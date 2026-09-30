@@ -1,0 +1,174 @@
+---
+refCode: CL-LSN-02035-V01
+slug: linux-premier-arriere-plan
+title: "Premier plan, arrière-plan et nohup"
+description: "Faire plusieurs choses à la fois dans un seul terminal : lancer une commande en arrière-plan avec &, lister et piloter les tâches avec jobs, fg, bg et kill %n, attendre avec wait, suspendre avec Ctrl+Z, survivre à la fermeture du terminal avec nohup, disown ou tmux, et comprendre le terminal de contrôle qui rend tout cela possible. Avec des tâches à lancer, suivre et laisser tourner, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02034-V01"]
+---
+
+Une sauvegarde qui dure vingt minutes, une compilation, un gros téléchargement : pendant ce temps, le terminal est bloqué, et on attend. À moins de dire au shell de lancer la commande **en arrière-plan** et de rendre la main tout de suite. Le shell sait gérer plusieurs **tâches** à la fois : les lancer, les suspendre, les reprendre, les ramener au premier plan. Et quand on se déconnecte d'un serveur, il faut encore que ces tâches survivent à la fermeture du terminal. Cette leçon t'apprend ces gestes quotidiens de l'administrateur, et le mécanisme qui les rend possibles : le **terminal de contrôle**.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lancer une commande en arrière-plan avec `&` et retrouver son PID avec `$!` ;
+- lister les tâches avec `jobs` et les désigner avec `%n` ;
+- ramener une tâche au premier plan avec `fg`, la relancer en arrière-plan avec `bg` ;
+- suspendre la commande au premier plan avec Ctrl+Z ;
+- attendre la fin d'une tâche avec `wait` ;
+- faire survivre une tâche à la déconnexion avec `nohup`, `disown`, `tmux` ou `screen` ;
+- expliquer le rôle du terminal de contrôle.
+
+## pourquoi ça compte
+
+Sur un serveur, on travaille presque toujours à distance, par SSH, et une connexion peut se couper à tout moment : Wi-Fi instable, ordinateur mis en veille, délai d'inactivité. Une longue opération lancée sans précaution, une migration de base de données ou une restauration de sauvegarde, s'arrête alors en plein milieu, parfois avec des dégâts. Savoir détacher proprement une tâche de son terminal fait partie des réflexes de base. Côté sécurité, c'est aussi une technique courante des attaquants : un programme lancé avec `nohup` en arrière-plan survit à la fermeture de leur session, et un défenseur qui fait l'inventaire des processus doit savoir les repérer.
+
+## & : lancer en arrière-plan
+
+Il suffit de terminer une commande par **`&`** :
+
+```bash
+$ sh sauvegarde.sh &
+[1] 2451
+$
+```
+
+Le shell affiche un **numéro de tâche** entre crochets, `[1]`, puis le **PID**, `2451`, et rend la main immédiatement. La commande tourne en parallèle. Le PID du dernier processus lancé en arrière-plan est aussi dans la variable spéciale **`$!`**, pratique dans un script : `kill $!` arrête ce que l'on vient de lancer.
+
+Deux précautions. Une commande en arrière-plan qui **écrit** à l'écran mélange sa sortie à ce que tu tapes : on la redirige vers un fichier, `sh sauvegarde.sh > sauvegarde.log 2>&1 &`. Et une commande en arrière-plan qui essaie de **lire** au clavier est suspendue par le système, puisqu'elle n'a pas le droit de lire le terminal.
+
+## jobs, fg, bg et %n
+
+`jobs` liste les tâches du shell courant :
+
+```bash
+$ jobs
+[1]-  Running                 sh sauvegarde.sh > sauvegarde.log 2>&1 &
+[2]+  Stopped                 vim notes.txt
+```
+
+Le `+` marque la tâche **courante**, celle que visent `fg` et `bg` sans argument ; le `-`, la précédente. On désigne une tâche par **`%n`** : `%1`, `%2`. Ces notations fonctionnent avec `kill`, `fg`, `bg` et `wait`.
+
+- **Ctrl+Z** envoie `SIGTSTP` à la commande au premier plan et la **suspend** : elle passe en état `T`, et le shell rend la main.
+- **`bg %2`** la relance **en arrière-plan** : elle continue de tourner, et tu gardes la main.
+- **`fg %1`** ramène une tâche **au premier plan** : le terminal lui appartient à nouveau, jusqu'à ce qu'elle se termine ou qu'on la suspende.
+- **`kill %1`** envoie `SIGTERM` à la tâche 1, sans avoir besoin de son PID.
+- **`wait`** attend la fin de toutes les tâches en arrière-plan ; `wait %1` ou `wait $!` attend une tâche précise.
+
+Le scénario classique : tu lances une longue copie sans `&`, tu t'en aperçois, tu appuies sur Ctrl+Z, puis `bg` : la copie continue en arrière-plan, sans avoir été interrompue.
+
+## le terminal de contrôle
+
+Tout cela repose sur une notion discrète : le **terminal de contrôle**. Quand tu ouvres une session, ton shell est rattaché à un terminal, un vrai ou un pseudo-terminal comme `/dev/pts/2` (la commande `tty` le révèle). Le terminal sait quel **groupe de processus** est au premier plan. Quand tu tapes Ctrl+C ou Ctrl+Z, ce n'est pas le shell qui réagit : c'est le **terminal**, qui envoie `SIGINT` ou `SIGTSTP` à tout le groupe au premier plan. `fg` et `bg` ne font que changer quel groupe est au premier plan.
+
+<Diagram caption="Ce qui se passe quand on tape Ctrl+Z">
+sequenceDiagram
+  participant U as Toi, au clavier
+  participant T as Le terminal
+  participant C as La commande au premier plan
+  participant S as Le shell
+  U->>T: Ctrl+Z
+  T->>C: SIGTSTP à tout le groupe au premier plan
+  C-->>S: la commande est suspendue, état T
+  S->>U: [1]+ Stopped, le shell rend la main
+  U->>S: bg
+  S->>C: SIGCONT, et la tâche passe en arrière-plan
+</Diagram>
+
+Le terminal des exercices a le sien : la console série de la machine, `/dev/ttyS0`, que la commande `tty` affiche. Ctrl+C, Ctrl+Z, `fg` et `bg` y fonctionnent comme sur un serveur. Une particularité de ce Linux minimal, pourtant : BusyBox exécute certaines commandes très simples, comme `sleep`, à l'intérieur même du shell, sans créer de processus. Ctrl+C les interrompt, mais Ctrl+Z ne peut pas les suspendre, puisqu'il n'y a pas de processus distinct à arrêter. Pour t'exercer, `/bin/sleep 60` lance un vrai programme séparé, qui se suspend normalement. Autre différence avec bash : le shell de BusyBox n'affiche pas `[1] 2451` au lancement d'une tâche. `jobs -l` donne les numéros de tâche et les PID, et `echo $!` le PID de la dernière.
+
+## groupes de processus et sessions
+
+Une commande n'est pas toujours un seul processus. Dans `cat access.log | grep 404 | wc -l`, le shell lance trois processus, et Ctrl+C doit les arrêter tous les trois. C'est pourquoi le shell range chaque **tâche** dans un **groupe de processus**, identifié par le PID de son premier membre : la colonne `pgid` de `ps -o pid,pgid,args` le montre. Les signaux du terminal visent le groupe entier, jamais un seul de ses membres.
+
+Au-dessus des groupes, il y a la **session** : l'ensemble des groupes rattachés à un même terminal, avec le shell de connexion pour chef de session, la lettre `s` de la colonne `STAT`. Quand le terminal disparaît, c'est au chef de session, puis à toute la session, que le système envoie `SIGHUP`. Tu as maintenant toutes les pièces du puzzle : un terminal, une session, des groupes au premier ou à l'arrière-plan, et des signaux qui circulent entre eux.
+
+## paralléliser dans un script
+
+`&` et `wait` ne servent pas qu'au clavier. Dans un script, ils permettent de lancer plusieurs traitements **en parallèle**, puis d'attendre qu'ils soient tous terminés avant de continuer :
+
+```bash
+#!/bin/sh
+gzip -k journal-lundi.log &
+gzip -k journal-mardi.log &
+gzip -k journal-mercredi.log &
+wait
+echo "Les trois journaux sont compressés."
+```
+
+Sur une machine à plusieurs cœurs, les trois compressions avancent en même temps, et le script ne prend guère plus de temps que la plus longue. `wait` suivi d'un PID renvoie en plus le **code de retour** de cette tâche, ce qui permet de vérifier que chacune a réussi. Attention toutefois à ne pas lancer des centaines de tâches à la fois : la machine passerait son temps à les alterner, et les disques à chercher leurs données.
+
+## survivre à la déconnexion
+
+Quand un terminal se ferme, le système envoie **`SIGHUP`** (*hang up*, « raccroché ») aux processus de la session, qui s'arrêtent par défaut. Plusieurs façons de l'éviter :
+
+- **`nohup commande &`** lance la commande en lui faisant **ignorer `SIGHUP`**. Si sa sortie allait vers le terminal, `nohup` la redirige dans un fichier **`nohup.out`**.
+- **`disown`**, dans bash, retire une tâche déjà lancée de la liste du shell, qui ne lui transmettra pas `SIGHUP` en partant.
+- **`tmux`** ou **`screen`** créent un terminal **persistant** sur le serveur : on s'y détache, on se déconnecte, et on s'y rattache plus tard, en retrouvant tout en l'état, même la commande en cours au premier plan. C'est la solution préférée pour les longues opérations interactives.
+- **`setsid commande`** lance la commande dans une **nouvelle session**, sans terminal : elle ne reçoit donc aucun `SIGHUP` du terminal que l'on ferme.
+- Pour un programme qui doit tourner **en permanence**, aucune de ces astuces n'est la bonne réponse : on en fait un **service**, géré par systemd, sujet du module 8.
+
+## tmux en pratique
+
+Sur un serveur, `tmux` est l'outil que les administrateurs ouvrent avant toute longue opération. Le principe : `tmux new -s migration` ouvre une **session** nommée, dans laquelle tu travailles normalement. La combinaison **Ctrl+B** puis **D** t'en **détache** : la session continue de tourner sur le serveur, avec tout ce qu'elle contient, même si tu fermes ta connexion SSH. Plus tard, depuis n'importe quel poste, `tmux ls` liste les sessions ouvertes et `tmux attach -t migration` te remet exactement devant l'écran que tu avais quitté, avec la commande toujours en cours.
+
+`tmux` sait aussi découper l'écran en plusieurs panneaux, par exemple un `top` d'un côté et la commande de l'autre, et ouvrir plusieurs fenêtres dans la même session. `screen`, plus ancien, offre l'essentiel des mêmes services avec d'autres raccourcis : Ctrl+A puis D pour se détacher, `screen -r` pour se rattacher. L'un ou l'autre est installé sur presque tous les serveurs.
+
+Côté défense, ces sessions persistantes sont aussi une cachette appréciée : un attaquant qui laisse une session `tmux` ou `screen` ouverte sur un serveur compromis y retrouve ses outils à chaque retour. `tmux ls` et `screen -ls`, lancés sous chaque compte, font partie des vérifications d'une enquête.
+
+## à toi de jouer
+
+Le dossier de travail contient `rapport.sh`, qui simule un traitement de trente secondes, puis écrit `rapport.txt`. Pilote plusieurs tâches à la fois :
+
+1. lance `sh rapport.sh`, sans `&` : il occupe le terminal ;
+2. suspends-le avec **Ctrl+Z**, vérifie avec `jobs` qu'il est `Stopped`, puis relance-le en arrière-plan avec `bg` ;
+3. lance aussi `sleep 300 &`, puis affiche les tâches et leurs PID avec `jobs -l` ;
+4. arrête la tâche `sleep` avec `kill` et son numéro de tâche, `%2`, puis vérifie avec `jobs` ;
+5. attends la fin du rapport avec `wait`, puis lis `rapport.txt` ;
+6. enfin, lance `nohup sh rapport.sh &` et regarde, une fois la tâche terminée, le fichier `nohup.out` qu'il a créé.
+
+<LinuxTerminal title="Plusieurs tâches à la fois" files={{"rapport.sh": "#!/bin/sh\n# Simule un long traitement, puis écrit le rapport.\necho \"Traitement en cours...\"\nsleep 30\necho \"Rapport du $(date '+%d/%m à %H:%M') : traitement terminé, aucune erreur.\" > rapport.txt\necho \"Traitement terminé.\"\n"}} expectedCommands={["sh rapport.sh", "bg", "sleep 300 &", "jobs -l", "kill %2", "wait", "nohup sh rapport.sh &"]} checks={[{"label": "rapport.txt a été écrit", "path": "rapport.txt", "expect": "file", "contains": "terminé"}, {"label": "nohup a gardé la sortie dans nohup.out", "path": "nohup.out", "expect": "file", "contains": "Traitement terminé"}]} hints={["Ctrl+Z suspend la commande au premier plan ; bg la relance derrière.", "Le & à la fin rend la main tout de suite.", "jobs -l numérote les tâches et donne leurs PID : la seconde est %2.", "kill %2 vise la tâche 2, pas le processus 2.", "wait rend la main quand toutes les tâches sont finies.", "nohup.out n'est complet qu'à la fin du traitement : attends trente secondes, ou utilise wait."]} />
+
+Remarque que le rapport, suspendu puis relancé, a repris là où il en était : aucune seconde de traitement n'a été perdue. `wait` bloque ensuite le shell jusqu'à sa fin, puis rend la main. Et `nohup` a écrit dans `nohup.out` ce que le script aurait affiché : sur un vrai serveur, tu pourrais te déconnecter pendant le traitement, et retrouver ce fichier en revenant.
+
+## les pièges
+
+- **Lancer en arrière-plan une commande bavarde.** Sa sortie se mélange à ta saisie : redirige-la vers un fichier.
+- **Confondre `%1` et `1`.** `kill %1` vise la tâche 1 du shell ; `kill 1` viserait le processus numéro 1, `init`.
+- **Croire que `&` suffit pour se déconnecter.** À la fermeture du terminal, `SIGHUP` arrête les tâches : `nohup`, `disown` ou `tmux`.
+- **Chercher ses tâches depuis un autre terminal.** `jobs` ne connaît que les tâches du shell courant ; ailleurs, c'est `ps`.
+- **Utiliser `nohup` pour un service permanent.** Il ne redémarre pas après une panne ni au démarrage de la machine : c'est le travail de systemd.
+- **Oublier `nohup.out`.** Il grossit à chaque lancement, dans le répertoire courant.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Job-Control-Basics.html" description="Les tâches, fg, bg, jobs et les notations %n dans bash, en anglais">Manuel de bash : le contrôle des tâches</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/nohup.1.html" description="Faire ignorer SIGHUP à une commande, et où va sa sortie, en anglais">Page de manuel de nohup</ExternalLink>
+
+<ExternalLink href="https://github.com/tmux/tmux/wiki" description="Le multiplexeur de terminal qui survit aux déconnexions, en anglais">Le wiki de tmux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que fait le & à la fin d'une commande ?" options={["Il la lance en arrière-plan et rend la main tout de suite", "Il la lance deux fois", "Il la lance avec les droits de root", "Il redirige sa sortie"]} correct={0} explanation="Le shell affiche un numéro de tâche et un PID, puis reprend la saisie pendant que la commande tourne." />
+  <Quiz id="q-2" question="Que contient la variable $! ?" options={["Le code de retour de la dernière commande", "Le PID du shell", "Le nombre de tâches", "Le PID du dernier processus lancé en arrière-plan"]} correct={3} explanation="$! permet par exemple de faire kill $! sur ce que l'on vient de lancer. $? est le code de retour, $$ le PID du shell." />
+  <Quiz id="q-3" question="Quelle est la différence entre kill %1 et kill 1 ?" options={["Aucune", "kill 1 est plus rapide", "kill %1 vise la tâche 1 du shell ; kill 1 vise le processus de PID 1, init", "kill %1 envoie SIGKILL"]} correct={2} explanation="Le pourcentage désigne un numéro de tâche du shell. Sans lui, c'est un PID." />
+  <Quiz id="q-4" question="Tu as lancé une longue copie au premier plan. Comment la passer en arrière-plan sans l'interrompre ?" options={["Ctrl+Z pour la suspendre, puis bg", "Ctrl+C puis la relancer avec &", "fg", "nohup"]} correct={0} explanation="Ctrl+Z suspend la commande, bg la relance en arrière-plan : elle reprend là où elle en était." />
+  <Quiz id="q-5" question="Pourquoi une tâche lancée avec & s'arrête-t-elle quand on ferme la session SSH ?" options={["Parce que & ne dure que cinq minutes", "Parce que la mémoire est libérée", "Elle ne s'arrête pas", "Parce que la fermeture du terminal envoie SIGHUP aux processus de la session"]} correct={3} explanation="SIGHUP arrête le processus par défaut. nohup le fait ignorer ; tmux garde un terminal ouvert sur le serveur." />
+  <Quiz id="q-6" question="Qui transforme la frappe de Ctrl+C en signal SIGINT ?" options={["Le shell", "Le noyau, pour tous les processus", "Le terminal de contrôle, qui l'envoie au groupe de processus au premier plan", "Le programme lui-même"]} correct={2} explanation="Le shell choisit seulement quel groupe est au premier plan ; c'est le terminal qui envoie SIGINT à ce groupe quand on tape Ctrl+C." />
+  <Quiz id="q-7" question="Un programme doit tourner en permanence sur un serveur, et redémarrer après une panne. Quelle solution ?" options={["nohup", "tmux", "En faire un service géré par systemd", "Le lancer avec & dans le .bashrc"]} correct={2} explanation="nohup et tmux évitent l'arrêt à la déconnexion, mais ne relancent rien. Un service systemd démarre avec la machine et peut redémarrer automatiquement." />
+</QuizGroup>
+
+## à retenir
+
+- **`commande &`** lance en arrière-plan ; **`$!`** donne le PID du dernier lancé.
+- **`jobs`** liste les tâches ; **`%n`** les désigne ; **`fg`**, **`bg`**, **`kill %n`**, **`wait`** les pilotent.
+- **Ctrl+Z** suspend la commande au premier plan, **`bg`** la relance derrière.
+- Le **terminal de contrôle** transforme Ctrl+C et Ctrl+Z en signaux pour le groupe au premier plan.
+- Survivre à la déconnexion : **`nohup`** (sortie dans `nohup.out`), **`disown`**, et surtout **`tmux`** ou **`screen`**. Pour un programme permanent : un **service** systemd.

@@ -1,0 +1,153 @@
+---
+refCode: CL-LSN-02033-V01
+slug: linux-surveiller-direct
+title: "Surveiller en direct : top et la charge"
+description: "Suivre une machine en temps réel : top et son en-tête (charge, tâches, processeur, mémoire), la charge système et ce qu'elle mesure vraiment, uptime, les pourcentages de processeur, htop, le mode non interactif pour enregistrer une mesure, et watch pour répéter une commande. Avec la traque d'un processus qui accapare le processeur, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02032-V01"]
+---
+
+`ps` prend une photo ; pour voir une machine **vivre**, il faut un film. C'est le rôle de `top`, installé sur tous les systèmes Linux et présent jusque dans les plus petits : il rafraîchit toutes les trois secondes la liste des processus, triée par consommation de processeur, sous un en-tête qui résume l'état de la machine. C'est la première commande qu'on tape quand un utilisateur se plaint que « le serveur rame ». Encore faut-il savoir lire cet en-tête, et en particulier la fameuse **charge système**, souvent mal comprise. Cette leçon t'apprend à lire `top`, à l'utiliser sans écran, et à trouver en quelques secondes le processus responsable d'une lenteur.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lancer `top` et lire son en-tête : charge, tâches, processeur, mémoire ;
+- expliquer ce que mesure la charge système, et la comparer au nombre de cœurs ;
+- trier et filtrer les processus dans `top`, et en arrêter un ;
+- utiliser `top` en mode non interactif pour enregistrer une mesure ;
+- répéter une commande à intervalle régulier avec `watch` ;
+- trouver le processus qui accapare le processeur, et l'arrêter proprement.
+
+## pourquoi ça compte
+
+« Le site est lent depuis ce matin. » Face à cette phrase, l'administrateur a besoin de répondre vite à trois questions : la machine est-elle **surchargée** ? Par **quoi** ? Et **depuis quand** ? `top` y répond en une commande. En sécurité, la même surveillance repère des anomalies : un mineur de cryptomonnaie installé par un attaquant se trahit presque toujours par un processus qui consomme 100 % d'un processeur en permanence, sur une machine qui devrait être au repos. Les outils de supervision des entreprises, qui surveillent des milliers de serveurs, ne font que collecter automatiquement ces mêmes mesures.
+
+## l'en-tête de top
+
+Lance `top`, et voici ce qu'affichent ses premières lignes, ici sur un serveur Debian :
+
+```text
+top - 10:42:13 up 12 days,  3:07,  2 users,  load average: 3.92, 2.10, 1.05
+Tasks: 187 total,   4 running, 183 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 96.1 us,  2.3 sy,  0.0 ni,  1.2 id,  0.3 wa,  0.0 hi,  0.1 si,  0.0 st
+MiB Mem :   3915.4 total,    212.8 free,   2890.1 used,    812.5 buff/cache
+MiB Swap:   2048.0 total,   1998.3 free,     49.7 used.    768.2 avail Mem
+```
+
+- La **première ligne** donne l'heure, la durée depuis le démarrage (`up 12 days`), le nombre de sessions ouvertes, et la **charge moyenne** sur 1, 5 et 15 minutes.
+- **Tasks** compte les processus par état : ceux de la leçon précédente, avec les zombies en fin de ligne.
+- **%Cpu(s)** découpe le temps du processeur : `us` pour les programmes des utilisateurs, `sy` pour le noyau, `ni` pour les programmes à priorité basse, `id` pour l'inactivité, `wa` pour l'attente des disques, `st` pour le temps volé par l'hyperviseur d'une machine virtuelle.
+- **Mem** et **Swap** résument la mémoire, sujet d'une leçon à venir.
+
+Sous l'en-tête, la liste des processus, triée par défaut par `%CPU` décroissant : le plus gourmand est en haut. Les colonnes reprennent celles de `ps` : `PID`, `USER`, `PR` et `NI` pour la priorité, `VIRT`, `RES` et `SHR` pour la mémoire, `S` pour l'état, `%CPU`, `%MEM`, `TIME+` pour le temps de processeur cumulé, et `COMMAND`.
+
+## la charge système
+
+La **charge** (*load average*) est le nombre moyen de processus qui **veulent** le processeur : ceux qui s'exécutent, plus ceux qui attendent leur tour. Sous Linux, on y ajoute ceux qui sont bloqués en attente de disque, en état `D`. Les trois nombres sont des moyennes sur 1, 5 et 15 minutes, ce qui donne la **tendance** : `3.92, 2.10, 1.05` décrit une charge qui monte depuis un quart d'heure.
+
+Une charge ne se lit **jamais seule** : elle se compare au **nombre de cœurs**. Sur une machine à 4 cœurs, une charge de 4 signifie que tous les cœurs sont occupés, sans file d'attente ; une charge de 8, qu'en moyenne chaque cœur a un processus qui attend. Sur une machine à 1 cœur, une charge de 4 est déjà une forte surcharge. La commande `nproc` donne le nombre de cœurs, et `uptime` affiche la seule première ligne de `top`, pratique pour un coup d'œil.
+
+Une charge élevée avec un processeur **inactif** (`id` haut) et un `wa` élevé ne vient pas du calcul, mais des **disques** : les processus attendent des lectures ou des écritures. C'est un diagnostic très différent, qui se poursuit avec les outils de la leçon sur la mémoire et le disque.
+
+<Diagram caption="Lire une lenteur avec top">
+flowchart TD
+  A["La machine est lente"] --> B["uptime : charge comparée à nproc"]
+  B --> C["Charge faible"]
+  B --> D["Charge élevée"]
+  C --> C1["Chercher ailleurs : réseau, application, base de données"]
+  D --> E["top : que dit la ligne %Cpu ?"]
+  E -->|"us ou sy élevé"| F["Un processus calcule : le premier de la liste"]
+  E -->|"wa élevé, id élevé"| G["Les disques ne suivent pas : df, du, iostat"]
+</Diagram>
+
+## les colonnes de la liste
+
+Trois colonnes de mémoire intriguent souvent. **`VIRT`** est la mémoire **virtuelle** : tout ce que le processus a réservé ou projeté, y compris des bibliothèques partagées et des zones jamais touchées. Ce nombre est souvent énorme et presque toujours trompeur. **`RES`** (*resident*) est la mémoire **réellement présente** en RAM pour ce processus : c'est elle qui compte quand la mémoire manque. **`SHR`** est la part de `RES` **partagée** avec d'autres processus, comme les bibliothèques communes. Un serveur web à vingt processus n'utilise donc pas vingt fois son `RES` : une bonne partie est commune.
+
+La colonne **`TIME+`** est le temps de processeur **cumulé** depuis le démarrage du processus, et non sa durée de vie. Un démon qui tourne depuis un mois avec quelques secondes de `TIME+` dort presque tout le temps ; un processus lancé il y a une heure avec cinquante minutes de `TIME+` a calculé sans relâche. C'est un bon indice pour distinguer un pic passager d'une consommation permanente.
+
+Enfin, `%CPU` peut dépasser 100 % sur une machine à plusieurs cœurs : un programme qui occupe deux cœurs à plein affiche 200 %. Ce n'est pas une erreur, c'est la convention de `top` sous Linux.
+
+## piloter top
+
+`top` est interactif. Les touches les plus utiles :
+
+| Touche | Effet |
+|---|---|
+| `P` | trier par processeur, l'ordre par défaut |
+| `M` | trier par mémoire |
+| `u` | n'afficher qu'un utilisateur |
+| `1` | détailler chaque cœur, sur un Linux complet |
+| `k` | envoyer un signal à un PID, pour arrêter un processus |
+| `q` | quitter |
+
+Beaucoup d'administrateurs préfèrent **htop**, une version en couleurs qu'on installe à part, avec des barres par cœur, le défilement à la souris et l'arbre des processus avec `F5`. Le principe reste le même.
+
+Pour **enregistrer** une mesure, dans un script ou pour un rapport, on utilise le mode non interactif : `top -b -n 1` affiche un seul rafraîchissement, en texte, puis rend la main. On le combine avec `head` pour garder l'en-tête et les premiers processus : `top -b -n 1 | head -15`. C'est aussi la bonne façon de s'en servir dans le terminal des exercices. Le `top` de BusyBox, celui de ce Linux minimal, affiche un en-tête plus court que celui de Debian : une ligne `Mem`, une ligne `CPU` avec les mêmes découpages (`usr`, `sys`, `nic`, `idle`, `io`), une ligne `Load average`, puis les colonnes `PID`, `PPID`, `USER`, `STAT`, `VSZ`, `%CPU` et `COMMAND`. La lecture reste la même.
+
+Enfin, `watch` relance une commande à intervalle régulier et en affiche le résultat en plein écran : `watch -n 2 'ps -o pid,stat,args'` suit l'évolution des processus toutes les deux secondes. L'option `-d` surligne ce qui a changé d'un affichage à l'autre, ce qui rend visibles les processus qui apparaissent et disparaissent. On s'en sert aussi pour suivre une copie ou un téléchargement, avec `watch -n 5 'du -sh /sauvegardes'`, ou le nombre de connexions d'un service. Comme `top`, `watch` occupe le terminal jusqu'à ce qu'on l'interrompe : sur un vrai terminal, Ctrl+C le quitte, et le terminal redevient disponible.
+
+## garder une trace dans le temps
+
+`top` répond à la question « que se passe-t-il **maintenant** ? ». Mais la plainte arrive souvent après coup : « le site était lent hier soir vers 22 h ». À ce moment-là, `top` ne montre plus rien. D'où l'intérêt de mesures **enregistrées**. Sur beaucoup de serveurs, le paquet `sysstat` collecte toutes les dix minutes l'activité du processeur, de la mémoire et des disques, que la commande `sar` relit ensuite pour une date et une heure données. Les solutions de supervision, comme Prometheus avec ses tableaux de bord Grafana, ou Zabbix, font la même chose à l'échelle d'un parc entier, avec des alertes quand un seuil est franchi.
+
+À défaut, une simple ligne programmée qui ajoute `top -b -n 1 | head -15` à un fichier toutes les minutes rend déjà de grands services lors d'un incident. Tu apprendras à programmer ce genre de tâche dans le module sur les scripts et l'automatisation.
+
+## un mot sur le terminal des exercices
+
+Le terminal de ces leçons est un vrai Linux : un `top` interactif y fonctionne, la touche `q` le quitte, et **Ctrl+C** interrompt `watch` comme n'importe quelle commande. Pour enregistrer une mesure, `top -b -n 1` reste la bonne méthode. Et si jamais une commande reste bloquée, le bouton **Redémarrer** relance la machine en quelques secondes.
+
+## à toi de jouer
+
+Un collègue se plaint que la machine rame. Lance `sh demarrer.sh`, qui reproduit la situation, puis enquête :
+
+1. regarde la charge avec `uptime`, et le nombre de cœurs avec `nproc` ;
+2. prends une mesure avec `top -b -n 1 | head -15` : quel processus est en tête, avec quel pourcentage de processeur ?
+3. enregistre cette mesure dans `mesure.txt`, pour ton rapport ;
+4. arrête le coupable **proprement**, avec `kill` suivi de son PID. Le programme est écrit pour laisser une trace quand on lui demande poliment de s'arrêter.
+
+<LinuxTerminal title="La machine rame" files={{"demarrer.sh": "#!/bin/sh\n# Reproduit la situation : un calcul qui accapare le processeur.\nsh calcul.sh > /dev/null 2>&1 &\necho \"La situation est en place. À toi d'enquêter.\"\n", "calcul.sh": "#!/bin/sh\n# Un calcul qui ne s'arrête jamais de lui-même.\ntrap 'echo \"calcul arrêté proprement par SIGTERM\" > arret.txt; exit 0' TERM\nwhile :; do :; done\n"}} expectedCommands={["sh demarrer.sh", "uptime", "nproc", "top -b -n 1 | head -15"]} checks={[{"label": "mesure.txt contient une mesure de top", "path": "mesure.txt", "expect": "file", "contains": "calcul.sh"}, {"label": "Le calcul est arrêté proprement", "path": "arret.txt", "expect": "file", "contains": "SIGTERM"}]} hints={["Lance d'abord sh demarrer.sh.", "top -b -n 1 | head -15 affiche une seule mesure, puis rend la main.", "Ajoute > mesure.txt au bout de la même commande pour l'enregistrer.", "Le PID du coupable est dans la première colonne de top. kill suivi de ce PID, sans option."]} />
+
+Tu remarqueras peut-être que la première mesure de `uptime` est basse : la machine vient de démarrer, et la moyenne sur une minute monte progressivement. Relance-la une ou deux minutes plus tard, avant d'arrêter le calcul : la charge monte vers 1, soit un processus prêt en permanence pour un seul cœur. Relance ensuite `top -b -n 1 | head -15` : le processeur est de nouveau inactif. La charge, elle, ne redescend que progressivement, puisque c'est une moyenne : `uptime` affichera encore une valeur élevée sur la moyenne de 5 et de 15 minutes pendant un moment. C'est normal, et c'est pour cela qu'on regarde les trois nombres.
+
+## les pièges
+
+- **Lire la charge sans connaître le nombre de cœurs.** Une charge de 4 est idéale sur 4 cœurs et catastrophique sur un seul.
+- **Croire qu'une charge élevée veut dire « processeur saturé ».** Sous Linux, elle compte aussi les attentes disque : regarde `wa` et `id`.
+- **Paniquer devant une mémoire « presque pleine ».** Le cache (`buff/cache`) est de la mémoire libérable : c'est `avail Mem` qui compte.
+- **Tuer le premier processus de la liste sans réfléchir.** Il peut s'agir de la base de données en plein travail légitime. Identifie d'abord ce qu'il est.
+- **Utiliser `kill -9` d'emblée.** On demande d'abord poliment avec `kill`, qui laisse au programme le temps de se terminer proprement.
+- **Oublier que la charge est une moyenne.** Après la correction, elle met plusieurs minutes à redescendre.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/top.1.html" description="Toutes les colonnes, les touches et les options de top, en anglais">Page de manuel de top</ExternalLink>
+
+<ExternalLink href="https://www.brendangregg.com/blog/2017-08-08/linux-load-averages.html" description="Pourquoi la charge sous Linux compte aussi les attentes disque, par un spécialiste des performances, en anglais">Brendan Gregg : Linux Load Averages</ExternalLink>
+
+<ExternalLink href="https://htop.dev/" description="Le site de htop, l'alternative interactive et colorée à top, en anglais">htop</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Une machine à 2 cœurs affiche une charge de 6.0. Qu'en conclure ?" options={["Elle est au repos", "Elle a 6 utilisateurs connectés", "En moyenne, chaque cœur a deux processus qui attendent : elle est surchargée", "Elle a 6 Go de mémoire utilisée"]} correct={2} explanation="La charge se compare au nombre de cœurs : 6 processus prêts pour 2 cœurs, c'est une file d'attente permanente." />
+  <Quiz id="q-2" question="Que signifient les trois nombres de load average ?" options={["Les moyennes sur 1, 5 et 15 minutes", "La charge des trois premiers cœurs", "Le minimum, la moyenne et le maximum", "La charge du processeur, de la mémoire et du disque"]} correct={0} explanation="Trois moyennes glissantes, qui donnent la tendance : une charge qui monte ou qui redescend." />
+  <Quiz id="q-3" question="La charge est élevée, mais %Cpu affiche id à 85 % et wa à 12 %. Où chercher ?" options={["Un processus qui calcule", "Du côté du réseau uniquement", "Nulle part, tout va bien", "Du côté des disques, que les processus attendent"]} correct={3} explanation="Le processeur est presque inactif : ce sont les attentes d'entrées et sorties, comptées dans la charge sous Linux, qui la font monter." />
+  <Quiz id="q-4" question="Comment enregistrer une seule mesure de top dans un fichier ?" options={["top > mesure.txt", "top -q", "top | save", "top -b -n 1 > mesure.txt"]} correct={3} explanation="-b pour le mode non interactif, -n 1 pour un seul rafraîchissement : top affiche du texte et rend la main." />
+  <Quiz id="q-5" question="Dans top, quelle touche trie les processus par mémoire ?" options={["M", "P", "k", "q"]} correct={0} explanation="M trie par mémoire, P par processeur ; k envoie un signal et q quitte." />
+  <Quiz id="q-6" question="Un serveur censé être au repos a un processus inconnu à 100 % de processeur en permanence. Qu'est-ce qui doit venir à l'esprit ?" options={["Une mise à jour normale", "Un disque plein", "Un mineur de cryptomonnaie installé par un attaquant, entre autres hypothèses à vérifier", "Un problème d'écran"]} correct={2} explanation="Un calcul permanent et inexpliqué est l'un des signes les plus courants d'une machine compromise et utilisée pour miner." />
+  <Quiz id="q-7" question="Pourquoi la charge reste-t-elle élevée quelques minutes après l'arrêt du processus coupable ?" options={["Parce que le processus n'est pas vraiment arrêté", "Parce que top est en retard", "Parce qu'il faut redémarrer", "Parce que ce sont des moyennes sur 1, 5 et 15 minutes, qui redescendent progressivement"]} correct={3} explanation="La charge moyenne intègre le passé récent : elle redescend en quelques minutes, d'abord sur 1 minute, puis sur 5 et 15." />
+</QuizGroup>
+
+## à retenir
+
+- `top` filme la machine : en-tête (**charge**, **tâches**, **%Cpu**, **mémoire**) et processus triés par processeur. `htop` en est la version confortable.
+- La **charge** compte les processus qui veulent le processeur, et sous Linux ceux qui attendent le disque. Elle se compare **toujours** au nombre de **cœurs** (`nproc`).
+- `%Cpu` : `us` et `sy` pour le calcul, `id` pour l'inactivité, `wa` pour l'attente disque.
+- Touches : `P`, `M`, `k`, `q`. Sans écran : `top -b -n 1 | head -15`. En boucle : `watch`.
+- Face à une lenteur : `uptime`, puis `top`, puis identifier avant d'agir, et **`kill`** avant **`kill -9`**.

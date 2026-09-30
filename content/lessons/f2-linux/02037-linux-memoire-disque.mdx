@@ -1,0 +1,172 @@
+---
+refCode: CL-LSN-02037-V01
+slug: linux-memoire-disque
+title: "Mémoire et disque : free, df, du"
+description: "Lire les ressources d'une machine Linux sans se tromper : la mémoire avec free (utilisée, libre, cache, disponible), le swap et le tueur de processus OOM, vmstat pour la tendance, l'espace disque avec df (en octets et en inodes), trouver ce qui le remplit avec du et sort, l'activité des disques avec iostat, et le cas piège du fichier supprimé mais encore ouvert. Avec un disque à remettre en ordre, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02036-V01"]
+---
+
+« No space left on device. » Ce message, tout administrateur l'a vu un jour, souvent à 3 h du matin, parce qu'un journal a grossi sans limite. Un disque plein arrête les bases de données, empêche les connexions, fait planter les services qui ne peuvent plus écrire. La mémoire, elle, manque plus discrètement : la machine ralentit, puis le noyau commence à arrêter des programmes de lui-même. Ces deux ressources se surveillent avec une poignée de commandes, à condition de savoir **lire** leurs chiffres, qui sont souvent trompeurs au premier regard. Cette leçon t'apprend à le faire, puis à retrouver et libérer ce qui remplit un disque.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire `free` et distinguer mémoire utilisée, cache et mémoire **disponible** ;
+- expliquer le rôle du swap et ce que fait le tueur OOM ;
+- suivre la tendance de la mémoire et du processeur avec `vmstat` ;
+- lire l'occupation des systèmes de fichiers avec `df -h`, et celle des inodes avec `df -i` ;
+- trouver ce qui remplit un disque avec `du` et `sort` ;
+- libérer de la place sans casser un service qui écrit ;
+- expliquer pourquoi supprimer un fichier ne libère pas toujours l'espace.
+
+## pourquoi ça compte
+
+Le disque plein est l'une des pannes les plus fréquentes en production, et l'une des plus évitables. La mémoire épuisée en est une autre, plus difficile à diagnostiquer. Les deux ont aussi une face sécurité : un attaquant qui remplit un disque de journaux, en provoquant des milliers d'erreurs, peut faire tomber un service ou empêcher l'enregistrement de ses propres traces. Et les fichiers supprimés mais encore ouverts sont une cachette connue : un programme malveillant peut effacer son fichier de travail tout en continuant à s'en servir. Savoir lire ces ressources est donc utile à l'administrateur comme à l'analyste.
+
+## free : la mémoire, bien lue
+
+```text
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       1.2Gi       212Mi        45Mi       2.4Gi       2.3Gi
+Swap:          2.0Gi        12Mi       1.9Gi
+```
+
+La colonne **`free`** affiche 212 Mio sur 3,8 Gio : la machine semble à bout. Elle ne l'est pas. Linux utilise toute la mémoire inoccupée comme **cache** des fichiers lus récemment, la colonne **`buff/cache`**, parce qu'une mémoire vide ne sert à rien. Ce cache est **libéré** dès qu'un programme a besoin de place. La colonne qui compte est donc **`available`** : l'estimation de ce que les programmes peuvent encore obtenir sans rien pousser dans le swap. Ici, 2,3 Gio : tout va bien.
+
+Un adage résume la situation : « la mémoire libre est de la mémoire gaspillée ». Une machine en bonne santé a souvent peu de `free` et beaucoup de `buff/cache`. L'inquiétude commence quand `available` devient faible.
+
+## le swap et le tueur OOM
+
+Le **swap** est une zone du disque où le noyau range les pages de mémoire peu utilisées quand la RAM manque. Il évite un arrêt brutal, mais un disque est des milliers de fois plus lent que la mémoire : une machine qui **utilise activement** son swap devient très lente. Quelques mégaoctets de swap occupés depuis longtemps ne sont pas un problème ; un swap qui se remplit et se vide sans cesse en est un.
+
+Quand il ne reste vraiment plus rien, le noyau déclenche le **tueur OOM** (*out of memory killer*). Il choisit un processus, en général le plus gros consommateur, et l'arrête avec `SIGKILL`, sans préavis. Le journal du noyau en garde la trace, avec un message `Out of memory: Killed process` que `dmesg` ou `journalctl -k` retrouvent. Un service qui disparaît sans explication, sans erreur dans ses propres journaux, a souvent été victime de l'OOM.
+
+## vmstat : la tendance
+
+`free` est une photo. **`vmstat 2`** affiche une ligne toutes les deux secondes, avec la mémoire, le swap, les disques et le processeur :
+
+```text
+procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 3  0  12288 216440  98320 2410112    0    0    12   340  812 1450 71  6 22  1  0
+ 4  1  12288 210012  98324 2410900    0    0     8  2210  901 1610 74  7 12  7  0
+```
+
+Les colonnes à regarder d'abord : **`r`**, le nombre de processus prêts, à comparer au nombre de cœurs ; **`b`**, les processus bloqués en attente de disque ; **`si`** et **`so`**, la mémoire relue depuis le swap et envoyée vers lui, qui doivent rester à zéro sur une machine saine ; **`wa`**, le temps d'attente des disques. La première ligne est une moyenne depuis le démarrage : on lit les suivantes. `vmstat` n'est pas présent sur le Linux minimal des exercices, où `free` et `top` en donnent l'essentiel.
+
+## df : l'espace des systèmes de fichiers
+
+`df -h` (*disk free*, en unités lisibles) montre chaque système de fichiers monté, sa taille, son occupation et son **point de montage** :
+
+```text
+$ df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        20G   19G  112M 100% /
+/dev/sdb1       200G   81G  110G  43% /srv
+tmpfs           392M  1.2M  391M   1% /run
+```
+
+La ligne à surveiller est celle dont le **`Use%`** approche 100 %. Ici, la racine est pleine, alors que `/srv` a de la place : déplacer des données d'un système de fichiers à l'autre peut suffire à débloquer la situation. Les lignes `tmpfs` sont des systèmes de fichiers en mémoire, sans lien avec les disques.
+
+Un autre piège : un système de fichiers peut être « plein » avec de l'espace libre, parce qu'il n'a plus d'**inodes**. Chaque fichier en consomme un, et leur nombre est fixé à la création du système de fichiers. Des millions de minuscules fichiers, par exemple des sessions PHP jamais nettoyées, les épuisent. **`df -i`** affiche leur occupation, avec la même lecture.
+
+## du : trouver ce qui remplit
+
+`df` dit **quel** système de fichiers est plein ; **`du`** (*disk usage*) dit **quoi** le remplit. La méthode classique descend l'arborescence niveau par niveau :
+
+```bash
+du -sh /var/* 2>/dev/null | sort -h        # la taille de chaque élément de /var, triée
+du -sh /var/log/* | sort -h | tail -5      # les cinq plus gros de /var/log
+```
+
+`-s` résume chaque argument en une ligne, `-h` affiche des unités lisibles, et `sort -h` sait trier ces unités, où `2K` passe avant `1M`. On recommence dans le plus gros répertoire, jusqu'à trouver le coupable. Sur un Linux complet, `du -xh / --max-depth=1` reste sur un seul système de fichiers, et l'outil interactif **`ncdu`** rend l'exploration très confortable.
+
+Pour chercher directement les gros fichiers, `find` fait aussi l'affaire : `find / -xdev -type f -size +500M` liste les fichiers de plus de 500 Mio du système de fichiers racine.
+
+<Diagram caption="Retrouver ce qui remplit un disque">
+flowchart TD
+  A["No space left on device"] --> B["df -h : quel système de fichiers est plein ?"]
+  B -->|"Use% à 100 %"| C["du -sh point_de_montage/* | sort -h"]
+  B -->|"Use% faible"| D["df -i : plus d'inodes ?"]
+  C --> E["Descendre dans le plus gros répertoire"]
+  E --> F["Le coupable : journal, sauvegarde, cache"]
+  F --> G["Compresser, déplacer ou vider, sans casser le service"]
+  G --> H["df -h a baissé ? Sinon : fichier supprimé mais encore ouvert"]
+</Diagram>
+
+## libérer sans casser
+
+Face à un énorme journal, la tentation est de le supprimer avec `rm`. C'est souvent une mauvaise idée pour le journal **actif**, celui qu'un service est en train d'écrire. Deux réflexes valent mieux :
+
+- **compresser** les anciens journaux, ceux qui ne bougent plus : `gzip app.log.1` remplace le fichier par `app.log.1.gz`, souvent dix fois plus petit, et on peut toujours le relire avec `zcat` ou `zless` ;
+- **vider** le journal actif au lieu de le supprimer : `: > app.log` ou `truncate -s 0 app.log` ramène sa taille à zéro, et le service continue d'écrire dans le même fichier.
+
+La vraie solution est ensuite de ne plus avoir à le faire : **logrotate**, présent sur toutes les distributions, fait tourner les journaux chaque jour ou chaque semaine, les compresse et supprime les plus anciens, selon les règles de `/etc/logrotate.d/`.
+
+## le fichier supprimé qui prend encore de la place
+
+Voici le piège le plus célèbre. Un administrateur supprime un journal de 10 Gio avec `rm`, relance `df -h`, et rien n'a bougé. La raison tient à ce que tu as vu sur les liens : `rm` supprime un **nom**, pas les données. Tant qu'un processus garde le fichier **ouvert**, le noyau conserve ses données, même s'il n'a plus aucun nom. L'espace ne sera libéré qu'à la fermeture du fichier, c'est-à-dire à l'arrêt ou au redémarrage du service.
+
+Pour retrouver ces fichiers fantômes, on demande au noyau la liste des fichiers ouverts. Sur un Linux complet, `lsof +L1` les liste directement. Partout, le répertoire `/proc/PID/fd` d'un processus montre ses fichiers ouverts, et un fichier supprimé y apparaît suivi de **`(deleted)`**. La dernière leçon du module explore `/proc` en détail. Une fois le coupable trouvé, on redémarre le service, ou, en urgence, on vide le fichier à travers ce descripteur : `: > /proc/PID/fd/3`.
+
+## iostat : l'activité des disques
+
+Un disque peut aussi être lent sans être plein. `iostat -x 2`, du paquet `sysstat`, affiche pour chaque disque le nombre de lectures et d'écritures par seconde, les débits, le temps d'attente moyen (`await`) et le taux d'occupation (`%util`). Un disque à 100 % d'occupation avec des temps d'attente élevés explique un `wa` important dans `top` et une charge qui monte sans calcul. L'outil **`iotop`** montre, comme `top`, quels processus lisent et écrivent le plus. Ni l'un ni l'autre ne sont sur le Linux minimal des exercices.
+
+## à toi de jouer
+
+Le disque de la machine se remplit. Lance `sh preparer.sh`, qui recrée la situation dans le dossier `logs`, puis remets de l'ordre :
+
+1. fais l'état des lieux de la mémoire avec `free -h`, puis de l'espace avec `df -h` ;
+2. trouve les plus gros fichiers de `logs` avec `du -sh logs/* | sort -h` ;
+3. compresse l'ancien journal `logs/app.log.1` avec `gzip`, et compare sa nouvelle taille ;
+4. vide le journal actif `logs/app.log` sans le supprimer, avec `: > logs/app.log` ;
+5. relance `du -sh logs/* | sort -h` pour mesurer ce que tu as gagné.
+
+<LinuxTerminal title="Un disque à remettre en ordre" files={{"preparer.sh": "#!/bin/sh\n# Recrée un dossier de journaux qui a trop grossi.\nmkdir -p logs\nawk -v j=28 'BEGIN { for (i = 1; i <= 40000; i++) printf \"2026-09-%s %02d:%02d:%02d INFO GET /api/commandes/%d 200 en %d ms\\n\", j, int(i / 1800) % 24, int(i / 30) % 60, i % 60, i, i % 97 }' > logs/app.log.1\nawk -v j=29 'BEGIN { for (i = 1; i <= 8000; i++) printf \"2026-09-%s %02d:%02d:%02d INFO GET /api/commandes/%d 200 en %d ms\\n\", j, int(i / 1800) % 24, int(i / 30) % 60, i % 60, i, i % 97 }' > logs/app.log\necho \"2026-09-29 08:00:00 démarrage du service\" > logs/service.log\necho \"Les journaux sont en place dans logs.\"\n", "ecrivain.sh": "#!/bin/sh\n# Garde logs/trace.log ouvert et y écrit une ligne par seconde.\nexec 3>> logs/trace.log\nwhile true; do\n  echo \"$(date +%T) trace\" >&3\n  sleep 1\ndone\n"}} expectedCommands={["sh preparer.sh", "free -h", "df -h", "du -sh logs/* | sort -h", "gzip logs/app.log.1", ": > logs/app.log"]} checks={[{"label": "L'ancien journal est compressé", "path": "logs/app.log.1.gz", "expect": "file"}, {"label": "L'ancien journal non compressé a disparu", "path": "logs/app.log.1", "expect": "absent"}, {"label": "Le journal actif existe toujours", "path": "logs/app.log", "expect": "file"}]} hints={["Commence par sh preparer.sh.", "du -sh logs/* | sort -h : le plus gros est en bas.", "gzip logs/app.log.1 remplace le fichier par logs/app.log.1.gz.", "Le deux-points est une commande qui ne fait rien : : > logs/app.log vide le fichier sans le supprimer."]} />
+
+Un journal répétitif se compresse très bien : l'ancien journal passe d'environ 2,4 Mio à moins de 300 Kio, soit près de dix fois moins. Remarque aussi ce qu'affiche `df -h` sur ce Linux minimal : il n'a pas de disque, seulement des systèmes de fichiers en mémoire et le dossier de travail, un partage avec ton navigateur (`host9p`) dont la taille annoncée n'a pas de sens. Sur un vrai serveur, c'est la ligne de ton disque qu'il faudrait surveiller ; ici, `du` fait tout le travail. Pour aller plus loin, reproduis le piège du fichier fantôme : `sh ecrivain.sh &` lance un programme qui garde `logs/trace.log` ouvert ; supprime ce fichier avec `rm`, puis regarde `ls -l /proc/$!/fd` : le fichier y figure toujours, marqué `(deleted)`. Arrête ensuite le programme avec `kill %1`.
+
+## les pièges
+
+- **Lire la colonne `free` de `free`.** Le cache est libérable : c'est `available` qui dit ce qui reste.
+- **Supprimer le journal actif d'un service.** L'espace n'est pas libéré tant que le service le garde ouvert, et ses nouvelles lignes partent dans un fichier invisible. Vide-le plutôt avec `: >`.
+- **Oublier les inodes.** Un disque « plein » avec de l'espace libre manque souvent d'inodes : `df -i`.
+- **Lancer `du` sur toute la racine sans `-x`.** Il parcourt aussi les autres disques et les partages réseau, et peut mettre des heures.
+- **Ignorer un swap qui travaille.** Des valeurs `si` et `so` non nulles en continu signalent un vrai manque de mémoire.
+- **Chercher un service disparu dans ses propres journaux.** S'il a été tué par l'OOM, la trace est dans le journal du noyau.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.linuxatemyram.com/" description="Pourquoi Linux semble utiliser toute la mémoire, et pourquoi c'est normal, en anglais">Linux ate my RAM!</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/vmstat.8.html" description="Toutes les colonnes de vmstat, en anglais">Page de manuel de vmstat</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/logrotate.8.html" description="Faire tourner, compresser et purger les journaux automatiquement, en anglais">Page de manuel de logrotate</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="free -h affiche free 180Mi et available 2.1Gi sur 4 Go. Qu'en conclure ?" options={["La machine manque de mémoire", "Le swap est plein", "Il faut redémarrer", "Tout va bien : le cache occupe la mémoire inutilisée et sera libéré au besoin"]} correct={3} explanation="La colonne available estime ce que les programmes peuvent encore obtenir. Une faible valeur free est normale sous Linux." />
+  <Quiz id="q-2" question="Un service disparaît sans aucune erreur dans ses journaux. Quelle piste vérifier ?" options={["Un disque trop rapide", "Une erreur de syntaxe dans ps", "Le tueur OOM du noyau, dont la trace est dans dmesg ou journalctl -k", "Un problème de fuseau horaire"]} correct={2} explanation="Quand la mémoire est épuisée, le noyau arrête un processus par SIGKILL, sans lui laisser le temps d'écrire quoi que ce soit." />
+  <Quiz id="q-3" question="df -h affiche 40 % d'occupation, mais la création de fichiers échoue avec « No space left on device ». Que vérifier ?" options={["free -h", "La valeur nice", "df -i, les inodes", "Le swap"]} correct={2} explanation="Chaque fichier consomme un inode ; des millions de petits fichiers peuvent les épuiser avant l'espace." />
+  <Quiz id="q-4" question="Quelle commande liste les éléments de /var/log triés par taille ?" options={["du -sh /var/log/* | sort -h", "ls /var/log | sort", "df -h /var/log", "free /var/log"]} correct={0} explanation="du -sh donne la taille de chaque élément ; sort -h sait trier les unités K, M et G." />
+  <Quiz id="q-5" question="Tu supprimes un journal de 10 Go avec rm, mais df ne bouge pas. Pourquoi ?" options={["df est en retard d'une heure", "Un processus garde encore le fichier ouvert : ses données restent tant qu'il n'est pas fermé", "rm ne supprime que les petits fichiers", "Le fichier est dans la corbeille"]} correct={1} explanation="rm retire le nom ; les données restent tant qu'un processus a le fichier ouvert. lsof +L1 ou /proc/PID/fd le révèlent." />
+  <Quiz id="q-6" question="Comment libérer la place d'un journal actif sans perturber le service qui l'écrit ?" options={["rm app.log", "Le vider avec : > app.log ou truncate -s 0 app.log", "Le renommer", "Le déplacer dans /tmp"]} correct={1} explanation="Le service continue d'écrire dans le même fichier, désormais vide. La vraie prévention reste logrotate." />
+  <Quiz id="q-7" question="Dans vmstat, les colonnes si et so restent élevées en permanence. Que signifie-t-il ?" options={["Les disques sont neufs", "Le processeur est au repos", "La machine utilise activement son swap : elle manque de mémoire", "Il y a trop d'inodes"]} correct={2} explanation="si et so mesurent les échanges avec le swap ; sur une machine saine, ils restent à zéro." />
+</QuizGroup>
+
+## à retenir
+
+- `free -h` : lis **`available`**, pas `free`. Le cache est de la mémoire libérable.
+- Le **swap** évite l'arrêt brutal mais ralentit ; à court de tout, le **tueur OOM** arrête un processus, trace dans le journal du noyau.
+- **`vmstat 2`** donne la tendance : `r`, `b`, `si`, `so`, `wa`.
+- **`df -h`** pour l'espace, **`df -i`** pour les inodes ; **`du -sh chemin/* | sort -h`** pour trouver le coupable.
+- On **compresse** les anciens journaux, on **vide** l'actif avec `: >`, et on laisse **logrotate** faire le reste.
+- Un fichier supprimé mais **ouvert** garde sa place : `lsof +L1` ou `/proc/PID/fd`, marqué `(deleted)`.

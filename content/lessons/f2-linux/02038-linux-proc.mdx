@@ -1,0 +1,166 @@
+---
+refCode: CL-LSN-02038-V01
+slug: linux-proc
+title: "Le système de fichiers /proc"
+description: "Ce que le noyau expose sous forme de fichiers : /proc/cpuinfo, meminfo, loadavg, et surtout /proc/PID pour chaque processus, avec sa ligne de commande, son environnement, son exécutable, son répertoire courant, ses fichiers ouverts et ses limites. Les réglages de /proc/sys et sysctl, ce que /proc révèle à un attaquant, et comment un analyste l'utilise pour enquêter. Avec un processus suspect à examiner, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02037-V01"]
+---
+
+Tout au long de ce module, tu as utilisé `ps`, `top`, `free` ou `uptime`. D'où tirent-ils leurs chiffres ? D'un endroit étonnant : un répertoire, **`/proc`**, rempli de fichiers qui n'existent sur aucun disque. Chaque fois qu'on les lit, c'est le **noyau** qui fabrique leur contenu, à la volée. Les processus, la mémoire, le processeur, les connexions réseau, les réglages du noyau : tout y est, lisible avec `cat`. C'est la fidèle application de la philosophie Unix, « tout est fichier ». Pour un administrateur, c'est une mine d'informations ; pour un analyste en sécurité, c'est souvent la première source de vérité sur un processus suspect.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un pseudo-système de fichiers comme `/proc` ;
+- lire les informations générales : `cpuinfo`, `meminfo`, `loadavg`, `uptime` ;
+- explorer `/proc/PID` : `cmdline`, `environ`, `status`, `exe`, `cwd`, `fd`, `limits` ;
+- lire les fichiers dont les champs sont séparés par des caractères nuls ;
+- lire et modifier un réglage du noyau avec `/proc/sys` et `sysctl` ;
+- dire ce que `/proc` révèle aux autres utilisateurs, et comment s'en protéger ;
+- utiliser `/proc` pour examiner un processus suspect.
+
+## pourquoi ça compte
+
+Les commandes d'administration ne sont que des lecteurs de `/proc` : les comprendre, c'est savoir où chercher quand l'outil habituel manque, comme sur un conteneur minimal ou une machine de secours. En sécurité, `/proc` joue un double rôle. Pour l'**attaquant**, c'est une source de renseignements : la ligne de commande d'un processus peut contenir un mot de passe, visible par tous les comptes. Pour le **défenseur**, c'est l'outil d'enquête le plus direct : il dit quel exécutable tourne réellement, même s'il a été supprimé du disque, quels fichiers et quelles connexions un processus garde ouverts, et avec quelles variables il a été lancé.
+
+## un système de fichiers qui n'existe pas
+
+`df` ou `mount` montrent `/proc` comme un système de fichiers de type **`proc`**, sans aucun disque derrière. Ses fichiers affichent souvent une taille nulle dans `ls -l`, et pourtant `cat` en sort du texte : le contenu est calculé au moment de la lecture. On parle de **pseudo-système de fichiers**. Linux en a d'autres du même genre : **`/sys`**, qui décrit les périphériques et les pilotes, et **`/dev`**, qui donne accès aux périphériques eux-mêmes.
+
+Quelques fichiers généraux à connaître :
+
+| Fichier | Contenu | Commande qui s'en sert |
+|---|---|---|
+| `/proc/cpuinfo` | le modèle et les caractéristiques de chaque cœur | `nproc`, `lscpu` |
+| `/proc/meminfo` | le détail de la mémoire, dont `MemAvailable` | `free` |
+| `/proc/loadavg` | les trois moyennes de charge, puis les processus | `uptime`, `top` |
+| `/proc/uptime` | les secondes depuis le démarrage | `uptime` |
+| `/proc/mounts` | les systèmes de fichiers montés | `mount`, `df` |
+| `/proc/version` | la version du noyau | `uname -a` |
+| `/proc/net/tcp` | les connexions TCP, en hexadécimal | `ss`, `netstat` |
+
+## /proc/PID : la fiche de chaque processus
+
+Chaque processus a son répertoire, nommé d'après son PID : `/proc/1` pour init, `/proc/2451` pour le processus 2451. Le raccourci **`/proc/self`** désigne toujours le processus qui lit, et `$$` donne le PID de ton shell : `ls /proc/$$` explore ton propre shell.
+
+| Entrée | Contenu |
+|---|---|
+| `cmdline` | la ligne de commande complète, avec ses arguments |
+| `environ` | les variables d'environnement au lancement |
+| `status` | un résumé lisible : nom, état, PPID, UID, mémoire, nombre de fils |
+| `exe` | un lien vers l'exécutable réellement lancé |
+| `cwd` | un lien vers le répertoire courant du processus |
+| `fd/` | un lien par fichier ouvert, numéroté par descripteur |
+| `limits` | les limites de ressources, celles de `ulimit` |
+| `maps` | les zones de mémoire et les bibliothèques chargées |
+
+`status` se lit directement ; il contient le nom, l'état, le `PPid`, les `Uid` et `Gid`, et la mémoire résidente (`VmRSS`). `exe` et `cwd` sont des liens symboliques : `readlink /proc/2451/exe` ou `ls -l` révèlent leur cible. Dans `fd/`, les descripteurs 0, 1 et 2 sont l'entrée, la sortie et l'erreur standard, et les suivants les fichiers, tubes et connexions ouverts par le programme, sous la forme `socket:[48213]` pour une connexion réseau.
+
+## limits et maps : deux fiches utiles
+
+Deux autres entrées rendent service plus souvent qu'on ne le croit. **`limits`** affiche les limites réellement appliquées au processus, celles que tu as réglées avec `ulimit` ou `limits.conf` au module précédent. C'est la seule façon fiable de vérifier qu'un service lancé par systemd a bien reçu le nombre de fichiers ouverts prévu : la valeur de ton propre shell ne dit rien de la sienne. Un serveur qui refuse des connexions avec l'erreur `Too many open files` se diagnostique en comparant la ligne `Max open files` de `limits` au nombre d'entrées de `fd`, que `ls /proc/PID/fd | wc -l` compte.
+
+**`maps`** liste les zones de mémoire du processus et les fichiers qui y sont projetés, dont toutes les **bibliothèques** chargées. En sécurité, c'est là qu'on repère une bibliothèque inattendue, injectée dans un programme légitime par la variable `LD_PRELOAD` ou par un outil d'attaque : un chemin sous `/tmp` ou `/dev/shm` au milieu des bibliothèques système est un signal d'alarme. `grep '\.so' /proc/PID/maps` en donne la liste.
+
+## les champs séparés par des nuls
+
+`cmdline` et `environ` ont une particularité : leurs éléments sont séparés par le caractère **nul**, l'octet zéro, et non par des espaces ou des retours à la ligne. C'est ainsi que le noyau les conserve, parce qu'un argument peut lui-même contenir des espaces. Un `cat` colle donc tout ensemble. On remplace les nuls avec `tr` :
+
+```bash
+tr '\0' ' ' < /proc/2451/cmdline; echo      # la ligne de commande, lisible
+tr '\0' '\n' < /proc/2451/environ           # une variable par ligne
+```
+
+Le `echo` final ajoute le retour à la ligne qui manque. `xxd` ou `od -c` montrent les octets nuls tels quels, si tu veux les voir.
+
+<Diagram caption="Enquêter sur un processus suspect avec /proc">
+flowchart TD
+  A["Un PID suspect, repéré avec ps ou top"] --> B["cmdline : avec quels arguments ?"]
+  A --> C["exe : quel fichier tourne vraiment ?"]
+  A --> D["cwd : depuis quel répertoire ?"]
+  A --> E["fd : quels fichiers et connexions ouverts ?"]
+  A --> F["environ : quelles variables au lancement ?"]
+  C -->|"cible marquée (deleted)"| G["Copier /proc/PID/exe pour l'analyser"]
+  E -->|"socket:[...]"| H["Chercher la connexion avec ss -p"]
+</Diagram>
+
+## ce que /proc révèle aux autres
+
+Par défaut, **n'importe quel utilisateur** peut lire la liste des processus et leur `cmdline`, y compris ceux de root et des autres comptes. C'est ce qui permet à `ps` de fonctionner pour tous. Conséquence directe : un mot de passe passé en argument, comme `mysql -u admin -pSecret123`, est lisible par tous les comptes de la machine le temps que la commande tourne. C'est une fuite classique, que les attaquants cherchent systématiquement après avoir obtenu un premier accès. La règle en découle : **jamais de secret en argument**. On les passe par un fichier de configuration protégé, une variable d'environnement ou l'entrée standard.
+
+`environ`, `fd`, `exe` et `cwd` sont mieux protégés : seuls le propriétaire du processus et root peuvent les lire. Une variable d'environnement est donc plus discrète qu'un argument, sans être un coffre-fort : tout processus du même compte y a accès, et elle est héritée par les enfants.
+
+Enfin, l'administrateur peut restreindre `/proc` lui-même : monté avec l'option **`hidepid=2`** (ou `hidepid=invisible` sur les noyaux récents), il cache à chaque utilisateur les processus des autres comptes.
+
+## /proc/sys et sysctl : les réglages du noyau
+
+Sous **`/proc/sys`**, les fichiers ne sont pas seulement lisibles : certains s'**écrivent**, et modifient le comportement du noyau en direct. La commande **`sysctl`** en donne une vue plus commode, où les `/` deviennent des points :
+
+```bash
+cat /proc/sys/net/ipv4/ip_forward          # 0 : la machine ne route pas les paquets
+sysctl net.ipv4.ip_forward                 # la même valeur, par sysctl
+sudo sysctl -w net.ipv4.ip_forward=1       # activer le routage, jusqu'au redémarrage
+```
+
+Un changement fait ainsi disparaît au redémarrage ; pour le rendre permanent, on l'écrit dans un fichier de `/etc/sysctl.d/`. Plusieurs réglages de sécurité passent par là, comme `kernel.randomize_va_space`, qui active la randomisation des adresses mémoire, ou `kernel.dmesg_restrict`, qui réserve le journal du noyau à root. Tu les retrouveras dans le module sur le durcissement.
+
+## l'exécutable supprimé
+
+Un programme malveillant efface souvent son propre fichier après s'être lancé, pour ne rien laisser sur le disque. Mais tant qu'il tourne, le noyau garde l'exécutable, comme n'importe quel fichier supprimé mais ouvert. Le lien `/proc/PID/exe` pointe alors vers une cible suivie de **`(deleted)`**, ce qui est en soi un signal d'alarme : un programme légitime n'a aucune raison d'avoir disparu du disque, sauf juste après une mise à jour. Mieux encore, on peut **récupérer** le fichier pour l'analyser : `cp /proc/PID/exe /root/suspect.bin` le recopie depuis la mémoire du noyau. C'est pourquoi on gèle un processus suspect avec `kill -STOP` plutôt que de le tuer : une fois arrêté, cette dernière copie disparaît avec lui.
+
+## à toi de jouer
+
+Lance `sh demarrer.sh`. Il démarre en arrière-plan deux processus, dont un mal écrit et un franchement suspect. Examine-les avec `/proc` :
+
+1. repère le processus `agent.sh` avec `ps -o pid,user,args` ;
+2. enregistre sa ligne de commande, rendue lisible, dans `cmdline.txt` : `tr '\0' ' ' < /proc/PID/cmdline > cmdline.txt`. Quel secret s'y trouve, lisible par tous les comptes ?
+3. affiche ses variables d'environnement avec `tr '\0' '\n' < /proc/PID/environ` ;
+4. regarde son répertoire courant et ses fichiers ouverts : `ls -l /proc/PID/cwd /proc/PID/fd` ;
+5. l'autre processus s'appelle `sleep`, mais cherche d'où il a été lancé : `ls -l /proc/*/exe 2>/dev/null | grep deleted`, et enregistre ce résultat dans `supprime.txt`.
+
+<LinuxTerminal title="Examiner des processus avec /proc" files={{"demarrer.sh": "#!/bin/sh\n# Démarre deux processus en arrière-plan, à examiner avec /proc.\nici=$(pwd)\nmkdir -p /tmp/synchro\ncd /tmp/synchro\nJETON_API=exemple-de-jeton sh \"$ici/agent.sh\" --serveur=depot.exemple.test --password=exemple-sans-valeur > /dev/null 2>&1 &\ncd \"$ici\"\ncp /bin/busybox /tmp/sleep\n/tmp/sleep 900 &\nsleep 1\nrm /tmp/sleep\necho \"Deux processus tournent en arrière-plan.\"\n", "agent.sh": "#!/bin/sh\n# Un agent de synchronisation mal écrit : son mot de passe est en argument.\nexec 3>> /tmp/synchro/agent.log\nwhile true; do\n  echo \"$(date +%T) synchronisation avec $1\" >&3\n  sleep 5\ndone\n"}} expectedCommands={["sh demarrer.sh", "ps -o pid,user,args"]} checks={[{"label": "cmdline.txt contient la ligne de commande de agent.sh", "path": "cmdline.txt", "expect": "file", "contains": "--password"}, {"label": "supprime.txt désigne l'exécutable supprimé", "path": "supprime.txt", "expect": "file", "contains": "deleted"}]} hints={["Le PID de agent.sh est dans la première colonne de ps.", "tr '\\0' ' ' < /proc/PID/cmdline > cmdline.txt, en remplaçant PID.", "Pour environ, tr '\\0' '\\n' met une variable par ligne.", "ls -l /proc/*/exe 2>/dev/null | grep deleted > supprime.txt"]} />
+
+Le mot de passe de `agent.sh` est visible pour tous : sur un vrai serveur, n'importe quel compte aurait pu le lire. Le faux `sleep`, lui, a été lancé depuis `/tmp`, puis son fichier a été supprimé : c'est le comportement typique d'un programme qui cherche à se cacher. Récupère-le avec `cp /proc/PID/exe suspect.bin`, puis compare-le au vrai : `ls -l suspect.bin /bin/busybox`. Ici, c'était une simple copie de BusyBox, l'outil qui fournit la plupart des commandes de ce Linux minimal.
+
+## les pièges
+
+- **Chercher les fichiers de `/proc` sur un disque.** Ils n'existent que le temps de la lecture ; leur taille affichée est souvent nulle.
+- **Lire `cmdline` ou `environ` avec `cat`.** Les éléments sont collés par des nuls : utilise `tr '\0' ' '`.
+- **Passer un secret en argument de commande.** Tout compte de la machine peut le lire dans `/proc/PID/cmdline`.
+- **Croire qu'une variable d'environnement est secrète.** Elle est plus discrète qu'un argument, mais tout processus du même compte la lit, et elle passe aux enfants.
+- **Tuer un processus suspect avant de l'examiner.** Son exécutable supprimé, ses fichiers ouverts et sa mémoire disparaissent avec lui.
+- **Modifier `/proc/sys` et s'étonner que ce soit perdu.** Un réglage durable s'écrit dans `/etc/sysctl.d/`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/proc.5.html" description="La référence complète de chaque fichier de /proc, en anglais">Page de manuel proc(5)</ExternalLink>
+
+<ExternalLink href="https://docs.kernel.org/filesystems/proc.html" description="La documentation du noyau sur /proc et ses options, dont hidepid, en anglais">Documentation du noyau Linux : /proc</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/sysctl.8.html" description="Lire et modifier les réglages du noyau, en anglais">Page de manuel de sysctl</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="D'où vient le contenu des fichiers de /proc ?" options={["D'un disque caché", "D'une sauvegarde quotidienne", "Du gestionnaire de paquets", "Du noyau, qui le fabrique au moment de la lecture"]} correct={3} explanation="/proc est un pseudo-système de fichiers : rien n'est stocké, le noyau génère le contenu à chaque lecture." />
+  <Quiz id="q-2" question="Pourquoi cat /proc/2451/cmdline affiche-t-il les arguments collés ?" options={["Parce que les arguments sont séparés par des octets nuls", "Parce que le fichier est corrompu", "Parce qu'il faut être root", "Parce que cat ne lit pas /proc"]} correct={0} explanation="Le noyau sépare les arguments par le caractère nul ; tr '\0' ' ' les rend lisibles." />
+  <Quiz id="q-3" question="Un script lance mysql -u admin -pSecret123. Qui peut lire ce mot de passe pendant qu'il tourne ?" options={["Personne", "Seulement root", "N'importe quel compte de la machine, dans ps ou /proc/PID/cmdline", "Seulement l'utilisateur admin"]} correct={2} explanation="La ligne de commande de tous les processus est lisible par tous, sauf si /proc est monté avec hidepid." />
+  <Quiz id="q-4" question="Le lien /proc/3127/exe pointe vers /tmp/.x (deleted). Qu'en penser ?" options={["C'est normal pour tout programme", "Le processus est un zombie", "Le programme tourne depuis un fichier supprimé, un comportement typique d'un logiciel qui se cache", "Le disque est plein"]} correct={2} explanation="Un exécutable lancé depuis /tmp puis effacé est un signal d'alarme. On peut le récupérer avec cp /proc/3127/exe." />
+  <Quiz id="q-5" question="Où voir les fichiers ouverts par le processus 2451 ?" options={["/proc/2451/fd", "/proc/2451/maps", "/proc/2451/cwd", "/proc/2451/limits"]} correct={0} explanation="fd contient un lien par descripteur ouvert : fichiers, tubes et connexions réseau." />
+  <Quiz id="q-6" question="Tu actives le routage avec sysctl -w net.ipv4.ip_forward=1. Que se passe-t-il au redémarrage ?" options={["Le réglage est conservé", "La machine ne démarre plus", "Il est perdu, sauf s'il est écrit dans un fichier de /etc/sysctl.d/", "Il devient 2"]} correct={2} explanation="/proc/sys reflète l'état du noyau en cours ; la configuration durable vit dans /etc/sysctl.d/." />
+  <Quiz id="q-7" question="Quelle option de montage de /proc empêche un utilisateur de voir les processus des autres comptes ?" options={["noexec", "ro", "nosuid", "hidepid=2"]} correct={3} explanation="hidepid=2, ou hidepid=invisible sur les noyaux récents, cache les répertoires /proc/PID des autres utilisateurs." />
+</QuizGroup>
+
+## à retenir
+
+- **`/proc`** est un pseudo-système de fichiers : le noyau fabrique son contenu à la lecture. `ps`, `top`, `free` et `uptime` ne font que le lire.
+- **`/proc/PID`** : `cmdline`, `environ`, `status`, `exe`, `cwd`, `fd`, `limits`, `maps`. `/proc/self` et `$$` désignent le processus courant.
+- `cmdline` et `environ` sont séparés par des **nuls** : `tr '\0' ' '`.
+- La **ligne de commande** est lisible par **tous** : jamais de secret en argument. `hidepid=2` restreint cette visibilité.
+- **`/proc/sys`** et **`sysctl`** règlent le noyau en direct ; le réglage durable va dans `/etc/sysctl.d/`.
+- Un **`exe` marqué `(deleted)`** est un signal d'alarme, et `cp /proc/PID/exe` récupère le programme.

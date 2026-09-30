@@ -1,0 +1,168 @@
+---
+refCode: CL-LSN-02034-V01
+slug: linux-signaux
+title: "Les signaux : kill, SIGTERM, SIGKILL et trap"
+description: "Parler à un processus en cours d'exécution : ce qu'est un signal, les plus utiles (SIGTERM, SIGKILL, SIGHUP, SIGINT, SIGSTOP et SIGCONT), la commande kill et ses variantes, pourquoi demander avant d'exiger, qui a le droit d'envoyer un signal à qui, et comment un script intercepte les signaux avec trap pour s'arrêter proprement. Avec un service à recharger puis à arrêter, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02033-V01"]
+---
+
+Un processus tourne ; comment lui dire de s'arrêter, de relire sa configuration ou de faire une pause ? On ne peut pas lui parler comme à un humain, mais le noyau offre un canal minimal et universel : les **signaux**. Un signal est un message très court, un simple numéro, que le noyau remet à un processus. Certains demandent poliment, d'autres ne laissent pas le choix. Quand tu appuies sur Ctrl+C, quand un service redémarre après une mise à jour, quand la machine s'éteint et arrête proprement tous ses programmes, ce sont des signaux qui circulent. Cette leçon t'apprend à les envoyer, à choisir le bon, et à écrire des scripts qui y répondent correctement.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un signal et comment un processus peut y réagir ;
+- utiliser les signaux les plus courants : `SIGTERM`, `SIGKILL`, `SIGHUP`, `SIGINT`, `SIGSTOP`, `SIGCONT` ;
+- envoyer un signal avec `kill`, par numéro ou par nom ;
+- expliquer pourquoi on essaie `SIGTERM` avant `SIGKILL` ;
+- dire qui a le droit d'envoyer un signal à un processus ;
+- intercepter un signal dans un script avec `trap`.
+
+## pourquoi ça compte
+
+Arrêter un programme semble anodin, mais la façon de le faire a des conséquences. Une base de données tuée brutalement pendant une écriture peut laisser des fichiers incohérents ; un serveur web arrêté proprement termine les requêtes en cours avant de fermer. Les administrateurs rechargent aussi la configuration de nombreux services par un signal, sans les arrêter, pour ne couper aucune connexion. Et en sécurité, les signaux ont leur place : un programme malveillant peut ignorer les demandes polies, et un analyste qui veut examiner un processus suspect avant de l'arrêter commence par le **suspendre**, pour qu'il ne puisse plus rien faire, sans perdre son état.
+
+## ce qu'est un signal
+
+Un signal a un **numéro** et un **nom**. `kill -l` en affiche la liste : une soixantaine sur Linux, dont une poignée suffit au quotidien.
+
+| Signal | Numéro | Effet par défaut | Usage courant |
+|---|---|---|---|
+| `SIGTERM` | 15 | terminer | la demande d'arrêt polie, celle que `kill` envoie par défaut |
+| `SIGKILL` | 9 | terminer, sans exception | l'arrêt forcé, en dernier recours |
+| `SIGINT` | 2 | terminer | ce qu'envoie Ctrl+C dans un terminal |
+| `SIGHUP` | 1 | terminer | « le terminal a raccroché » ; par convention, « relis ta configuration » pour les services |
+| `SIGSTOP` | 19 | suspendre, sans exception | geler un processus |
+| `SIGCONT` | 18 | reprendre | réveiller un processus suspendu |
+| `SIGTSTP` | 20 | suspendre | ce qu'envoie Ctrl+Z |
+
+Face à un signal, un processus peut faire trois choses : laisser le noyau appliquer l'**effet par défaut**, l'**ignorer**, ou l'**intercepter** pour exécuter son propre code, par exemple fermer proprement ses fichiers avant de sortir. Deux signaux échappent à cette règle : **`SIGKILL`** et **`SIGSTOP`** ne peuvent être ni ignorés ni interceptés. Le noyau les applique directement. C'est ce qui en fait des outils de dernier recours fiables, et brutaux.
+
+## kill : envoyer un signal
+
+Malgré son nom, `kill` ne tue pas forcément : il **envoie un signal**, par défaut `SIGTERM`.
+
+```bash
+kill 2231             # SIGTERM au processus 2231
+kill -TERM 2231       # la même chose, en nommant le signal
+kill -15 2231         # la même chose, par son numéro
+kill -HUP 740         # demander au service 740 de relire sa configuration
+kill -STOP 2231       # geler 2231
+kill -CONT 2231       # le réveiller
+kill -9 2231          # arrêt forcé : à n'utiliser qu'en dernier recours
+```
+
+`kill` accepte plusieurs PID à la fois. Dans un shell, il accepte aussi les numéros de tâche, comme `kill %1`, vus à la leçon suivante. Sur un Linux complet, `pkill` et `killall` envoient un signal **par nom** plutôt que par PID : `pkill -HUP nginx`. Pratique, mais dangereux avec un nom trop vague : `pkill python` arrêterait tous les programmes Python de la machine.
+
+## demander avant d'exiger
+
+La règle professionnelle tient en une ligne : **`SIGTERM` d'abord, `SIGKILL` ensuite**. `SIGTERM` laisse au programme le temps de terminer ce qu'il fait, de vider ses tampons, de fermer ses fichiers et ses connexions, de supprimer ses fichiers temporaires. `SIGKILL` le coupe net, au milieu de ce qu'il faisait : les données en cours d'écriture sont perdues, les fichiers de verrou restent en place, et le prochain démarrage peut échouer.
+
+On envoie donc `SIGTERM`, on attend quelques secondes, et seulement si le processus est toujours là, on passe à `SIGKILL`. C'est exactement ce que font systemd et les scripts d'arrêt : à l'extinction de la machine, chaque service reçoit `SIGTERM`, puis, après un délai de grâce, `SIGKILL` pour les retardataires.
+
+<Diagram caption="Arrêter un processus, dans l'ordre">
+flowchart TD
+  A["kill PID : SIGTERM"] --> B["Le processus s'arrête proprement ?"]
+  B -->|"oui"| C["Terminé, fichiers cohérents"]
+  B -->|"non, après quelques secondes"| D["Pourquoi ? Bloqué en état D, ou signal ignoré"]
+  D --> E["kill -9 PID : SIGKILL"]
+  E --> F["Arrêt forcé : données en cours perdues"]
+</Diagram>
+
+Un cas particulier : un processus en état **`D`**, bloqué dans une attente disque, ne réagit même pas à `SIGKILL` tant que l'opération n'est pas terminée. Si `kill -9` semble sans effet, regarde son état : le problème est alors le disque ou le partage réseau, pas le processus.
+
+## geler plutôt que tuer
+
+Face à un processus suspect, le premier réflexe est de l'arrêter. C'est souvent une erreur. Un programme malveillant contient des indices précieux : ses connexions réseau ouvertes, les fichiers qu'il lit, sa mémoire, qui peut contenir l'adresse de son serveur de commande ou une clé de chiffrement. Tout cela disparaît avec lui. Les équipes de réponse à incident préfèrent donc **`kill -STOP`** : le processus est gelé, il ne peut plus rien exécuter ni envoyer, et il ne peut pas s'y opposer, puisque `SIGSTOP` ne s'intercepte pas. On prend alors le temps de relever ses fichiers ouverts, sa ligne de commande et son exécutable, ce que la dernière leçon du module t'apprendra à faire dans `/proc`, et d'en copier la mémoire avec des outils spécialisés. Ce n'est qu'ensuite qu'on l'arrête, et qu'on cherche comment il est arrivé là.
+
+Un processus gelé apparaît en état **`T`** dans `ps`. `kill -CONT` le réveille, et il reprend exactement là où il s'était arrêté, sans même savoir qu'il a été suspendu.
+
+## quand un programme reçoit un signal sans qu'on l'envoie
+
+Tous les signaux ne viennent pas d'un `kill`. Le **noyau** en envoie lui-même quand un programme fait quelque chose d'interdit. Le plus célèbre est **`SIGSEGV`** (*segmentation fault*, signal 11) : le programme a tenté d'accéder à une zone de mémoire qui ne lui appartient pas, souvent à cause d'un bogue. C'est aussi le symptôme classique d'une tentative d'exploitation ratée, comme un débordement de tampon : une série de plantages en `SIGSEGV` d'un service exposé sur le réseau mérite l'attention d'un défenseur. **`SIGPIPE`** arrive quand un programme écrit dans un tube que personne ne lit plus, par exemple quand `head` a eu ses lignes et s'est arrêté. Et **`SIGCHLD`** prévient un parent qu'un de ses enfants s'est terminé : c'est son signal pour aller lire le code de retour et éviter un zombie.
+
+Le shell révèle ces morts violentes dans le **code de retour** : un programme tué par un signal renvoie **128 plus le numéro du signal**. `echo $?` après un arrêt par `SIGKILL` affiche donc `137`, et après un `SIGTERM`, `143`. Ce code te dira, dans un script ou un journal, qu'un programme n'a pas fini de lui-même.
+
+## qui peut envoyer quoi à qui
+
+Un utilisateur ordinaire ne peut envoyer de signal qu'à **ses propres processus**. Tenter d'arrêter le processus d'un autre compte donne `Operation not permitted`. Seul **root** peut signaler n'importe quel processus. C'est une protection essentielle : sans elle, n'importe quel compte pourrait arrêter le serveur web ou la base de données. C'est aussi pourquoi un attaquant qui a pris le contrôle d'un compte de service, comme `www-data`, ne peut arrêter que les processus de ce compte, et cherche ensuite à devenir root. La même règle protège d'ailleurs les services entre eux : chacun tourne sous son propre compte, précisément pour qu'une faille dans l'un ne permette pas d'arrêter ou de perturber les autres. C'est une application directe du principe du moindre privilège, vu dans le module sur les utilisateurs et les permissions.
+
+## trap : intercepter un signal dans un script
+
+Un script shell peut intercepter les signaux avec la commande intégrée **`trap`**, suivie du code à exécuter et des signaux concernés :
+
+```bash
+#!/bin/sh
+nettoyer() {
+    rm -f /tmp/mon-script.verrou
+    echo "arrêt propre"
+    exit 0
+}
+trap nettoyer TERM INT
+trap 'echo "relecture de la configuration"' HUP
+
+touch /tmp/mon-script.verrou
+while true; do
+    sleep 1
+done
+```
+
+À réception de `SIGTERM` ou de `SIGINT`, le script supprime son fichier de verrou et sort proprement ; à réception de `SIGHUP`, il affiche un message et continue. `trap '' INT` ferait **ignorer** Ctrl+C, et `trap - INT` rétablirait le comportement par défaut. Un détail pratique : le shell n'exécute le code d'un `trap` qu'entre deux commandes, donc après la fin du `sleep 1` en cours. C'est pour cela qu'une boucle d'attente se découpe en petites pauses.
+
+Il existe aussi un pseudo-signal très utile, **`EXIT`** : `trap nettoyer EXIT` exécute le nettoyage à la sortie du script, quelle qu'en soit la raison. C'est la façon la plus sûre de ne jamais laisser traîner un fichier temporaire.
+
+## à toi de jouer
+
+Le dossier de travail contient `service.sh`, un faux service écrit avec `trap` : il note ses événements dans `service.log`. Pilote-le avec des signaux :
+
+1. lance-le en arrière-plan avec `sh service.sh &`, puis affiche son PID avec `echo $!` : contrairement à bash, le shell de ce Linux minimal ne l'affiche pas de lui-même ;
+2. demande-lui de relire sa configuration avec `kill -HUP` suivi de son PID ;
+3. arrête-le proprement avec `kill`, sans option ;
+4. lis `service.log` : chaque signal y a laissé sa trace.
+
+<LinuxTerminal title="Parler à un service par signaux" files={{"service.sh": "#!/bin/sh\n# Un faux service : il note ses événements dans service.log.\ntrap 'echo \"$(date +%T) SIGHUP reçu : rechargement de la configuration\" >> service.log' HUP\ntrap 'echo \"$(date +%T) SIGTERM reçu : arrêt propre\" >> service.log; exit 0' TERM\necho \"$(date +%T) démarrage du service, PID $$\" >> service.log\nwhile true; do\n  sleep 1\ndone\n"}} expectedCommands={["sh service.sh &", "cat service.log"]} checks={[{"label": "Le service a relu sa configuration", "path": "service.log", "expect": "file", "contains": "rechargement"}, {"label": "Le service s'est arrêté proprement", "path": "service.log", "expect": "file", "contains": "arrêt propre"}]} hints={["echo $! affiche le PID de la dernière tâche lancée.", "kill -HUP suivi du PID, ou kill -HUP $! juste après le lancement.", "Le script ne traite le signal qu'à la fin de son sleep 1 : attends une seconde avant de lire le journal.", "kill sans option envoie SIGTERM."]} />
+
+Recommence ensuite l'expérience avec `kill -9` à l'étape 3 : relance le service, envoie `SIGKILL`, puis relis le journal. Aucune ligne « arrêt propre » ne s'ajoute : `SIGKILL` ne peut pas être intercepté, et le script n'a eu aucune chance de faire son ménage. C'est toute la différence entre demander et exiger.
+
+## les pièges
+
+- **Commencer par `kill -9`.** On perd les données en cours et on laisse des verrous. `SIGTERM` d'abord, `SIGKILL` en dernier recours.
+- **Croire que `kill` tue toujours.** Il envoie un signal ; un programme peut intercepter ou ignorer `SIGTERM`.
+- **Utiliser `pkill` ou `killall` avec un nom vague.** On arrête bien plus de processus que prévu.
+- **S'acharner sur un processus en état `D`.** Même `SIGKILL` attend la fin de l'opération disque ; c'est le disque qu'il faut examiner.
+- **Oublier `SIGHUP`.** Beaucoup de services relisent leur configuration sans s'arrêter : inutile de les redémarrer.
+- **Écrire un script qui laisse des fichiers temporaires.** Un `trap ... EXIT` garantit le nettoyage.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/signal.7.html" description="La liste des signaux Linux, leurs numéros et leur effet par défaut, en anglais">Page de manuel signal(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/kill.1.html" description="Toutes les formes de la commande kill, en anglais">Page de manuel de kill</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Signals.html" description="Comment bash traite les signaux, et ce que change trap, en anglais">Manuel de bash : les signaux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel signal kill envoie-t-il sans option ?" options={["SIGKILL", "SIGTERM", "SIGHUP", "SIGSTOP"]} correct={1} explanation="Par défaut, kill envoie SIGTERM, la demande d'arrêt polie, que le programme peut intercepter pour se terminer proprement." />
+  <Quiz id="q-2" question="Quels signaux ne peuvent être ni interceptés ni ignorés ?" options={["SIGKILL et SIGSTOP", "SIGTERM et SIGINT", "SIGHUP et SIGCONT", "Tous peuvent l'être"]} correct={0} explanation="Le noyau applique SIGKILL et SIGSTOP directement, sans que le programme puisse s'y opposer." />
+  <Quiz id="q-3" question="Pourquoi essayer SIGTERM avant SIGKILL ?" options={["Parce que SIGTERM laisse le programme terminer ce qu'il fait, fermer ses fichiers et nettoyer", "Parce que SIGKILL est plus lent", "Parce que SIGKILL est réservé à root", "Il n'y a aucune différence"]} correct={0} explanation="SIGKILL coupe net : données en cours perdues, verrous oubliés. On ne l'utilise que si SIGTERM reste sans effet." />
+  <Quiz id="q-4" question="Que demande-t-on conventionnellement à un service avec kill -HUP ?" options={["De s'arrêter immédiatement", "De se suspendre", "De relire sa configuration sans s'arrêter", "De changer de priorité"]} correct={2} explanation="Beaucoup de démons interprètent SIGHUP comme « relis ta configuration », ce qui évite de couper les connexions en cours." />
+  <Quiz id="q-5" question="Un utilisateur ordinaire tente kill sur un processus de root. Que se passe-t-il ?" options={["Le processus s'arrête", "Le signal est mis en attente", "Operation not permitted : on ne signale que ses propres processus", "La machine redémarre"]} correct={2} explanation="Seul root peut envoyer un signal à n'importe quel processus. C'est ce qui protège les services des autres comptes." />
+  <Quiz id="q-6" question="kill -9 semble sans effet sur un processus. Que vérifier en premier ?" options={["S'il a le bon nom", "S'il est en état D, bloqué dans une attente disque", "S'il est en couleur dans top", "Rien, il faut redémarrer"]} correct={1} explanation="Un processus en attente non interruptible ne traite même pas SIGKILL avant la fin de l'opération : le problème est le stockage." />
+  <Quiz id="q-7" question="Que fait trap nettoyer EXIT dans un script ?" options={["Elle arrête le script immédiatement", "Elle exécute la fonction nettoyer à la sortie du script, quelle qu'en soit la raison", "Elle ignore tous les signaux", "Elle envoie SIGTERM aux autres scripts"]} correct={1} explanation="EXIT est un pseudo-signal déclenché à la sortie : c'est la façon la plus sûre de ne pas laisser de fichiers temporaires." />
+</QuizGroup>
+
+## à retenir
+
+- Un **signal** est un message numéroté que le noyau remet à un processus, qui peut l'appliquer, l'ignorer ou l'**intercepter**, sauf **`SIGKILL`** et **`SIGSTOP`**.
+- À connaître : **`SIGTERM`** (15, arrêt poli, par défaut), **`SIGKILL`** (9, arrêt forcé), **`SIGINT`** (Ctrl+C), **`SIGHUP`** (relire la configuration), **`SIGSTOP`** et **`SIGCONT`**.
+- `kill` envoie un signal : `kill PID`, `kill -HUP PID`, `kill -9 PID`. `pkill` et `killall` visent un nom, avec prudence.
+- **`SIGTERM` d'abord, `SIGKILL` en dernier recours.**
+- On ne signale que **ses propres** processus, sauf root.
+- Dans un script, **`trap`** intercepte les signaux ; `trap ... EXIT` garantit le nettoyage.
