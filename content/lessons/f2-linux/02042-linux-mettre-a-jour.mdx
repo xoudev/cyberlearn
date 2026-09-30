@@ -1,0 +1,160 @@
+---
+refCode: CL-LSN-02042-V01
+slug: linux-mettre-a-jour
+title: "Mettre à jour un système"
+description: "Garder un serveur Linux à jour sans le casser : apt update, upgrade et full-upgrade, lire ce qui va changer, les bulletins de sécurité, les mises à jour automatiques avec unattended-upgrades, savoir quand redémarrer (reboot-required, needrestart, le noyau), l'équivalent dnf, le passage à une nouvelle version de la distribution, et la méthode d'une mise à jour en production. Avec la maintenance d'un serveur Debian, dans un terminal simulé."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02041-V01"]
+---
+
+La grande majorité des intrusions réussies n'exploitent pas une faille inconnue, mais une faille **connue**, pour laquelle un correctif existait depuis des semaines ou des mois. Mettre à jour ses systèmes est la mesure de sécurité la plus efficace qui soit, et l'une des plus négligées : par peur de casser quelque chose, par manque de temps, ou parce qu'on ne sait pas si une mise à jour demande un redémarrage. Cette leçon t'apprend à mettre à jour un serveur Linux méthodiquement, à automatiser ce qui peut l'être, et à savoir exactement quand un redémarrage est nécessaire.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer `apt update`, `apt upgrade` et `apt full-upgrade` ;
+- lire ce qu'une mise à jour va changer avant de la lancer ;
+- suivre les bulletins de sécurité de ta distribution ;
+- activer les mises à jour de sécurité automatiques avec `unattended-upgrades` ;
+- savoir quand un redémarrage ou le redémarrage d'un service est nécessaire ;
+- transposer ces gestes avec `dnf` ;
+- appliquer une méthode sûre pour mettre à jour un serveur en production.
+
+## pourquoi ça compte
+
+Quand une faille est publiée avec son correctif, une course commence. Les attaquants analysent le correctif pour comprendre la faille, écrivent un programme qui l'exploite, et balaient Internet à la recherche des machines qui ne l'ont pas encore appliqué. Pour les failles les plus graves, ce délai se compte parfois en heures. Les grandes compromissions de ces dernières années, sur des serveurs de messagerie, des passerelles VPN ou des bibliothèques de journalisation, ont presque toutes touché des machines qui avaient un correctif disponible et ne l'avaient pas installé. Un administrateur qui met à jour régulièrement ferme la porte à l'essentiel de ces attaques ; les référentiels comme le guide d'hygiène de l'ANSSI en font une règle de base.
+
+## update, upgrade, full-upgrade
+
+Trois commandes, trois rôles bien distincts :
+
+```bash
+sudo apt update          # 1. rafraîchir l'index : ce qui est disponible
+apt list --upgradable    # 2. voir ce qui peut être mis à jour
+sudo apt upgrade         # 3. mettre à jour, sans jamais retirer de paquet
+sudo apt full-upgrade    # 3 bis. mettre à jour, quitte à ajouter ou retirer des paquets
+```
+
+**`apt update`** ne met à jour **aucun logiciel** : il télécharge l'index des dépôts, et vérifie sa signature, comme vu dans la leçon précédente. Sans lui, apt ignore qu'il existe des versions plus récentes. **`apt upgrade`** installe les nouvelles versions des paquets déjà présents, mais refuse toute opération qui obligerait à **retirer** un paquet ; il peut en revanche en installer de nouveaux si une dépendance l'exige. **`apt full-upgrade`**, l'ancien `apt-get dist-upgrade`, accepte aussi les retraits quand les dépendances ont changé. On l'utilise notamment pour les mises à jour du noyau sur certaines distributions, et lors d'un changement de version, en lisant attentivement sa liste.
+
+Avant de valider, apt affiche ce qu'il va faire. `apt list --upgradable` donne la liste détaillée, et `apt changelog paquet` le journal des modifications du paquet : on y lit, pour une mise à jour de sécurité, les identifiants **CVE** des failles corrigées.
+
+## suivre les bulletins de sécurité
+
+Chaque distribution publie ses bulletins : les **DSA** (*Debian Security Advisories*) pour Debian, les **USN** (*Ubuntu Security Notices*) pour Ubuntu, les **RHSA** pour Red Hat. Chaque bulletin nomme les paquets concernés, les failles corrigées avec leur identifiant CVE et leur gravité, et les versions qui les corrigent. S'abonner à la liste de diffusion de sa distribution, ou suivre son flux, permet de savoir quand un correctif critique demande d'agir sans attendre la prochaine maintenance.
+
+Côté sécurité, un correctif ne sert à rien s'il arrive trop tard : les dépôts de sécurité (`bookworm-security` chez Debian) doivent figurer dans les déclarations de dépôts, ce que vérifie un simple `apt-cache policy` sur un paquet récemment corrigé.
+
+## les mises à jour automatiques
+
+Sur Debian et Ubuntu, le paquet **`unattended-upgrades`** installe automatiquement, chaque jour, les mises à jour de **sécurité**. Il s'active avec :
+
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+Sa configuration, dans `/etc/apt/apt.conf.d/50unattended-upgrades`, précise quels dépôts sont concernés (par défaut, seulement la sécurité), les paquets à exclure, l'adresse à prévenir par courriel, et s'il faut **redémarrer automatiquement** la nuit quand c'est nécessaire (`Unattended-Upgrade::Automatic-Reboot`). Son journal est dans `/var/log/unattended-upgrades/`.
+
+Faut-il tout automatiser ? Pour les correctifs de sécurité d'un serveur standard, la réponse des spécialistes est généralement **oui** : le risque qu'un correctif de sécurité casse quelque chose est bien plus faible que celui de rester exposé. Pour les mises à jour de fonctionnalités, ou sur un système très sensible, on préfère une maintenance planifiée, testée d'abord sur une machine de préproduction.
+
+## quand redémarrer
+
+Une mise à jour remplace des fichiers sur le disque, mais un programme **déjà lancé** garde en mémoire l'ancienne version, y compris des bibliothèques corrigées. Tant qu'il n'est pas relancé, la faille reste exploitable. Trois cas se présentent :
+
+- **une bibliothèque** comme `libssl3` est mise à jour : il faut **redémarrer les services** qui l'utilisent. L'outil **`needrestart`**, installé par défaut sur Ubuntu, les liste après chaque mise à jour et propose de les relancer ;
+- **le noyau**, `glibc` ou `systemd` sont mis à jour : il faut **redémarrer la machine**. Sur Debian et Ubuntu, le fichier **`/var/run/reboot-required`** apparaît alors, et **`/var/run/reboot-required.pkgs`** dit quels paquets l'exigent. `uname -r` montre la version du noyau **en cours**, qui reste l'ancienne jusqu'au redémarrage ;
+- un simple outil en ligne de commande est mis à jour : rien à faire, la nouvelle version servira dès son prochain lancement, puisqu'il ne tourne pas en permanence.
+
+Le cas du noyau pose un problème réel sur les serveurs qu'on ne peut pas redémarrer souvent. Des services de **correctifs à chaud** (*livepatch*), proposés par Canonical pour Ubuntu ou par Red Hat, appliquent certains correctifs du noyau sans redémarrage, en attendant la prochaine fenêtre de maintenance.
+
+<Diagram caption="Après une mise à jour : que faut-il relancer ?">
+flowchart TD
+  A["apt upgrade terminé"] --> B["/var/run/reboot-required existe ?"]
+  B -->|"oui : noyau, glibc, systemd"| C["Planifier un redémarrage de la machine"]
+  B -->|"non"| D["needrestart : des services utilisent-ils d'anciennes bibliothèques ?"]
+  D -->|"oui"| E["Redémarrer ces services"]
+  D -->|"non"| F["Rien à faire"]
+  C --> G["Après redémarrage : uname -r montre le nouveau noyau"]
+</Diagram>
+
+## et avec dnf
+
+La famille Red Hat réunit tout dans une commande : **`dnf upgrade`** rafraîchit l'index s'il est ancien, puis met à jour. `dnf check-update` liste ce qui est disponible, et **`dnf upgrade --security`** n'applique que les correctifs de sécurité. Pour l'automatisation, le paquet **`dnf-automatic`** joue le rôle d'`unattended-upgrades`. Et **`dnf needs-restarting -r`** dit si un redémarrage de la machine est nécessaire, `dnf needs-restarting -s` quels services relancer.
+
+## quand une mise à jour casse quelque chose
+
+Il arrive, rarement, qu'une mise à jour casse une application. Plusieurs filets existent. Pour le **noyau**, les versions précédentes restent installées : le menu de démarrage, GRUB, permet de redémarrer sur l'ancienne, le temps de comprendre. Pour un **paquet**, on peut revenir à la version antérieure avec `apt install paquet=version`, à condition que cette version soit encore disponible dans un dépôt ou dans le cache `/var/cache/apt/archives/` ; `apt-cache policy paquet` montre les versions accessibles. Debian conserve aussi toutes les versions publiées sur son archive historique, `snapshot.debian.org`. Une fois revenu en arrière, un `apt-mark hold` temporaire empêche la mise à jour suivante de réinstaller la version problématique, le temps qu'un correctif arrive. Côté Red Hat, `dnf downgrade paquet` et `dnf history undo N` jouent ce rôle.
+
+Pour éviter les surprises, le paquet `apt-listchanges` affiche, avant chaque mise à jour, les nouvelles importantes des paquets concernés. Mais le meilleur filet reste celui de la méthode ci-dessous : un instantané pris juste avant, qui ramène toute la machine à son état antérieur en quelques secondes.
+
+## changer de version de distribution
+
+Une distribution a une **durée de support** : Debian maintient chaque version environ trois ans, puis deux de plus avec le projet LTS ; Ubuntu LTS cinq ans, davantage avec un abonnement. Passé ce délai, **plus aucun correctif de sécurité** n'est publié, et le serveur devient une cible de choix. Il faut alors passer à la version suivante : modifier les suites dans les déclarations de dépôts (de `bookworm` à `trixie`), puis `apt update` et `apt full-upgrade` sous Debian, ou utiliser `do-release-upgrade` sous Ubuntu. C'est une opération lourde, qui se prépare : lire les notes de version, sauvegarder, tester sur une copie. Beaucoup d'équipes préfèrent d'ailleurs **reconstruire** un serveur neuf dans la nouvelle version, et y migrer le service.
+
+## la méthode en production
+
+Sur un serveur qui rend un service, une mise à jour se déroule selon une routine :
+
+1. **sauvegarder**, ou prendre un **instantané** (*snapshot*) si la machine est virtuelle : c'est le plan de retour en arrière, à vérifier avant d'en avoir besoin ;
+2. **mettre à jour une machine de test** identique d'abord, et vérifier que l'application fonctionne ;
+3. **choisir une fenêtre de maintenance** et prévenir les utilisateurs si un redémarrage est prévu ;
+4. **lire la liste** d'apt avant de valider, en cherchant les paquets critiques : noyau, base de données, serveur web ;
+5. **relancer** ce qui doit l'être, puis **vérifier** que le service répond ;
+6. **noter** ce qui a été fait, et quand, pour pouvoir relier un incident des jours suivants à une mise à jour précise.
+
+## à toi de jouer
+
+C'est ta maintenance mensuelle sur un serveur Debian. Dans le terminal simulé :
+
+1. rafraîchis l'index des paquets ;
+2. affiche la liste de ce qui peut être mis à jour ;
+3. applique les mises à jour ;
+4. vérifie si un redémarrage est nécessaire, et à cause de quels paquets ;
+5. compare la version du noyau en cours avec `uname -r`.
+
+<SimulatedTerminal shell="bash" title="La maintenance du mois" expectedCommands={["sudo apt update", "apt list --upgradable", "sudo apt upgrade", "cat /var/run/reboot-required.pkgs"]} hints={["update rafraîchit l'index, sans rien installer.", "apt list avec l'option --upgradable.", "upgrade applique les mises à jour sans retirer de paquet.", "Le fichier reboot-required.pkgs est dans /var/run."]} commands={{ "sudo apt update": "Hit:1 https://deb.debian.org/debian bookworm InRelease\nGet:2 https://deb.debian.org/debian bookworm-updates InRelease [55,4 kB]\nGet:3 https://security.debian.org/debian-security bookworm-security InRelease [48,0 kB]\nGet:4 https://security.debian.org/debian-security bookworm-security/main amd64 Packages [241 kB]\nFetched 345 kB in 1s (412 kB/s)\nReading package lists... Done\nBuilding dependency tree... Done\n5 packages can be upgraded. Run 'apt list --upgradable' to see them.", "apt list --upgradable": "Listing... Done\nlibssl3/stable-security 3.0.15-1~deb12u1 amd64 [upgradable from: 3.0.14-1~deb12u2]\nopenssl/stable-security 3.0.15-1~deb12u1 amd64 [upgradable from: 3.0.14-1~deb12u2]\nlinux-image-amd64/stable-security 6.1.112-1 amd64 [upgradable from: 6.1.106-3]\nlinux-image-6.1.0-26-amd64/stable-security 6.1.112-1 amd64 [upgradable from: 6.1.106-3]\ncurl/stable-security 7.88.1-10+deb12u8 amd64 [upgradable from: 7.88.1-10+deb12u7]", "sudo apt upgrade": "Reading package lists... Done\nBuilding dependency tree... Done\nCalculating upgrade... Done\nThe following NEW packages will be installed:\n  linux-image-6.1.0-27-amd64\nThe following packages will be upgraded:\n  curl libssl3 linux-image-amd64 openssl\n4 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nDo you want to continue? [Y/n] Y\n...\nSetting up linux-image-6.1.0-27-amd64 (6.1.112-1) ...\nSetting up libssl3:amd64 (3.0.15-1~deb12u1) ...\nProcessing triggers for libc-bin (2.36-9+deb12u8) ...", "ls /var/run/reboot-required": "/var/run/reboot-required", "cat /var/run/reboot-required": "*** System restart required ***", "cat /var/run/reboot-required.pkgs": "linux-image-6.1.0-27-amd64", "uname -r": "6.1.0-26-amd64", "sudo needrestart -r l": "Scanning processes...\nScanning linux images...\n\nPending kernel upgrade!\nRunning kernel version:\n  6.1.0-26-amd64\nExpected kernel version:\n  6.1.0-27-amd64\n\nServices to be restarted:\n  nginx.service\n  ssh.service", "apt changelog libssl3": "openssl (3.0.15-1~deb12u1) bookworm-security; urgency=medium\n\n  * Import 3.0.15\n    - CVE-2024-5535\n    - CVE-2024-6119\n\n -- Debian Security Team  Wed, 23 Sep 2026 10:12:44 +0200" }} />
+
+La simulation montre les trois cas de la leçon. Le noyau a été mis à jour, mais `uname -r` affiche toujours l'ancien, `6.1.0-26` : il faudra redémarrer la machine. La bibliothèque `libssl3` aussi : `sudo needrestart -r l` liste les services qui l'utilisent encore dans sa version corrigée d'avant, `nginx` et `ssh`. Et `curl`, simple outil, n'exige rien. Remarque enfin, dans `apt upgrade`, un paquet **nouveau** : chaque version du noyau est un paquet distinct, pour pouvoir redémarrer sur l'ancienne en cas de problème.
+
+## les pièges
+
+- **Croire qu'`apt update` met à jour le système.** Il ne fait que rafraîchir l'index : c'est `apt upgrade` qui installe.
+- **Mettre à jour sans redémarrer ce qui doit l'être.** Le service tourne encore avec l'ancienne bibliothèque, et la faille reste ouverte.
+- **Oublier les dépôts de sécurité.** Sans `bookworm-security`, les correctifs n'arrivent qu'avec les versions intermédiaires, des semaines plus tard.
+- **Garder une distribution en fin de vie.** Elle ne reçoit plus aucun correctif : planifie la migration avant l'échéance.
+- **Mettre à jour la production sans plan de retour.** Une sauvegarde ou un instantané d'abord.
+- **Lancer `full-upgrade` sans lire sa liste.** Il peut retirer des paquets.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.debian.org/security/" description="Les bulletins de sécurité de Debian et la liste de diffusion à suivre, en anglais">Informations de sécurité de Debian</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/UnattendedUpgrades" description="Installer et régler les mises à jour automatiques, en anglais">Wiki Debian : UnattendedUpgrades</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les mesures de base de l'ANSSI, dont la mise à jour régulière des systèmes">ANSSI : guide d'hygiène informatique</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la différence entre apt upgrade et apt full-upgrade ?" options={["Aucune", "upgrade ne retire jamais de paquet ; full-upgrade peut en ajouter et en retirer si les dépendances l'exigent", "full-upgrade change de version de distribution automatiquement", "upgrade ne fait que les mises à jour de sécurité"]} correct={1} explanation="full-upgrade, l'ancien dist-upgrade, accepte les retraits : il faut lire sa liste avant de valider." />
+  <Quiz id="q-2" question="libssl3 vient d'être mis à jour. Pourquoi nginx peut-il rester vulnérable ?" options={["Parce que nginx n'utilise pas libssl3", "Parce que le service déjà lancé garde l'ancienne bibliothèque en mémoire jusqu'à son redémarrage", "Parce que la mise à jour échoue toujours", "Il ne peut pas rester vulnérable"]} correct={1} explanation="needrestart liste ces services ; il faut les relancer pour que le correctif s'applique vraiment." />
+  <Quiz id="q-3" question="Après une mise à jour du noyau, uname -r affiche encore l'ancienne version. Pourquoi ?" options={["La mise à jour a échoué", "Le noyau en cours reste celui du démarrage : il faut redémarrer la machine", "uname est en retard", "Il faut lancer apt update"]} correct={1} explanation="Le nouveau noyau est installé sur le disque, mais ne sera chargé qu'au prochain démarrage." />
+  <Quiz id="q-4" question="Quel fichier indique, sur Debian et Ubuntu, qu'un redémarrage est nécessaire ?" options={["/etc/reboot", "/var/run/reboot-required", "/var/log/apt/history.log", "/boot/restart"]} correct={1} explanation="reboot-required.pkgs, à côté, dit quels paquets l'exigent." />
+  <Quiz id="q-5" question="Que fait unattended-upgrades dans sa configuration par défaut ?" options={["Il installe toutes les mises à jour, fonctionnalités comprises", "Il installe chaque jour les mises à jour de sécurité", "Il change de version de distribution", "Il redémarre la machine chaque nuit"]} correct={1} explanation="Par défaut, seul le dépôt de sécurité est concerné ; le redémarrage automatique est une option." />
+  <Quiz id="q-6" question="Quel est l'équivalent Red Hat de /var/run/reboot-required ?" options={["dnf check-update", "dnf needs-restarting -r", "rpm -qa", "dnf history"]} correct={1} explanation="dnf needs-restarting -r dit si un redémarrage est nécessaire ; -s liste les services à relancer." />
+  <Quiz id="q-7" question="Pourquoi une distribution en fin de vie est-elle dangereuse ?" options={["Parce qu'elle devient plus lente", "Parce qu'elle ne reçoit plus aucun correctif de sécurité, alors que les failles continuent d'être découvertes", "Parce qu'apt cesse de fonctionner", "Elle ne l'est pas si on ne l'utilise pas"]} correct={1} explanation="Les failles découvertes après la fin du support ne seront jamais corrigées : il faut migrer avant l'échéance." />
+</QuizGroup>
+
+## à retenir
+
+- **`apt update`** rafraîchit l'index ; **`apt upgrade`** met à jour sans rien retirer ; **`apt full-upgrade`** peut retirer, lis sa liste.
+- Suis les **bulletins de sécurité** (DSA, USN, RHSA) et garde le dépôt **`-security`** dans tes sources.
+- **`unattended-upgrades`** (ou `dnf-automatic`) applique automatiquement les correctifs de sécurité.
+- Une bibliothèque mise à jour : **relancer les services** (`needrestart`). Le noyau, `glibc`, `systemd` : **redémarrer** (`/var/run/reboot-required`, `dnf needs-restarting -r`).
+- Une distribution en **fin de vie** ne reçoit plus rien : migrer avant l'échéance.
+- En production : **sauvegarde**, **test**, **fenêtre**, **lecture**, **relance**, **vérification**, **trace**.

@@ -1,0 +1,163 @@
+---
+refCode: CL-LSN-02906-V01
+slug: linux-bilan-module-6
+title: "Bilan du module 6 : préparer un serveur"
+description: "Le quiz du module Installer et gérer des logiciels, puis un projet : préparer un serveur Debian avec une liste de logiciels, depuis les dépôts officiels et le dépôt tiers de PostgreSQL ajouté proprement, activer les mises à jour de sécurité automatiques et tenir l'inventaire de ce qui est installé, avec une correction commentée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02044-V01"]
+---
+
+Le module 6 t'a appris d'où viennent les logiciels d'un Linux et comment les gérer : les paquets et leurs dépendances, les commandes du quotidien, les dépôts et leur chaîne de signatures, les mises à jour, la compilation, et les formats qui vivent en dehors des paquets. Ce bilan vérifie les connaissances, puis te fait préparer un serveur de bout en bout, comme on le fait avant de le mettre en service : un système à jour, les bons logiciels depuis les bonnes sources, rien de superflu, des correctifs automatiques, et un inventaire.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- mettre à jour un système et savoir s'il faut redémarrer ;
+- installer depuis les dépôts officiels sans rien embarquer d'inutile ;
+- retirer proprement ce qui ne sert pas ;
+- ajouter un dépôt tiers avec sa clé, limitée à ce dépôt, et vérifier d'où vient un paquet ;
+- activer les mises à jour de sécurité automatiques ;
+- dresser l'inventaire de ce qui est installé, y compris hors des paquets.
+
+## quiz
+
+Quatorze questions sur les six leçons du module.
+
+<QuizGroup>
+  <Quiz id="m6-q-1" question="Que contient un paquet .deb, en plus des fichiers du logiciel ?" options={["Rien", "Des métadonnées, dont les dépendances, et des scripts exécutés en root à l'installation", "Une copie du noyau", "Une clé de chiffrement"]} correct={1} explanation="C'est pourquoi la provenance d'un paquet compte autant : ses scripts ont les pleins pouvoirs." />
+  <Quiz id="m6-q-2" question="Quelle est la différence entre dpkg et apt ?" options={["Aucune", "dpkg installe un fichier donné sans chercher les dépendances ; apt les résout depuis les dépôts", "apt est réservé à Red Hat", "dpkg est plus récent"]} correct={1} explanation="apt calcule et télécharge, puis confie l'installation à dpkg, qui tient la base des paquets." />
+  <Quiz id="m6-q-3" question="Quelle commande dit quel paquet a installé /usr/bin/curl ?" options={["apt show /usr/bin/curl", "dpkg -S /usr/bin/curl", "which curl", "dpkg -L curl"]} correct={1} explanation="dpkg -S cherche le propriétaire d'un fichier ; dpkg -L liste les fichiers d'un paquet." />
+  <Quiz id="m6-q-4" question="Après apt remove nginx, que reste-t-il ?" options={["Rien", "La configuration de nginx, en état rc", "Le binaire de nginx", "Le service nginx démarré"]} correct={1} explanation="purge efface aussi la configuration ; aucun des deux ne touche aux données." />
+  <Quiz id="m6-q-5" question="Quel est le risque d'un apt-mark hold oublié ?" options={["Le paquet disparaît", "Le paquet ne reçoit plus ses correctifs de sécurité", "apt ne fonctionne plus", "Aucun"]} correct={1} explanation="Un blocage doit être temporaire, documenté et relu avec apt-mark showhold." />
+  <Quiz id="m6-q-6" question="Quel fichier dit quel compte a installé un paquet, et quand ?" options={["/etc/apt/sources.list", "/var/log/apt/history.log", "/var/lib/dpkg/status", "/etc/os-release"]} correct={1} explanation="Chaque opération y figure avec sa date, sa commande et la ligne Requested-By." />
+  <Quiz id="m6-q-7" question="Que protège la signature d'un dépôt apt ?" options={["Le transport uniquement", "Le contenu : InRelease garantit les index, qui garantissent chaque paquet par son empreinte", "Le mot de passe root", "Rien si le dépôt est en http"]} correct={1} explanation="Même en http, une modification serait détectée ; https ajoute la confidentialité." />
+  <Quiz id="m6-q-8" question="Pourquoi Signed-By plutôt qu'apt-key add ?" options={["Parce que c'est plus court", "Parce que la clé ne vaut que pour son dépôt, au lieu de valoir pour tous", "Parce qu'apt-key chiffre les paquets", "Aucune raison"]} correct={1} explanation="Avec l'ancien trousseau global, la clé d'un éditeur pouvait signer pour n'importe quel dépôt." />
+  <Quiz id="m6-q-9" question="Que signifie [trusted=yes] dans une déclaration de dépôt ?" options={["Le dépôt est officiel", "Le dépôt est accepté sans vérification de signature", "Le dépôt est en https", "Le dépôt est prioritaire"]} correct={1} explanation="C'est une option à ne jamais utiliser sur un vrai système." />
+  <Quiz id="m6-q-10" question="Quelle est la différence entre apt upgrade et apt full-upgrade ?" options={["Aucune", "upgrade ne retire jamais de paquet ; full-upgrade peut en retirer", "full-upgrade ne fait que la sécurité", "upgrade change de version de distribution"]} correct={1} explanation="Il faut lire la liste de full-upgrade avant de valider." />
+  <Quiz id="m6-q-11" question="Après une mise à jour du noyau, que faut-il faire ?" options={["Rien", "Redémarrer la machine : le noyau en cours reste l'ancien jusque-là", "Relancer apt update", "Réinstaller le paquet"]} correct={1} explanation="/var/run/reboot-required le signale ; uname -r montre le noyau en cours." />
+  <Quiz id="m6-q-12" question="Pourquoi compiler en utilisateur ordinaire et installer seul avec sudo ?" options={["Pour aller plus vite", "Parce que la construction exécute des scripts du projet, qui n'ont aucune raison d'avoir les droits de root", "Parce que make refuse root", "Pour économiser la mémoire"]} correct={1} explanation="Seul make install écrit dans le système." />
+  <Quiz id="m6-q-13" question="Qui met à jour un binaire autonome installé dans /usr/local/bin ?" options={["apt upgrade", "unattended-upgrades", "Personne, sauf toi", "snapd"]} correct={2} explanation="Il échappe au gestionnaire de paquets : note sa version et surveille le projet." />
+  <Quiz id="m6-q-14" question="Pourquoi ne jamais lancer sudo pip install sur une Debian ?" options={["pip n'existe pas", "Les paquets se mêlent à ceux du système et peuvent le casser : on utilise un environnement virtuel ou pipx", "sudo est interdit", "C'est plus lent"]} correct={1} explanation="Debian refuse d'ailleurs par défaut, avec l'erreur externally-managed-environment." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. La gestion des logiciels revient dans les modules sur systemd et sur le durcissement.
+
+## projet
+
+### la situation
+
+Ton équipe reçoit un serveur Debian 12 fraîchement installé, qui hébergera une petite application web et sa base de données PostgreSQL. Il faut le préparer avant la mise en service. Ce projet demande les droits root et un accès à Internet : fais-le dans la **machine virtuelle d'entraînement** installée au parcours Fondamentaux, **jamais sur un serveur réel**.
+
+### le cahier des charges
+
+1. Le système est **à jour**, et redémarré si nécessaire.
+2. Sont installés **depuis les dépôts officiels**, sans leurs recommandations : `nginx`, `curl`, `git` et `unattended-upgrades`.
+3. Aucun client en clair ne traîne : si `telnet` ou `ftp` sont présents, ils sont **purgés**, et les dépendances orphelines retirées.
+4. **PostgreSQL 16** est installé depuis le **dépôt officiel du projet PostgreSQL**, déclaré au format deb822, avec sa clé dans `/etc/apt/keyrings/` et l'option `Signed-By`.
+5. Les **mises à jour de sécurité** s'installent automatiquement chaque jour.
+6. Un **inventaire** est écrit dans `/root/inventaire-logiciels.txt` : les paquets installés à la main, les dépôts déclarés, et les exécutables de `/usr/local/bin` qui n'appartiennent à aucun paquet.
+
+### les critères de réussite
+
+| Test | Résultat attendu |
+| --- | --- |
+| `apt list --upgradable` | Aucun paquet |
+| `ls /var/run/reboot-required` | Fichier absent |
+| `apt-mark showmanual` | Contient `nginx`, `curl`, `git`, `unattended-upgrades` |
+| `dpkg -l telnet` | Aucun paquet, ou aucun en état `ii` ni `rc` |
+| `apt-cache policy postgresql-16` | Version installée venant de `apt.postgresql.org` |
+| `grep -r trusted /etc/apt/sources.list*` | Aucun résultat |
+| `cat /etc/apt/apt.conf.d/20auto-upgrades` | `APT::Periodic::Unattended-Upgrade "1";` |
+| `systemctl is-enabled apt-daily-upgrade.timer` | `enabled` |
+| `cat /root/inventaire-logiciels.txt` | Les trois parties du point 6 |
+
+### la correction commentée
+
+À lire après avoir essayé.
+
+**1. Mettre à jour, puis vérifier s'il faut redémarrer :**
+
+```bash
+sudo apt update
+sudo apt full-upgrade
+ls /var/run/reboot-required && cat /var/run/reboot-required.pkgs
+sudo reboot
+```
+
+Sur un système neuf, `full-upgrade` est approprié, à condition de lire sa liste. Le redémarrage n'a lieu que si le fichier existe.
+
+**2 et 3. Installer le nécessaire, retirer le superflu :**
+
+```bash
+sudo apt install --no-install-recommends nginx curl git unattended-upgrades
+sudo apt purge telnet ftp
+sudo apt autoremove
+```
+
+Si `telnet` ou `ftp` sont absents, `apt` le dit et continue sans erreur grave. Lis la liste d'`autoremove` avant de valider.
+
+**4. Le dépôt de PostgreSQL**, en suivant la méthode de la leçon sur les dépôts :
+
+```bash
+sudo install -d /etc/apt/keyrings
+sudo curl -fsSL -o /etc/apt/keyrings/postgresql.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+gpg --show-keys /etc/apt/keyrings/postgresql.asc
+```
+
+Compare l'empreinte affichée à celle que publie la page de téléchargement de postgresql.org pour Debian. Puis déclare le dépôt dans `/etc/apt/sources.list.d/pgdg.sources` :
+
+```text
+Types: deb
+URIs: https://apt.postgresql.org/pub/repos/apt
+Suites: bookworm-pgdg
+Components: main
+Signed-By: /etc/apt/keyrings/postgresql.asc
+```
+
+```bash
+sudo apt update
+apt-cache policy postgresql-16
+sudo apt install postgresql-16
+```
+
+`apt-cache policy`, lancé **avant** l'installation, confirme que la version candidate vient bien de `apt.postgresql.org` : c'est la preuve que le dépôt est pris en compte, et le seul endroit d'où ce paquet pouvait venir.
+
+**5. Les mises à jour automatiques :**
+
+```bash
+sudo dpkg-reconfigure -plow unattended-upgrades
+sudo unattended-upgrades --dry-run --debug | tail -5
+```
+
+La première commande écrit le fichier `/etc/apt/apt.conf.d/20auto-upgrades`, qui active le passage quotidien, déclenché par le minuteur systemd `apt-daily-upgrade.timer` ; la seconde simule un passage pour vérifier la configuration sans rien installer.
+
+**6. L'inventaire :**
+
+```bash
+{
+  echo "== Paquets installés à la main"; apt-mark showmanual
+  echo "== Dépôts déclarés"; grep -rh '^URIs\|^deb ' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null
+  echo "== Hors paquet dans /usr/local/bin"
+  for f in /usr/local/bin/*; do [ -e "$f" ] || continue; dpkg -S "$f" > /dev/null 2>&1 || echo "$f"; done
+} | sudo tee /root/inventaire-logiciels.txt
+```
+
+Les accolades regroupent les commandes pour n'écrire qu'une fois dans le fichier, et `sudo tee` écrit en root, comme vu au module 3. Le test `[ -e "$f" ]` évite une fausse ligne quand `/usr/local/bin` est vide.
+
+**La preuve.** Lance chaque test du tableau. Un test qui échoue désigne précisément l'étape à reprendre.
+
+### pour aller plus loin
+
+Relance ta préparation sur une machine neuve, mais cette fois **entièrement dans un script** `preparer-serveur.sh`, qui s'arrête à la première erreur et peut être relancé sans dommage. Tu as vu presque toutes les briques ; le module 7, sur les scripts Bash, t'apportera le reste : options, contrôle des erreurs et journal.
+
+## à retenir
+
+- Préparer un serveur : **mettre à jour**, **installer le nécessaire** sans recommandations, **retirer le superflu**, **activer les correctifs automatiques**, **inventorier**.
+- Un dépôt tiers s'ajoute avec **sa clé** dans `/etc/apt/keyrings/`, **vérifiée**, liée par **`Signed-By`**, et **`apt-cache policy`** prouve d'où vient le paquet.
+- Tout ce qui est installé **hors paquet** doit figurer dans un **inventaire**, sinon personne ne le mettra à jour.
+- Chaque exigence se **prouve** par une commande : c'est ce qui distingue une préparation d'un « ça a l'air de marcher ».
+- Le module 7 passe aux **scripts Bash**, pour automatiser tout cela.
