@@ -217,11 +217,11 @@ Elle est au plafond. **3. Où corriger ?** L'application est un **service system
 
 ## à toi de jouer
 
-Affiche toutes les limites de ton shell, puis seulement la limite dure du nombre de fichiers ouverts. Enfin, affiche les lignes actives (sans commentaires ni lignes vides) du fichier PAM `common-auth`.
+Affiche toutes les limites de ton shell, puis seulement la limite dure du nombre de fichiers ouverts. Ce Linux minimal n'utilise pas PAM : le dossier de travail contient une copie du fichier `common-auth` d'un serveur Debian, dans `pam.d/`. Affiche-en les lignes actives, sans commentaires ni lignes vides.
 
-<SimulatedTerminal shell="bash" title="Limites et authentification" expectedCommands={["ulimit -a", "ulimit -Hn", "grep -v \"^#\" /etc/pam.d/common-auth | grep -v \"^$\""]} hints={["ulimit avec l'option qui affiche tout.", "H pour la limite dure, n pour les fichiers ouverts.", "Deux grep -v enchaînés : les commentaires, puis les lignes vides."]} commands={{ "ulimit -a": "core file size              (blocks, -c) 0\ndata seg size               (kbytes, -d) unlimited\nfile size                   (blocks, -f) unlimited\nopen files                          (-n) 1024\nmax user processes                  (-u) 15432\nstack size                  (kbytes, -s) 8192\ncpu time                   (seconds, -t) unlimited", "ulimit -n": "1024", "ulimit -Sn": "1024", "ulimit -Hn": "524288", "grep -v \"^#\" /etc/pam.d/common-auth | grep -v \"^$\"": "auth\t[success=1 default=ignore]\tpam_unix.so nullok\nauth\trequisite\t\t\tpam_deny.so\nauth\trequired\t\t\tpam_permit.so", "ls /etc/pam.d/": "chfn  common-account  common-auth  common-password  common-session  cron  login  other  passwd  sshd  su  sudo" }} />
+<LinuxTerminal title="Limites et authentification" files={{"pam.d/common-auth": "#\n# /etc/pam.d/common-auth - authentication settings common to all services\n#\n# here are the per-package modules (the \"Primary\" block)\nauth\t[success=1 default=ignore]\tpam_unix.so nullok\n# here's the fallback if no module succeeds\nauth\trequisite\t\t\tpam_deny.so\n\n# prime the stack with a positive return value if there isn't one already\nauth\trequired\t\t\tpam_permit.so\n"}} expectedCommands={["ulimit -a", "ulimit -Hn", "grep -v \"^#\" pam.d/common-auth | grep -v \"^$\""]} hints={["ulimit avec l'option qui affiche tout.", "H pour la limite dure, n pour les fichiers ouverts.", "Deux grep -v enchaînés : les commentaires, puis les lignes vides."]} />
 
-Repère dans la sortie de `common-auth` l'option `nullok` : qu'autorise-t-elle, et pourquoi la retirer sur un serveur ?
+Compare `ulimit -Sn` et `ulimit -Hn` : la limite souple, 1024 fichiers ouverts, est celle qui s'applique ; la limite dure, plus haute, est le plafond jusqu'où un utilisateur peut la relever lui-même. Puis repère dans la sortie de `common-auth` l'option `nullok` : qu'autorise-t-elle, et pourquoi la retirer sur un serveur ?
 
 ## les pièges
 
