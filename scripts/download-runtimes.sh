@@ -139,3 +139,25 @@ if [[ "$(sha256sum "${V86_DEST}/bash" | cut -d' ' -f1)" != "$BASH_SHA" ]]; then
   exit 1
 fi
 echo "  ✓ v86/bash (bash 5.2.15, static)"
+
+# The image has no terminal database: without one, bash's line editor treats
+# the screen as a dumb terminal. Debian's compiled entry for TERM=linux comes
+# from ncurses-base, checked the same way.
+NCURSES_DEB="ncurses-base_6.4-4_all.deb"
+NCURSES_DEB_SHA="bfd1d89f833c09a28b062ee916495cf69649ca2bf529532476c7b69d75d24909"
+TERMINFO_SHA="b70a4941416eb703a01b5a06fd1c914880452302b0e0b2a7dea12600607824a7"
+curl -fsSL "https://deb.debian.org/debian/pool/main/n/ncurses/${NCURSES_DEB}" -o "${WORK}/${NCURSES_DEB}"
+if [[ "$(sha256sum "${WORK}/${NCURSES_DEB}" | cut -d' ' -f1)" != "$NCURSES_DEB_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - ${NCURSES_DEB}"
+  exit 1
+fi
+mkdir -p "${WORK}/ncurses-base"
+(cd "${WORK}" && rm -f data.tar.xz && ar x "${NCURSES_DEB}" data.tar.xz)
+tar -xJf "${WORK}/data.tar.xz" -C "${WORK}/ncurses-base" ./lib/terminfo/l/linux ./usr/share/doc/ncurses-base/copyright
+cp "${WORK}/ncurses-base/lib/terminfo/l/linux" "${V86_DEST}/terminfo-linux"
+cp "${WORK}/ncurses-base/usr/share/doc/ncurses-base/copyright" "${V86_DEST}/LICENSE-ncurses.txt"
+if [[ "$(sha256sum "${V86_DEST}/terminfo-linux" | cut -d' ' -f1)" != "$TERMINFO_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - v86/terminfo-linux"
+  exit 1
+fi
+echo "  ✓ v86/terminfo-linux (ncurses 6.4)"

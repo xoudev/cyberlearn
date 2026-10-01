@@ -14,6 +14,7 @@ import {
   normalizeCommand,
   octalMode,
   setupCommand,
+  TERMINFO_FILE,
   toSerial,
   type PathObservation,
   type StateCheck,
@@ -150,18 +151,23 @@ function readV86(): V86Constructor | null {
 }
 
 let runtime: Promise<V86Constructor> | null = null;
-let bash: Promise<Uint8Array | null> | null = null;
+const extras = new Map<string, Promise<Uint8Array | null>>();
 
 /**
- * The static bash the image lacks, fetched once per page while the machine
- * boots. Without it the terminal still works, with ash alone: a lesson that
- * needs bash fails on its own command, not the whole machine.
+ * A file the image lacks, served next to it: the static bash, and the
+ * terminal description its line editor needs. Fetched once per page while the
+ * machine boots. Without them the terminal still works, with ash alone: a
+ * lesson that needs bash fails on its own command, not the whole machine.
  */
-function loadBash(): Promise<Uint8Array | null> {
-  bash ??= fetch(`${RUNTIME}/bash`)
-    .then(async (res) => (res.ok ? new Uint8Array(await res.arrayBuffer()) : null))
-    .catch(() => null);
-  return bash;
+function loadExtra(name: "bash" | "terminfo-linux"): Promise<Uint8Array | null> {
+  let file = extras.get(name);
+  if (!file) {
+    file = fetch(`${RUNTIME}/${name}`)
+      .then(async (res) => (res.ok ? new Uint8Array(await res.arrayBuffer()) : null))
+      .catch(() => null);
+    extras.set(name, file);
+  }
+  return file;
 }
 
 /**
@@ -289,14 +295,20 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         for (const [path, content] of Object.entries(filesRef.current)) {
           await emulator.create_file(path, encoder.encode(content));
         }
-        const bashBytes = await loadBash();
+        const [bashBytes, terminfo] = await Promise.all([
+          loadExtra("bash"),
+          loadExtra("terminfo-linux"),
+        ]);
         if (bashBytes) await emulator.create_file(BASH_FILE, bashBytes);
+        if (bashBytes && terminfo) await emulator.create_file(TERMINFO_FILE, terminfo);
         stage = "live";
         setPhase("ready");
         term.focus();
         // Installs bash if it came, then redraws a clean prompt, now that the
         // screen shows the output.
-        emulator.serial0_send(bashBytes ? `${installBashCommand()}; clear\n` : "clear\n");
+        emulator.serial0_send(
+          bashBytes ? `${installBashCommand(terminfo !== null)}; clear\n` : "clear\n",
+        );
       };
 
       emulator.add_listener("serial0-output-byte", (byte) => {
@@ -352,7 +364,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const start = useCallback(async (): Promise<void> => {
     if (!containerRef.current || emulatorRef.current) return;
     setPhase("loading");
-    void loadBash();
+    void loadExtra("bash");
+    void loadExtra("terminfo-linux");
     try {
       const [V86, { Terminal }, { FitAddon }] = await Promise.all([
         loadV86(),
