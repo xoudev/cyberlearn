@@ -1,0 +1,186 @@
+---
+refCode: CL-LSN-02057-V01
+slug: linux-cibles
+title: "Les cibles : niveaux de fonctionnement et mode de secours"
+description: "Choisir dans quel état démarre une machine : des niveaux de fonctionnement de SysV aux cibles de systemd, la cible par défaut et comment la changer, passer d'une cible à l'autre, lire les dépendances d'une cible, puis réparer une machine qui ne démarre plus avec le mode de secours (rescue) et le mode d'urgence (emergency), y compris après une erreur dans /etc/fstab, et arrêter ou redémarrer proprement, à l'heure prévue. Ce que l'accès à ces modes dit de la sécurité physique. Avec un serveur installé avec un bureau par erreur, puis une machine bloquée en mode d'urgence."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02056-V01"]
+---
+
+Une machine Linux ne démarre pas toujours « complètement ». Un serveur n'a pas besoin d'interface graphique ; un système en panne doit pouvoir démarrer avec le strict minimum, juste de quoi réparer ; et pour un arrêt, il faut que tout s'éteigne dans le bon ordre. systemd règle ces situations avec des **cibles** : des états du système, chacun défini par l'ensemble des unités qui doivent tourner. Cette leçon t'apprend à choisir la cible de démarrage, à en changer, et surtout à te servir des deux cibles de dépannage, le jour où un serveur refuse de démarrer.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- faire le lien entre les anciens niveaux de fonctionnement et les cibles systemd ;
+- lire et changer la cible par défaut ;
+- passer à une autre cible sans redémarrer, et lister ce qu'une cible contient ;
+- démarrer en mode de **secours** ou d'**urgence**, et savoir lequel choisir ;
+- réparer une erreur dans `/etc/fstab` qui bloque le démarrage ;
+- arrêter et redémarrer proprement, éventuellement à une heure donnée.
+
+## pourquoi ça compte
+
+Le jour où un serveur ne démarre plus, on n'a ni réseau ni SSH : seulement la console, physique ou celle de l'hébergeur. Savoir démarrer en mode de secours, monter ce qu'il faut et corriger la configuration fautive fait la différence entre dix minutes d'interruption et une réinstallation. Ces modes ont aussi une face sécurité : ils donnent un shell root à qui est devant la machine, avec ou sans mot de passe selon la configuration. Comprendre ce qu'ils ouvrent, c'est comprendre pourquoi la sécurité physique et le chiffrement du disque ne sont pas optionnels.
+
+## des niveaux de fonctionnement aux cibles
+
+SysV init connaissait sept **niveaux de fonctionnement** (*runlevels*), numérotés de 0 à 6, chacun associé à une liste de scripts à lancer ou arrêter. systemd les a remplacés par des cibles, et garde des alias pour la compatibilité :
+
+| Niveau SysV | Cible systemd | État |
+| --- | --- | --- |
+| 0 | `poweroff.target` | machine arrêtée |
+| 1 | `rescue.target` | mode de secours : un seul utilisateur, root |
+| 3 | `multi-user.target` | système complet, sans interface graphique : le cas d'un serveur |
+| 5 | `graphical.target` | système complet avec interface graphique |
+| 6 | `reboot.target` | redémarrage |
+
+Les niveaux 2 et 4 n'avaient pas de sens standard ; sous systemd, ils renvoient à `multi-user.target`. Une cible en inclut souvent une autre : `graphical.target` contient tout `multi-user.target`, plus le gestionnaire d'affichage. La commande `runlevel` existe encore et traduit la cible actuelle en numéro, pour les vieux scripts.
+
+## la cible par défaut
+
+```bash
+systemctl get-default                          # la cible atteinte au démarrage
+sudo systemctl set-default multi-user.target   # la changer
+```
+
+La cible par défaut est un simple lien symbolique, `/etc/systemd/system/default.target`, que `set-default` remplace. Un serveur installé par erreur avec un bureau démarre en `graphical.target`, et fait tourner un serveur graphique, un gestionnaire de connexion et toute une pile de services inutiles. Le ramener à `multi-user.target` les écarte au prochain démarrage, sans rien désinstaller.
+
+## changer de cible, voir ce qu'elle contient
+
+```bash
+sudo systemctl isolate multi-user.target       # passer à cette cible tout de suite
+systemctl list-dependencies multi-user.target  # l'arbre des unités qu'elle rassemble
+systemctl list-units --type=target             # les cibles actives en ce moment
+```
+
+**`isolate`** démarre la cible demandée et **arrête tout ce qui n'en fait pas partie**. Passer en `multi-user.target` depuis une session graphique ferme la session. Passer en `rescue.target` sur un serveur distant coupe le réseau, et SSH avec : on ne le fait qu'à la console. `list-dependencies` montre, sous forme d'arbre, tout ce que la cible tire avec elle, avec un point vert pour ce qui tourne : c'est la façon la plus directe de voir ce qui démarre sur une machine.
+
+## le mode de secours et le mode d'urgence
+
+Deux cibles servent à réparer :
+
+- **`rescue.target`**, le mode de **secours** : les systèmes de fichiers sont montés, le minimum de services tourne, pas de réseau, pas d'utilisateurs. On y répare un service qui fait planter le démarrage, un compte cassé, une configuration erronée ;
+- **`emergency.target`**, le mode d'**urgence** : presque rien. La racine est montée **en lecture seule**, les autres systèmes de fichiers ne le sont pas, aucun service. C'est le mode de dernier recours, quand même le mode de secours échoue, typiquement parce qu'un disque de `/etc/fstab` ne peut pas être monté.
+
+systemd bascule tout seul en mode d'urgence quand un montage indispensable échoue au démarrage. L'écran affiche alors `You are in emergency mode` et demande le mot de passe de root.
+
+Pour démarrer volontairement dans l'un de ces modes, on passe par GRUB : au menu, `e` sur l'entrée voulue, on ajoute `systemd.unit=rescue.target` (ou `emergency.target`) à la fin de la ligne qui commence par `linux`, puis Ctrl+X pour démarrer. La modification ne vaut que pour ce démarrage.
+
+## réparer un fstab
+
+Le scénario le plus courant : un disque retiré, ou une faute de frappe dans un UUID, et une ligne de `/etc/fstab` qui ne peut plus être montée. Au démarrage suivant, la machine s'arrête en mode d'urgence. La réparation suit toujours le même chemin :
+
+```bash
+journalctl -xb | grep -i -B2 -A2 'mount'   # quel montage a échoué, et pourquoi
+mount -o remount,rw /                        # rendre la racine modifiable
+lsblk -f                                     # les vrais UUID des disques présents
+vi /etc/fstab                                # corriger ou commenter la ligne fautive
+systemctl daemon-reload                      # fstab est traduit en unités .mount
+mount -a                                     # essayer tous les montages : aucune erreur ?
+systemctl default                            # reprendre le démarrage normal
+```
+
+L'étape `mount -a` est la vraie vérification : si elle passe sans erreur, le prochain démarrage passera aussi. Pour un disque qui peut légitimement être absent, comme un disque USB de sauvegarde, l'option **`nofail`** dans `/etc/fstab` évite tout ce scénario : le démarrage continue sans lui. Le module 9 revient en détail sur `/etc/fstab`.
+
+<Diagram caption="Le démarrage, normal ou de dépannage">
+flowchart LR
+  A["noyau"] --> B["sysinit.target"]
+  B -->|"un montage indispensable échoue"| E["emergency.target : racine en lecture seule"]
+  B --> C["basic.target"]
+  C --> R["rescue.target : secours, sans réseau"]
+  C --> M["multi-user.target : serveur"]
+  M --> G["graphical.target : bureau"]
+</Diagram>
+
+## et la sécurité ?
+
+Le mode de secours et le mode d'urgence ouvrent un shell **root**. Sur Debian et Red Hat, ils demandent d'abord le mot de passe de root, par le programme `sulogin`. Sur Ubuntu, où le compte root est verrouillé par défaut, le mode d'urgence refuse : `Cannot open access to console, the root account is locked`. Il reste alors la méthode `init=/bin/bash` de la leçon sur le démarrage, qui ne demande rien du tout.
+
+Autrement dit, quiconque a accès à la console et au menu de GRUB peut devenir root : c'est la procédure officielle de récupération d'un mot de passe root oublié. Les parades sont celles déjà vues : un mot de passe sur GRUB, et surtout le **chiffrement du disque**, sans lequel l'accès physique donne les données. Sur un serveur en salle partagée ou chez un hébergeur, on masque aussi `ctrl-alt-del.target`, pour qu'un Ctrl+Alt+Suppr tapé sur la mauvaise console ne redémarre pas la machine.
+
+## arrêter et redémarrer
+
+```bash
+sudo systemctl poweroff                               # arrêter
+sudo systemctl reboot                                 # redémarrer
+sudo shutdown -r +10 "Redémarrage pour le noyau"      # dans 10 minutes, avec un message
+sudo shutdown -h 23:30                                # arrêt à 23 h 30
+sudo shutdown -c                                      # annuler l'arrêt prévu
+```
+
+`shutdown` prévient les utilisateurs connectés par un message sur leurs terminaux, et bloque les nouvelles connexions dans les cinq dernières minutes. C'est la bonne manière d'arrêter une machine partagée. Les variantes brutales, `reboot -f` ou `poweroff -f`, coupent sans arrêter les services ni démonter proprement les disques : à réserver aux machines déjà bloquées.
+
+## ce qui se passe à l'arrêt
+
+Arrêter une machine, c'est pour systemd atteindre `poweroff.target` ou `reboot.target`, en arrêtant toutes les unités dans l'**ordre inverse** de leur démarrage : un service déclaré `After=postgresql.service` s'arrête avant la base de données, qui peut donc finir proprement ses dernières écritures. Pour chaque service, systemd envoie d'abord `SIGTERM`, le signal poli du module 5, puis attend. Si le service n'est toujours pas arrêté au bout de son délai, `TimeoutStopSec=`, 90 secondes par défaut, il envoie `SIGKILL`.
+
+C'est l'explication du message que tout administrateur finit par voir : `A stop job is running for … (1min 12s / 1min 30s)`. Un service ne répond pas à `SIGTERM`, ou attend une ressource qui a déjà disparu, comme un partage réseau démonté trop tôt. La machine finit par s'arrêter, mais 90 secondes plus tard, et le service a été tué sans pouvoir terminer son travail. Le journal du démarrage précédent, `journalctl -b -1 -e`, dit lequel. La correction se fait dans l'unité du service, en déclarant correctement ses dépendances pour qu'il s'arrête avant ce dont il a besoin, ou en réduisant son `TimeoutStopSec=` s'il n'a rien d'important à sauvegarder.
+
+## à toi de jouer
+
+D'abord, un serveur Debian qu'un prestataire a installé avec un bureau graphique, inutile et coûteux en mémoire. Ramène-le à la cible d'un serveur, et prépare son redémarrage :
+
+1. constate la cible actuelle : `systemctl get-default`, puis `runlevel` ;
+2. regarde ce que contient la cible d'un serveur : `systemctl list-dependencies multi-user.target | head -15` ;
+3. change la cible par défaut : `sudo systemctl set-default multi-user.target` ;
+4. empêche un Ctrl+Alt+Suppr malheureux de redémarrer la machine : `sudo systemctl mask ctrl-alt-del.target` ;
+5. programme le redémarrage dans cinq minutes, avec un message pour les utilisateurs : `sudo shutdown -r +5 "Passage en mode serveur"`, puis annule-le, car une mise à jour est encore en cours : `sudo shutdown -c`.
+
+<SimulatedTerminal shell="bash" title="Un serveur, pas un poste de travail" expectedCommands={["systemctl get-default", "runlevel", "systemctl list-dependencies multi-user.target | head -15", "sudo systemctl set-default multi-user.target", "sudo systemctl mask ctrl-alt-del.target", "sudo shutdown -r +5 \"Passage en mode serveur\"", "sudo shutdown -c"]} hints={["runlevel affiche le niveau précédent puis l'actuel : N veut dire « aucun ».", "set-default remplace le lien /etc/systemd/system/default.target.", "mask remplace la cible par un lien vers /dev/null.", "shutdown -c annule un arrêt programmé."]} commands={{"systemctl get-default": "graphical.target", "runlevel": "N 5", "systemctl list-dependencies multi-user.target | head -15": "multi-user.target\n● ├─cron.service\n● ├─dbus.service\n● ├─nginx.service\n● ├─ssh.service\n● ├─systemd-logind.service\n● ├─systemd-user-sessions.service\n● ├─basic.target\n● │ ├─-.mount\n● │ ├─paths.target\n● │ ├─slices.target\n● │ ├─sockets.target\n● │ ├─sysinit.target\n● │ └─timers.target\n● ├─getty.target", "systemctl list-dependencies multi-user.target": "multi-user.target\n● ├─cron.service\n● ├─dbus.service\n● ├─nginx.service\n● ├─ssh.service\n● ├─systemd-logind.service\n● ├─systemd-user-sessions.service\n● ├─basic.target\n● │ ├─-.mount\n● │ ├─paths.target\n● │ ├─slices.target\n● │ ├─sockets.target\n● │ ├─sysinit.target\n● │ └─timers.target\n● ├─getty.target\n● │ ├─getty@tty1.service\n● │ └─serial-getty@ttyS0.service\n● └─remote-fs.target", "sudo systemctl set-default multi-user.target": "Removed \"/etc/systemd/system/default.target\".\nCreated symlink /etc/systemd/system/default.target → /lib/systemd/system/multi-user.target.", "sudo systemctl mask ctrl-alt-del.target": "Created symlink /etc/systemd/system/ctrl-alt-del.target → /dev/null.", "sudo shutdown -r +5 \"Passage en mode serveur\"": "Reboot scheduled for Thu 2026-10-01 18:47:00 CEST, use 'shutdown -c' to cancel.", "sudo shutdown -c": "", "systemctl list-units --type=target": "  UNIT                   LOAD   ACTIVE SUB    DESCRIPTION\n  basic.target           loaded active active Basic System\n  graphical.target       loaded active active Graphical Interface\n  local-fs.target        loaded active active Local File Systems\n  multi-user.target      loaded active active Multi-User System\n  network-online.target  loaded active active Network is Online\n  network.target         loaded active active Network\n  sysinit.target         loaded active active System Initialization\n  timers.target          loaded active active Timer Units\n\n8 loaded units listed."}} />
+
+Ensuite, une machine qui ne démarre plus : on a retiré hier son second disque, sans toucher à `/etc/fstab`. Elle s'est arrêtée en mode d'urgence, et tu as tapé le mot de passe de root. Répare-la :
+
+1. trouve le montage fautif : `journalctl -xb | grep -i 'mount'` ;
+2. regarde le fichier : `cat /etc/fstab`, puis les disques présents : `lsblk -f` ;
+3. rends la racine modifiable : `mount -o remount,rw /` ;
+4. commente la ligne du disque retiré : `sed -i 's|^UUID=6f3c9a51|#UUID=6f3c9a51|' /etc/fstab` ;
+5. vérifie : `systemctl daemon-reload`, puis `mount -a` ne doit rien afficher. Reprends enfin le démarrage : `systemctl default`.
+
+<SimulatedTerminal shell="bash" title="Bloquée en mode d'urgence" expectedCommands={["journalctl -xb | grep -i 'mount'", "cat /etc/fstab", "lsblk -f", "mount -o remount,rw /", "sed -i 's|^UUID=6f3c9a51|#UUID=6f3c9a51|' /etc/fstab", "systemctl daemon-reload", "mount -a", "systemctl default"]} hints={["Dependency failed for srv-donnees.mount : le montage de /srv/donnees a échoué.", "Compare l'UUID attendu dans /etc/fstab avec ceux que lsblk -f trouve vraiment.", "En mode d'urgence, la racine est en lecture seule : remount,rw d'abord.", "mount -a ne doit rien afficher : c'est la preuve que fstab est de nouveau correct.", "systemctl default reprend le démarrage vers la cible par défaut."]} commands={{"journalctl -xb | grep -i 'mount'": "oct. 01 08:31:14 srv-fichiers systemd[1]: dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device: Job dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device/start timed out.\noct. 01 08:31:14 srv-fichiers systemd[1]: Timed out waiting for device dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device - /dev/disk/by-uuid/6f3c9a51-2b8e-4d0f-9a77-1c5e0d3b7f20.\noct. 01 08:31:14 srv-fichiers systemd[1]: Dependency failed for srv-donnees.mount - /srv/donnees.\noct. 01 08:31:14 srv-fichiers systemd[1]: Dependency failed for local-fs.target - Local File Systems.\noct. 01 08:31:14 srv-fichiers systemd[1]: local-fs.target: Triggering OnFailure= dependencies.", "journalctl -xb | grep -i mount": "oct. 01 08:31:14 srv-fichiers systemd[1]: dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device: Job dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device/start timed out.\noct. 01 08:31:14 srv-fichiers systemd[1]: Timed out waiting for device dev-disk-by\\x2duuid-6f3c9a51\\x2d2b8e\\x2d4d0f\\x2d9a77\\x2d1c5e0d3b7f20.device - /dev/disk/by-uuid/6f3c9a51-2b8e-4d0f-9a77-1c5e0d3b7f20.\noct. 01 08:31:14 srv-fichiers systemd[1]: Dependency failed for srv-donnees.mount - /srv/donnees.\noct. 01 08:31:14 srv-fichiers systemd[1]: Dependency failed for local-fs.target - Local File Systems.\noct. 01 08:31:14 srv-fichiers systemd[1]: local-fs.target: Triggering OnFailure= dependencies.", "cat /etc/fstab": "# /etc/fstab: static file system information.\n# <file system>                           <mount point>  <type> <options>         <dump> <pass>\nUUID=8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2 /              ext4   errors=remount-ro 0      1\nUUID=1D4B-7E22                            /boot/efi      vfat   umask=0077        0      1\nUUID=6f3c9a51-2b8e-4d0f-9a77-1c5e0d3b7f20 /srv/donnees   ext4   defaults          0      2\n/swapfile                                 none           swap   sw                0      0", "lsblk -f": "NAME   FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINTS\nsda\n├─sda1 vfat   FAT32       1D4B-7E22\n└─sda2 ext4   1.0         8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2   21.3G    23% /", "mount -o remount,rw /": "", "sed -i 's|^UUID=6f3c9a51|#UUID=6f3c9a51|' /etc/fstab": "", "systemctl daemon-reload": "", "mount -a": "", "systemctl default": "", "touch /etc/test": "touch: cannot touch '/etc/test': Read-only file system"}} />
+
+Le message du journal disait tout : un montage, `/srv/donnees`, attendait un disque dont l'UUID n'existait plus, et `lsblk -f` le confirmait. Si ce disque doit revenir un jour, mieux vaut garder sa ligne avec l'option `nofail` que la commenter : le démarrage continuera sans lui, et le montage se fera dès qu'il sera branché.
+
+## les pièges
+
+- **`isolate rescue.target` par SSH.** Le réseau s'arrête, et ta session avec.
+- **Laisser un serveur en `graphical.target`.** Des services inutiles tournent et consomment : `set-default multi-user.target`.
+- **Oublier que la racine est en lecture seule en mode d'urgence.** Toute modification échoue : `mount -o remount,rw /` d'abord.
+- **Corriger `/etc/fstab` sans tester.** `mount -a` doit passer sans erreur avant de redémarrer.
+- **Un disque amovible dans `/etc/fstab` sans `nofail`.** Son absence bloque le démarrage.
+- **`reboot -f` sur une machine qui répond.** Les services ne s'arrêtent pas proprement : `systemctl reboot` ou `shutdown`.
+- **Croire qu'un mot de passe root protège la console.** Le menu de GRUB le contourne : mot de passe GRUB et chiffrement.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html" description="La liste des cibles spéciales de systemd et leur rôle, en anglais">systemd.special(7)</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/shutdown.html" description="Arrêter ou redémarrer à une heure donnée, avec un message, en anglais">shutdown(8)</ExternalLink>
+
+<ExternalLink href="https://wiki.archlinux.org/title/Systemd#Targets" description="Les cibles systemd et la correspondance avec les niveaux de fonctionnement, en anglais">ArchWiki : systemd, Targets</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle cible correspond à un serveur complet, sans interface graphique ?" options={["graphical.target", "multi-user.target", "rescue.target", "basic.target"]} correct={1} explanation="C'est l'ancien niveau de fonctionnement 3." />
+  <Quiz id="q-2" question="Comment faire démarrer la machine en mode serveur à partir du prochain boot ?" options={["systemctl isolate multi-user.target", "sudo systemctl set-default multi-user.target", "runlevel 3", "systemctl enable multi-user.target"]} correct={1} explanation="isolate change de cible maintenant ; set-default change la cible de démarrage." />
+  <Quiz id="q-3" question="Que fait systemctl isolate rescue.target lancé depuis une session SSH ?" options={["Rien", "Il passe en mode de secours et arrête tout le reste, réseau et SSH compris", "Il redémarre la machine", "Il ouvre une nouvelle session"]} correct={1} explanation="isolate arrête tout ce qui ne fait pas partie de la cible : on ne le fait qu'à la console." />
+  <Quiz id="q-4" question="Quelle est la différence entre le mode de secours et le mode d'urgence ?" options={["Aucune", "Le secours monte les systèmes de fichiers et lance le minimum ; l'urgence ne monte que la racine, en lecture seule", "L'urgence a le réseau", "Le secours est réservé aux bureaux"]} correct={1} explanation="Le mode d'urgence sert quand même le secours échoue, par exemple après une erreur dans /etc/fstab." />
+  <Quiz id="q-5" question="En mode d'urgence, pourquoi vi /etc/fstab ne peut-il pas enregistrer ?" options={["vi n'existe pas", "Parce que la racine est montée en lecture seule : il faut mount -o remount,rw /", "Parce qu'il faut sudo", "Parce que fstab est verrouillé"]} correct={1} explanation="On rend la racine modifiable avant toute correction." />
+  <Quiz id="q-6" question="Quelle option de /etc/fstab évite qu'un disque absent bloque le démarrage ?" options={["noauto", "nofail", "defaults", "ro"]} correct={1} explanation="Avec nofail, le démarrage continue sans le disque ; noauto, lui, ne le monte jamais automatiquement." />
+  <Quiz id="q-7" question="Pourquoi le mode de secours pose-t-il une question de sécurité physique ?" options={["Il n'en pose aucune", "Parce qu'il donne un shell root à qui est devant la console, et que GRUB permet de contourner le mot de passe", "Parce qu'il désactive le pare-feu", "Parce qu'il efface les journaux"]} correct={1} explanation="Mot de passe GRUB et chiffrement du disque sont les vraies protections contre un accès physique." />
+</QuizGroup>
+
+## à retenir
+
+- Les **cibles** remplacent les niveaux de fonctionnement : `multi-user.target` (3) pour un serveur, `graphical.target` (5) avec bureau, `rescue.target` (1), `poweroff` (0) et `reboot` (6).
+- **`systemctl get-default`** et **`set-default`** pour la cible de démarrage ; **`isolate`** pour changer maintenant, jamais par SSH vers le secours.
+- **`list-dependencies`** montre ce qu'une cible fait démarrer.
+- **`rescue.target`** pour réparer avec les disques montés ; **`emergency.target`** quand même cela échoue, racine en lecture seule : **`mount -o remount,rw /`**.
+- Un `/etc/fstab` fautif se corrige, puis se vérifie avec **`mount -a`** ; **`nofail`** pour les disques amovibles.
+- **`shutdown -r +10 "message"`** pour un arrêt annoncé, **`shutdown -c`** pour l'annuler.
+- Console et GRUB donnent root : **mot de passe GRUB** et **chiffrement**.

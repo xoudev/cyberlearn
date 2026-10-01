@@ -1,0 +1,215 @@
+---
+refCode: CL-LSN-02058-V01
+slug: linux-journal
+title: "Le journal : journalctl, filtres et persistance"
+description: "Lire le journal de systemd : ce que journald recueille et comment il le range, les filtres qui trouvent la bonne ligne parmi des millions (unité, démarrage, priorité, période, motif, champs comme _PID ou _COMM), les formats de sortie pour l'humain et pour les scripts, la persistance sur disque, la taille du journal, qui a le droit de le lire, et comment le protéger d'un attaquant qui voudrait effacer ses traces. Avec une enquête dans le journal d'un serveur compromis, la nuit du 27 septembre."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02057-V01"]
+---
+
+Quand un service plante, qu'un utilisateur ne peut plus se connecter ou qu'on soupçonne une intrusion, la première question est toujours la même : **que s'est-il passé, et quand ?** La réponse est dans les journaux. Sur une machine systemd, presque tout ce qui se passe passe par un même service, **journald**, qui enregistre les messages du noyau, de chaque service, de chaque connexion. L'outil pour les lire s'appelle **`journalctl`**. Bien utilisé, il retrouve en une commande la ligne qui compte parmi des millions. Mal utilisé, il noie dans un flot de texte.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce que recueille journald, et ce qui distingue son journal d'un fichier texte ;
+- filtrer par unité, par démarrage, par priorité, par période et par motif ;
+- filtrer par champ : un PID, un programme, un utilisateur ;
+- choisir un format de sortie, pour lire ou pour traiter ;
+- rendre le journal persistant et maîtriser sa taille ;
+- protéger les journaux d'un attaquant qui voudrait effacer ses traces.
+
+## pourquoi ça compte
+
+Les journaux sont la mémoire d'un système. Pour l'administrateur, ils disent pourquoi un service a refusé de démarrer. Pour l'enquêteur, ils sont souvent la seule preuve d'une intrusion : l'heure de la première connexion, le compte utilisé, les commandes lancées. C'est pour cela qu'un attaquant averti s'en prend à eux, et que la réglementation impose de les conserver dans de nombreux secteurs. Savoir y chercher vite, et savoir qu'ils sont fiables, fait partie du métier.
+
+## ce que journald recueille
+
+journald reçoit tout : les messages du **noyau**, ce que chaque service **affiche** sur sa sortie standard ou d'erreur, les messages envoyés par l'ancienne interface **syslog**, et ceux des programmes qui lui écrivent directement. Il les range dans un format **binaire et indexé**, dans `/var/log/journal/` ou `/run/log/journal/`.
+
+Chaque entrée n'est pas une simple ligne de texte, mais un ensemble de **champs** : le message lui-même, sa priorité, et des champs ajoutés par journald, impossibles à falsifier par le programme : `_PID`, `_UID`, `_COMM` (le nom du programme), `_SYSTEMD_UNIT`, `_BOOT_ID`, `_HOSTNAME`. C'est ce qui permet de filtrer avec précision, là où un fichier texte oblige à deviner avec `grep`. En contrepartie, le journal ne se lit pas avec `cat` : il faut `journalctl`.
+
+## lire le journal
+
+```bash
+journalctl                  # tout, du plus ancien au plus récent, page par page
+journalctl -e               # en se plaçant à la fin
+journalctl -n 50            # les 50 dernières entrées
+journalctl -f               # suivre en direct, comme tail -f
+journalctl -r               # du plus récent au plus ancien
+```
+
+Sans filtre, le journal d'un serveur compte souvent des millions d'entrées. Tout l'art est dans les filtres, qui se **combinent**.
+
+## les filtres du quotidien
+
+```bash
+journalctl -u nginx                      # une unité (plusieurs -u possibles)
+journalctl -b                            # le démarrage en cours
+journalctl -b -1                         # le démarrage précédent
+journalctl --list-boots                  # la liste des démarrages connus
+journalctl -k                            # le noyau seulement
+journalctl -p err                        # les erreurs et plus grave
+journalctl --since "2026-10-01 08:00" --until "2026-10-01 09:00"
+journalctl --since "1 hour ago"          # aussi : today, yesterday, "-15min"
+journalctl -g "Failed password"          # un motif, en expression régulière
+```
+
+Les **priorités** reprennent celles de syslog, de la plus grave à la plus anodine : `emerg` (0), `alert` (1), `crit` (2), `err` (3), `warning` (4), `notice` (5), `info` (6), `debug` (7). `-p err` montre `err` **et tout ce qui est plus grave** ; `-p warning..err` un intervalle. `-b -1` est précieux après un plantage : il montre les dernières lignes **avant** le redémarrage, souvent la cause. Encore faut-il que le journal soit conservé d'un démarrage à l'autre, ce qu'on va régler plus bas.
+
+## filtrer par champ
+
+On peut aussi filtrer sur n'importe quel champ, en écrivant `CHAMP=valeur` :
+
+```bash
+journalctl _PID=2313                   # un processus précis
+journalctl _COMM=sudo                  # tout ce qu'a écrit sudo
+journalctl _UID=1002                   # tout ce qu'ont fait les processus d'un compte
+journalctl _SYSTEMD_UNIT=ssh.service _COMM=sshd
+journalctl -F _COMM                    # les valeurs possibles d'un champ
+```
+
+Deux champs **différents** se combinent par un « et » ; le même champ répété, par un « ou ». `journalctl _COMM=sudo --since today` répond à une question d'audit fréquente : qui a utilisé `sudo` aujourd'hui, et pour quoi faire ? `-F` (*field*) liste les valeurs connues d'un champ, pratique pour découvrir les noms de programmes présents.
+
+## le noyau et le tueur de processus
+
+Les messages du noyau entrent eux aussi dans le journal, ce qui permet de les croiser avec ceux des services. Le cas typique est un service qui s'arrête sans raison apparente, avec `code=killed, status=9/KILL` : personne ne lui a envoyé ce signal, sinon le noyau. Quand la mémoire vient à manquer, le noyau choisit un processus et le tue pour sauver le reste du système : c'est l'**OOM killer** (*out of memory*).
+
+```bash
+journalctl -k -g "Out of memory|oom-kill" --since yesterday
+```
+
+La ligne trouvée nomme le processus tué, son PID et la mémoire qu'il occupait, à la seconde près. En la rapprochant du journal du service au même instant, on comprend ce qui s'est passé : une fuite de mémoire de l'application, un autre programme trop gourmand sur la même machine, ou une limite trop basse. Car systemd sait aussi limiter la mémoire d'un service, avec `MemoryMax=` dans son unité, et c'est alors le service seul qui est arrêté, au lieu d'un processus choisi au hasard par le noyau. Un serveur dont le journal montre régulièrement l'OOM killer a besoin d'attention, et vite.
+
+## les formats de sortie
+
+```bash
+journalctl -u ssh -o short-iso      # dates au format ISO, faciles à trier
+journalctl -u ssh -o verbose        # tous les champs de chaque entrée
+journalctl -u ssh -o json           # une entrée JSON par ligne, pour un programme
+journalctl -u ssh -o cat            # le message seul, sans date ni nom
+journalctl -u ssh --no-pager        # sans pagination, pour un script ou un tube
+```
+
+`-o verbose` montre tous les champs disponibles, et donc tous les filtres possibles. `-o json` est fait pour les scripts : avec `jq`, on extrait les champs voulus sans découper du texte. Dans un script ou une tâche planifiée, `--no-pager` évite que `journalctl` attende une touche.
+
+<Diagram caption="Le trajet d'un message">
+flowchart LR
+  A["noyau"] --> J["journald"]
+  B["sortie d'un service"] --> J
+  C["programmes syslog et logger"] --> J
+  J --> D["/var/log/journal : persistant"]
+  J --> E["/run/log/journal : perdu au redémarrage"]
+  J -->|"transfert facultatif"| F["rsyslog et ses fichiers texte"]
+  D --> G["journalctl et ses filtres"]
+</Diagram>
+
+## suivre plusieurs services à la fois
+
+Les filtres se combinent aussi avec le suivi en direct. Pendant qu'on reproduit un problème, on surveille d'un coup tous les services en jeu :
+
+```bash
+journalctl -f -u nginx -u php8.2-fpm -u postgresql   # trois services, en direct
+journalctl -f -p warning                              # tout ce qui va mal, sur toute la machine
+journalctl -n 0 -f -u releve                          # seulement les nouvelles lignes
+```
+
+Avec plusieurs `-u`, les lignes des différents services s'entrelacent dans l'ordre chronologique, ce qui permet de voir qu'une requête arrive dans nginx, part vers PHP, et échoue dans la base de données, à la seconde près. `-n 0` évite d'afficher l'historique avant de suivre : seules les lignes nouvelles apparaissent.
+
+## extraire une période pour une enquête
+
+Lors d'un incident de sécurité, on ne laisse pas les preuves sur la machine compromise : on en **extrait** une copie, qu'on met à l'abri avant toute autre action. `journalctl` sait exporter une période dans un fichier :
+
+```bash
+sudo journalctl --since "2026-09-27 00:00" --until "2026-09-28 00:00" -o json > journal-27-sept.json
+sha256sum journal-27-sept.json > journal-27-sept.json.sha256
+```
+
+Le format JSON garde **tous les champs** de chaque entrée, y compris ceux que l'affichage ordinaire masque, et se relit avec n'importe quel outil. L'empreinte SHA-256, calculée tout de suite et rangée à part, permettra de prouver plus tard que le fichier n'a pas été modifié depuis son extraction. C'est le début de la **chaîne de conservation** des preuves, que les modules de cybersécurité détaillent. Le format `-o export`, lui, est le format binaire de journald : `journalctl --file` le relit tel quel, avec ses filtres, sur une autre machine.
+
+## persistance et taille
+
+Le réglage `Storage=` de `/etc/systemd/journald.conf` décide où vit le journal. La valeur par défaut, `auto`, écrit sur disque dans `/var/log/journal/` **si ce dossier existe**, et sinon en mémoire dans `/run/log/journal/`, où tout disparaît au redémarrage. Selon les distributions et leurs versions, le dossier est créé ou non à l'installation : vérifie toujours. Pour rendre le journal persistant :
+
+```bash
+sudo mkdir -p /var/log/journal
+sudo systemctl restart systemd-journald
+```
+
+Pour la taille, journald limite par défaut le journal à 10 % du système de fichiers, plafonné à 4 Go. On règle cette limite par `SystemMaxUse=` dans un fichier `/etc/systemd/journald.conf.d/taille.conf`, et l'on peut faire le ménage à la main :
+
+```bash
+journalctl --disk-usage                 # la place occupée
+sudo journalctl --vacuum-size=500M      # réduire à 500 Mo, en supprimant les plus anciens
+sudo journalctl --vacuum-time=30d       # ne garder que 30 jours
+```
+
+Pense à la durée de conservation **avant** l'incident : trente jours de journaux ne servent à rien pour une intrusion découverte au bout de trois mois. Les recommandations courantes vont de plusieurs mois à un an pour les journaux de sécurité.
+
+## qui peut lire, et comment protéger
+
+Un utilisateur ordinaire ne voit que les entrées de ses propres processus. Les membres des groupes **`systemd-journal`** et **`adm`** lisent tout le journal, comme root. C'est un vrai privilège : le journal contient des noms d'utilisateurs, des adresses, parfois un mot de passe tapé par erreur à la place d'un nom de compte. On n'ajoute donc à ces groupes que les comptes qui en ont besoin.
+
+Un attaquant devenu root peut effacer le journal local : `journalctl --rotate` suivi de `--vacuum-time=1s` fait le vide. Deux parades :
+
+- **l'envoi à distance** : chaque entrée part aussitôt vers un serveur de journaux, avec `systemd-journal-upload` ou par rsyslog, comme le montre la leçon suivante. Ce qui est déjà parti ne peut plus être effacé depuis la machine compromise ;
+- **le scellement** : `Seal=yes` et `journalctl --setup-keys` ajoutent régulièrement au journal une signature, que `journalctl --verify` contrôle. Une modification ou une suppression partielle devient détectable.
+
+La disparition soudaine des journaux est d'ailleurs un indice en soi, que la supervision doit remarquer.
+
+## à toi de jouer
+
+Tu reprends l'enquête du module 6. Le journal d'apt avait montré que, dans la nuit du 27 septembre, le compte `deploy` avait installé `socat` et `ncat` à 2 h 47, puis purgé `auditd`. Le journal de systemd du serveur, conservé sur disque, doit dire **comment** ce compte a été utilisé :
+
+1. compte les échecs de connexion SSH entre 2 h et 3 h cette nuit-là : `journalctl -u ssh --since "2026-09-27 02:00" --until "2026-09-27 03:00" | grep -c "Failed password"` ;
+2. cherche une connexion réussie dans la même période : `journalctl -u ssh --since "2026-09-27 02:00" --until "2026-09-27 03:00" -g "Accepted"` ;
+3. vois ce que `sudo` a enregistré ensuite : `journalctl _COMM=sudo --since "2026-09-27 02:46" --until "2026-09-27 03:00"` ;
+4. vérifie l'arrêt du service d'audit : `journalctl -u auditd --since "2026-09-27 02:48" --until "2026-09-27 02:50"` ;
+5. enfin, mesure la place du journal : `journalctl --disk-usage`.
+
+<SimulatedTerminal shell="bash" title="La nuit du 27 septembre" expectedCommands={["journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" | grep -c \"Failed password\"", "journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" -g \"Accepted\"", "journalctl _COMM=sudo --since \"2026-09-27 02:46\" --until \"2026-09-27 03:00\"", "journalctl -u auditd --since \"2026-09-27 02:48\" --until \"2026-09-27 02:50\"", "journalctl --disk-usage"]} hints={["--since et --until bornent la recherche ; grep -c compte les lignes trouvées.", "-g cherche un motif dans les messages, sans passer par grep.", "_COMM=sudo garde les entrées écrites par le programme sudo, quel que soit le service.", "Compare les heures : connexion, installation, arrêt de l'audit."]} commands={{"journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" | grep -c \"Failed password\"": "1347", "journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" | grep \"Failed password\" | head -5": "sept. 27 02:10:04 srv-app-01 sshd[27302]: Failed password for root from 203.0.113.50 port 40112 ssh2\nsept. 27 02:10:06 srv-app-01 sshd[27302]: Failed password for root from 203.0.113.50 port 40112 ssh2\nsept. 27 02:10:09 srv-app-01 sshd[27305]: Failed password for invalid user admin from 203.0.113.50 port 40118 ssh2\nsept. 27 02:10:11 srv-app-01 sshd[27305]: Failed password for invalid user admin from 203.0.113.50 port 40118 ssh2\nsept. 27 02:10:14 srv-app-01 sshd[27309]: Failed password for deploy from 203.0.113.50 port 40124 ssh2", "journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" -g \"Accepted\"": "sept. 27 02:46:51 srv-app-01 sshd[28817]: Accepted password for deploy from 203.0.113.50 port 51122 ssh2", "journalctl -u ssh --since \"2026-09-27 02:00\" --until \"2026-09-27 03:00\" -g Accepted": "sept. 27 02:46:51 srv-app-01 sshd[28817]: Accepted password for deploy from 203.0.113.50 port 51122 ssh2", "journalctl _COMM=sudo --since \"2026-09-27 02:46\" --until \"2026-09-27 03:00\"": "sept. 27 02:47:03 srv-app-01 sudo[28854]:   deploy : TTY=pts/0 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/apt-get install -y socat ncat\nsept. 27 02:47:03 srv-app-01 sudo[28854]: pam_unix(sudo:session): session opened for user root(uid=0) by deploy(uid=1002)\nsept. 27 02:47:09 srv-app-01 sudo[28854]: pam_unix(sudo:session): session closed for user root\nsept. 27 02:48:31 srv-app-01 sudo[28930]:   deploy : TTY=pts/0 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/apt-get purge -y auditd\nsept. 27 02:48:31 srv-app-01 sudo[28930]: pam_unix(sudo:session): session opened for user root(uid=0) by deploy(uid=1002)\nsept. 27 02:48:34 srv-app-01 sudo[28930]: pam_unix(sudo:session): session closed for user root", "journalctl -u auditd --since \"2026-09-27 02:48\" --until \"2026-09-27 02:50\"": "sept. 27 02:48:32 srv-app-01 systemd[1]: Stopping auditd.service - Security Auditing Service...\nsept. 27 02:48:32 srv-app-01 auditd[612]: The audit daemon is exiting.\nsept. 27 02:48:32 srv-app-01 systemd[1]: auditd.service: Deactivated successfully.\nsept. 27 02:48:32 srv-app-01 systemd[1]: Stopped auditd.service - Security Auditing Service.", "journalctl --disk-usage": "Archived and active journals take up 1.2G in the file system.", "journalctl --list-boots": "IDX BOOT ID                          FIRST ENTRY                  LAST ENTRY\n -2 3f1c2a9e7b5d4f0c8e6a1b2c3d4e5f60 Mon 2026-09-14 06:02:11 CEST Sat 2026-09-26 04:11:52 CEST\n -1 9a8b7c6d5e4f30211f2e3d4c5b6a7980 Sat 2026-09-26 04:12:40 CEST Tue 2026-09-29 05:58:03 CEST\n  0 0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a Tue 2026-09-29 05:58:51 CEST Thu 2026-10-01 18:40:12 CEST", "journalctl -F _COMM | head": "sshd\nsudo\nsystemd\nCRON\nnginx\nauditd\napt-get\ndbus-daemon\nsystemd-logind\nkernel"}} />
+
+Le scénario se reconstitue en quatre commandes : plus de mille tentatives de mot de passe depuis `203.0.113.50`, une connexion réussie sur `deploy` par **mot de passe** à 2 h 46, puis, dans la minute, l'installation d'outils réseau et l'arrêt de l'audit, par `sudo`. Le compte de déploiement avait donc un mot de passe faible, et le droit d'utiliser `sudo` sans restriction. Les mesures qui s'imposent viennent du module 4 et du module 10 : interdire l'authentification SSH par mot de passe, limiter les droits `sudo` de `deploy` à ce dont il a besoin, et envoyer les journaux hors de la machine.
+
+## les pièges
+
+- **Lire le journal sans filtre.** Des millions de lignes : `-u`, `-b`, `-p`, `--since` d'abord.
+- **Chercher la cause d'un plantage dans `-b`.** Elle est dans le démarrage précédent : `-b -1`, si le journal est persistant.
+- **Croire le journal persistant sans vérifier.** Sans `/var/log/journal/`, tout disparaît au redémarrage.
+- **Garder trop peu de journaux.** Une intrusion se découvre souvent des semaines plus tard.
+- **`journalctl` dans un script sans `--no-pager`.** Il peut attendre une touche.
+- **Donner le groupe `adm` à la légère.** Il donne accès à tout le journal, informations sensibles comprises.
+- **Ne garder les journaux que sur la machine.** Un attaquant root les efface : envoi à distance.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/journalctl.html" description="Toutes les options de journalctl, en anglais">journalctl(1)</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html" description="Persistance, taille, scellement et transfert du journal, en anglais">journald.conf(5)</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le guide de durcissement de l'ANSSI, dont ses recommandations sur la journalisation, en français">ANSSI : recommandations de configuration d'un système GNU/Linux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande montre les erreurs du démarrage précédent, utile après un plantage ?" options={["journalctl -p err", "journalctl -b -1 -p err", "journalctl -f", "journalctl -k"]} correct={1} explanation="-b -1 désigne le démarrage précédent, à condition que le journal soit persistant." />
+  <Quiz id="q-2" question="Que montre journalctl -p warning ?" options={["Les avertissements seulement", "Les avertissements et tout ce qui est plus grave : err, crit, alert, emerg", "Tout sauf les avertissements", "Les messages de debug"]} correct={1} explanation="Une priorité seule veut dire « cette priorité et les plus graves »." />
+  <Quiz id="q-3" question="Comment savoir qui a utilisé sudo aujourd'hui ?" options={["cat /var/log/journal", "journalctl _COMM=sudo --since today", "journalctl -u sudo", "sudo -l"]} correct={1} explanation="_COMM est le nom du programme, un champ ajouté par journald et que le programme ne peut pas falsifier." />
+  <Quiz id="q-4" question="Le journal disparaît à chaque redémarrage. Pourquoi ?" options={["Le disque est plein", "Avec Storage=auto, il est conservé en mémoire tant que /var/log/journal n'existe pas", "journalctl l'efface", "C'est normal et sans remède"]} correct={1} explanation="Créer /var/log/journal puis redémarrer journald le rend persistant." />
+  <Quiz id="q-5" question="Quel format choisir pour traiter le journal avec un programme ?" options={["-o short", "-o json", "-o cat", "-o verbose"]} correct={1} explanation="Une entrée JSON par ligne se traite avec jq, sans découper de texte." />
+  <Quiz id="q-6" question="Pourquoi envoyer les journaux vers un autre serveur ?" options={["Pour gagner de la place", "Parce qu'un attaquant devenu root peut effacer le journal local, mais pas ce qui est déjà parti", "Parce que journalctl l'exige", "Pour aller plus vite"]} correct={1} explanation="Le scellement (Seal=yes) permet en plus de détecter une modification du journal local." />
+  <Quiz id="q-7" question="Dans le journal, une connexion SSH réussie par mot de passe suit mille échecs depuis la même adresse. Que conclure ?" options={["Que l'utilisateur a oublié son mot de passe", "Qu'une attaque par force brute a probablement réussi : le compte avait un mot de passe faible", "Que SSH fonctionne normalement", "Rien"]} correct={1} explanation="Il faut interdire l'authentification par mot de passe et limiter ce que ce compte peut faire." />
+</QuizGroup>
+
+## à retenir
+
+- **journald** recueille noyau, services et syslog dans un journal **binaire indexé**, avec des **champs** infalsifiables : `_PID`, `_UID`, `_COMM`, `_SYSTEMD_UNIT`.
+- Filtres : **`-u`** unité, **`-b`** (et `-b -1`) démarrage, **`-p`** priorité, **`--since`** et **`--until`**, **`-g`** motif, **`CHAMP=valeur`**.
+- Formats : **`-o short-iso`**, **`-o verbose`**, **`-o json`** ; **`--no-pager`** dans les scripts.
+- Persistance : **`/var/log/journal/`** doit exister ; taille : **`--disk-usage`**, **`SystemMaxUse=`**, **`--vacuum-size`**.
+- Lire tout le journal est un privilège (groupes **`systemd-journal`**, **`adm`**).
+- Contre l'effacement : **envoi à distance** et **scellement** (`Seal=yes`, `--verify`).

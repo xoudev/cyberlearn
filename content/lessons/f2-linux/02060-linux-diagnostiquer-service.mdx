@@ -1,0 +1,180 @@
+---
+refCode: CL-LSN-02060-V01
+slug: linux-diagnostiquer-service
+title: "Diagnostiquer un service qui ne démarre pas"
+description: "Une méthode pour remonter d'un service en échec à sa cause, sans tâtonner : lire l'état et le code de sortie dans systemctl status, comprendre les codes propres à systemd (203/EXEC, 217/USER, 200/CHDIR), lire le journal de l'unité, vérifier l'unité et la configuration du logiciel, reproduire le lancement à la main sous le compte du service, puis passer en revue les causes classiques : droits, disque plein, port déjà pris, dépendance en échec, mémoire, AppArmor ou SELinux, limite de redémarrages. Avec un service qui refuse de démarrer après une mise à jour, pour deux raisons successives."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02059-V01"]
+---
+
+Tôt ou tard, un service refusera de démarrer : après une mise à jour, un changement de configuration, une restauration de sauvegarde, ou sans raison apparente un lundi matin. Face à un `failed` rouge, la tentation est de tout essayer à la fois : redémarrer, réinstaller, modifier trois fichiers, redémarrer la machine. C'est la meilleure façon de ne jamais savoir ce qui a réglé le problème, ou d'en créer un second. Cette leçon propose une **méthode**, toujours la même, qui part des symptômes et remonte à la cause en quelques commandes.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire l'état d'un service en échec et son code de sortie ;
+- reconnaître les codes propres à systemd, comme `203/EXEC` ou `217/USER` ;
+- trouver dans le journal le message qui explique l'échec ;
+- vérifier l'unité et la configuration du logiciel ;
+- reproduire le lancement à la main, sous le compte du service ;
+- passer en revue les causes classiques, et ne changer qu'une chose à la fois.
+
+## pourquoi ça compte
+
+Un service en panne, c'est souvent un site inaccessible, une sauvegarde qui ne se fait plus, une application métier arrêtée. Le temps de diagnostic se compte directement en minutes d'interruption. Une méthode éprouvée le réduit, et elle a un autre mérite : elle laisse une trace. Savoir **pourquoi** le service est tombé permet de l'expliquer, d'éviter que cela recommence, et parfois de découvrir que la panne n'était pas un accident : un binaire remplacé, des droits modifiés, une configuration altérée sont aussi des signes d'intrusion.
+
+## première étape : l'état et le code de sortie
+
+```text
+× releve.service - Relevé des capteurs de l'atelier
+     Loaded: loaded (/etc/systemd/system/releve.service; enabled; preset: enabled)
+     Active: failed (Result: exit-code) since Thu 2026-10-01 10:31:02 CEST; 12s ago
+    Process: 5120 ExecStart=/usr/local/bin/releve --port 8080 (code=exited, status=203/EXEC)
+   Main PID: 5120 (code=exited, status=203/EXEC)
+```
+
+`systemctl status` donne déjà l'essentiel : l'état `failed`, le **résultat** (`exit-code`, `signal`, `timeout`, `start-limit-hit`) et surtout le **code de sortie**. Certains codes viennent du programme lui-même, d'autres de **systemd**, qui n'a pas réussi à lancer le programme. Ces derniers sont précieux, car ils désignent directement l'étape fautive :
+
+| Code | Ce que systemd n'a pas pu faire |
+| --- | --- |
+| `203/EXEC` | exécuter le programme : absent, pas exécutable, mauvais shebang, mauvaise architecture |
+| `217/USER` | trouver le compte de `User=` |
+| `200/CHDIR` | entrer dans le `WorkingDirectory=` |
+| `226/NAMESPACE` | préparer le bac à sable : un chemin de `ReadWritePaths=` qui n'existe pas |
+| `209/STDOUT` | ouvrir la sortie demandée |
+
+Les autres valeurs viennent du programme : `status=1/FAILURE` veut dire « le programme a rendu 1 », et c'est **son** message, dans le journal, qui dira pourquoi. `code=killed, status=9/KILL` signale un processus tué, souvent par le **tueur de processus du noyau** quand la mémoire manque (l'*OOM killer*, que `journalctl -k | grep -i oom` révèle). `code=dumped, status=11/SEGV` est un plantage du programme lui-même.
+
+## deuxième étape : le journal
+
+```bash
+journalctl -u releve -n 30          # les 30 dernières lignes de l'unité
+journalctl -xeu releve              # la fin du journal, avec les explications du catalogue
+journalctl -u releve -b -p warning  # seulement les avertissements et erreurs du démarrage
+```
+
+L'option `-x` ajoute à certaines lignes une explication tirée du **catalogue** de systemd, utile pour les messages les moins clairs. Lis le journal **de bas en haut**, en remontant jusqu'à la **première** erreur : les suivantes en sont souvent des conséquences. Un service qui redémarre en boucle produit des dizaines de lignes identiques, et la seule qui compte est celle qui précède la première tentative de redémarrage.
+
+Un détail qui égare souvent : `systemctl status` ne montre que les **dix dernières** lignes du journal de l'unité, et coupe celles qui dépassent la largeur de l'écran. Pour en voir plus, et en entier, `systemctl status releve -n 50 -l --no-pager`. Mais dès qu'il s'agit de remonter dans le temps, `journalctl -u` reste le bon outil.
+
+## troisième étape : l'unité et la configuration
+
+Si le journal pointe vers l'unité elle-même, on la relit telle que systemd la voit, compléments compris, et on la fait vérifier :
+
+```bash
+systemctl cat releve
+sudo systemd-analyze verify /etc/systemd/system/releve.service
+```
+
+Si c'est la configuration du **logiciel** qui est en cause, chaque logiciel sérieux a son test : `nginx -t`, `sshd -t`, `apachectl configtest`, `named-checkconf`, `postfix check`. Pense aussi à la question la plus utile du diagnostic : **qu'est-ce qui a changé ?** Une mise à jour (`/var/log/apt/history.log`), une configuration modifiée (`ls -lt /etc | head`), un fichier restauré. La panne date presque toujours du dernier changement.
+
+## quatrième étape : reproduire à la main
+
+Quand le journal ne suffit pas, on lance le programme **soi-même**, exactement comme systemd le fait, sous le même compte :
+
+```bash
+sudo -u releve /usr/local/bin/releve --port 8080
+```
+
+L'erreur s'affiche alors directement dans le terminal, souvent plus détaillée. Il faut reproduire **les mêmes conditions** : le même compte (`User=`), le même dossier de travail, les mêmes variables d'environnement (`EnvironmentFile=`). Un programme qui marche quand tu le lances en root et échoue sous son compte a, presque à coup sûr, un problème de **droits**.
+
+<Diagram caption="La méthode, dans l'ordre">
+flowchart TD
+  A["systemctl status : état et code de sortie"] --> B["journalctl -u : la première erreur"]
+  B --> C["systemctl cat, verify, test de configuration"]
+  C --> D["qu'est-ce qui a changé ?"]
+  D --> E["reproduire à la main, sous le compte du service"]
+  E --> F["une seule correction, puis vérifier"]
+  F -->|"toujours en échec"| A
+</Diagram>
+
+## les causes classiques
+
+Quand l'erreur n'est pas évidente, ces causes reviennent si souvent qu'on les passe en revue :
+
+- **les droits** : le binaire n'est plus exécutable, le dossier de données appartient à root après une restauration, la clé TLS n'est lisible que par root. `ls -l`, et `namei -l chemin` pour vérifier chaque dossier du chemin ;
+- **le disque plein** : `df -h` et `df -i` (plus d'inodes libres) ; un service qui ne peut plus écrire son fichier PID ou ses données refuse de démarrer ;
+- **le port déjà pris** : `Address already in use` ; `ss -ltnp | grep :8080` montre qui l'occupe, souvent une ancienne instance lancée à la main ;
+- **une dépendance en échec** : `Dependency failed for` ; c'est l'autre unité qu'il faut diagnostiquer d'abord ;
+- **la mémoire** : un processus tué par l'OOM killer, visible dans `journalctl -k` ;
+- **AppArmor ou SELinux** : un accès refusé alors que les droits Unix sont bons. `journalctl -k | grep -i apparmor` sur Debian et Ubuntu, `ausearch -m AVC` sur Red Hat ;
+- **la limite de redémarrages** : `start request repeated too quickly`. Une fois la cause réglée, `systemctl reset-failed releve` remet le compteur à zéro, sinon systemd refuse de relancer.
+
+Et une règle d'hygiène : **une seule modification à la fois**, vérifiée avant de passer à la suivante. Note ce que tu fais au fur et à mesure : à la fin, tu sauras quoi écrire dans le rapport d'incident, et quoi défaire si une modification n'a servi à rien.
+
+## quand le service tourne mais ne répond pas
+
+Une variante sournoise : `systemctl status` affiche `active (running)`, et pourtant le site ne répond pas. Le service a démarré, mais quelque chose entre lui et l'utilisateur ne va pas. La méthode change de direction : on part du service et on s'en éloigne, maillon par maillon.
+
+```bash
+sudo ss -ltnp | grep nginx            # écoute-t-il, et sur quelle adresse ?
+curl -sI http://127.0.0.1/            # répond-il depuis la machine elle-même ?
+curl -sI http://192.0.2.10/           # et sur son adresse réseau ?
+sudo nft list ruleset | grep 80       # le pare-feu laisse-t-il passer ?
+```
+
+Chaque commande élimine une hypothèse. Un service qui écoute seulement sur `127.0.0.1` est injoignable de l'extérieur, quoi que dise son état : c'est une erreur de configuration fréquente, `listen 127.0.0.1:80` au lieu de `listen 80`. S'il répond en local mais pas sur l'adresse réseau, le coupable est entre les deux : le pare-feu, que le module 10 traite en détail. S'il répond partout depuis la machine, il faut regarder plus loin encore : le DNS, un proxy, le pare-feu de l'hébergeur. Enfin, un service peut répondre, mais mal : une page d'erreur 502 de nginx désigne l'application derrière lui, et c'est son journal à elle qu'il faut lire. Le principe reste le même que pour un service en échec : suivre la chaîne dans l'ordre, et ne conclure qu'avec une preuve.
+
+## à toi de jouer
+
+Ce matin, une nouvelle version de `releve` a été téléchargée depuis le serveur de compilation, puis copiée à sa place avec `cp`, et la nuit dernière, son dossier de données a été restauré depuis une sauvegarde. Le service ne démarre plus. Applique la méthode, sur ce serveur Debian simulé :
+
+1. l'état : `systemctl status releve`. Note le code de sortie ;
+2. le journal : `journalctl -u releve -n 5` ;
+3. vérifie le binaire : `ls -l /usr/local/bin/releve`, et corrige : `sudo chmod 755 /usr/local/bin/releve` ;
+4. relance et relis le journal depuis la relance : `sudo systemctl restart releve`, puis `journalctl -u releve --since "10:32"`. Une autre erreur apparaît ;
+5. vérifie le dossier de données : `ls -ld /var/lib/releve /var/lib/releve/etat.db`, et rends-le au compte du service : `sudo chown -R releve:releve /var/lib/releve` ;
+6. le service a atteint sa limite de redémarrages : remets le compteur à zéro et relance, `sudo systemctl reset-failed releve`, puis `sudo systemctl restart releve` ;
+7. vérifie : `systemctl is-active releve`, puis `sudo ss -ltnp | grep 8080`.
+
+<SimulatedTerminal shell="bash" title="Un service qui ne démarre plus" expectedCommands={["systemctl status releve", "journalctl -u releve -n 5", "ls -l /usr/local/bin/releve", "sudo chmod 755 /usr/local/bin/releve", "sudo systemctl restart releve", "journalctl -u releve --since \"10:32\"", "ls -ld /var/lib/releve /var/lib/releve/etat.db", "sudo chown -R releve:releve /var/lib/releve", "sudo systemctl reset-failed releve", "systemctl is-active releve", "sudo ss -ltnp | grep 8080"]} hints={["203/EXEC : systemd n'a même pas pu lancer le programme.", "Dans ls -l, il manque les x : le fichier n'est pas exécutable.", "La seconde erreur vient du programme lui-même : lis son message.", "Le service tourne sous le compte releve, mais le dossier appartient à root.", "Après « Start request repeated too quickly », reset-failed avant de relancer."]} commands={{"systemctl status releve": "× releve.service - Relevé des capteurs de l'atelier\n     Loaded: loaded (/etc/systemd/system/releve.service; enabled; preset: enabled)\n     Active: failed (Result: exit-code) since Thu 2026-10-01 10:31:02 CEST; 12s ago\n   Duration: 2ms\n    Process: 5120 ExecStart=/usr/local/bin/releve --port 8080 (code=exited, status=203/EXEC)\n   Main PID: 5120 (code=exited, status=203/EXEC)\n        CPU: 3ms\n\noct. 01 10:31:02 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:31:02 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=203/EXEC\noct. 01 10:31:02 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.", "journalctl -u releve -n 5": "oct. 01 10:31:02 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:31:02 srv-app-01 (releve)[5120]: releve.service: Unable to locate executable '/usr/local/bin/releve': Permission denied\noct. 01 10:31:02 srv-app-01 (releve)[5120]: releve.service: Failed at step EXEC spawning /usr/local/bin/releve: Permission denied\noct. 01 10:31:02 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=203/EXEC\noct. 01 10:31:02 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.", "ls -l /usr/local/bin/releve": "-rw-r--r-- 1 root root 8421376 oct.   1 10:30 /usr/local/bin/releve", "sudo chmod 755 /usr/local/bin/releve": "", "sudo systemctl restart releve": "", "journalctl -u releve --since \"10:32\"": "oct. 01 10:32:40 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:32:40 srv-app-01 releve[5233]: erreur : impossible d'ouvrir /var/lib/releve/etat.db : Permission denied\noct. 01 10:32:40 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=1/FAILURE\noct. 01 10:32:40 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.\noct. 01 10:32:45 srv-app-01 systemd[1]: releve.service: Scheduled restart job, restart counter is at 1.\noct. 01 10:32:45 srv-app-01 releve[5241]: erreur : impossible d'ouvrir /var/lib/releve/etat.db : Permission denied\noct. 01 10:32:45 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=1/FAILURE\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Scheduled restart job, restart counter is at 5.\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Start request repeated too quickly.\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.\noct. 01 10:33:10 srv-app-01 systemd[1]: Failed to start releve.service - Relevé des capteurs de l'atelier.", "journalctl -u releve --since 10:32": "oct. 01 10:32:40 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:32:40 srv-app-01 releve[5233]: erreur : impossible d'ouvrir /var/lib/releve/etat.db : Permission denied\noct. 01 10:32:40 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=1/FAILURE\noct. 01 10:32:40 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.\noct. 01 10:32:45 srv-app-01 systemd[1]: releve.service: Scheduled restart job, restart counter is at 1.\noct. 01 10:32:45 srv-app-01 releve[5241]: erreur : impossible d'ouvrir /var/lib/releve/etat.db : Permission denied\noct. 01 10:32:45 srv-app-01 systemd[1]: releve.service: Main process exited, code=exited, status=1/FAILURE\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Scheduled restart job, restart counter is at 5.\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Start request repeated too quickly.\noct. 01 10:33:10 srv-app-01 systemd[1]: releve.service: Failed with result 'exit-code'.\noct. 01 10:33:10 srv-app-01 systemd[1]: Failed to start releve.service - Relevé des capteurs de l'atelier.", "ls -ld /var/lib/releve /var/lib/releve/etat.db": "drwxr-x--- 2 root root     4096 oct.   1 02:15 /var/lib/releve\n-rw-r----- 1 root root 52428800 oct.   1 02:15 /var/lib/releve/etat.db", "sudo chown -R releve:releve /var/lib/releve": "", "sudo systemctl reset-failed releve": "", "systemctl is-active releve": "active", "sudo ss -ltnp | grep 8080": "LISTEN 0      4096         0.0.0.0:8080      0.0.0.0:*    users:((\"releve\",pid=5318,fd=3))", "sudo -u releve /usr/local/bin/releve --port 8080": "erreur : impossible d'ouvrir /var/lib/releve/etat.db : Permission denied", "systemctl cat releve": "# /etc/systemd/system/releve.service\n[Unit]\nDescription=Relevé des capteurs de l'atelier\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nExecStart=/usr/local/bin/releve --port 8080\nUser=releve\nWorkingDirectory=/var/lib/releve\nRestart=on-failure\nRestartSec=5\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=multi-user.target", "tail -3 /var/log/apt/history.log": "Start-Date: 2026-09-28  11:30:12\nCommandline: apt install htop\nEnd-Date: 2026-09-28  11:30:15"}} />
+
+Deux causes, deux étapes de la chaîne. Le nouveau binaire n'avait pas le droit d'exécution : un fichier téléchargé est créé sans ce droit, et `cp` a conservé les droits du fichier copié, là où `install -m 755` les aurait fixés. systemd n'avait même pas pu lancer le programme, d'où le code `203/EXEC`. La restauration avait rendu le dossier de données à root, et le programme, lancé sous le compte `releve`, ne pouvait plus ouvrir sa base : un code `1/FAILURE`, avec son propre message. Aucune de ces deux causes ne se voyait sans lire le journal, et la seconde était cachée derrière la première. Le rapport d'incident en tire deux améliorations : déployer avec `install -m 755`, et restaurer en conservant les propriétaires des fichiers.
+
+## après la réparation
+
+Un service redevenu `active` n'est pas forcément réparé. On vérifie qu'il **rend vraiment son service**, de bout en bout : la page s'affiche, l'API répond, les données arrivent. On surveille aussi `systemctl show -p NRestarts releve` pendant quelques heures : un compteur qui grimpe signale un service qui plante encore, mais que `Restart=` relance si vite qu'on ne le voit pas.
+
+Puis on écrit quelques lignes : les symptômes, l'heure, la cause, la correction, et ce qui évitera que cela recommence. Cette note, que l'on retrouvera la prochaine fois, transforme une panne en amélioration.
+
+## les pièges
+
+- **Tout changer en même temps.** On ne sait plus ce qui a réparé, ni ce qui a abîmé : une modification à la fois.
+- **Lire la dernière erreur du journal au lieu de la première.** Les suivantes sont souvent des conséquences.
+- **Tester le programme en root.** Les problèmes de droits disparaissent : reproduis sous le compte du service.
+- **Oublier `reset-failed`.** Après trop d'échecs, systemd refuse de relancer, même une fois la cause corrigée.
+- **Ignorer le code de sortie.** `203`, `217` ou `200` désignent directement l'étape fautive.
+- **Ne pas se demander ce qui a changé.** La panne date presque toujours du dernier déploiement ou de la dernière modification.
+- **Réparer sans comprendre.** Un binaire modifié ou des droits changés peuvent aussi signaler une intrusion.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#Process%20Exit%20Codes" description="La liste complète des codes de sortie propres à systemd, en anglais">systemd.exec(5) : Process Exit Codes</ExternalLink>
+
+<ExternalLink href="https://wiki.archlinux.org/title/Systemd#Troubleshooting" description="Méthodes de diagnostic des unités systemd, en anglais">ArchWiki : systemd, Troubleshooting</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/util-linux/namei.1.fr.html" description="Vérifier les droits de chaque dossier d'un chemin, en français">Page de manuel de namei</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Un service échoue avec status=203/EXEC. Que soupçonner ?" options={["Une erreur dans le programme", "Que systemd n'a pas pu exécuter le programme : absent, pas exécutable, mauvais shebang", "Un compte inexistant", "Un disque plein"]} correct={1} explanation="Les codes 2xx viennent de systemd, avant même que le programme ne démarre." />
+  <Quiz id="q-2" question="Que signifie status=217/USER ?" options={["Le programme a planté", "Le compte indiqué par User= n'existe pas", "Le port est pris", "La mémoire manque"]} correct={1} explanation="On crée le compte, par exemple avec useradd --system, ou on corrige le nom." />
+  <Quiz id="q-3" question="Dans un journal plein d'erreurs répétées, laquelle lire en premier ?" options={["La dernière", "La première, celle qui précède la première tentative de redémarrage", "Celle qui revient le plus", "Aucune"]} correct={1} explanation="Les erreurs suivantes sont souvent des conséquences de la première." />
+  <Quiz id="q-4" question="Pourquoi reproduire le lancement avec sudo -u releve plutôt qu'en root ?" options={["Pour aller plus vite", "Parce qu'en root, les problèmes de droits du compte du service disparaissent", "Parce que root ne peut pas lancer le programme", "Ce n'est pas utile"]} correct={1} explanation="Il faut reproduire les mêmes conditions : même compte, même dossier, même environnement." />
+  <Quiz id="q-5" question="Le journal affiche start request repeated too quickly. Que faire une fois la cause corrigée ?" options={["Redémarrer la machine", "systemctl reset-failed, puis relancer le service", "Désinstaller le service", "Attendre une heure"]} correct={1} explanation="systemd a abandonné après trop d'échecs ; reset-failed remet le compteur à zéro." />
+  <Quiz id="q-6" question="Un service échoue avec Address already in use. Quelle commande montre qui occupe le port ?" options={["df -h", "ss -ltnp", "journalctl -k", "systemctl cat"]} correct={1} explanation="Souvent une ancienne instance du programme, lancée à la main." />
+  <Quiz id="q-7" question="Pourquoi ne changer qu'une chose à la fois pendant un diagnostic ?" options={["Par habitude", "Pour savoir ce qui a réparé, pouvoir défaire le reste, et écrire un rapport juste", "Parce que systemctl l'impose", "Pour aller plus vite"]} correct={1} explanation="Plusieurs modifications à la fois masquent la cause, et peuvent créer une seconde panne." />
+</QuizGroup>
+
+## à retenir
+
+- La méthode : **`systemctl status`** (état, code de sortie), **`journalctl -u`** (la **première** erreur), **`systemctl cat`** et les tests de configuration, **qu'est-ce qui a changé ?**, puis **reproduire** avec `sudo -u compte`.
+- Les codes de systemd : **`203/EXEC`** (exécution), **`217/USER`** (compte), **`200/CHDIR`** (dossier), **`226/NAMESPACE`** (bac à sable).
+- `status=1/FAILURE` : lire le message **du programme** ; `9/KILL` : penser à la mémoire.
+- Les causes classiques : **droits**, **disque plein**, **port pris** (`ss -ltnp`), **dépendance**, **mémoire**, **AppArmor ou SELinux**, **limite de redémarrages** (`reset-failed`).
+- **Une modification à la fois**, notée, et un rapport qui dit la cause et ce qui évitera la récidive.

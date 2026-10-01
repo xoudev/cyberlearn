@@ -1,0 +1,201 @@
+---
+refCode: CL-LSN-02055-V01
+slug: linux-gerer-service
+title: "Gérer un service avec systemctl"
+description: "Piloter les services d'un serveur : démarrer, arrêter, redémarrer ou recharger avec systemctl, distinguer ce qui tourne maintenant de ce qui démarre au boot (start et enable), lire chaque ligne de systemctl status, lister les services actifs, en échec ou activables, masquer un service pour l'interdire tout à fait, et reconnaître l'héritage des scripts /etc/init.d. Réduire la surface d'attaque en coupant ce qui ne sert pas. Avec un serveur web à mettre en route et un service superflu à neutraliser, puis un service à l'ancienne sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02054-V01"]
+---
+
+Un serveur Linux fait tourner en permanence des dizaines de programmes : le serveur SSH qui t'accueille, le planificateur, le journal, le serveur web, la base de données. Ces programmes qui tournent en arrière-plan, sans terminal, s'appellent des **services**, ou des **démons** dans la tradition Unix (d'où le `d` final de `sshd` ou `crond`). Sous systemd, on les pilote tous avec une seule commande : **`systemctl`**. Cette leçon t'apprend les gestes du quotidien, et un réflexe de sécurité : un service qui ne sert à rien est un service à arrêter.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- démarrer, arrêter, redémarrer et recharger un service ;
+- faire la différence entre **démarrer maintenant** et **démarrer au boot** ;
+- lire chaque ligne de `systemctl status` ;
+- lister les services actifs, en échec, ou activés au démarrage ;
+- **masquer** un service pour qu'il ne puisse plus démarrer du tout ;
+- reconnaître les anciens scripts `/etc/init.d` et la commande `service`.
+
+## pourquoi ça compte
+
+Chaque service qui tourne est du code qui s'exécute, souvent avec des privilèges, parfois à l'écoute du réseau. Un serveur web qui fait aussi tourner un serveur d'impression, un service de découverte du réseau local et un serveur de messagerie installé par défaut offre autant de portes à un attaquant, et autant de logiciels à mettre à jour. Les guides de durcissement, dont celui de l'ANSSI, posent le même principe : **n'activer que les services nécessaires**. Le savoir-faire de cette leçon sert donc deux fois : faire tourner ce qui doit tourner, et éteindre le reste.
+
+## démarrer, arrêter, redémarrer, recharger
+
+```bash
+sudo systemctl start nginx      # démarrer maintenant
+sudo systemctl stop nginx       # arrêter maintenant
+sudo systemctl restart nginx    # arrêter puis redémarrer
+sudo systemctl reload nginx     # relire la configuration, sans arrêter le service
+```
+
+Le nom complet d'un service se termine par `.service` ; `systemctl` l'ajoute tout seul quand on l'omet. Agir sur un service demande les droits de root, d'où `sudo` ; consulter son état ne les demande pas.
+
+**`reload`** mérite qu'on s'y arrête. Un `restart` coupe le service : les connexions en cours sont perdues, et si la nouvelle configuration contient une erreur, le service ne redémarre pas du tout. Un `reload` demande au programme de relire sa configuration **sans s'arrêter** : nginx, par exemple, garde ses anciens processus le temps de finir les requêtes en cours. Tous les services ne savent pas recharger ; `systemctl reload-or-restart` recharge quand c'est possible et redémarre sinon. Et avant l'un comme l'autre, on **teste la configuration** quand le logiciel le permet : `nginx -t`, `sshd -t`, `apachectl configtest`. Un `restart` de `sshd` avec une configuration cassée, sur un serveur distant, peut te couper l'accès pour de bon.
+
+## maintenant, ou au démarrage : start et enable
+
+Deux questions indépendantes se posent pour chaque service : **tourne-t-il en ce moment ?**, et **démarrera-t-il au prochain boot ?** Elles ont chacune leur commande :
+
+| | Maintenant | Au démarrage |
+| --- | --- | --- |
+| Oui | `systemctl start` | `systemctl enable` |
+| Non | `systemctl stop` | `systemctl disable` |
+| Vérifier | `systemctl is-active` | `systemctl is-enabled` |
+
+`enable` ne démarre rien : il crée un lien symbolique dans le dossier de la cible concernée, par exemple `/etc/systemd/system/multi-user.target.wants/`, pour que systemd lance le service la prochaine fois qu'il atteindra cette cible. L'oubli classique est un service démarré à la main, qui tourne parfaitement… jusqu'au premier redémarrage. L'option **`--now`** fait les deux d'un coup : `enable --now` active et démarre, `disable --now` désactive et arrête.
+
+`is-enabled` peut répondre autre chose que `enabled` ou `disabled` : **`static`** désigne un service sans section d'installation, qui ne démarre que comme dépendance d'un autre ; **`masked`** un service interdit, comme on va le voir.
+
+## lire systemctl status
+
+```text
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-10-01 09:14:22 CEST; 2h 3min ago
+       Docs: man:nginx(8)
+   Main PID: 2313 (nginx)
+      Tasks: 3 (limit: 4613)
+     Memory: 4.1M
+        CPU: 1.204s
+     CGroup: /system.slice/nginx.service
+             ├─2313 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─2314 "nginx: worker process"
+             └─2315 "nginx: worker process"
+```
+
+Ligne par ligne :
+
+- le **point** en tête : vert (`●`) si le service tourne, blanc (`○`) s'il est arrêté, rouge (`×`) s'il a échoué ;
+- **`Loaded`** : le fichier d'unité utilisé, si le service est activé au démarrage, et la valeur que la distribution recommande (`preset`) ;
+- **`Active`** : l'état, `active (running)`, `inactive (dead)` ou `failed`, et depuis quand ;
+- **`Main PID`** : le processus principal ;
+- **`CGroup`** : tous les processus du service. systemd range chaque service dans un **groupe de contrôle**, ce qui lui permet de les retrouver tous, de limiter leurs ressources et de les arrêter ensemble, même ceux qui se sont détachés.
+
+Sous ces lignes, `status` affiche les **dernières lignes du journal** du service : le premier endroit où chercher quand quelque chose ne va pas. La leçon sur le journal montrera comment remonter plus loin.
+
+## lister les services
+
+```bash
+systemctl list-units --type=service                    # les services chargés, et leur état
+systemctl list-units --type=service --state=running    # ceux qui tournent
+systemctl --failed                                     # ceux qui ont échoué
+systemctl list-unit-files --type=service --state=enabled   # ceux qui démarrent au boot
+```
+
+`systemctl --failed` est la première commande à taper en arrivant sur un serveur qu'on ne connaît pas, ou après un redémarrage : elle liste ce qui n'a pas réussi à démarrer. La dernière commande, elle, est la base d'un audit : chaque service activé doit avoir une raison de l'être. Pour savoir lesquels **écoutent le réseau**, on la croise avec `ss -ltnp`, qui liste les ports ouverts et les programmes derrière.
+
+## masquer un service
+
+`disable` empêche un service de démarrer au boot, mais il peut encore être démarré à la main, ou par un autre service qui en dépend, ou par une **socket**. Car systemd sait démarrer un service à la demande : une unité `.socket` écoute un port, et lance le service à la première connexion. Désactiver le service sans la socket ne suffit donc pas toujours, et `systemctl` le signale par un avertissement.
+
+**`mask`** va plus loin : il remplace l'unité par un lien vers `/dev/null`. Le service devient impossible à démarrer, par qui que ce soit, jusqu'à un `unmask`.
+
+```bash
+sudo systemctl disable --now avahi-daemon
+sudo systemctl mask avahi-daemon.service avahi-daemon.socket
+```
+
+C'est la bonne façon d'éteindre durablement un service installé avec un paquet dont on a besoin, sans risquer qu'une mise à jour ou une dépendance le réveille. Sur un serveur, les candidats habituels sont `avahi-daemon` (la découverte de services sur le réseau local), `cups` (l'impression) ou `bluetooth`.
+
+## les services d'un utilisateur
+
+systemd ne gère pas que les services du système. Chaque utilisateur connecté a sa propre instance de systemd, qui peut faire tourner **ses** services, sans aucun droit root : un petit serveur de développement, une synchronisation de fichiers, un agent. Les commandes sont les mêmes, avec l'option `--user` :
+
+```bash
+systemctl --user status syncthing
+systemctl --user enable --now syncthing
+journalctl --user -u syncthing
+```
+
+Les unités d'un utilisateur se rangent dans `~/.config/systemd/user/`. Par défaut, elles s'arrêtent quand l'utilisateur ferme sa dernière session ; pour qu'elles tournent en permanence, même sans session ouverte, l'administrateur active la **persistance** du compte : `sudo loginctl enable-linger alice`.
+
+C'est pratique, et c'est aussi un point à surveiller en audit : un attaquant qui a pris la main sur un compte ordinaire peut y installer un service utilisateur qui se relance tout seul, sans jamais toucher aux fichiers du système. La revue des tâches planifiées du module 7 s'étend donc aux dossiers `~/.config/systemd/user/` de chaque compte, et à la liste des comptes persistants, dans `/var/lib/systemd/linger/`.
+
+## avant systemd : /etc/init.d et service
+
+Sur les systèmes plus anciens, et sur ceux qui n'utilisent pas systemd, chaque service est piloté par un **script** de `/etc/init.d/`, qu'on appelle avec une action :
+
+```bash
+sudo /etc/init.d/nginx restart
+sudo service nginx restart        # la même chose, par une commande enveloppe
+```
+
+Ces scripts sont des scripts shell comme ceux du module 7 : un `case` sur `start`, `stop`, `restart`, qui lance le démon, écrit son PID dans un fichier et le tue à l'arrêt. Leur ordre au démarrage venait de leur nom, `S01`, `S02`, et leur activation de liens gérés par `update-rc.d` sur Debian ou `chkconfig` sur Red Hat. La commande `service` existe toujours sur les systèmes à systemd, où elle transmet simplement l'ordre à `systemctl`. Et les scripts `/etc/init.d` qui restent sont convertis à la volée en unités par systemd. Tu les croiseras encore dans les vieux tutoriels, sur des équipements réseau, et dans des conteneurs.
+
+<Diagram caption="Deux questions indépendantes pour chaque service">
+flowchart LR
+  A["start et stop"] --> B["l'état maintenant : active ou inactive"]
+  C["enable et disable"] --> D["un lien dans multi-user.target.wants : démarrage au boot"]
+  E["mask"] --> F["un lien vers /dev/null : plus aucun démarrage possible"]
+</Diagram>
+
+## à toi de jouer
+
+D'abord un serveur web Debian, sous systemd, dans un terminal simulé. nginx vient d'y être installé mais n'est pas lancé, et le serveur fait tourner un service inutile ici, la découverte du réseau local par `avahi-daemon` :
+
+1. vérifie l'état de nginx : `systemctl is-active nginx`, puis `systemctl is-enabled nginx` ;
+2. active-le et démarre-le d'un coup : `sudo systemctl enable --now nginx`, puis lis `systemctl status nginx` ligne par ligne ;
+3. après une modification de sa configuration, teste-la et recharge sans couper : `sudo nginx -t`, puis `sudo systemctl reload nginx` ;
+4. liste ce qui tourne : `systemctl list-units --type=service --state=running`, et repère `avahi-daemon` ;
+5. coupe-le : `sudo systemctl disable --now avahi-daemon`. Lis l'avertissement, puis masque le service **et** sa socket : `sudo systemctl mask avahi-daemon.service avahi-daemon.socket`.
+
+<SimulatedTerminal shell="bash" title="Mettre en route, et éteindre ce qui ne sert pas" expectedCommands={["systemctl is-active nginx", "systemctl is-enabled nginx", "sudo systemctl enable --now nginx", "systemctl status nginx", "sudo nginx -t", "sudo systemctl reload nginx", "systemctl list-units --type=service --state=running", "sudo systemctl disable --now avahi-daemon", "sudo systemctl mask avahi-daemon.service avahi-daemon.socket"]} hints={["is-active parle de l'instant, is-enabled du prochain démarrage.", "enable --now active au démarrage et démarre tout de suite.", "nginx -t teste la configuration ; reload la fait relire sans couper les connexions.", "L'avertissement de disable cite la socket qui peut encore réveiller le service.", "mask accepte plusieurs unités à la suite : le service et sa socket."]} commands={{"systemctl is-active nginx": "inactive", "systemctl is-enabled nginx": "disabled", "sudo systemctl enable --now nginx": "Synchronizing state of nginx.service with SysV service script with /lib/systemd/systemd-sysv-install.\nExecuting: /lib/systemd/systemd-sysv-install enable nginx\nCreated symlink /etc/systemd/system/multi-user.target.wants/nginx.service → /lib/systemd/system/nginx.service.", "systemctl status nginx": "● nginx.service - A high performance web server and a reverse proxy server\n     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; preset: enabled)\n     Active: active (running) since Thu 2026-10-01 09:14:22 CEST; 6s ago\n       Docs: man:nginx(8)\n    Process: 2311 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)\n    Process: 2312 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)\n   Main PID: 2313 (nginx)\n      Tasks: 3 (limit: 4613)\n     Memory: 3.9M\n        CPU: 38ms\n     CGroup: /system.slice/nginx.service\n             ├─2313 \"nginx: master process /usr/sbin/nginx -g daemon on; master_process on;\"\n             ├─2314 \"nginx: worker process\"\n             └─2315 \"nginx: worker process\"\n\noct. 01 09:14:22 srv-web-01 systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...\noct. 01 09:14:22 srv-web-01 systemd[1]: Started nginx.service - A high performance web server and a reverse proxy server.", "sudo systemctl status nginx": "● nginx.service - A high performance web server and a reverse proxy server\n     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; preset: enabled)\n     Active: active (running) since Thu 2026-10-01 09:14:22 CEST; 6s ago\n       Docs: man:nginx(8)\n    Process: 2311 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)\n    Process: 2312 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)\n   Main PID: 2313 (nginx)\n      Tasks: 3 (limit: 4613)\n     Memory: 3.9M\n        CPU: 38ms\n     CGroup: /system.slice/nginx.service\n             ├─2313 \"nginx: master process /usr/sbin/nginx -g daemon on; master_process on;\"\n             ├─2314 \"nginx: worker process\"\n             └─2315 \"nginx: worker process\"\n\noct. 01 09:14:22 srv-web-01 systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...\noct. 01 09:14:22 srv-web-01 systemd[1]: Started nginx.service - A high performance web server and a reverse proxy server.", "sudo nginx -t": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful", "sudo systemctl reload nginx": "", "systemctl list-units --type=service --state=running": "  UNIT                       LOAD   ACTIVE SUB     DESCRIPTION\n  avahi-daemon.service       loaded active running Avahi mDNS/DNS-SD Stack\n  cron.service               loaded active running Regular background program processing daemon\n  dbus.service               loaded active running D-Bus System Message Bus\n  getty@tty1.service         loaded active running Getty on tty1\n  nginx.service              loaded active running A high performance web server and a reverse proxy server\n  ssh.service                loaded active running OpenBSD Secure Shell server\n  systemd-journald.service   loaded active running Journal Service\n  systemd-logind.service     loaded active running User Login Management\n  systemd-networkd.service   loaded active running Network Configuration\n  systemd-timesyncd.service  loaded active running Network Time Synchronization\n  systemd-udevd.service      loaded active running Rule-based Manager for Device Events and Files\n\nLOAD   = Reflects whether the unit definition was properly loaded.\nACTIVE = The high-level unit activation state, i.e. generalization of SUB.\nSUB    = The low-level unit activation state, values depend on unit type.\n11 loaded units listed.", "sudo systemctl disable --now avahi-daemon": "Synchronizing state of avahi-daemon.service with SysV service script with /lib/systemd/systemd-sysv-install.\nExecuting: /lib/systemd/systemd-sysv-install disable avahi-daemon\nRemoved \"/etc/systemd/system/multi-user.target.wants/avahi-daemon.service\".\nRemoved \"/etc/systemd/system/sockets.target.wants/avahi-daemon.socket\".\nRemoved \"/etc/systemd/system/dbus-org.freedesktop.Avahi.service\".\nWarning: Stopping avahi-daemon.service, but it can still be activated by:\n  avahi-daemon.socket", "sudo systemctl mask avahi-daemon.service avahi-daemon.socket": "Created symlink /etc/systemd/system/avahi-daemon.service → /dev/null.\nCreated symlink /etc/systemd/system/avahi-daemon.socket → /dev/null.", "systemctl is-enabled avahi-daemon": "masked", "systemctl --failed": "  UNIT LOAD ACTIVE SUB DESCRIPTION\n0 loaded units listed.", "sudo ss -ltnp": "State  Recv-Q Send-Q Local Address:Port Peer Address:Port Process\nLISTEN 0      511          0.0.0.0:80        0.0.0.0:*     users:((\"nginx\",pid=2313,fd=6))\nLISTEN 0      128          0.0.0.0:22        0.0.0.0:*     users:((\"sshd\",pid=611,fd=3))"}} />
+
+L'avertissement de l'étape 5 est précieux : désactivé, le service pouvait encore être réveillé par sa socket, à la première requête de découverte reçue sur le réseau. Le masque ferme cette porte aussi.
+
+Ensuite, le pilotage à l'ancienne, sur le vrai Linux des exercices, qui n'a pas systemd. Le démon de journalisation `syslogd` y a son script dans `/etc/init.d/`, mais rien ne l'a lancé au démarrage :
+
+1. lis le script : `cat /etc/init.d/S01syslogd`. Retrouve le `case` final et les actions qu'il accepte ;
+2. démarre le service : `/etc/init.d/S01syslogd start`, puis vérifie qu'il tourne : `ps | grep syslogd` ;
+3. envoie-lui un message avec `logger -t essai "service démarré à la main"`, et garde la preuve qu'il l'a reçu : `grep essai /var/log/messages > preuve.txt` ;
+4. essaie `/etc/init.d/S01syslogd status` : ce vieux script ne connaît pas cette action. Arrête enfin le service : `/etc/init.d/S01syslogd stop`.
+
+<LinuxTerminal title="Un service à l'ancienne" expectedCommands={["cat /etc/init.d/S01syslogd", "/etc/init.d/S01syslogd start", "ps | grep syslogd", "grep essai /var/log/messages > preuve.txt", "/etc/init.d/S01syslogd status", "/etc/init.d/S01syslogd stop"]} checks={[{"label": "preuve.txt montre le message reçu par syslogd", "path": "preuve.txt", "expect": "file", "contains": "service démarré à la main"}]} hints={["Le case en bas du script accepte start, stop, restart et reload.", "logger envoie un message au démon de journalisation, qui l'écrit dans /var/log/messages.", "Si preuve.txt est vide, vérifie que syslogd tourne avant d'appeler logger.", "status n'existe pas dans ce script : il répond par son usage."]} />
+
+Là où `systemctl status` montre l'état, le PID, les processus et les derniers messages, le script se contente de lancer et d'arrêter, en notant un PID dans `/var/run/syslogd.pid` (relis la fonction `start`). C'est toute la différence entre un gestionnaire de services et une collection de scripts.
+
+## les pièges
+
+- **`start` sans `enable`.** Le service tourne, jusqu'au prochain redémarrage : `enable --now`.
+- **`restart` d'un service distant avec une configuration non testée.** `sshd -t` ou `nginx -t` d'abord, sinon l'accès peut être perdu.
+- **`restart` quand `reload` suffit.** Les connexions en cours sont coupées pour rien.
+- **Désactiver un service sans sa socket.** Il redémarre à la première connexion : désactive ou masque les deux.
+- **Croire que `disable` interdit.** Il empêche seulement le démarrage au boot : `mask` interdit.
+- **Laisser tourner les services installés par défaut.** Chaque service inutile est une surface d'attaque : `list-unit-files --state=enabled` et `ss -ltnp` pour l'audit.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemctl.html" description="Toutes les sous-commandes de systemctl, en anglais">systemctl(1)</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le guide de durcissement de l'ANSSI, dont la réduction des services actifs, en français">ANSSI : recommandations de sécurité pour un système GNU/Linux</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/systemd" description="systemd sur Debian, avec les correspondances des anciennes commandes, en anglais">Debian : systemd</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande fait démarrer nginx au prochain boot, sans le lancer maintenant ?" options={["systemctl start nginx", "systemctl enable nginx", "systemctl reload nginx", "systemctl status nginx"]} correct={1} explanation="enable agit sur le démarrage, start sur l'instant ; enable --now fait les deux." />
+  <Quiz id="q-2" question="Quelle est la différence entre reload et restart ?" options={["Aucune", "reload relit la configuration sans arrêter le service ; restart l'arrête puis le relance", "restart est réservé à root", "reload redémarre la machine"]} correct={1} explanation="reload évite de couper les connexions en cours, quand le service le permet." />
+  <Quiz id="q-3" question="Dans systemctl status, que signifie Loaded: loaded (...; disabled; preset: enabled) ?" options={["Le service tourne", "Le service ne démarrera pas au boot, alors que la distribution le recommanderait", "Le service est masqué", "Le service a échoué"]} correct={1} explanation="Loaded parle du démarrage au boot ; c'est la ligne Active qui dit si le service tourne." />
+  <Quiz id="q-4" question="Quelle commande liste les services qui ont échoué ?" options={["systemctl list-timers", "systemctl --failed", "systemctl is-enabled", "systemctl mask"]} correct={1} explanation="C'est la première commande à taper sur un serveur inconnu ou après un redémarrage." />
+  <Quiz id="q-5" question="Qu'apporte mask par rapport à disable ?" options={["Rien", "Le service devient impossible à démarrer, même à la main ou par une dépendance", "Il supprime le paquet", "Il arrête le service maintenant"]} correct={1} explanation="mask remplace l'unité par un lien vers /dev/null, jusqu'à un unmask." />
+  <Quiz id="q-6" question="Un service désactivé redémarre à la première connexion réseau. Pourquoi ?" options={["C'est un bug", "Une unité .socket écoute le port et démarre le service à la demande", "Le preset l'impose", "cron le relance"]} correct={1} explanation="Il faut désactiver ou masquer aussi la socket." />
+  <Quiz id="q-7" question="Pourquoi tester la configuration avec sshd -t avant de redémarrer sshd sur un serveur distant ?" options={["Pour aller plus vite", "Parce qu'une configuration cassée empêche sshd de redémarrer, et peut couper l'accès au serveur", "Parce que systemctl l'exige", "Ce n'est pas utile"]} correct={1} explanation="Tester d'abord, et garder une session ouverte pendant le changement." />
+</QuizGroup>
+
+## à retenir
+
+- **`systemctl start`, `stop`, `restart`, `reload`** pour l'instant présent ; **`enable`**, **`disable`** pour le démarrage ; **`--now`** pour les deux.
+- **`is-active`** et **`is-enabled`** répondent par un mot ; **`status`** montre l'état, le PID, les processus du groupe de contrôle et les derniers messages.
+- On **teste la configuration** (`nginx -t`, `sshd -t`) avant un `reload` ou un `restart`, et on préfère `reload` quand il suffit.
+- **`systemctl --failed`** en arrivant sur un serveur ; **`list-unit-files --state=enabled`** et **`ss -ltnp`** pour l'audit.
+- **`mask`** interdit un service, socket comprise ; `disable` ne fait que l'écarter du démarrage.
+- Les scripts **`/etc/init.d`** et la commande **`service`** sont l'héritage de SysV init.
