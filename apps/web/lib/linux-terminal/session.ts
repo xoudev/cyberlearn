@@ -65,20 +65,32 @@ export function setupCommand(paths: readonly string[], cols: number, rows: numbe
  * The root filesystem is capped at half the machine's memory, about 16 MB,
  * and the image already fills all but 1.7 MB of it: the cap is raised first,
  * or the copy stops halfway. A copy that fails anyway leaves no /bin/bash
- * rather than a truncated one. ~/.bashrc gives an interactive bash a prompt
- * that ends like ash's, which is what the page waits for before looking at
- * the learner's work.
+ * rather than a truncated one.
+ *
+ * The image has no terminal database either, and without one bash's line
+ * editor treats the screen as a dumb terminal and scrolls long lines
+ * sideways: Debian's compiled entry for the machine's TERM, linux, is served
+ * too and copied into /lib/terminfo. ~/.bashrc gives an interactive bash a
+ * prompt that ends like ash's, which is what the page waits for before
+ * looking at the learner's work, and turns bracketed paste off, so a pasted
+ * command reaches the page as plain keys, as it does under ash.
  */
 export const BASH_FILE = ".bash";
+export const TERMINFO_FILE = ".terminfo";
 
-export function installBashCommand(): string {
-  const served = `${LESSON_DIR}/${BASH_FILE}`;
-  return [
+export function installBashCommand(withTerminfo: boolean): string {
+  const bash = `${LESSON_DIR}/${BASH_FILE}`;
+  const terminfo = `${LESSON_DIR}/${TERMINFO_FILE}`;
+  const steps = [
     "mount -o remount,size=24m /",
-    `cp ${served} /bin/bash && chmod 755 /bin/bash || rm -f /bin/bash`,
-    `rm -f ${served}`,
-    `printf '%s\\n' "PS1='bash \\W% '" > /root/.bashrc`,
-  ].join("; ");
+    `cp ${bash} /bin/bash && chmod 755 /bin/bash || rm -f /bin/bash`,
+  ];
+  if (withTerminfo) steps.push(`mkdir -p /lib/terminfo/l && cp ${terminfo} /lib/terminfo/l/linux`);
+  steps.push(
+    `rm -f ${bash} ${terminfo}`,
+    `printf '%s\\n' "PS1='bash \\W% '" "bind 'set enable-bracketed-paste off'" > /root/.bashrc`,
+  );
+  return steps.join("; ");
 }
 
 /** The shell's prompt ends every command: "~% ", "/mnt% ", "bash mnt% ". */

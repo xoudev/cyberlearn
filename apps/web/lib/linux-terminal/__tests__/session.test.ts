@@ -71,17 +71,25 @@ describe("setupCommand", () => {
 });
 
 describe("installBashCommand", () => {
-  it("makes room on /, moves the served bash to /bin and leaves nothing behind in /mnt", () => {
-    expect(installBashCommand()).toBe(
+  it("makes room on /, installs bash and its terminal, and leaves nothing behind in /mnt", () => {
+    expect(installBashCommand(true)).toBe(
       "mount -o remount,size=24m /; " +
         "cp /mnt/.bash /bin/bash && chmod 755 /bin/bash || rm -f /bin/bash; " +
-        "rm -f /mnt/.bash; " +
-        `printf '%s\\n' "PS1='bash \\W% '" > /root/.bashrc`,
+        "mkdir -p /lib/terminfo/l && cp /mnt/.terminfo /lib/terminfo/l/linux; " +
+        "rm -f /mnt/.bash /mnt/.terminfo; " +
+        `printf '%s\\n' "PS1='bash \\W% '" "bind 'set enable-bracketed-paste off'" > /root/.bashrc`,
     );
   });
 
-  it("gives bash a prompt the page recognises", () => {
-    expect(installBashCommand()).toContain("PS1='bash \\W% '");
+  it("still installs bash when the terminal description did not come", () => {
+    const line = installBashCommand(false);
+    expect(line).toContain("cp /mnt/.bash /bin/bash");
+    expect(line).not.toContain("/lib/terminfo");
+  });
+
+  it("gives bash a prompt the page recognises, and plain pasting", () => {
+    expect(installBashCommand(true)).toContain("PS1='bash \\W% '");
+    expect(installBashCommand(true)).toContain("enable-bracketed-paste off");
     expect(endsWithPrompt("bash mnt% ")).toBe(true);
   });
 });

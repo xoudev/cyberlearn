@@ -107,9 +107,11 @@ our servers; these files are only downloaded, on the learner's first click on
 | `vgabios.bin` | same commit | 36 352 B | `a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880` |
 | `buildroot-bzimage68.bin` | https://i.copy.sh/buildroot-bzimage68.bin | 10 068 480 B | `507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c` |
 | `bash` | Debian 12 `bash-static_5.2.15-2+b13_i386.deb`, `bin/bash-static` | 2 605 584 B | `eb5062d5e2fa6437dc7e7b5623879c3cdec34499c68d445ad6c9295390e93898` |
+| `terminfo-linux` | Debian 12 `ncurses-base_6.4-4_all.deb`, `lib/terminfo/l/linux` | 1 740 B | `b70a4941416eb703a01b5a06fd1c914880452302b0e0b2a7dea12600607824a7` |
 
 **npm tarball SHA-256**: `1384ad8bbe80aa4f6cd43f43bd16ddbd7495931df833f038a27fcdc8b9a31351`
 **bash-static package SHA-256** (as published by Debian): `e69f3c2b832f1d1c58534dd1a4dc816f880d6f781cf05d138d36745a5a84128c`
+**ncurses-base package SHA-256** (as published by Debian): `bfd1d89f833c09a28b062ee916495cf69649ca2bf529532476c7b69d75d24909`
 **Total**: ~15.3 MB
 
 The image is a Linux 6.8.12 kernel (i686) with an embedded Buildroot 2024.05.2
@@ -125,8 +127,14 @@ puts it in `/bin/bash`, so `#!/bin/bash` scripts run:
 - the root filesystem is capped at half the memory, about 16 MB, and the
   image fills all but 1.7 MB of it: the line raises the cap to 24 MB first;
 - a copy that fails leaves no `/bin/bash` rather than a truncated one;
+- the image has no terminal database, and without one bash's line editor
+  treats the screen as a dumb terminal and scrolls long lines sideways:
+  `terminfo-linux`, Debian's compiled entry for the machine's `TERM`,
+  goes to `/lib/terminfo/l/linux`;
 - `/root/.bashrc` sets bash's prompt to `bash mnt% `: it ends in `% ` like
-  ash's, which the page waits for before checking the learner's work.
+  ash's, which the page waits for before checking the learner's work. It
+  also turns bracketed paste off, so a pasted command reaches the page as
+  plain keys, as it does under ash.
 
 The learner's shell stays `ash`; typing `bash` opens a bash, `exit` leaves it.
 
@@ -143,6 +151,8 @@ The learner's shell stays `ash`; typing `bash` opens a bash, `exit` leaves it.
 - `bash`: GPL-3.0-or-later, redistributed unmodified from Debian, with
   Debian's notice as `LICENSE-bash.txt`. Its source is Debian's `bash` source
   package, version 5.2.15-2, on sources.debian.org.
+- `terminfo-linux`: from ncurses, MIT/X11 licence, Debian's notice as
+  `LICENSE-ncurses.txt`.
 
 ### Upgrade procedure
 

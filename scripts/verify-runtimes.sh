@@ -57,6 +57,8 @@ check_file "${V86}/vgabios.bin"              "a4bc0d80cc3ca028c73dafa8fee396b8d0
 check_file "${V86}/buildroot-bzimage68.bin"  "507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c" "v86/buildroot-bzimage68.bin"
 # Debian's static bash (bash-static 5.2.15-2+b13, i386), copied to /bin/bash at boot
 check_file "${V86}/bash"                     "eb5062d5e2fa6437dc7e7b5623879c3cdec34499c68d445ad6c9295390e93898" "v86/bash"
+# Debian's compiled terminfo entry for TERM=linux (ncurses-base 6.4-4), for bash's line editor
+check_file "${V86}/terminfo-linux"           "b70a4941416eb703a01b5a06fd1c914880452302b0e0b2a7dea12600607824a7" "v86/terminfo-linux"
 
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $FAILED -ne 0 ]]; then
