@@ -110,7 +110,6 @@ browser via CheerpX. Voir docs/backlog/terminal-v2-webvm.md.
 | Option A - VPS + Supabase managed | ~8-13€/mois |
 | Option B - VPS + tout self-hosted | ~7-12€/mois |
 
-**Plan recommandé pour CV** : Option B (mode hardcore showcase).
 
 ## Triggers de monétisation (re-évaluer)
 
