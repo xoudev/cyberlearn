@@ -115,3 +115,27 @@ for file in "${!V86_HASHES[@]}"; do
   echo "  ✓ v86/${file}"
 done
 echo "v86 ${V86_VERSION} ready in ${V86_DEST}"
+
+# ── bash for the v86 machine ─────────────────────────────────────────────────
+# The image has BusyBox's ash only. Debian's statically linked bash, from the
+# signed archive, is served next to it and copied to /bin/bash at boot. The
+# package is checked against the hash Debian publishes, the binary against ours.
+# A .deb is an ar archive: ar and tar unpack it without dpkg.
+BASH_DEB="bash-static_5.2.15-2+b13_i386.deb"
+BASH_DEB_SHA="e69f3c2b832f1d1c58534dd1a4dc816f880d6f781cf05d138d36745a5a84128c"
+BASH_SHA="eb5062d5e2fa6437dc7e7b5623879c3cdec34499c68d445ad6c9295390e93898"
+curl -fsSL "https://deb.debian.org/debian/pool/main/b/bash/${BASH_DEB}" -o "${WORK}/${BASH_DEB}"
+if [[ "$(sha256sum "${WORK}/${BASH_DEB}" | cut -d' ' -f1)" != "$BASH_DEB_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - ${BASH_DEB}"
+  exit 1
+fi
+mkdir -p "${WORK}/bash-static"
+(cd "${WORK}" && ar x "${BASH_DEB}" data.tar.xz)
+tar -xJf "${WORK}/data.tar.xz" -C "${WORK}/bash-static" ./bin/bash-static ./usr/share/doc/bash-static/copyright
+cp "${WORK}/bash-static/bin/bash-static" "${V86_DEST}/bash"
+cp "${WORK}/bash-static/usr/share/doc/bash-static/copyright" "${V86_DEST}/LICENSE-bash.txt"
+if [[ "$(sha256sum "${V86_DEST}/bash" | cut -d' ' -f1)" != "$BASH_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - v86/bash"
+  exit 1
+fi
+echo "  ✓ v86/bash (bash 5.2.15, static)"

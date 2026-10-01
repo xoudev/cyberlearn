@@ -55,6 +55,8 @@ check_file "${V86}/v86.wasm"                 "aa0d0e149d6b60063b85de4871e7850563
 check_file "${V86}/seabios.bin"              "73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98" "v86/seabios.bin"
 check_file "${V86}/vgabios.bin"              "a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880" "v86/vgabios.bin"
 check_file "${V86}/buildroot-bzimage68.bin"  "507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c" "v86/buildroot-bzimage68.bin"
+# Debian's static bash (bash-static 5.2.15-2+b13, i386), copied to /bin/bash at boot
+check_file "${V86}/bash"                     "eb5062d5e2fa6437dc7e7b5623879c3cdec34499c68d445ad6c9295390e93898" "v86/bash"
 
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $FAILED -ne 0 ]]; then

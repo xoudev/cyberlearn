@@ -5,9 +5,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import {
+  BASH_FILE,
   checkHolds,
   createLineTracker,
   endsWithPrompt,
+  installBashCommand,
   isLessonFilePath,
   normalizeCommand,
   octalMode,
@@ -24,7 +26,7 @@ import {
  * real system - on a machine that lives in the tab and vanishes with it.
  *
  * Nothing starts until the learner asks: the first start downloads about
- * 12 MB (public/runtimes/v86, verified by scripts/verify-runtimes.sh), which
+ * 15 MB (public/runtimes/v86, verified by scripts/verify-runtimes.sh), which
  * the browser then keeps.
  */
 
@@ -148,6 +150,19 @@ function readV86(): V86Constructor | null {
 }
 
 let runtime: Promise<V86Constructor> | null = null;
+let bash: Promise<Uint8Array | null> | null = null;
+
+/**
+ * The static bash the image lacks, fetched once per page while the machine
+ * boots. Without it the terminal still works, with ash alone: a lesson that
+ * needs bash fails on its own command, not the whole machine.
+ */
+function loadBash(): Promise<Uint8Array | null> {
+  bash ??= fetch(`${RUNTIME}/bash`)
+    .then(async (res) => (res.ok ? new Uint8Array(await res.arrayBuffer()) : null))
+    .catch(() => null);
+  return bash;
+}
 
 /**
  * Loads libv86.js once per page. A script added by the page's own code: the
@@ -274,11 +289,14 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         for (const [path, content] of Object.entries(filesRef.current)) {
           await emulator.create_file(path, encoder.encode(content));
         }
+        const bashBytes = await loadBash();
+        if (bashBytes) await emulator.create_file(BASH_FILE, bashBytes);
         stage = "live";
         setPhase("ready");
         term.focus();
-        // Redraws a clean prompt, now that the screen shows the output.
-        emulator.serial0_send("clear\n");
+        // Installs bash if it came, then redraws a clean prompt, now that the
+        // screen shows the output.
+        emulator.serial0_send(bashBytes ? `${installBashCommand()}; clear\n` : "clear\n");
       };
 
       emulator.add_listener("serial0-output-byte", (byte) => {
@@ -334,6 +352,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const start = useCallback(async (): Promise<void> => {
     if (!containerRef.current || emulatorRef.current) return;
     setPhase("loading");
+    void loadBash();
     try {
       const [V86, { Terminal }, { FitAddon }] = await Promise.all([
         loadV86(),
@@ -530,7 +549,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               <>
                 <p style={{ margin: 0, maxWidth: 520 }}>
                   Un vrai Linux tourne ici, dans ton navigateur : toutes les commandes marchent, et
-                  rien ne sort de cet onglet. Le premier démarrage télécharge environ 12 Mo.
+                  rien ne sort de cet onglet. Le premier démarrage télécharge environ 15 Mo.
                 </p>
                 <button
                   type="button"

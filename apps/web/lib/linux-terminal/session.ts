@@ -56,7 +56,32 @@ export function setupCommand(paths: readonly string[], cols: number, rows: numbe
   return `${steps.join("; ")}\n`;
 }
 
-/** The shell's prompt ends every command: "~% ", "/mnt% ". */
+/**
+ * The image has BusyBox's ash, not bash. A static bash is served next to it
+ * and written into /mnt under this name once the shell is up; the line below
+ * moves it to /bin, so #!/bin/bash scripts run and the lesson directory
+ * shows only the lesson's files.
+ *
+ * The root filesystem is capped at half the machine's memory, about 16 MB,
+ * and the image already fills all but 1.7 MB of it: the cap is raised first,
+ * or the copy stops halfway. A copy that fails anyway leaves no /bin/bash
+ * rather than a truncated one. ~/.bashrc gives an interactive bash a prompt
+ * that ends like ash's, which is what the page waits for before looking at
+ * the learner's work.
+ */
+export const BASH_FILE = ".bash";
+
+export function installBashCommand(): string {
+  const served = `${LESSON_DIR}/${BASH_FILE}`;
+  return [
+    "mount -o remount,size=24m /",
+    `cp ${served} /bin/bash && chmod 755 /bin/bash || rm -f /bin/bash`,
+    `rm -f ${served}`,
+    `printf '%s\\n' "PS1='bash \\W% '" > /root/.bashrc`,
+  ].join("; ");
+}
+
+/** The shell's prompt ends every command: "~% ", "/mnt% ", "bash mnt% ". */
 export function endsWithPrompt(text: string): boolean {
   return text.endsWith("% ");
 }

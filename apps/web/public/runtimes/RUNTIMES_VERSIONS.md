@@ -106,13 +106,29 @@ our servers; these files are only downloaded, on the learner's first click on
 | `seabios.bin` | github.com/copy/v86 `bios/`, commit `b8a39b11dd2076870699e6cac053556271b9bfab` | 131 072 B | `73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98` |
 | `vgabios.bin` | same commit | 36 352 B | `a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880` |
 | `buildroot-bzimage68.bin` | https://i.copy.sh/buildroot-bzimage68.bin | 10 068 480 B | `507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c` |
+| `bash` | Debian 12 `bash-static_5.2.15-2+b13_i386.deb`, `bin/bash-static` | 2 605 584 B | `eb5062d5e2fa6437dc7e7b5623879c3cdec34499c68d445ad6c9295390e93898` |
 
 **npm tarball SHA-256**: `1384ad8bbe80aa4f6cd43f43bd16ddbd7495931df833f038a27fcdc8b9a31351`
-**Total**: ~12.7 MB
+**bash-static package SHA-256** (as published by Debian): `e69f3c2b832f1d1c58534dd1a4dc816f880d6f781cf05d138d36745a5a84128c`
+**Total**: ~15.3 MB
 
 The image is a Linux 6.8.12 kernel (i686) with an embedded Buildroot 2024.05.2
 root filesystem: BusyBox, a root shell on the serial console, no network. It
 boots to a `~%` prompt in a few seconds.
+
+The image has BusyBox's `ash` and no bash. `bash` is Debian's statically
+linked bash 5.2.15 for i386, taken from the `bash-static` package of the
+signed Debian archive. The page writes it into the machine once the shell is
+up, and one line (`installBashCommand`, `lib/linux-terminal/session.ts`)
+puts it in `/bin/bash`, so `#!/bin/bash` scripts run:
+
+- the root filesystem is capped at half the memory, about 16 MB, and the
+  image fills all but 1.7 MB of it: the line raises the cap to 24 MB first;
+- a copy that fails leaves no `/bin/bash` rather than a truncated one;
+- `/root/.bashrc` sets bash's prompt to `bash mnt% `: it ends in `% ` like
+  ash's, which the page waits for before checking the learner's work.
+
+The learner's shell stays `ash`; typing `bash` opens a bash, `exit` leaves it.
 
 ### Licences
 
@@ -124,6 +140,9 @@ boots to a `~%` prompt in a few seconds.
   and Buildroot 2024.05.2 (buildroot.org), with the configuration published in
   the v86 repository. A written source offer must accompany the image if it
   is ever distributed in any other form than this public repository.
+- `bash`: GPL-3.0-or-later, redistributed unmodified from Debian, with
+  Debian's notice as `LICENSE-bash.txt`. Its source is Debian's `bash` source
+  package, version 5.2.15-2, on sources.debian.org.
 
 ### Upgrade procedure
 

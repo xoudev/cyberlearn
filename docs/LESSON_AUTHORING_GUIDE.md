@@ -577,7 +577,7 @@ tourne sur nos serveurs.
 À savoir en écrivant :
 
 - La machine ne démarre qu'au clic sur **Démarrer la machine** : le premier
-  démarrage télécharge environ 12 Mo, gardés ensuite par le navigateur.
+  démarrage télécharge environ 15 Mo, gardés ensuite par le navigateur.
   Quelques secondes de démarrage.
 - L'élève est **root** et il n'y a **pas de réseau**. Les commandes sont celles
   de BusyBox (`ls`, `chmod`, `chown`, `adduser`, `su`, `grep`, `sed`, `awk`,
@@ -589,8 +589,19 @@ tourne sur nos serveurs.
   (utiliser `id -Gn`), `tac`, `column` et `tar -z` (archives non compressées,
   puis `gzip`). Sont là : `tree`, `xxd`, `od`, `readlink`, `lsattr`, `umask`,
   `ulimit`, `touch -d`, `adduser`, `addgroup`, `passwd`, `chgrp`. Un exercice
-  qui repose sur une fonction propre à bash reste en `SimulatedTerminal`, ou
-  dit clairement ce qui diffère.
+  qui repose sur une fonction propre à bash la fait passer par `bash`
+  (ci-dessous), ou dit clairement ce qui diffère.
+- **bash** est là aussi, en `/bin/bash` (bash 5.2 de Debian, statique) : un
+  script `#!/bin/bash` s'exécute avec `./script.sh` ou `bash script.sh`, et
+  `bash` ouvre un vrai shell bash, avec tableaux, `[[ ]]`, accolades,
+  `mapfile` et `set -o pipefail`, à l'invite `bash mnt% ` ; `exit` ramène à
+  `ash`. Le shell de l'élève au démarrage reste `ash` : pour les leçons sur
+  bash, fais-lui taper `bash` d'abord, ou lancer les scripts avec lui. Les
+  `checks` marchent dans les deux shells.
+- **Ctrl+C**, **Ctrl+Z**, `fg` et `bg` fonctionnent : le shell a un vrai
+  terminal de contrôle (`/dev/ttyS0`). Seule exception, BusyBox exécute des
+  commandes simples comme `sleep` dans le shell lui-même : Ctrl+C les
+  interrompt, Ctrl+Z ne peut pas les suspendre (`/bin/sleep` se suspend).
 - Les fichiers de la leçon sont créés en `rw-rw-rw-` : un exercice de
   permissions commence donc par les régler, ou vérifie le résultat avec `mode`.
 - Exemple de `checks` : `checks={[{ "label": "Le rapport est dans docs", "path": "docs/rapport.txt", "expect": "file", "contains": "Bilan" }, { "label": "Le brouillon est supprimé", "path": "brouillon.tmp", "expect": "absent" }]}`. L'exercice est complété quand toutes les commandes demandées ont été tapées et toutes les vérifications tiennent.
