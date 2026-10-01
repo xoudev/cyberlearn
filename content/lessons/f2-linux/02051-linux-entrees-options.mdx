@@ -1,0 +1,244 @@
+---
+refCode: CL-LSN-02051-V01
+slug: linux-entrees-options
+title: "Entrées de l'utilisateur et options : read et getopts"
+description: "Faire dialoguer un script avec la personne qui le lance : poser une question avec read (réponse par défaut, saisie masquée, délai), demander une confirmation avant une action destructrice, savoir si un terminal est là pour répondre, puis accepter des options comme une vraie commande avec getopts (OPTARG, OPTIND, shift, erreurs), afficher une aide, valider les valeurs reçues et respecter les conventions -h, --, codes de retour. Avec un script de rotation de journaux à piloter, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02050-V01"]
+---
+
+Jusqu'ici, tes scripts recevaient leurs données par leurs arguments, dans un ordre fixe. C'est vite limitant : comment dire « garde trois fichiers au lieu de sept », « montre-moi ce que tu ferais sans le faire », ou « ne me demande pas confirmation » ? Les commandes que tu utilises tous les jours répondent avec des **options** : `ls -l`, `tar -cf`, `rm -i`. Cette leçon donne les mêmes manières à tes scripts. Elle montre aussi comment **poser une question** à l'utilisateur, et surtout quand ne pas le faire.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire une saisie avec `read`, avec une invite, une valeur par défaut, une saisie masquée ou un délai ;
+- demander une confirmation avant une action destructrice ;
+- savoir si un terminal est là pour répondre, avec `[[ -t 0 ]]` ;
+- accepter des options courtes avec `getopts`, avec ou sans valeur ;
+- écrire une aide `-h`, valider les valeurs reçues et rendre le code 2 en cas de mauvaise utilisation.
+
+## pourquoi ça compte
+
+Un script d'administration est souvent destructeur : il supprime, écrase, redémarre. Les options lui donnent des **garde-fous** que tout le monde connaît : une simulation pour voir avant d'agir, une confirmation, une aide qui dit ce qu'il fait. Elles le rendent aussi **automatisable** : une tâche planifiée ne peut pas répondre à une question, il lui faut une option qui y réponde d'avance. Enfin, tout ce qu'un script lit de l'extérieur, saisie ou option, est une **entrée non fiable** : un nombre qui n'en est pas un, un chemin vide, un nom qui commence par un tiret. Valider ces entrées, c'est la première ligne de défense d'un script.
+
+## read : poser une question
+
+```bash
+read -r -p "Nom du compte à créer : " compte
+echo "Création de $compte..."
+```
+
+`read` lit une ligne sur l'entrée standard et la range dans la variable. `-p` affiche une invite, `-r` garde les barres obliques inverses telles quelles, comme dans les boucles de lecture. Les autres options utiles :
+
+| Option | Effet |
+| --- | --- |
+| `-s` | saisie **masquée**, pour un mot de passe : rien ne s'affiche |
+| `-t 10` | abandon après 10 secondes sans réponse : `read` échoue |
+| `-n 1` | lit un seul caractère, sans attendre Entrée |
+| `-a liste` | range les mots de la ligne dans un tableau |
+
+Une **valeur par défaut** se donne avec un développement vu à la leçon sur les variables :
+
+```bash
+read -r -p "Dossier de destination [/srv/sauvegardes] : " dest
+dest=${dest:-/srv/sauvegardes}
+```
+
+Et une réponse s'**accepte seulement si elle est valide**, en reposant la question au besoin :
+
+```bash
+until [[ $port =~ ^[0-9]+$ ]] && (( port >= 1 && port <= 65535 )); do
+  read -r -p "Port d'écoute (1 à 65535) : " port
+done
+```
+
+Pour un secret, `read -s` évite l'affichage, mais ne règle pas tout. La valeur reste dans une variable du script, visible dans une trace `bash -x`. Et transmise en argument à une commande, elle apparaîtrait dans la liste des processus, que tout utilisateur de la machine peut lire avec `ps`. Un secret se passe donc par l'entrée standard ou par un fichier aux droits restreints, jamais en argument : `mysql --defaults-extra-file=/root/.my.cnf` plutôt que `mysql -p"$motdepasse"`.
+
+## demander confirmation
+
+Avant une suppression, une question où la réponse prudente est la valeur par défaut :
+
+```bash
+read -r -p "Supprimer 42 fichiers ? [o/N] " reponse
+case "$reponse" in
+  [oO]*) ;;                      # o, O, oui, Oui : on continue
+  *) echo "Annulé."; exit 1 ;;   # tout le reste, y compris Entrée seule
+esac
+```
+
+Le `N` majuscule de `[o/N]` est une convention : il indique la réponse par défaut, ici **non**. Une simple pression sur Entrée annule. Pour une action vraiment grave, on demande de **retaper un nom** plutôt qu'un simple « o », comme le fait GitHub pour supprimer un dépôt : `read -r -p "Tape le nom du serveur pour confirmer : " nom`.
+
+## un terminal est-il là ?
+
+Un script lancé par une tâche planifiée, ou dont l'entrée vient d'un tube, n'a personne pour répondre. Un `read` y lit une ligne vide, ou la fin du fichier, et la confirmation échoue au mieux, ou au pire lit une donnée qui ne lui était pas destinée. Le test **`-t 0`** dit si l'entrée standard est un terminal :
+
+```bash
+if [[ ! -t 0 ]]; then
+  echo "Pas de terminal pour confirmer : relance avec -y." >&2
+  exit 2
+fi
+```
+
+La règle qui en découle : **toute question doit pouvoir être évitée par une option**. Un script interactif seulement ne s'automatise pas.
+
+## getopts : des options comme une vraie commande
+
+`getopts`, une commande intégrée de bash, lit les options une par une. On l'appelle dans une boucle :
+
+```bash
+garder=7
+simulation=non
+while getopts ":n:sh" opt; do
+  case "$opt" in
+    n)  garder=$OPTARG ;;
+    s)  simulation=oui ;;
+    h)  usage; exit 0 ;;
+    :)  echo "L'option -$OPTARG attend une valeur." >&2; exit 2 ;;
+    \?) echo "Option inconnue : -$OPTARG" >&2; exit 2 ;;
+  esac
+done
+shift $(( OPTIND - 1 ))
+```
+
+Tout se joue dans la chaîne **`":n:sh"`** :
+
+- chaque lettre est une option acceptée : `-n`, `-s`, `-h` ;
+- une lettre suivie de **`:`** attend une **valeur**, que `getopts` range dans **`OPTARG`** : `-n 3` donne `OPTARG=3` ;
+- le **`:`** en tête rend `getopts` silencieux : c'est le script qui gère les erreurs, avec le cas `:` (valeur manquante) et le cas `?` (option inconnue), écrit `\?` dans le `case` pour qu'il ne soit pas pris pour un joker.
+
+`getopts` accepte toutes les écritures habituelles : `-s -n 3`, `-sn 3`, `-n3`. Il s'arrête au premier argument qui n'est pas une option, ou à `--`. Après la boucle, **`OPTIND`** contient le numéro du premier argument restant, et **`shift $(( OPTIND - 1 ))`** retire les options déjà lues : `$1` redevient le premier argument « ordinaire », comme un nom de dossier.
+
+`getopts` ne connaît que les options **courtes**, d'une lettre. Pour des options longues comme `--aide` ou `--garder=3`, on lit les arguments soi-même, comme le montre la section suivante, ou on utilise la commande `getopt` de util-linux, plus complète mais propre à Linux.
+
+## les options longues, à la main
+
+Les commandes GNU acceptent aussi des options longues, plus lisibles dans un script ou une crontab : `--garder 3`, `--simulation`, `--aide`. `getopts` ne les connaît pas, mais une boucle sur les arguments suffit :
+
+```bash
+while (( $# > 0 )); do
+  case "$1" in
+    -n|--garder)     garder=${2:?"$1 attend une valeur"}; shift ;;
+    --garder=*)      garder=${1#*=} ;;
+    -s|--simulation) simulation=oui ;;
+    -h|--aide)       usage; exit 0 ;;
+    --)              shift; break ;;
+    -*)              echo "Option inconnue : $1" >&2; exit 2 ;;
+    *)               break ;;
+  esac
+  shift
+done
+```
+
+La boucle regarde le premier argument, le traite, puis `shift` le retire. Une option qui attend une valeur la prend dans `$2`, et fait un `shift` de plus pour la consommer. La forme `--garder=3` se découpe avec `${1#*=}`, qui retire tout jusqu'au signe égal. `--` arrête la lecture des options, et le premier argument qui ne commence pas par un tiret aussi : ce qui reste dans `"$@"` est la liste des arguments ordinaires. Ce style est plus long que `getopts`, mais il gère à la fois les formes courtes et longues. Il ne sait pas, en revanche, regrouper des options courtes : `-sn 3` n'y est pas compris.
+
+## les réglages par l'environnement
+
+Une troisième source de réglages complète les options : l'**environnement**. Une tâche planifiée ou un conteneur fixe volontiers ses réglages par des variables plutôt que par des options :
+
+```bash
+garder=${SAUVEGARDE_GARDER:-7}
+destination=${SAUVEGARDE_DEST:-/srv/sauvegardes}
+```
+
+La valeur par défaut s'applique si la variable est absente ou vide. L'usage veut que l'**option l'emporte** sur l'environnement, qui l'emporte lui-même sur la valeur par défaut : on lit donc l'environnement d'abord, puis les options, qui écrasent ce qui précède. Documente ces variables dans l'aide, au même titre que les options, et donne-leur un préfixe propre au script, pour ne pas reprendre par accident une variable qui existe déjà. Une variable d'environnement n'est jamais plus fiable qu'une option : elle se **valide** de la même façon.
+
+## lire un fichier ou l'entrée standard
+
+Beaucoup de commandes lisent le fichier qu'on leur donne, ou leur entrée standard si on ne leur en donne pas : `grep motif fichier` comme `commande | grep motif`. Un script obtient le même comportement en une ligne :
+
+```bash
+while IFS= read -r ligne; do
+  traiter "$ligne"
+done < "${1:-/dev/stdin}"
+```
+
+Sans argument, `${1:-/dev/stdin}` vaut `/dev/stdin`, c'est-à-dire l'entrée standard : le script s'utilise aussi bien avec un fichier qu'au bout d'un tube. Par convention, un argument réduit à un tiret, `-`, désigne lui aussi l'entrée standard.
+
+## l'aide, la validation et les conventions
+
+Un script qui a des options doit dire lesquelles. Une fonction `usage` avec un here-document fait l'affaire :
+
+```bash
+usage() {
+  cat << FIN
+Usage : $(basename "$0") [-n NOMBRE] [-s] [-h] DOSSIER
+  -n NOMBRE  nombre de fichiers à garder (défaut : 7)
+  -s         simulation : affiche sans rien supprimer
+  -h         affiche cette aide
+FIN
+}
+```
+
+Les conventions que tes utilisateurs attendent, parce que toutes les commandes les suivent :
+
+- **`-h`** affiche l'aide et rend 0 ;
+- une **mauvaise utilisation** (option inconnue, valeur manquante, argument absent) affiche l'aide sur `>&2` et rend **2** ;
+- **`--`** marque la fin des options : `script.sh -- -fichier-bizarre` ;
+- les valeurs reçues sont **validées** avant usage : `[[ $garder =~ ^[0-9]+$ ]]` pour un nombre, `[[ -d $dossier ]]` pour un dossier.
+
+Une option qui reçoit `-n trois` doit être refusée net, et non transformée en zéro par un calcul qui, plus loin, supprimerait tout.
+
+<Diagram caption="Comment getopts lit bash rotation.sh -s -n 3 journaux">
+flowchart LR
+  A["-s"] -->|"opt = s"| B["simulation = oui"]
+  C["-n 3"] -->|"opt = n, OPTARG = 3"| D["garder = 3"]
+  E["journaux"] -->|"pas une option : fin de la boucle"| F["OPTIND = 4"]
+  F --> G["shift 3 : $1 vaut journaux"]
+</Diagram>
+
+## à toi de jouer
+
+Le dossier `journaux` contient dix journaux quotidiens, du 21 au 30 septembre. Leurs noms portent la date au format `AAAA-MM-JJ` : l'ordre alphabétique est donc l'ordre chronologique. `rotation.sh` garde les plus récents et supprime les autres. Pilote-le uniquement par ses options :
+
+1. lis son aide : `bash rotation.sh -h` ;
+2. simule une rotation qui garde trois journaux : `bash rotation.sh -s -n 3 journaux`. Sept fichiers sont listés, rien n'est supprimé ;
+3. essaie une valeur invalide : `bash rotation.sh -n trois journaux`, puis `echo $?`. Le script refuse, avec le code 2 ;
+4. lance la vraie rotation : `bash rotation.sh -n 3 journaux`. À la question, réponds simplement par Entrée : la réponse par défaut annule ;
+5. relance la même commande, et réponds `o` cette fois. Vérifie avec `ls journaux`.
+
+<LinuxTerminal title="Piloter par les options" height={440} files={{"rotation.sh": "#!/bin/bash\n# rotation.sh : garde les N journaux les plus récents d'un dossier, supprime les autres.\n# Les noms portent la date (app-AAAA-MM-JJ.log) : l'ordre des noms est celui des dates.\n# Codes de retour : 0 succès, 1 annulé, 2 mauvaise utilisation.\nset -euo pipefail\n\nusage() {\n  cat << FIN\nUsage : $(basename \"$0\") [-n NOMBRE] [-s] [-y] [-h] DOSSIER\n  -n NOMBRE  nombre de journaux à garder (défaut : 7)\n  -s         simulation : affiche ce qui serait supprimé, sans rien supprimer\n  -y         ne demande pas de confirmation (pour une tâche planifiée)\n  -h         affiche cette aide\nFIN\n}\n\ngarder=7\nsimulation=non\nconfirmer=oui\nwhile getopts \":n:syh\" opt; do\n  case \"$opt\" in\n    n)  garder=$OPTARG ;;\n    s)  simulation=oui ;;\n    y)  confirmer=non ;;\n    h)  usage; exit 0 ;;\n    :)  echo \"L'option -$OPTARG attend une valeur.\" >&2; usage >&2; exit 2 ;;\n    \\?) echo \"Option inconnue : -$OPTARG\" >&2; usage >&2; exit 2 ;;\n  esac\ndone\nshift $(( OPTIND - 1 ))\n\nif (( $# != 1 )); then\n  usage >&2\n  exit 2\nfi\ndossier=$1\n[[ $garder =~ ^[0-9]+$ ]] || { echo \"-n attend un nombre, pas « $garder ».\" >&2; exit 2; }\n[[ -d $dossier ]] || { echo \"$dossier : dossier introuvable.\" >&2; exit 2; }\n\nmapfile -t a_supprimer < <(printf '%s\\n' \"$dossier\"/app-*.log | sort -r | tail -n +$(( garder + 1 )))\nif (( ${#a_supprimer[@]} == 0 )); then\n  echo \"Rien à supprimer : $dossier contient au plus $garder journaux.\"\n  exit 0\nfi\n\necho \"À supprimer (${#a_supprimer[@]}) :\"\nprintf '  %s\\n' \"${a_supprimer[@]}\"\nif [[ $simulation == oui ]]; then\n  echo \"Simulation : rien n'a été supprimé.\"\n  exit 0\nfi\nif [[ $confirmer == oui ]]; then\n  if [[ ! -t 0 ]]; then\n    echo \"Pas de terminal pour confirmer : relance avec -y.\" >&2\n    exit 2\n  fi\n  read -r -p \"Supprimer ces ${#a_supprimer[@]} fichiers ? [o/N] \" reponse\n  case \"$reponse\" in\n    [oO]*) ;;\n    *) echo \"Annulé.\"; exit 1 ;;\n  esac\nfi\nrm -- \"${a_supprimer[@]}\"\necho \"${#a_supprimer[@]} journaux supprimés, $garder gardés.\"\n", "journaux/app-2026-09-21.log": "Journal du 21 septembre 2026\n", "journaux/app-2026-09-22.log": "Journal du 22 septembre 2026\n", "journaux/app-2026-09-23.log": "Journal du 23 septembre 2026\n", "journaux/app-2026-09-24.log": "Journal du 24 septembre 2026\n", "journaux/app-2026-09-25.log": "Journal du 25 septembre 2026\n", "journaux/app-2026-09-26.log": "Journal du 26 septembre 2026\n", "journaux/app-2026-09-27.log": "Journal du 27 septembre 2026\n", "journaux/app-2026-09-28.log": "Journal du 28 septembre 2026\n", "journaux/app-2026-09-29.log": "Journal du 29 septembre 2026\n", "journaux/app-2026-09-30.log": "Journal du 30 septembre 2026\n"}} expectedCommands={["bash rotation.sh -h", "bash rotation.sh -s -n 3 journaux", "bash rotation.sh -n trois journaux", "bash rotation.sh -n 3 journaux", "ls journaux"]} checks={[{"label": "Le journal du 30 est gardé", "path": "journaux/app-2026-09-30.log", "expect": "file"}, {"label": "Le journal du 28 est gardé", "path": "journaux/app-2026-09-28.log", "expect": "file"}, {"label": "Le journal du 27 est supprimé", "path": "journaux/app-2026-09-27.log", "expect": "absent"}, {"label": "Le journal du 21 est supprimé", "path": "journaux/app-2026-09-21.log", "expect": "absent"}]} hints={["-s simule : la liste s'affiche, mais rien n'est supprimé.", "echo $? juste après donne le code de retour : 2 pour une mauvaise utilisation.", "À la question [o/N], Entrée seule annule : c'est la réponse par défaut.", "Pour supprimer pour de bon, relance bash rotation.sh -n 3 journaux et réponds o."]} />
+
+Lis le script avec `cat rotation.sh` : tu y retrouveras `getopts` et sa chaîne `":n:syh"`, la validation de `-n` par une expression régulière, le test `-t 0`, et la confirmation par `case`. L'option `-y`, que tu n'as pas utilisée, sert aux tâches planifiées : sans terminal, le script refuse de supprimer sans elle.
+
+## les pièges
+
+- **Un script qui pose des questions et rien d'autre.** Il ne s'automatise pas : chaque question doit avoir son option.
+- **Un `read` sans terminal.** Dans une tâche planifiée ou après un tube, il lit du vide ou des données : teste `-t 0`.
+- **Une confirmation dont la valeur par défaut est « oui ».** Une pression distraite sur Entrée supprime tout : `[o/N]`.
+- **Oublier `shift $(( OPTIND - 1 ))`.** `$1` reste la première option au lieu de l'argument attendu.
+- **Ne pas valider une valeur.** `-n trois` devient 0 dans un calcul, et le script supprime tout.
+- **Écrire `?)` au lieu de `\?)` dans le `case`.** Non protégé, `?` est un joker qui attrape toutes les options d'une lettre.
+- **Lire un mot de passe sans `-s`.** Il s'affiche à l'écran, et parfois dans l'historique ou une capture.
+
+## pour aller plus loin
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/035" description="getopts, les options longues et la lecture manuelle des arguments, en anglais">BashFAQ 035 : gérer les options d'un script</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#index-getopts" description="getopts et read parmi les commandes intégrées de bash, en anglais">Manuel de bash : getopts</ExternalLink>
+
+<ExternalLink href="https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap12.html" description="Les conventions POSIX des options en ligne de commande, en anglais">POSIX : Utility Conventions</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle option de read masque la saisie d'un mot de passe ?" options={["-p", "-s", "-r", "-t"]} correct={1} explanation="-s n'affiche pas ce qui est tapé ; -p affiche une invite, -r garde les barres obliques, -t fixe un délai." />
+  <Quiz id="q-2" question="Dans la question Supprimer ? [o/N], que signifie le N majuscule ?" options={["Que non est interdit", "Que non est la réponse par défaut, celle d'une pression sur Entrée", "Que la réponse doit être en majuscule", "Rien de particulier"]} correct={1} explanation="Pour une action destructrice, la réponse par défaut doit être la prudente." />
+  <Quiz id="q-3" question="Que vérifie [[ -t 0 ]] ?" options={["Que le script a zéro argument", "Que l'entrée standard est un terminal, donc qu'une personne peut répondre", "Que le délai est écoulé", "Que le fichier 0 existe"]} correct={1} explanation="Dans une tâche planifiée ou après un tube, il n'y a pas de terminal : une question n'a pas de sens." />
+  <Quiz id="q-4" question="Dans la chaîne :n:sh donnée à getopts, que signifie le : après n ?" options={["Que -n est facultative", "Que -n attend une valeur, rangée dans OPTARG", "Que -n est la dernière option", "Que -n est silencieuse"]} correct={1} explanation="Le : en tête de chaîne, lui, rend getopts silencieux pour que le script gère les erreurs." />
+  <Quiz id="q-5" question="À quoi sert shift $(( OPTIND - 1 )) après la boucle getopts ?" options={["À relire les options", "À retirer les options déjà lues, pour que $1 soit le premier argument ordinaire", "À compter les options", "À afficher l'aide"]} correct={1} explanation="OPTIND indique le premier argument qui n'est pas une option." />
+  <Quiz id="q-6" question="Quel code de retour rend, par convention, un script mal utilisé, par exemple avec une option inconnue ?" options={["0", "2", "1", "127"]} correct={1} explanation="0 pour le succès, 1 pour un échec, 2 pour une mauvaise utilisation : c'est la convention de la plupart des commandes." />
+  <Quiz id="q-7" question="Pourquoi valider qu'une option -n reçoit bien un nombre ?" options={["Pour l'esthétique", "Parce qu'une valeur comme trois deviendrait 0 dans un calcul, avec des effets imprévus, comme tout supprimer", "Parce que getopts l'exige", "Ce n'est pas utile"]} correct={1} explanation="Toute entrée venue de l'extérieur est non fiable : on la refuse net si elle n'a pas la forme attendue." />
+</QuizGroup>
+
+## à retenir
+
+- **`read -r -p "Question : " var`** pour une saisie ; **`-s`** pour un secret, **`-t`** pour un délai, **`${var:-défaut}`** pour une valeur par défaut.
+- Une confirmation **`[o/N]`** lue avec `case`, où Entrée seule annule.
+- **`[[ -t 0 ]]`** : pas de terminal, pas de question. Chaque question a son **option**.
+- **`while getopts ":n:sh" opt; do case ... esac; done`**, puis **`shift $(( OPTIND - 1 ))`** ; `:` après une lettre pour une valeur dans **`OPTARG`**.
+- **`-h`** rend 0, une mauvaise utilisation rend **2** avec l'aide sur `>&2`, et toute valeur reçue est **validée**.

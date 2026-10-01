@@ -1,0 +1,253 @@
+---
+refCode: CL-LSN-02047-V01
+slug: linux-conditions
+title: "Conditions : codes de retour, test et [[ ]]"
+description: "Faire décider un script : le code de retour comme base de toute condition, les enchaînements && et ||, if, elif et else, les tests de fichiers, de chaînes et de nombres avec test et [ ], la forme moderne [[ ]] avec ses motifs et ses expressions régulières, les comparaisons numériques avec (( )), et case pour choisir parmi plusieurs valeurs. Avec un script qui décide mal, et un banc de tests qui le prouve, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02046-V01"]
+---
+
+Un script qui exécute toujours les mêmes commandes, quoi qu'il arrive, est dangereux : il archive un dossier qui n'existe pas, écrase un fichier qu'il aurait dû garder, continue après une erreur. Un vrai script **vérifie avant d'agir** : le fichier est-il là ? Le disque est-il plein ? La commande précédente a-t-elle réussi ? Cette leçon t'apprend à poser ces questions. Tu verras que bash ne les pose pas comme les autres langages : ses conditions ne testent pas des valeurs vraies ou fausses, mais des **commandes qui réussissent ou échouent**.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- utiliser le code de retour d'une commande comme condition, avec `if`, `&&` et `||` ;
+- écrire un `if`, avec `elif` et `else` ;
+- tester un fichier, une chaîne ou un nombre avec `test`, `[ ]` et `[[ ]]` ;
+- comparer des nombres avec `(( ))` ;
+- reconnaître un motif ou une expression régulière avec `[[ ]]` ;
+- choisir parmi plusieurs valeurs avec `case`.
+
+## pourquoi ça compte
+
+Les conditions sont l'endroit où un script se trompe **en silence**. Une condition mal écrite ne provoque pas toujours d'erreur : elle peut simplement être toujours vraie. Le script décide alors d'archiver, de supprimer ou de redémarrer à chaque fois, et personne ne s'en aperçoit avant le jour où ça compte. Tu vas en voir un exemple réel dans l'exercice : un test qui semble comparer deux nombres, qui ne compare rien du tout, et qui fabrique un fichier au passage.
+
+## la condition, c'est un code de retour
+
+En bash, `if` n'évalue pas une expression : il **exécute une commande** et regarde son code de retour. 0, le succès, compte comme vrai ; tout le reste compte comme faux.
+
+```bash
+if grep -q "^alice:" /etc/passwd; then
+  echo "Le compte alice existe."
+fi
+
+if ping -c 1 -W 2 srv-base > /dev/null 2>&1; then
+  echo "srv-base répond."
+else
+  echo "srv-base ne répond pas." >&2
+fi
+```
+
+`grep -q` ne dit rien, il rend seulement 0 s'il trouve, 1 sinon : c'est la forme idéale pour une condition. Toute commande fait l'affaire : `mkdir`, `cp`, `systemctl is-active`, ou un de tes scripts, à condition qu'il rende un code de retour honnête. Le `!` inverse : `if ! mkdir "$dossier"; then ...`.
+
+## && et || : les conditions courtes
+
+Pour une seule action, deux opérateurs suffisent :
+
+```bash
+mkdir -p /srv/sauvegardes && echo "Dossier prêt."      # la suite seulement si ça a réussi
+cd /srv/app || exit 1                                    # la suite seulement si ça a échoué
+[[ -f config.ini ]] || { echo "config.ini manquant" >&2; exit 1; }
+```
+
+`cd dossier || exit 1` est une ligne à connaître par cœur : un `cd` raté suivi d'un `rm` s'exécute dans le **mauvais dossier**. Les accolades regroupent plusieurs commandes ; l'espace après `{` et le `;` avant `}` sont obligatoires.
+
+Méfie-toi de la combinaison `a && b || c`. Elle ressemble à un si-alors-sinon, mais `c` s'exécute aussi quand `b` échoue. Pour un vrai choix entre deux branches, écris un `if`.
+
+## if, elif, else
+
+```bash
+if [[ ! -d "$source" ]]; then
+  echo "$source n'existe pas" >&2
+  exit 2
+elif [[ ! -r "$source" ]]; then
+  echo "$source n'est pas lisible" >&2
+  exit 2
+else
+  echo "Sauvegarde de $source..."
+fi
+```
+
+`then` peut aller à la ligne suivante, ou sur la même ligne après un `;`. Chaque `if` se ferme par `fi`.
+
+## test, [ ] et [[ ]]
+
+La commande qui teste des fichiers, des chaînes et des nombres s'appelle **`test`**. Elle a un autre nom, **`[`**, qui exige un `]` final : `[ -f config.ini ]` est la commande `[`, avec trois arguments. D'où une règle absolue : **des espaces autour des crochets**, puisque ce sont des mots de la commande. `[-f config.ini]` cherche une commande nommée `[-f`.
+
+Bash ajoute **`[[ ]]`**, un mot-clé du shell plus sûr et plus riche. Dans un script bash, préfère-le : à l'intérieur, pas de découpage en mots ni de jokers sur les variables, `&&` et `||` s'écrivent directement, et `<` ou `>` comparent sans créer de fichier. `[ ]` reste nécessaire dans un script `#!/bin/sh`.
+
+Les tests de **fichiers** :
+
+| Test | Vrai si |
+| --- | --- |
+| `-e f` | `f` existe, quel que soit son type |
+| `-f f` | `f` est un fichier ordinaire |
+| `-d f` | `f` est un dossier |
+| `-L f` | `f` est un lien symbolique |
+| `-s f` | `f` existe et n'est pas vide |
+| `-r f`, `-w f`, `-x f` | tu as le droit de lire, d'écrire, d'exécuter `f` |
+| `a -nt b` | `a` est plus récent que `b` |
+
+Les tests de **chaînes** :
+
+| Test | Vrai si |
+| --- | --- |
+| `-z "$v"` | la chaîne est vide |
+| `-n "$v"` | la chaîne n'est pas vide |
+| `"$a" = "$b"` | les chaînes sont égales (`==` aussi dans `[[ ]]`) |
+| `"$a" != "$b"` | elles sont différentes |
+
+Les tests de **nombres**, avec des lettres et non des symboles : `-eq` (égal), `-ne` (différent), `-lt` (plus petit), `-le` (plus petit ou égal), `-gt` (plus grand), `-ge` (plus grand ou égal). `[[ "$n" -gt 100 ]]`. C'est le piège central de la leçon : dans `[ ]`, `>` n'est pas une comparaison mais une **redirection**. `[ $n > 100 ]` écrit dans un fichier nommé `100`, et le test, réduit à `[ $n ]`, est toujours vrai.
+
+## (( )) pour les nombres
+
+Pour comparer des nombres, `(( ))` est plus lisible : on y écrit les comparaisons comme en mathématiques, sans `$` devant les noms.
+
+```bash
+usage=$(df --output=pcent / | tail -1 | tr -d ' %')
+if (( usage >= 90 )); then
+  echo "ALERTE : / est plein à $usage %"
+elif (( usage >= 80 )); then
+  echo "Attention : / est plein à $usage %"
+fi
+```
+
+`(( ))` rend 0 si le résultat du calcul n'est pas nul, 1 sinon : il s'utilise donc directement dans un `if`. Les opérateurs : `==`, `!=`, `<`, `<=`, `>`, `>=`, et `&&`, `||` pour les combiner.
+
+## motifs et expressions régulières
+
+Dans `[[ ]]`, à droite de `==`, un texte **sans guillemets** est un **motif** de jokers, comme pour les noms de fichiers :
+
+```bash
+[[ $fichier == *.log ]] && echo "C'est un journal."
+[[ $reponse == [oO]* ]] && echo "Réponse positive."
+```
+
+Et `=~` compare à une **expression régulière** étendue, celle de `grep -E`. Les parties entre parenthèses sont recueillies dans le tableau `BASH_REMATCH` :
+
+```bash
+ligne="2026-10-01 03:12:44 ERREUR disque /dev/sda1 plein"
+if [[ $ligne =~ ^([0-9-]+)\ ([0-9:]+)\ ERREUR ]]; then
+  echo "Erreur le ${BASH_REMATCH[1]} à ${BASH_REMATCH[2]}"
+fi
+```
+
+Mets l'expression dans une variable si elle contient des espaces ou des caractères spéciaux : `motif='^[0-9]+$'` puis `[[ $n =~ $motif ]]`, **sans guillemets** à droite, sinon elle serait prise comme un texte littéral. C'est la façon idiomatique de vérifier qu'un argument est bien un nombre.
+
+## case : choisir parmi plusieurs valeurs
+
+Quand une même variable est comparée à plusieurs valeurs, `case` remplace une longue chaîne de `elif` :
+
+```bash
+case "$1" in
+  start)          demarrer ;;
+  stop)           arreter ;;
+  restart|reload) arreter; demarrer ;;
+  *.conf)         verifier_configuration "$1" ;;
+  "")             echo "Usage : $0 start|stop|restart" >&2; exit 2 ;;
+  *)              echo "Action inconnue : $1" >&2; exit 2 ;;
+esac
+```
+
+Chaque cas est un motif, comme dans `[[ == ]]`, terminé par `)`. Les actions se terminent par `;;`. `|` sépare plusieurs motifs, et `*` attrape tout le reste : c'est le cas par défaut, à mettre en dernier. Les scripts de démarrage des services, avant systemd, étaient tous construits sur ce modèle.
+
+<Diagram caption="Comment bash choisit une branche">
+flowchart TD
+  A["if commande"] --> B["code de retour ?"]
+  B -->|"0 : succès"| C["bloc then"]
+  B -->|"1 à 255 : échec"| D["un elif ?"]
+  D -->|"oui"| A
+  D -->|"non"| E["bloc else, s'il existe"]
+</Diagram>
+
+## démonstration : un contrôle de santé
+
+Voici comment ces briques s'assemblent dans un vrai script : un contrôle de santé qu'une supervision lance toutes les cinq minutes, et qui répond par son code de retour.
+
+```bash
+#!/bin/bash
+# sante.sh : vérifie le serveur web. Codes : 0 sain, 1 dégradé, 2 en panne.
+etat=0
+
+if ! systemctl is-active --quiet nginx; then
+  echo "PANNE : nginx est arrêté"
+  exit 2
+fi
+
+usage=$(df --output=pcent /var | tail -1 | tr -d ' %')
+if (( usage >= 90 )); then
+  echo "DÉGRADÉ : /var est plein à $usage %"
+  etat=1
+fi
+
+if [[ ! -s /etc/nginx/sites-enabled/site.conf ]]; then
+  echo "DÉGRADÉ : la configuration du site est absente ou vide"
+  etat=1
+fi
+
+(( etat == 0 )) && echo "SAIN"
+exit "$etat"
+```
+
+Chaque vérification est une condition indépendante. La plus grave, un service arrêté, sort immédiatement avec le code 2 : inutile de mesurer le disque d'un serveur en panne. Les défauts moins graves, eux, ne s'arrêtent pas au premier : ils mettent `etat` à 1 et laissent les vérifications suivantes se faire, pour que le message liste **tous** les problèmes d'un coup, au lieu d'en révéler un nouveau à chaque passage. À la fin, le code de retour résume la situation.
+
+C'est exactement le contrat des outils de supervision de la famille de Nagios, dont c'est la convention : 0 pour un état normal, 1 pour un avertissement, 2 pour un état critique, et une ligne de texte qui explique le tout à la personne d'astreinte. Remarque enfin le `exit "$etat"` final. Sans lui, le script rendrait le code de sa dernière commande, ici le `(( ))`, qui vaut 1 quand l'état n'est pas sain. Le résultat serait le même, mais par chance : un script ne doit jamais laisser le hasard choisir son code de retour.
+
+## à toi de jouer
+
+`verifier.sh` dit si un journal doit être archivé : plus de 100 lignes, on archive (code 0), sinon on garde (code 1), et en cas d'erreur, le code 2. Son auteur a aussi écrit `tester.sh`, un **banc de tests** : il prépare des journaux, lance `verifier.sh` sur quatre cas et compare au comportement attendu. Le terminal démarre dans `ash` ; les deux scripts, eux, s'exécutent avec bash.
+
+1. lance les tests : `bash tester.sh`. Deux cas sur quatre échouent, et un fichier nommé `100` est apparu ;
+2. lis `verifier.sh` avec `cat` et trouve les deux conditions fautives : relis la partie sur `test` et `[ ]` ;
+3. corrige-les, avec `vi verifier.sh` ou avec les commandes `sed` des indices. Les formes sûres : `[[ -z "$journal" ]]` pour une chaîne vide, `(( lignes > 100 ))` pour une comparaison de nombres ;
+4. supprime le fichier parasite : `rm 100` ;
+5. relance les tests en gardant leur résultat : `bash tester.sh | tee resultats.txt`.
+
+<LinuxTerminal title="Le script qui décide mal" height={460} files={{"verifier.sh": "#!/bin/bash\n# verifier.sh : dit si un journal doit être archivé.\n# Usage : ./verifier.sh JOURNAL\n# Codes de retour : 0 à archiver, 1 à garder, 2 erreur.\njournal=$1\nif [ $journal = \"\" ]; then\n  echo \"Usage : $0 JOURNAL\" >&2\n  exit 2\nfi\nif [ ! -f \"$journal\" ]; then\n  echo \"$journal : fichier introuvable\" >&2\n  exit 2\nfi\nlignes=$(wc -l < \"$journal\")\nif [ $lignes > 100 ]; then\n  echo \"$journal : $lignes lignes, à archiver\"\n  exit 0\nfi\necho \"$journal : $lignes lignes, à garder\"\nexit 1\n", "tester.sh": "#!/bin/bash\n# tester.sh : lance verifier.sh sur quatre cas et compare au comportement attendu.\nseq 150 > gros.log\nseq 20 > petit.log\nrm -f absent.log\nreussis=0\n\nbash verifier.sh > sortie.tmp 2>&1; code=$?\nif [[ $code -eq 2 ]] && grep -q Usage sortie.tmp; then\n  echo \"réussi : sans argument, l'usage et le code 2\"; reussis=$((reussis + 1))\nelse\n  echo \"ÉCHEC  : sans argument, attendu l'usage et le code 2, obtenu le code $code et : $(head -1 sortie.tmp)\"\nfi\n\nbash verifier.sh absent.log > sortie.tmp 2>&1; code=$?\nif [[ $code -eq 2 ]]; then\n  echo \"réussi : journal absent, code 2\"; reussis=$((reussis + 1))\nelse\n  echo \"ÉCHEC  : journal absent, attendu le code 2, obtenu le code $code\"\nfi\n\nbash verifier.sh gros.log > sortie.tmp 2>&1; code=$?\nif [[ $code -eq 0 ]]; then\n  echo \"réussi : 150 lignes, à archiver (code 0)\"; reussis=$((reussis + 1))\nelse\n  echo \"ÉCHEC  : 150 lignes, attendu le code 0, obtenu le code $code\"\nfi\n\nbash verifier.sh petit.log > sortie.tmp 2>&1; code=$?\nif [[ $code -eq 1 ]]; then\n  echo \"réussi : 20 lignes, à garder (code 1)\"; reussis=$((reussis + 1))\nelse\n  echo \"ÉCHEC  : 20 lignes, attendu le code 1, obtenu le code $code\"\nfi\n\nrm -f sortie.tmp\nif [[ -e 100 ]]; then\n  echo \"ATTENTION : un fichier nommé 100 est apparu dans le dossier. D'où vient-il ?\"\nfi\necho \"Cas réussis : $reussis/4\"\n"}} expectedCommands={["bash tester.sh", "rm 100", "bash tester.sh | tee resultats.txt"]} checks={[{"label": "Les quatre cas passent", "path": "resultats.txt", "expect": "file", "contains": "Cas réussis : 4/4"}, {"label": "Plus de fichier parasite nommé 100", "path": "100", "expect": "absent"}]} hints={["Sans argument, [ $journal = \"\" ] devient [ = \"\" ] : il manque un membre. [[ -z \"$journal\" ]] teste une chaîne vide.", "Dans [ ], > est une redirection, pas une comparaison : (( lignes > 100 )) compare des nombres.", "sed -i 's/if \\[ \\$journal = \"\" \\]/if [[ -z \"$journal\" ]]/' verifier.sh", "sed -i 's/if \\[ \\$lignes > 100 \\]/if (( lignes > 100 ))/' verifier.sh", "Le fichier 100 vient de la redirection : supprime-le une fois le script corrigé."]} />
+
+Le premier bug n'arrivait que sans argument : `[ $journal = "" ]` devient `[ = "" ]`, une expression que `[` ne comprend pas. Il affiche une erreur, rend un code d'échec, et le script continue comme si de rien n'était. Le second était pire : il ne produisait **aucune** erreur, il donnait juste la mauvaise réponse et créait un fichier. Sans banc de tests, il serait passé inaperçu. Le bilan du module te fera écrire tes propres tests.
+
+## les pièges
+
+- **Oublier les espaces autour des crochets.** `[-f fichier]` ou `[ -f fichier]` : commande introuvable, ou `missing ]`.
+- **Comparer des nombres avec `>` dans `[ ]`.** C'est une redirection : un fichier est créé, et le test est toujours vrai. `-gt`, ou `(( ))`.
+- **Une variable vide dans `[ ]` sans guillemets.** `[ $v = oui ]` devient `[ = oui ]` : erreur. Guillemets, ou `[[ ]]`.
+- **Mettre l'expression régulière entre guillemets.** `[[ $x =~ "^[0-9]+$" ]]` compare au texte littéral.
+- **Croire que `a && b || c` est un si-alors-sinon.** `c` s'exécute aussi quand `b` échoue.
+- **Un `cd` sans contrôle.** `cd /srv/app; rm -rf cache` : si le `cd` échoue, le `rm` vise le dossier courant. `cd /srv/app || exit 1`.
+- **Oublier le cas par défaut d'un `case`.** Une valeur imprévue ne fait alors rien, sans un mot.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Bash-Conditional-Expressions" description="Tous les tests de fichiers, de chaînes et de nombres, en anglais">Manuel de bash : Conditional Expressions</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/031" description="Les différences entre test, [ et [[, en anglais">BashFAQ 031 : test, [ ou [[ ?</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/coreutils/test.1.fr.html" description="La commande test et ses opérateurs, en français">Page de manuel de test</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Sur quoi un if de bash décide-t-il ?" options={["Sur la valeur vraie ou fausse d'une expression", "Sur le code de retour d'une commande : 0 est vrai, le reste faux", "Sur ce que la commande affiche", "Sur le nombre d'arguments"]} correct={1} explanation="if exécute une commande ; test, [[ ]] et (( )) sont des commandes comme les autres, qui rendent 0 ou 1." />
+  <Quiz id="q-2" question="Que fait [ $n > 100 ] avec n=20 ?" options={["Il rend faux", "Il crée un fichier nommé 100 et rend vrai", "Il provoque une erreur de syntaxe", "Il compare les chaînes"]} correct={1} explanation="Dans [ ], > est une redirection. Il reste [ 20 ], toujours vrai. On compare avec -gt, ou avec (( n > 100 ))." />
+  <Quiz id="q-3" question="Pourquoi écrire cd /srv/app || exit 1 dans un script ?" options={["Pour aller plus vite", "Pour arrêter le script si le cd échoue, au lieu d'agir dans le mauvais dossier", "Parce que cd ne rend pas de code", "Pour revenir au dossier précédent"]} correct={1} explanation="Un cd raté suivi d'un rm ou d'un tar agit sur le dossier courant : une source classique d'accident." />
+  <Quiz id="q-4" question="Quel test est vrai si la variable v est vide ?" options={["[[ -n $v ]]", "[[ -z $v ]]", "[[ -e $v ]]", "[[ -s $v ]]"]} correct={1} explanation="-z teste une chaîne vide, -n une chaîne non vide ; -e et -s testent des fichiers." />
+  <Quiz id="q-5" question="Que vérifie [[ $f == *.log ]] ?" options={["Que le fichier existe", "Que la valeur de f se termine par .log", "Que f contient littéralement *.log", "Que f est un dossier"]} correct={1} explanation="Dans [[ ]], à droite de == et sans guillemets, le texte est un motif de jokers." />
+  <Quiz id="q-6" question="Avec a && b || c, quand c s'exécute-t-il ?" options={["Seulement quand a échoue", "Quand a échoue, mais aussi quand a réussit et que b échoue", "Jamais", "Toujours"]} correct={1} explanation="Ce n'est pas un vrai si-alors-sinon : pour deux branches exclusives, il faut un if." />
+  <Quiz id="q-7" question="Dans un case, à quoi sert le motif *) placé en dernier ?" options={["À arrêter le script", "À traiter toutes les valeurs qu'aucun cas précédent n'a reconnues", "À répéter le case", "À rien, il est ignoré"]} correct={1} explanation="C'est le cas par défaut : idéal pour signaler une valeur inattendue au lieu de l'ignorer." />
+</QuizGroup>
+
+## à retenir
+
+- Une condition est une **commande** : `if`, `&&` et `||` regardent son **code de retour**, 0 pour vrai.
+- **`cd dossier || exit 1`** : ne jamais continuer après un `cd` raté.
+- **`[[ ]]`** dans un script bash, `[ ]` seulement pour `sh`, et **des espaces autour des crochets**.
+- Fichiers : **`-e`**, **`-f`**, **`-d`**, **`-s`**, **`-r`**, **`-w`**, **`-x`**. Chaînes : **`-z`**, **`-n`**, **`=`**, **`!=`**. Nombres : **`-eq`**, **`-lt`**, **`-gt`**… ou **`(( a > b ))`**.
+- Jamais `>` pour comparer des nombres dans `[ ]` : c'est une redirection.
+- **`[[ $v == motif ]]`** pour un motif, **`[[ $v =~ $regex ]]`** pour une expression régulière, avec `BASH_REMATCH`.
+- **`case`** pour choisir parmi plusieurs valeurs, avec un **`*)`** final.

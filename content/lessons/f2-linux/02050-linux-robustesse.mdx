@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-02050-V01
+slug: linux-robustesse
+title: "Robustesse : set -euo pipefail, erreurs et trap"
+description: "Écrire des scripts qui échouent franchement au lieu de mentir : pourquoi bash continue après une erreur, le mode strict set -euo pipefail et ses limites, vérifier une commande et sortir proprement avec un message et un code, nettoyer à coup sûr avec trap EXIT, signaler la ligne fautive avec trap ERR, les fichiers temporaires avec mktemp, les variables vides dans les chemins, et empêcher deux exécutions simultanées avec flock. Avec une sauvegarde qui annonce un succès sans rien sauvegarder, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02049-V01"]
+---
+
+Voici le pire scénario d'un script d'administration : il échoue, et il dit qu'il a réussi. La sauvegarde de la nuit n'a rien copié, mais le journal affiche « sauvegarde réussie » et le code de retour vaut 0. Personne ne s'inquiète, jusqu'au jour où l'on a besoin de la sauvegarde. Ce n'est pas un cas d'école : c'est le comportement **par défaut** de bash, qui continue tranquillement après une commande ratée. Cette leçon t'apprend à écrire des scripts qui s'arrêtent à la première erreur, le disent clairement, et ne laissent rien traîner derrière eux.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer pourquoi un script bash continue après une erreur, et ce que cela coûte ;
+- activer le **mode strict** `set -euo pipefail`, et connaître ses limites ;
+- vérifier une commande et sortir avec un message et un code de retour clairs ;
+- garantir un nettoyage avec **`trap ... EXIT`**, et localiser une erreur avec `trap ... ERR` ;
+- créer des fichiers temporaires sûrs avec `mktemp` ;
+- empêcher deux exécutions simultanées d'un même script avec `flock`.
+
+## pourquoi ça compte
+
+Un script d'exploitation tourne souvent **seul** : la nuit, par une tâche planifiée, sans personne pour lire ses messages. Son code de retour et son journal sont les seules traces de ce qu'il a fait. S'il continue après une erreur, chaque commande suivante travaille sur un état faux : un `cd` raté suivi d'un `rm`, une archive vide envoyée sur le serveur de sauvegarde à la place de la bonne, une rotation qui supprime les anciennes copies alors que la nouvelle a échoué. Un script robuste préfère **s'arrêter bruyamment** plutôt que de continuer en silence.
+
+## le comportement par défaut : continuer
+
+```bash
+#!/bin/bash
+cd /srv/app/cache        # le dossier n'existe pas : erreur…
+rm -rf ./*               # … et rm s'exécute dans le dossier courant !
+echo "Cache vidé."
+```
+
+Bash affiche l'erreur du `cd`, puis passe à la ligne suivante comme si de rien n'était. Le script se termine avec le code de **sa dernière commande**, ici `echo`, qui a réussi : 0. Tu as vu à la leçon sur les conditions comment protéger un `cd` avec `|| exit 1`. Mais vérifier chaque commande à la main est fastidieux, et on en oublie toujours une.
+
+## le mode strict : set -euo pipefail
+
+Trois options changent ce comportement. On les active en tête de script, juste après le shebang :
+
+```bash
+#!/bin/bash
+set -euo pipefail
+```
+
+- **`set -e`** (*errexit*) : le script s'arrête dès qu'une commande échoue ;
+- **`set -u`** (*nounset*) : utiliser une variable qui n'existe pas devient une **erreur**, au lieu de donner une chaîne vide. Une faute de frappe dans un nom de variable arrête le script au lieu de vider un chemin ;
+- **`set -o pipefail`** : un tube échoue si **l'une** de ses commandes échoue, et non plus seulement la dernière. Sans cette option, `mysqldump base | gzip > base.sql.gz` réussit toujours, puisque `gzip` réussit, même quand l'export a planté.
+
+Avec `set -u`, une variable qui peut légitimement être vide ou absente se lit avec une valeur par défaut : `"${1:-}"` pour un argument facultatif, `"${DEST:-/srv/sauvegardes}"` pour un réglage.
+
+## les limites de set -e
+
+`set -e` est précieux, mais il a des exceptions qu'il faut connaître, sinon il donne une fausse impression de sécurité :
+
+- une commande **testée** ne l'arrête pas : dans `if commande`, `commande || autre`, `commande && autre`, ou après un `!`, l'échec est attendu, donc toléré ;
+- une commande qui échoue **dans une fonction appelée depuis un `if`** ne l'arrête pas non plus : tout ce qui est testé l'est jusqu'au bout ;
+- `local x=$(commande)` et `export x=$(commande)` masquent l'échec de la commande, puisque `local` et `export` réussissent ;
+- à l'inverse, il arrête parfois là où on ne l'attend pas : `(( compteur++ ))` vaut 0 au premier tour, ce qui compte comme un échec et tue le script. On écrit `compteur=$(( compteur + 1 ))`, ou `(( compteur++ )) || true` ;
+- `grep` qui ne trouve rien rend 1 : un `grep` dans un tube ou une affectation peut arrêter le script. Si « rien trouvé » est un résultat normal : `grep motif fichier || true`.
+
+`set -e` est un **filet**, pas une stratégie. Les commandes importantes se vérifient explicitement, avec un message qui dit ce qui a échoué.
+
+## échouer proprement
+
+Un script qui s'arrête doit dire **pourquoi**, sur la sortie d'erreur, et rendre un code non nul. Une petite fonction suffit :
+
+```bash
+mourir() {
+  echo "$(basename "$0") : ERREUR : $*" >&2
+  exit 1
+}
+
+[[ -d "$source" ]] || mourir "dossier source introuvable : $source"
+tar -cf "$archive" -C "$source" . || mourir "échec de l'archivage de $source"
+```
+
+Choisis des codes de retour qui ont un sens, et documente-les dans l'en-tête : 0 succès, 1 échec, 2 mauvaise utilisation, c'est la convention la plus répandue.
+
+Et pour les chemins, un garde-fou vu à la leçon sur les variables : `rm -rf -- "${dossier:?}/"*`. Si `dossier` est vide, le script s'arrête au lieu d'effacer depuis la racine. Avec `set -u`, une variable **inexistante** est déjà une erreur ; `:?` arrête aussi sur une variable **vide**.
+
+## trap EXIT : nettoyer quoi qu'il arrive
+
+Tu as rencontré `trap` à la leçon sur les signaux. Son usage le plus utile dans un script est le pseudo-signal **`EXIT`** : le code indiqué s'exécute à la sortie du script, **quelle qu'en soit la raison**, succès, erreur arrêtée par `set -e`, `exit` explicite, ou Ctrl+C.
+
+```bash
+travail=$(mktemp -d)
+trap 'rm -rf "$travail"' EXIT
+
+cp -r /srv/donnees "$travail/"
+tar -cf /srv/sauvegardes/donnees.tar -C "$travail" .
+```
+
+Si le `cp` échoue et que `set -e` arrête le script, le dossier temporaire est quand même supprimé. Le `trap` se pose **juste après** la création de ce qu'il doit nettoyer. Les apostrophes retardent le développement de `$travail` au moment du nettoyage.
+
+**`mktemp`** crée un fichier (ou, avec `-d`, un dossier) au nom imprévisible, comme `/tmp/tmp.k3XbQ9`, accessible à toi seul. Un nom fixe comme `/tmp/sauvegarde.tmp` est une erreur de sécurité : un autre compte peut créer ce fichier, ou un lien symbolique à sa place, avant ton script, et lui faire écrire où il veut.
+
+## trap ERR : savoir où ça a cassé
+
+Le pseudo-signal **`ERR`** se déclenche à chaque commande qui échoue, là où `set -e` arrêterait le script. Avec la variable `LINENO`, il dit **où** :
+
+```bash
+set -euo pipefail
+trap 'echo "Erreur ligne $LINENO : $BASH_COMMAND" >&2' ERR
+```
+
+`BASH_COMMAND` contient la commande qui a échoué. Dans un journal de tâche planifiée, cette ligne fait gagner un temps précieux. Pour que le `trap ERR` vaille aussi dans les fonctions, on ajoute l'option `set -E`.
+
+## une seule exécution à la fois : flock
+
+Une sauvegarde planifiée toutes les heures qui, un jour, met plus d'une heure : la suivante démarre pendant que la première tourne encore, et les deux s'écrasent mutuellement. **`flock`** pose un verrou sur un fichier, que le système relâche automatiquement à la fin du processus, même en cas de plantage :
+
+```bash
+exec 9> /run/lock/sauvegarde.lock
+flock -n 9 || mourir "une sauvegarde est déjà en cours"
+```
+
+`exec 9>` ouvre le fichier de verrou sur le descripteur 9 pour toute la durée du script ; `flock -n` tente de le verrouiller sans attendre, et échoue s'il l'est déjà. Une autre forme, sans toucher au script, enveloppe la commande : `flock -n /run/lock/sauvegarde.lock /usr/local/bin/sauvegarde.sh`.
+
+<Diagram caption="Un script robuste, de bout en bout">
+flowchart TD
+  A["set -euo pipefail"] --> B["verrou flock : une seule exécution"]
+  B --> C["mktemp, puis trap EXIT pour nettoyer"]
+  C --> D["chaque étape vérifiée, avec un message clair"]
+  D -->|"une commande échoue"| E["arrêt, message sur la sortie d'erreur, code non nul"]
+  D -->|"tout réussit"| F["exit 0"]
+  E --> G["trap EXIT : nettoyage"]
+  F --> G
+</Diagram>
+
+## pouvoir relancer : l'idempotence
+
+Un script robuste doit aussi pouvoir être **relancé** sans dégât, après un échec ou par erreur. On le dit **idempotent** : le lancer deux fois produit le même résultat que le lancer une fois. Quelques réflexes y mènent :
+
+- `mkdir -p` plutôt que `mkdir`, qui échoue si le dossier existe déjà ;
+- `ln -sfn` pour créer ou remplacer un lien symbolique ;
+- vérifier avant d'ajouter une ligne à un fichier de configuration : `grep -qxF "$ligne" fichier || echo "$ligne" >> fichier`, sans quoi chaque exécution l'ajoute une fois de plus ;
+- créer un compte seulement si `id compte` échoue, pour ne pas planter sur un compte qui existe déjà.
+
+Un script idempotent se répare simplement : on corrige la cause de l'échec, et on le relance du début, sans se demander jusqu'où il était allé. C'est aussi le principe des outils de gestion de configuration comme Ansible, qui décrivent un état à atteindre plutôt qu'une suite d'actions.
+
+## à toi de jouer
+
+`sauvegarder.sh` archive le dossier `donnees` dans `sauvegardes/donnees.tar`, puis note son succès dans `journal.txt`. Son auteur avait prévu le mode strict et le nettoyage, mais les a laissés en commentaire. Le script contient aussi une faute de frappe.
+
+1. lance-le : `bash sauvegarder.sh`, puis `echo $?`. Une erreur s'affiche, et pourtant le code vaut 0 ;
+2. regarde le journal et le contenu de l'archive : `cat journal.txt`, puis `tar -tf sauvegardes/donnees.tar`. Le journal annonce un succès, l'archive est **vide** ;
+3. active le mode strict en retirant le `# ` de sa ligne : `sed -i 's/^# set -euo/set -euo/' sauvegarder.sh`. Relance, puis `echo $?` : le script s'arrête sur la variable inconnue, avec le code 1. Mais `ls /tmp` montre un dossier temporaire abandonné ;
+4. active le nettoyage : `sed -i 's/^# trap/trap/' sauvegarder.sh`, supprime le dossier abandonné avec `rm -r /tmp/tmp.*`, relance, et vérifie avec `ls /tmp` que rien ne traîne plus, même après un échec ;
+5. corrige enfin la faute de frappe : `sed -i 's/sourc_dir/source_dir/' sauvegarder.sh`. Relance, vérifie le code de retour et le contenu de l'archive.
+
+<LinuxTerminal title="La sauvegarde qui ment" height={440} files={{"sauvegarder.sh": "#!/bin/bash\n# sauvegarder.sh : archive le dossier donnees dans sauvegardes/donnees.tar,\n# puis note le résultat dans journal.txt.\n# set -euo pipefail\n\nsource_dir=donnees\nmkdir -p sauvegardes\ntravail=$(mktemp -d)\n# trap 'rm -rf \"$travail\"' EXIT\n\ncp -r \"$sourc_dir\" \"$travail/\"\ntar -cf sauvegardes/donnees.tar -C \"$travail\" .\nrm -rf \"$travail\"\necho \"$(date +%T) sauvegarde réussie\" >> journal.txt\n", "donnees/clients.txt": "Martin;Lyon\nDurand;Nantes\nPetit;Lille\n", "donnees/factures.txt": "F-2026-0412;Martin;1250\nF-2026-0413;Petit;380\n"}} expectedCommands={["bash sauvegarder.sh", "tar -tf sauvegardes/donnees.tar", "ls /tmp"]} checks={[{"label": "Le mode strict est activé", "path": "sauvegarder.sh", "expect": "file", "contains": "\nset -euo pipefail"}, {"label": "Le nettoyage par trap est activé", "path": "sauvegarder.sh", "expect": "file", "contains": "\ntrap 'rm -rf"}, {"label": "La faute de frappe est corrigée", "path": "sauvegarder.sh", "expect": "file", "contains": "cp -r \"$source_dir\""}, {"label": "L'archive contient vraiment les clients", "path": "sauvegardes/donnees.tar", "expect": "file", "contains": "Durand;Nantes"}]} hints={["echo $? juste après le script donne son code de retour.", "tar -tf liste le contenu d'une archive sans l'extraire.", "unbound variable : set -u a repéré une variable jamais définie. Compare son nom à celui de la ligne source_dir=.", "Le dossier abandonné s'appelle /tmp/tmp. suivi de six caractères : rm -r /tmp/tmp.* le supprime.", "Après la correction, le code de retour doit valoir 0, et tar -tf doit lister clients.txt et factures.txt."]} />
+
+À l'étape 1, le script a tout faux sans que rien ne le trahisse, sauf un message vite noyé dans un journal : `cp` a échoué, `tar` a archivé un dossier vide, et le journal a menti. Avec `set -u`, la faute de frappe devient une erreur franche, que `set -e` transforme en arrêt. Et `trap ... EXIT` garantit que le dossier temporaire part avec le script, quelle que soit sa fin. Sur un vrai serveur, ce journal mensonger aurait été lu par une supervision qui aurait affiché « vert » pendant des semaines.
+
+## les pièges
+
+- **Ne rien activer.** Par défaut, bash continue après une erreur et rend le code de sa dernière commande.
+- **Croire que `set -e` attrape tout.** Pas dans un `if`, un `||`, un `&&`, ni dans `local x=$(...)`.
+- **`(( i++ ))` sous `set -e`.** Il vaut 0 au premier tour et arrête le script : `i=$(( i + 1 ))`.
+- **Oublier `pipefail`.** Un tube réussit dès que sa dernière commande réussit, même si l'export en tête a échoué.
+- **Un fichier temporaire au nom fixe dans `/tmp`.** Un autre compte peut le préparer à ta place : `mktemp`.
+- **Poser le `trap EXIT` trop tard.** Une erreur avant lui laisse les fichiers temporaires : juste après `mktemp`.
+- **Deux exécutions en même temps.** Une tâche planifiée qui déborde sur la suivante : `flock`.
+- **Un message d'erreur sur la sortie standard.** Il se perd dans les données : `>&2`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/105" description="Pourquoi set -e ne fait pas ce qu'on croit, exemples à l'appui, en anglais">BashFAQ 105 : les surprises de set -e</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin" description="Toutes les options de set, dont -e, -u, -E et pipefail, en anglais">Manuel de bash : la commande set</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/util-linux/flock.1.fr.html" description="Poser un verrou depuis un script shell, en français">Page de manuel de flock</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Sans option particulière, que fait bash quand une commande d'un script échoue ?" options={["Il arrête le script", "Il affiche l'erreur et passe à la commande suivante", "Il recommence la commande", "Il redémarre le script"]} correct={1} explanation="Et le script rend le code de sa dernière commande : un échec au milieu peut finir par un 0." />
+  <Quiz id="q-2" question="Que change set -u ?" options={["Il arrête le script à la première erreur", "Il fait de l'utilisation d'une variable inexistante une erreur", "Il passe les variables en majuscules", "Il désactive les jokers"]} correct={1} explanation="Une faute de frappe dans un nom de variable arrête le script au lieu de donner une chaîne vide." />
+  <Quiz id="q-3" question="Sans pipefail, quand le tube mysqldump base | gzip > base.gz échoue-t-il ?" options={["Dès que mysqldump échoue", "Seulement si gzip, la dernière commande, échoue", "Jamais", "Toujours"]} correct={1} explanation="Le code d'un tube est celui de sa dernière commande. pipefail le fait échouer dès qu'une commande échoue." />
+  <Quiz id="q-4" question="Sous set -e, pourquoi (( compteur++ )) peut-il arrêter le script ?" options={["Parce que ++ est interdit", "Parce qu'il vaut 0 au premier tour, et que (( 0 )) rend un code d'échec", "Parce que compteur n'est pas déclaré", "Il ne l'arrête jamais"]} correct={1} explanation="(( )) rend 1 quand le résultat est nul ; le post-incrément vaut l'ancienne valeur, 0. On écrit compteur=$(( compteur + 1 ))." />
+  <Quiz id="q-5" question="Que fait trap 'rm -rf $travail' EXIT, posé juste après mktemp ?" options={["À supprimer le dossier au démarrage", "À supprimer le dossier temporaire à la sortie du script, quelle qu'en soit la raison", "À intercepter Ctrl+C seulement", "À rien sans set -e"]} correct={1} explanation="EXIT se déclenche à toute sortie : succès, erreur, exit ou interruption." />
+  <Quiz id="q-6" question="Pourquoi utiliser mktemp plutôt que /tmp/sauvegarde.tmp ?" options={["C'est plus court", "Un nom imprévisible empêche un autre compte de préparer le fichier, ou un lien, à la place du script", "mktemp compresse le fichier", "/tmp est en lecture seule"]} correct={1} explanation="Un nom fixe dans un dossier partagé ouvre la porte aux attaques par lien symbolique." />
+  <Quiz id="q-7" question="Une sauvegarde horaire dure parfois plus d'une heure. Comment éviter que deux exécutions se chevauchent ?" options={["Avec sleep 3600", "Avec un verrou flock, que la seconde exécution trouve pris", "Avec set -e", "Avec nohup"]} correct={1} explanation="flock -n échoue si le verrou est pris ; le système le relâche à la fin du processus, même en cas de plantage." />
+</QuizGroup>
+
+## à retenir
+
+- Par défaut, bash **continue après une erreur** : un script peut échouer et rendre 0.
+- **`set -euo pipefail`** en tête : arrêt à la première erreur, variable inconnue interdite, tube en échec dès qu'une commande échoue.
+- `set -e` ne voit pas les commandes **testées** (`if`, `||`, `&&`) ni `local x=$(...)` ; attention à **`(( i++ ))`** et à **`grep`** sans résultat.
+- Échouer proprement : un **message sur `>&2`**, un **code non nul**, documenté.
+- **`mktemp`** pour les fichiers temporaires, **`trap '...' EXIT`** juste après pour les nettoyer, **`trap '...' ERR`** avec `$LINENO` pour localiser une erreur.
+- **`flock`** pour qu'une tâche ne tourne qu'une fois à la fois.

@@ -1,0 +1,244 @@
+---
+refCode: CL-LSN-02048-V01
+slug: linux-boucles
+title: "Boucles : for, while et lire un fichier ligne à ligne"
+description: "Répéter une action sans la recopier : for sur une liste, des fichiers ou les arguments, la boucle à compteur, while et until pour attendre ou réessayer, break et continue, et surtout la bonne façon de lire un fichier ligne à ligne et champ par champ avec while IFS= read -r. Avec les pièges classiques : for sur $(cat), la boucle dans un tube qui perd ses variables, le joker qui ne trouve rien. Avec des photos à renommer et un inventaire de comptes, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02047-V01"]
+---
+
+Archiver trente journaux, vérifier vingt serveurs, créer cent comptes à partir d'une liste : c'est là qu'un script fait gagner des heures. Encore faut-il le dire au shell : « pour chacun de ces éléments, fais ceci ». C'est le rôle des **boucles**. Elles sont simples à écrire, mais c'est aussi là que se concentrent les bugs des noms de fichiers à espaces et des fichiers lus de travers. Cette leçon t'apprend les formes justes, celles qui ne cassent pas le jour où les données sont moins sages que prévu.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- parcourir une liste, des fichiers ou les arguments du script avec `for` ;
+- écrire une boucle à compteur ;
+- répéter tant qu'une condition tient, avec `while` et `until`, pour attendre ou réessayer ;
+- sortir d'une boucle ou passer au tour suivant avec `break` et `continue` ;
+- lire un fichier **ligne à ligne** et **champ par champ**, correctement ;
+- éviter les trois pièges classiques des boucles shell.
+
+## pourquoi ça compte
+
+Une boucle multiplie tout, y compris les erreurs. Une commande destructrice mal écrite abîme un fichier ; dans une boucle, elle les abîme tous, en quelques millisecondes. D'où une habitude prise à la leçon sur les jokers, et qui vaut encore plus ici : **faire tourner la boucle à blanc d'abord**, avec un `echo` devant la commande dangereuse, lire ce qu'elle ferait, puis seulement retirer l'`echo`.
+
+## for : pour chaque élément d'une liste
+
+```bash
+for serveur in srv-web-01 srv-web-02 srv-base; do
+  echo "Vérification de $serveur"
+done
+```
+
+La variable `serveur` prend tour à tour chaque valeur de la liste, et le corps, entre `do` et `done`, s'exécute une fois pour chacune. La liste peut venir de partout :
+
+```bash
+for f in /var/log/*.log; do          # des fichiers, par un joker
+  echo "$f : $(wc -l < "$f") lignes"
+done
+
+for arg in "$@"; do                   # les arguments du script, intacts
+  echo "Argument : $arg"
+done
+
+for i in {1..5}; do                   # une suite, par les accolades
+  echo "Essai $i"
+done
+
+for (( i = 1; i <= 5; i++ )); do      # la boucle à compteur, comme en C
+  echo "Tour $i"
+done
+```
+
+Avec un joker, chaque nom de fichier arrive **entier** dans la variable, même s'il contient des espaces : c'est la bonne façon de parcourir des fichiers. Le danger est ensuite d'utiliser la variable sans guillemets : `"$f"`, toujours. Les accolades `{1..5}` ne prennent pas de variable : `{1..$n}` ne marche pas. Pour une borne variable, la boucle à compteur fait l'affaire, ou `seq` : `for i in $(seq 1 "$n")`.
+
+## while et until : tant que, jusqu'à ce que
+
+`while` répète tant que sa commande réussit, `until` tant qu'elle échoue. Elles servent surtout à **attendre** et à **réessayer** :
+
+```bash
+# Attendre qu'un service réponde, au plus 30 secondes.
+essais=0
+until curl -fs http://localhost:8080/sante > /dev/null; do
+  (( essais++ ))
+  if (( essais >= 30 )); then
+    echo "Le service ne répond toujours pas." >&2
+    exit 1
+  fi
+  sleep 1
+done
+echo "Service prêt après $essais secondes."
+```
+
+Une boucle d'attente a toujours une **limite** : sans elle, un service qui ne démarre jamais bloque le script pour toujours. `while true; do ... done` existe, pour les boucles qui tournent jusqu'à ce qu'on les arrête, mais il leur faut alors une sortie explicite.
+
+## break et continue
+
+`continue` passe directement au tour suivant ; `break` sort de la boucle :
+
+```bash
+for f in *.conf; do
+  [[ -s "$f" ]] || continue            # fichier vide : on passe
+  if grep -q "^debug=true" "$f"; then
+    echo "Mode debug trouvé dans $f"
+    break                              # un seul suffit, on s'arrête
+  fi
+done
+```
+
+Dans des boucles imbriquées, `break` et `continue` n'agissent que sur la boucle la plus proche. Pour sortir de deux niveaux d'un coup, on leur donne un nombre : `break 2` quitte la boucle courante et celle qui la contient. C'est utile pour une recherche à deux dimensions, par exemple une liste de serveurs parcourue pour chaque service : dès qu'un serveur répond pour le service cherché, inutile d'essayer les autres. Utilise cette forme avec parcimonie : au-delà de deux niveaux, une fonction qui sort par `return` est presque toujours plus lisible qu'un `break 3`.
+
+## lire un fichier ligne à ligne
+
+C'est la forme à connaître par cœur :
+
+```bash
+while IFS= read -r ligne; do
+  echo "Lu : $ligne"
+done < serveurs.txt
+```
+
+Chaque morceau a sa raison d'être :
+
+- **`read`** lit une ligne de son entrée et la range dans la variable ; il échoue à la fin du fichier, ce qui arrête le `while` ;
+- **`-r`** garde les barres obliques inverses telles quelles, au lieu de les interpréter ;
+- **`IFS=`** vide le séparateur le temps de la lecture, pour garder les espaces de début et de fin de ligne ;
+- **`done < serveurs.txt`** branche le fichier sur l'entrée de toute la boucle.
+
+Pour lire des **champs**, on donne à `IFS` le séparateur et à `read` plusieurs noms de variables. Le dernier nom reçoit tout le reste de la ligne :
+
+```bash
+while IFS=: read -r compte _ uid _ _ dossier shell; do
+  if (( uid >= 1000 )); then
+    echo "$compte : $dossier, shell $shell"
+  fi
+done < /etc/passwd
+```
+
+Le `_` est un nom de variable comme un autre, qu'on utilise par convention pour un champ qui ne sert pas. Si la dernière ligne d'un fichier n'a pas de saut de ligne final, `read` la lit mais échoue quand même : on la rattrape avec `while IFS= read -r ligne || [[ -n $ligne ]]`.
+
+<Diagram caption="Une ligne lue par while IFS=: read -r">
+flowchart LR
+  A["alice:x:1000:1000:Alice:/home/alice:/bin/bash"] --> B["IFS=: découpe aux deux-points"]
+  B --> C["compte = alice"]
+  B --> D["uid = 1000"]
+  B --> E["dossier = /home/alice"]
+  B --> F["shell = /bin/bash, le dernier champ"]
+</Diagram>
+
+Un dernier piège guette la boucle de lecture : une commande du corps de la boucle qui lit, elle aussi, l'**entrée standard**. Elle avale alors le reste du fichier, et la boucle s'arrête après un seul tour. Le cas typique est `ssh`, qui transmet son entrée à la commande distante :
+
+```bash
+while IFS= read -r serveur; do
+  ssh "$serveur" uptime < /dev/null     # sans < /dev/null, ssh lirait la suite de la liste
+done < serveurs.txt
+```
+
+`ssh -n` fait la même chose. Le symptôme est facile à reconnaître une fois qu'on le connaît : une boucle sur une liste de vingt serveurs qui n'en traite que le premier, sans la moindre erreur.
+
+## parcourir une arborescence
+
+Un joker ne descend pas dans les sous-dossiers. Pour traiter tous les fichiers d'une arborescence, on associe `find`, vu au module 2, à une boucle de lecture :
+
+```bash
+find /var/www -name '*.php' -mtime -1 -print0 |
+  while IFS= read -r -d '' f; do
+    echo "Modifié depuis hier : $f"
+  done
+```
+
+`-print0` sépare les noms par un caractère nul au lieu d'un retour à la ligne, et `read -d ''` lit jusqu'à ce caractère nul. Pourquoi tant de précautions ? Parce qu'un nom de fichier peut contenir **n'importe quel caractère, sauf le nul et la barre oblique**, y compris un retour à la ligne. Quelqu'un qui dépose dans un dossier partagé un fichier dont le nom contient un saut de ligne suivi de `/etc/passwd` peut tromper un script qui lit la sortie de `find` ligne par ligne, et lui faire traiter un fichier qu'il n'aurait jamais dû toucher. Le caractère nul est le seul séparateur sûr. Pour une action simple sur chaque fichier, `find` sait aussi exécuter une commande lui-même, sans boucle : `find /var/www -name '*.bak' -exec rm -- {} +` lance `rm` avec autant de fichiers que possible à la fois.
+
+## une boucle, ou une seule commande ?
+
+Une boucle shell lance souvent une ou plusieurs commandes à chaque tour : un `grep`, un `cut`, un `date`. Sur dix lignes, c'est instantané. Sur un journal d'un million de lignes, cela fait des millions de processus, et le script met des heures là où une seule commande met une seconde. Avant d'écrire une boucle sur les lignes d'un gros fichier, demande-toi si `grep`, `sort`, `uniq -c` ou `awk` ne feraient pas le travail en une seule passe :
+
+```bash
+# Lent : un processus cut par ligne.
+while IFS= read -r ligne; do
+  echo "$ligne" | cut -d' ' -f1
+done < access.log | sort | uniq -c
+
+# Rapide : une seule commande pour tout le fichier.
+awk '{ print $1 }' access.log | sort | uniq -c
+```
+
+La boucle reste le bon outil quand chaque élément demande une **action** : copier un fichier, interroger un serveur, créer un compte. Pour **transformer** ou **compter** des données, les outils du module 3 sont faits pour cela, et ils le font mieux.
+
+## trois erreurs classiques
+
+**Premier piège : `for ligne in $(cat fichier)`.** Cette forme ne parcourt pas des lignes mais des **mots** : le contenu est découpé à chaque espace, et chaque mot passe par les jokers. Une ligne `Jean Dupont` donne deux tours de boucle, une ligne `*` donne la liste des fichiers du dossier. Pour des lignes, c'est `while IFS= read -r`, toujours.
+
+**Deuxième piège : la boucle dans un tube.** Chaque côté d'un tube tourne dans un **sous-shell**, un processus à part. Ce que la boucle modifie disparaît avec lui :
+
+```bash
+total=0
+cat ventes.txt | while IFS= read -r ligne; do
+  (( total++ ))
+done
+echo "$total"     # affiche 0 !
+```
+
+La correction : rediriger le fichier dans la boucle (`done < ventes.txt`) au lieu de passer par un tube, ou, pour la sortie d'une commande, la **substitution de processus** : `done < <(commande)`. La boucle tourne alors dans le shell du script, et `total` garde sa valeur.
+
+**Troisième piège : le joker qui ne trouve rien.** Si aucun fichier ne correspond à `*.log`, bash laisse le motif tel quel : la boucle fait un tour avec `f` valant littéralement `*.log`, et la première commande échoue sur un fichier introuvable. On s'en protège en testant l'existence (`[[ -e "$f" ]] || continue`), ou en activant `shopt -s nullglob`, avec lequel un motif sans correspondance ne donne rien du tout.
+
+## à toi de jouer
+
+Tape d'abord **`bash`** pour quitter le shell de BusyBox : les commandes de l'exercice utilisent des fonctions de bash. L'invite devient `bash mnt% `. Le dossier `photos` contient des fichiers venus d'un appareil photo, aux noms en majuscules et avec des espaces : il faut les renommer en `IMG_0001.jpg`, sans espace et avec une extension en minuscules.
+
+1. regarde-les : `ls photos` ;
+2. fais tourner la boucle **à blanc**, avec un `echo` devant `mv` :
+   `for f in photos/*.JPG; do n="${f%.JPG}.jpg"; echo mv -- "$f" "${n// /_}"; done` ;
+3. lis les quatre lignes affichées : chaque nom arrive entier, espaces comprises. Puis relance la même boucle **sans** l'`echo` ;
+4. le fichier `comptes.csv` liste des comptes, au format `compte;nom;shell`. Garde ceux qui peuvent ouvrir une session, c'est-à-dire dont le shell n'est ni `nologin` ni `false` :
+   `while IFS=';' read -r compte nom shell; do [[ $shell == */nologin || $shell == */false ]] || echo "$compte : $nom"; done < comptes.csv > interactifs.txt`
+5. vérifie avec `cat interactifs.txt`.
+
+<LinuxTerminal title="Renommer et inventorier" files={{"photos/IMG 0001.JPG": "Photo factice : seul le nom compte pour l'exercice.\n", "photos/IMG 0002.JPG": "Photo factice : seul le nom compte pour l'exercice.\n", "photos/IMG 0003.JPG": "Photo factice : seul le nom compte pour l'exercice.\n", "photos/vacances plage.JPG": "Photo factice : seul le nom compte pour l'exercice.\n", "comptes.csv": "alice;Alice Martin;/bin/bash\nwww-data;Serveur web;/usr/sbin/nologin\nbob;Bob Durand;/bin/bash\npostgres;Base de données;/bin/false\ndeploy;Compte de déploiement;/bin/bash\nbackup;Sauvegardes;/usr/sbin/nologin\nclaire;Claire Petit;/bin/zsh\n"}} expectedCommands={["bash", "ls photos"]} checks={[{"label": "IMG 0001.JPG est devenu IMG_0001.jpg", "path": "photos/IMG_0001.jpg", "expect": "file"}, {"label": "vacances plage.JPG est devenu vacances_plage.jpg", "path": "photos/vacances_plage.jpg", "expect": "file"}, {"label": "Plus aucun ancien nom", "path": "photos/IMG 0003.JPG", "expect": "absent"}, {"label": "interactifs.txt garde alice", "path": "interactifs.txt", "expect": "file", "contains": "alice : Alice Martin"}, {"label": "interactifs.txt garde claire, et son zsh", "path": "interactifs.txt", "expect": "file", "contains": "claire : Claire Petit"}, {"label": "interactifs.txt relève le compte deploy", "path": "interactifs.txt", "expect": "file", "contains": "deploy : Compte de déploiement"}]} hints={["Tape bash d'abord : l'invite devient bash mnt% .", "${f%.JPG} retire l'extension, ${n// /_} remplace chaque espace par un tiret bas.", "La répétition à blanc affiche les mv sans les faire : retire seulement le mot echo pour les exécuter.", "IFS=';' découpe chaque ligne aux points-virgules : compte, nom, puis shell.", "[[ ... ]] || echo : l'echo ne s'exécute que si le test échoue, donc pour les shells qui ne sont ni nologin ni false."]} />
+
+Le `--` devant les noms de fichiers dit à `mv` que les options sont finies : un fichier dont le nom commencerait par un tiret ne serait pas pris pour une option. Et regarde le compte `deploy` dans le résultat : un compte de service qui peut ouvrir une session, c'est exactement ce qu'un audit doit relever. Normalement, seuls les humains ont un vrai shell.
+
+## les pièges
+
+- **`for ligne in $(cat fichier)`.** Ce sont des mots, pas des lignes : `while IFS= read -r ligne; do ...; done < fichier`.
+- **Une boucle dans un tube qui modifie une variable.** La modification est perdue : `done < fichier`, ou `done < <(commande)`.
+- **Un joker sans correspondance.** La boucle tourne une fois sur le motif lui-même : `shopt -s nullglob`, ou un test `-e`.
+- **`"$f"` oublié dans le corps de la boucle.** Le nom à espace, arrivé entier, est découpé au moment de s'en servir.
+- **Une boucle d'attente sans limite.** Un service qui ne répond jamais bloque le script : compte les essais.
+- **Lancer une boucle destructrice sans répétition à blanc.** Un `echo` devant la commande d'abord, toujours.
+- **Oublier `-r` et `IFS=`.** Les barres obliques inverses et les espaces de début de ligne disparaissent en silence.
+
+## pour aller plus loin
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/001" description="Lire un fichier ou une sortie ligne à ligne, ou champ par champ, en anglais">BashFAQ 001 : lire un fichier ligne à ligne</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/024" description="Pourquoi une variable modifiée dans une boucle de tube est perdue, en anglais">BashFAQ 024 : la variable qui disparaît après la boucle</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Looping-Constructs" description="for, while, until, et leurs variantes, en anglais">Manuel de bash : les boucles</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Avec un fichier contenant la ligne Jean Dupont, combien de tours fait for l in $(cat fichier) ?" options={["Un", "Deux", "Zéro", "Autant que de caractères"]} correct={1} explanation="$(cat) sans guillemets est découpé en mots : Jean, puis Dupont. Pour des lignes, while IFS= read -r." />
+  <Quiz id="q-2" question="Quelle est la forme correcte pour lire un fichier ligne à ligne ?" options={["for ligne in $(cat f)", "while IFS= read -r ligne; do ...; done < f", "cat f | for ligne", "read -a f"]} correct={1} explanation="read lit une ligne par tour, -r garde les barres obliques, IFS= garde les espaces, et la redirection alimente toute la boucle." />
+  <Quiz id="q-3" question="Après cat f | while read l; do (( n++ )); done, pourquoi n vaut-il toujours 0 ?" options={["read ne lit rien", "La boucle tourne dans un sous-shell, dont les variables disparaissent avec lui", "(( )) ne compte pas", "n est une variable réservée"]} correct={1} explanation="Chaque côté d'un tube est un processus à part. done < f, ou done < <(commande), garde la boucle dans le shell courant." />
+  <Quiz id="q-4" question="Aucun fichier .log n'existe. Que fait for f in *.log; do ... done ?" options={["Rien", "Un tour, avec f valant le texte *.log", "Une erreur de syntaxe", "Il parcourt tous les fichiers"]} correct={1} explanation="Sans correspondance, bash laisse le motif tel quel. shopt -s nullglob le fait disparaître." />
+  <Quiz id="q-5" question="Dans while IFS=: read -r a b c, que contient c si la ligne a cinq champs ?" options={["Le troisième champ seulement", "Le troisième champ et tout le reste de la ligne", "Rien", "Le dernier champ seulement"]} correct={1} explanation="La dernière variable de read reçoit tout ce qui reste de la ligne." />
+  <Quiz id="q-6" question="Que fait continue dans une boucle ?" options={["Il sort de la boucle", "Il passe directement au tour suivant", "Il relance le script", "Il met la boucle en pause"]} correct={1} explanation="continue saute la fin du corps pour ce tour ; break, lui, sort de la boucle." />
+  <Quiz id="q-7" question="Pourquoi une boucle d'attente doit-elle compter ses essais ?" options={["Pour aller plus vite", "Pour ne pas bloquer le script indéfiniment si la condition n'arrive jamais", "Parce que until l'exige", "Pour économiser la mémoire"]} correct={1} explanation="Un service qui ne démarre jamais ne doit pas suspendre le script pour toujours : on fixe un nombre d'essais, puis on échoue proprement." />
+</QuizGroup>
+
+## à retenir
+
+- **`for x in liste`** pour une liste, des fichiers (**`for f in *.log`**) ou les arguments (**`for a in "$@"`**) ; **`for (( i = 0; i < n; i++ ))`** pour un compteur.
+- **`while`** et **`until`** pour attendre ou réessayer, avec **une limite**.
+- **`break`** sort de la boucle, **`continue`** passe au tour suivant.
+- Lire un fichier : **`while IFS= read -r ligne; do ...; done < fichier`** ; des champs : **`while IFS=';' read -r a b c`**.
+- Jamais **`for ligne in $(cat fichier)`** ; pas de boucle qui compte dans un tube ; **`shopt -s nullglob`** contre le joker vide.
+- Une boucle destructrice tourne **à blanc** d'abord, avec `echo`.

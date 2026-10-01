@@ -1,0 +1,202 @@
+---
+refCode: CL-LSN-02045-V01
+slug: linux-premier-script
+title: "Premier script : shebang, droits et arguments"
+description: "Passer de la commande tapée à la main au script qu'on relance à volonté : ce qu'est un script shell, la ligne shebang et le choix de l'interpréteur, les droits d'exécution, les façons de lancer un script et ce qui les distingue, les arguments ($0, $1, $#, \"$@\"), le code de retour et l'en-tête qui rend un script lisible. Avec deux scripts à lancer et à écrire, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02906-V01"]
+---
+
+Depuis le début du parcours, tu tapes tes commandes une par une. C'est parfait pour explorer, mais un administrateur refait sans cesse les mêmes gestes : vérifier l'espace disque, archiver des journaux, créer un compte avec les bons réglages, préparer un serveur. Le jour où une suite de commandes revient pour la troisième fois, on l'écrit dans un **script** : un fichier texte qui contient des commandes, que le shell exécute de haut en bas. Ce module t'apprend à écrire des scripts Bash fiables, du premier fichier de trois lignes jusqu'au script de sauvegarde planifié qui tourne seul chaque nuit.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- écrire un script et choisir son interpréteur avec la ligne **shebang** ;
+- rendre un script exécutable, et le lancer de plusieurs façons en sachant ce qui les distingue ;
+- lire les **arguments** passés au script : `$0`, `$1`, `$#`, `"$@"` ;
+- terminer un script avec un **code de retour** qui dit s'il a réussi ;
+- donner à un script un en-tête qui explique à quoi il sert et comment l'appeler.
+
+## pourquoi ça compte
+
+Un script, c'est d'abord de la **mémoire** : la procédure exacte, sans l'étape oubliée à 2 h du matin. C'est aussi de la **reproductibilité** : la même opération, faite de la même façon sur dix serveurs. Mais c'est du code qui tourne souvent avec les droits de root, parfois sans personne pour le surveiller. Un script mal écrit peut supprimer les mauvais fichiers, annoncer une sauvegarde réussie qui n'a jamais eu lieu, ou ouvrir une faille : un script appelé par une tâche planifiée et modifiable par n'importe qui est une porte d'entrée classique pour passer root. Écrire des scripts, c'est donc apprendre à les écrire **proprement** dès le premier.
+
+## un script, c'est un fichier de commandes
+
+Voici un script complet :
+
+```bash
+#!/bin/bash
+# espace.sh : affiche l'espace disque et les plus gros dossiers de /var.
+echo "Espace disque :"
+df -h /
+echo
+echo "Les cinq plus gros dossiers de /var :"
+du -sh /var/* 2>/dev/null | sort -h | tail -5
+```
+
+Rien de nouveau dans les commandes : ce sont celles que tu connais. Le shell lit le fichier ligne par ligne et exécute chaque commande comme si tu l'avais tapée. Ce qui commence par `#` est un **commentaire**, ignoré à l'exécution, sauf la toute première ligne, qui joue un rôle à part.
+
+## le shebang : quel interpréteur ?
+
+La première ligne, `#!/bin/bash`, s'appelle le **shebang** (de *hash*, le `#`, et *bang*, le `!`). Quand tu exécutes le fichier, c'est le **noyau** qui la lit : il lance le programme indiqué en lui passant le chemin du script. `#!/bin/bash` dit donc « fais lire ce fichier par bash ». Les variantes courantes :
+
+| Shebang | Effet |
+| --- | --- |
+| `#!/bin/bash` | Bash, à l'emplacement standard. Le choix de ce module |
+| `#!/usr/bin/env bash` | Le premier `bash` trouvé dans le `PATH` : utile quand bash n'est pas dans `/bin`, comme sur certains BSD ou sur macOS avec un bash récent |
+| `#!/bin/sh` | Le shell POSIX du système : `dash` sur Debian et Ubuntu, `ash` sur Alpine ou BusyBox. Plus portable, mais sans les ajouts de bash |
+| `#!/usr/bin/python3` | Le même mécanisme vaut pour tout interpréteur |
+
+Le piège classique : écrire `#!/bin/sh` puis utiliser des fonctions propres à bash, comme les tableaux ou `[[ ]]`. Le script marche sur ta machine, où `sh` est peut-être bash, et casse sur une Debian, où `sh` est `dash`. Règle simple : **si tu écris du bash, déclare bash**. Le shebang doit être **la toute première ligne**, sans espace ni ligne vide avant.
+
+## rendre un script exécutable
+
+Un fichier qu'on vient de créer n'a pas le droit d'exécution. Tu l'ajoutes avec `chmod`, vu au module 4 :
+
+```bash
+chmod 755 espace.sh    # rwxr-xr-x : tout le monde lit et exécute, seul le propriétaire modifie
+chmod u+x espace.sh    # ajoute seulement l'exécution pour le propriétaire
+```
+
+Pour un script d'administration, la règle d'or est que **personne d'autre que son propriétaire ne puisse le modifier**. Un script lancé par root, mais modifiable par un autre compte, permet à ce compte de faire exécuter n'importe quoi à root. `755` ou `700` conviennent ; `777` ne convient jamais.
+
+## lancer un script : quatre façons
+
+```bash
+./espace.sh            # exécute le fichier : il faut le droit x, et le shebang choisit l'interpréteur
+bash espace.sh         # lance bash en lui donnant le fichier à lire : pas besoin du droit x
+sh espace.sh           # même chose avec sh : le shebang est ignoré !
+source espace.sh       # exécute le fichier dans le shell courant (aussi : . espace.sh)
+```
+
+Le `./` est nécessaire parce que le répertoire courant n'est **pas** dans le `PATH` : c'est voulu, pour qu'un fichier piégé nommé `ls`, déposé dans un dossier, ne soit pas lancé à ta place. Pour appeler un script par son seul nom, on le range dans un dossier du `PATH`, comme `/usr/local/bin` pour tout le système ou `~/.local/bin` pour ton compte.
+
+Les trois premières façons lancent un **nouveau processus** : le script a sa propre copie des variables, et ce qu'il change (un `cd`, une variable) disparaît quand il se termine. `source` fait l'inverse : les commandes s'exécutent dans **ton** shell, et leurs effets restent. C'est ce qu'on veut pour charger des réglages ou une bibliothèque de fonctions, et c'est ce que fait ton shell avec `~/.bashrc` à chaque ouverture. Un `exit` dans un fichier chargé par `source` ferme donc ton propre terminal.
+
+<Diagram caption="Lancer ou charger un script">
+flowchart LR
+  A["./script.sh"] -->|"le noyau lit le shebang"| B["nouveau processus bash"]
+  C["bash script.sh"] --> B
+  B --> D["ses variables et son cd disparaissent à la fin"]
+  E["source script.sh"] --> F["exécuté dans le shell courant"]
+  F --> G["ses variables et son cd restent"]
+</Diagram>
+
+## les arguments
+
+Ce qu'on écrit après le nom du script lui est transmis sous forme d'**arguments**, que le script lit dans des variables spéciales :
+
+| Variable | Contenu |
+| --- | --- |
+| `$0` | le nom du script, tel qu'il a été appelé |
+| `$1`, `$2`… `$9` | le premier, le deuxième… le neuvième argument |
+| `${10}` | le dixième : au-delà de 9, les accolades sont obligatoires |
+| `$#` | le nombre d'arguments |
+| `"$@"` | tous les arguments, chacun gardé intact |
+| `$*` | tous les arguments, collés en une seule chaîne |
+
+```bash
+#!/bin/bash
+# copier.sh : copie un fichier dans le dossier de sauvegarde.
+echo "Le script $0 a reçu $# argument(s)."
+cp "$1" /srv/sauvegardes/
+```
+
+`./copier.sh "rapport final.pdf"` donne **un** argument, grâce aux guillemets : `$1` vaut `rapport final.pdf`. Sans guillemets, le shell aurait découpé le nom en deux arguments. Et dans le script, les guillemets autour de `"$1"` sont tout aussi indispensables, pour la même raison : on y reviendra longuement à la leçon suivante. Pour transmettre tous les arguments à une autre commande sans rien abîmer, on écrit toujours `"$@"`, entre guillemets.
+
+La commande intégrée `shift` décale les arguments : `$2` devient `$1`, `$3` devient `$2`, et `$#` diminue de un. On s'en sert pour traiter les arguments un par un, ce que tu feras avec les boucles et les options.
+
+## le code de retour
+
+Chaque commande se termine par un **code de retour**, un nombre de 0 à 255 : **0** veut dire succès, tout le reste veut dire échec. La variable `$?` contient le code de la dernière commande :
+
+```bash
+ls /etc/passwd ; echo $?     # 0
+ls /nexistepas ; echo $?     # 2 : ls a échoué
+```
+
+Un script fait de même avec `exit` : `exit 0` pour dire « tout s'est bien passé », `exit 1` ou un autre nombre pour signaler un problème. Sans `exit`, le script rend le code de **sa dernière commande**, ce qui peut cacher un échec survenu plus haut. Ce code n'est pas un détail : c'est lui que lisent les tâches planifiées, les outils de supervision et les autres scripts pour décider de la suite. Un script de sauvegarde qui échoue en rendant 0 est pire qu'un script qui n'existe pas, parce que tout le monde le croit en bonne santé. La leçon sur les conditions apprend à exploiter ces codes, celle sur la robustesse à ne jamais les perdre.
+
+## un en-tête qui sert
+
+Un script se relit bien plus souvent qu'il ne s'écrit, souvent par quelqu'un d'autre, souvent pendant un incident. Quelques lignes en tête suffisent :
+
+```bash
+#!/bin/bash
+# purge-cache.sh : supprime les fichiers de cache de plus de 7 jours.
+# Usage : purge-cache.sh DOSSIER
+# Codes de retour : 0 succès, 1 erreur, 2 mauvais usage.
+# Planifié chaque nuit à 3 h (crontab de root).
+```
+
+Ce que fait le script, comment l'appeler, ce que veulent dire ses codes de retour, et d'où il est lancé : de quoi comprendre en vingt secondes ce que fait ce fichier trouvé dans `/usr/local/bin`. Donne aussi au fichier un **nom qui dit ce qu'il fait** : `purge-cache.sh`, pas `script2.sh`. L'extension `.sh` n'a aucun effet pour le système, c'est le shebang qui compte, mais elle aide les humains et les éditeurs.
+
+## à toi de jouer
+
+Le terminal ci-dessous démarre dans le shell de BusyBox, `ash`. Les scripts que tu vas lancer, eux, déclarent bash dans leur shebang : c'est bash qui les exécutera, sans que tu aies à le choisir. Le dossier de travail contient `arguments.sh`, qui montre ce qu'un script reçoit.
+
+1. lis-le avec `cat arguments.sh`, puis lance-le avec `./arguments.sh` : le système refuse, il manque le droit d'exécution ;
+2. donne-le-lui avec `chmod 755 arguments.sh`, puis relance-le ;
+3. appelle-le avec deux arguments, dont un nom qui contient une espace, et garde le résultat : `./arguments.sh "rapport final.txt" notes.txt > args.txt`, puis `cat args.txt` ;
+4. lance-le maintenant avec `sh arguments.sh` : la ligne de l'interpréteur reste vide, car `sh` a ignoré le shebang ;
+5. écris ton premier script, `salut.sh`, avec un here-document (tape les lignes une à une, `FIN` termine le texte) :
+
+```bash
+cat > salut.sh << 'FIN'
+#!/bin/bash
+# salut.sh : salue la personne dont le nom est passé en argument.
+echo "Bonjour, $1 !"
+echo "Tu m'as donné $# argument(s)."
+FIN
+```
+
+6. rends-le exécutable avec `chmod 755 salut.sh`, puis lance-le en gardant sa sortie : `./salut.sh Alice > salut.txt`.
+
+<LinuxTerminal title="Ton premier script" files={{"arguments.sh": "#!/bin/bash\n# arguments.sh : montre ce qu'un script reçoit de la ligne de commande.\necho \"Interpréteur : bash $BASH_VERSION\"\necho \"Nom du script : $0\"\necho \"Nombre d'arguments : $#\"\necho \"Premier argument : $1\"\necho \"Deuxième argument : $2\"\n"}} expectedCommands={["chmod 755 arguments.sh", "./arguments.sh \"rapport final.txt\" notes.txt > args.txt", "sh arguments.sh", "./salut.sh Alice > salut.txt"]} checks={[{"label": "arguments.sh est exécutable (755)", "path": "arguments.sh", "expect": "file", "mode": "755"}, {"label": "args.txt montre deux arguments", "path": "args.txt", "expect": "file", "contains": "Nombre d'arguments : 2"}, {"label": "salut.sh commence par le shebang de bash", "path": "salut.sh", "expect": "file", "contains": "#!/bin/bash"}, {"label": "salut.sh est exécutable (755)", "path": "salut.sh", "expect": "file", "mode": "755"}, {"label": "salut.txt salue Alice", "path": "salut.txt", "expect": "file", "contains": "Bonjour, Alice !"}]} hints={["« Permission denied » : le fichier n'a pas encore le droit d'exécution.", "Les guillemets autour de \"rapport final.txt\" en font un seul argument.", "Avec sh arguments.sh, c'est sh qui lit le fichier : $BASH_VERSION est vide.", "Le here-document se termine par une ligne qui contient seulement FIN.", "Une faute de frappe dans salut.sh ? Recommence le cat > salut.sh, il remplace le fichier."]} />
+
+Remarque le résultat de l'étape 3 : `Nombre d'arguments : 2`, et le premier argument garde son espace. Sans les guillemets autour de `"rapport final.txt"`, le script en aurait reçu trois. Remarque aussi l'étape 4 : lancer un script avec `sh` ou `bash` court-circuite son shebang, ce qui explique bien des « ça marche chez moi ». Quant aux apostrophes autour de `'FIN'`, elles empêchent le shell de remplacer `$1` et `$#` au moment où il écrit le fichier : ces variables doivent arriver telles quelles dans le script, pour n'être lues qu'à son exécution.
+
+## les pièges
+
+- **Oublier le shebang, ou le mettre après une ligne vide.** Le script est alors lu par le shell qui le lance, pas forcément bash.
+- **Écrire `#!/bin/sh` et utiliser du bash.** Ça marche là où `sh` est bash, et casse sur Debian, où `sh` est `dash`.
+- **Taper `script.sh` au lieu de `./script.sh`.** Le dossier courant n'est pas dans le `PATH` : « commande introuvable ».
+- **Rendre un script d'administration modifiable par tous.** Un `chmod 777` sur un script lancé par root offre root à n'importe quel compte.
+- **Lancer avec `source` un script qui fait `exit`.** C'est ton propre shell qui se ferme.
+- **Utiliser `$1` sans guillemets.** Un nom de fichier avec une espace devient deux arguments.
+- **Écrire des fins de ligne Windows.** Un script édité sous Windows et copié tel quel échoue avec `bad interpreter: /bin/bash^M` : `dos2unix` le répare.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Shell-Scripts" description="Comment bash exécute un script, et le rôle du shebang, en anglais">Manuel de bash : les scripts shell</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Special-Parameters" description="$#, $@, $*, $? et les autres paramètres spéciaux, en anglais">Manuel de bash : les paramètres spéciaux</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/BashGuide" description="Le guide de référence de la communauté bash, en anglais : une lecture idéale en parallèle de ce module">Le BashGuide de Greg Wooledge</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle de la ligne #!/bin/bash en tête d'un script ?" options={["C'est un commentaire sans effet", "Elle indique au noyau quel interpréteur doit lire le fichier quand on l'exécute", "Elle rend le fichier exécutable", "Elle importe les fonctions de bash"]} correct={1} explanation="Le shebang est lu par le noyau quand on exécute le fichier ; le droit d'exécution, lui, vient de chmod." />
+  <Quiz id="q-2" question="Pourquoi faut-il taper ./sauvegarde.sh et pas seulement sauvegarde.sh ?" options={["Pour l'exécuter en root", "Parce que le répertoire courant n'est pas dans le PATH, volontairement", "Parce que l'extension .sh l'exige", "Pour ignorer le shebang"]} correct={1} explanation="Ne pas chercher les commandes dans le dossier courant évite de lancer par erreur un fichier piégé." />
+  <Quiz id="q-3" question="Un script lancé avec ./config.sh fait cd /etc et définit une variable. Que reste-t-il dans ton shell après sa fin ?" options={["Le cd et la variable", "Rien : il a tourné dans un processus à part", "La variable seulement", "Le cd seulement"]} correct={1} explanation="Seul source exécute le fichier dans le shell courant, dont il modifie alors l'état." />
+  <Quiz id="q-4" question="Que contient $# dans un script appelé avec ./copier.sh 'a b' c ?" options={["3", "2", "1", "Le nom du script"]} correct={1} explanation="Les apostrophes font de a b un seul argument : le script en reçoit deux." />
+  <Quiz id="q-5" question="Comment transmettre tous les arguments d'un script à une autre commande sans en abîmer aucun ?" options={["$*", "\"$@\"", "$@ sans guillemets", "$#"]} correct={1} explanation="Entre guillemets, $@ garde chaque argument séparé et intact, espaces comprises." />
+  <Quiz id="q-6" question="Que signifie un code de retour de 0 ?" options={["Une erreur", "Le succès", "Que le script n'a rien fait", "Que le script a été interrompu"]} correct={1} explanation="0 veut dire succès, toute autre valeur un échec : c'est l'inverse de l'habitude des langages où 0 vaut faux." />
+  <Quiz id="q-7" question="Un script de maintenance lancé par root est en mode 777. Quel est le risque ?" options={["Aucun", "N'importe quel compte peut le modifier et faire exécuter ses commandes par root", "Il s'exécute plus lentement", "Il ne peut plus être planifié"]} correct={1} explanation="Un script lancé par root ne doit être modifiable que par root : 755 ou 700." />
+</QuizGroup>
+
+## à retenir
+
+- Un **script** est un fichier de commandes. Sa première ligne, le **shebang** (`#!/bin/bash`), choisit l'interpréteur : si tu écris du bash, déclare bash.
+- **`chmod 755`** le rend exécutable ; seul son propriétaire doit pouvoir le modifier.
+- **`./script.sh`** l'exécute dans un nouveau processus, **`bash script.sh`** aussi sans exiger le droit `x`, **`source`** l'exécute dans ton shell.
+- Les arguments : **`$1`**, **`$2`**… **`$#`** pour leur nombre, **`"$@"`** pour tous, intacts. Toujours entre guillemets.
+- **`exit 0`** pour le succès, un autre code pour l'échec : c'est ce que lisent les tâches planifiées et la supervision.
+- Un **en-tête** : ce que fait le script, son usage, ses codes de retour, d'où il est lancé.
