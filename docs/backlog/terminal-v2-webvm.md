@@ -2,6 +2,12 @@
 
 > Tracé pour v1.5/v2 - pas en v1.
 
+> **Remplacé.** Le vrai Linux est arrivé dans les leçons avec v86 et une image
+> Buildroot (`<LinuxTerminal>`, PR #341), servie avec le site, sans CheerpX ni
+> R2. La suite (défis, image complète, machines reliées) est dans
+> [interactive-learning.md](interactive-learning.md). Ce document reste comme
+> trace du plan d'origine.
+
 ## Pourquoi
 
 SimulatedTerminal v1 fonctionne mais a des limites pédagogiques :
