@@ -4,6 +4,7 @@ import {
   createLineTracker,
   directoriesOf,
   endsWithPrompt,
+  installBashCommand,
   isLessonFilePath,
   normalizeCommand,
   octalMode,
@@ -66,6 +67,22 @@ describe("setupCommand", () => {
 
   it("creates nothing when there is nothing to create", () => {
     expect(setupCommand([], 80, 24)).toBe("stty cols 80 rows 24; cd /mnt; clear\n");
+  });
+});
+
+describe("installBashCommand", () => {
+  it("makes room on /, moves the served bash to /bin and leaves nothing behind in /mnt", () => {
+    expect(installBashCommand()).toBe(
+      "mount -o remount,size=24m /; " +
+        "cp /mnt/.bash /bin/bash && chmod 755 /bin/bash || rm -f /bin/bash; " +
+        "rm -f /mnt/.bash; " +
+        `printf '%s\\n' "PS1='bash \\W% '" > /root/.bashrc`,
+    );
+  });
+
+  it("gives bash a prompt the page recognises", () => {
+    expect(installBashCommand()).toContain("PS1='bash \\W% '");
+    expect(endsWithPrompt("bash mnt% ")).toBe(true);
   });
 });
 
