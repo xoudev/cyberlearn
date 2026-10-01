@@ -1,0 +1,184 @@
+---
+refCode: CL-LSN-02908-V01
+slug: linux-bilan-module-8
+title: "Bilan du module 8 : une application devenue service"
+description: "Le quiz du module Services, systemd et journaux, puis un lab : transformer un script en service fiable sur la machine virtuelle d'entraînement, avec son compte dédié, son réglage, une unité qui redémarre après un plantage et démarre au boot, des messages dans le journal et un bac à sable qui ramène son exposition sous 5, avec une correction commentée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02060-V01"]
+---
+
+Le module 8 t'a montré ce qui fait tourner un Linux : la chaîne du démarrage jusqu'à systemd, le pilotage des services, l'écriture d'une unité, les cibles et les modes de dépannage, le journal, syslog et la rotation, et une méthode pour diagnostiquer un service en panne. Ce bilan vérifie les connaissances, puis te fait faire le geste qui résume tout le module : prendre un programme lancé à la main et en faire un **vrai service**, qui démarre au boot, se relève seul après un plantage, journalise proprement et ne peut presque rien faire d'autre que son travail.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- créer le compte et les dossiers d'un service, avec les bons propriétaires et les bons droits ;
+- écrire une unité complète, avec son environnement, son redémarrage et son installation ;
+- activer un service, vérifier qu'il démarre au boot et qu'il se relève d'un plantage ;
+- retrouver ses messages dans le journal ;
+- l'enfermer dans un bac à sable et mesurer son exposition ;
+- diagnostiquer pourquoi il refuse de démarrer, si c'est le cas.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="m8-q-1" question="Quel est le rôle de l'initramfs au démarrage ?" options={["Afficher le menu de GRUB", "Fournir de quoi trouver et monter la vraie racine : pilotes, déchiffrement, LVM", "Remplacer systemd", "Stocker le journal"]} correct={1} explanation="Le noyau l'utilise avant que la racine soit disponible, puis lance PID 1." />
+  <Quiz id="m8-q-2" question="Pourquoi un accès physique à une machine non protégée donne-t-il root ?" options={["Il ne le donne pas", "Parce qu'on peut ajouter init=/bin/bash à la ligne du noyau dans GRUB", "Parce que root n'a pas de mot de passe", "Parce que systemd est désactivé"]} correct={1} explanation="Mot de passe GRUB et chiffrement du disque sont les parades." />
+  <Quiz id="m8-q-3" question="Quelle commande fait démarrer un service au boot ET maintenant ?" options={["systemctl start", "systemctl enable --now", "systemctl reload", "systemctl daemon-reload"]} correct={1} explanation="enable agit sur le démarrage, start sur l'instant ; --now fait les deux." />
+  <Quiz id="m8-q-4" question="Quelle est la différence entre disable et mask ?" options={["Aucune", "disable l'écarte du démarrage ; mask le rend impossible à démarrer, même à la main", "mask le désinstalle", "disable l'arrête maintenant"]} correct={1} explanation="mask remplace l'unité par un lien vers /dev/null." />
+  <Quiz id="m8-q-5" question="Où ranger l'unité d'un service maison ?" options={["/lib/systemd/system/", "/etc/systemd/system/", "/usr/local/lib/", "/var/lib/systemd/"]} correct={1} explanation="/lib appartient aux paquets ; /etc l'emporte et t'appartient." />
+  <Quiz id="m8-q-6" question="Après avoir modifié une unité, que faut-il faire avant de relancer le service ?" options={["Rien", "systemctl daemon-reload", "reboot", "journalctl --vacuum"]} correct={1} explanation="Sans daemon-reload, systemd utilise l'ancienne version de l'unité." />
+  <Quiz id="m8-q-7" question="Pourquoi After=network-online.target seul n'attend-il souvent rien ?" options={["Parce que la cible n'existe pas", "Parce que After ne fait qu'ordonner : sans Wants=, personne ne demande cette cible", "Parce qu'il faut Before", "Il attend toujours"]} correct={1} explanation="On combine Wants= pour la faire démarrer et After= pour l'attendre." />
+  <Quiz id="m8-q-8" question="Que fait Restart=on-failure ?" options={["Il redémarre la machine", "Il relance le service s'il s'arrête sur une erreur ou un signal, pas s'il est arrêté proprement", "Il redémarre le service chaque heure", "Il empêche les plantages"]} correct={1} explanation="RestartSec règle le délai, StartLimitBurst le nombre d'essais." />
+  <Quiz id="m8-q-9" question="Quelle cible correspond à un serveur sans interface graphique ?" options={["graphical.target", "multi-user.target", "rescue.target", "emergency.target"]} correct={1} explanation="C'est l'ancien niveau de fonctionnement 3." />
+  <Quiz id="m8-q-10" question="En mode d'urgence, pourquoi faut-il mount -o remount,rw / avant de corriger /etc/fstab ?" options={["Par habitude", "Parce que la racine y est montée en lecture seule", "Pour monter les autres disques", "Pour activer le réseau"]} correct={1} explanation="Puis mount -a vérifie la correction avant de reprendre le démarrage." />
+  <Quiz id="m8-q-11" question="Quelle commande montre les erreurs du démarrage précédent ?" options={["journalctl -p err", "journalctl -b -1 -p err", "dmesg -c", "systemctl --failed"]} correct={1} explanation="À condition que le journal soit persistant, dans /var/log/journal." />
+  <Quiz id="m8-q-12" question="Que reçoit la règle rsyslog auth.warning /var/log/alertes ?" options={["Seulement les avertissements d'authentification", "Les messages d'authentification de priorité warning et plus grave", "Tous les avertissements", "Rien"]} correct={1} explanation="Une priorité inclut toutes les plus graves." />
+  <Quiz id="m8-q-13" question="Après une rotation, un service écrit toujours dans le fichier renommé. Que manque-t-il ?" options={["L'option compress", "Un postrotate qui fait rouvrir ses fichiers au service", "L'option daily", "Rien"]} correct={1} explanation="Un fichier ouvert reste le même, même renommé." />
+  <Quiz id="m8-q-14" question="Un service échoue avec status=203/EXEC. Par quoi commencer ?" options={["Réinstaller le système", "Vérifier que le programme existe et qu'il est exécutable", "Augmenter la mémoire", "Vider le journal"]} correct={1} explanation="Les codes 2xx viennent de systemd : ici, il n'a pas pu exécuter le programme." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. Les services reviennent dans les modules sur le réseau et dans le projet final.
+
+## projet
+
+### la situation
+
+Une petite équipe utilise `pulsation`, un script maison qui relève la charge de la machine à intervalles réguliers. Jusqu'ici, quelqu'un le lance à la main dans une session `tmux` après chaque redémarrage, en root, et oublie une fois sur deux. On te demande d'en faire un service propre. Ce lab demande systemd et les droits root : fais-le dans la **machine virtuelle d'entraînement** installée au parcours Fondamentaux, **jamais sur un serveur réel**.
+
+Voici le script, tel que l'équipe l'utilise :
+
+```bash
+#!/bin/bash
+# pulsation : relève la charge de la machine à intervalles réguliers.
+set -euo pipefail
+intervalle=${PULSATION_INTERVALLE:-10}
+etat=/var/lib/pulsation/etat
+while true; do
+  printf '%s charge=%s\n' "$(date '+%F %T')" "$(cut -d' ' -f1 /proc/loadavg)" | tee "$etat"
+  sleep "$intervalle"
+done
+```
+
+Il affiche chaque relevé, et garde le dernier dans `/var/lib/pulsation/etat`.
+
+### le cahier des charges
+
+1. **Un compte dédié** : un compte système `pulsation`, sans répertoire personnel ni shell.
+2. **Le programme** : installé dans `/usr/local/bin/pulsation`, propriété de root, en mode `755`.
+3. **Ses données** : le dossier `/var/lib/pulsation`, propriété du compte `pulsation`, et de lui seul.
+4. **Son réglage** : l'intervalle vaut 5 secondes, fixé par `PULSATION_INTERVALLE=5` dans `/etc/pulsation.env`, lisible par root et le groupe `pulsation` seulement.
+5. **L'unité** `pulsation.service` : le service tourne sous le compte `pulsation`, lit son réglage, redémarre trois secondes après un plantage, et démarre au boot.
+6. **Le journal** : ses relevés se lisent avec `journalctl`, sans aucun fichier de journal à part.
+7. **Le bac à sable** : l'exposition mesurée par `systemd-analyze security` est **inférieure à 5**, et le service fonctionne toujours.
+
+### les critères de réussite
+
+| Test | Résultat attendu |
+| --- | --- |
+| `systemctl is-enabled pulsation` | `enabled` |
+| `systemctl is-active pulsation` | `active` |
+| `ps -o user= -C pulsation` | `pulsation` |
+| `journalctl -u pulsation -n 3` | trois relevés, à 5 secondes d'intervalle |
+| `sudo kill -9` du processus principal, puis `systemctl show -p NRestarts pulsation` cinq secondes plus tard | `NRestarts=1`, et le service est de nouveau `active` |
+| `sudo -u nobody cat /etc/pulsation.env` | `Permission denied` |
+| `systemd-analyze security pulsation \| tail -1` | une exposition inférieure à 5 |
+| après `sudo reboot` | le service est `active` sans intervention |
+
+### la correction commentée
+
+À lire après avoir essayé.
+
+**1. Le compte, le programme, les données, le réglage.**
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin pulsation
+sudo install -m 755 -o root -g root pulsation /usr/local/bin/pulsation
+sudo install -d -m 750 -o pulsation -g pulsation /var/lib/pulsation
+echo 'PULSATION_INTERVALLE=5' | sudo tee /etc/pulsation.env > /dev/null
+sudo chown root:pulsation /etc/pulsation.env
+sudo chmod 640 /etc/pulsation.env
+```
+
+`install` copie un fichier en fixant d'un coup ses droits et son propriétaire, ce que `cp` ne fait pas : c'était la leçon de la panne `203/EXEC`. `install -d` crée un dossier de la même façon. Le programme appartient à root et n'est modifiable que par lui : le compte du service peut l'exécuter, pas le changer. Le réglage, lisible par le groupe `pulsation`, est inaccessible aux autres comptes, comme le serait un secret.
+
+**2. L'unité.** Dans `/etc/systemd/system/pulsation.service` :
+
+```ini
+[Unit]
+Description=Relevé de la charge de la machine
+Documentation=file:///usr/local/bin/pulsation
+
+[Service]
+Type=simple
+User=pulsation
+Group=pulsation
+EnvironmentFile=/etc/pulsation.env
+ExecStart=/usr/local/bin/pulsation
+Restart=on-failure
+RestartSec=3
+
+# Le bac à sable : le service ne peut écrire que dans son dossier,
+# n'a ni réseau, ni périphériques, ni privilèges à gagner.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/pulsation
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Pas de `After=network-online.target` : le service n'a pas besoin du réseau, et il n'en aura d'ailleurs pas, grâce à `PrivateNetwork=yes`. Les relevés vont dans le journal sans rien configurer, puisque systemd capte la sortie du service. Le bac à sable retire tout ce dont un relevé de charge n'a pas besoin : écrire hors de son dossier, voir `/home`, accéder au réseau ou aux périphériques, charger un module du noyau, gagner des privilèges. `CapabilityBoundingSet=` vide lui retire toutes les **capacités** du noyau, ces fragments des pouvoirs de root, et `SystemCallFilter=@system-service` ne laisse passer que les appels système d'un service ordinaire.
+
+**3. Activer et éprouver.**
+
+```bash
+sudo systemd-analyze verify /etc/systemd/system/pulsation.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now pulsation
+journalctl -u pulsation -f                       # Ctrl+C pour quitter
+sudo kill -9 "$(systemctl show -p MainPID --value pulsation)"
+sleep 5; systemctl show -p NRestarts pulsation; systemctl is-active pulsation
+systemd-analyze security pulsation | tail -1
+```
+
+`systemctl show -p MainPID --value` donne le PID du processus principal, ce qui évite de le chercher dans `ps`. Après le `kill -9`, le journal montre le processus tué par le signal 9, puis le redémarrage planifié trois secondes plus tard. `NRestarts` compte ces redémarrages automatiques : une valeur qui grimpe sur un serveur en production est une alerte à surveiller.
+
+**4. Si le service ne démarre pas.** Applique la méthode de la leçon 7. Les erreurs typiques de ce lab : `217/USER` si le compte n'a pas été créé, `203/EXEC` si le script n'est pas exécutable ou a des fins de ligne Windows, `226/NAMESPACE` si `/var/lib/pulsation` n'existe pas alors que `ReadWritePaths=` le cite, et `Permission denied` sur `etat` si le dossier appartient à root. Ajouter les protections du bac à sable **une à une**, en relançant le service à chaque fois, permet de savoir laquelle bloque, si l'une bloque.
+
+**5. Le redémarrage.** `sudo reboot`, puis, une fois reconnecté, `systemctl is-active pulsation` et `journalctl -u pulsation -b`. Le premier relevé suit de quelques secondes le démarrage de la machine.
+
+### pour aller plus loin
+
+Remplace la boucle `while true` par un **minuteur** : un service `Type=oneshot` qui fait un seul relevé, déclenché toutes les 5 secondes par un `pulsation.timer` avec `OnUnitActiveSec=5s`. Compare les deux approches : le minuteur ne garde aucun processus en mémoire entre deux relevés, et un plantage n'interrompt plus rien. Puis passe le service en **`DynamicUser=yes`**, qui crée un compte éphémère à chaque démarrage, et `StateDirectory=pulsation`, qui crée `/var/lib/pulsation` avec le bon propriétaire : plus besoin de `useradd` ni de `install -d`.
+
+## à retenir
+
+- Un service propre a son **compte système**, un programme **propriété de root** en `755`, un dossier de données à lui, et un réglage en **`640`** dans un `EnvironmentFile`.
+- **`install -m 755 -o root`** plutôt que `cp`, pour fixer droits et propriétaire.
+- L'unité : **`User=`**, **`EnvironmentFile=`**, **`Restart=on-failure`**, **`RestartSec=`**, **`WantedBy=multi-user.target`**, puis **`daemon-reload`** et **`enable --now`**.
+- On **éprouve** un service : `kill -9` et `NRestarts`, un redémarrage complet, le journal.
+- Le bac à sable fait passer l'exposition de 9,6 à presque rien : on ajoute les protections une à une.
+- Le module 9 passe aux **disques** : partitions, systèmes de fichiers, montages, LVM, chiffrement et sauvegardes.

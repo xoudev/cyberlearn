@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-02059-V01
+slug: linux-syslog-rotation
+title: "syslog, rsyslog et la rotation des journaux"
+description: "Les journaux en fichiers texte : le protocole syslog et ses deux étiquettes, la facilité et la priorité, envoyer un message avec logger, les règles de rsyslog qui trient les messages vers les fichiers de /var/log, ce que contient chacun de ces fichiers, l'envoi des journaux vers un serveur central, puis la rotation avec logrotate : fréquence, nombre de copies, compression, et le service qu'il faut prévenir pour qu'il écrive dans le nouveau fichier. Avec un démon syslog filtré et une rotation qui tourne sous tes yeux, sur un vrai Linux, puis rsyslog et logrotate sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02058-V01"]
+---
+
+Avant journald, et encore aujourd'hui à côté de lui, les journaux d'un Linux sont des **fichiers texte** dans `/var/log` : `auth.log`, `syslog`, `kern.log`, et ceux de chaque logiciel. Ils ont un avantage décisif : tous les outils du module 3 s'y appliquent, `grep`, `awk`, `tail -f`, et tous les systèmes de collecte savent les lire. Derrière eux se trouve un protocole vieux de quarante ans, **syslog**, et un démon qui trie les messages, le plus souvent **rsyslog**. Reste un problème que tout fichier de journal finit par poser : il grossit sans fin. La **rotation** le règle, à condition de la configurer correctement.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer les deux étiquettes d'un message syslog : la **facilité** et la **priorité** ;
+- envoyer un message au journal depuis un script avec `logger` ;
+- lire et écrire une règle de rsyslog ;
+- dire ce que contiennent les principaux fichiers de `/var/log` ;
+- envoyer les journaux vers un serveur central ;
+- configurer la rotation d'un journal avec logrotate, et la tester.
+
+## pourquoi ça compte
+
+Un disque plein de journaux arrête un serveur aussi sûrement qu'une panne : la base de données ne peut plus écrire, les services plantent, et parfois plus personne ne peut se connecter. À l'inverse, des journaux supprimés trop tôt laissent l'enquêteur sans preuve. La rotation règle ce compromis : garder assez longtemps, sans jamais remplir le disque. Et le tri par rsyslog sépare ce qui compte pour la sécurité, comme les authentifications, de tout le reste, pour qu'on puisse le garder plus longtemps et l'envoyer hors de la machine.
+
+## facilité et priorité
+
+Chaque message syslog porte deux étiquettes. La **facilité** dit d'où il vient :
+
+| Facilité | Émetteur |
+| --- | --- |
+| `kern` | le noyau |
+| `auth`, `authpriv` | les authentifications : connexions, `sudo`, `su` |
+| `daemon` | les services sans facilité propre |
+| `cron` | le planificateur |
+| `mail` | la messagerie |
+| `user` | les programmes ordinaires, la valeur par défaut |
+| `local0` à `local7` | libres, pour tes applications |
+
+La **priorité** dit sa gravité, avec la même échelle que journald : `emerg`, `alert`, `crit`, `err`, `warning`, `notice`, `info`, `debug`, de 0 à 7. Un message s'écrit donc `auth.warning` ou `local3.err`.
+
+Depuis un script, **`logger`** envoie un message au journal du système :
+
+```bash
+logger -t sauvegarde "archive créée : 1,8 Go"
+logger -t sauvegarde -p user.err "échec : disque de destination plein"
+logger -t appli -p local3.info "démarrage de la version 2.4"
+```
+
+`-t` donne l'étiquette du programme, `-p` la facilité et la priorité. C'est la façon la plus simple de faire entrer les messages d'un script dans les journaux, où la supervision les trouvera, plutôt que dans un fichier à part que personne ne lit.
+
+## rsyslog et ses règles
+
+**rsyslog** reçoit les messages syslog, y compris ceux que journald lui transmet, et les **trie** vers des destinations. Sa configuration est dans `/etc/rsyslog.conf` et les fichiers de `/etc/rsyslog.d/`. Le cœur en est une liste de règles, une par ligne : un **sélecteur**, puis une **action**.
+
+```text
+auth,authpriv.*                 /var/log/auth.log
+*.*;auth,authpriv.none          -/var/log/syslog
+kern.*                          -/var/log/kern.log
+mail.err                        /var/log/mail.err
+local3.*                        /var/log/appli.log
+```
+
+Le sélecteur s'écrit `facilité.priorité`, et la priorité veut dire « celle-ci **et plus grave** » : `mail.err` reçoit `err`, `crit`, `alert` et `emerg`. `*` désigne toutes les valeurs, `none` aucune, et `;` sépare plusieurs sélecteurs : la deuxième ligne envoie tout dans `syslog`, **sauf** les authentifications, qui ont leur propre fichier. Le `-` devant un chemin désactive l'écriture synchrone sur le disque pour ce fichier, plus rapide, au prix de quelques messages perdus en cas de coupure.
+
+Sur certaines distributions récentes, comme Debian 12, rsyslog n'est plus installé par défaut : le journal de systemd conserve seul les messages. On l'ajoute quand on veut des fichiers texte, ou un envoi à distance. Après toute modification : `sudo rsyslogd -N1` pour vérifier la syntaxe, puis `sudo systemctl restart rsyslog`.
+
+## les fichiers de /var/log
+
+| Fichier (Debian) | Équivalent Red Hat | Contenu |
+| --- | --- | --- |
+| `/var/log/syslog` | `/var/log/messages` | presque tout |
+| `/var/log/auth.log` | `/var/log/secure` | connexions, `sudo`, `su`, SSH |
+| `/var/log/kern.log` | | le noyau |
+| `/var/log/dpkg.log`, `apt/` | `dnf.log` | les paquets, vus au module 6 |
+| `/var/log/nginx/`, `/var/log/postgresql/` | | chaque logiciel, ses propres fichiers |
+| `/var/log/wtmp`, `btmp`, `lastlog` | | les connexions réussies et échouées, en binaire |
+
+Les trois derniers ne se lisent pas avec `cat` : `last` montre les connexions réussies (`wtmp`), `sudo lastb` les échecs (`btmp`), `lastlog` la dernière connexion de chaque compte. `auth.log` est le fichier le plus précieux en sécurité : chaque tentative de connexion, chaque `sudo`, chaque création de compte y laisse une ligne.
+
+## envoyer les journaux ailleurs
+
+Comme on l'a vu avec journald, un attaquant root efface les journaux locaux. rsyslog sait envoyer chaque message vers un **serveur central** au moment même où il arrive :
+
+```text
+*.*   @@journaux.example.org:514
+```
+
+`@@` envoie en **TCP**, `@` en UDP, plus léger mais sans garantie de livraison. Sur un réseau qui n'est pas de confiance, on chiffre le transport en **TLS**, sur le port 6514. Le serveur central, que l'attaquant ne contrôle pas, garde une copie intacte, et c'est là que les outils de détection, un SIEM par exemple, analysent les journaux de tout le parc.
+
+<Diagram caption="Du programme au fichier, puis au serveur central">
+flowchart LR
+  A["sshd, sudo, logger…"] -->|"facilité.priorité"| B["journald"]
+  B --> C["rsyslog"]
+  C -->|"les authentifications"| D["/var/log/auth.log"]
+  C -->|"tout le reste"| E["/var/log/syslog"]
+  C -->|"@@ en TCP ou TLS"| F["serveur central de journaux"]
+  D --> G["logrotate : rotation, compression, purge"]
+  E --> G
+</Diagram>
+
+## la rotation avec logrotate
+
+**logrotate** fait tourner les fichiers de journaux : chaque jour ou chaque semaine, `auth.log` devient `auth.log.1`, l'ancien `auth.log.1` devient `auth.log.2.gz`, et ainsi de suite, jusqu'au nombre de copies voulu ; la plus ancienne est supprimée. Il est lancé chaque jour, par un minuteur systemd ou par cron. Sa configuration générale est dans `/etc/logrotate.conf`, et chaque logiciel a son fichier dans `/etc/logrotate.d/` :
+
+```text
+/var/log/releve/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 releve adm
+    postrotate
+        systemctl reload releve > /dev/null 2>&1 || true
+    endscript
+}
+```
+
+Ligne par ligne : une rotation **par jour**, **14** copies gardées, les anciennes **compressées**, sauf la plus récente (`delaycompress`), pour qu'un programme qui y écrit encore ne soit pas gêné. Pas d'erreur si le fichier manque (`missingok`), pas de rotation s'il est vide (`notifempty`), et un nouveau fichier vide créé avec ces droits (`create`).
+
+Le bloc **`postrotate`** règle le point le plus délicat. Un service qui a ouvert `releve.log` continue d'écrire **dans le même fichier**, même renommé en `releve.log.1` : c'est le fichier fantôme du module 5. Il faut donc lui demander de **rouvrir** ses fichiers, en général par un `reload`. Pour un programme qui ne sait pas le faire, l'option `copytruncate` copie le fichier puis le vide sur place, au risque de perdre les lignes écrites entre les deux.
+
+On teste toujours une configuration avant de lui faire confiance : `sudo logrotate -d /etc/logrotate.d/releve` montre ce qui serait fait, sans rien faire, et `sudo logrotate -f` force une rotation immédiate.
+
+## à toi de jouer
+
+Le Linux des exercices a le démon `syslogd` de BusyBox. Il n'a pas de règles comme rsyslog, mais il sait filtrer par priorité et faire sa propre rotation, par taille. Fais-le écrire dans ton dossier de travail :
+
+1. lance-le : `syslogd -O /mnt/journal.log -l 5 -s 2 -b 2`. `-O` choisit le fichier, `-l 5` ne garde que les messages **plus urgents** que la priorité 5, c'est-à-dire `warning` et plus grave, `-s 2` fait tourner le fichier à 2 Ko, et `-b 2` garde deux anciennes copies ;
+2. envoie deux messages de priorités différentes : `logger -p user.info -t appli "information ordinaire"`, puis `logger -p auth.warning -t sshd "tentative refusée pour root"` ;
+3. lis le journal : `cat journal.log`. Seul l'avertissement y est : l'information a été filtrée ;
+4. remplis le journal pour déclencher la rotation : `for i in $(seq 60); do logger -p user.err -t appli "erreur numéro $i, assez longue pour remplir le journal"; done` ;
+5. regarde le résultat : `ls -l` montre trois fichiers, et `head -2 journal.log.1` la copie la plus ancienne. L'avertissement de l'étape 2 en est la première ligne ;
+6. relance la même boucle, puis cherche l'avertissement : `grep refusée journal.log*`. Il n'est plus nulle part.
+
+<LinuxTerminal title="Un démon syslog filtré" expectedCommands={["syslogd -O /mnt/journal.log -l 5 -s 2 -b 2", "logger -p user.info -t appli \"information ordinaire\"", "logger -p auth.warning -t sshd \"tentative refusée pour root\"", "cat journal.log", "ls -l"]} checks={[{"label": "Le journal a tourné une première fois", "path": "journal.log.0", "expect": "file", "contains": "erreur numéro"}, {"label": "Il garde une seconde copie, plus ancienne", "path": "journal.log.1", "expect": "file", "contains": "appli"}]} hints={["-l 5 garde les priorités plus urgentes que 5 (notice) : warning, err, crit, alert, emerg.", "Si journal.log n'apparaît pas, vérifie que syslogd tourne : ps | grep syslogd.", "La boucle envoie soixante erreurs : de quoi dépasser plusieurs fois les 2 Ko.", "journal.log.0 est la copie la plus récente, journal.log.1 la plus ancienne."]} />
+
+Avec `-b 2`, seules deux anciennes copies survivent : à la rotation suivante, la plus vieille est supprimée, et l'avertissement avec elle. Soixante messages d'erreur ont suffi à effacer la trace d'une tentative de connexion. C'est tout le dilemme de la rotation : un journal trop court efface les preuves, un journal trop long remplit le disque. Et c'est aussi une technique d'attaque : noyer les journaux sous des messages sans intérêt pour faire tourner, puis disparaître, ceux qui comptent. Sur un vrai serveur, les authentifications ont donc leur propre fichier, gardé plus longtemps, et envoyé ailleurs.
+
+Ensuite, rsyslog et logrotate sur un serveur Debian, dans un terminal simulé. L'application `releve` de la leçon sur les unités écrit ses journaux dans `/var/log/releve/`, et personne n'a prévu de rotation :
+
+1. vois les règles actives de rsyslog : `grep -v '^#' /etc/rsyslog.conf | grep .` ;
+2. envoie un message d'authentification et retrouve-le dans son fichier : `logger -p auth.warning -t essai "test de tri"`, puis `sudo tail -1 /var/log/auth.log` ;
+3. regarde la place prise par les journaux de `releve` : `sudo du -sh /var/log/releve` ;
+4. la configuration de rotation vient d'être écrite : relis-la avec `cat /etc/logrotate.d/releve`, puis teste-la à blanc : `sudo logrotate -d /etc/logrotate.d/releve` ;
+5. force une première rotation : `sudo logrotate -f /etc/logrotate.d/releve`, puis `ls -l /var/log/releve`.
+
+<SimulatedTerminal shell="bash" title="rsyslog et logrotate sur un serveur" expectedCommands={["grep -v '^#' /etc/rsyslog.conf | grep .", "logger -p auth.warning -t essai \"test de tri\"", "sudo tail -1 /var/log/auth.log", "sudo du -sh /var/log/releve", "cat /etc/logrotate.d/releve", "sudo logrotate -d /etc/logrotate.d/releve", "sudo logrotate -f /etc/logrotate.d/releve", "ls -l /var/log/releve"]} hints={["La règle auth,authpriv.* envoie les authentifications dans /var/log/auth.log.", "logger -p auth.warning étiquette le message comme une authentification.", "logrotate -d décrit ce qu'il ferait, sans rien faire.", "Le postrotate lance un reload, pour que le service rouvre son fichier."]} commands={{"grep -v '^#' /etc/rsyslog.conf | grep .": "module(load=\"imuxsock\")\nmodule(load=\"imklog\")\n$FileOwner root\n$FileGroup adm\n$FileCreateMode 0640\n$DirCreateMode 0755\n$Umask 0022\n$WorkDirectory /var/spool/rsyslog\n$IncludeConfig /etc/rsyslog.d/*.conf\nauth,authpriv.*\t\t\t/var/log/auth.log\n*.*;auth,authpriv.none\t\t-/var/log/syslog\nkern.*\t\t\t\t-/var/log/kern.log\nmail.*\t\t\t\t-/var/log/mail.log\nmail.err\t\t\t/var/log/mail.err\n*.emerg\t\t\t\t:omusrmsg:*", "logger -p auth.warning -t essai \"test de tri\"": "", "sudo tail -1 /var/log/auth.log": "2026-10-01T18:52:10.418233+02:00 srv-app-01 essai: test de tri", "sudo du -sh /var/log/releve": "3.4G\t/var/log/releve", "cat /etc/logrotate.d/releve": "/var/log/releve/*.log {\n    daily\n    rotate 14\n    compress\n    delaycompress\n    missingok\n    notifempty\n    create 0640 releve adm\n    postrotate\n        systemctl reload releve > /dev/null 2>&1 || true\n    endscript\n}", "sudo logrotate -d /etc/logrotate.d/releve": "warning: logrotate in debug mode does nothing except printing debug messages!  Consider using verbose mode (-v) instead if this is not what you want.\n\nreading config file /etc/logrotate.d/releve\nReading state from file: /var/lib/logrotate/status\nAllocating hash table for state file, size 64 entries\nHandling 1 logs\n\nrotating pattern: /var/log/releve/*.log  after 1 days empty log files are not rotated, (14 rotations), old logs are removed\nconsidering log /var/log/releve/releve.log\n  Now: 2026-10-01 18:53\n  Last rotated at 2026-09-02 00:00\n  log needs rotating\nrotating log /var/log/releve/releve.log, log->rotateCount is 14\nrenaming /var/log/releve/releve.log.1 to /var/log/releve/releve.log.2 (rotatecount 14, logstart 1, i 1), \nrenaming /var/log/releve/releve.log to /var/log/releve/releve.log.1\ncreating new /var/log/releve/releve.log mode = 0640 uid = 998 gid = 4\nrunning postrotate script\nrunning script with args /var/log/releve/*.log : \"\n        systemctl reload releve > /dev/null 2>&1 || true\n\"", "sudo logrotate -f /etc/logrotate.d/releve": "", "ls -l /var/log/releve": "total 3561212\n-rw-r----- 1 releve adm          0 oct.   1 18:54 releve.log\n-rw-r----- 1 releve adm 3646451712 oct.   1 18:54 releve.log.1", "sudo rsyslogd -N1": "rsyslogd: version 8.2302.0, config validation run (level 1), master config /etc/rsyslog.conf\nrsyslogd: End of config validation run. Bye."}} />
+
+Le test à blanc de l'étape 4 dit tout ce que logrotate va faire : renommer, créer le nouveau fichier avec ses droits, lancer le `reload`. Après la rotation forcée, l'ancien journal est devenu `releve.log.1`, le nouveau est vide, et le service y écrit déjà, grâce au `postrotate`. Remarque que `releve.log.1` occupe toujours ses 3,4 Go : à cause de `delaycompress`, il ne sera compressé qu'à la rotation suivante, demain. Pour un premier ménage d'urgence, on le compresserait à la main avec `gzip`, une fois sûr que le service n'y écrit plus.
+
+## les pièges
+
+- **Ne pas faire tourner un journal.** Il finit par remplir le disque et arrêter le serveur.
+- **Oublier le `postrotate`.** Le service continue d'écrire dans l'ancien fichier, et l'espace n'est pas libéré.
+- **Confondre `mail.err` et « seulement les erreurs ».** Le sélecteur prend la priorité et tout ce qui est plus grave ; `mail.=err` pour celle-ci seule.
+- **Un `logrotate` jamais testé.** `logrotate -d` montre ce qui serait fait, sans risque.
+- **Garder les authentifications aussi peu que le reste.** Elles servent aux enquêtes, souvent tardives : un fichier à part, gardé plus longtemps.
+- **Envoyer les journaux en UDP sur un réseau non sûr.** Ils peuvent être perdus ou lus : TCP, et TLS.
+- **Écrire les messages d'un script dans un fichier que personne ne lit.** `logger` les met là où la supervision regarde.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.rsyslog.com/doc/configuration/index.html" description="La configuration de rsyslog, ses sélecteurs et ses actions, en anglais">Documentation de rsyslog</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/logrotate/logrotate.8.fr.html" description="Toutes les directives de logrotate, en français">Page de manuel de logrotate</ExternalLink>
+
+<ExternalLink href="https://datatracker.ietf.org/doc/html/rfc5424" description="Le protocole syslog, ses facilités et ses priorités, en anglais">RFC 5424 : The Syslog Protocol</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans auth.warning, que désignent auth et warning ?" options={["Le fichier et le programme", "La facilité, d'où vient le message, et la priorité, sa gravité", "L'utilisateur et le service", "Le serveur et le port"]} correct={1} explanation="Chaque message syslog porte ces deux étiquettes." />
+  <Quiz id="q-2" question="Quels messages reçoit la règle mail.err ?" options={["Seulement les erreurs de la messagerie", "Les messages de la messagerie de priorité err et plus grave", "Toutes les erreurs du système", "Aucun"]} correct={1} explanation="Une priorité veut dire « celle-ci et plus grave » ; mail.=err prend celle-ci seule." />
+  <Quiz id="q-3" question="Comment un script envoie-t-il un message au journal du système ?" options={["echo >> /var/log/syslog", "logger -t nom -p user.err \"message\"", "journalctl -m", "syslog send"]} correct={1} explanation="logger passe par le démon de journalisation, qui trie et conserve le message." />
+  <Quiz id="q-4" question="Sur Debian, quel fichier contient les connexions SSH et les utilisations de sudo ?" options={["/var/log/syslog", "/var/log/auth.log", "/var/log/kern.log", "/var/log/dpkg.log"]} correct={1} explanation="Sur Red Hat, c'est /var/log/secure." />
+  <Quiz id="q-5" question="Que signifie *.* @@journaux.example.org:514 dans rsyslog ?" options={["Supprimer tous les messages", "Envoyer tous les messages en TCP vers un serveur central", "Recevoir les messages d'un autre serveur", "Écrire dans un fichier nommé journaux"]} correct={1} explanation="@@ pour TCP, @ pour UDP ; TLS sur le port 6514 sur un réseau non sûr." />
+  <Quiz id="q-6" question="Après une rotation, le disque n'est pas libéré et le service écrit toujours dans releve.log.1. Que manque-t-il ?" options={["L'option compress", "Un postrotate qui fait rouvrir ses fichiers au service, par exemple avec un reload", "L'option daily", "Rien, c'est normal"]} correct={1} explanation="Un fichier ouvert reste le même fichier, même renommé : le service doit le rouvrir." />
+  <Quiz id="q-7" question="Comment tester une configuration de logrotate sans rien modifier ?" options={["logrotate -f", "logrotate -d", "logrotate --now", "rsyslogd -N1"]} correct={1} explanation="-d (debug) montre ce qui serait fait ; -f force une vraie rotation." />
+</QuizGroup>
+
+## à retenir
+
+- Un message syslog porte une **facilité** (`auth`, `kern`, `cron`, `local0`…) et une **priorité** (`emerg` à `debug`).
+- **`logger -t nom -p facilité.priorité "message"`** pour les scripts.
+- rsyslog trie avec des règles **`sélecteur action`** ; une priorité inclut les plus graves ; **`rsyslogd -N1`** vérifie la syntaxe.
+- **`/var/log/auth.log`** (ou `secure`) pour les authentifications, **`last`** et **`lastb`** pour les connexions.
+- **`@@serveur:514`** (TCP, ou TLS sur 6514) envoie les journaux hors d'atteinte d'un attaquant.
+- **logrotate** : `daily`, `rotate N`, `compress`, `delaycompress`, `missingok`, `notifempty`, `create`, et un **`postrotate`** qui fait rouvrir les fichiers ; **`logrotate -d`** pour tester.

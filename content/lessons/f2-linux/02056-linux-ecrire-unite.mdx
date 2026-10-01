@@ -1,0 +1,208 @@
+---
+refCode: CL-LSN-02056-V01
+slug: linux-ecrire-unite
+title: "Écrire une unité : un service maison fiable"
+description: "Transformer un programme en service systemd : où vivent les fichiers d'unité et lequel l'emporte, les sections [Unit], [Service] et [Install], l'ordre (After) et les dépendances (Wants, Requires), le type de service, le compte qui l'exécute, l'environnement et les secrets, le redémarrage automatique et ses limites, la modification d'une unité fournie par un paquet sans la toucher (systemctl edit), puis le durcissement : NoNewPrivileges, ProtectSystem, PrivateTmp et le score de systemd-analyze security. Avec un brouillon d'unité à corriger sur un vrai Linux, puis son installation sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02055-V01"]
+---
+
+Les services de la leçon précédente arrivaient tout prêts avec leur paquet. Tôt ou tard, il faut faire tourner **ton** programme : une application maison, un script de collecte, un petit serveur d'API. On pourrait le lancer avec `nohup` dans une session, comme au module 5, mais il ne redémarrerait pas après un plantage ni au reboot, et ses messages se perdraient. La bonne réponse est de lui écrire une **unité** : une dizaine de lignes qui disent à systemd quoi lancer, sous quel compte, après quoi, et quoi faire s'il s'arrête. Bien écrite, elle le rend aussi bien plus difficile à détourner.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- dire où se rangent les fichiers d'unité, et lequel l'emporte ;
+- écrire un service avec ses sections `[Unit]`, `[Service]` et `[Install]` ;
+- distinguer l'**ordre** (`After`) de la **dépendance** (`Wants`, `Requires`) ;
+- faire tourner un service sous un compte dédié, avec son environnement et ses secrets ;
+- le faire redémarrer automatiquement, sans boucle infinie ;
+- modifier une unité de paquet sans toucher à son fichier ;
+- durcir un service et mesurer son exposition avec `systemd-analyze security`.
+
+## pourquoi ça compte
+
+Un service est un programme qui tourne seul, longtemps, souvent exposé au réseau. S'il est compromis, l'attaquant hérite de **tout ce que le service a le droit de faire**. Un service maison lancé en root, qui peut écrire partout et lire `/home`, transforme la moindre faille de l'application en prise de contrôle de la machine. Le même service, lancé sous un compte dédié, dans un système de fichiers en lecture seule et sans possibilité de gagner des privilèges, limite les dégâts à presque rien. Ces protections ne demandent que quelques lignes dans l'unité : c'est le meilleur rapport effort et sécurité de tout le module.
+
+## où vivent les unités
+
+| Dossier | Contenu | Qui y écrit |
+| --- | --- | --- |
+| `/lib/systemd/system/` (ou `/usr/lib/...`) | les unités fournies par les paquets | le gestionnaire de paquets |
+| `/etc/systemd/system/` | tes unités, et tes modifications | toi, l'administrateur |
+| `/run/systemd/system/` | des unités temporaires, perdues au redémarrage | systemd et ses outils |
+
+Quand une unité du même nom existe à plusieurs endroits, **`/etc` l'emporte** sur `/lib`. Tes propres services vont donc dans `/etc/systemd/system/`. Une règle s'ajoute aussitôt : après chaque création ou modification d'un fichier d'unité, **`sudo systemctl daemon-reload`** pour que systemd le relise. Sans elle, il continue d'utiliser l'ancienne version, et te le rappelle par un avertissement dans `systemctl status`.
+
+## l'anatomie d'un service
+
+```ini
+# /etc/systemd/system/releve.service
+[Unit]
+Description=Relevé des capteurs de l'atelier
+Documentation=https://intranet.example/releve
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=releve
+Group=releve
+WorkingDirectory=/var/lib/releve
+EnvironmentFile=/etc/releve/releve.env
+ExecStart=/usr/local/bin/releve --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**`[Unit]`** décrit l'unité et sa place parmi les autres. **`[Service]`** dit comment lancer le programme. **`[Install]`** ne sert qu'à `enable` : `WantedBy=multi-user.target` signifie « quand on active ce service, rattache-le à la cible du démarrage normal ». Sans section `[Install]`, `enable` refuse, et le service est `static`.
+
+Quelques règles de `ExecStart` qui piègent tout le monde : le chemin du programme est **absolu**, et la ligne n'est **pas** interprétée par un shell. Pas de tube, pas de redirection, pas de `&&`, pas de `~`. Ce qui serait du shell s'écrit dans un script, ou s'enveloppe explicitement dans `/bin/sh -c '...'`. Et inutile de rediriger la sortie : tout ce que le service affiche part dans le journal.
+
+## l'ordre et les dépendances
+
+Deux notions que l'on confond souvent :
+
+- **l'ordre** : `After=b.service` veut dire « si les deux démarrent, démarre-moi après b ». Il ne démarre pas `b` ;
+- **la dépendance** : `Wants=b.service` veut dire « quand je démarre, démarre aussi b », sans échouer si b échoue. `Requires=` est plus strict : si b échoue ou s'arrête, l'unité s'arrête aussi.
+
+On les combine presque toujours : `Wants=` ou `Requires=` pour que l'autre unité soit là, `After=` pour l'attendre. L'exemple typique est le réseau : `After=network-online.target` seul n'attend rien si personne n'a demandé cette cible ; il faut aussi `Wants=network-online.target`. Pour une base de données locale : `Requires=postgresql.service` et `After=postgresql.service`.
+
+<Diagram caption="L'ordre et la dépendance sont deux réglages distincts">
+flowchart LR
+  A["releve.service"] -->|"Wants : démarre-la aussi"| B["network-online.target"]
+  A -->|"After : attends-la"| B
+  C["appli.service"] -->|"Requires : sans elle, je m'arrête"| D["postgresql.service"]
+  C -->|"After : attends-la"| D
+</Diagram>
+
+## le type, le compte et l'environnement
+
+**`Type=`** dit à systemd quand considérer le service comme démarré. `simple` (le défaut) et `exec` conviennent à un programme qui reste au premier plan, ce qu'il faut préférer. `forking` est réservé aux vieux démons qui se détachent eux-mêmes en arrière-plan. `oneshot` décrit une tâche qui s'exécute puis se termine, comme celles des minuteurs du module 7. `notify` attend que le programme signale lui-même qu'il est prêt.
+
+**`User=`** et **`Group=`** font tourner le service sous un compte dédié, créé pour lui : `sudo useradd --system --no-create-home --shell /usr/sbin/nologin releve`. Un compte système, sans shell ni mot de passe, qui ne possède que ce dont le service a besoin. Sans `User=`, le service tourne en **root**.
+
+L'environnement se fixe par `Environment=CLE=valeur`, ou mieux par **`EnvironmentFile=`**, un fichier de lignes `CLE=valeur`. Les **secrets** (mot de passe de base, jeton d'API) vont dans ce fichier, propriété de root et en mode `600`, jamais dans l'unité elle-même : `systemctl show` et `systemctl cat` affichent une unité à n'importe quel utilisateur.
+
+## redémarrer, mais pas indéfiniment
+
+**`Restart=on-failure`** relance le service s'il s'arrête sur une erreur, un code de sortie non nul ou un signal, mais pas s'il s'arrête proprement ou si tu l'arrêtes avec `systemctl stop`. `Restart=always` le relance dans tous les cas, ce qui convient à un programme qui ne devrait jamais s'arrêter. **`RestartSec=5`** attend cinq secondes avant de relancer, pour ne pas marteler une ressource indisponible.
+
+systemd se protège des boucles : par défaut, plus de **5 démarrages en 10 secondes** et il abandonne, avec le message `start request repeated too quickly`. Les options `StartLimitBurst=` et `StartLimitIntervalSec=`, dans la section `[Unit]`, règlent ce seuil, et `systemctl reset-failed` remet le compteur à zéro une fois la cause corrigée.
+
+## les unités modèles
+
+Pour faire tourner plusieurs fois le même programme avec des réglages différents, on n'écrit pas dix unités presque identiques. On écrit une **unité modèle**, dont le nom contient une arobase : `releve@.service`. Dans le fichier, `%i` sera remplacé par ce qui suit l'arobase au moment du démarrage :
+
+```ini
+[Service]
+User=releve
+EnvironmentFile=/etc/releve/%i.env
+ExecStart=/usr/local/bin/releve --atelier %i
+```
+
+`sudo systemctl enable --now releve@nord releve@sud` démarre alors deux **instances** indépendantes, chacune avec son fichier de réglage, son journal (`journalctl -u releve@nord`) et son état. Tu en as déjà croisé sans le savoir : `getty@tty1.service`, qui ouvre la console du premier terminal, ou `postgresql@15-main.service`, une instance de PostgreSQL par version et par cluster. D'autres spécificateurs existent, comme `%n` pour le nom complet de l'unité ou `%h` pour le répertoire personnel de l'utilisateur.
+
+## modifier une unité de paquet
+
+Pour changer le comportement de `nginx.service`, on ne modifie **pas** `/lib/systemd/system/nginx.service` : la prochaine mise à jour du paquet écraserait la modification. On ajoute un **fichier complémentaire**, un *drop-in* :
+
+```bash
+sudo systemctl edit nginx
+```
+
+La commande ouvre un éditeur sur `/etc/systemd/system/nginx.service.d/override.conf`, où l'on écrit seulement ce qui change, par exemple une section `[Service]` avec `Restart=on-failure`. Elle recharge systemd à la fermeture. `systemctl cat nginx` affiche ensuite l'unité d'origine suivie de ses compléments : c'est la configuration réellement appliquée.
+
+## durcir un service
+
+systemd sait enfermer un service dans un bac à sable, option par option :
+
+```ini
+[Service]
+# Impossible de gagner des droits, même par un programme setuid.
+NoNewPrivileges=yes
+# Tout le système de fichiers en lecture seule, sauf le dossier de données.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/releve
+# /home, /root et /run/user invisibles.
+ProtectHome=yes
+# Un /tmp à lui, invisible des autres, et aucun accès aux périphériques.
+PrivateTmp=yes
+PrivateDevices=yes
+```
+
+Un détail de syntaxe : dans un fichier d'unité, un commentaire occupe **toute une ligne**, qui commence par `#`. Écrit au bout d'une directive, il ferait partie de sa valeur. Chaque ligne retire une capacité dont le service n'a pas besoin, et dont un attaquant aurait besoin. `NoNewPrivileges` neutralise les élévations de privilèges du module 4 ; `ProtectSystem=strict` empêche de modifier un binaire ou une configuration ; `PrivateTmp` coupe les attaques par fichiers temporaires vues au module 7. **`systemd-analyze security releve`** passe en revue des dizaines de ces protections et donne un score d'**exposition**, de 0 (très protégé) à 10 (aucune protection). Un service sans aucun réglage obtient environ 9,6, « UNSAFE » ; les quelques lignes ci-dessus le font descendre nettement. On ajoute les protections une par une, en vérifiant à chaque fois que le service fonctionne encore : un `ProtectSystem=strict` sans le bon `ReadWritePaths` empêchera simplement l'application d'écrire ses données.
+
+## à toi de jouer
+
+Un collègue a écrit le brouillon de l'unité de `releve`, l'application de relevé des capteurs, avant de partir en congés. Il est dans le dossier de travail : `releve.service`. Ce Linux n'a pas systemd, mais un fichier d'unité est un simple fichier texte : corrige-le ici.
+
+1. lis-le : `cat releve.service`. Repère quatre problèmes : un chemin relatif, un service qui tournera en root, aucun redémarrage, et une unité impossible à activer ;
+2. corrige-le, avec `vi releve.service`, ou en le réécrivant d'un bloc avec un here-document (`cat > releve.service << 'FIN'`, puis le fichier, puis `FIN`). L'unité finale doit contenir :
+   - `ExecStart=/usr/local/bin/releve --port 8080` ;
+   - `User=releve` ;
+   - `Restart=on-failure` et `RestartSec=5` ;
+   - une section `[Install]` avec `WantedBy=multi-user.target` ;
+   - et une première protection : `NoNewPrivileges=yes` ;
+3. relis le résultat avec `cat releve.service`.
+
+<LinuxTerminal title="Le brouillon d'unité" files={{"releve.service": "[Unit]\nDescription=Relevé des capteurs de l'atelier\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nExecStart=releve --port 8080\nRestart=no\n"}} expectedCommands={["cat releve.service"]} checks={[{"label": "ExecStart donne le chemin absolu", "path": "releve.service", "expect": "file", "contains": "ExecStart=/usr/local/bin/releve --port 8080"}, {"label": "Le service tourne sous le compte releve", "path": "releve.service", "expect": "file", "contains": "User=releve"}, {"label": "Il redémarre en cas d'échec", "path": "releve.service", "expect": "file", "contains": "Restart=on-failure"}, {"label": "Avec un délai de 5 secondes", "path": "releve.service", "expect": "file", "contains": "RestartSec=5"}, {"label": "Il peut être activé au démarrage", "path": "releve.service", "expect": "file", "contains": "WantedBy=multi-user.target"}, {"label": "Il ne peut pas gagner de privilèges", "path": "releve.service", "expect": "file", "contains": "NoNewPrivileges=yes"}]} hints={["Le programme est installé dans /usr/local/bin.", "User= se place dans la section [Service], comme Restart= et RestartSec=.", "La section [Install] se place à la fin, avec une seule ligne : WantedBy=multi-user.target.", "Avec un here-document, tape le fichier entier entre cat > releve.service << 'FIN' et FIN."]} />
+
+Ensuite, l'installation, sur un serveur Debian simulé où ce fichier corrigé t'attend dans ton dossier personnel :
+
+1. copie-le à sa place : `sudo cp releve.service /etc/systemd/system/` ;
+2. vérifie-le : `sudo systemd-analyze verify /etc/systemd/system/releve.service` ;
+3. fais relire les unités, puis active et démarre le service : `sudo systemctl daemon-reload`, `sudo systemctl enable --now releve` ;
+4. simule un plantage en tuant le processus : `sudo kill -9 4127`, puis regarde le journal : `journalctl -u releve -n 6` ;
+5. mesure son exposition : `sudo systemd-analyze security releve`.
+
+<SimulatedTerminal shell="bash" title="Installer et éprouver le service" expectedCommands={["sudo cp releve.service /etc/systemd/system/", "sudo systemd-analyze verify /etc/systemd/system/releve.service", "sudo systemctl daemon-reload", "sudo systemctl enable --now releve", "sudo kill -9 4127", "journalctl -u releve -n 6", "sudo systemd-analyze security releve"]} hints={["verify ne dit rien quand l'unité est correcte.", "daemon-reload fait relire les fichiers d'unité à systemd.", "kill -9 envoie SIGKILL : un arrêt brutal, que Restart=on-failure doit rattraper.", "Dans le journal, cherche « Scheduled restart job » et le compteur de redémarrages.", "Le score d'exposition va de 0 (enfermé) à 10 (aucune protection)."]} commands={{"sudo cp releve.service /etc/systemd/system/": "", "sudo systemd-analyze verify /etc/systemd/system/releve.service": "", "sudo systemctl daemon-reload": "", "sudo systemctl enable --now releve": "Created symlink /etc/systemd/system/multi-user.target.wants/releve.service → /etc/systemd/system/releve.service.", "systemctl status releve": "● releve.service - Relevé des capteurs de l'atelier\n     Loaded: loaded (/etc/systemd/system/releve.service; enabled; preset: enabled)\n     Active: active (running) since Thu 2026-10-01 10:02:11 CEST; 8s ago\n   Main PID: 4127 (releve)\n      Tasks: 2 (limit: 4613)\n     Memory: 6.2M\n        CPU: 74ms\n     CGroup: /system.slice/releve.service\n             └─4127 /usr/local/bin/releve --port 8080\n\noct. 01 10:02:11 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:02:11 srv-app-01 releve[4127]: écoute sur le port 8080", "sudo kill -9 4127": "", "journalctl -u releve -n 6": "oct. 01 10:05:37 srv-app-01 systemd[1]: releve.service: Main process exited, code=killed, status=9/KILL\noct. 01 10:05:37 srv-app-01 systemd[1]: releve.service: Failed with result 'signal'.\noct. 01 10:05:42 srv-app-01 systemd[1]: releve.service: Scheduled restart job, restart counter is at 1.\noct. 01 10:05:42 srv-app-01 systemd[1]: Stopped releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:05:42 srv-app-01 systemd[1]: Started releve.service - Relevé des capteurs de l'atelier.\noct. 01 10:05:42 srv-app-01 releve[4198]: écoute sur le port 8080", "sudo systemd-analyze security releve": "  NAME                                  DESCRIPTION                                               EXPOSURE\n✓ User=/DynamicUser=                    Service runs under a static non-root user identity\n✓ NoNewPrivileges=                      Service processes cannot acquire new privileges\n✗ PrivateTmp=                           Service has access to other software's temporary files       0.2\n✗ ProtectHome=                          Service has full access to home directories                  0.2\n✗ ProtectSystem=                        Service has full access to the OS file hierarchy             0.2\n✗ PrivateDevices=                       Service potentially has access to hardware devices           0.2\n✗ ProtectKernelTunables=                Service may alter kernel tunables                            0.2\n✗ RestrictAddressFamilies=~AF_PACKET    Service may allocate packet sockets                          0.2\n…\n\n→ Overall exposure level for releve.service: 7.9 EXPOSED 🙁", "systemctl cat releve": "# /etc/systemd/system/releve.service\n[Unit]\nDescription=Relevé des capteurs de l'atelier\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nExecStart=/usr/local/bin/releve --port 8080\nUser=releve\nRestart=on-failure\nRestartSec=5\nNoNewPrivileges=yes\n\n[Install]\nWantedBy=multi-user.target"}} />
+
+Le journal de l'étape 4 montre tout le mécanisme : le processus tué par le signal 9, le redémarrage planifié cinq secondes plus tard grâce à `RestartSec=5`, et le service de nouveau lancé, avec un compteur de redémarrages. Le score de l'étape 5 reste élevé : `NoNewPrivileges` seul ne suffit pas. Ajouter `ProtectSystem=strict`, `ReadWritePaths=/var/lib/releve`, `ProtectHome=yes` et `PrivateTmp=yes` serait l'étape suivante, à valider en relançant le service.
+
+## les pièges
+
+- **Oublier `daemon-reload`.** systemd garde l'ancienne version de l'unité et ignore la modification.
+- **Un chemin relatif, un tube ou une redirection dans `ExecStart`.** La ligne n'est pas lue par un shell : chemin absolu, et un script pour le reste.
+- **Pas de `User=`.** Le service tourne en root, et sa moindre faille offre la machine.
+- **`After=` sans `Wants=`.** L'ordre seul n'attend rien si l'autre unité n'est pas demandée.
+- **Un secret dans l'unité.** Tout le monde peut lire une unité : `EnvironmentFile=` en mode `600`.
+- **Modifier le fichier d'un paquet dans `/lib/systemd/system`.** La mise à jour suivante l'écrase : `systemctl edit`.
+- **Pas de section `[Install]`.** `enable` échoue, et le service ne démarre jamais au boot.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html" description="Toutes les options de la section [Service], en anglais">systemd.service(5)</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html" description="Les options d'environnement et de bac à sable : User, ProtectSystem, PrivateTmp, en anglais">systemd.exec(5)</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html" description="Les sections [Unit] et [Install], l'ordre et les dépendances, en anglais">systemd.unit(5)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Où ranger l'unité d'un service maison ?" options={["/lib/systemd/system/", "/etc/systemd/system/", "/usr/local/bin/", "/var/lib/systemd/"]} correct={1} explanation="/etc l'emporte sur /lib, qui appartient aux paquets." />
+  <Quiz id="q-2" question="Après avoir modifié un fichier d'unité, que faut-il faire ?" options={["Redémarrer la machine", "sudo systemctl daemon-reload", "Rien", "systemctl mask"]} correct={1} explanation="Sans daemon-reload, systemd continue d'utiliser l'ancienne version." />
+  <Quiz id="q-3" question="Quelle est la différence entre After= et Wants= ?" options={["Aucune", "After fixe l'ordre de démarrage, Wants demande que l'autre unité démarre aussi", "Wants fixe l'ordre, After démarre l'autre unité", "After est obligatoire"]} correct={1} explanation="On les combine presque toujours : Wants pour la faire démarrer, After pour l'attendre." />
+  <Quiz id="q-4" question="Pourquoi ExecStart=releve > /var/log/releve.log ne fonctionne-t-il pas ?" options={["Parce que /var/log est protégé", "Parce que ExecStart n'est pas lu par un shell : le chemin doit être absolu, et la redirection n'est pas comprise", "Parce qu'il manque sudo", "Il fonctionne"]} correct={1} explanation="Inutile d'ailleurs de rediriger : la sortie du service va dans le journal." />
+  <Quiz id="q-5" question="Que fait Restart=on-failure ?" options={["Il redémarre le service toutes les 5 secondes", "Il relance le service s'il s'arrête sur une erreur, mais pas s'il est arrêté proprement", "Il redémarre la machine en cas d'échec", "Il empêche le service de planter"]} correct={1} explanation="RestartSec règle le délai ; StartLimitBurst évite les boucles infinies." />
+  <Quiz id="q-6" question="Comment modifier nginx.service fourni par un paquet, sans perdre la modification à la prochaine mise à jour ?" options={["Modifier /lib/systemd/system/nginx.service", "systemctl edit nginx, qui crée un fichier complémentaire dans /etc", "Copier le paquet", "C'est impossible"]} correct={1} explanation="Le drop-in override.conf ne contient que ce qui change ; systemctl cat montre le résultat." />
+  <Quiz id="q-7" question="Que mesure systemd-analyze security ?" options={["La vitesse du service", "L'exposition du service : les protections du bac à sable qu'il n'utilise pas, avec un score de 0 à 10", "Les failles connues du programme", "Les mots de passe faibles"]} correct={1} explanation="Plus le score est bas, plus le service est enfermé." />
+</QuizGroup>
+
+## à retenir
+
+- Tes unités vont dans **`/etc/systemd/system/`**, puis **`daemon-reload`** ; celles des paquets restent dans `/lib` et se modifient par **`systemctl edit`**.
+- **`[Unit]`** (description, ordre, dépendances), **`[Service]`** (comment lancer), **`[Install]`** (`WantedBy=multi-user.target` pour `enable`).
+- **`ExecStart=`** : un chemin absolu, pas de shell.
+- **`After=`** ordonne, **`Wants=`** et **`Requires=`** font démarrer : on les combine.
+- **`User=`** dédié, secrets dans un **`EnvironmentFile=`** en `600`.
+- **`Restart=on-failure`** et **`RestartSec=`**, avec une limite contre les boucles.
+- **`NoNewPrivileges`**, **`ProtectSystem=strict`**, **`ProtectHome`**, **`PrivateTmp`**, mesurés par **`systemd-analyze security`**.

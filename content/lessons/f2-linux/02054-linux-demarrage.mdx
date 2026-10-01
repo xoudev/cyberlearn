@@ -1,0 +1,168 @@
+---
+refCode: CL-LSN-02054-V01
+slug: linux-demarrage
+title: "Le démarrage d'un Linux moderne : du noyau à systemd"
+description: "Suivre une machine Linux de la mise sous tension à l'invite de connexion : le micrologiciel BIOS ou UEFI, le chargeur GRUB, le noyau et sa ligne de commande, l'initramfs, puis le premier processus, PID 1, qui démarre tout le reste. Ce qu'est systemd, ses unités et ses cibles, et comment mesurer un démarrage avec systemd-analyze. Les points faibles de chaque étape pour un attaquant qui a la main sur la machine. Avec une enquête sur le démarrage d'un vrai Linux, puis l'analyse d'un serveur sous systemd."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02907-V01"]
+---
+
+Tu sais maintenant écrire des scripts, les rendre fiables et les planifier. Il reste à faire tourner des programmes **en permanence** : un serveur web, une base de données, l'agent de supervision, ton propre service. Sur un Linux moderne, c'est le rôle de **systemd**, le premier programme lancé au démarrage, qui lance et surveille tous les autres. Avant d'apprendre à le piloter, ce module commence par le début : que se passe-t-il entre le moment où l'on appuie sur le bouton et celui où l'invite de connexion apparaît ? Comprendre cette chaîne, c'est savoir où regarder quand une machine ne démarre plus, et savoir ce qu'un attaquant peut faire à chaque maillon.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décrire les étapes du démarrage : micrologiciel, chargeur, noyau, initramfs, PID 1 ;
+- lire la ligne de commande du noyau et ses messages de démarrage ;
+- expliquer le rôle de PID 1, et ce que systemd y apporte ;
+- distinguer une **unité** d'une **cible** systemd ;
+- mesurer un démarrage avec `systemd-analyze` ;
+- repérer les points faibles de la chaîne de démarrage.
+
+## pourquoi ça compte
+
+Un serveur qui ne redémarre pas après une mise à jour du noyau, une partition oubliée dans `/etc/fstab`, un service qui bloque le démarrage pendant une minute et demie : ces pannes arrivent toutes **avant** que tu puisses te connecter normalement. Les résoudre demande de savoir à quelle étape la machine s'est arrêtée. Côté sécurité, la chaîne de démarrage est aussi une cible : celui qui contrôle ce qui démarre en premier contrôle tout ce qui suit. Un accès physique à une machine non protégée suffit à obtenir un shell root en quelques secondes, et c'est pour cela que le chiffrement des disques et la protection du chargeur existent.
+
+## les cinq étapes
+
+Le démarrage d'un PC ou d'un serveur suit toujours la même chaîne. Chaque maillon charge le suivant, puis lui passe la main :
+
+1. **le micrologiciel** (BIOS sur les machines anciennes, **UEFI** aujourd'hui), gravé sur la carte mère, teste le matériel et cherche un support de démarrage ;
+2. **le chargeur d'amorçage**, le plus souvent **GRUB**, affiche éventuellement un menu et charge le noyau choisi en mémoire ;
+3. **le noyau** Linux initialise le processeur, la mémoire et les pilotes ;
+4. **l'initramfs**, un petit système de fichiers chargé en mémoire avec le noyau, contient de quoi trouver et monter la vraie racine : pilotes de disque, déchiffrement LUKS, assemblage du RAID ou de LVM ;
+5. **PID 1**, le premier processus, lancé par le noyau une fois la racine montée. Sur presque toutes les distributions actuelles, c'est **systemd**. Il démarre les services, monte les systèmes de fichiers et ouvre les invites de connexion.
+
+<Diagram caption="La chaîne du démarrage">
+flowchart LR
+  A["Micrologiciel BIOS ou UEFI"] --> B["Chargeur GRUB"]
+  B --> C["Noyau Linux"]
+  C --> D["initramfs : trouver et monter la racine"]
+  D --> E["PID 1 : systemd"]
+  E --> F["Services, montages, invites de connexion"]
+</Diagram>
+
+Avec l'**UEFI**, le micrologiciel lit une petite partition dédiée, la partition système EFI (souvent montée sur `/boot/efi`), et y lance un programme : le chargeur. Le **Secure Boot**, quand il est activé, vérifie la signature de ce programme, puis celle du noyau, pour qu'un code non signé ne puisse pas s'insérer au tout début de la chaîne. C'est la parade aux **bootkits**, ces logiciels malveillants qui s'installent avant même le système d'exploitation.
+
+## GRUB et la ligne de commande du noyau
+
+GRUB lit sa configuration dans `/boot/grub/grub.cfg`. On ne modifie jamais ce fichier à la main : il est **généré** à partir de `/etc/default/grub` et des scripts de `/etc/grub.d/`, par `update-grub` sur Debian et Ubuntu, `grub2-mkconfig` sur Red Hat. C'est GRUB qui transmet au noyau sa **ligne de commande**, une suite d'options comme `root=UUID=...` (la partition racine), `ro` (monter la racine en lecture seule le temps des vérifications) ou `quiet` (moins de messages à l'écran). Sur une machine en marche, `/proc/cmdline` la montre telle que le noyau l'a reçue.
+
+Au menu de GRUB, la touche `e` permet de **modifier cette ligne** pour un seul démarrage. C'est l'outil de secours de l'administrateur, pour démarrer en mode de secours par exemple, et c'est aussi la faille la plus connue : ajouter `init=/bin/bash` à la ligne fait démarrer un shell root à la place de systemd, **sans aucun mot de passe**. La parade tient en deux mesures : un mot de passe sur GRUB, qui interdit de modifier la ligne, et surtout le chiffrement du disque, sans lequel un accès physique donne de toute façon accès aux données.
+
+## le noyau et ses messages
+
+Une fois chargé, le noyau détecte le matériel et note tout ce qu'il fait dans un tampon de messages, que **`dmesg`** affiche :
+
+```bash
+dmesg | head                 # les premières lignes : version du noyau, mémoire
+dmesg -l err,warn            # seulement les erreurs et les avertissements
+dmesg | grep -i usb          # ce que le noyau a vu passer sur l'USB
+```
+
+C'est là qu'on cherche un disque non détecté, une carte réseau sans pilote ou une erreur matérielle. Le tampon a une taille limitée : sur une machine qui tourne depuis longtemps, les premiers messages ont pu disparaître. Sous systemd, `journalctl -k` les conserve avec le reste du journal. Pour des raisons de sécurité, beaucoup de distributions réservent désormais `dmesg` à root : les messages du noyau contiennent des adresses mémoire utiles à un attaquant.
+
+## PID 1 : le premier processus
+
+Quand la racine est montée, le noyau lance **un seul** programme, qui reçoit le numéro de processus 1. Tous les autres processus de la machine en descendent : tu l'as vu au module 5 avec `ps` et ses colonnes PID et PPID. PID 1 a trois responsabilités :
+
+- **démarrer** tout ce qui doit tourner, dans le bon ordre ;
+- **adopter** les processus orphelins, dont le parent est mort, et recueillir leur code de sortie pour qu'ils ne restent pas zombies ;
+- **arrêter** proprement la machine, en terminant les services et en démontant les disques.
+
+Si PID 1 meurt, le noyau s'arrête net avec un message « Kernel panic : Attempted to kill init ». Pendant des décennies, ce rôle a été tenu par **SysV init** : un programme simple qui lisait `/etc/inittab` et lançait, les uns après les autres, des scripts shell rangés dans `/etc/init.d/`. Les machines embarquées et les conteneurs utilisent encore des init de ce genre, comme celui de BusyBox, que tu vas observer dans l'exercice.
+
+## systemd, ses unités et ses cibles
+
+**systemd** a remplacé SysV init sur Debian, Ubuntu, Red Hat, Fedora, Arch et SUSE au milieu des années 2010. Il démarre les services **en parallèle** quand leurs dépendances le permettent, ce qui raccourcit le démarrage, et il les **surveille** : il sait relancer un service qui plante, limiter ses ressources et garder sa sortie dans un journal.
+
+Tout ce que systemd gère est une **unité**, décrite par un petit fichier de configuration. Le suffixe du nom dit de quoi il s'agit :
+
+| Type | Exemple | Rôle |
+| --- | --- | --- |
+| `.service` | `ssh.service` | un programme à lancer et surveiller |
+| `.socket` | `ssh.socket` | un port ou une socket qui démarre un service à la première connexion |
+| `.timer` | `apt-daily.timer` | une échéance qui démarre un service, vue au module 7 |
+| `.mount` | `home.mount` | un système de fichiers à monter |
+| `.target` | `multi-user.target` | un groupe d'unités, une étape du démarrage |
+
+Une **cible** (*target*) ne lance rien elle-même : elle rassemble d'autres unités et sert de point de rendez-vous. Démarrer la machine, c'est pour systemd atteindre la cible par défaut, `multi-user.target` sur un serveur, `graphical.target` sur un poste avec un bureau. Les cibles remplacent les anciens « niveaux de fonctionnement » de SysV init ; une leçon de ce module leur est consacrée.
+
+## mesurer un démarrage
+
+```bash
+systemd-analyze                   # la durée totale, découpée par étape
+systemd-analyze blame             # les unités, de la plus lente à la plus rapide
+systemd-analyze critical-chain    # la chaîne qui a vraiment retardé la cible finale
+journalctl -b -p err              # les erreurs du démarrage en cours
+```
+
+`blame` est trompeur si on le lit seul : un service lent qui démarre en parallèle des autres ne retarde rien. `critical-chain` montre, lui, la chaîne d'attente qui a effectivement fixé l'heure d'arrivée à la cible. Le coupable classique sur un serveur est `systemd-networkd-wait-online.service` ou `NetworkManager-wait-online.service`, qui attend qu'une interface réseau soit configurée, parfois jusqu'à son délai maximal de deux minutes, à cause d'une interface débranchée.
+
+## à toi de jouer
+
+Le Linux des exercices est minimal : il n'a pas systemd. Il démarre avec l'init de BusyBox, comme un routeur ou un objet connecté. C'est l'occasion d'observer une chaîne de démarrage entière, en petit. Mène l'enquête et garde tes preuves dans le dossier de travail :
+
+1. la version du noyau et la façon dont il a été construit, dans la première ligne de ses messages : `dmesg | head -1 > noyau.txt` ;
+2. la ligne de commande qu'il a reçue : `cat /proc/cmdline > cmdline.txt`. Pas de `root=` : ce noyau embarque sa racine en mémoire, comme un initramfs qui ne passerait jamais la main ;
+3. le nom de PID 1, et le programme vers lequel pointe `/sbin/init` : `cat /proc/1/comm > pid1.txt`, puis `ls -l /sbin/init` ;
+4. sa configuration, à l'ancienne : `grep -v '^#' /etc/inittab | grep . > inittab.txt`. La ligne `ttyS0::respawn:-/bin/sh` est celle qui t'a donné ce shell, et `respawn` le relance si tu le quittes ;
+5. les scripts de démarrage à la manière de SysV : `ls /etc/init.d/`. Remarque qu'aucune ligne de l'`inittab` ne les lance ici.
+
+<LinuxTerminal title="Enquête sur un démarrage" expectedCommands={["dmesg | head -1 > noyau.txt", "cat /proc/cmdline > cmdline.txt", "cat /proc/1/comm > pid1.txt", "ls -l /sbin/init", "grep -v '^#' /etc/inittab | grep . > inittab.txt", "ls /etc/init.d/"]} checks={[{"label": "noyau.txt donne la version du noyau", "path": "noyau.txt", "expect": "file", "contains": "Linux version"}, {"label": "cmdline.txt garde la ligne de commande", "path": "cmdline.txt", "expect": "file"}, {"label": "pid1.txt nomme le premier processus", "path": "pid1.txt", "expect": "file", "contains": "init"}, {"label": "inittab.txt garde les lignes actives", "path": "inittab.txt", "expect": "file", "contains": "respawn"}]} hints={["> range la sortie d'une commande dans un fichier du dossier de travail.", "/proc/1/comm contient le nom du processus numéro 1.", "ls -l montre la cible d'un lien symbolique, après la flèche.", "grep -v '^#' retire les commentaires, grep . retire les lignes vides."]} />
+
+Le `respawn` de l'`inittab` est l'ancêtre direct de l'option `Restart=` des services systemd, et les scripts `S01syslogd`, `S02klogd` sont ceux que SysV init exécutait par ordre de numéro. systemd a remplacé tout cela par des unités et des dépendances, que la suite du module t'apprend à manipuler.
+
+Voici maintenant un vrai serveur Debian sous systemd, dans un terminal simulé. Il a mis près de deux minutes à démarrer ce matin. Trouve pourquoi :
+
+1. `systemd-analyze` donne la durée totale ;
+2. `systemd-analyze blame | head -5` liste les unités les plus lentes ;
+3. `systemd-analyze critical-chain` montre celle qui a vraiment retardé le démarrage ;
+4. `journalctl -b -u systemd-networkd-wait-online.service` explique ce qu'elle attendait.
+
+<SimulatedTerminal shell="bash" title="Un serveur qui démarre lentement" expectedCommands={["systemd-analyze", "systemd-analyze blame | head -5", "systemd-analyze critical-chain", "journalctl -b -u systemd-networkd-wait-online.service"]} hints={["La durée de userspace est celle des services : c'est elle qui est anormale.", "blame classe par durée, mais une unité lente lancée en parallèle ne retarde rien.", "Dans critical-chain, le nombre après + est le temps de démarrage de l'unité.", "journalctl -u filtre le journal sur une unité, -b sur le démarrage en cours."]} commands={{"systemd-analyze": "Startup finished in 3.112s (firmware) + 2.807s (loader) + 1.942s (kernel) + 2min 4.381s (userspace) = 2min 12.242s \nmulti-user.target reached after 2min 4.012s in userspace.", "systemd-analyze time": "Startup finished in 3.112s (firmware) + 2.807s (loader) + 1.942s (kernel) + 2min 4.381s (userspace) = 2min 12.242s \nmulti-user.target reached after 2min 4.012s in userspace.", "systemd-analyze blame | head -5": "2min 1.633s systemd-networkd-wait-online.service\n     3.204s apt-daily-upgrade.service\n     1.873s postgresql@15-main.service\n     1.221s dev-sda1.device\n      914ms nginx.service", "systemd-analyze blame": "2min 1.633s systemd-networkd-wait-online.service\n     3.204s apt-daily-upgrade.service\n     1.873s postgresql@15-main.service\n     1.221s dev-sda1.device\n      914ms nginx.service\n      612ms systemd-journal-flush.service\n      488ms ssh.service\n      301ms systemd-logind.service\n      285ms systemd-udevd.service", "systemd-analyze critical-chain": "The time when unit became active or started is printed after the \"@\" character.\nThe time the unit took to start is printed after the \"+\" character.\n\nmulti-user.target @2min 4.012s\n└─nginx.service @2min 3.090s +914ms\n  └─network-online.target @2min 3.082s\n    └─systemd-networkd-wait-online.service @1.447s +2min 1.633s\n      └─systemd-networkd.service @1.298s +142ms\n        └─systemd-udevd.service @1.004s +285ms\n          └─systemd-tmpfiles-setup-dev.service @912ms +87ms\n            └─kmod-static-nodes.service @801ms +101ms\n              └─systemd-journald.socket @788ms\n                └─system.slice @760ms\n                  └─-.slice @760ms", "journalctl -b -u systemd-networkd-wait-online.service": "oct. 01 07:12:03 srv-app-01 systemd[1]: Starting systemd-networkd-wait-online.service - Wait for Network to be Configured...\noct. 01 07:12:05 srv-app-01 systemd-networkd-wait-online[412]: enp2s0: link is not ready\noct. 01 07:14:05 srv-app-01 systemd-networkd-wait-online[412]: Timeout occurred while waiting for network connectivity.\noct. 01 07:14:05 srv-app-01 systemd[1]: systemd-networkd-wait-online.service: Main process exited, code=exited, status=1/FAILURE\noct. 01 07:14:05 srv-app-01 systemd[1]: systemd-networkd-wait-online.service: Failed with result 'exit-code'.\noct. 01 07:14:05 srv-app-01 systemd[1]: Failed to start systemd-networkd-wait-online.service - Wait for Network to be Configured.", "journalctl -b -p err": "oct. 01 07:14:05 srv-app-01 systemd[1]: Failed to start systemd-networkd-wait-online.service - Wait for Network to be Configured.", "ip -br link": "lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP>\nenp1s0           UP             52:54:00:3a:9c:11 <BROADCAST,MULTICAST,UP,LOWER_UP>\nenp2s0           DOWN           52:54:00:7e:20:4b <NO-CARRIER,BROADCAST,MULTICAST,UP>", "uname -r": "6.1.0-25-amd64", "cat /proc/cmdline": "BOOT_IMAGE=/boot/vmlinuz-6.1.0-25-amd64 root=UUID=8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2 ro quiet"}} />
+
+La cause : une deuxième interface réseau, `enp2s0`, déclarée dans la configuration mais sans câble. Le service d'attente du réseau a patienté jusqu'à son délai maximal. On corrige en retirant l'interface de la configuration, ou en ne faisant attendre que l'interface utile : `--interface=enp1s0` dans l'unité, ou l'option `RequiredForOnline=no` pour l'autre.
+
+## les pièges
+
+- **Modifier `/boot/grub/grub.cfg` à la main.** Il est régénéré à la prochaine mise à jour : on modifie `/etc/default/grub`, puis `update-grub`.
+- **Lire `systemd-analyze blame` comme un classement des coupables.** Seule `critical-chain` montre ce qui a retardé le démarrage.
+- **Croire qu'un mot de passe root protège une machine accessible physiquement.** `init=/bin/bash` le contourne ; il faut protéger GRUB et chiffrer le disque.
+- **Confondre le noyau en cours et le noyau installé.** Après une mise à jour, `uname -r` montre l'ancien jusqu'au redémarrage.
+- **Chercher les premiers messages du noyau des semaines après.** Le tampon de `dmesg` tourne : `journalctl -k -b` les garde.
+- **Tuer PID 1.** C'est un arrêt brutal de la machine entière.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/bootup.html" description="Le déroulement du démarrage sous systemd, cible par cible, en anglais">systemd : bootup(7)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/grub/manual/grub/grub.html" description="Le manuel de GRUB, dont la protection par mot de passe, en anglais">Manuel de GRUB</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/SecureBoot" description="Comment fonctionne le Secure Boot sur Debian, en anglais">Debian : Secure Boot</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans quel ordre s'enchaînent les étapes du démarrage ?" options={["Noyau, GRUB, UEFI, systemd", "UEFI, GRUB, noyau et initramfs, systemd", "GRUB, UEFI, systemd, noyau", "systemd, noyau, GRUB, UEFI"]} correct={1} explanation="Le micrologiciel lance le chargeur, qui charge le noyau et l'initramfs, et le noyau lance PID 1." />
+  <Quiz id="q-2" question="Où lit-on la ligne de commande reçue par le noyau en cours ?" options={["/etc/default/grub", "/proc/cmdline", "/boot/grub/grub.cfg", "/etc/inittab"]} correct={1} explanation="/etc/default/grub sert à la générer ; /proc/cmdline montre celle qui a vraiment été transmise." />
+  <Quiz id="q-3" question="À quoi sert l'initramfs ?" options={["À remplacer le noyau", "À fournir de quoi trouver et monter la vraie racine : pilotes, déchiffrement, RAID ou LVM", "À stocker les journaux", "À afficher le menu de démarrage"]} correct={1} explanation="C'est un petit système de fichiers en mémoire, utilisé avant que la racine soit disponible." />
+  <Quiz id="q-4" question="Quel est le rôle de PID 1 ?" options={["Afficher l'invite de connexion seulement", "Démarrer les services, adopter les processus orphelins et arrêter proprement la machine", "Gérer la mémoire", "Charger le noyau"]} correct={1} explanation="Si PID 1 meurt, le noyau s'arrête : Attempted to kill init." />
+  <Quiz id="q-5" question="Qu'est-ce qu'une cible (target) systemd ?" options={["Un service à lancer", "Un groupe d'unités qui sert d'étape du démarrage, comme multi-user.target", "Un fichier journal", "Un disque"]} correct={1} explanation="Une cible ne lance rien elle-même : elle rassemble d'autres unités." />
+  <Quiz id="q-6" question="Pourquoi lire systemd-analyze critical-chain plutôt que blame seul ?" options={["Parce que blame est faux", "Parce qu'un service lent lancé en parallèle ne retarde rien : seule la chaîne critique montre ce qui a fixé la durée", "Parce que blame demande root", "C'est la même chose"]} correct={1} explanation="blame classe les unités par durée, pas par impact sur le démarrage." />
+  <Quiz id="q-7" question="Pourquoi un mot de passe root ne suffit-il pas à protéger une machine accessible physiquement ?" options={["Il suffit", "Parce qu'ajouter init=/bin/bash dans GRUB donne un shell root sans mot de passe, si GRUB n'est pas protégé et le disque pas chiffré", "Parce que root n'a pas de mot de passe", "Parce que l'UEFI le contourne toujours"]} correct={1} explanation="Protéger GRUB par mot de passe et chiffrer le disque sont les deux parades." />
+</QuizGroup>
+
+## à retenir
+
+- Le démarrage : **micrologiciel** (UEFI), **chargeur** (GRUB), **noyau** et **initramfs**, puis **PID 1**, systemd sur les distributions actuelles.
+- La ligne de commande du noyau se lit dans **`/proc/cmdline`** ; elle se règle dans `/etc/default/grub`, puis `update-grub`.
+- **`dmesg`** montre les messages du noyau ; `journalctl -k` les garde.
+- **PID 1** démarre tout, adopte les orphelins et arrête la machine ; SysV init lisait `/etc/inittab` et `/etc/init.d/`.
+- systemd gère des **unités** (`.service`, `.socket`, `.timer`, `.mount`) regroupées en **cibles** (`multi-user.target`).
+- **`systemd-analyze critical-chain`** dit ce qui a retardé un démarrage.
+- Un accès physique contourne le mot de passe root : **mot de passe GRUB** et **chiffrement du disque**.
