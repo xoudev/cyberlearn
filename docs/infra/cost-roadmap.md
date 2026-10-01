@@ -66,6 +66,13 @@ Si coup de marketing avec 100+ inscriptions en 1h, les emails 101+
 
 ## Phase v1.5 - WebVM integration
 
+> **Fait autrement, sans coût en plus.** Le vrai Linux tourne avec v86 et une
+> image Buildroot, environ 12,7 Mo en tout, servis par Vercel avec le site
+> depuis `apps/web/public/runtimes/v86/` : ni CheerpX ni R2. Ces fichiers
+> comptent dans la bande passante de Vercel ; une image plus lourde (idée 5 de
+> docs/backlog/interactive-learning.md) reposerait la question d'un CDN. Le
+> plan ci-dessous reste comme trace.
+
 **Objectif** : remplacer SimulatedTerminal par un vrai Linux dans le
 browser via CheerpX. Voir docs/backlog/terminal-v2-webvm.md.
 

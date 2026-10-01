@@ -190,7 +190,7 @@ des free tiers et plan d'évolution : [docs/infra/cost-roadmap.md](docs/infra/co
 | Phase | Statut | Contenu |
 |---|---|---|
 | **v1** | En cours | Free tier complet - leçons interactives, gamification, certificats, sandboxes |
-| **v1.5** | Backlog | WebVM (CheerpX) : vrai Linux dans le navigateur pour les leçons DevOps/Réseaux - [détail](docs/backlog/terminal-v2-webvm.md) |
+| **v1.5** | En cours | Exercices interactifs dans le navigateur : vrai Linux livré (v86), puis défis CTF, labs web, réseau et Git - [détail](docs/backlog/interactive-learning.md) |
 | **v2** | Backlog | Migration VPS self-hosted (Docker, Caddy, Postgres, monitoring Grafana/Loki) - vitrine DevOps |
 
 ## Documentation
