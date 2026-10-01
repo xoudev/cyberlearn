@@ -42,15 +42,27 @@ export function directoriesOf(paths: readonly string[]): string[] {
 }
 
 /**
+ * The links every Linux has in /dev, made at boot by udev or systemd, which
+ * this image lacks: without /dev/fd, bash's process substitution, < <(...),
+ * fails, and so does a script that writes to /dev/stderr.
+ */
+const DEV_LINKS = [
+  "ln -s /proc/self/fd /dev/fd",
+  "ln -s /proc/self/fd/0 /dev/stdin",
+  "ln -s /proc/self/fd/1 /dev/stdout",
+  "ln -s /proc/self/fd/2 /dev/stderr",
+];
+
+/**
  * The one line the page types into the fresh shell before handing it over:
  * the terminal's real size (the shell assumes 80 columns and would wrap lines
- * in the wrong place), the lesson's directories, then the lesson directory,
- * and a clear screen. The files themselves are written from the page once the
- * directories exist.
+ * in the wrong place), the standard links of /dev, the lesson's directories,
+ * then the lesson directory, and a clear screen. The files themselves are
+ * written from the page once the directories exist.
  */
 export function setupCommand(paths: readonly string[], cols: number, rows: number): string {
   const dirs = directoriesOf(paths).map((d) => `'${LESSON_DIR}/${d}'`);
-  const steps = [`stty cols ${String(cols)} rows ${String(rows)}`];
+  const steps = [`stty cols ${String(cols)} rows ${String(rows)}`, ...DEV_LINKS];
   if (dirs.length > 0) steps.push(`mkdir -p ${dirs.join(" ")}`);
   steps.push(`cd ${LESSON_DIR}`, "clear");
   return `${steps.join("; ")}\n`;

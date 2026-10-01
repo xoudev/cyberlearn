@@ -59,14 +59,18 @@ describe("directoriesOf", () => {
 });
 
 describe("setupCommand", () => {
-  it("sizes the terminal, creates the directories, starts in /mnt and clears", () => {
+  const links =
+    "ln -s /proc/self/fd /dev/fd; ln -s /proc/self/fd/0 /dev/stdin; " +
+    "ln -s /proc/self/fd/1 /dev/stdout; ln -s /proc/self/fd/2 /dev/stderr; ";
+
+  it("sizes the terminal, links /dev, creates the directories, starts in /mnt and clears", () => {
     expect(setupCommand(["projet/notes.txt", "lisezmoi.txt"], 96, 20)).toBe(
-      "stty cols 96 rows 20; mkdir -p '/mnt/projet'; cd /mnt; clear\n",
+      `stty cols 96 rows 20; ${links}mkdir -p '/mnt/projet'; cd /mnt; clear\n`,
     );
   });
 
-  it("creates nothing when there is nothing to create", () => {
-    expect(setupCommand([], 80, 24)).toBe("stty cols 80 rows 24; cd /mnt; clear\n");
+  it("creates no directory when there is none to create", () => {
+    expect(setupCommand([], 80, 24)).toBe(`stty cols 80 rows 24; ${links}cd /mnt; clear\n`);
   });
 });
 
