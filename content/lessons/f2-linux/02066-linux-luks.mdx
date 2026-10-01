@@ -1,0 +1,188 @@
+---
+refCode: CL-LSN-02066-V01
+slug: linux-luks
+title: "Le chiffrement du disque : LUKS"
+description: "Protéger les données d'un disque volé, perdu ou mis au rebut : ce que chiffre LUKS et ce qu'il ne protège pas, l'en-tête et ses emplacements de clés, chiffrer un disque avec cryptsetup, l'ouvrir et le fermer, ajouter ou retirer une phrase de passe, sauvegarder l'en-tête sans lequel tout est perdu, déverrouiller au démarrage avec /etc/crypttab, avec une phrase, un fichier de clé ou la puce TPM, et effacer un disque en un instant en détruisant ses clés. Avec un disque de données à chiffrer sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02065-V01"]
+---
+
+Les leçons précédentes ont protégé les données contre la panne. Celle-ci les protège contre le **vol**. Un portable oublié dans un train, un disque de serveur renvoyé sous garantie, une machine volée dans un local mal fermé : sans chiffrement, quiconque branche le disque lit tout, mots de passe du système compris. On a vu, dès la leçon sur le démarrage, qu'un accès physique contourne le mot de passe root. Le **chiffrement du disque** est la seule réponse à ce scénario : sans la clé, le disque n'est qu'une suite d'octets aléatoires. Sous Linux, le standard s'appelle **LUKS**, et l'outil **cryptsetup**.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- dire ce que le chiffrement du disque protège, et ce qu'il ne protège pas ;
+- décrire l'en-tête LUKS et ses emplacements de clés ;
+- chiffrer un disque, l'ouvrir, y créer un système de fichiers et le fermer ;
+- gérer plusieurs phrases de passe, et sauvegarder l'en-tête ;
+- déverrouiller un disque au démarrage avec `/etc/crypttab` ;
+- effacer un disque chiffré en un instant.
+
+## pourquoi ça compte
+
+La perte ou le vol d'un ordinateur portable non chiffré contenant des données personnelles est une **violation de données** au sens du RGPD : selon les risques pour les personnes, elle doit être notifiée à la CNIL, et parfois aux personnes concernées. Le même portable chiffré, avec une phrase de passe solide, ne fait courir aucun risque de divulgation : c'est l'une des mesures de sécurité qu'attend la CNIL. Pour un serveur, le chiffrement protège les disques qui sortent du centre de données : renvoyés en garantie, remplacés, mis au rebut. Et il rend leur effacement instantané et sûr, là où l'effacement d'un SSD est notoirement difficile.
+
+## ce que LUKS protège, et ce qu'il ne protège pas
+
+LUKS chiffre **au repos** : quand la machine est éteinte, ou le volume fermé, les données sont illisibles sans la clé. Dès que le volume est **ouvert**, le système lit et écrit en clair, de façon transparente : tout programme et tout utilisateur qui en ont le droit voient les fichiers normalement. Le chiffrement du disque ne protège donc **pas** contre :
+
+- un attaquant qui a pris la main sur la machine **en marche** ;
+- un logiciel malveillant, qui lit les fichiers comme n'importe quel programme ;
+- un administrateur indiscret ;
+- une sauvegarde faite en clair ailleurs.
+
+Il protège contre l'accès **physique** au disque éteint. C'est une protection essentielle, mais ciblée.
+
+## comment fonctionne LUKS
+
+Un volume LUKS commence par un **en-tête**, suivi des données chiffrées. Les données sont chiffrées avec une **clé maîtresse**, aléatoire, générée une fois pour toutes, que personne ne connaît. Cette clé maîtresse est elle-même rangée, chiffrée, dans des **emplacements de clés** (*keyslots*) de l'en-tête : un par phrase de passe ou fichier de clé. Pour ouvrir le volume, `cryptsetup` dérive une clé de la phrase tapée, déchiffre la clé maîtresse dans l'emplacement correspondant, et s'en sert.
+
+Cette architecture a trois conséquences pratiques :
+
+- on peut avoir **plusieurs phrases de passe** (jusqu'à 32 en LUKS2) pour le même volume, et en changer **sans rechiffrer** les données ;
+- la dérivation de la phrase de passe utilise une fonction volontairement **lente et gourmande en mémoire**, **Argon2id**, qui rend les attaques par force brute extrêmement coûteuses. Une phrase longue reste toutefois indispensable ;
+- l'**en-tête est vital** : s'il est abîmé, la clé maîtresse est perdue, et les données avec elle, même avec la bonne phrase. On le sauvegarde donc, à l'abri.
+
+<Diagram caption="Les couches d'un disque chiffré">
+flowchart LR
+  A["/dev/sdd1 : partition"] --> B["en-tête LUKS : emplacements de clés"]
+  B -->|"phrase de passe, Argon2id"| C["clé maîtresse"]
+  C --> D["/dev/mapper/coffre : le volume ouvert, en clair"]
+  D --> E["système de fichiers, ou LVM"]
+</Diagram>
+
+## chiffrer, ouvrir, fermer
+
+```bash
+sudo cryptsetup luksFormat --type luks2 /dev/sdd1      # chiffre : EFFACE tout, demande YES et une phrase
+sudo cryptsetup open /dev/sdd1 coffre                  # ouvre : /dev/mapper/coffre apparaît
+sudo mkfs.ext4 -L coffre /dev/mapper/coffre            # le système de fichiers, dans le volume ouvert
+sudo mount /dev/mapper/coffre /srv/coffre
+sudo umount /srv/coffre
+sudo cryptsetup close coffre                           # referme : les données redeviennent illisibles
+```
+
+`luksFormat` est destructeur : il demande de taper `YES` en majuscules, puis la phrase de passe deux fois. Le volume ouvert, `/dev/mapper/coffre`, s'utilise comme n'importe quelle partition : on y crée un système de fichiers, ou un volume physique LVM pour y découper plusieurs volumes chiffrés d'un coup. C'est la configuration que propose l'installateur de Debian, « LVM chiffré », pour chiffrer tout le système sauf `/boot`.
+
+Les algorithmes par défaut, AES en mode XTS, sont rapides : les processeurs actuels ont des instructions dédiées, et `cryptsetup benchmark` montre des débits de plusieurs gigaoctets par seconde. Le chiffrement ne ralentit plus sensiblement un serveur.
+
+## gérer les clés, sauvegarder l'en-tête
+
+```bash
+sudo cryptsetup luksDump /dev/sdd1                     # l'en-tête : algorithmes, emplacements utilisés
+sudo cryptsetup luksAddKey /dev/sdd1                   # ajouter une phrase de passe (secours)
+sudo cryptsetup luksRemoveKey /dev/sdd1                # retirer une phrase
+sudo cryptsetup luksHeaderBackup /dev/sdd1 --header-backup-file sdd1-entete.img
+```
+
+Une bonne pratique : une seconde phrase de **secours**, longue, conservée dans un coffre ou par une autre personne, pour le jour où la première est oubliée, ou son titulaire absent. La **sauvegarde de l'en-tête** se range hors du disque, en lieu sûr : elle contient les emplacements de clés, et donc de quoi ouvrir le volume avec les anciennes phrases. Après un changement de phrase de passe, l'ancienne sauvegarde de l'en-tête ouvre toujours le volume avec l'ancienne phrase : on la remplace.
+
+La phrase de passe elle-même mérite qu'on la choisisse bien : c'est elle, et non l'algorithme, qui protège le disque. Une suite de cinq ou six mots tirés **au hasard**, par exemple avec des dés et une liste de mots (la méthode *diceware*), est à la fois longue, facile à retenir et très difficile à deviner. Une phrase connue, une citation, un titre de chanson ou un mot de passe déjà utilisé ailleurs se retrouvent, eux, dans les listes des attaquants.
+
+## au démarrage : /etc/crypttab
+
+Pour qu'un volume chiffré s'ouvre au démarrage, on le décrit dans **`/etc/crypttab`**, que systemd lit avant `/etc/fstab` :
+
+```text
+# <nom>   <source>                                    <clé>   <options>
+coffre    UUID=b3f6a1d2-4c7e-4a8b-9e21-5d3c7f0a1b9e   none    luks
+```
+
+`none` veut dire « demander la phrase de passe à la console », ce qui convient à un portable, mais pas à un serveur distant, qui attendrait indéfiniment au démarrage. D'autres méthodes existent :
+
+- un **fichier de clé**, rangé sur un autre volume déjà déchiffré, en mode `400` : pratique pour un disque de données, quand le disque système est lui-même chiffré ;
+- la puce **TPM2** de la machine, avec `systemd-cryptenroll --tpm2-device=auto` : le disque s'ouvre tout seul **sur cette machine-là**, et reste illisible s'il est retiré ;
+- un serveur de clés sur le réseau, avec **Clevis** et **Tang** : le serveur ne s'ouvre que s'il démarre dans le bon réseau.
+
+Le volume ouvert se monte ensuite par `/etc/fstab`, comme n'importe quel autre, par exemple avec `/dev/mapper/coffre` comme source.
+
+## le swap et les fichiers temporaires
+
+Chiffrer un disque de données ne suffit pas si les secrets fuient ailleurs. L'**espace d'échange** reçoit des pages de mémoire, où passent mots de passe, clés et documents ouverts ; il se chiffre lui aussi. Le plus simple est une **clé aléatoire**, tirée à chaque démarrage, puisque le contenu du swap n'a pas besoin de survivre à un redémarrage :
+
+```text
+swap  /dev/sda3  /dev/urandom  swap,cipher=aes-xts-plain64,size=512
+```
+
+Cette ligne de `/etc/crypttab` recrée un swap chiffré, avec une clé jamais écrite nulle part, à chaque démarrage. Seule exception : l'hibernation, qui doit relire la mémoire après le redémarrage, et demande donc un swap chiffré par une phrase de passe. Pour le reste, `/tmp` en tmpfs vit en mémoire et disparaît à l'arrêt.
+
+## les attaques qui restent
+
+Le chiffrement du disque élimine l'attaque la plus simple, mais pas toutes :
+
+- la **femme de chambre malveillante** (*evil maid*) : quelqu'un modifie le chargeur ou l'initramfs, qui ne sont pas chiffrés, pour capturer la phrase de passe au prochain démarrage. Le **Secure Boot** et le démarrage mesuré par la TPM détectent ces modifications ;
+- l'**attaque par démarrage à froid** (*cold boot*) : la mémoire d'une machine allumée ou en veille garde la clé maîtresse, et peut être lue quelques secondes après une coupure. Éteindre plutôt que mettre en veille une machine sensible qu'on laisse sans surveillance ;
+- la **phrase faible**, l'enregistreur de frappe, le regard par-dessus l'épaule : la cryptographie ne protège pas une phrase volée.
+
+## chiffrer un fichier ou une archive
+
+Pour chiffrer un fichier isolé, comme une sauvegarde avant de l'envoyer ailleurs, LUKS n'est pas l'outil. On utilise **GnuPG** (`gpg --symmetric --cipher-algo AES256 sauvegarde.tar.gz`) ou **age**, plus récent et plus simple, avec une phrase de passe ou une clé publique. Une archive d'un volume chiffré est en clair : elle doit être chiffrée à son tour avant de quitter la machine.
+
+## l'effacement instantané
+
+Effacer un SSD de façon sûre est difficile : ses contrôleurs redistribuent les écritures, et un `dd` ne garantit pas d'avoir touché chaque cellule. Avec LUKS, il suffit de **détruire les emplacements de clés** :
+
+```bash
+sudo cryptsetup luksErase /dev/sdd1
+```
+
+En une seconde, la clé maîtresse devient irrécupérable, et les données chiffrées ne sont plus que du bruit. C'est l'**effacement cryptographique**, le moyen le plus sûr et le plus rapide de préparer un disque à la mise au rebut, à condition, bien sûr, qu'aucune sauvegarde de l'en-tête ne traîne.
+
+## à toi de jouer
+
+Le serveur de fichiers reçoit un nouveau disque, `/dev/sdd`, qui contiendra les dossiers des ressources humaines. Chiffre sa partition, sur ce serveur Debian simulé :
+
+1. chiffre-la : `sudo cryptsetup luksFormat --type luks2 /dev/sdd1`. Lis l'avertissement, et ce qui est demandé ;
+2. ouvre-la sous le nom `coffre` : `sudo cryptsetup open /dev/sdd1 coffre`, puis regarde le volume ouvert : `ls -l /dev/mapper/coffre` ;
+3. crée le système de fichiers dans le volume ouvert : `sudo mkfs.ext4 -L coffre /dev/mapper/coffre` ;
+4. observe l'empilement : `lsblk /dev/sdd`, puis l'en-tête : `sudo cryptsetup luksDump /dev/sdd1` ;
+5. sauvegarde l'en-tête, à copier ensuite hors du serveur : `sudo cryptsetup luksHeaderBackup /dev/sdd1 --header-backup-file /root/sdd1-entete.img` ;
+6. referme le volume : `sudo cryptsetup close coffre`.
+
+<SimulatedTerminal shell="bash" title="Chiffrer le disque des RH" expectedCommands={["sudo cryptsetup luksFormat --type luks2 /dev/sdd1", "sudo cryptsetup open /dev/sdd1 coffre", "ls -l /dev/mapper/coffre", "sudo mkfs.ext4 -L coffre /dev/mapper/coffre", "lsblk /dev/sdd", "sudo cryptsetup luksDump /dev/sdd1", "sudo cryptsetup luksHeaderBackup /dev/sdd1 --header-backup-file /root/sdd1-entete.img", "sudo cryptsetup close coffre"]} hints={["luksFormat demande YES en majuscules : c'est le dernier avertissement avant l'effacement.", "Le volume ouvert est un nouveau périphérique, dans /dev/mapper.", "Dans luksDump, PBKDF dit comment la phrase de passe est transformée en clé.", "La sauvegarde de l'en-tête se copie ensuite hors du serveur."]} commands={{"sudo cryptsetup luksFormat --type luks2 /dev/sdd1": "\nWARNING!\n========\nThis will overwrite data on /dev/sdd1 irrevocably.\n\nAre you sure? (Type 'yes' in capital letters): YES\nEnter passphrase for /dev/sdd1: \nVerify passphrase: ", "sudo cryptsetup open /dev/sdd1 coffre": "Enter passphrase for /dev/sdd1: ", "ls -l /dev/mapper/coffre": "lrwxrwxrwx 1 root root 7 oct.   1 14:08 /dev/mapper/coffre -> ../dm-0", "sudo mkfs.ext4 -L coffre /dev/mapper/coffre": "mke2fs 1.47.0 (5-Feb-2023)\nCreating filesystem with 244187904 4k blocks and 61054976 inodes\nFilesystem UUID: 0c9e2a71-5b4d-4f3e-a8c6-9d1b7e2f4a50\nAllocating group tables: done                            \nWriting inode tables: done                            \nCreating journal (262144 blocks): done\nWriting superblocks and filesystem accounting information: done   ", "lsblk /dev/sdd": "NAME       MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS\nsdd          8:48   0 931.5G  0 disk  \n└─sdd1       8:49   0 931.5G  0 part  \n  └─coffre 254:0    0 931.5G  0 crypt ", "sudo cryptsetup luksDump /dev/sdd1": "LUKS header information\nVersion:       \t2\nEpoch:         \t3\nMetadata area: \t16384 [bytes]\nKeyslots area: \t16744448 [bytes]\nUUID:          \tb3f6a1d2-4c7e-4a8b-9e21-5d3c7f0a1b9e\nLabel:         \t(no label)\nSubsystem:     \t(no subsystem)\nFlags:       \t(no flags)\n\nData segments:\n  0: crypt\n\toffset: 16777216 [bytes]\n\tlength: (whole device)\n\tcipher: aes-xts-plain64\n\tsector: 512 [bytes]\n\nKeyslots:\n  0: luks2\n\tKey:        512 bits\n\tPriority:   normal\n\tCipher:     aes-xts-plain64\n\tCipher key: 512 bits\n\tPBKDF:      argon2id\n\tTime cost:  4\n\tMemory:     1048576\n\tThreads:    4\n\tSalt:       5e 1a 9c 47 0b d3 72 e8 61 2f a4 c9 13 8d 50 b6 \n\t            e2 07 3b 9f c4 18 6a d5 2e 91 7c 03 f8 4b a6 1d \n\tAF stripes: 4000\n\tAF hash:    sha256\n\tArea offset:32768 [bytes]\n\tArea length:258048 [bytes]\n\tDigest ID:  0", "sudo cryptsetup luksHeaderBackup /dev/sdd1 --header-backup-file /root/sdd1-entete.img": "", "sudo cryptsetup close coffre": "", "sudo blkid /dev/sdd1": "/dev/sdd1: UUID=\"b3f6a1d2-4c7e-4a8b-9e21-5d3c7f0a1b9e\" TYPE=\"crypto_LUKS\" PARTUUID=\"2d8f4c1a-6e3b-4b7d-91a5-0c7e2f8d3b46\"", "sudo cryptsetup benchmark -c aes-xts-plain64 -s 512": "# Tests are approximate using memory only (no storage IO).\n#     Algorithm |       Key |      Encryption |      Decryption\n        aes-xts        512b      3412.6 MiB/s      3398.2 MiB/s"}} />
+
+L'en-tête de l'étape 4 montre ce qui protège la phrase de passe : la fonction **Argon2id**, réglée pour coûter une seconde et un gigaoctet de mémoire à chaque essai. Un attaquant qui volerait le disque devrait payer ce prix pour chaque phrase testée. Et la sauvegarde de l'étape 5 ne doit pas rester sur le serveur : elle part dans le coffre-fort des secrets de l'équipe, avec la phrase de secours.
+
+## les pièges
+
+- **Oublier la phrase de passe, sans phrase de secours.** Les données sont perdues, définitivement.
+- **Ne pas sauvegarder l'en-tête.** Un en-tête abîmé, et même la bonne phrase n'ouvre plus rien.
+- **`luksFormat` sur la mauvaise partition.** Il efface tout : `lsblk` et le numéro de série avant.
+- **Croire qu'un disque chiffré protège une machine en marche.** Ouvert, le volume se lit en clair.
+- **Une phrase de passe courte.** Argon2id ralentit les essais, il ne rend pas une phrase faible robuste.
+- **Un serveur distant qui attend sa phrase à la console.** Il ne redémarre jamais seul : TPM2, Clevis ou fichier de clé.
+- **Laisser traîner une ancienne sauvegarde d'en-tête.** Elle ouvre le volume avec les anciennes phrases.
+
+## pour aller plus loin
+
+<ExternalLink href="https://gitlab.com/cryptsetup/cryptsetup/-/wikis/FrequentlyAskedQuestions" description="La FAQ de cryptsetup : fonctionnement, sauvegardes, récupération, en anglais">FAQ de cryptsetup</ExternalLink>
+
+<ExternalLink href="https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system" description="Chiffrer tout un système, avec LVM ou non, en anglais">ArchWiki : chiffrer un système entier</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/securite-chiffrer-garantir-lintegrite-ou-signer" description="Les recommandations de la CNIL sur le chiffrement des données, en français">CNIL : chiffrement, hachage, signature</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Contre quoi le chiffrement d'un disque avec LUKS protège-t-il ?" options={["Contre un logiciel malveillant sur la machine en marche", "Contre l'accès physique au disque éteint ou au volume fermé : vol, perte, mise au rebut", "Contre toutes les attaques", "Contre la panne du disque"]} correct={1} explanation="Ouvert, le volume se lit en clair pour tout programme qui en a le droit." />
+  <Quiz id="q-2" question="Pourquoi peut-on changer une phrase de passe LUKS sans rechiffrer le disque ?" options={["Parce que les données ne sont pas vraiment chiffrées", "Parce que les données sont chiffrées par une clé maîtresse, que la phrase ne fait que protéger dans un emplacement de clé", "Parce que cryptsetup rechiffre en arrière-plan", "On ne peut pas"]} correct={1} explanation="Chaque phrase de passe a son emplacement, qui contient la clé maîtresse chiffrée." />
+  <Quiz id="q-3" question="Que se passe-t-il si l'en-tête LUKS est abîmé et qu'aucune sauvegarde n'existe ?" options={["On ouvre avec la phrase de passe quand même", "Les données sont perdues : la clé maîtresse est irrécupérable", "cryptsetup le répare", "Le disque devient lisible en clair"]} correct={1} explanation="D'où luksHeaderBackup, rangé hors du disque, en lieu sûr." />
+  <Quiz id="q-4" question="À quoi sert Argon2id dans LUKS2 ?" options={["À chiffrer les données", "À dériver la clé de la phrase de passe de façon lente et coûteuse en mémoire, contre la force brute", "À compresser l'en-tête", "À vérifier le disque"]} correct={1} explanation="Chaque essai coûte cher à l'attaquant ; une phrase longue reste indispensable." />
+  <Quiz id="q-5" question="Quel fichier décrit les volumes chiffrés à ouvrir au démarrage ?" options={["/etc/fstab", "/etc/crypttab", "/etc/luks.conf", "/etc/mtab"]} correct={1} explanation="systemd ouvre les volumes de crypttab, puis monte ceux de fstab." />
+  <Quiz id="q-6" question="Comment un serveur distant chiffré peut-il redémarrer sans qu'on tape la phrase à la console ?" options={["C'est impossible", "Avec la puce TPM2, un serveur Clevis et Tang, ou un fichier de clé sur un volume déjà ouvert", "En mettant la phrase dans /etc/fstab", "En désactivant le chiffrement"]} correct={1} explanation="systemd-cryptenroll lie le volume à la TPM de la machine." />
+  <Quiz id="q-7" question="Que fait cryptsetup luksErase ?" options={["Il efface les données bloc par bloc, en plusieurs heures", "Il détruit les emplacements de clés : les données deviennent irrécupérables en un instant", "Il retire le chiffrement", "Il efface la sauvegarde de l'en-tête"]} correct={1} explanation="C'est l'effacement cryptographique, idéal avant une mise au rebut, si aucune copie d'en-tête ne traîne." />
+</QuizGroup>
+
+## à retenir
+
+- LUKS protège le disque **éteint** ou le volume **fermé** : vol, perte, mise au rebut. Ouvert, tout est en clair.
+- Les données sont chiffrées par une **clé maîtresse**, protégée dans des **emplacements de clés**, un par phrase, dérivée par **Argon2id**.
+- **`cryptsetup luksFormat`** (efface tout), **`open`**, **`close`** ; le volume ouvert est dans **`/dev/mapper/`**.
+- **`luksAddKey`** pour une phrase de secours, **`luksHeaderBackup`** pour sauvegarder l'en-tête, hors du disque.
+- **`/etc/crypttab`** ouvre au démarrage : phrase à la console, fichier de clé, **TPM2** ou **Clevis et Tang**.
+- **`luksErase`** : l'effacement cryptographique, instantané.

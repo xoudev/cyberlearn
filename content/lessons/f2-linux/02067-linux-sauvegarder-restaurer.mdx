@@ -1,0 +1,176 @@
+---
+refCode: CL-LSN-02067-V01
+slug: linux-sauvegarder-restaurer
+title: "Sauvegarder et restaurer : rsync, instantanés, restauration testée"
+description: "Construire des sauvegardes qui servent le jour J : la règle 3-2-1 et la copie hors ligne contre les rançongiciels, les objectifs RPO et RTO, quoi sauvegarder et comment obtenir une copie cohérente d'une base de données, sauvegardes complètes, incrémentales et rétention, rsync et ses pièges, les instantanés par liens physiques, LVM ou Btrfs, chiffrer et isoler les sauvegardes, puis la seule preuve qui compte : une restauration testée. Avec une sauvegarde vérifiée et restaurée sur un vrai Linux, puis des copies quotidiennes avec rsync sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02066-V01"]
+---
+
+Tout ce module a protégé les données contre la panne, la place qui manque et le vol. Il reste ce que rien de tout cela ne couvre : le fichier supprimé par erreur, la base corrompue par une mise à jour, le serveur entièrement chiffré par un rançongiciel, l'incendie de la salle. Contre tout cela, il n'existe qu'une protection : une **sauvegarde**, faite régulièrement, rangée ailleurs, et dont on a **vérifié qu'elle se restaure**. Cette dernière condition est celle qu'on néglige, et c'est elle qui fait la différence le jour où l'on en a besoin.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- appliquer la règle **3-2-1**, et pourquoi une copie hors ligne compte face aux rançongiciels ;
+- fixer les objectifs de perte et de reprise, **RPO** et **RTO** ;
+- choisir quoi sauvegarder, et obtenir une copie cohérente d'une base de données ;
+- utiliser `tar` et `rsync` pour des sauvegardes complètes et incrémentales ;
+- comprendre les instantanés, par liens physiques, LVM ou Btrfs ;
+- vérifier l'intégrité d'une sauvegarde et **tester une restauration**.
+
+## pourquoi ça compte
+
+Les rançongiciels ont changé la nature des sauvegardes. Les attaquants savent qu'une victime qui restaure ne paie pas : avant de chiffrer les serveurs, ils cherchent les sauvegardes, les suppriment ou les chiffrent aussi. Une sauvegarde joignable depuis le serveur compromis, avec les mêmes identifiants, disparaît avec lui. À l'inverse, une copie **hors ligne** ou **immuable** est souvent ce qui sépare une entreprise qui repart en quelques jours d'une entreprise qui ne repart pas. Et beaucoup découvrent, ce jour-là, que leurs sauvegardes étaient incomplètes, corrompues, ou que personne ne savait les restaurer.
+
+## la règle 3-2-1, et un peu plus
+
+La règle classique :
+
+- **3** copies des données : l'original et deux sauvegardes ;
+- sur **2** supports différents : un disque du serveur et un NAS, un NAS et un stockage objet ;
+- dont **1** hors du site : un autre bâtiment, un autre centre de données, un fournisseur de stockage.
+
+On la complète aujourd'hui en **3-2-1-1-0** : au moins **1** copie **hors ligne** ou **immuable**, que personne ne peut modifier ni supprimer pendant sa durée de conservation, pas même un administrateur dont le compte a été volé ; et **0** erreur lors des vérifications de restauration.
+
+## RPO et RTO
+
+Deux chiffres guident toute la stratégie, et se décident avec ceux qui utilisent les données :
+
+- le **RPO** (*Recovery Point Objective*) : combien de données peut-on se permettre de **perdre** ? Une sauvegarde par nuit, c'est jusqu'à 24 heures de travail perdues ;
+- le **RTO** (*Recovery Time Objective*) : combien de temps peut-on rester **arrêté** ? Restaurer 2 To depuis un stockage distant peut prendre une journée entière.
+
+Une base de commandes en ligne aura un RPO de quelques minutes, ce qui demande autre chose qu'une sauvegarde nocturne : la réplication de la base, ou l'archivage continu de ses journaux de transactions. Un dossier de documents internes supportera un RPO d'une journée. Le choix des outils découle de ces chiffres, pas l'inverse.
+
+## quoi sauvegarder, et comment
+
+On sauvegarde ce qui ne se réinstalle pas : les **données** (`/srv`, `/home`, `/var/lib` des applications), la **configuration** (`/etc`), et de quoi reconstruire le reste : la liste des paquets installés (`dpkg --get-selections`), les unités et les scripts maison, les tâches planifiées. Le système lui-même se réinstalle.
+
+Les **bases de données** demandent un soin particulier : copier leurs fichiers pendant qu'elles écrivent produit une copie incohérente, souvent inutilisable. On utilise leur outil d'export, qui produit une image cohérente pendant que la base tourne : `pg_dump` pour PostgreSQL, `mysqldump --single-transaction` pour MariaDB. Autre solution, un **instantané** du volume, LVM ou Btrfs, qui fige tous les fichiers au même instant, et que l'on sauvegarde ensuite tranquillement.
+
+## complète, incrémentale, rétention
+
+Une sauvegarde **complète** copie tout ; une **incrémentale** ne copie que ce qui a changé depuis la précédente. On combine les deux, avec une **rétention** qui garde par exemple 7 sauvegardes quotidiennes, 4 hebdomadaires et 12 mensuelles. Une corruption ou une infection découverte trois semaines plus tard peut ainsi être contournée en revenant à un état antérieur.
+
+## rsync
+
+**`rsync`** copie une arborescence vers une autre, locale ou distante par SSH, en ne transférant que les différences :
+
+```bash
+rsync -a --dry-run /srv/donnees/ /mnt/nas/donnees/            # ce qui serait fait, sans rien faire
+rsync -a /srv/donnees/ /mnt/nas/donnees/                      # copier, en gardant droits, dates, liens
+rsync -a /srv/donnees/ sauvegarde@nas:/sauvegardes/donnees/  # vers une autre machine, par SSH
+```
+
+Trois pièges à connaître :
+
+- la **barre oblique finale** de la source change tout : `/srv/donnees/` copie le **contenu** du dossier, `/srv/donnees` copie le dossier **lui-même**, qui se retrouve un niveau plus bas ;
+- **`--delete`** supprime de la destination ce qui n'existe plus dans la source. C'est un miroir, pas une sauvegarde : une suppression accidentelle, ou un chiffrement par un rançongiciel, est fidèlement recopiée ;
+- **`--dry-run`** (ou `-n`) d'abord, toujours, avec une nouvelle commande.
+
+## les instantanés
+
+Un **instantané** fige l'état des données à un instant, en ne stockant que ce qui change ensuite. Trois façons d'en faire :
+
+- avec `rsync --link-dest` : chaque jour, un nouveau dossier daté, où les fichiers **inchangés** sont des **liens physiques** vers ceux de la veille. Chaque dossier paraît complet, mais seuls les fichiers modifiés prennent de la place. C'est le principe de nombreux outils de sauvegarde ;
+- avec **LVM**, vu plus tôt dans ce module : `lvcreate -s` fige un volume le temps de le sauvegarder ;
+- avec **Btrfs** : `btrfs subvolume snapshot -r /srv /srv/.instantanes/2026-10-01` crée un instantané en lecture seule, instantanément.
+
+Un instantané posé sur les **mêmes disques** que les données n'est pas une sauvegarde : il protège contre l'erreur humaine, pas contre la panne ni le rançongiciel qui prend la main sur la machine. Il complète les copies hors site, il ne les remplace pas. Des outils dédiés, comme **restic** ou **BorgBackup**, combinent instantanés, déduplication et chiffrement, et méritent d'être étudiés pour une vraie infrastructure.
+
+## protéger les sauvegardes
+
+- **Chiffre-les** dès qu'elles quittent la machine : elles contiennent tout ce que l'attaquant cherche ;
+- préfère le **modèle tiré** (*pull*) : c'est le serveur de sauvegarde qui vient chercher les données, avec un compte en lecture seule. Le serveur sauvegardé n'a alors aucun accès aux sauvegardes, et un attaquant qui le compromet ne peut pas les effacer ;
+- garde au moins une copie **immuable** ou **hors ligne** : un disque débranché, un stockage objet avec verrouillage (*object lock*), une bande ;
+- **surveille** les tâches de sauvegarde : un script qui échoue en silence, comme celui du module 7, laisse croire à une protection qui n'existe plus.
+
+<Diagram caption="Une stratégie 3-2-1-1-0">
+flowchart LR
+  A["serveur : les données"] -->|"instantané quotidien"| B["même disque : erreur humaine"]
+  A -->|"rsync tiré par le NAS, chiffré"| C["NAS du site : 2e support"]
+  C -->|"réplication nocturne"| D["stockage distant, immuable : hors site et hors ligne"]
+  D -->|"restauration testée chaque mois"| E["0 erreur"]
+</Diagram>
+
+## tester la restauration
+
+Une sauvegarde n'existe vraiment qu'une fois **restaurée**. On le vérifie régulièrement, et pas seulement en relisant une liste de fichiers :
+
+1. vérifier l'**intégrité** de l'archive, avec une empreinte calculée au moment de la sauvegarde : `sha256sum -c` ;
+2. restaurer **ailleurs** que sur les données en production, dans un dossier ou une machine de test, pour ne rien écraser ;
+3. **comparer** le résultat à l'original, avec `diff -r`, ou lancer l'application sur les données restaurées ;
+4. **chronométrer** la restauration, et comparer au RTO ;
+5. **écrire la procédure**, pour que quelqu'un d'autre puisse la suivre un jour de crise.
+
+## à toi de jouer
+
+Le dossier de travail contient `donnees`, les fichiers d'une petite équipe, dont un au nom piégeux. Sauvegarde-les, provoque un incident, puis prouve que ta sauvegarde les restaure :
+
+1. une sauvegarde complète, compressée : `mkdir sauvegardes`, puis `tar -cf - donnees | gzip > sauvegardes/complete.tar.gz` ;
+2. son empreinte, calculée tout de suite : `sha256sum sauvegardes/complete.tar.gz > sauvegardes/complete.sha256` ;
+3. l'incident : un collègue supprime par erreur le dossier des factures, `rm -r donnees/factures` ;
+4. avant de restaurer, vérifie que l'archive est intacte : `sha256sum -c sauvegardes/complete.sha256 > verification.txt`, puis `cat verification.txt` ;
+5. restaure **à part**, jamais par-dessus les données : `mkdir restauration`, puis `gunzip -c sauvegardes/complete.tar.gz | tar -xf - -C restauration` ;
+6. compare avec l'état actuel : `diff -rqN restauration/donnees donnees`. `-q` ne dit que quels fichiers diffèrent, et `-N` compte un fichier absent comme vide, pour qu'il apparaisse : seules les factures manquent. Le `diff` d'une distribution complète l'écrirait directement, avec `Only in` ;
+7. remets le dossier perdu, en gardant ses droits et ses dates : `cp -a restauration/donnees/factures donnees/` ;
+8. contrôle final, et garde la preuve : `diff -r restauration/donnees donnees && echo identiques > controle.txt`.
+
+<LinuxTerminal title="Sauvegarder, perdre, restaurer" height={440} files={{"donnees/clients.csv": "Martin;Lyon;client depuis 2019\nDurand;Nantes;client depuis 2022\nPetit;Lille;client depuis 2024\n", "donnees/compte rendu.txt": "Réunion du 29 septembre : tester la restauration avant la fin du mois.\n", "donnees/factures/2026-09.txt": "F-2026-0412;Martin;1250\nF-2026-0413;Petit;380\nF-2026-0414;Durand;910\n", "donnees/factures/2026-10.txt": "F-2026-0501;Martin;420\n"}} expectedCommands={["mkdir sauvegardes", "tar -cf - donnees | gzip > sauvegardes/complete.tar.gz", "sha256sum sauvegardes/complete.tar.gz > sauvegardes/complete.sha256", "rm -r donnees/factures", "sha256sum -c sauvegardes/complete.sha256 > verification.txt", "mkdir restauration", "gunzip -c sauvegardes/complete.tar.gz | tar -xf - -C restauration", "diff -rqN restauration/donnees donnees", "cp -a restauration/donnees/factures donnees/", "diff -r restauration/donnees donnees && echo identiques > controle.txt"]} checks={[{"label": "L'archive a été vérifiée", "path": "verification.txt", "expect": "file", "contains": ": OK"}, {"label": "Les factures sont revenues", "path": "donnees/factures/2026-09.txt", "expect": "file", "contains": "F-2026-0413"}, {"label": "La restauration est identique à l'original", "path": "controle.txt", "expect": "file", "contains": "identiques"}]} hints={["Le tar de ce petit Linux n'a pas -z : on passe par un tube vers gzip.", "sha256sum -c relit le fichier d'empreintes et recalcule chaque empreinte.", "tar -C restauration extrait dans ce dossier, sans toucher à donnees.", "diff -r compare deux arborescences ; s'il ne dit rien et rend 0, elles sont identiques.", "cp -a garde les droits, les dates et les liens."]} />
+
+Remarque l'ordre : vérifier l'archive **avant** de s'en servir, restaurer **à part**, comparer, puis ne remettre que ce qui manque. Restaurer directement par-dessus le dossier de travail aurait écrasé les modifications faites depuis la sauvegarde par le reste de l'équipe. Le `diff -r` final ne disant rien, la restauration est complète, au fichier près, celui dont le nom contient une espace compris.
+
+Ensuite, des copies quotidiennes avec rsync, sur un serveur Debian simulé où le NAS est monté sur `/mnt/nas` :
+
+1. simule la synchronisation : `rsync -an --delete /srv/donnees/ /mnt/nas/miroir/`. Lis bien la ligne `deleting` ;
+2. crée la copie du jour, par liens physiques vers celle de la veille : `rsync -a --link-dest=/mnt/nas/2026-09-30 /srv/donnees/ /mnt/nas/2026-10-01/` ;
+3. compare la place réelle des deux copies : `du -sh /mnt/nas/2026-09-30 /mnt/nas/2026-10-01` ;
+4. vérifie qu'un fichier inchangé est bien le même inode dans les deux : `ls -li /mnt/nas/2026-09-30/clients.csv /mnt/nas/2026-10-01/clients.csv`.
+
+<SimulatedTerminal shell="bash" title="Des copies quotidiennes avec rsync" expectedCommands={["rsync -an --delete /srv/donnees/ /mnt/nas/miroir/", "rsync -a --link-dest=/mnt/nas/2026-09-30 /srv/donnees/ /mnt/nas/2026-10-01/", "du -sh /mnt/nas/2026-09-30 /mnt/nas/2026-10-01", "ls -li /mnt/nas/2026-09-30/clients.csv /mnt/nas/2026-10-01/clients.csv"]} hints={["-n est la simulation : rien n'est copié ni supprimé.", "--link-dest désigne la copie de la veille, à laquelle comparer.", "du compte une seule fois un fichier qui a plusieurs liens physiques.", "Le premier nombre de ls -li est le numéro d'inode, le troisième le nombre de liens."]} commands={{"rsync -an --delete /srv/donnees/ /mnt/nas/miroir/": "deleting ancien-rapport.pdf\n./\nclients.csv\nfactures/\nfactures/2026-10.txt", "rsync -anv --delete /srv/donnees/ /mnt/nas/miroir/": "sending incremental file list\ndeleting ancien-rapport.pdf\n./\nclients.csv\nfactures/\nfactures/2026-10.txt\n\nsent 412 bytes  received 47 bytes  918.00 bytes/sec\ntotal size is 2,184,331,207  speedup is 4,758,891.52 (DRY RUN)", "rsync -a --link-dest=/mnt/nas/2026-09-30 /srv/donnees/ /mnt/nas/2026-10-01/": "", "du -sh /mnt/nas/2026-09-30 /mnt/nas/2026-10-01": "2.1G\t/mnt/nas/2026-09-30\n38M\t/mnt/nas/2026-10-01", "ls -li /mnt/nas/2026-09-30/clients.csv /mnt/nas/2026-10-01/clients.csv": "1572871 -rw-r----- 2 www-data www-data 18342 sept. 30 17:02 /mnt/nas/2026-09-30/clients.csv\n1572871 -rw-r----- 2 www-data www-data 18342 sept. 30 17:02 /mnt/nas/2026-10-01/clients.csv", "ls /mnt/nas": "2026-09-28  2026-09-29  2026-09-30  2026-10-01  miroir"}} />
+
+La copie du 1er octobre paraît complète, avec ses 2,1 Go de fichiers, mais n'occupe que 38 Mo : les fichiers inchangés y sont des liens physiques vers ceux de la veille, le même inode, comme le montre `ls -li`. Et la simulation de l'étape 1 a révélé un danger : avec `--delete`, un fichier supprimé de la source, `ancien-rapport.pdf`, aurait disparu du miroir. C'est pour cela qu'on garde des copies datées, et pas seulement un miroir.
+
+## les pièges
+
+- **N'avoir jamais restauré.** Une sauvegarde non testée est une hypothèse, pas une protection.
+- **Des sauvegardes joignables et modifiables depuis le serveur.** Un rançongiciel les chiffre avec le reste : modèle tiré, copie immuable ou hors ligne.
+- **Copier les fichiers d'une base en marche.** La copie est incohérente : `pg_dump`, `mysqldump`, ou un instantané.
+- **`rsync --delete` pris pour une sauvegarde.** Un miroir recopie aussi les suppressions et les chiffrements.
+- **Oublier la barre oblique finale, ou la mettre à tort.** Le dossier se retrouve un niveau trop bas, ou son contenu se mélange à la destination.
+- **Restaurer par-dessus les données en production.** On restaure à part, puis on remet ce qui manque.
+- **Des sauvegardes en clair hors de la machine.** Elles contiennent tout : chiffrer.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Le guide d'hygiène de l'ANSSI, dont les mesures sur les sauvegardes, en français">ANSSI : guide d'hygiène informatique</ExternalLink>
+
+<ExternalLink href="https://download.samba.org/pub/rsync/rsync.1" description="Toutes les options de rsync, dont --link-dest et --delete, en anglais">Page de manuel de rsync</ExternalLink>
+
+<ExternalLink href="https://restic.readthedocs.io/" description="Un outil de sauvegarde moderne : instantanés, déduplication, chiffrement, en anglais">Documentation de restic</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que dit la règle 3-2-1 ?" options={["3 sauvegardes par jour, pendant 2 semaines, 1 fois par mois", "3 copies des données, sur 2 supports différents, dont 1 hors du site", "3 serveurs, 2 disques, 1 NAS", "3 mots de passe, 2 clés, 1 coffre"]} correct={1} explanation="On y ajoute une copie hors ligne ou immuable, et zéro erreur de restauration : 3-2-1-1-0." />
+  <Quiz id="q-2" question="Que mesure le RPO ?" options={["La durée d'arrêt acceptable", "La quantité de données qu'on accepte de perdre, en temps", "La taille des sauvegardes", "Le nombre de copies"]} correct={1} explanation="Le RTO, lui, mesure le temps de reprise acceptable." />
+  <Quiz id="q-3" question="Pourquoi ne pas copier les fichiers d'une base PostgreSQL en marche ?" options={["Parce que c'est lent", "Parce que la copie serait incohérente : on utilise pg_dump ou un instantané", "Parce que c'est interdit par la licence", "Parce que les fichiers sont chiffrés"]} correct={1} explanation="L'outil d'export de la base produit une image cohérente pendant qu'elle tourne." />
+  <Quiz id="q-4" question="Quelle est la différence entre rsync -a /srv/donnees/ dest/ et rsync -a /srv/donnees dest/ ?" options={["Aucune", "Avec la barre oblique, le contenu du dossier est copié ; sans, le dossier lui-même, un niveau plus bas", "La première est plus rapide", "La seconde supprime la source"]} correct={1} explanation="Un détail qui place des milliers de fichiers au mauvais endroit." />
+  <Quiz id="q-5" question="Un miroir rsync --delete protège-t-il d'un rançongiciel ?" options={["Oui", "Non : les fichiers chiffrés et les suppressions sont recopiés fidèlement", "Seulement la nuit", "Seulement par SSH"]} correct={1} explanation="Il faut des copies datées, et au moins une copie immuable ou hors ligne." />
+  <Quiz id="q-6" question="Avec rsync --link-dest, pourquoi la copie du jour prend-elle si peu de place ?" options={["Elle est compressée", "Les fichiers inchangés sont des liens physiques vers ceux de la veille", "Elle est incomplète", "Elle est chiffrée"]} correct={1} explanation="Chaque copie paraît complète, mais seuls les fichiers modifiés occupent de l'espace." />
+  <Quiz id="q-7" question="Pourquoi restaurer dans un dossier à part plutôt que par-dessus les données ?" options={["Par habitude", "Pour ne pas écraser les modifications faites depuis la sauvegarde, et comparer avant de remettre", "Parce que tar l'exige", "Pour gagner de la place"]} correct={1} explanation="On compare avec diff -r, puis on ne remet que ce qui manque." />
+</QuizGroup>
+
+## à retenir
+
+- **3-2-1-1-0** : 3 copies, 2 supports, 1 hors site, 1 hors ligne ou immuable, 0 erreur de restauration.
+- **RPO** : la perte acceptable ; **RTO** : l'arrêt acceptable. Ils dictent les outils.
+- Sauvegarder **données**, **`/etc`**, la liste des paquets ; les bases par leur **export** ou un **instantané**.
+- **`rsync -a`**, la barre oblique finale, **`--dry-run`** d'abord ; **`--delete`** fait un miroir, pas une sauvegarde.
+- Instantanés : **`--link-dest`**, **LVM**, **Btrfs** ; sur les mêmes disques, ils ne remplacent pas une copie ailleurs.
+- **Chiffrer**, modèle **tiré**, copie **immuable**, tâches **surveillées**.
+- **Tester** : `sha256sum -c`, restaurer **à part**, **`diff -r`**, chronométrer, écrire la procédure.

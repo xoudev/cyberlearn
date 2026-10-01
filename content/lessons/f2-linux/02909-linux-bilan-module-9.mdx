@@ -1,0 +1,176 @@
+---
+refCode: CL-LSN-02909-V01
+slug: linux-bilan-module-9
+title: "Bilan du module 9 : un disque chiffré, souple et sauvegardé"
+description: "Le quiz du module Disques, systèmes de fichiers et sauvegardes, puis un lab sur la machine virtuelle d'entraînement : ajouter un disque, le chiffrer avec LUKS, y installer LVM, créer et monter un volume durci qui s'ouvre au démarrage, l'agrandir à chaud, et prouver qu'une sauvegarde se restaure, avec une correction commentée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02067-V01"]
+---
+
+Le module 9 t'a fait descendre jusqu'aux disques : les nommer sans se tromper, les partitionner, y créer des systèmes de fichiers, les monter avec les bonnes options, les regrouper avec LVM, les protéger de la panne avec le RAID et du vol avec LUKS, et surtout sauvegarder ce qu'ils contiennent. Ce bilan vérifie les connaissances, puis te fait empiler toutes ces couches sur un vrai disque, dans l'ordre où on le fait en production : chiffrement, LVM, système de fichiers, montage durci, et une sauvegarde dont on prouve qu'elle se restaure.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- identifier un disque avec certitude, et le partitionner en GPT ;
+- chiffrer une partition avec LUKS, et l'ouvrir au démarrage ;
+- empiler LVM sur un volume chiffré, et agrandir un volume à chaud ;
+- créer un système de fichiers et le monter par son UUID, avec des options durcies ;
+- sauvegarder, vérifier une sauvegarde et prouver qu'elle se restaure.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="m9-q-1" question="Pourquoi vérifier le numéro de série d'un disque avant de le partitionner ?" options={["Pour la garantie", "Parce que les noms comme /dev/sdb peuvent changer, et qu'écrire sur le mauvais disque détruit ses données", "Parce que fdisk l'exige", "Par habitude"]} correct={1} explanation="Le numéro de série se lit dans /dev/disk/by-id/ et sur l'étiquette du disque." />
+  <Quiz id="m9-q-2" question="Quel format de table choisir pour un disque de 6 To ?" options={["MBR", "GPT", "Aucun", "Les deux"]} correct={1} explanation="Le MBR ne gère pas plus de 2 Tio." />
+  <Quiz id="m9-q-3" question="df -h montre de la place libre, mais l'écriture échoue. Que vérifier ?" options={["La mémoire", "Les inodes, avec df -i", "Le RAID", "Le pare-feu"]} correct={1} explanation="Des millions de petits fichiers peuvent épuiser les inodes." />
+  <Quiz id="m9-q-4" question="Pourquoi ne jamais lancer fsck sur un système de fichiers monté ?" options={["Il est trop lent", "Il modifierait des structures que le noyau utilise, au risque de détruire des données", "Il ne trouve rien", "Il faut être root"]} correct={1} explanation="On démonte d'abord, ou l'on vérifie au démarrage." />
+  <Quiz id="m9-q-5" question="Que fait l'option nodev sur un système de fichiers monté ?" options={["Elle interdit la lecture", "Elle fait ignorer les fichiers de périphériques qu'il contiendrait", "Elle interdit d'exécuter", "Elle le monte en lecture seule"]} correct={1} explanation="Avec nosuid et noexec, c'est le trio de durcissement des montages." />
+  <Quiz id="m9-q-6" question="Comment vérifier /etc/fstab avant de redémarrer ?" options={["Avec cat", "Avec findmnt --verify puis mount -a", "Avec fsck", "En redémarrant"]} correct={1} explanation="Une erreur non détectée bloque le démarrage en mode d'urgence." />
+  <Quiz id="m9-q-7" question="Que fait lvextend -r -L +20G vg/lv ?" options={["Il crée un volume", "Il ajoute 20 Go au volume et agrandit son système de fichiers, à chaud", "Il réduit le volume", "Il crée un instantané"]} correct={1} explanation="Sans -r, seul le volume grandit." />
+  <Quiz id="m9-q-8" question="Un groupe LVM s'étend sur deux disques sans RAID. Un disque tombe en panne. Que se passe-t-il ?" options={["Rien", "Les volumes qui avaient des extents dessus sont perdus", "LVM bascule sur l'autre disque", "Le groupe passe en lecture seule sans perte"]} correct={1} explanation="LVM apporte la souplesse ; la redondance vient du RAID, placé dessous." />
+  <Quiz id="m9-q-9" question="Combien de disques peut perdre un RAID 6 sans perte de données ?" options={["Aucun", "Deux", "Un", "La moitié"]} correct={1} explanation="Deux parités : deux pannes supportées." />
+  <Quiz id="m9-q-10" question="Que signifie [U_] dans /proc/mdstat ?" options={["La grappe est saine", "La grappe est dégradée, sans plus aucune redondance", "La grappe se crée", "Un disque de secours attend"]} correct={1} explanation="Il faut remplacer le disque au plus vite, et vérifier les sauvegardes." />
+  <Quiz id="m9-q-11" question="Un disque chiffré avec LUKS protège-t-il d'un logiciel malveillant sur la machine en marche ?" options={["Oui", "Non : un volume ouvert se lit en clair pour tout programme qui en a le droit", "Seulement en LUKS2", "Seulement avec un fichier de clé"]} correct={1} explanation="LUKS protège le disque éteint ou le volume fermé : vol, perte, mise au rebut." />
+  <Quiz id="m9-q-12" question="Pourquoi sauvegarder l'en-tête d'un volume LUKS ?" options={["Pour accélérer l'ouverture", "Parce que s'il est abîmé, la clé maîtresse est perdue, et les données avec, même avec la bonne phrase", "Pour changer de phrase", "Ce n'est pas utile"]} correct={1} explanation="On le range hors du disque, en lieu sûr." />
+  <Quiz id="m9-q-13" question="Pourquoi un miroir rsync --delete n'est-il pas une sauvegarde suffisante ?" options={["Il est trop lent", "Il recopie aussi les suppressions et les fichiers chiffrés par un rançongiciel", "Il ne copie pas les droits", "Il ne fonctionne pas par SSH"]} correct={1} explanation="Il faut des copies datées, dont une immuable ou hors ligne." />
+  <Quiz id="m9-q-14" question="Qu'est-ce qui prouve qu'une sauvegarde est bonne ?" options={["Sa taille", "Une restauration réussie, comparée à l'original", "La présence du fichier", "La date de création"]} correct={1} explanation="Une sauvegarde non restaurée reste une hypothèse." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. Les disques reviennent dans le projet de fin de parcours, avec le serveur d'une petite équipe à mettre en service.
+
+## projet
+
+### la situation
+
+Le serveur de l'équipe doit héberger des documents confidentiels. On lui ajoute un disque dédié, qui doit être **chiffré**, pour que sa mise au rebut ou son vol ne fasse courir aucun risque, **souple**, pour pouvoir grandir sans interruption, et **sauvegardé**, avec une preuve que la sauvegarde se restaure. Ce lab demande les droits root et un disque à effacer : fais-le dans la **machine virtuelle d'entraînement**, après lui avoir ajouté un **second disque virtuel de 10 Go** depuis ton logiciel de virtualisation, **jamais sur un serveur réel**.
+
+### le cahier des charges
+
+1. **Le disque** est identifié avec certitude, et reçoit une table **GPT** et une seule partition, qui occupe tout le disque.
+2. **Le chiffrement** : la partition est chiffrée en **LUKS2**, avec deux phrases de passe, une d'usage et une de secours, et son en-tête est sauvegardé dans `/root/coffre-entete.img`.
+3. **LVM** : le volume chiffré ouvert devient le volume physique d'un groupe `vg_coffre`, dans lequel un volume `lv_docs` de **4 Go** est créé. Le reste du groupe reste libre.
+4. **Le système de fichiers** : un ext4 étiqueté `docs`, monté sur `/srv/docs` **par son UUID**, avec les options `nodev,nosuid,noexec`.
+5. **Le démarrage** : le volume s'ouvre au démarrage, en demandant la phrase à la console, et `/srv/docs` est monté ensuite.
+6. **L'agrandissement** : avec des fichiers dedans, `lv_docs` passe à **6 Go** sans être démonté.
+7. **La sauvegarde** : le contenu de `/srv/docs` est archivé dans `/var/backups/docs.tar.gz`, avec son empreinte SHA-256, puis **restauré à part** et comparé à l'original, sans aucune différence.
+
+### les critères de réussite
+
+| Test | Résultat attendu |
+| --- | --- |
+| `lsblk -f` | le disque, sa partition `crypto_LUKS`, le volume ouvert, le volume LVM `ext4` monté sur `/srv/docs` |
+| `sudo cryptsetup luksDump /dev/sdb1 \| grep -c luks2` | deux emplacements de clés utilisés |
+| `ls -l /root/coffre-entete.img` | la sauvegarde de l'en-tête existe |
+| `findmnt /srv/docs` | options `nodev,nosuid,noexec` |
+| `grep docs /etc/fstab` | une source `UUID=` |
+| `sudo lvs vg_coffre` | `lv_docs` à 6 Go, de l'espace libre dans le groupe |
+| `sha256sum -c /var/backups/docs.tar.gz.sha256` | `OK` |
+| `diff -r` entre la restauration et `/srv/docs` | aucune différence |
+| après `sudo reboot` et la phrase de passe | `/srv/docs` monté et lisible |
+
+### la correction commentée
+
+À lire après avoir essayé. Le nouveau disque s'appelle ici `/dev/sdb` : vérifie le tien.
+
+**1. Identifier et partitionner.**
+
+```bash
+lsblk
+ls -l /dev/disk/by-id/ | grep sdb
+sudo parted /dev/sdb --script mklabel gpt mkpart coffre 1MiB 100%
+lsblk /dev/sdb
+```
+
+Le disque virtuel ajouté se reconnaît à sa taille, 10 Go, et à son absence de partitions. Sur un vrai serveur, c'est le numéro de série de `by-id` qu'on comparerait à l'étiquette du disque.
+
+**2. Chiffrer, ajouter une phrase de secours, sauvegarder l'en-tête.**
+
+```bash
+sudo cryptsetup luksFormat --type luks2 /dev/sdb1
+sudo cryptsetup luksAddKey /dev/sdb1
+sudo cryptsetup luksHeaderBackup /dev/sdb1 --header-backup-file /root/coffre-entete.img
+sudo chmod 600 /root/coffre-entete.img
+sudo cryptsetup open /dev/sdb1 coffre
+```
+
+La phrase de secours de `luksAddKey` est longue et rangée ailleurs, dans un coffre de mots de passe ou sous enveloppe. La sauvegarde de l'en-tête ne doit pas rester sur le serveur : on la copiera hors de la machine, dans le même coffre.
+
+**3. LVM sur le volume chiffré.**
+
+```bash
+sudo pvcreate /dev/mapper/coffre
+sudo vgcreate vg_coffre /dev/mapper/coffre
+sudo lvcreate -n lv_docs -L 4G vg_coffre
+```
+
+Le chiffrement est **sous** LVM : une seule phrase de passe ouvre tout le groupe, et tous ses volumes sont chiffrés, y compris ceux qu'on créera plus tard. L'ordre inverse, un volume LUKS par volume logique, demanderait une phrase par volume.
+
+**4. Système de fichiers et montage durci.**
+
+```bash
+sudo mkfs.ext4 -L docs /dev/vg_coffre/lv_docs
+sudo mkdir -p /srv/docs
+sudo blkid /dev/vg_coffre/lv_docs           # relever l'UUID
+echo 'UUID=<uuid-du-volume> /srv/docs ext4 defaults,nodev,nosuid,noexec 0 2' | sudo tee -a /etc/fstab
+```
+
+On remplace `<uuid-du-volume>` par l'UUID relevé, et l'on vérifie que la ligne est bien seule sur la sienne avec `tail -2 /etc/fstab`.
+
+**5. L'ouverture au démarrage.** Dans `/etc/crypttab`, avec l'UUID de la **partition chiffrée**, différent de celui du système de fichiers :
+
+```bash
+sudo blkid /dev/sdb1                         # TYPE="crypto_LUKS", relever cet UUID
+echo 'coffre UUID=<uuid-luks> none luks' | sudo tee -a /etc/crypttab
+sudo findmnt --verify
+sudo systemctl daemon-reload
+sudo mount -a
+```
+
+`none` fait demander la phrase à la console au démarrage. Sur un serveur distant, on préférerait la TPM2 de la machine ou un serveur Clevis et Tang, vus dans la leçon sur LUKS.
+
+**6. Agrandir à chaud.**
+
+```bash
+sudo cp -a /etc /srv/docs/exemple-etc        # des fichiers pour l'exercice
+df -h /srv/docs
+sudo lvextend -r -L 6G vg_coffre/lv_docs
+df -h /srv/docs
+```
+
+`-L 6G` vise une taille finale, là où `+2G` aurait ajouté deux gigaoctets : le résultat est le même ici. Le système de fichiers grandit pendant qu'il est monté, sans interruption.
+
+**7. Sauvegarder, vérifier, restaurer, comparer.**
+
+```bash
+sudo tar -czf /var/backups/docs.tar.gz -C /srv docs
+cd /var/backups && sudo sha256sum docs.tar.gz | sudo tee docs.tar.gz.sha256
+sudo sha256sum -c docs.tar.gz.sha256
+sudo mkdir -p /tmp/restauration
+sudo tar -xzf /var/backups/docs.tar.gz -C /tmp/restauration
+sudo diff -r /tmp/restauration/docs /srv/docs && echo "restauration identique"
+```
+
+Le `tar` de la machine virtuelle connaît `-z`, contrairement à celui des exercices. L'empreinte est calculée depuis le dossier de l'archive, pour que `sha256sum -c` la retrouve par son nom. La sauvegarde est ici sur le même serveur, ce qui ne vaut pas une vraie sauvegarde : en production, elle partirait chiffrée vers un autre site, selon la règle 3-2-1. Et l'archive d'un volume chiffré est en clair : elle doit être chiffrée à son tour.
+
+**8. Le redémarrage.** `sudo reboot` : la console demande la phrase de passe de `coffre`, puis `/srv/docs` est monté. `lsblk -f` montre tout l'empilement, du disque au point de montage.
+
+### pour aller plus loin
+
+Remplace la phrase de passe tapée à la console par une ouverture automatique liée à la machine : si ton logiciel de virtualisation propose une puce TPM virtuelle, `sudo systemd-cryptenroll --tpm2-device=auto /dev/sdb1`, puis `tpm2-device=auto` dans les options de `/etc/crypttab`. Puis simule la fin de vie du disque : démonte, ferme le volume, et efface-le en un instant avec `cryptsetup luksErase`. Vérifie qu'il ne s'ouvre plus, même avec la bonne phrase, puis restaure l'en-tête depuis `/root/coffre-entete.img` avec `luksHeaderRestore` : il s'ouvre de nouveau. Tu viens de voir pourquoi une sauvegarde d'en-tête doit être gardée aussi précieusement que la phrase elle-même, et détruite le jour où le disque part au rebut.
+
+## à retenir
+
+- L'empilement de production : **disque**, **partition GPT**, **LUKS**, **LVM**, **système de fichiers**, **montage durci par UUID**.
+- **Chiffrement sous LVM** : une seule phrase, tous les volumes protégés.
+- **`/etc/crypttab`** ouvre, **`/etc/fstab`** monte, et **`findmnt --verify`** avant de redémarrer.
+- Deux phrases de passe et un **en-tête sauvegardé** hors de la machine.
+- **`lvextend -r`** agrandit sans interruption ; on laisse de la place libre dans le groupe.
+- Une sauvegarde se **vérifie** (`sha256sum -c`) et se **restaure à part** (`diff -r`) ; elle part chiffrée, ailleurs.
+- Le module 10 passe au **réseau** : interfaces, diagnostic, SSH et pare-feu.

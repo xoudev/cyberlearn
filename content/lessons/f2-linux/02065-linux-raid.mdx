@@ -1,0 +1,164 @@
+---
+refCode: CL-LSN-02065-V01
+slug: linux-raid
+title: "Le RAID logiciel : niveaux et compromis"
+description: "Survivre à la panne d'un disque : les niveaux de RAID 0, 1, 5, 6 et 10, leur capacité, leurs performances et ce qu'ils protègent, RAID matériel, logiciel ou intégré au système de fichiers, créer une grappe avec mdadm, la surveiller avec /proc/mdstat et SMART, remplacer un disque en panne et suivre la reconstruction, et placer LVM par-dessus. Pourquoi le RAID n'est jamais une sauvegarde. Avec un miroir dégradé à réparer sur un serveur de fichiers."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02064-V01"]
+---
+
+Un disque finit toujours par tomber en panne. La seule question est quand. Sur un poste de travail, on restaure la sauvegarde et l'on perd une demi-journée. Sur un serveur dont dépend toute une équipe, chaque heure d'arrêt compte. Le **RAID** répartit les données sur plusieurs disques de façon à survivre à la perte de l'un d'eux : le serveur continue de fonctionner, on remplace le disque à chaud, et personne ne s'aperçoit de rien. Encore faut-il choisir le bon niveau, surveiller la grappe, et ne jamais confondre cette protection avec une sauvegarde.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- comparer les niveaux de RAID 0, 1, 5, 6 et 10 : capacité, performances, tolérance aux pannes ;
+- choisir entre RAID matériel, logiciel et intégré au système de fichiers ;
+- créer une grappe avec `mdadm`, et l'enregistrer pour le démarrage ;
+- lire l'état d'une grappe dans `/proc/mdstat`, et surveiller la santé des disques ;
+- remplacer un disque en panne et suivre la reconstruction ;
+- expliquer pourquoi le RAID ne remplace pas une sauvegarde.
+
+## pourquoi ça compte
+
+Le RAID protège la **disponibilité** : le service continue malgré une panne matérielle. C'est précieux, mais c'est tout. Il recopie fidèlement sur tous les disques un fichier supprimé par erreur, une base corrompue par un bug, ou des données chiffrées par un rançongiciel. Il ne protège pas non plus d'un incendie, d'un vol ou d'une alimentation défaillante qui grille tous les disques d'un coup. Et une grappe dégradée que personne ne remarque n'a plus aucune redondance : au disque suivant, tout est perdu. Le RAID n'a de valeur que **surveillé**, et **accompagné de sauvegardes**.
+
+## les niveaux
+
+| Niveau | Principe | Disques min. | Capacité utile, avec n disques | Pannes supportées |
+| --- | --- | --- | --- | --- |
+| **RAID 0** | les données réparties en bandes sur tous les disques | 2 | n disques | **aucune** |
+| **RAID 1** | un miroir : chaque disque contient tout | 2 | 1 disque | n − 1 |
+| **RAID 5** | bandes et une parité répartie | 3 | n − 1 disques | 1 |
+| **RAID 6** | bandes et une double parité | 4 | n − 2 disques | 2 |
+| **RAID 10** | un ensemble de miroirs, sur lesquels on répartit en bandes | 4 | n ÷ 2 disques | 1 par miroir |
+
+**RAID 0** n'est pas de la redondance : il additionne la vitesse et la capacité des disques, et perd **tout** à la première panne. Il ne sert que pour des données jetables. **RAID 1** est le plus simple et le plus sûr pour deux disques : chaque disque est une copie complète. **RAID 5** offre plus de capacité, grâce à une **parité** qui permet de recalculer les données d'un disque manquant ; mais avec les disques actuels de plusieurs téraoctets, la reconstruction dure des heures, voire des jours, pendant lesquels une seconde panne, ou une simple erreur de lecture, perd la grappe. D'où la préférence actuelle pour **RAID 6**, qui supporte deux pannes, ou **RAID 10**, plus rapide en écriture et à reconstruire, au prix de la moitié de la capacité.
+
+## matériel, logiciel ou système de fichiers
+
+Le **RAID matériel** est géré par une carte contrôleur : le système ne voit qu'un seul disque. Il décharge le processeur, mais la grappe dépend de la carte : si elle tombe en panne, il faut souvent la même pour relire les disques. Le **RAID logiciel** de Linux, géré par le noyau et l'outil **`mdadm`**, ne dépend d'aucun matériel : les disques se relisent sur n'importe quel Linux. Les processeurs actuels le font tourner sans effort, et c'est le choix le plus courant sur les serveurs Linux. Enfin, **Btrfs** et **ZFS** intègrent leur propre RAID, avec un avantage décisif : grâce à leurs sommes de contrôle, ils savent **quelle copie est la bonne** quand deux disques ne sont pas d'accord, ce que ni le RAID matériel ni `mdadm` ne savent faire.
+
+Une précision pratique : dans une grappe, chaque membre ne compte que pour la taille du **plus petit**. Un miroir d'un disque de 1 To et d'un disque de 2 To offre 1 To, et le reste du grand disque est perdu pour la grappe. On assemble donc des disques de même taille, et, quand on remplace un disque, on en choisit un au moins aussi grand que celui qu'il remplace : quelques secteurs de moins d'un fabricant à l'autre suffisent à faire refuser un ajout.
+
+## créer une grappe avec mdadm
+
+```bash
+sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc1
+cat /proc/mdstat                              # la synchronisation initiale en cours
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
+sudo update-initramfs -u                      # pour que la grappe s'assemble au démarrage
+```
+
+Les partitions membres portent idéalement le type `Linux RAID`. La grappe apparaît comme un nouveau disque, `/dev/md0`, sur lequel on crée un système de fichiers, ou mieux, un volume physique LVM : le **RAID dessous, LVM dessus**, et l'on obtient à la fois la redondance et la souplesse de la leçon précédente. L'enregistrement dans `mdadm.conf` et l'initramfs garantit que la grappe sera reconnue et assemblée sous le même nom à chaque démarrage.
+
+## surveiller
+
+```text
+md0 : active raid1 sdc1[1] sdb1[0]
+      976630464 blocks super 1.2 [2/2] [UU]
+```
+
+**`/proc/mdstat`** résume l'état de chaque grappe. `[2/2]` dit qu'il faut deux disques et que deux sont présents ; `[UU]` montre chaque disque, `U` s'il fonctionne (*up*), `_` s'il manque. Une grappe saine affiche `[UU]` ; une grappe **dégradée**, `[2/1] [U_]` : elle fonctionne encore, mais sans plus aucune redondance. `mdadm --detail /dev/md0` donne le détail, dont l'état (`clean`, `degraded`, `recovering`) et le rôle de chaque disque.
+
+Personne ne lit `/proc/mdstat` tous les matins. Il faut donc une **alerte** : le service `mdmonitor` (ou `mdadm --monitor`) envoie un courrier à l'adresse `MAILADDR` de `mdadm.conf` dès qu'un disque tombe. On surveille aussi la santé des disques **avant** la panne, grâce à leurs compteurs internes **SMART** : `smartctl -H /dev/sdb` donne un verdict global, `smartctl -a` le détail, dont les secteurs réalloués, signe d'un disque qui s'use. Le service `smartd` peut alerter tout seul.
+
+## vérifier régulièrement la grappe
+
+Un disque peut contenir des secteurs illisibles sans que personne le sache, tant qu'on ne les lit pas. Le jour où l'autre disque du miroir tombe en panne, la reconstruction lit **tout**, tombe sur ces secteurs, et échoue. Pour les découvrir à temps, on fait relire régulièrement toute la grappe, et comparer les copies :
+
+```bash
+echo check | sudo tee /sys/block/md0/md/sync_action
+cat /sys/block/md0/md/mismatch_cnt
+```
+
+Debian le fait tout seul une fois par mois, grâce au script `checkarray` planifié par le paquet `mdadm`. Un `mismatch_cnt` non nul signale des copies qui ne concordent plus, à examiner. C'est l'équivalent, pour `mdadm`, du *scrub* de Btrfs et de ZFS, qui ont l'avantage de savoir, grâce à leurs sommes de contrôle, laquelle des copies est la bonne.
+
+## les disques de secours
+
+Une grappe peut aussi recevoir un **disque de secours** (*hot spare*) : un disque branché, alimenté, mais inutilisé, que `mdadm` intègre automatiquement dès qu'un membre tombe en panne. La reconstruction démarre aussitôt, sans attendre qu'un technicien remplace le disque, ce qui réduit la période sans redondance. Ajouté à une grappe complète avec `mdadm --add`, un disque devient automatiquement un disque de secours. Sur un serveur difficile d'accès, la nuit ou dans un site distant, c'est souvent la meilleure assurance contre une seconde panne.
+
+## démarrer sur un miroir
+
+Mettre le disque système en RAID 1 protège aussi le démarrage, à une condition : que la machine puisse démarrer depuis **l'un ou l'autre** disque. Le chargeur GRUB doit donc être installé sur les deux, et, en UEFI, chaque disque doit avoir sa propre partition EFI, que le micrologiciel lit directement, sans connaître le RAID logiciel. Les installateurs de Debian et d'Ubuntu savent créer cette configuration, mais il faut penser à **tester** : débrancher un disque, puis l'autre, et vérifier que la machine démarre à chaque fois. Un miroir qui ne démarre que sur le disque qui vient de lâcher ne protège rien.
+
+## remplacer un disque en panne
+
+Quand un disque lâche, le noyau le marque **en panne** (`(F)` dans `/proc/mdstat`) et la grappe continue sans lui. Le remplacement suit toujours les mêmes étapes :
+
+```bash
+sudo mdadm --manage /dev/md0 --remove /dev/sdc1     # retirer le disque en panne de la grappe
+# remplacer physiquement le disque, souvent à chaud sur un serveur
+sudo sfdisk -d /dev/sdb | sudo sfdisk /dev/sdc       # recopier la table de partitions du disque sain
+sudo mdadm --manage /dev/md0 --add /dev/sdc1        # ajouter le nouveau disque
+cat /proc/mdstat                                    # suivre la reconstruction
+```
+
+Avant de retirer un disque, on vérifie **trois fois lequel** : retirer le disque sain d'un miroir dégradé, c'est tout perdre. Son numéro de série, dans `/dev/disk/by-id/` ou `smartctl -i`, est inscrit sur son étiquette. Pendant la reconstruction, la grappe reste utilisable, mais plus lente, et toujours **sans redondance** : c'est le moment le plus risqué, et celui où l'on vérifie que la dernière sauvegarde est bonne.
+
+<Diagram caption="Un miroir, de la panne à la reconstruction">
+flowchart LR
+  A["md0 sain : sdb1 et sdc1, UU"] -->|"sdc tombe en panne"| B["md0 dégradé : U_, plus de redondance"]
+  B -->|"alerte mdmonitor ou smartd"| C["--remove sdc1, remplacement du disque"]
+  C --> D["sfdisk : même table que sdb"]
+  D --> E["--add sdc1 : reconstruction"]
+  E --> A
+</Diagram>
+
+## à toi de jouer
+
+Ce matin, l'alerte de `mdmonitor` est arrivée : le miroir `md0` du serveur de fichiers est dégradé. Diagnostique, puis répare, sur ce serveur Debian simulé :
+
+1. l'état de la grappe : `cat /proc/mdstat`, puis `sudo mdadm --detail /dev/md0` ;
+2. ce que le noyau a vu : `journalctl -k -g sdc --since today` ;
+3. le verdict du disque lui-même : `sudo smartctl -H /dev/sdc` ;
+4. retire-le de la grappe : `sudo mdadm --manage /dev/md0 --remove /dev/sdc1` ;
+5. le technicien a remplacé le disque à chaud. Recopie la table de partitions du disque sain : `sudo sfdisk -d /dev/sdb | sudo sfdisk /dev/sdc` ;
+6. ajoute le nouveau disque, puis suis la reconstruction : `sudo mdadm --manage /dev/md0 --add /dev/sdc1`, puis `sudo mdadm --detail /dev/md0 | grep -E 'State :|Rebuild'`.
+
+<SimulatedTerminal shell="bash" title="Un miroir dégradé" expectedCommands={["cat /proc/mdstat", "sudo mdadm --detail /dev/md0", "journalctl -k -g sdc --since today", "sudo smartctl -H /dev/sdc", "sudo mdadm --manage /dev/md0 --remove /dev/sdc1", "sudo sfdisk -d /dev/sdb | sudo sfdisk /dev/sdc", "sudo mdadm --manage /dev/md0 --add /dev/sdc1", "sudo mdadm --detail /dev/md0 | grep -E 'State :|Rebuild'"]} hints={["(F) dans /proc/mdstat : le disque est marqué en panne ; [U_] : il manque un disque.", "Medium Error : une erreur de lecture physique, sur le disque lui-même.", "sfdisk -d sort la table de partitions du disque sain, que le second sfdisk applique au nouveau.", "recovering et Rebuild Status : la reconstruction est en cours."]} commands={{"cat /proc/mdstat": "Personalities : [raid1] [linear] [multipath] [raid0] [raid6] [raid5] [raid4] [raid10] \nmd0 : active raid1 sdc1[1](F) sdb1[0]\n      976630464 blocks super 1.2 [2/1] [U_]\n      bitmap: 3/8 pages [12KB], 65536KB chunk\n\nunused devices: <none>", "sudo mdadm --detail /dev/md0": "/dev/md0:\n           Version : 1.2\n     Creation Time : Mon Mar  3 10:12:44 2025\n        Raid Level : raid1\n        Array Size : 976630464 (931.39 GiB 1000.07 GB)\n     Used Dev Size : 976630464 (931.39 GiB 1000.07 GB)\n      Raid Devices : 2\n     Total Devices : 2\n       Persistence : Superblock is persistent\n\n     Intent Bitmap : Internal\n\n       Update Time : Thu Oct  1 09:12:03 2026\n             State : clean, degraded \n    Active Devices : 1\n   Working Devices : 1\n    Failed Devices : 1\n     Spare Devices : 0\n\nConsistency Policy : bitmap\n\n              Name : srv-fichiers:0  (local to host srv-fichiers)\n              UUID : 6d1a3f2e:8b9c4d5e:1f2a3b4c:5d6e7f80\n            Events : 48211\n\n    Number   Major   Minor   RaidDevice State\n       0       8       17        0      active sync   /dev/sdb1\n       -       0        0        1      removed\n\n       1       8       33        -      faulty   /dev/sdc1", "journalctl -k -g sdc --since today": "oct. 01 03:41:17 srv-fichiers kernel: ata3.00: failed command: READ FPDMA QUEUED\noct. 01 03:41:17 srv-fichiers kernel: sd 2:0:0:0: [sdc] tag#12 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_OK cmd_age=7s\noct. 01 03:41:17 srv-fichiers kernel: sd 2:0:0:0: [sdc] tag#12 Sense Key : Medium Error [current] \noct. 01 03:41:17 srv-fichiers kernel: I/O error, dev sdc, sector 418340872 op 0x0:(READ) flags 0x0 phys_seg 1 prio class 2\noct. 01 03:41:18 srv-fichiers kernel: md/raid1:md0: Disk failure on sdc1, disabling device.\n                                      md/raid1:md0: Operation continuing on 1 devices.", "sudo smartctl -H /dev/sdc": "smartctl 7.3 2022-02-28 r5338 [x86_64-linux-6.1.0-25-amd64] (local build)\nCopyright (C) 2002-22, Bruce Allen, Christian Franke, www.smartmontools.org\n\n=== START OF READ SMART DATA SECTION ===\nSMART overall-health self-assessment test result: FAILED!\nDrive failure expected in less than 24 hours. SAVE ALL DATA.", "sudo smartctl -i /dev/sdc | grep -i serial": "Serial Number:    WD-WCC4E7KT1903", "ls -l /dev/disk/by-id/ | grep sdc": "lrwxrwxrwx 1 root root  9 oct.   1 03:41 ata-WDC_WD10EFRX-68FYTN0_WD-WCC4E7KT1903 -> ../../sdc", "sudo mdadm --manage /dev/md0 --remove /dev/sdc1": "mdadm: hot removed /dev/sdc1 from /dev/md0", "sudo sfdisk -d /dev/sdb | sudo sfdisk /dev/sdc": "Checking that no-one is using this disk right now ... OK\n\nDisk /dev/sdc: 931.51 GiB, 1000204886016 bytes, 1953525168 sectors\nDisk model: WDC WD10EFRX-68F\nUnits: sectors of 1 * 512 = 512 bytes\nSector size (logical/physical): 512 bytes / 4096 bytes\n\n>>> Script header accepted.\n>>> Script header accepted.\n>>> Script header accepted.\n>>> Script header accepted.\n>>> Created a new GPT disklabel (GUID: 0E2C4B7A-91D3-4F6E-A852-3C7D1B9E4F20).\n/dev/sdc1: Created a new partition 1 of type 'Linux RAID' and of size 931.5 GiB.\n/dev/sdc2: Done.\n\nNew situation:\nDisklabel type: gpt\n\nDevice     Start        End    Sectors   Size Type\n/dev/sdc1   2048 1953523711 1953521664 931.5G Linux RAID\n\nThe partition table has been altered.\nCalling ioctl() to re-read partition table.\nSyncing disks.", "sudo mdadm --manage /dev/md0 --add /dev/sdc1": "mdadm: added /dev/sdc1", "sudo mdadm --detail /dev/md0 | grep -E 'State :|Rebuild'": "             State : clean, degraded, recovering \n    Rebuild Status : 3% complete"}} />
+
+L'histoire se lit dans l'ordre : des erreurs de lecture physiques (`Medium Error`) sur `sdc` à 3 h 41, le noyau qui retire le disque de la grappe et continue sur un seul, et SMART qui annonce une panne imminente. Pendant la reconstruction, qui durera plusieurs heures sur un téraoctet, le serveur reste en service, mais sans filet. C'est le moment de vérifier que la sauvegarde de la nuit s'est bien passée.
+
+## les pièges
+
+- **Prendre le RAID pour une sauvegarde.** Une suppression, une corruption ou un rançongiciel sont recopiés sur tous les disques.
+- **RAID 0 pour des données utiles.** La première panne emporte tout.
+- **RAID 5 sur de gros disques.** La reconstruction est longue et fragile : RAID 6 ou RAID 10.
+- **Ne pas surveiller.** Une grappe dégradée sans alerte n'a plus de redondance, et personne ne le sait.
+- **Retirer le mauvais disque.** On vérifie le numéro de série avant de toucher au matériel.
+- **Oublier `mdadm.conf` et l'initramfs.** La grappe peut changer de nom, ou ne pas s'assembler, au démarrage.
+- **Des disques du même lot.** Achetés ensemble, ils s'usent ensemble, et peuvent lâcher pendant la reconstruction.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.kernel.org/admin-guide/md.html" description="Le RAID logiciel du noyau, ses niveaux et ses réglages, par ses développeurs, en anglais">Documentation du noyau : RAID arrays</ExternalLink>
+
+<ExternalLink href="https://wiki.archlinux.org/title/RAID" description="Créer, surveiller et réparer une grappe mdadm, en anglais">ArchWiki : RAID</ExternalLink>
+
+<ExternalLink href="https://www.smartmontools.org/" description="smartctl et smartd, pour lire la santé des disques, en anglais">smartmontools</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Combien de pannes de disque un RAID 0 supporte-t-il ?" options={["Une", "Aucune : la première panne perd toutes les données", "Deux", "Autant que de disques"]} correct={1} explanation="RAID 0 répartit les données sans redondance, pour la vitesse et la capacité." />
+  <Quiz id="q-2" question="Quelle capacité utile offre un RAID 6 de six disques de 4 To ?" options={["24 To", "16 To", "20 To", "12 To"]} correct={1} explanation="Deux disques de parité : (6 − 2) × 4 To." />
+  <Quiz id="q-3" question="Pourquoi préfère-t-on aujourd'hui RAID 6 ou RAID 10 à RAID 5 sur de gros disques ?" options={["Par mode", "Parce que la reconstruction d'un RAID 5 est longue, et qu'une seconde panne pendant ce temps perd tout", "Parce que RAID 5 est plus cher", "Parce que RAID 5 n'existe plus"]} correct={1} explanation="RAID 6 supporte deux pannes ; RAID 10 se reconstruit plus vite." />
+  <Quiz id="q-4" question="Que signifie [2/1] [U_] dans /proc/mdstat ?" options={["La grappe est saine", "La grappe est dégradée : un des deux disques manque, il n'y a plus de redondance", "La grappe est arrêtée", "La reconstruction est terminée"]} correct={1} explanation="U pour un disque qui fonctionne, _ pour un disque manquant." />
+  <Quiz id="q-5" question="Le RAID protège-t-il d'un fichier supprimé par erreur ?" options={["Oui", "Non : la suppression est appliquée à tous les disques", "Seulement en RAID 1", "Seulement en RAID 6"]} correct={1} explanation="Le RAID protège la disponibilité face à une panne matérielle, pas les données elles-mêmes." />
+  <Quiz id="q-6" question="Où placer LVM par rapport au RAID ?" options={["Sous le RAID", "Au-dessus : la grappe RAID devient le volume physique de LVM", "À côté, sur d'autres disques", "Jamais ensemble"]} correct={1} explanation="RAID dessous pour la redondance, LVM dessus pour la souplesse." />
+  <Quiz id="q-7" question="Pourquoi vérifier le numéro de série avant de retirer un disque d'un miroir dégradé ?" options={["Pour la garantie", "Parce que retirer le disque sain par erreur fait perdre toutes les données", "Parce que mdadm l'exige", "Par habitude"]} correct={1} explanation="Le numéro de série est sur l'étiquette du disque et dans /dev/disk/by-id/." />
+</QuizGroup>
+
+## à retenir
+
+- **RAID 0** : vitesse, aucune redondance. **RAID 1** : miroir. **RAID 5** : une parité, à éviter sur de gros disques. **RAID 6** : deux parités. **RAID 10** : miroirs en bandes.
+- RAID **logiciel** avec **`mdadm`** : indépendant du matériel ; Btrfs et ZFS savent en plus quelle copie est la bonne.
+- **`/proc/mdstat`** : `[UU]` sain, `[U_]` dégradé ; **`mdadm --detail`** pour le détail.
+- Une grappe se **surveille** : `mdmonitor` pour les pannes, **SMART** (`smartctl`, `smartd`) pour l'usure.
+- Remplacer : **`--remove`**, changer le disque (le bon !), **`sfdisk -d | sfdisk`**, **`--add`**, suivre la reconstruction.
+- **RAID dessous, LVM dessus.** Et le RAID n'est **jamais** une sauvegarde.

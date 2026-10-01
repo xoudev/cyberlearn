@@ -1,0 +1,180 @@
+---
+refCode: CL-LSN-02061-V01
+slug: linux-disques-partitions
+title: "Disques et partitions : MBR, GPT, lsblk et fdisk"
+description: "Voir et organiser les disques d'un Linux : comment le système nomme les disques et les partitions, pourquoi ces noms peuvent changer et comment les désigner sans risque, lsblk, blkid et /dev/disk, les deux formats de table de partitions, MBR et GPT, et leurs limites, partitionner avec fdisk ou parted sans se tromper de disque, et organiser les partitions d'un serveur pour qu'un dossier plein n'arrête pas tout. Avec une image de disque à partitionner pour de vrai, puis un nouveau disque à préparer sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02908-V01"]
+---
+
+Tout ce qu'un serveur garde, ses programmes, ses configurations, ses bases de données, ses journaux, vit sur des disques. Les modules précédents les ont traités comme une évidence : un `/` qui existe, un `df -h` qui affiche des pourcentages. Ce module descend d'un étage. On ajoute un disque à un serveur, on le découpe en partitions, on y crée un système de fichiers, on le monte, on le regroupe avec d'autres, on le chiffre, et surtout on sauvegarde ce qu'il contient. Première étape : savoir **quels disques** a la machine, et les **découper**, sans jamais se tromper de disque.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- reconnaître les noms des disques et des partitions sous Linux ;
+- lister les disques avec `lsblk`, `blkid` et `/dev/disk/` ;
+- désigner un disque par un nom qui ne change pas ;
+- expliquer les différences entre les tables de partitions **MBR** et **GPT** ;
+- partitionner un disque avec `fdisk` ou `parted` ;
+- choisir un découpage qui protège un serveur.
+
+## pourquoi ça compte
+
+Les opérations sur les disques sont parmi les plus **irréversibles** d'un administrateur. Une table de partitions écrite sur le mauvais disque, un système de fichiers créé par-dessus des données, et les sauvegardes deviennent la seule issue. La règle de cette leçon tient en une phrase : **identifier le disque avec certitude avant d'écrire quoi que ce soit dessus**. Le découpage a aussi un rôle de sécurité : un `/var` séparé empêche des journaux qui débordent de remplir la racine, et des options de montage adaptées à chaque partition, que la leçon sur le montage détaille, retirent des armes à un attaquant.
+
+## les noms des disques
+
+Linux représente chaque disque par un **fichier de périphérique** dans `/dev` :
+
+| Nom | Type de disque | Ses partitions |
+| --- | --- | --- |
+| `/dev/sda`, `/dev/sdb`… | SATA, SAS, SCSI, USB | `/dev/sda1`, `/dev/sda2`… |
+| `/dev/nvme0n1`, `/dev/nvme1n1`… | SSD NVMe | `/dev/nvme0n1p1`, `/dev/nvme0n1p2`… |
+| `/dev/vda`, `/dev/vdb`… | disque virtuel d'une machine virtuelle | `/dev/vda1`… |
+| `/dev/mmcblk0` | carte SD, mémoire embarquée | `/dev/mmcblk0p1`… |
+
+Ces noms sont attribués **dans l'ordre de détection** au démarrage. Ajoute un disque, change un câble de port, et celui qui s'appelait `sdb` peut devenir `sdc`. Un script ou un `/etc/fstab` qui désigne un disque par `/dev/sdb` peut alors viser le mauvais. D'où les **noms stables** que Linux fabrique dans `/dev/disk/` :
+
+- `/dev/disk/by-id/` : le modèle et le numéro de série du disque, gravé en usine ;
+- `/dev/disk/by-uuid/` : l'identifiant unique du **système de fichiers**, créé avec lui ;
+- `/dev/disk/by-path/` : le chemin physique, le port du contrôleur.
+
+Pour un disque qu'on va effacer, on vérifie son **numéro de série** dans `by-id` ; pour monter un système de fichiers, on utilise son **UUID**.
+
+## voir les disques
+
+```bash
+lsblk                  # l'arbre des disques, partitions, volumes, avec tailles et points de montage
+lsblk -f               # avec le type de système de fichiers, l'étiquette et l'UUID
+sudo blkid             # les UUID et les types, partition par partition
+sudo fdisk -l          # les tables de partitions de chaque disque
+ls -l /dev/disk/by-id/ # les noms stables, avec les numéros de série
+```
+
+**`lsblk`** est le premier réflexe : il montre d'un coup d'œil chaque disque, ses partitions, leur taille et l'endroit où elles sont montées. Un disque qui vient d'être ajouté se reconnaît à ce qu'il n'a ni partition ni point de montage. Une colonne `TYPE` dit s'il s'agit d'un disque (`disk`), d'une partition (`part`), d'un volume LVM (`lvm`) ou d'un volume chiffré (`crypt`), que les leçons suivantes présentent.
+
+## MBR et GPT
+
+Le début d'un disque contient sa **table de partitions**, qui dit où commence et où finit chaque partition. Deux formats existent :
+
+| | MBR (ou DOS) | GPT |
+| --- | --- | --- |
+| Époque | 1983 | années 2000, avec l'UEFI |
+| Taille maximale du disque | 2 Tio | 8 Zio, sans limite pratique |
+| Nombre de partitions | 4 principales, ou 3 et une étendue qui en contient d'autres | 128 par défaut |
+| Copie de secours | aucune | une seconde table à la fin du disque, et une somme de contrôle |
+| Démarrage | BIOS | UEFI, avec une partition système EFI |
+
+Le **MBR** tient dans le premier secteur du disque, 512 octets, avec une seule copie : une écriture accidentelle sur ce secteur perd toute la table. Ses limites, quatre partitions et deux tébioctets, viennent d'une époque où les disques faisaient quelques dizaines de mégaoctets. **GPT** les lève toutes, garde une copie de secours et vérifie l'intégrité de sa table. Sur une machine récente et pour tout disque de plus de 2 Tio, c'est **GPT**, sans hésitation. Le MBR reste utile pour de petits supports, comme une clé USB que doit lire un vieux système.
+
+## partitionner : fdisk et parted
+
+**`fdisk`** est interactif : on lui donne un disque, et il attend des commandes d'une lettre. Les principales : `p` affiche la table, `n` crée une partition, `d` en supprime une, `t` change son type, `g` crée une table GPT vide, `o` une table MBR vide, `w` **écrit** et quitte, `q` quitte **sans rien écrire**. Tant qu'on n'a pas tapé `w`, rien n'est modifié sur le disque : on peut tout essayer, et sortir par `q`.
+
+**`parted`** fait la même chose, en ligne de commande, ce qui le rend pratique dans un script :
+
+```bash
+sudo parted /dev/sdb --script mklabel gpt mkpart donnees ext4 1MiB 100%
+sudo parted /dev/sdb print
+```
+
+Cette ligne crée une table GPT, puis une partition qui va de 1 Mio jusqu'à la fin du disque. Commencer à **1 Mio** aligne la partition sur les blocs physiques des disques modernes et des SSD ; un mauvais alignement peut diviser les performances par deux. Les outils actuels le font tout seuls. Après une modification, si le noyau ne voit pas encore la nouvelle partition, `sudo partprobe /dev/sdb` lui fait relire la table.
+
+Chaque partition porte un **type**, qui dit à quoi elle sert : `Linux` (83 en MBR) pour des données, `Linux swap` (82) pour l'espace d'échange, `EFI System` pour la partition de démarrage UEFI, `Linux LVM` (8e) pour un volume LVM. Le type n'empêche rien, mais il aide les outils et les humains à comprendre le disque.
+
+## découper un serveur
+
+Une installation par défaut met souvent tout dans une seule partition `/`. C'est simple, mais un seul dossier qui déborde remplit tout le système. Les guides de durcissement, dont celui de l'ANSSI, recommandent de **séparer** au moins :
+
+- `/boot` et la partition EFI, pour le démarrage ;
+- `/` pour le système ;
+- `/var`, et souvent `/var/log` à part, car journaux et données y grossissent sans prévenir ;
+- `/home`, pour les données des utilisateurs ;
+- `/tmp`, que tout le monde peut écrire ;
+- l'espace d'échange, en partition ou en fichier.
+
+Chaque partition séparée a deux avantages : un dossier plein n'arrête plus la machine entière, et chacune peut être montée avec des **options** propres, comme l'interdiction d'exécuter des programmes dans `/tmp`. Les leçons sur le montage et sur LVM montreront comment le faire sans figer définitivement les tailles.
+
+<Diagram caption="Un disque GPT découpé pour un serveur">
+flowchart LR
+  A["/dev/sda : table GPT, et sa copie à la fin"] --> B["sda1 : EFI, 512 Mo"]
+  A --> C["sda2 : /, 30 Go"]
+  A --> D["sda3 : /var, 40 Go"]
+  A --> E["sda4 : /home, le reste"]
+  A --> F["sda5 : swap, 4 Go"]
+</Diagram>
+
+## l'espace d'échange
+
+L'**espace d'échange** (*swap*) reçoit les pages de mémoire que le noyau retire de la mémoire vive quand elle vient à manquer. Il peut vivre dans une **partition** dédiée, de type `Linux swap`, ou dans un simple **fichier**, plus facile à agrandir ou à supprimer : c'est le choix par défaut d'Ubuntu. Sa taille dépend de l'usage : quelques gigaoctets suffisent à un serveur, qui ne doit de toute façon pas vivre en manquant de mémoire, alors qu'un portable qui hiberne a besoin d'au moins autant que sa mémoire vive. Comme il peut contenir n'importe quelle donnée passée par la mémoire, mots de passe compris, on le chiffre avec le reste du disque.
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas de vrai disque, mais `fdisk` sait travailler sur un **fichier image**, exactement comme sur un disque. Fabrique-en un, et partitionne-le :
+
+1. crée une image de 8 Mo remplie de zéros : `dd if=/dev/zero of=disque.img bs=64k count=128` ;
+2. ouvre-la avec `fdisk disque.img`, puis tape, une par une, les commandes de `fdisk` :
+   - `o` : une nouvelle table MBR, vide ;
+   - `n`, puis `p`, puis `1` : une partition principale numéro 1. Garde le premier secteur proposé (Entrée), et donne `+4M` comme fin ;
+   - `n`, `p`, `2` : une seconde partition. Entrée deux fois : elle prend tout le reste ;
+   - `t`, puis `2`, puis `82` : la seconde partition devient de type `Linux swap` ;
+   - `p` pour relire la table, puis `w` pour l'écrire et quitter ;
+3. vérifie et garde le résultat : `fdisk -l disque.img > table.txt`, puis `cat table.txt`.
+
+<LinuxTerminal title="Partitionner une image de disque" expectedCommands={["dd if=/dev/zero of=disque.img bs=64k count=128", "fdisk disque.img", "fdisk -l disque.img > table.txt"]} checks={[{"label": "L'image de 8 Mo existe", "path": "disque.img", "expect": "file"}, {"label": "Une partition Linux", "path": "table.txt", "expect": "file", "contains": "83 Linux"}, {"label": "Une partition d'échange", "path": "table.txt", "expect": "file", "contains": "82 Linux swap"}]} hints={["Dans fdisk, chaque commande tient en une lettre suivie d'Entrée ; m affiche l'aide.", "Pour la fin de la première partition, tape +4M : une taille relative au premier secteur.", "t change le type d'une partition : 82 est le code de Linux swap.", "Rien n'est écrit avant w. Une erreur ? q pour quitter sans écrire, et recommence."]} />
+
+Remarque le premier secteur proposé par ce `fdisk` minimal : 63, l'ancien alignement des disques des années 1990. Les `fdisk` et `parted` d'une distribution actuelle proposent 2048, c'est-à-dire 1 Mio. Et rien n'a été écrit dans l'image avant le `w` : c'est le moment de relire la table avec `p`, sur un vrai disque surtout. L'avertissement affiché après le `w`, `rereading partition table failed`, est normal ici : `fdisk` a demandé au noyau de relire la table, ce qui n'a pas de sens pour un fichier. Sur un vrai disque en cours d'utilisation, le même message voudrait dire que le noyau continue d'utiliser l'ancienne table jusqu'au prochain démarrage, ou jusqu'à un `partprobe` réussi.
+
+Ensuite, un vrai serveur Debian, dans un terminal simulé. On vient de lui ajouter un SSD de 250 Go pour les données. Identifie-le avec certitude, puis prépare-le en GPT :
+
+1. liste les disques : `lsblk`. Le nouveau n'a ni partition ni point de montage ;
+2. confirme son identité par son numéro de série : `ls -l /dev/disk/by-id/ | grep sdb` ;
+3. crée sa table et sa partition : `sudo parted /dev/sdb --script mklabel gpt mkpart donnees ext4 1MiB 100%` ;
+4. vérifie : `sudo parted /dev/sdb print`, puis `lsblk /dev/sdb`.
+
+<SimulatedTerminal shell="bash" title="Un nouveau disque sur le serveur" expectedCommands={["lsblk", "ls -l /dev/disk/by-id/ | grep sdb", "sudo parted /dev/sdb --script mklabel gpt mkpart donnees ext4 1MiB 100%", "sudo parted /dev/sdb print", "lsblk /dev/sdb"]} hints={["Le nouveau disque n'a ni partition ni point de montage.", "Le nom by-id contient le modèle et le numéro de série, gravés en usine.", "mklabel gpt crée la table, mkpart la partition, de 1MiB à 100 % du disque."]} commands={{"lsblk": "NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsda      8:0    0    40G  0 disk \n├─sda1   8:1    0   512M  0 part /boot/efi\n├─sda2   8:2    0  35.5G  0 part /\n└─sda3   8:3    0     4G  0 part [SWAP]\nsdb      8:16   0 232.9G  0 disk ", "ls -l /dev/disk/by-id/ | grep sdb": "lrwxrwxrwx 1 root root  9 oct.   1 11:02 ata-Samsung_SSD_870_EVO_250GB_S6PENU0T412345X -> ../../sdb\nlrwxrwxrwx 1 root root  9 oct.   1 11:02 wwn-0x5002538f4321a0b7 -> ../../sdb", "sudo parted /dev/sdb --script mklabel gpt mkpart donnees ext4 1MiB 100%": "", "sudo parted /dev/sdb print": "Model: ATA Samsung SSD 870 (scsi)\nDisk /dev/sdb: 250GB\nSector size (logical/physical): 512B/512B\nPartition Table: gpt\nDisk Flags: \n\nNumber  Start   End    Size   File system  Name     Flags\n 1      1049kB  250GB  250GB               donnees", "lsblk /dev/sdb": "NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsdb      8:16   0 232.9G  0 disk \n└─sdb1   8:17   0 232.9G  0 part ", "sudo fdisk -l /dev/sdb": "Disk /dev/sdb: 232.89 GiB, 250059350016 bytes, 488397168 sectors\nDisk model: Samsung SSD 870\nUnits: sectors of 1 * 512 = 512 bytes\nSector size (logical/physical): 512 bytes / 512 bytes\nI/O size (minimum/optimal): 512 bytes / 512 bytes\nDisklabel type: gpt\nDisk identifier: 7C1E2B4A-3D5F-4E6A-9B8C-1D2E3F4A5B6C\n\nDevice     Start       End   Sectors   Size Type\n/dev/sdb1   2048 488396799 488394752 232.9G Linux filesystem", "lsblk -f": "NAME   FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINTS\nsda\n├─sda1 vfat   FAT32       1D4B-7E22                             505.8M     1% /boot/efi\n├─sda2 ext4   1.0         8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2   26.1G    20% /\n└─sda3 swap   1           3e9b21f0-6c7a-4d2e-b8f1-0a9c4d5e6f71                [SWAP]\nsdb"}} />
+
+La partition existe, mais elle est encore vide : il lui faut un système de fichiers, sujet de la leçon suivante, puis un point de montage. Le nom `donnees` donné à `mkpart` est le **nom de la partition**, une étiquette propre à GPT, différente de l'étiquette du système de fichiers qu'on lui donnera ensuite.
+
+## les pièges
+
+- **Écrire sur le mauvais disque.** `lsblk` et le numéro de série dans `/dev/disk/by-id/` avant toute écriture.
+- **Désigner un disque par `/dev/sdb` dans un script ou dans `fstab`.** Le nom peut changer au prochain démarrage : UUID ou `by-id`.
+- **Utiliser le MBR sur un disque de plus de 2 Tio.** L'espace au-delà est inutilisable : GPT.
+- **Partitionner un disque monté.** Le noyau ne relit pas la table d'un disque en cours d'utilisation, et les données peuvent être corrompues.
+- **Taper `w` sans avoir relu avec `p`.** C'est la dernière occasion de corriger.
+- **Tout mettre dans `/`.** Un journal qui déborde arrête alors le serveur entier.
+
+## pour aller plus loin
+
+<ExternalLink href="https://wiki.archlinux.org/title/Partitioning" description="Tables de partitions, alignement, schémas de découpage, en anglais">ArchWiki : Partitioning</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/fdisk/fdisk.8.fr.html" description="Les commandes de fdisk, en français">Page de manuel de fdisk</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/parted/manual/parted.html" description="parted et ses commandes en mode script, en anglais">Manuel de GNU parted</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Comment s'appelle la deuxième partition du premier SSD NVMe ?" options={["/dev/sda2", "/dev/nvme0n1p2", "/dev/nvme2", "/dev/nvme0p2"]} correct={1} explanation="Le disque est nvme0n1, et ses partitions prennent un p suivi du numéro." />
+  <Quiz id="q-2" question="Pourquoi ne pas désigner un disque par /dev/sdb dans un script ?" options={["Parce que c'est plus long", "Parce que les noms sont attribués dans l'ordre de détection et peuvent changer d'un démarrage à l'autre", "Parce que /dev/sdb n'existe jamais", "Parce qu'il faut être root"]} correct={1} explanation="On utilise un nom stable : UUID pour un système de fichiers, by-id pour un disque." />
+  <Quiz id="q-3" question="Quelle commande montre l'arbre des disques, partitions et points de montage ?" options={["df -h", "lsblk", "mount", "du -sh"]} correct={1} explanation="lsblk -f ajoute les types de systèmes de fichiers et les UUID." />
+  <Quiz id="q-4" question="Quel format de table de partitions choisir pour un disque de 4 Tio ?" options={["MBR", "GPT", "Les deux conviennent", "Aucun"]} correct={1} explanation="Le MBR ne gère pas plus de 2 Tio ; GPT n'a pas de limite pratique et garde une copie de sa table." />
+  <Quiz id="q-5" question="Dans fdisk, que se passe-t-il si l'on quitte avec q ?" options={["Les modifications sont écrites", "Rien n'est écrit sur le disque", "Le disque est effacé", "La table est convertie en GPT"]} correct={1} explanation="Seul w écrit la table : tant qu'on ne l'a pas tapé, on peut tout essayer." />
+  <Quiz id="q-6" question="Pourquoi commencer une partition à 1 Mio ?" options={["Pour laisser de la place à GRUB seulement", "Pour l'aligner sur les blocs physiques des disques et SSD modernes", "Par superstition", "Parce que le MBR l'exige"]} correct={1} explanation="Un mauvais alignement peut nettement dégrader les performances." />
+  <Quiz id="q-7" question="Pourquoi séparer /var du reste du système ?" options={["Pour aller plus vite", "Pour qu'un dossier qui déborde, journaux ou données, ne remplisse pas la racine, et pour lui donner ses propres options de montage", "Parce que Linux l'impose", "Pour économiser de la place"]} correct={1} explanation="C'est une recommandation des guides de durcissement, dont celui de l'ANSSI." />
+</QuizGroup>
+
+## à retenir
+
+- Les disques : **`/dev/sda`**, **`/dev/nvme0n1`**, **`/dev/vda`** ; leurs partitions : `sda1`, `nvme0n1p1`. Ces noms peuvent changer.
+- Des noms stables dans **`/dev/disk/by-uuid/`** et **`by-id/`** ; on vérifie le numéro de série avant d'écrire.
+- **`lsblk`** (et `-f`), **`blkid`**, **`fdisk -l`** pour voir.
+- **MBR** : 4 partitions, 2 Tio, une seule copie. **GPT** : 128 partitions, aucune limite pratique, une copie de secours.
+- **`fdisk`** interactif, rien n'est écrit avant **`w`** ; **`parted --script`** pour les scripts ; partitions alignées sur **1 Mio**.
+- Un serveur sépare **`/`**, **`/var`**, **`/home`**, **`/tmp`** : un dossier plein n'arrête plus tout.

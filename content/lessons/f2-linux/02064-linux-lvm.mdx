@@ -1,0 +1,203 @@
+---
+refCode: CL-LSN-02064-V01
+slug: linux-lvm
+title: "LVM : des volumes qui s'agrandissent à chaud"
+description: "Sortir du piège des partitions de taille fixe avec LVM : volumes physiques, groupe de volumes et volumes logiques, les créer et les inspecter (pvs, vgs, lvs), agrandir un volume et son système de fichiers sans arrêter le service, ajouter un disque au groupe, en retirer un avec pvmove, et prendre un instantané avant une opération risquée. Ce que LVM ne fait pas : protéger contre la panne d'un disque. Avec un volume créé sur un nouveau disque, puis agrandi en production alors qu'il est plein à 96 %."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02063-V01"]
+---
+
+Les leçons précédentes ont créé une partition, un système de fichiers, un montage. Tout fonctionne, jusqu'au jour où `/srv/app` est plein à 96 % et où le disque d'à côté a encore 300 Go libres. Avec des partitions classiques, on ne peut pas faire déborder un système de fichiers sur un autre disque, et agrandir une partition demande souvent de déplacer celles qui la suivent. **LVM**, le gestionnaire de volumes logiques de Linux, ajoute une couche entre les disques et les systèmes de fichiers : on regroupe les disques dans un réservoir, et l'on y découpe des volumes qu'on agrandit en une commande, sans arrêter le service. C'est le choix par défaut des installations Red Hat, et une option proposée par Debian et Ubuntu.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer les trois niveaux de LVM : volume physique, groupe de volumes, volume logique ;
+- créer un volume logique et y mettre un système de fichiers ;
+- inspecter LVM avec `pvs`, `vgs` et `lvs` ;
+- agrandir un volume et son système de fichiers à chaud ;
+- ajouter un disque à un groupe, et en retirer un sans arrêt ;
+- prendre un instantané avant une opération risquée ;
+- dire ce que LVM ne protège pas.
+
+## pourquoi ça compte
+
+Un système de fichiers plein arrête les services : la base de données refuse d'écrire, les journaux se perdent, les utilisateurs ne peuvent plus enregistrer. Avec LVM, la réponse prend une minute et ne coupe rien. Sans LVM, c'est une intervention planifiée, parfois une migration complète. LVM est aussi l'outil des **instantanés** : figer un volume avant une mise à jour risquée, et revenir en arrière si elle tourne mal. Mais il cache un risque qu'il faut connaître : un groupe étalé sur plusieurs disques sans redondance perd des données au premier disque qui lâche.
+
+## les trois niveaux
+
+LVM empile trois notions :
+
+- le **volume physique** (*physical volume*, PV) : un disque entier ou une partition, préparé pour LVM ;
+- le **groupe de volumes** (*volume group*, VG) : un réservoir qui réunit un ou plusieurs volumes physiques. Sa capacité est la somme des leurs ;
+- le **volume logique** (*logical volume*, LV) : une portion du groupe, qu'on utilise comme une partition, avec un système de fichiers dessus.
+
+En interne, le groupe est découpé en **extents**, des blocs de 4 Mio par défaut. Un volume logique n'est qu'une liste d'extents, qui peuvent se trouver n'importe où dans le groupe, et même sur plusieurs disques. C'est ce qui permet de l'agrandir librement : on lui ajoute des extents libres, où qu'ils soient.
+
+<Diagram caption="Des disques au système de fichiers, en passant par LVM">
+flowchart LR
+  A["/dev/sdc : PV"] --> V["vg_donnees : le groupe, 1 To"]
+  B["/dev/sdd : PV"] --> V
+  V --> L1["lv_srv : 150 Go"]
+  V --> L2["lv_base : 300 Go"]
+  V --> L3["espace libre"]
+  L1 --> F1["ext4 monté sur /srv/app"]
+  L2 --> F2["XFS monté sur /var/lib/postgresql"]
+</Diagram>
+
+## LVM à l'installation
+
+On rencontre LVM bien avant de créer son premier volume : les installateurs de Red Hat, de Rocky Linux et, sur option, de Debian et d'Ubuntu, découpent le disque système en un groupe de volumes. Sur un serveur Red Hat fraîchement installé, `lsblk` montre typiquement une partition `/boot` classique, puis un volume physique qui porte un groupe `rhel`, découpé en volumes `root`, `swap` et parfois `home`. C'est ce qui permet, des mois plus tard, d'agrandir `/` sans réinstaller, à condition que l'installateur ait laissé de la place libre dans le groupe, ce qu'il ne fait pas toujours. Le premier réflexe sur un serveur inconnu est donc un `vgs`, pour savoir s'il reste de la marge.
+
+## créer
+
+```bash
+sudo pvcreate /dev/sdc                         # le disque devient un volume physique
+sudo vgcreate vg_donnees /dev/sdc              # un groupe, avec ce disque
+sudo lvcreate -n lv_srv -L 100G vg_donnees     # un volume de 100 Go
+sudo lvcreate -n lv_base -l 50%FREE vg_donnees # la moitié de ce qui reste
+sudo mkfs.ext4 -L srv /dev/vg_donnees/lv_srv   # un système de fichiers dessus
+```
+
+Le volume logique apparaît sous deux noms équivalents : `/dev/vg_donnees/lv_srv` et `/dev/mapper/vg_donnees-lv_srv`. C'est ce second nom que montrent `df` et `lsblk`. Dans `/etc/fstab`, on peut utiliser l'un ou l'autre, ou l'UUID du système de fichiers : les noms LVM, choisis par l'administrateur, ne changent pas d'un démarrage à l'autre.
+
+Une bonne pratique : **ne pas tout allouer**. Laisser de l'espace libre dans le groupe permet d'agrandir le volume qui en aura besoin, le moment venu, et de prendre des instantanés.
+
+## inspecter
+
+```bash
+sudo pvs       # les volumes physiques, leur groupe, leur taille, leur espace libre
+sudo vgs       # les groupes, leur taille, leur espace libre
+sudo lvs       # les volumes logiques et leur taille
+sudo lvdisplay vg_donnees/lv_srv   # le détail d'un volume
+```
+
+`vgs` répond à la question qui compte : **combien reste-t-il de place libre** dans le groupe (`VFree`) ? `lsblk` montre aussi l'empilement complet, du disque jusqu'au point de montage, avec un `TYPE` `lvm` pour les volumes logiques.
+
+Avant de retirer un disque d'un groupe, une question se pose : quels volumes ont des extents dessus ? `sudo lvs -a -o +devices` ajoute une colonne qui dit, pour chaque volume logique, sur quels volumes physiques il est réparti, et à partir de quel extent. C'est aussi la commande qui explique pourquoi la panne d'un seul disque peut toucher plusieurs volumes à la fois.
+
+## agrandir à chaud
+
+C'est la raison d'être de LVM. Quand `/srv/app` est presque plein :
+
+```bash
+sudo lvextend -r -L +50G vg_donnees/lv_srv
+```
+
+`lvextend` ajoute 50 Go au volume, et l'option **`-r`** (*resize filesystem*) agrandit aussitôt le système de fichiers qu'il contient, ext4 ou XFS, **sans démonter**, pendant que le service continue d'écrire. On peut aussi viser une taille finale (`-L 200G`) ou tout l'espace libre restant (`-l +100%FREE`). Sans `-r`, le volume grandit mais le système de fichiers garde sa taille : il faut alors lancer soi-même `resize2fs` ou `xfs_growfs`, l'oubli classique.
+
+Réduire est plus délicat : `lvreduce -r` sait réduire un ext4, en le démontant, mais pas un XFS, qui ne rétrécit jamais. Et une réduction ratée détruit des données : sauvegarde d'abord.
+
+## ajouter et retirer des disques
+
+Quand le groupe lui-même est plein, on lui ajoute un disque :
+
+```bash
+sudo pvcreate /dev/sdd
+sudo vgextend vg_donnees /dev/sdd
+```
+
+Sa capacité augmente d'autant, et les volumes peuvent grandir dessus. À l'inverse, pour remplacer un disque qui vieillit, on déplace ses données sur les autres disques du groupe, à chaud, puis on le retire :
+
+```bash
+sudo pvmove /dev/sdc            # déplacer ses extents vers les autres PV du groupe
+sudo vgreduce vg_donnees /dev/sdc
+sudo pvremove /dev/sdc
+```
+
+`pvmove` travaille pendant que les services tournent : c'est ainsi qu'on migre un serveur vers de nouveaux disques sans interruption.
+
+## les instantanés
+
+Un **instantané** (*snapshot*) fige l'état d'un volume à un instant donné :
+
+```bash
+sudo lvcreate -s -n avant_maj -L 10G vg_donnees/lv_srv
+```
+
+Il ne copie rien au départ : il garde seulement l'**ancienne version** des blocs que le volume d'origine modifie ensuite. Les 10 Go réservés doivent donc suffire à contenir tout ce qui changera pendant sa vie ; s'ils débordent, l'instantané devient inutilisable. Deux usages :
+
+- **revenir en arrière** après une mise à jour ratée : `lvconvert --merge vg_donnees/avant_maj` restaure l'état figé ;
+- **sauvegarder un état cohérent** : on monte l'instantané en lecture seule, on le sauvegarde tranquillement, puis on le supprime, pendant que le volume d'origine continue de vivre.
+
+Un instantané **n'est pas une sauvegarde** : il est sur les mêmes disques que l'original, et disparaît avec eux. On le supprime dès qu'il a servi (`lvremove`), car chaque écriture sur l'original le ralentit.
+
+## le provisionnement fin
+
+LVM sait aussi créer des **volumes fins** (*thin provisioning*) : on réserve un **réservoir** (`lvcreate --type thin-pool`), puis on y crée des volumes dont la taille annoncée peut dépasser, au total, la place réelle. Chaque volume ne consomme que ce qu'il contient vraiment. C'est l'outil des plateformes de virtualisation, qui donnent à chaque machine un disque de 100 Go dont elle n'utilisera qu'une fraction. Le revers est évident : si les volumes se remplissent tous en même temps, le réservoir déborde, et les écritures échouent partout à la fois. Un réservoir fin se **surveille** : la colonne `Data%` de `lvs` doit déclencher une alerte bien avant 100 %.
+
+## démonstration : une mise à jour risquée
+
+Le soir d'une mise à jour majeure de l'application qui écrit dans `lv_srv`, on prend ses précautions :
+
+```bash
+sudo systemctl stop appli                                  # un état stable, sans écriture en cours
+sudo lvcreate -s -n avant_maj -L 20G vg_donnees/lv_srv     # figer le volume
+sudo systemctl start appli
+# … mise à jour, puis tests …
+sudo lvremove vg_donnees/avant_maj                         # tout va bien : on libère la place
+```
+
+Si la mise à jour tourne mal, on arrête l'application, on démonte le volume, et `sudo lvconvert --merge vg_donnees/avant_maj` le ramène à son état d'avant, en quelques secondes, au lieu de restaurer des centaines de gigaoctets depuis une sauvegarde. L'arrêt de l'application avant l'instantané n'est pas un détail : figé en pleine écriture, le volume serait dans l'état d'une machine dont on aurait coupé le courant, que le journal du système de fichiers sait réparer, mais pas forcément la base de données de l'application.
+
+## ce que LVM ne fait pas
+
+LVM rend le stockage **souple**, pas **sûr**. Un groupe réparti sur deux disques sans redondance est plus fragile qu'un seul disque : si l'un des deux tombe en panne, tous les volumes qui avaient des extents dessus sont perdus. La redondance vient du **RAID**, sujet de la leçon suivante, que l'on place **sous** LVM : les volumes physiques sont alors des grappes RAID, et non des disques nus. Et rien de tout cela ne remplace une sauvegarde.
+
+## à toi de jouer
+
+Sur un serveur Debian, dans un terminal simulé, un disque de 500 Go, `/dev/sdc`, vient d'être ajouté pour l'application. Mets-le sous LVM, puis, quelques semaines plus tard, agrandis le volume sans arrêter le service :
+
+1. vérifie le disque : `lsblk` ;
+2. crée le volume physique, le groupe, puis un volume de 100 Go : `sudo pvcreate /dev/sdc`, `sudo vgcreate vg_donnees /dev/sdc`, `sudo lvcreate -n lv_srv -L 100G vg_donnees` ;
+3. formate-le et monte-le : `sudo mkfs.ext4 -L srv /dev/vg_donnees/lv_srv`, puis `sudo mount /dev/vg_donnees/lv_srv /srv/app` ;
+4. inspecte : `sudo vgs`, puis `sudo lvs` ;
+5. quelques semaines plus tard, le volume est presque plein : `df -h /srv/app` ;
+6. agrandis-le de 50 Go, système de fichiers compris, sans démonter : `sudo lvextend -r -L +50G vg_donnees/lv_srv`, puis vérifie l'empilement complet avec `lsblk /dev/sdc` et la place avec `df -h /srv/app | tail -1`.
+
+<SimulatedTerminal shell="bash" title="Un volume qui grandit à chaud" expectedCommands={["lsblk", "sudo pvcreate /dev/sdc", "sudo vgcreate vg_donnees /dev/sdc", "sudo lvcreate -n lv_srv -L 100G vg_donnees", "sudo mkfs.ext4 -L srv /dev/vg_donnees/lv_srv", "sudo mount /dev/vg_donnees/lv_srv /srv/app", "sudo vgs", "sudo lvs", "df -h /srv/app", "sudo lvextend -r -L +50G vg_donnees/lv_srv", "lsblk /dev/sdc", "df -h /srv/app | tail -1"]} hints={["pvcreate prépare le disque, vgcreate crée le groupe, lvcreate y découpe un volume.", "VFree dans vgs : la place encore libre dans le groupe.", "-r agrandit aussi le système de fichiers ; -L +50G ajoute 50 Go.", "Après l'agrandissement, df -h /srv/app montre la nouvelle taille."]} commands={{"lsblk": "NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsda      8:0    0    40G  0 disk \n├─sda1   8:1    0   512M  0 part /boot/efi\n├─sda2   8:2    0  35.5G  0 part /\n└─sda3   8:3    0     4G  0 part [SWAP]\nsdc      8:32   0   500G  0 disk ", "sudo pvcreate /dev/sdc": "  Physical volume \"/dev/sdc\" successfully created.", "sudo vgcreate vg_donnees /dev/sdc": "  Volume group \"vg_donnees\" successfully created", "sudo lvcreate -n lv_srv -L 100G vg_donnees": "  Logical volume \"lv_srv\" created.", "sudo mkfs.ext4 -L srv /dev/vg_donnees/lv_srv": "mke2fs 1.47.0 (5-Feb-2023)\nDiscarding device blocks: done                            \nCreating filesystem with 26214400 4k blocks and 6553600 inodes\nFilesystem UUID: 9e4c7b21-0d3a-4f58-b6e2-71a9c0d4e8f3\nSuperblock backups stored on blocks: \n\t32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, \n\t4096000, 7962624, 11239424, 20480000, 23887872\n\nAllocating group tables: done                            \nWriting inode tables: done                            \nCreating journal (131072 blocks): done\nWriting superblocks and filesystem accounting information: done   ", "sudo mount /dev/vg_donnees/lv_srv /srv/app": "", "sudo pvs": "  PV         VG         Fmt  Attr PSize    PFree   \n  /dev/sdc   vg_donnees lvm2 a--  <500.00g <400.00g", "sudo vgs": "  VG         #PV #LV #SN Attr   VSize    VFree   \n  vg_donnees   1   1   0 wz--n- <500.00g <400.00g", "sudo lvs": "  LV     VG         Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert\n  lv_srv vg_donnees -wi-ao---- 100.00g", "df -h /srv/app": "Filesystem                     Size  Used Avail Use% Mounted on\n/dev/mapper/vg_donnees-lv_srv   98G   89G  4.4G  96% /srv/app", "sudo lvextend -r -L +50G vg_donnees/lv_srv": "  Size of logical volume vg_donnees/lv_srv changed from 100.00 GiB (25600 extents) to 150.00 GiB (38400 extents).\n  Logical volume vg_donnees/lv_srv successfully resized.\nresize2fs 1.47.0 (5-Feb-2023)\nFilesystem at /dev/mapper/vg_donnees-lv_srv is mounted on /srv/app; on-line resizing required\nold_desc_blocks = 13, new_desc_blocks = 19\nThe filesystem on /dev/mapper/vg_donnees-lv_srv is now 39321600 (4k) blocks long.", "df -h /srv/app | tail -1": "/dev/mapper/vg_donnees-lv_srv  148G   89G   53G  63% /srv/app", "lsblk /dev/sdc": "NAME                  MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS\nsdc                     8:32   0  500G  0 disk \n└─vg_donnees-lv_srv   254:0    0  150G  0 lvm  /srv/app"}} />
+
+À l'étape 6, l'application n'a rien remarqué : le système de fichiers a grandi pendant qu'elle écrivait. Il reste près de 350 Go libres dans le groupe, de quoi agrandir encore, ou réserver un instantané avant la prochaine mise à jour de l'application. Sans LVM, il aurait fallu un nouveau disque, une copie des données et une interruption.
+
+## les pièges
+
+- **`lvextend` sans `-r`.** Le volume grandit, pas le système de fichiers : `df` ne voit rien.
+- **Tout allouer dès le départ.** Plus de marge pour agrandir le volume qui en aura besoin, ni pour un instantané.
+- **Un groupe sur plusieurs disques sans RAID.** Un disque en panne emporte tous les volumes qui y avaient des extents.
+- **Prendre un instantané pour une sauvegarde.** Il disparaît avec les disques qui le portent.
+- **Un instantané trop petit, ou oublié.** Il déborde et devient inutilisable, ou ralentit le volume d'origine pour rien.
+- **Réduire sans sauvegarde.** Une erreur de taille détruit des données ; XFS ne se réduit pas du tout.
+
+## pour aller plus loin
+
+<ExternalLink href="https://wiki.archlinux.org/title/LVM" description="LVM de bout en bout : création, redimensionnement, instantanés, en anglais">ArchWiki : LVM</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/lvm2/lvm.8.fr.html" description="Les commandes de LVM, en français">Page de manuel de lvm</ExternalLink>
+
+<ExternalLink href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_managing_logical_volumes/index" description="Le guide LVM de Red Hat, très complet, en anglais">Red Hat : Configuring and managing logical volumes</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans quel ordre s'empilent les notions de LVM ?" options={["LV, VG, PV", "PV (disques), VG (le groupe), LV (les volumes)", "VG, PV, LV", "PV, LV, VG"]} correct={1} explanation="Les volumes physiques forment un groupe, dans lequel on découpe des volumes logiques." />
+  <Quiz id="q-2" question="Que fait l'option -r de lvextend ?" options={["Elle réduit le volume", "Elle agrandit aussi le système de fichiers du volume, à chaud", "Elle redémarre le service", "Elle crée un instantané"]} correct={1} explanation="Sans -r, il faut lancer soi-même resize2fs ou xfs_growfs." />
+  <Quiz id="q-3" question="Quelle commande dit combien de place libre reste dans un groupe de volumes ?" options={["df -h", "vgs", "lsblk", "lvdisplay"]} correct={1} explanation="La colonne VFree de vgs donne l'espace encore allouable." />
+  <Quiz id="q-4" question="Comment remplacer un disque d'un groupe sans arrêter les services ?" options={["En le débranchant", "pvmove pour déplacer ses données vers les autres disques, puis vgreduce", "En recréant le groupe", "C'est impossible"]} correct={1} explanation="pvmove travaille à chaud ; vgreduce retire ensuite le disque vide." />
+  <Quiz id="q-5" question="Un instantané LVM est-il une sauvegarde ?" options={["Oui", "Non : il est sur les mêmes disques que l'original et disparaît avec eux", "Seulement s'il est grand", "Seulement en XFS"]} correct={1} explanation="Il sert à revenir en arrière ou à sauvegarder un état cohérent, pas à remplacer une sauvegarde." />
+  <Quiz id="q-6" question="Un groupe de volumes s'étend sur deux disques, sans RAID. Que se passe-t-il si l'un tombe en panne ?" options={["Rien, LVM recopie les données", "Les volumes qui avaient des extents sur ce disque sont perdus", "Le groupe passe en lecture seule sans perte", "LVM bascule sur l'autre disque"]} correct={1} explanation="LVM apporte la souplesse, pas la redondance : c'est le rôle du RAID, placé sous LVM." />
+  <Quiz id="q-7" question="Pourquoi laisser de l'espace libre dans un groupe de volumes ?" options={["Pour la performance", "Pour pouvoir agrandir un volume le moment venu, et réserver des instantanés", "Parce que LVM l'exige", "Pour le swap"]} correct={1} explanation="On alloue au fur et à mesure des besoins, plutôt que tout dès le départ." />
+</QuizGroup>
+
+## à retenir
+
+- **PV** (`pvcreate`), **VG** (`vgcreate`), **LV** (`lvcreate -n nom -L taille`) : des disques, un réservoir, des volumes.
+- Un volume se nomme **`/dev/vg/lv`** ou **`/dev/mapper/vg-lv`**, et ces noms sont stables.
+- **`pvs`**, **`vgs`** (la place libre), **`lvs`** pour inspecter.
+- **`lvextend -r -L +50G`** agrandit volume et système de fichiers **à chaud** ; réduire est risqué, impossible en XFS.
+- **`vgextend`** ajoute un disque, **`pvmove`** puis **`vgreduce`** en retirent un sans arrêt.
+- Un **instantané** (`lvcreate -s`) fige un état, pour revenir en arrière ou sauvegarder ; ce n'est **pas** une sauvegarde.
+- LVM n'est pas une **redondance** : le RAID se place dessous.
