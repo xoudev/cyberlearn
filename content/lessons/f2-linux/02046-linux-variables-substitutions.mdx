@@ -1,0 +1,214 @@
+---
+refCode: CL-LSN-02046-V01
+slug: linux-variables-substitutions
+title: "Variables, substitutions et guillemets"
+description: "Manipuler des données dans un script : affecter et lire une variable, capturer la sortie d'une commande avec $( ), calculer avec $(( )) et (( )), transformer une valeur avec les développements de paramètre (valeur par défaut, longueur, suffixe, préfixe, remplacement, casse), ranger une liste dans un tableau, et surtout comprendre le découpage en mots qui rend les guillemets obligatoires. Avec un script qui casse sur un nom de fichier à espace, à réparer sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02045-V01"]
+---
+
+Un script qui ne fait qu'enchaîner des commandes fixes rend vite service, mais il devient vraiment utile quand il **travaille sur des données** : le fichier qu'on lui donne, la date du jour, le nombre de lignes d'un journal, le nom d'une archive à fabriquer. Ces données vivent dans des **variables**. Tu les as rencontrées au module 1 ; cette leçon les reprend du point de vue de celui qui écrit un script, avec la règle la plus importante de tout le module : **une variable se met entre guillemets**. Tu vas voir pourquoi, preuve à l'appui.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- affecter une variable et la lire sans piège, avec ou sans accolades ;
+- capturer la sortie d'une commande avec `$( )` ;
+- calculer avec `$(( ))` et `(( ))`, et savoir quand passer à `bc` ;
+- transformer une valeur avec les développements de paramètre : valeur par défaut, longueur, suffixe, préfixe, remplacement ;
+- expliquer le **découpage en mots** et le **développement des jokers**, et pourquoi ils imposent les guillemets ;
+- ranger une liste de valeurs dans un tableau, et la parcourir intacte.
+
+## pourquoi ça compte
+
+La plupart des scripts cassés le sont par une variable sans guillemets. Le scénario est toujours le même : le script marche pendant des mois, jusqu'au jour où un fichier s'appelle `Rapport annuel.pdf`, ou jusqu'au jour où une variable est vide. Le premier cas fait échouer une commande ; le second peut être catastrophique. En 2015, un script d'installation de Steam pour Linux contenait `rm -rf "$STEAMROOT/"*` : quand la variable s'est retrouvée vide, la commande est devenue `rm -rf "/"*`, et des utilisateurs ont perdu tous les fichiers que leur compte pouvait effacer. Comprendre comment bash développe une ligne, c'est éviter ce genre d'accident.
+
+## affecter et lire
+
+```bash
+serveur=srv-web-01                 # pas d'espace autour du =
+dossier="/var/www/site principal"  # guillemets : la valeur contient une espace
+echo "$serveur"
+echo "${serveur}.example.com"      # accolades : le nom s'arrête où on veut
+readonly RETENTION=7               # une constante : toute modification échouera
+```
+
+Les conventions du module 1 valent toujours : pas d'espace autour du `=`, des noms en minuscules pour les variables du script, les majuscules étant réservées à l'environnement et aux constantes. Une variable inconnue vaut une chaîne vide, **sans erreur** : `echo "$sevreur"` n'affiche rien, et le script continue avec une valeur vide. La leçon sur la robustesse montrera comment faire de cette faute de frappe une erreur franche, avec `set -u`.
+
+## capturer une sortie : $( )
+
+`$( )` exécute une commande et la remplace par ce qu'elle affiche :
+
+```bash
+aujourdhui=$(date +%F)                          # 2026-10-01
+nb_comptes=$(wc -l < /etc/passwd)               # un nombre
+noyau=$(uname -r)
+archive="/srv/sauvegardes/etc-$(hostname)-$(date +%F).tar"
+```
+
+Deux détails comptent. D'abord, les **retours à la ligne de fin sont retirés** : `$(date)` ne laisse pas de saut de ligne parasite. Ensuite, `$( )` se **combine** : on peut l'imbriquer, `$(basename "$(pwd)")`, ce que l'ancienne syntaxe en accents graves rend illisible. Note le `wc -l < /etc/passwd` : en lisant par une redirection, `wc` ne connaît pas le nom du fichier et n'affiche que le nombre, ce qui est exactement ce qu'on veut stocker.
+
+Une substitution qui échoue ne fait pas échouer le script : la variable reçoit simplement une sortie vide, ou incomplète. Retiens-le pour la leçon sur la robustesse.
+
+## calculer : $(( )) et (( ))
+
+```bash
+total=$(( prix * quantite ))          # dans $(( )), le $ devant les noms est facultatif
+reste=$(( 100 - utilise ))
+(( compteur++ ))                      # (( )) seul : un calcul, sans rien afficher
+(( compteur += 5 ))
+pourcent=$(( 100 * utilise / total )) # multiplier avant de diviser
+```
+
+Bash ne calcule **qu'en entiers** : `$(( 7 / 2 ))` vaut `3`, et l'ordre des opérations compte. `100 * utilise / total` donne un pourcentage juste, `utilise / total * 100` donne presque toujours `0`. Pour des nombres à virgule, on confie le calcul à `bc` ou à `awk` :
+
+```bash
+echo "scale=2; 7 / 2" | bc     # 3.50
+awk 'BEGIN { printf "%.1f\n", 7 / 2 }'
+```
+
+Un nombre écrit avec un zéro en tête, comme `08`, est lu en **octal** par `$(( ))`, et `08` n'existe pas en octal : erreur. Le cas arrive avec les dates, `$(date +%m)` valant `08` en août. On force la base 10 en écrivant `$(( 10#$mois ))`.
+
+## les développements de paramètre
+
+Bash sait transformer la valeur d'une variable au moment de la lire, avec une syntaxe entre accolades. Les plus utiles en administration :
+
+| Écriture | Résultat | Exemple, avec `f=/var/log/nginx/access.log.1` |
+| --- | --- | --- |
+| `${f:-défaut}` | la valeur, ou `défaut` si elle est vide | `${DEST:-/srv/sauvegardes}` |
+| `${f:?message}` | la valeur, ou arrêt du script avec ce message | `${1:?fichier manquant}` |
+| `${#f}` | la longueur | `27` |
+| `${f##*/}` | retire le plus long préfixe qui finit par `/` : le nom | `access.log.1` |
+| `${f%/*}` | retire le plus court suffixe qui commence par `/` : le dossier | `/var/log/nginx` |
+| `${f%.*}` | retire la dernière extension | `/var/log/nginx/access.log` |
+| `${f#*.}` | retire tout jusqu'au premier point | `log.1` |
+| `${f/nginx/apache}` | remplace la première occurrence | `/var/log/apache/access.log.1` |
+| `${f//\//_}` | remplace toutes les occurrences, ici les `/` par des `_` | `_var_log_nginx_access.log.1` |
+| `${f:9:5}` | 5 caractères à partir du 10e (on compte depuis 0) | `nginx` |
+| `${f^^}` et `${f,,}` | tout en majuscules, tout en minuscules | `/VAR/LOG/...` |
+
+Moyen mnémotechnique : sur un clavier américain, `#` est à gauche de `%`. **`#` coupe à gauche** (le début), **`%` coupe à droite** (la fin). Doublé, l'opérateur coupe le plus possible. `${f##*/}` et `${f%/*}` remplacent avantageusement les commandes `basename` et `dirname`, sans lancer de processus.
+
+La forme `${var:?message}` mérite une place à part : c'est le garde-fou qui aurait sauvé les utilisateurs de Steam. `rm -rf "${STEAMROOT:?}/"*` arrête le script avec une erreur si la variable est vide, au lieu d'effacer depuis la racine.
+
+## le découpage en mots
+
+Voici le cœur de la leçon. Quand bash développe une variable ou une substitution **sans guillemets**, il fait deux choses de plus avec le résultat :
+
+1. il le **découpe en mots** sur les espaces, tabulations et retours à la ligne ;
+2. il traite chaque mot comme un **joker** possible : `*`, `?` et `[ ]` sont remplacés par les noms de fichiers qui correspondent.
+
+```bash
+fichier="Rapport annuel.pdf"
+rm $fichier       # rm reçoit DEUX arguments : « Rapport » et « annuel.pdf »
+rm "$fichier"     # rm reçoit UN argument : « Rapport annuel.pdf »
+
+motif="*.log"
+echo $motif       # affiche la liste des fichiers .log du dossier
+echo "$motif"     # affiche *.log
+```
+
+Pour voir exactement ce que reçoit une commande, `printf '[%s]\n'` affiche chaque argument entre crochets, un par ligne :
+
+```bash
+printf '[%s]\n' $fichier      # [Rapport]  puis  [annuel.pdf]
+printf '[%s]\n' "$fichier"    # [Rapport annuel.pdf]
+```
+
+D'où la règle : **mets entre guillemets doubles chaque `$variable` et chaque `$( )`**, sauf si tu veux expressément ce découpage. Les guillemets doubles laissent bash remplacer les variables, mais empêchent le découpage et les jokers. Les apostrophes, elles, empêchent tout : `'$HOME'` reste le texte `$HOME`.
+
+Quelques endroits ne découpent pas, et y mettre des guillemets ne gêne jamais : l'affectation (`copie=$original`), l'intérieur de `[[ ]]` et de `(( ))`, la valeur d'un `case`. Dans le doute, des guillemets.
+
+<Diagram caption="Ce que deviennent une variable sans guillemets et une variable entre guillemets">
+flowchart LR
+  A["rm $fichier, avec fichier = Rapport annuel.pdf"] --> B["découpage en mots"]
+  B --> C["rm reçoit Rapport, puis annuel.pdf"]
+  D["rm avec la variable entre guillemets"] --> E["pas de découpage, pas de jokers"]
+  E --> F["rm reçoit Rapport annuel.pdf"]
+</Diagram>
+
+## printf plutôt qu'echo
+
+Pour afficher des données dans un script, préfère **`printf`** à `echo`. `echo` est simple, mais son comportement varie : selon le shell et le système, `echo -e` interprète ou non les séquences comme `\n`, et une valeur qui commence par un tiret, comme `-n`, est prise pour une option et disparaît de l'affichage. `printf` se comporte partout de la même façon, et surtout il **met en forme** :
+
+```bash
+printf '%s\n' "$message"                      # une valeur, telle quelle, puis un saut de ligne
+printf '%-20s %6d Mo\n' "$dossier" "$taille"   # une colonne de 20 caractères, un nombre sur 6
+printf '%03d\n' 7                              # 007 : des zéros devant
+printf -v horodatage '%(%F %T)T' -1            # la date du moment, rangée dans une variable
+```
+
+Le premier argument est le **format** : `%s` pour une chaîne, `%d` pour un entier, `%f` pour un nombre à virgule, avec des largeurs pour aligner les colonnes. Les arguments suivants remplissent les `%` dans l'ordre. S'il y en a plus que de `%`, le format est réutilisé, ce qui affiche toute une liste en une commande : `printf -- '- %s\n' "${serveurs[@]}"`. L'option `-v` range le résultat dans une variable au lieu de l'afficher, sans créer de sous-shell. Pour le rapport qu'un script affiche à la fin de son travail, un tableau aligné avec `printf` se lit bien mieux qu'une suite d'`echo` aux colonnes qui flottent.
+
+## les tableaux
+
+Une variable contient une valeur ; un **tableau** en contient une liste, rangée par numéro à partir de 0 :
+
+```bash
+serveurs=(srv-web-01 srv-web-02 "srv base")   # trois éléments
+echo "${serveurs[0]}"                          # srv-web-01
+echo "${#serveurs[@]}"                         # 3 : le nombre d'éléments
+serveurs+=(srv-cache)                          # ajouter à la fin
+printf '[%s]\n' "${serveurs[@]}"               # chaque élément, intact
+```
+
+`"${serveurs[@]}"`, entre guillemets, donne chaque élément comme un argument séparé, espaces comprises : c'est le pendant de `"$@"` pour les arguments du script, et la seule bonne façon de parcourir un tableau. Un tableau est idéal pour construire une commande morceau par morceau, comme une liste d'options pour `tar` ou `rsync`, sans jamais se battre avec les guillemets.
+
+Bash connaît aussi les tableaux **associatifs**, indexés par des noms : `declare -A port=([ssh]=22 [https]=443)`, puis `echo "${port[ssh]}"`. Les tableaux sont propres à bash : un script qui en utilise doit déclarer `#!/bin/bash`.
+
+## à toi de jouer
+
+Le dossier de travail contient `resume.sh`, qui résume un fichier de ventes (une vente par ligne, au format `produit;montant`), et deux fichiers : `ventes.txt` et `ventes mars.txt`. Le script a été écrit vite, et testé seulement sur le premier.
+
+1. lis le script avec `cat resume.sh`, puis rends-le exécutable avec `chmod 755 resume.sh` ;
+2. lance-le sur le fichier qui a servi aux tests : `./resume.sh ventes.txt`. Tout va bien ;
+3. lance-le sur l'autre : `./resume.sh "ventes mars.txt"`. Lis les erreurs : `ambiguous redirect`, des fichiers introuvables, une division par zéro. Toutes viennent du nom du fichier coupé en deux ;
+4. répare le script en mettant `$fichier` entre guillemets partout où il est utilisé. Avec `vi`, ou d'un coup avec `sed` : `sed -i 's/\$fichier/"$fichier"/g' resume.sh`, puis relis-le avec `cat` ;
+5. relance-le et garde le résultat : `./resume.sh "ventes mars.txt" > resume.txt`.
+
+<LinuxTerminal title="Le nom qui casse tout" files={{"resume.sh": "#!/bin/bash\n# resume.sh : résume un fichier de ventes, une vente par ligne « produit;montant ».\n# Usage : ./resume.sh FICHIER\nfichier=$1\nnom=${fichier##*/}\nnombre=$(wc -l < $fichier)\ntotal=$(cut -d';' -f2 $fichier | paste -sd+ | bc)\necho \"Fichier : $nom\"\necho \"$nombre ventes, total : $total €\"\necho \"Vente moyenne : $(( total / nombre )) €\"\n", "ventes.txt": "clavier;45\nsouris;25\n", "ventes mars.txt": "clavier;45\nécran;189\nsouris;25\ncasque;79\nstation d'accueil;212\n"}} expectedCommands={["./resume.sh ventes.txt", "./resume.sh \"ventes mars.txt\" > resume.txt"]} checks={[{"label": "resume.sh met $fichier entre guillemets", "path": "resume.sh", "expect": "file", "contains": "< \"$fichier\""}, {"label": "resume.txt compte les cinq ventes de mars", "path": "resume.txt", "expect": "file", "contains": "5 ventes, total : 550 €"}, {"label": "resume.txt donne la moyenne", "path": "resume.txt", "expect": "file", "contains": "Vente moyenne : 110 €"}]} hints={["« ambiguous redirect » : la redirection a reçu deux noms au lieu d'un.", "Sans guillemets, \"ventes mars.txt\" devient deux mots : ventes et mars.txt.", "Avec sed, les apostrophes autour de l'expression empêchent le shell de toucher à $fichier.", "Relis le script avec cat : chaque $fichier doit être entouré de guillemets doubles."]} />
+
+Remarque que la ligne `nom=${fichier##*/}` n'avait pas besoin d'être corrigée : une affectation ne découpe pas en mots. Et le texte de la commande `sed` est lui-même entre apostrophes, pour que le shell ne remplace pas `$fichier` avant que `sed` ne le voie. Enfin, regarde la moyenne : `110`, un entier, parce que `$(( ))` ne connaît pas les virgules.
+
+## les pièges
+
+- **Une variable sans guillemets.** Un nom avec une espace devient deux arguments, une étoile devient une liste de fichiers. Toujours `"$var"` et `"$(commande)"`.
+- **Une variable vide dans un chemin.** `rm -rf "$dossier/"*` avec `dossier` vide efface depuis la racine : `"${dossier:?}"` arrête le script à temps.
+- **Des espaces autour du `=`.** `total = 0` lance une commande nommée `total`.
+- **Diviser avant de multiplier.** `$(( a / b * 100 ))` vaut presque toujours `0` en calcul entier.
+- **Un zéro en tête.** `$(( 08 + 1 ))` échoue, l'octal n'a pas de 8 : `$(( 10#08 + 1 ))`.
+- **`${tableau[@]}` sans guillemets.** Les éléments qui contiennent une espace sont découpés.
+- **Les apostrophes là où il faut des guillemets.** `echo 'Bonjour $nom'` affiche `$nom` tel quel.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion" description="Tous les développements de paramètre, en anglais">Manuel de bash : Shell Parameter Expansion</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/WordSplitting" description="Le découpage en mots expliqué en détail, avec ses pièges, en anglais">Greg's Wiki : Word Splitting</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/Quotes" description="Quand et comment mettre des guillemets dans un script, en anglais">Greg's Wiki : Quotes</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Avec fichier='Rapport annuel.pdf', combien d'arguments reçoit rm dans rm $fichier ?" options={["Un", "Deux", "Aucun", "Trois"]} correct={1} explanation="Sans guillemets, le résultat est découpé sur l'espace : rm reçoit Rapport et annuel.pdf." />
+  <Quiz id="q-2" question="Que donne ${f##*/} avec f=/var/log/syslog.1 ?" options={["/var/log", "syslog.1", "syslog", "/var/log/syslog"]} correct={1} explanation="## retire le plus long préfixe finissant par / : il reste le nom du fichier, comme avec basename." />
+  <Quiz id="q-3" question="Que donne ${f%.*} avec f=sauvegarde.tar.gz ?" options={["sauvegarde", "sauvegarde.tar", "gz", "tar.gz"]} correct={1} explanation="% retire le plus court suffixe commençant par un point : seule la dernière extension part. %% aurait laissé sauvegarde." />
+  <Quiz id="q-4" question="Combien vaut $(( 7 / 2 )) ?" options={["3.5", "3", "4", "Une erreur"]} correct={1} explanation="Bash ne calcule qu'en entiers et tronque. Pour une virgule, on passe par bc ou awk." />
+  <Quiz id="q-5" question="Dans rm -rf sur $DOSSIER/*, quel garde-fou empêche d'effacer depuis la racine si la variable est vide ?" options={["Mettre des apostrophes", "Écrire ${DOSSIER:?} pour arrêter le script si elle est vide", "Écrire ${DOSSIER:-/}", "Lancer le script avec sh"]} correct={1} explanation=":? arrête le script avec une erreur quand la variable est vide ou absente. :- / ferait exactement la catastrophe." />
+  <Quiz id="q-6" question="Comment parcourir tous les éléments d'un tableau sans abîmer ceux qui contiennent une espace ?" options={["${tab[*]}", "Avec \"${tab[@]}\", entre guillemets", "$tab", "${#tab[@]}"]} correct={1} explanation="Entre guillemets, [@] donne chaque élément comme un argument séparé, intact." />
+  <Quiz id="q-7" question="Que fait echo '$HOME' ?" options={["Affiche le chemin du répertoire personnel", "Affiche le texte $HOME tel quel", "Provoque une erreur", "Affiche une ligne vide"]} correct={1} explanation="Les apostrophes empêchent tout développement ; il faut des guillemets doubles pour que la variable soit remplacée." />
+</QuizGroup>
+
+## à retenir
+
+- **`"$var"`** et **`"$(commande)"`** : toujours entre guillemets doubles, sinon bash **découpe en mots** et développe les **jokers**.
+- **`$( )`** capture la sortie d'une commande ; **`$(( ))`** calcule en entiers, **`(( ))`** calcule sans rien afficher ; **`bc`** ou **`awk`** pour les virgules.
+- Développements utiles : **`${v:-défaut}`**, **`${v:?message}`**, **`${#v}`**, **`${v##*/}`** (le nom), **`${v%/*}`** (le dossier), **`${v%.*}`** (sans extension), **`${v//a/b}`**.
+- `#` coupe à gauche, `%` coupe à droite, doublés ils coupent le plus possible.
+- Un **tableau** : `t=(a b "c d")`, parcouru avec **`"${t[@]}"`**, compté avec **`${#t[@]}`**.
+- **`printf '[%s]\n'`** montre exactement ce que reçoit une commande.

@@ -1,0 +1,242 @@
+---
+refCode: CL-LSN-02049-V01
+slug: linux-fonctions
+title: "Fonctions : portée, retour et bibliothèques"
+description: "Découper un script en fonctions : les définir et les appeler, leur passer des arguments, distinguer ce qu'une fonction rend (son code de retour) de ce qu'elle affiche (sa sortie, capturée avec $( )), protéger ses variables avec local, ranger les fonctions communes dans une bibliothèque chargée avec source, et structurer un script autour d'une fonction main. Avec un script dont une fonction écrase la variable de son appelant, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02048-V01"]
+---
+
+Un script de cinquante lignes se lit d'un trait. À deux cents, on s'y perd : le même bloc de journalisation recopié six fois, une vérification écrite trois fois de trois façons, et une correction qui n'est appliquée qu'à une seule des copies. Les **fonctions** règlent ce problème : on donne un nom à un bloc de commandes, on l'appelle autant de fois qu'il faut, et on ne le corrige qu'à un endroit. Elles ont pourtant une particularité qui surprend tous ceux qui viennent d'un autre langage : par défaut, leurs variables ne leur appartiennent pas.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- définir une fonction, l'appeler et lui passer des arguments ;
+- distinguer ce qu'une fonction **rend**, son code de retour, de ce qu'elle **affiche**, sa sortie ;
+- protéger les variables d'une fonction avec `local` ;
+- ranger des fonctions communes dans une **bibliothèque** et la charger avec `source` ;
+- organiser un script autour d'une fonction `main`.
+
+## pourquoi ça compte
+
+Un script d'exploitation vit des années et passe entre plusieurs mains. Découpé en fonctions bien nommées, il se lit comme une table des matières : `verifier_prerequis`, `creer_archive`, `purger_anciennes`, `envoyer_rapport`. Chaque morceau se comprend, se teste et se corrige seul. Les fonctions communes, comme la journalisation ou la gestion des erreurs, se partagent entre tous les scripts d'une équipe au lieu d'être recopiées, avec leurs bugs, dans chacun.
+
+## définir et appeler
+
+```bash
+saluer() {
+  echo "Bonjour, $1 !"
+}
+
+saluer Alice        # Bonjour, Alice !
+saluer "Jean Paul"  # Bonjour, Jean Paul !
+```
+
+On définit une fonction par son nom suivi de `()`, puis son corps entre accolades. On l'appelle ensuite **comme une commande**, avec ses arguments, sans parenthèses. La forme `function saluer { ... }` existe aussi, mais elle est propre à bash : `saluer() { ... }` est la forme portable, et la plus courante.
+
+Une fonction doit être **définie avant d'être appelée** : bash lit le script de haut en bas. Dans le corps, les arguments de la fonction s'appellent `$1`, `$2`, `$#` et `"$@"`, exactement comme ceux d'un script. Ils **masquent** ceux du script le temps de l'appel : pour qu'une fonction travaille sur les arguments du script, on les lui passe explicitement, `traiter "$@"`.
+
+## ce qu'une fonction rend, ce qu'elle affiche
+
+C'est la distinction la plus importante de la leçon. Une fonction communique de deux façons, qui n'ont rien à voir :
+
+- son **code de retour**, un nombre de 0 à 255, fixé par `return` ou, à défaut, par sa dernière commande. Il sert aux conditions ;
+- sa **sortie**, ce qu'elle affiche. Elle sert à transmettre des données, qu'on capture avec `$( )`.
+
+```bash
+# Réussit si le service répond : un code de retour, pour un if.
+service_actif() {
+  systemctl is-active --quiet "$1"
+}
+
+# Affiche le nombre de lignes : une sortie, pour $( ).
+nb_lignes() {
+  wc -l < "$1"
+}
+
+if service_actif nginx; then
+  echo "nginx tourne."
+fi
+total=$(nb_lignes /var/log/syslog)
+```
+
+`return` ne sert **pas** à rendre une valeur : `return 1200` est tronqué à 176, puisqu'un code de retour ne dépasse pas 255. Pour renvoyer un nombre, un nom ou une liste, la fonction l'**affiche**, et l'appelant le capture. Corollaire : une fonction dont on capture la sortie ne doit rien afficher d'autre. Ses messages d'information ou d'erreur vont sur la sortie d'erreur, avec `>&2`, sinon ils se retrouvent mêlés au résultat.
+
+Une fonction peut aussi combiner les deux : afficher un résultat **et** rendre un code qui dit si ce résultat est valable. L'appelant teste alors la capture elle-même, puisqu'une affectation par `$( )` rend le code de la commande capturée. Cela permet d'écrire en une ligne « récupère l'adresse, et arrête-toi si ce n'est pas possible » : `ip=$(adresse_de srv-base) || mourir "srv-base introuvable"`, où `mourir` est une petite fonction d'erreur que tu verras plus bas. C'est la forme la plus courante dans les scripts soignés, et la raison pour laquelle une fonction doit toujours rendre un code d'échec quand elle n'a pas pu produire son résultat.
+
+## local : la portée des variables
+
+En bash, une variable créée dans une fonction est **globale** : elle existe dans tout le script, et elle écrase une variable du même nom qui existait déjà.
+
+```bash
+fichier="rapport.txt"
+
+compter() {
+  fichier=$1               # écrase la variable globale !
+  wc -l < "$fichier"
+}
+
+compter /etc/passwd
+echo "$fichier"            # affiche /etc/passwd, plus rapport.txt
+```
+
+Le mot-clé **`local`** donne à une variable une existence limitée à la fonction, et aux fonctions qu'elle appelle :
+
+```bash
+compter() {
+  local fichier=$1
+  wc -l < "$fichier"
+}
+```
+
+La règle est simple : **toute variable d'une fonction est déclarée `local`**, sauf si la fonction a précisément pour rôle de modifier une variable globale. Le bug le plus sournois est celui de l'exercice : une fonction qui utilise `f` ou `i` comme variable de boucle, appelée depuis une boucle qui utilise le même nom.
+
+Une subtilité : `local resultat=$(commande)` rend le code de retour de `local`, toujours 0, et non celui de la commande. Pour tester la commande, on sépare la déclaration de l'affectation : `local resultat`, puis `resultat=$(commande) || return 1`.
+
+<Diagram caption="Sans local, la fonction travaille sur la variable de son appelant">
+flowchart TD
+  A["boucle du script : f = app.log"] --> B["appel de tous_lisibles"]
+  B --> C["for f dans la fonction, sans local"]
+  C --> D["f = web.log en sortant"]
+  D --> E["le script croit traiter app.log, il traite web.log"]
+  B --> F["avec local f"]
+  F --> G["le f du script reste app.log"]
+</Diagram>
+
+## les bibliothèques de fonctions
+
+Les fonctions qui servent à plusieurs scripts vont dans un fichier à part, une **bibliothèque**, que chaque script charge avec `source` :
+
+```bash
+# /usr/local/lib/exploitation.sh : fonctions communes aux scripts de l'équipe.
+# À charger avec source, pas à exécuter.
+
+journal() {
+  printf '%s [%s] %s\n' "$(date '+%F %T')" "$1" "$2" >> /var/log/exploitation.log
+}
+
+mourir() {
+  echo "ERREUR : $*" >&2
+  journal ERREUR "$*"
+  exit 1
+}
+```
+
+```bash
+#!/bin/bash
+source /usr/local/lib/exploitation.sh
+cd /srv/app || mourir "dossier /srv/app introuvable"
+journal INFO "déploiement commencé"
+```
+
+Une bibliothèque n'a pas de shebang ni de droit d'exécution : elle n'est jamais lancée seule. Elle ne fait rien à son chargement, à part définir des fonctions et des constantes. `source` l'exécute dans le shell du script, ce qui rend ses fonctions disponibles. Attention au chemin : `source lib/outils.sh` cherche le fichier par rapport au **dossier courant**, pas à celui du script. Pour qu'un script trouve sa bibliothèque d'où qu'on le lance, on part de son propre emplacement : `source "$(dirname "$0")/lib/outils.sh"`.
+
+Et comme pour un script, une bibliothèque chargée par root ne doit être modifiable que par root : quiconque peut l'éditer peut faire exécuter ce qu'il veut à tous les scripts qui la chargent.
+
+## nommer et ranger ses fonctions
+
+Quelques règles rendent les fonctions faciles à lire et à réutiliser :
+
+- **un verbe et un objet** : `creer_archive`, `verifier_espace`, `envoyer_rapport`. Le nom dit ce que fait la fonction, et le script se lit comme une liste d'actions ;
+- **une seule tâche par fonction** : si son nom a besoin d'un « et », elle en fait sans doute deux ;
+- **un préfixe pour une bibliothèque** : `log_info`, `log_erreur`, `log_debug`. Sans préfixe, une fonction de la bibliothèque peut porter le même nom qu'une fonction du script qui la charge, et la dernière définie remplace l'autre sans prévenir ;
+- **jamais le nom d'une commande** : une fonction nommée `test`, `ls` ou `cp` remplace la commande pour tout le reste du script. C'est d'ailleurs une technique d'attaque connue : une fonction nommée `sudo`, glissée dans le `~/.bashrc` d'une victime, peut lui demander son mot de passe et l'enregistrer. Pour appeler la vraie commande malgré une fonction du même nom, on écrit `command ls`.
+
+Une fonction est aussi le bon endroit pour **documenter** : un commentaire au-dessus de chaque définition, qui dit ce qu'elle attend, ce qu'elle affiche et ce qu'elle rend, comme dans la bibliothèque de l'exercice.
+
+## tester une fonction à la main
+
+Une fonction se teste seule, sans lancer tout le script. On charge la bibliothèque dans son shell, puis on appelle la fonction sur des cas choisis :
+
+```bash
+source lib/outils.sh
+lignes /etc/passwd ; echo "code : $?"
+lignes /nexistepas ; echo "code : $?"
+```
+
+C'est l'avantage majeur d'un script découpé en fonctions : chaque morceau s'essaie isolément, avec des valeurs normales, des valeurs limites et des valeurs absurdes. La fonction la plus facile à tester est celle qui dépend le moins de variables globales : tout ce dont elle a besoin lui arrive par ses arguments, et tout ce qu'elle produit sort par son affichage et son code de retour.
+
+Pour tester les fonctions d'un script complet, et pas seulement celles d'une bibliothèque, on protège son appel final : `[[ ${BASH_SOURCE[0]} == "$0" ]] && main "$@"`. La condition n'est vraie que si le fichier est **exécuté** ; s'il est **chargé** avec `source`, `main` n'est pas appelée, et toutes les fonctions du script deviennent disponibles dans ton shell, prêtes à être essayées une à une.
+
+## structurer un script autour de main
+
+Une convention répandue range tout le script dans des fonctions, et l'appel principal tient en une ligne, tout en bas :
+
+```bash
+#!/bin/bash
+# deployer.sh : déploie l'application.
+
+verifier_prerequis() { ... }
+recuperer_version() { ... }
+redemarrer() { ... }
+
+main() {
+  verifier_prerequis
+  recuperer_version "$1"
+  redemarrer
+}
+
+main "$@"
+```
+
+On lit d'abord `main`, qui raconte le script en trois lignes, puis le détail de chaque étape. Et comme rien ne s'exécute avant la dernière ligne, un script tronqué, par exemple téléchargé à moitié, ne fait rien plutôt que d'exécuter ses premières commandes.
+
+Pour inspecter les fonctions définies dans ton shell : `declare -F` liste leurs noms, `declare -f nom` affiche le code d'une fonction, `type nom` dit si un nom est une fonction, une commande ou un mot-clé, et `unset -f nom` en supprime une.
+
+## à toi de jouer
+
+`inventaire.sh` note dans `inventaire.txt` le nombre de lignes de chaque journal du dossier. Il charge une petite bibliothèque, `lib/outils.sh`, et vérifie avant chaque mesure que tous les journaux sont lisibles. Il y a trois journaux, et pourtant…
+
+1. lance-le avec `bash inventaire.sh`, puis lis le résultat : `cat inventaire.txt`. Le même journal revient trois fois ;
+2. lis le script et la bibliothèque : `cat inventaire.sh lib/outils.sh`. Trouve la fonction qui modifie une variable de son appelant ;
+3. corrige-la en déclarant sa variable de boucle `local`, avec `vi`, ou avec `sed -i '/^tous_lisibles() {/a local f' inventaire.sh` ;
+4. vide le résultat avec `rm inventaire.txt`, relance `bash inventaire.sh`, et vérifie qu'il cite bien les trois journaux ;
+5. tape `bash`, puis écris ta propre fonction, qui copie un fichier en ajoutant `.bak` à son nom : `sauver() { cp -- "$1" "$1.bak"; }`. Appelle-la avec `sauver db.log`, puis regarde ce que bash en sait avec `type sauver`.
+
+<LinuxTerminal title="La fonction qui écrase sa voisine" files={{"lib/outils.sh": "# lib/outils.sh : fonctions communes aux scripts d'exploitation.\n# À charger avec source, pas à exécuter.\n\n# journal NIVEAU MESSAGE : ajoute une ligne horodatée à inventaire.txt.\njournal() {\n  printf '%s [%s] %s\n' \"$(date +%T)\" \"$1\" \"$2\" >> inventaire.txt\n}\n\n# lignes FICHIER : affiche le nombre de lignes du fichier.\nlignes() {\n  wc -l < \"$1\"\n}\n", "inventaire.sh": "#!/bin/bash\n# inventaire.sh : note dans inventaire.txt le nombre de lignes de chaque journal.\nsource lib/outils.sh\n\n# tous_lisibles FICHIER... : réussit si tous les fichiers sont lisibles.\ntous_lisibles() {\n  for f in \"$@\"; do\n    [[ -r \"$f\" ]] || return 1\n  done\n}\n\nfor f in *.log; do\n  tous_lisibles *.log || { journal ERREUR \"un journal est illisible\"; exit 1; }\n  journal INFO \"$f : $(lignes \"$f\") lignes\"\ndone\njournal INFO \"inventaire terminé\"\n", "app.log": "démarrage\nrequête 1\narrêt\n", "db.log": "connexion\nrequête lente\nrequête lente\nindex reconstruit\ndéconnexion\n", "web.log": "GET /\nGET /contact\nPOST /contact\nGET /\nGET /blog\nGET /\nGET /favicon.ico\nGET /\n"}} expectedCommands={["bash inventaire.sh", "rm inventaire.txt", "sauver db.log", "type sauver"]} checks={[{"label": "inventaire.txt cite app.log", "path": "inventaire.txt", "expect": "file", "contains": "app.log : 3 lignes"}, {"label": "inventaire.txt cite db.log", "path": "inventaire.txt", "expect": "file", "contains": "db.log : 5 lignes"}, {"label": "inventaire.txt cite web.log", "path": "inventaire.txt", "expect": "file", "contains": "web.log : 8 lignes"}, {"label": "la fonction déclare sa variable local", "path": "inventaire.sh", "expect": "file", "contains": "local f"}, {"label": "ta fonction sauver a copié db.log", "path": "db.log.bak", "expect": "file", "contains": "requête lente"}]} hints={["tous_lisibles parcourt les journaux avec une variable f… la même que la boucle du script.", "Après l'appel de tous_lisibles, f vaut le dernier journal parcouru : web.log.", "La ligne local f se place au début du corps de tous_lisibles, avant le for.", "inventaire.txt est complété à chaque lancement : supprime-le avant de relancer.", "Définis et appelle sauver dans le même shell : une fonction n'existe que dans le shell où elle a été tapée."]} />
+
+Une fonction tapée dans le terminal disparaît avec la session : pour la garder, on la met dans son `~/.bashrc`, ou dans une bibliothèque. Note aussi le `--` dans `cp -- "$1"` : il protège ta fonction le jour où on lui passe un nom de fichier qui commence par un tiret.
+
+## les pièges
+
+- **Oublier `local`.** La fonction écrase les variables de son appelant, souvent une variable de boucle.
+- **Vouloir rendre une valeur avec `return`.** Il ne rend qu'un code de 0 à 255 : la valeur s'affiche, et se capture avec `$( )`.
+- **Afficher des messages dans une fonction dont on capture la sortie.** Ils se mêlent au résultat : `>&2` pour les messages.
+- **`local x=$(commande)` pour tester la commande.** Le code testé est celui de `local` : déclarer d'abord, affecter ensuite.
+- **Appeler une fonction avant sa définition.** Bash lit de haut en bas : `command not found`.
+- **Charger une bibliothèque par un chemin relatif.** Elle n'est trouvée que si l'on lance le script depuis son dossier : partir de `$(dirname "$0")`.
+- **Une bibliothèque modifiable par d'autres que son propriétaire.** Tous les scripts qui la chargent exécutent ce qu'on y ajoute.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/bash.html#Shell-Functions" description="Définition, arguments, return et local, en anglais">Manuel de bash : les fonctions</ExternalLink>
+
+<ExternalLink href="https://mywiki.wooledge.org/BashFAQ/084" description="Comment une fonction peut renvoyer une valeur à son appelant, en anglais">BashFAQ 084 : renvoyer une valeur depuis une fonction</ExternalLink>
+
+<ExternalLink href="https://google.github.io/styleguide/shellguide.html" description="Les conventions de Google pour les scripts shell : fonctions, main, nommage, en anglais">Guide de style shell de Google</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Comment appelle-t-on une fonction saluer avec l'argument Alice ?" options={["saluer(Alice)", "saluer Alice", "call saluer Alice", "$saluer Alice"]} correct={1} explanation="Une fonction s'appelle comme une commande, avec ses arguments séparés par des espaces." />
+  <Quiz id="q-2" question="Une fonction doit transmettre un nom de fichier à son appelant. Comment faire ?" options={["return \"$nom\"", "L'afficher avec echo, et la capturer avec $( ) chez l'appelant", "Avec exit", "C'est impossible"]} correct={1} explanation="return ne rend qu'un code de 0 à 255. Les données passent par la sortie." />
+  <Quiz id="q-3" question="Sans le mot local, que devient une variable créée dans une fonction ?" options={["Elle disparaît à la fin de la fonction", "Elle est globale : elle existe dans tout le script et peut en écraser une autre", "Elle provoque une erreur", "Elle est visible seulement dans les sous-shells"]} correct={1} explanation="En bash, les variables sont globales par défaut : local limite leur portée à la fonction." />
+  <Quiz id="q-4" question="Que vaut $? après return 300 ?" options={["300", "44", "0", "255"]} correct={1} explanation="Un code de retour tient sur un octet : 300 modulo 256 donne 44. On ne transmet pas de nombre par return." />
+  <Quiz id="q-5" question="Pourquoi les messages d'erreur d'une fonction vont-ils sur >&2 ?" options={["Pour les colorer", "Pour ne pas se mêler à la sortie que l'appelant capture avec $( )", "Parce que echo l'exige", "Pour arrêter le script"]} correct={1} explanation="La sortie standard porte les données ; la sortie d'erreur porte les messages." />
+  <Quiz id="q-6" question="Que fait source lib/outils.sh dans un script ?" options={["Il lance la bibliothèque dans un autre processus", "Il exécute le fichier dans le shell du script, ce qui définit ses fonctions", "Il copie le fichier", "Il compile les fonctions"]} correct={1} explanation="Le chemin est relatif au dossier courant : on part en général du dossier du script, tiré de $0 par dirname." />
+  <Quiz id="q-7" question="Quel est l'intérêt d'appeler main, avec tous les arguments, à la toute fin du script ?" options={["Aucun", "Le script se lit par son résumé, et un fichier tronqué n'exécute rien", "Il est plus rapide", "Il devient compatible avec sh"]} correct={1} explanation="Tout est défini avant que quoi que ce soit ne s'exécute." />
+</QuizGroup>
+
+## à retenir
+
+- **`nom() { ...; }`**, puis **`nom arg1 arg2`** : une fonction s'appelle comme une commande, et lit ses arguments dans `$1`, `$#`, `"$@"`.
+- Le **code de retour** (`return`, de 0 à 255) sert aux conditions ; la **sortie** (`echo`, capturée par `$( )`) transmet les données.
+- **`local`** pour toute variable de fonction : sinon elle est globale et écrase celle de l'appelant.
+- Les messages vont sur **`>&2`**, pour ne pas polluer la sortie.
+- Une **bibliothèque** se charge avec **`source`**, par un chemin tiré de `$(dirname "$0")`, et n'est modifiable que par son propriétaire.
+- Un script structuré finit par **`main "$@"`**.

@@ -1,0 +1,228 @@
+---
+refCode: CL-LSN-02052-V01
+slug: linux-deboguer-verifier
+title: "Déboguer et vérifier : bash -x et ShellCheck"
+description: "Trouver pourquoi un script ne fait pas ce qu'on attend : lire le message d'erreur et son numéro de ligne, vérifier la syntaxe sans rien exécuter avec bash -n, suivre l'exécution pas à pas avec bash -x et set -x, rendre la trace lisible avec PS4, ajouter des messages de débogage commandés par une variable, puis confier la relecture à ShellCheck, qui repère avant l'exécution les pièges de tout ce module. Avec un rapport faux à expliquer par la trace, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02051-V01"]
+---
+
+Tout script finit un jour par donner un résultat faux. Le plus souvent, sans aucune erreur : il tourne, il se termine, et le nombre qu'il affiche est simplement incorrect. Relire le code ne suffit pas toujours, parce qu'on relit ce qu'on **croit** avoir écrit. Bash peut en revanche te montrer ce qu'il **fait vraiment**, commande par commande, avec les valeurs réelles des variables. Et un outil comme ShellCheck relit ton script avant même que tu le lances, avec l'œil de quelqu'un qui connaît tous les pièges de ce module.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- exploiter un message d'erreur de bash et son numéro de ligne ;
+- vérifier la syntaxe d'un script sans l'exécuter, avec `bash -n` ;
+- suivre une exécution pas à pas avec `bash -x` et `set -x`, et rendre la trace lisible avec `PS4` ;
+- ajouter des messages de débogage qu'une variable active ou coupe ;
+- lire les avertissements de **ShellCheck**, et savoir quand en faire taire un ;
+- tester un script avant de le confier à la production.
+
+## pourquoi ça compte
+
+Un bug dans un script d'administration se paie souvent en production : la sauvegarde incomplète, le compte créé avec les mauvais droits, la purge qui a supprimé un fichier de trop. Plus tôt on le trouve, moins il coûte. ShellCheck le trouve avant l'exécution, la trace le trouve à la première exécution, et les tests le trouvent avant la mise en service. Ces outils sont aussi ceux qu'on attend de toi en équipe : dans beaucoup d'entreprises, aucun script ne passe en revue de code sans un ShellCheck propre.
+
+## lire le message d'erreur
+
+Bash dit presque toujours où il s'est arrêté :
+
+```text
+./purge.sh: line 14: [: -gt: unary operator expected
+./purge.sh: line 22: syntax error near unexpected token `fi'
+./purge.sh: line 9: archive: unbound variable
+```
+
+Le nom du script, le **numéro de ligne**, puis le problème. Dans le premier cas, à la ligne 14, un `[` a reçu `-gt` sans rien devant : la variable à comparer était vide, et sans guillemets. Le deuxième est une erreur de **syntaxe** : bash a trouvé un `fi` qu'il n'attendait pas, souvent à cause d'un `then` oublié ou d'un `;` manquant un peu plus haut. Le troisième vient de `set -u` : la variable `archive` n'a jamais été définie, souvent une faute de frappe. Commence toujours par **ouvrir le script à la ligne indiquée** : `vi +14 purge.sh` y place directement le curseur.
+
+## bash -n : vérifier la syntaxe
+
+```bash
+bash -n purge.sh
+```
+
+`-n` lit le script et vérifie sa syntaxe **sans rien exécuter** : un `if` sans `fi`, une guillemet non fermée, une accolade en trop. S'il ne dit rien, la syntaxe est bonne, ce qui ne prouve pas que le script soit juste. C'est un contrôle sans risque, à faire avant toute exécution d'un script qu'on vient de modifier, surtout sur un serveur.
+
+## bash -x : voir ce qui s'exécute
+
+L'option **`-x`** (*xtrace*) affiche chaque commande **juste avant de l'exécuter**, après tous les développements, précédée d'un `+` :
+
+```bash
+bash -x purge.sh /var/log/app
+```
+
+```text
++ dossier=/var/log/app
++ garder=7
+++ ls /var/log/app
+++ wc -l
++ nombre=3
++ '[' 3 -gt 7 ']'
++ echo 'Rien à purger.'
+Rien à purger.
+```
+
+On y voit les **vraies valeurs** : ce que valait `nombre`, ce que le `[` a vraiment comparé. Le `++` signale une commande exécutée dans une substitution `$( )`, un niveau plus bas. C'est le meilleur outil pour comprendre un résultat faux : la ligne où la valeur cesse d'être celle que tu attendais désigne le bug.
+
+La trace s'écrit sur la **sortie d'erreur**. Pour l'enregistrer à part : `bash -x script.sh 2> trace.txt`. Pour ne tracer qu'une partie d'un long script, on encadre la zone suspecte :
+
+```bash
+set -x     # début de la trace
+calculer_retention
+purger_anciennes
+set +x     # fin de la trace
+```
+
+La variable **`PS4`** définit le préfixe des lignes de trace. Avec le nom du fichier et le numéro de ligne, la trace devient une carte du script :
+
+```bash
+export PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '
+bash -x purge.sh /var/log/app
+```
+
+```text
++ purge.sh:5: dossier=/var/log/app
++ purge.sh:6: garder=7
+```
+
+Attention : la trace affiche **tout**, y compris les mots de passe et les jetons que le script manipule. Ne colle jamais une trace dans un ticket ou un canal de discussion sans la relire.
+
+## des messages de débogage à la demande
+
+Pour un script qu'on maintient longtemps, on prévoit des messages de débogage, éteints par défaut, qu'une variable d'environnement allume :
+
+```bash
+debug() {
+  [[ ${DEBUG:-0} == 1 ]] && echo "DEBUG : $*" >&2
+  return 0
+}
+
+debug "fichiers trouvés : ${#fichiers[@]}"
+```
+
+`DEBUG=1 ./purge.sh /var/log/app` affiche les messages, `./purge.sh /var/log/app` reste muet. Le `return 0` final évite que la fonction rende l'échec du test quand le débogage est coupé, ce qui arrêterait un script en `set -e`. Et pour voir exactement ce que contient une variable, l'astuce de la leçon sur les variables reste la meilleure : `printf '[%s]\n' "$var"`.
+
+## ShellCheck : un relecteur automatique
+
+**ShellCheck** analyse un script sans l'exécuter et signale les erreurs et les pièges connus : variables sans guillemets, `cd` non vérifié, `for` sur la sortie de `ls`, comparaison de nombres avec `>`, variable jamais utilisée, et des centaines d'autres. Il s'installe depuis les dépôts : `sudo apt install shellcheck`.
+
+```bash
+shellcheck purge.sh
+```
+
+Chaque avertissement indique la ligne, souligne la partie en cause, donne un **code** comme `SC2086` et un niveau de gravité : `error`, `warning`, `info` ou `style`. Chaque code a sa page explicative sur le wiki du projet, avec le problème, un exemple et la correction : `https://www.shellcheck.net/wiki/SC2086`. Ce wiki est l'un des meilleurs cours de bash qui existent.
+
+Les codes que tu croiseras le plus, et que ce module t'a appris à éviter :
+
+| Code | Problème |
+| --- | --- |
+| `SC2086` | variable sans guillemets : découpage en mots et jokers |
+| `SC2164` | `cd` sans `\|\| exit` : le script continue dans le mauvais dossier |
+| `SC2045` | `for f in $(ls ...)` : itérer sur la sortie de `ls` est fragile |
+| `SC2155` | `local x=$(...)` ou `export x=$(...)` : le code de retour est masqué |
+| `SC2034` | variable affectée mais jamais utilisée, souvent une faute de frappe |
+| `SC2181` | `if [ $? -eq 0 ]` : tester la commande directement est plus sûr |
+
+Quand un avertissement ne s'applique pas, parce que le découpage en mots est voulu par exemple, on le fait taire **sur une seule ligne**, avec la raison :
+
+```bash
+# shellcheck disable=SC2086  # $OPTIONS contient plusieurs options, à découper volontairement
+rsync $OPTIONS "$source" "$dest"
+```
+
+ShellCheck s'intègre aux éditeurs (VS Code, vim, Emacs), qui soulignent les problèmes pendant la frappe, et à la chaîne d'intégration continue, où il bloque un script fautif avant sa fusion. Son compagnon **`shfmt`** remet en forme un script, comme un formateur de code.
+
+En équipe, on ne compte pas sur la bonne volonté de chacun : ShellCheck tourne dans la **chaîne d'intégration continue**, sur chaque modification proposée, et une erreur bloque la fusion. Quelques lignes suffisent, par exemple dans GitHub Actions :
+
+```yaml
+- name: ShellCheck
+  run: shellcheck --severity=warning scripts/*.sh
+```
+
+Le niveau `warning` laisse passer les simples remarques de style, et arrête tout ce qui ressemble à un vrai bug. Chaque script ajouté au dépôt est ainsi relu automatiquement, avant même qu'un collègue ne le lise.
+
+## tester avant la production
+
+Un script se teste comme un programme :
+
+- sur des **cas variés** : sans argument, avec un fichier absent, un nom à espace, un dossier vide, beaucoup de fichiers. Le banc de tests de la leçon sur les conditions en était un exemple ;
+- dans un **environnement jetable** : un dossier de test, une machine virtuelle, un conteneur, jamais la production directement ;
+- avec une **simulation** quand il en a une : l'option `-s` de la leçon précédente.
+
+Pour aller plus loin, **bats-core** est un cadre de tests automatiques pour bash : chaque test lance le script et vérifie sa sortie et son code de retour. Le bilan de ce module te fera écrire un script qui passe une série de tests de ce genre.
+
+<Diagram caption="Du bug à sa cause">
+flowchart TD
+  A["un résultat faux ou une erreur"] --> B["un message avec un numéro de ligne ?"]
+  B -->|"oui"| C["ouvrir le script à cette ligne"]
+  B -->|"non"| D["bash -n, puis shellcheck"]
+  D --> E["bash -x : comparer chaque valeur à celle attendue"]
+  C --> E
+  E --> F["la première valeur fausse désigne le bug"]
+</Diagram>
+
+## à toi de jouer
+
+D'abord, ShellCheck. Il n'est pas installé dans le petit Linux des exercices : le terminal ci-dessous le simule, sur un script de sauvegarde écrit trop vite. Lance-le et lis chaque avertissement :
+
+1. `cat sauvegarde.sh`, pour voir le script ;
+2. `shellcheck sauvegarde.sh`, pour la relecture ;
+3. `shellcheck -S warning sauvegarde.sh`, pour ne garder que les avertissements et les erreurs.
+
+<SimulatedTerminal shell="bash" title="ShellCheck relit une sauvegarde" expectedCommands={["cat sauvegarde.sh", "shellcheck sauvegarde.sh", "shellcheck -S warning sauvegarde.sh"]} hints={["Chaque avertissement donne la ligne, souligne la partie en cause, et un code SC suivi d'un numéro.", "-S warning cache les avertissements de niveau info et style.", "Le wiki de chaque code, comme https://www.shellcheck.net/wiki/SC2164, explique le problème et sa correction."]} commands={{"cat sauvegarde.sh": "#!/bin/bash\nDEST=/srv/sauvegardes\ndate=$(date +%F)\ncd $DEST\nfor f in $(ls *.tar); do\n  echo \"Ancienne archive : $f\"\ndone\nexport ARCHIVE=$(hostname)-$date.tar\ntar -cf \"$ARCHIVE\" /etc", "shellcheck sauvegarde.sh": "\nIn sauvegarde.sh line 4:\ncd $DEST\n^------^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.\n   ^---^ SC2086 (info): Double quote to prevent globbing and word splitting.\n\nDid you mean: \ncd \"$DEST\" || exit\n\n\nIn sauvegarde.sh line 5:\nfor f in $(ls *.tar); do\n         ^---------^ SC2045 (error): Iterating over ls output is fragile. Use globs.\n\n\nIn sauvegarde.sh line 8:\nexport ARCHIVE=$(hostname)-$date.tar\n       ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.\n\nFor more information:\n  https://www.shellcheck.net/wiki/SC2045 -- Iterating over ls output is fragi...\n  https://www.shellcheck.net/wiki/SC2155 -- Declare and assign separately to ...\n  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... ...", "shellcheck -S warning sauvegarde.sh": "\nIn sauvegarde.sh line 4:\ncd $DEST\n^------^ SC2164 (warning): Use 'cd ... || exit' or 'cd ... || return' in case cd fails.\n\nDid you mean: \ncd \"$DEST\" || exit\n\n\nIn sauvegarde.sh line 5:\nfor f in $(ls *.tar); do\n         ^---------^ SC2045 (error): Iterating over ls output is fragile. Use globs.\n\n\nIn sauvegarde.sh line 8:\nexport ARCHIVE=$(hostname)-$date.tar\n       ^-----^ SC2155 (warning): Declare and assign separately to avoid masking return values.\n\nFor more information:\n  https://www.shellcheck.net/wiki/SC2045 -- Iterating over ls output is fragi...\n  https://www.shellcheck.net/wiki/SC2155 -- Declare and assign separately to ...\n  https://www.shellcheck.net/wiki/SC2164 -- Use 'cd ... || exit' or 'cd ... ...", "shellcheck --version": "ShellCheck - shell script analysis tool\nversion: 0.9.0\nlicense: GNU General Public License, version 3\nwebsite: https://www.shellcheck.net"}} />
+
+Chaque problème relevé est un piège vu dans ce module : la variable sans guillemets et le `cd` non vérifié (leçons sur les variables et les conditions), la boucle sur `ls` (leçon sur les boucles), le code de retour masqué (leçon sur la robustesse). ShellCheck propose même la correction de la ligne 4.
+
+Ensuite, un vrai bug, sans aucune erreur. `stats.sh` compte les réponses 404 d'un journal d'accès, dont chaque ligne contient une adresse IP, une date, un code HTTP et une taille. Il affiche `404 : 0`. Pourtant, il y en a.
+
+1. vérifie : `bash stats.sh acces.log`, puis `grep -c ' 404 ' acces.log` ;
+2. la syntaxe est-elle en cause ? `bash -n stats.sh` ne dit rien : elle est correcte ;
+3. trace l'exécution dans un fichier : `bash -x stats.sh acces.log 2> trace.txt`, puis lis le début : `head -12 trace.txt`. Regarde ce que le `[[` compare vraiment ;
+4. tu as trouvé : la dernière variable de `read` reçoit **tout le reste de la ligne**. Ajoute une variable pour le dernier champ : `sed -i 's/read -r ip date code;/read -r ip date code taille;/' stats.sh` ;
+5. relance et garde le résultat : `bash stats.sh acces.log > resultat.txt`.
+
+<LinuxTerminal title="Le compteur qui ne compte rien" files={{"stats.sh": "#!/bin/bash\n# stats.sh : compte les réponses 404 d'un journal d'accès.\n# Format d'une ligne : IP DATE CODE TAILLE\nset -euo pipefail\njournal=${1:?Usage : stats.sh JOURNAL}\nerreurs=0\nwhile read -r ip date code; do\n  if [[ $code == 404 ]]; then\n    erreurs=$(( erreurs + 1 ))\n  fi\ndone < \"$journal\"\necho \"404 : $erreurs\"\n", "acces.log": "192.0.2.10 2026-09-30T10:01:12 200 5120\n198.51.100.7 2026-09-30T10:01:15 404 512\n192.0.2.10 2026-09-30T10:02:03 200 2048\n203.0.113.44 2026-09-30T10:02:41 404 512\n198.51.100.7 2026-09-30T10:03:09 500 128\n192.0.2.25 2026-09-30T10:03:30 200 9216\n203.0.113.44 2026-09-30T10:04:02 404 512\n192.0.2.10 2026-09-30T10:04:58 301 0\n"}} expectedCommands={["bash stats.sh acces.log", "grep -c ' 404 ' acces.log", "bash -n stats.sh", "bash -x stats.sh acces.log 2> trace.txt", "bash stats.sh acces.log > resultat.txt"]} checks={[{"label": "trace.txt contient la trace des comparaisons", "path": "trace.txt", "expect": "file", "contains": "== 404 ]]"}, {"label": "read range la taille dans sa propre variable", "path": "stats.sh", "expect": "file", "contains": "code taille"}, {"label": "resultat.txt compte trois 404", "path": "resultat.txt", "expect": "file", "contains": "404 : 3"}]} hints={["grep -c compte les lignes qui contiennent le motif : il y a bien des 404.", "La trace s'écrit sur la sortie d'erreur : 2> trace.txt la range dans un fichier.", "Dans la trace, regarde la valeur comparée à 404 : elle contient deux nombres.", "read donne à sa dernière variable tout le reste de la ligne : il faut une variable de plus."]} />
+
+La trace montrait `[[ 404 512 == 404 ]]` : `code` contenait le code **et** la taille, parce que `read` donne à sa dernière variable tout ce qui reste. C'était écrit à la leçon sur les boucles ; c'est la trace qui l'a rendu visible en une seconde. Le script était syntaxiquement parfait, ShellCheck n'y aurait rien trouvé : seule l'exécution observée pouvait révéler ce bug.
+
+## les pièges
+
+- **Ignorer le numéro de ligne d'une erreur.** Il dit où regarder ; une erreur de syntaxe se situe souvent juste au-dessus.
+- **Croire qu'un `bash -n` silencieux prouve que le script est juste.** Il ne vérifie que la syntaxe.
+- **Chercher la trace dans la sortie standard.** Elle va sur la sortie d'erreur : `2> trace.txt`.
+- **Partager une trace sans la relire.** Elle contient les valeurs réelles, mots de passe compris.
+- **Faire taire ShellCheck pour tout le fichier.** On désactive un code sur une ligne, avec la raison.
+- **Tester directement en production.** Un dossier de test, une machine virtuelle, ou une simulation d'abord.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.shellcheck.net/" description="Coller un script et voir l'analyse en ligne, sans rien installer, en anglais">ShellCheck en ligne</ExternalLink>
+
+<ExternalLink href="https://www.shellcheck.net/wiki/" description="Une page par avertissement : le problème, un exemple, la correction, en anglais">Le wiki de ShellCheck</ExternalLink>
+
+<ExternalLink href="https://bats-core.readthedocs.io/" description="Un cadre de tests automatiques pour les scripts bash, en anglais">Documentation de bats-core</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que fait bash -n script.sh ?" options={["Il exécute le script sans afficher de sortie", "Il vérifie la syntaxe sans rien exécuter", "Il exécute le script pas à pas", "Il numérote les lignes"]} correct={1} explanation="Un if sans fi ou une guillemet non fermée sont signalés ; un script syntaxiquement correct peut rester faux." />
+  <Quiz id="q-2" question="Que montre bash -x ?" options={["Les erreurs seulement", "Chaque commande juste avant son exécution, après développement des variables", "Le code source du script", "Les processus lancés"]} correct={1} explanation="On y lit les vraies valeurs reçues par chaque commande : c'est là qu'on voit où un résultat devient faux." />
+  <Quiz id="q-3" question="Comment enregistrer la trace de bash -x dans un fichier ?" options={["bash -x script.sh > trace.txt", "bash -x script.sh 2> trace.txt", "bash -x trace.txt script.sh", "set -x > trace.txt"]} correct={1} explanation="La trace s'écrit sur la sortie d'erreur, le descripteur 2." />
+  <Quiz id="q-4" question="À quoi sert export PS4='+ ${BASH_SOURCE##*/}:${LINENO}: ' ?" options={["À changer l'invite du shell", "À préfixer chaque ligne de trace par le nom du script et le numéro de ligne", "À activer la trace", "À masquer les mots de passe"]} correct={1} explanation="PS4 est le préfixe des lignes de xtrace ; avec LINENO, la trace pointe la ligne exécutée." />
+  <Quiz id="q-5" question="Que signale l'avertissement SC2086 de ShellCheck ?" options={["Un cd non vérifié", "Une variable sans guillemets, exposée au découpage en mots et aux jokers", "Une variable inutilisée", "Une boucle sur ls"]} correct={1} explanation="C'est l'avertissement le plus fréquent : on l'évite avec des guillemets doubles." />
+  <Quiz id="q-6" question="Un avertissement de ShellCheck ne s'applique pas à une ligne précise. Que faire ?" options={["Désactiver ShellCheck pour tout le projet", "Ajouter # shellcheck disable=SCxxxx sur cette ligne, avec la raison", "Supprimer la ligne", "Ignorer tous les avertissements"]} correct={1} explanation="On fait taire un code précis, à un endroit précis, en expliquant pourquoi." />
+  <Quiz id="q-7" question="Pourquoi ne pas coller une trace bash -x dans un ticket sans la relire ?" options={["Parce qu'elle est trop longue", "Parce qu'elle affiche les valeurs réelles, y compris les mots de passe et les jetons", "Parce qu'elle est en anglais", "Parce qu'elle contient des couleurs"]} correct={1} explanation="La trace montre tout ce que le script manipule ; un secret y apparaît en clair." />
+</QuizGroup>
+
+## à retenir
+
+- Un message d'erreur donne **la ligne** : commence par là, et regarde juste au-dessus pour une erreur de syntaxe.
+- **`bash -n`** vérifie la syntaxe sans exécuter ; **`bash -x`** (ou **`set -x`** … **`set +x`**) montre chaque commande avec ses vraies valeurs, sur la sortie d'erreur.
+- **`PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '`** rend la trace lisible ; une trace se relit avant d'être partagée.
+- Des messages **`DEBUG`** activés par une variable d'environnement, sur `>&2`.
+- **ShellCheck** avant chaque mise en service : un code `SCxxxx` par problème, expliqué sur son wiki ; on ne le fait taire que ligne par ligne, avec la raison.
+- On **teste** sur des cas variés, dans un environnement jetable, jamais d'abord en production.

@@ -1,0 +1,197 @@
+---
+refCode: CL-LSN-02907-V01
+slug: linux-bilan-module-7
+title: "Bilan du module 7 : un script de sauvegarde fiable"
+description: "Le quiz du module Scripts Bash, puis un projet : écrire de bout en bout un script de sauvegarde avec des options, une archive horodatée, une rotation des anciennes copies, un journal et des codes de retour fiables, sans fichier temporaire abandonné, et le faire passer une série de onze tests automatiques sur un vrai Linux, avec une correction commentée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02053-V01"]
+---
+
+Le module 7 t'a fait passer de la commande tapée à la main au script qui tourne seul : le shebang et les arguments, les variables et les guillemets, les conditions, les boucles, les fonctions, la robustesse, les options, le débogage et la planification. Ce bilan vérifie les connaissances, puis te fait écrire **le** script que tout administrateur finit par écrire : une sauvegarde. Pas une sauvegarde de démonstration, une vraie, avec ses options, sa rotation, son journal et des codes de retour honnêtes, jugée par un banc de tests automatiques qui ne laisse rien passer.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- écrire un script bash complet, structuré en fonctions ;
+- accepter des options avec `getopts`, valider les entrées et respecter les codes de retour ;
+- manipuler des noms de fichiers sans jamais les abîmer, espaces comprises ;
+- rendre un script robuste : mode strict, fichiers temporaires nettoyés, échecs signalés ;
+- garder une trace de chaque exécution dans un journal ;
+- vérifier un script par des tests automatiques.
+
+## quiz
+
+Quatorze questions sur les neuf leçons du module.
+
+<QuizGroup>
+  <Quiz id="m7-q-1" question="Un script commence par #!/bin/sh et utilise [[ ]] et des tableaux. Que risque-t-il ?" options={["Rien", "De casser là où sh n'est pas bash, comme sur Debian où sh est dash", "D'être plus lent", "De ne pas pouvoir être rendu exécutable"]} correct={1} explanation="Si l'on écrit du bash, on déclare #!/bin/bash." />
+  <Quiz id="m7-q-2" question="Comment transmettre à une autre commande tous les arguments d'un script, sans en abîmer aucun ?" options={["$*", "\"$@\"", "$@", "$#"]} correct={1} explanation="Entre guillemets, $@ garde chaque argument intact, espaces comprises." />
+  <Quiz id="m7-q-3" question="Avec f='Rapport 2026.pdf', que reçoit rm dans rm $f ?" options={["Un argument", "Deux arguments, Rapport et 2026.pdf", "Aucun", "Une erreur de syntaxe"]} correct={1} explanation="Sans guillemets, bash découpe le résultat en mots : une variable s'écrit toujours entre guillemets." />
+  <Quiz id="m7-q-4" question="Que donne ${chemin##*/} avec chemin=/srv/sauvegardes/donnees.tar.gz ?" options={["/srv/sauvegardes", "donnees.tar.gz", "donnees", "gz"]} correct={1} explanation="## retire le plus long préfixe finissant par / : il reste le nom, comme avec basename." />
+  <Quiz id="m7-q-5" question="Que fait [ $n > 100 ] ?" options={["Il compare n à 100", "Il redirige vers un fichier nommé 100 et rend presque toujours vrai", "Il provoque une erreur", "Il rend toujours faux"]} correct={1} explanation="Dans [ ], > est une redirection. On compare des nombres avec -gt ou (( n > 100 ))." />
+  <Quiz id="m7-q-6" question="Quelle est la bonne façon de lire un fichier ligne à ligne ?" options={["for l in $(cat f)", "while IFS= read -r l; do ...; done < f", "cat f | for l", "read f"]} correct={1} explanation="for sur $(cat) parcourt des mots, pas des lignes." />
+  <Quiz id="m7-q-7" question="Pourquoi déclarer local les variables d'une fonction ?" options={["Pour qu'elles soient plus rapides", "Parce que sans local elles sont globales, et écrasent celles de l'appelant", "Parce que bash l'exige", "Pour les exporter"]} correct={1} explanation="Le bug classique : une variable de boucle de même nom dans la fonction et dans son appelant." />
+  <Quiz id="m7-q-8" question="Une fonction doit renvoyer un chemin de fichier à son appelant. Comment ?" options={["Avec return", "En l'affichant, et l'appelant le capture avec $( )", "Avec exit", "Avec export"]} correct={1} explanation="return ne rend qu'un code de 0 à 255 ; les données passent par la sortie." />
+  <Quiz id="m7-q-9" question="Que garantit set -o pipefail ?" options={["Que les tubes sont plus rapides", "Qu'un tube échoue si l'une de ses commandes échoue, pas seulement la dernière", "Que les tubes ne s'exécutent pas", "Que les erreurs sont cachées"]} correct={1} explanation="Sans lui, tar | gzip réussit dès que gzip réussit, même si tar a échoué." />
+  <Quiz id="m7-q-10" question="Où poser le trap EXIT qui supprime un fichier temporaire ?" options={["À la fin du script", "Juste après la création du fichier temporaire", "Avant le shebang", "Dans chaque fonction"]} correct={1} explanation="Posé plus tard, il ne couvre pas une erreur survenue entre-temps." />
+  <Quiz id="m7-q-11" question="Quel code de retour rend, par convention, un script appelé avec une option inconnue ?" options={["0", "2", "1", "127"]} correct={1} explanation="0 succès, 1 échec, 2 mauvaise utilisation." />
+  <Quiz id="m7-q-12" question="Un script affiche un total faux, sans aucune erreur. Quel outil montre les vraies valeurs de chaque commande ?" options={["bash -n", "bash -x", "shellcheck", "crontab -l"]} correct={1} explanation="bash -n vérifie la syntaxe, ShellCheck relit le code ; seule la trace montre l'exécution réelle." />
+  <Quiz id="m7-q-13" question="Une tâche cron écrit dans un fichier désigné par un chemin relatif. Où atterrit-il ?" options={["Dans le dossier du script", "Dans le répertoire personnel du compte", "Dans /var/log", "Nulle part"]} correct={1} explanation="Le dossier courant d'une tâche cron est le répertoire personnel : chemins absolus partout." />
+  <Quiz id="m7-q-14" question="Quel avantage a un minuteur systemd sur une ligne de crontab ?" options={["Il n'en a aucun", "Il est plus court à écrire", "La sortie de la tâche va dans le journal, et une exécution manquée peut être rattrapée", "Il fonctionne sur tous les Unix"]} correct={2} explanation="journalctl -u garde la sortie, Persistent=true rattrape ; en échange, il faut deux fichiers, et systemd." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. Les scripts reviennent dans tous les modules suivants : services, stockage, réseau et durcissement.
+
+## projet
+
+### la situation
+
+Les données d'une petite équipe vivent dans un dossier, `donnees`. Il n'existe aucune sauvegarde. On te demande un script, `sauvegarde.sh`, qui sera planifié chaque nuit et que tes collègues lanceront aussi à la main. Il doit être fiable : si quelque chose échoue, il doit le dire, par son code de retour et dans son journal, et ne rien laisser traîner.
+
+Le dossier de travail du terminal ci-dessous contient `donnees`, dont un fichier au nom piégeux, `compte rendu.txt`, et un banc de tests, **`tests.sh`**, qui vérifie onze comportements de ton script. Écris `sauvegarde.sh` dans ce même dossier, avec `vi`, ou dans ton éditeur habituel puis colle-le dans un here-document : `cat > sauvegarde.sh << 'FIN'`, le script, puis `FIN`.
+
+### le cahier des charges
+
+```text
+Usage : sauvegarde.sh [-d DESTINATION] [-n NOMBRE] [-h] SOURCE
+```
+
+1. **L'archive.** Le script archive le dossier `SOURCE` dans `DESTINATION/NOM-AAAAMMJJ-HHMMSS.tar.gz`, où `NOM` est le nom du dossier source : `donnees-20261001-023000.tar.gz`. Le `tar` de ce petit Linux n'a pas `-z` : on passe par un tube vers `gzip`.
+2. **Les options.** `-d` choisit la destination (par défaut `./sauvegardes`, créée si besoin), `-n` le nombre d'archives à garder (par défaut 5, un entier d'au moins 1), `-h` affiche l'aide.
+3. **La rotation.** Après une sauvegarde réussie, seules les `NOMBRE` archives les plus récentes **de cette source** restent dans la destination. Les archives d'autres sources n'y sont jamais touchées.
+4. **Le journal.** Chaque exécution ajoute au moins une ligne à `DESTINATION/sauvegarde.log`, avec la date, l'heure et `OK` ou `ERREUR` : `2026-10-01 02:30:00 OK donnees-20261001-023000.tar.gz créée`.
+5. **Les codes de retour.** 0 en cas de succès ; 1 en cas d'échec, par exemple une source introuvable ou une destination impossible à créer, avec un message sur la sortie d'erreur et une ligne `ERREUR` au journal quand la destination existe ; 2 en cas de mauvaise utilisation (option inconnue, valeur invalide, source absente de la ligne de commande), avec l'aide sur la sortie d'erreur.
+6. **La propreté.** Aucun fichier temporaire ne reste, ni dans `/tmp` ni dans la destination, même après un échec.
+
+### les critères de réussite
+
+Lance `bash tests.sh` aussi souvent que tu veux : il essaie ton script dans des dossiers temporaires, sans toucher à `donnees`, et affiche chaque cas réussi ou échoué.
+
+| Test | Ce qu'il vérifie |
+| --- | --- |
+| aide | `-h` affiche l'aide et rend 0 |
+| sans argument | rend 2 |
+| option inconnue | `-z` rend 2 |
+| nombre invalide | `-n abc` rend 2 |
+| source absente | rend 1 et écrit `ERREUR` au journal |
+| archive | une archive au bon nom, qui contient `compte rendu.txt`, et `OK` au journal |
+| rotation | avec `-n 3`, trois archives de la source restent, les plus récentes, et celle d'une autre source est intacte |
+| destination par défaut | sans `-d`, l'archive va dans `./sauvegardes` |
+| destination impossible | une destination qui est un fichier rend 1 |
+| panne de tar | avec un faux `tar` en panne placé en tête du `PATH` : le script rend 1, écrit `ERREUR` au journal, et ne laisse aucune archive |
+| rien ne traîne | ni `/tmp` ni la destination ne gardent de fichier temporaire, même après une panne |
+
+Le projet est réussi quand `bash tests.sh | tee resultats.txt` affiche `Tests réussis : 11/11`.
+
+<LinuxTerminal title="Projet : la sauvegarde" height={480} files={{"tests.sh": "#!/bin/bash\n# tests.sh : vérifie sauvegarde.sh sur onze cas, dans des dossiers temporaires.\n# Usage : bash tests.sh\nICI=$(cd \"$(dirname \"$0\")\" && pwd)\nSCRIPT=\"$ICI/sauvegarde.sh\"\nT=$(mktemp -d)\ntrap 'rm -rf \"$T\"' EXIT\nreussis=0\ntotal=0\n\n# verifier DESCRIPTION FONCTION : lance un cas, et compte s'il réussit.\nverifier() {\n  total=$(( total + 1 ))\n  if \"$2\" > /dev/null 2>&1; then\n    reussis=$(( reussis + 1 ))\n    echo \"réussi : $1\"\n  else\n    echo \"ÉCHEC  : $1\"\n  fi\n}\n\nif [[ ! -f $SCRIPT ]]; then\n  echo \"sauvegarde.sh est introuvable dans $ICI : écris-le d'abord.\"\n  exit 1\nfi\n\nt_aide() {\n  local sortie\n  sortie=$(bash \"$SCRIPT\" -h) && [[ $sortie == *Usage* ]]\n}\nt_sans_argument() {\n  bash \"$SCRIPT\"\n  (( $? == 2 ))\n}\nt_option_inconnue() {\n  bash \"$SCRIPT\" -z \"$ICI/donnees\"\n  (( $? == 2 ))\n}\nt_nombre_invalide() {\n  bash \"$SCRIPT\" -n abc -d \"$T/invalide\" \"$ICI/donnees\"\n  (( $? == 2 ))\n}\nt_source_absente() {\n  bash \"$SCRIPT\" -d \"$T/absente\" \"$ICI/nexistepas\"\n  (( $? == 1 )) && grep -q ERREUR \"$T/absente/sauvegarde.log\"\n}\nt_archive() {\n  bash \"$SCRIPT\" -d \"$T/dest\" \"$ICI/donnees\" || return 1\n  local archives=(\"$T\"/dest/donnees-*.tar.gz)\n  (( ${#archives[@]} == 1 )) && [[ -f ${archives[0]} ]] || return 1\n  [[ ${archives[0]##*/} =~ ^donnees-[0-9]{8}-[0-9]{6}\\.tar\\.gz$ ]] || return 1\n  gunzip -c \"${archives[0]}\" | tar -tf - | grep -q \"compte rendu.txt\" || return 1\n  grep -q \" OK \" \"$T/dest/sauvegarde.log\"\n}\nt_rotation() {\n  mkdir -p \"$T/rot\"\n  local jour\n  for jour in 01 02 03 04; do\n    touch \"$T/rot/donnees-202609$jour-020000.tar.gz\"\n  done\n  touch \"$T/rot/autre-20260901-020000.tar.gz\"\n  bash \"$SCRIPT\" -n 3 -d \"$T/rot\" \"$ICI/donnees\" || return 1\n  local restantes=(\"$T\"/rot/donnees-*.tar.gz)\n  (( ${#restantes[@]} == 3 )) \\\n    && [[ -e $T/rot/donnees-20260904-020000.tar.gz ]] \\\n    && [[ ! -e $T/rot/donnees-20260902-020000.tar.gz ]] \\\n    && [[ -e $T/rot/autre-20260901-020000.tar.gz ]]\n}\nt_destination_par_defaut() {\n  mkdir -p \"$T/travail\"\n  (cd \"$T/travail\" && bash \"$SCRIPT\" \"$ICI/donnees\") || return 1\n  local archives=(\"$T\"/travail/sauvegardes/donnees-*.tar.gz)\n  [[ -f ${archives[0]} ]]\n}\nt_destination_impossible() {\n  touch \"$T/fichier\"\n  bash \"$SCRIPT\" -d \"$T/fichier\" \"$ICI/donnees\"\n  (( $? == 1 ))\n}\n# Un faux tar, toujours en panne, placé en tête du PATH par les deux derniers cas.\nmkdir -p \"$T/faux\"\ncat > \"$T/faux/tar\" << 'FIN'\n#!/bin/sh\necho \"tar : panne simulée\" >&2\nexit 2\nFIN\nchmod 755 \"$T/faux/tar\"\nt_panne_de_tar() {\n  PATH=\"$T/faux:$PATH\" bash \"$SCRIPT\" -d \"$T/panne\" \"$ICI/donnees\"\n  (( $? == 1 )) || return 1\n  grep -q ERREUR \"$T/panne/sauvegarde.log\" || return 1\n  ! ls -A \"$T/panne\" | grep -q '\\.tar\\.gz'\n}\nt_rien_ne_traine() {\n  local avant apres\n  avant=$(ls -A /tmp | wc -l)\n  bash \"$SCRIPT\" -d \"$T/propre\" \"$ICI/donnees\"\n  bash \"$SCRIPT\" -d \"$T/propre\" \"$ICI/nexistepas\"\n  PATH=\"$T/faux:$PATH\" bash \"$SCRIPT\" -d \"$T/propre\" \"$ICI/donnees\"\n  apres=$(ls -A /tmp | wc -l)\n  (( avant == apres )) || return 1\n  ! ls -A \"$T/propre\" | grep -v -e '\\.tar\\.gz$' -e '^sauvegarde\\.log$' | grep -q .\n}\n\nverifier \"aide : -h affiche l'aide et rend 0\" t_aide\nverifier \"sans argument : rend 2\" t_sans_argument\nverifier \"option inconnue : -z rend 2\" t_option_inconnue\nverifier \"nombre invalide : -n abc rend 2\" t_nombre_invalide\nverifier \"source absente : rend 1 et écrit ERREUR au journal\" t_source_absente\nverifier \"archive : bon nom, compte rendu.txt dedans, OK au journal\" t_archive\nverifier \"rotation : -n 3 garde les trois plus récentes, et rien d'une autre source\" t_rotation\nverifier \"destination par défaut : ./sauvegardes\" t_destination_par_defaut\nverifier \"destination impossible : rend 1\" t_destination_impossible\nverifier \"panne de tar : rend 1, ERREUR au journal, et aucune archive\" t_panne_de_tar\nverifier \"rien ne traîne : ni dans /tmp, ni dans la destination, même après une panne\" t_rien_ne_traine\necho\necho \"Tests réussis : $reussis/$total\"\n", "donnees/clients.txt": "Martin;Lyon;client depuis 2019\nDurand;Nantes;client depuis 2022\nPetit;Lille;client depuis 2024\n", "donnees/compte rendu.txt": "Réunion du 29 septembre : valider la sauvegarde nocturne avant la fin du mois.\n", "donnees/factures/2026-09.txt": "F-2026-0412;Martin;1250\nF-2026-0413;Petit;380\nF-2026-0414;Durand;910\n"}} expectedCommands={["bash tests.sh | tee resultats.txt"]} checks={[{"label": "sauvegarde.sh déclare bash", "path": "sauvegarde.sh", "expect": "file", "contains": "#!/bin/bash"}, {"label": "Les onze tests passent", "path": "resultats.txt", "expect": "file", "contains": "Tests réussis : 11/11"}]} hints={["Commence par l'en-tête, set -euo pipefail, et la boucle getopts : les quatre premiers tests ne demandent que cela.", "Le nom de l'archive : \"$destination/$nom-$(date +%Y%m%d-%H%M%S).tar.gz\", avec nom=$(basename \"$source_dir\").", "Sans tar -z : tar -cf - -C \"$(dirname \"$source_dir\")\" \"$nom\" | gzip > fichier.", "Crée la destination avant de vérifier la source : l'erreur doit pouvoir s'écrire dans le journal.", "Pour la rotation : printf '%s\n' \"$destination/$nom\"-*.tar.gz | sort -r | tail -n +$(( garder + 1 )) donne les archives en trop.", "Un test échoue ? Lance la même commande à la main, avec bash -x, dans un dossier de test."]} />
+
+### la correction commentée
+
+À lire après avoir essayé. Voici une solution complète, puis ses choix expliqués.
+
+```bash
+#!/bin/bash
+# sauvegarde.sh : archive un dossier en .tar.gz horodaté, garde les N plus récentes,
+# et note chaque exécution dans DESTINATION/sauvegarde.log.
+# Usage : sauvegarde.sh [-d DESTINATION] [-n NOMBRE] [-h] SOURCE
+# Codes de retour : 0 succès, 1 échec, 2 mauvaise utilisation.
+set -euo pipefail
+
+usage() {
+  cat << FIN
+Usage : $(basename "$0") [-d DESTINATION] [-n NOMBRE] [-h] SOURCE
+  -d DESTINATION  dossier des archives (défaut : ./sauvegardes)
+  -n NOMBRE       nombre d'archives à garder (défaut : 5)
+  -h              affiche cette aide
+FIN
+}
+
+# journal OK|ERREUR MESSAGE : une ligne horodatée dans le journal de la destination.
+journal() {
+  printf '%s %s %s\n' "$(date '+%F %T')" "$1" "$2" >> "$destination/sauvegarde.log"
+}
+
+# echouer MESSAGE : signale l'échec partout où il doit l'être, puis sort avec 1.
+echouer() {
+  echo "ERREUR : $1" >&2
+  journal ERREUR "$1"
+  exit 1
+}
+
+destination=./sauvegardes
+garder=5
+while getopts ":d:n:h" opt; do
+  case "$opt" in
+    d)  destination=$OPTARG ;;
+    n)  garder=$OPTARG ;;
+    h)  usage; exit 0 ;;
+    :)  echo "L'option -$OPTARG attend une valeur." >&2; usage >&2; exit 2 ;;
+    \?) echo "Option inconnue : -$OPTARG" >&2; usage >&2; exit 2 ;;
+  esac
+done
+shift $(( OPTIND - 1 ))
+if (( $# != 1 )); then
+  usage >&2
+  exit 2
+fi
+if [[ ! $garder =~ ^[0-9]+$ ]] || (( garder < 1 )); then
+  echo "-n attend un nombre entier d'au moins 1, pas « $garder »." >&2
+  exit 2
+fi
+
+source_dir=${1%/}
+nom=$(basename "$source_dir")
+mkdir -p "$destination" || exit 1
+[[ -d $source_dir ]] || echouer "source introuvable : $source_dir"
+
+archive="$destination/$nom-$(date +%Y%m%d-%H%M%S).tar.gz"
+temporaire=$(mktemp)
+trap 'rm -f "$temporaire"' EXIT
+tar -cf - -C "$(dirname "$source_dir")" "$nom" | gzip > "$temporaire" \
+  || echouer "échec de l'archivage de $source_dir"
+mv "$temporaire" "$archive"
+journal OK "$(basename "$archive") créée"
+
+# Rotation : les noms portent la date, l'ordre alphabétique est l'ordre chronologique.
+mapfile -t anciennes < <(printf '%s\n' "$destination/$nom"-*.tar.gz | sort -r | tail -n +$(( garder + 1 )))
+if (( ${#anciennes[@]} > 0 )); then
+  rm -- "${anciennes[@]}"
+  journal OK "${#anciennes[@]} ancienne(s) archive(s) supprimée(s)"
+fi
+```
+
+**La structure.** Le mode strict en tête, puis les fonctions, puis la lecture des options, puis le travail. Les trois fonctions évitent de répéter le même code : `journal` écrit une ligne, `echouer` fait les trois gestes d'un échec (message, journal, code 1), `usage` sert à `-h` comme aux erreurs d'utilisation. L'en-tête documente l'usage et les codes de retour, ce que les tests vérifient justement.
+
+**Les options.** `getopts ":d:n:h"` : `-d` et `-n` attendent une valeur, le `:` de tête laisse le script gérer les erreurs, avec le code 2 et l'aide sur la sortie d'erreur. Après `shift`, il doit rester exactement un argument. La valeur de `-n` est validée par une expression régulière **avant** tout calcul : `-n abc` serait sinon devenu 0, puis une rotation qui supprime tout.
+
+**Les noms.** Toutes les variables sont entre guillemets, ce qui fait passer `compte rendu.txt` sans encombre. `${1%/}` retire une éventuelle barre oblique finale (`donnees/` donnerait sinon un nom vide), `basename` et `dirname` découpent le chemin, et `tar -C` archive le dossier sous son seul nom, sans le chemin complet.
+
+**L'ordre des vérifications.** La destination est créée **avant** de vérifier la source, pour que l'erreur « source introuvable » puisse être écrite dans son journal. Si la destination ne peut pas être créée, `mkdir` affiche sa propre erreur et le script sort avec 1 : il n'y a pas de journal où écrire.
+
+**L'archive.** Elle est d'abord écrite dans un fichier temporaire créé par `mktemp`, puis déplacée à son nom définitif seulement si tout a réussi. Ainsi, une archive à moitié écrite ne porte jamais le nom d'une vraie sauvegarde. Le `trap ... EXIT`, posé juste après `mktemp`, supprime le temporaire si le script s'arrête en route. Grâce à `pipefail`, un `tar` qui échoue fait échouer le tube, même si `gzip` réussit : c'est ce que vérifie le cas « panne de tar ». Sans `pipefail`, le tube aurait réussi, et le script aurait rangé sous un vrai nom une archive vide, en écrivant `OK` au journal.
+
+**La rotation.** Elle ne s'exécute qu'**après** une sauvegarde réussie : un script qui supprime les anciennes copies alors que la nouvelle a échoué peut finir par ne plus rien garder du tout. Le motif `"$destination/$nom"-*.tar.gz` ne vise que les archives de cette source. Les noms portant la date au format `AAAAMMJJ-HHMMSS`, le tri alphabétique inverse range les plus récentes en tête, et `tail -n +$(( garder + 1 ))` donne celles qui sont en trop. `mapfile` les range dans un tableau, et `rm -- "${anciennes[@]}"` les supprime sans risque, même avec des noms étranges.
+
+**Le code de retour.** Sous `set -e`, le script s'arrête à la première erreur non traitée, avec un code non nul ; arrivé au bout, il rend 0. Il ne peut donc plus annoncer un succès qu'il n'a pas obtenu, ce qui était le défaut de la sauvegarde de la leçon sur la robustesse.
+
+### pour aller plus loin
+
+Trois améliorations, dans l'ordre où un vrai service les demanderait :
+
+- **un verrou** : enveloppe le travail dans `flock -n` sur `/run/lock/sauvegarde.lock`, pour que deux exécutions ne se chevauchent jamais ;
+- **une vérification de l'archive** : après le `mv`, relis-la avec `gunzip -t`, et calcule son empreinte avec `sha256sum` dans un fichier à côté, pour détecter plus tard une archive abîmée ;
+- **la planification** : sur un serveur, installe le script dans `/usr/local/bin` en `755`, propriété de root, puis planifie-le, avec une ligne de crontab qui redirige sa sortie, ou avec un minuteur systemd `Persistent=true`. Et une sauvegarde n'existe vraiment que le jour où l'on a réussi à la **restaurer** : fais l'essai.
+
+## à retenir
+
+- Un script fiable commence par **`set -euo pipefail`**, documente son **usage** et ses **codes de retour**, et se découpe en **fonctions**.
+- Les entrées se **valident** avant usage, les options se lisent avec **`getopts`**, une mauvaise utilisation rend **2**.
+- Des **guillemets** partout : les noms de fichiers ne sont jamais aussi sages qu'on le croit.
+- On écrit dans un **temporaire** (`mktemp`, nettoyé par `trap ... EXIT`), puis on le déplace : jamais d'archive à moitié écrite sous un vrai nom.
+- On ne **supprime** les anciennes copies qu'**après** une sauvegarde réussie.
+- Chaque exécution laisse une trace dans un **journal**, et un banc de **tests** vérifie les cas difficiles avant la mise en service.
+- Le module 8 passe aux **services** : systemd, ses unités et ses journaux, pour faire tourner proprement ce que tu sais maintenant écrire.
