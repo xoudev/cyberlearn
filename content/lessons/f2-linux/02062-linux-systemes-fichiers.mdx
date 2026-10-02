@@ -1,0 +1,186 @@
+---
+refCode: CL-LSN-02062-V01
+slug: linux-systemes-fichiers
+title: "Les systèmes de fichiers : ext4, XFS, Btrfs"
+description: "Ce qu'un système de fichiers ajoute à une partition : le superbloc, les inodes, les blocs et le journal. Choisir entre ext4, XFS et Btrfs, et savoir où servent vfat et tmpfs. Créer un système de fichiers avec mkfs, lui donner une étiquette, l'inspecter avec blkid et tune2fs, le vérifier et le réparer avec fsck sans l'abîmer, l'agrandir, et comprendre pourquoi un disque peut être plein sans manquer de place. Avec un système de fichiers créé dans une image, dont on lit puis efface la signature, sur un vrai Linux, puis un nouveau disque à formater sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02061-V01"]
+---
+
+Une partition n'est qu'une suite d'octets, du premier au dernier secteur. Pour y ranger des fichiers avec leurs noms, leurs dossiers, leurs droits et leurs dates, il faut une organisation : un **système de fichiers**. C'est lui qui sait où commence chaque fichier, quels blocs sont libres, et comment retrouver ses esprits après une coupure de courant. Linux en propose plusieurs, et le choix n'est pas anodin : certains ne savent pas rétrécir, d'autres savent prendre des instantanés ou détecter une corruption silencieuse. Cette leçon t'apprend à choisir, créer, inspecter et réparer.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce que sont le superbloc, les inodes, les blocs et le journal ;
+- choisir entre ext4, XFS et Btrfs, et reconnaître vfat, swap et tmpfs ;
+- créer un système de fichiers avec `mkfs`, avec une étiquette ;
+- l'inspecter avec `blkid`, `tune2fs` et `df` ;
+- le vérifier et le réparer avec `fsck`, sans l'abîmer davantage ;
+- reconnaître un disque plein faute d'inodes.
+
+## pourquoi ça compte
+
+Le système de fichiers garde l'intégrité des données. Un mauvais réflexe, comme lancer `fsck` sur un système monté, peut transformer une petite incohérence en perte de fichiers. À l'inverse, savoir qu'un système de fichiers garde des copies de son superbloc, ou que des données « supprimées » restent souvent lisibles sur le disque, change la façon d'envisager une récupération, une enquête ou la mise au rebut d'un disque. C'est l'un des enseignements de l'exercice : effacer la signature d'un système de fichiers ne détruit pas ce qu'il contenait.
+
+## ce qu'il y a dans un système de fichiers
+
+Les systèmes de fichiers Unix partagent la même architecture :
+
+- le **superbloc**, au début, décrit l'ensemble : la taille, le nombre de blocs et d'inodes, l'état (propre ou à vérifier), l'étiquette et l'UUID. Il est si important qu'ext4 en garde des **copies de secours** à plusieurs endroits du disque ;
+- les **inodes**, un par fichier, contiennent tout sauf le nom : propriétaire, droits, taille, dates, et l'emplacement des données. Tu les as croisés avec les liens physiques au module 2 ;
+- les **blocs de données** contiennent le contenu des fichiers ; un dossier n'est qu'un fichier spécial, la liste des noms et des numéros d'inodes ;
+- le **journal** note les modifications avant de les appliquer. Après une coupure de courant, le système relit le journal et termine ou annule les opérations en cours, au lieu de vérifier tout le disque. C'est ce qui rend le redémarrage rapide et le système cohérent.
+
+Chaque système de fichiers commence aussi par une **signature**, quelques octets à un endroit précis, qui disent « je suis un ext4 » ou « je suis un XFS ». C'est en les lisant que `blkid` ou `mount` reconnaissent le type sans qu'on le leur dise.
+
+## lequel choisir
+
+| Système | Points forts | Limites | On le trouve |
+| --- | --- | --- | --- |
+| **ext4** | robuste, éprouvé, outils mûrs, peut rétrécir (démonté) | moins performant sur de très gros volumes | par défaut sur Debian et Ubuntu |
+| **XFS** | très performant sur gros fichiers et en parallèle, s'agrandit à chaud | **ne peut pas rétrécir** | par défaut sur Red Hat |
+| **Btrfs** | copie sur écriture, **instantanés**, sommes de contrôle, compression, sous-volumes | plus complexe ; ses modes RAID 5 et 6 restent déconseillés | par défaut sur openSUSE et Fedora |
+| **vfat**, **exFAT** | lisibles partout, Windows et macOS compris | pas de droits Unix, pas de journal | clés USB, partition EFI |
+| **swap** | espace d'échange de la mémoire | ce n'est pas un système de fichiers pour des fichiers | une partition ou un fichier |
+| **tmpfs** | en mémoire, très rapide | perdu au redémarrage | `/run`, souvent `/tmp` |
+
+Pour un serveur sans besoin particulier, **ext4** est le choix sûr. XFS s'impose pour de gros volumes de données, à condition de ne jamais vouloir les réduire. Btrfs apporte des fonctions précieuses, dont les instantanés vus dans la leçon sur les sauvegardes, au prix d'un peu plus de complexité. Sa grande force est la **somme de contrôle** de chaque bloc : il détecte une donnée corrompue par le disque lui-même, ce que ext4 et XFS ne voient pas.
+
+## créer un système de fichiers
+
+```bash
+sudo mkfs.ext4 -L donnees /dev/sdb1      # ext4, avec l'étiquette donnees
+sudo mkfs.xfs -L archives /dev/sdc1      # XFS
+sudo mkfs.btrfs -L photos /dev/sdd1      # Btrfs
+sudo mkswap -L echange /dev/sdb2         # un espace d'échange
+sudo swapon /dev/sdb2                    # et l'activer
+```
+
+`mkfs` **efface** tout ce que la partition semblait contenir, sans demander de confirmation dans la plupart des cas : on vérifie trois fois le nom avec `lsblk`. L'**étiquette** (`-L`) est un nom lisible, et chaque système de fichiers reçoit aussi un **UUID** unique, que l'on utilisera pour le monter.
+
+Sur ext4, une option compte sur les gros disques : par défaut, **5 % des blocs sont réservés à root**, pour que le système puisse encore écrire ses journaux quand un utilisateur a tout rempli. Sur un disque de données de 4 To, cela fait 200 Go réservés pour rien : `sudo tune2fs -m 1 /dev/sdb1` ramène la réserve à 1 %.
+
+## inspecter
+
+```bash
+lsblk -f                         # type, étiquette, UUID, place libre
+sudo blkid /dev/sdb1             # type, étiquette et UUID d'une partition
+df -hT                           # place utilisée, avec le type de chaque système monté
+df -i                            # les inodes utilisés et libres
+sudo tune2fs -l /dev/sdb1        # toutes les caractéristiques d'un ext4
+xfs_info /srv/archives           # celles d'un XFS monté
+```
+
+`df -i` répond à un mystère classique : `No space left on device`, alors que `df -h` montre de la place libre. Le système de fichiers n'a plus d'**inodes** : leur nombre est fixé à la création, et des millions de tout petits fichiers, comme des sessions PHP jamais nettoyées ou une file de messages bloquée, peuvent les épuiser avant les blocs. La solution est de supprimer ces fichiers, et à la prochaine création, de prévoir plus d'inodes avec `mkfs.ext4 -i`.
+
+## vérifier et réparer : fsck
+
+**`fsck`** (*file system check*) vérifie la cohérence d'un système de fichiers et répare ce qu'il peut. Il appelle l'outil propre à chaque type : `e2fsck` pour ext4, `xfs_repair` pour XFS. Une règle passe avant toutes les autres : **jamais sur un système de fichiers monté** en écriture. `fsck` modifierait des structures que le noyau est en train d'utiliser, et la réparation deviendrait une destruction.
+
+```bash
+sudo umount /srv/donnees
+sudo e2fsck -n /dev/sdb1      # vérifier sans rien modifier
+sudo e2fsck -f /dev/sdb1      # forcer une vérification complète, et réparer
+```
+
+`-n` répond « non » à toutes les questions : un diagnostic sans risque. Pour la racine, qu'on ne peut pas démonter, la vérification se fait au démarrage, selon le dernier champ de sa ligne dans `/etc/fstab`, ou depuis un système de secours. Si le superbloc principal est abîmé, `e2fsck -b 32768` repart d'une de ses copies de secours, dont `mkfs` affiche la liste à la création. Avant toute réparation importante d'un disque qui contient des données précieuses, on en fait d'abord une **image** complète avec `dd` ou `ddrescue` : on répare la copie, pas l'original.
+
+## les attributs : immuable et ajout seul
+
+Les systèmes de fichiers ext4 et XFS connaissent des **attributs**, qui s'ajoutent aux droits Unix et que même root doit retirer avant d'agir. `lsattr` les affiche, `chattr` les change. Deux d'entre eux servent la sécurité :
+
+```bash
+sudo chattr +i /etc/resolv.conf     # immuable : ni modification, ni suppression, ni renommage
+sudo chattr +a /var/log/audit.log   # ajout seul : on peut écrire à la fin, jamais réécrire ni effacer
+lsattr /etc/resolv.conf
+```
+
+L'attribut `a` est précieux pour un journal : un programme compromis peut y ajouter des lignes, mais pas effacer celles qui le trahissent. Un attaquant devenu root peut retirer l'attribut, bien sûr, mais c'est un geste de plus, et un signal que les outils de détection savent repérer. À l'inverse, un fichier système que l'on n'arrive pas à modifier, même en root, a peut-être été rendu immuable par un attaquant pour protéger sa porte dérobée : `lsattr` le révèle.
+
+## agrandir
+
+```bash
+sudo resize2fs /dev/sdb1          # ext4 : occuper toute la partition, même monté
+sudo xfs_growfs /srv/archives     # XFS : s'agrandit monté, par son point de montage
+```
+
+On agrandit d'abord la partition, ou le volume LVM, puis le système de fichiers. Rétrécir un ext4 demande de le démonter, et XFS ne le permet pas du tout : on prévoit donc les tailles, ou on utilise LVM, sujet d'une prochaine leçon.
+
+<Diagram caption="Du disque au fichier">
+flowchart LR
+  A["disque /dev/sdb"] --> B["partition /dev/sdb1"]
+  B --> C["signature et superbloc"]
+  C --> D["inodes : droits, dates, emplacement"]
+  C --> E["blocs de données"]
+  C --> F["journal"]
+  D --> E
+</Diagram>
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas de vrai disque, mais ses outils savent créer un système de fichiers dans un **fichier image**. Son `mke2fs` crée de l'**ext2**, l'ancêtre d'ext4 sans journal : la même architecture, le même superbloc, la même signature.
+
+1. fabrique une image de 4 Mo : `dd if=/dev/zero of=donnees.img bs=64k count=64` ;
+2. crée un système de fichiers dedans, avec une étiquette : `mke2fs -F -L DONNEES donnees.img`. Sans `-F`, `mke2fs` refuse, car un fichier n'est pas un vrai disque. Lis ce qu'il annonce : les blocs, les inodes, les groupes ;
+3. demande à `blkid` ce qu'il reconnaît : `blkid donnees.img > blkid.txt`, puis `cat blkid.txt` ;
+4. lis la **signature** elle-même, deux octets placés à 1 080 octets du début : `xxd -s 1080 -l 2 donnees.img > signature.txt`, puis `cat signature.txt`. Tu dois voir `53ef`, le nombre magique `EF53` des systèmes ext, écrit à l'envers comme le veut le processeur ;
+5. efface les deux premiers kilo-octets de l'image, où se trouve le superbloc : `dd if=/dev/zero of=donnees.img bs=1024 count=2 conv=notrunc` ;
+6. redemande à `blkid` : `blkid donnees.img`. Il ne reconnaît plus rien.
+
+<LinuxTerminal title="Un système de fichiers dans une image" expectedCommands={["dd if=/dev/zero of=donnees.img bs=64k count=64", "mke2fs -F -L DONNEES donnees.img", "blkid donnees.img > blkid.txt", "xxd -s 1080 -l 2 donnees.img > signature.txt", "dd if=/dev/zero of=donnees.img bs=1024 count=2 conv=notrunc", "blkid donnees.img"]} checks={[{"label": "blkid a reconnu l'étiquette", "path": "blkid.txt", "expect": "file", "contains": "LABEL=\"DONNEES\""}, {"label": "La signature EF53 est relevée", "path": "signature.txt", "expect": "file", "contains": "53ef"}]} hints={["mke2fs travaille sur un fichier comme sur une partition, avec -F pour forcer.", "xxd -s choisit le décalage de départ, -l le nombre d'octets à afficher.", "conv=notrunc écrit par-dessus le début de l'image sans raccourcir le fichier.", "Après l'effacement, blkid ne répond plus rien : la signature a disparu."]} />
+
+Le reste de l'image, les inodes, les blocs, n'a pas été touché : seule la signature et le superbloc ont disparu. C'est ce que fait la commande `wipefs` sur un vrai disque, et c'est pour cela qu'un disque « formaté » n'est pas un disque effacé : les données sont toujours là, et des outils de récupération les retrouvent. Avant de donner, vendre ou jeter un disque, on l'efface entièrement, ou mieux, on l'a **chiffré** dès le départ, comme le montre la leçon sur LUKS. Sur un ext4, `e2fsck -b` aurait même pu reconstruire le superbloc à partir d'une de ses copies.
+
+Ensuite, le nouveau SSD du serveur Debian de la leçon précédente, dans un terminal simulé. Sa partition `sdb1` attend un système de fichiers :
+
+1. crée un ext4 étiqueté `donnees` : `sudo mkfs.ext4 -L donnees /dev/sdb1`. Repère la liste des copies du superbloc ;
+2. vérifie : `sudo blkid /dev/sdb1` ;
+3. regarde la réserve de root : `sudo tune2fs -l /dev/sdb1 | grep -i 'block count'`, puis réduis-la à 1 % : `sudo tune2fs -m 1 /dev/sdb1` ;
+4. fais une vérification complète, possible puisqu'il n'est pas monté : `sudo e2fsck -f /dev/sdb1`.
+
+<SimulatedTerminal shell="bash" title="Formater le nouveau disque" expectedCommands={["sudo mkfs.ext4 -L donnees /dev/sdb1", "sudo blkid /dev/sdb1", "sudo tune2fs -l /dev/sdb1 | grep -i 'block count'", "sudo tune2fs -m 1 /dev/sdb1", "sudo e2fsck -f /dev/sdb1"]} hints={["Les copies du superbloc servent à réparer avec e2fsck -b.", "Reserved block count : les blocs que seul root peut utiliser.", "e2fsck -f force une vérification complète, même sur un système propre."]} commands={{"sudo mkfs.ext4 -L donnees /dev/sdb1": "mke2fs 1.47.0 (5-Feb-2023)\nDiscarding device blocks: done                            \nCreating filesystem with 61049344 4k blocks and 15269888 inodes\nFilesystem UUID: 3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34\nSuperblock backups stored on blocks: \n\t32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, \n\t4096000, 7962624, 11239424, 20480000, 23887872\n\nAllocating group tables: done                            \nWriting inode tables: done                            \nCreating journal (262144 blocks): done\nWriting superblocks and filesystem accounting information: done   ", "sudo blkid /dev/sdb1": "/dev/sdb1: LABEL=\"donnees\" UUID=\"3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34\" BLOCK_SIZE=\"4096\" TYPE=\"ext4\" PARTLABEL=\"donnees\" PARTUUID=\"5b1d3e2a-7c4f-4a91-8e6d-2f0a9b3c1d47\"", "sudo tune2fs -l /dev/sdb1 | grep -i 'block count'": "Block count:              61049344\nReserved block count:     3052467", "sudo tune2fs -m 1 /dev/sdb1": "tune2fs 1.47.0 (5-Feb-2023)\nSetting reserved blocks percentage to 1% (610493 blocks)", "sudo e2fsck -f /dev/sdb1": "e2fsck 1.47.0 (5-Feb-2023)\nPass 1: Checking inodes, blocks, and sizes\nPass 2: Checking directory structure\nPass 3: Checking directory connectivity\nPass 4: Checking reference counts\nPass 5: Checking group summary information\ndonnees: 11/15269888 files (0.0% non-contiguous), 1236271/61049344 blocks", "lsblk -f /dev/sdb": "NAME   FSTYPE FSVER LABEL   UUID                                 FSAVAIL FSUSE% MOUNTPOINTS\nsdb\n└─sdb1 ext4   1.0   donnees 3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34"}} />
+
+## les pièges
+
+- **`mkfs` sur la mauvaise partition.** Tout ce qui s'y trouvait devient inaccessible : `lsblk -f` avant, toujours.
+- **`fsck` sur un système de fichiers monté.** La réparation devient une destruction : démonter d'abord.
+- **Réparer l'original d'un disque précieux.** On en fait d'abord une image, et l'on répare la copie.
+- **Choisir XFS en pensant le réduire un jour.** Il ne rétrécit pas.
+- **Croire qu'un disque formaté est effacé.** Seuls la signature et les structures changent : les données restent lisibles.
+- **Chercher de la place quand ce sont les inodes qui manquent.** `df -i`.
+- **Laisser 5 % réservés à root sur un gros disque de données.** `tune2fs -m 1`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://wiki.archlinux.org/title/File_systems" description="Comparaison des systèmes de fichiers de Linux et leur création, en anglais">ArchWiki : File systems</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/e2fsprogs/e2fsck.8.fr.html" description="Vérifier et réparer un ext2, ext3 ou ext4, en français">Page de manuel d'e2fsck</ExternalLink>
+
+<ExternalLink href="https://btrfs.readthedocs.io/" description="La documentation officielle de Btrfs : instantanés, sous-volumes, sommes de contrôle, en anglais">Documentation de Btrfs</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que contient un inode ?" options={["Le nom du fichier", "Tout sauf le nom : propriétaire, droits, taille, dates, emplacement des données", "Le contenu du fichier", "La liste des partitions"]} correct={1} explanation="Le nom est dans le dossier, qui associe des noms à des numéros d'inodes." />
+  <Quiz id="q-2" question="À quoi sert le journal d'un système de fichiers ?" options={["À enregistrer les connexions", "À noter les modifications avant de les appliquer, pour rester cohérent après une coupure", "À compresser les fichiers", "À chiffrer le disque"]} correct={1} explanation="Au redémarrage, le journal est rejoué au lieu de vérifier tout le disque." />
+  <Quiz id="q-3" question="Quel système de fichiers ne peut pas être rétréci ?" options={["ext4", "XFS", "Btrfs", "vfat"]} correct={1} explanation="XFS s'agrandit à chaud mais ne rétrécit jamais ; ext4 rétrécit une fois démonté." />
+  <Quiz id="q-4" question="df -h montre de la place libre, mais l'écriture échoue avec No space left on device. Que vérifier ?" options={["La mémoire", "Les inodes, avec df -i", "Le réseau", "Le journal"]} correct={1} explanation="Des millions de petits fichiers peuvent épuiser les inodes avant les blocs." />
+  <Quiz id="q-5" question="Pourquoi ne jamais lancer fsck sur un système de fichiers monté en écriture ?" options={["Parce qu'il est trop lent", "Parce qu'il modifierait des structures que le noyau utilise, et pourrait détruire des données", "Parce qu'il faut être root", "Parce qu'il ne trouve rien"]} correct={1} explanation="On démonte d'abord ; pour la racine, la vérification se fait au démarrage ou depuis un système de secours." />
+  <Quiz id="q-6" question="Après un mkfs, les anciennes données de la partition sont-elles détruites ?" options={["Oui, toutes", "Non : seules les structures et la signature changent, beaucoup de données restent récupérables", "Seulement sur un SSD", "Seulement les fichiers cachés"]} correct={1} explanation="Pour se débarrasser d'un disque, on l'efface entièrement, ou on l'a chiffré dès le départ." />
+  <Quiz id="q-7" question="Que fait tune2fs -m 1 /dev/sdb1 ?" options={["Il monte la partition", "Il réduit à 1 % les blocs réservés à root", "Il vérifie le disque une fois", "Il change le type en ext4"]} correct={1} explanation="Par défaut, 5 % sont réservés, ce qui est beaucoup sur un gros disque de données." />
+</QuizGroup>
+
+## à retenir
+
+- Un système de fichiers : **superbloc** (et ses copies), **inodes**, **blocs**, **journal**, et une **signature** que `blkid` reconnaît.
+- **ext4** par défaut et sûr, **XFS** pour les gros volumes (ne rétrécit pas), **Btrfs** pour les instantanés et les sommes de contrôle ; **vfat** pour l'échange, **tmpfs** en mémoire.
+- **`mkfs.ext4 -L nom`** crée et étiquette ; il efface sans prévenir : **`lsblk -f`** avant.
+- **`blkid`**, **`df -hT`**, **`df -i`**, **`tune2fs -l`** pour inspecter ; **`tune2fs -m 1`** sur un gros disque de données.
+- **`fsck`** jamais monté ; **`-n`** pour un diagnostic, une **image** avant de réparer un disque précieux.
+- **`resize2fs`** et **`xfs_growfs`** pour agrandir.
+- Un disque formaté n'est pas effacé : **effacer** ou **chiffrer**.

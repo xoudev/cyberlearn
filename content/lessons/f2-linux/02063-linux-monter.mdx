@@ -1,0 +1,209 @@
+---
+refCode: CL-LSN-02063-V01
+slug: linux-monter
+title: "Monter : mount, /etc/fstab et UUID"
+description: "Rattacher un système de fichiers à l'arborescence : le point de montage, mount et umount, et que faire quand un démontage refuse. Les options qui comptent, dont les trois qui durcissent un serveur (noexec, nosuid, nodev), et nofail, noatime, ro. Écrire une ligne de /etc/fstab avec l'UUID, la vérifier avant de redémarrer, et ce que systemd en fait. Les montages recommandés par l'ANSSI pour /tmp, /home ou /proc. Avec des systèmes de fichiers en mémoire montés et durcis sur un vrai Linux, puis le nouveau disque du serveur monté pour de bon."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02062-V01"]
+---
+
+Sous Windows, chaque disque a sa lettre : `C:`, `D:`. Sous Linux, il n'y a qu'**un seul arbre**, qui part de `/`, et chaque système de fichiers vient s'y accrocher à un dossier, son **point de montage**. Le disque de données apparaît dans `/srv/donnees`, la clé USB dans `/media/cle`, la partition EFI dans `/boot/efi`. Monter, c'est faire cet accrochage. C'est aussi l'occasion de décider ce qu'on autorise sur chaque système de fichiers : y exécuter des programmes, y créer des périphériques, y honorer les droits spéciaux. Bien choisies, ces options ferment des portes classiques aux attaquants.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- monter et démonter un système de fichiers, et débloquer un démontage refusé ;
+- lire les montages actifs avec `mount`, `findmnt` et `df` ;
+- choisir les options de montage, dont `noexec`, `nosuid` et `nodev` ;
+- écrire une ligne de `/etc/fstab` avec un UUID, et la vérifier avant de redémarrer ;
+- appliquer les montages recommandés pour durcir un serveur.
+
+## pourquoi ça compte
+
+`/etc/fstab` est lu à chaque démarrage. Une ligne fausse peut bloquer la machine en mode d'urgence, comme dans la leçon sur les cibles. Mais ce fichier est aussi un outil de sécurité méconnu : un attaquant qui dépose un programme dans `/tmp`, le dossier que tout le monde peut écrire, cherche ensuite à l'exécuter. Si `/tmp` est monté en `noexec`, l'exécution directe échoue. Un programme setuid apporté sur une clé USB est neutralisé par `nosuid`. Quelques mots dans `/etc/fstab` retirent ainsi plusieurs étapes classiques d'une attaque.
+
+## monter et démonter
+
+```bash
+sudo mount /dev/sdb1 /srv/donnees            # le type est détecté par sa signature
+sudo mount -t ext4 -o ro /dev/sdb1 /mnt      # en précisant le type et une option
+sudo umount /srv/donnees                     # démonter, par le point de montage
+```
+
+Le point de montage est un dossier qui doit **exister**. S'il contenait des fichiers, ils deviennent invisibles le temps du montage, sans être effacés : ils réapparaissent au démontage. Ce détail explique des situations troublantes, comme un `du` qui ne retrouve pas la place qu'occupe un dossier caché sous un montage.
+
+`umount` refuse quand un processus utilise encore le système de fichiers : `target is busy`. Un shell dont le dossier courant est dedans, un fichier ouvert, un service qui y écrit. Pour trouver lequel :
+
+```bash
+sudo fuser -vm /srv/donnees       # les processus qui l'utilisent
+sudo lsof +f -- /srv/donnees      # les fichiers ouverts dedans
+```
+
+On arrête alors le processus proprement, ou on sort du dossier, puis on démonte. L'option `umount -l` (*lazy*) détache le montage tout de suite et termine plus tard : elle débloque, mais masque le problème, et des écritures peuvent se perdre.
+
+## voir les montages
+
+```bash
+findmnt                       # l'arbre de tous les montages, avec leurs options
+findmnt /srv/donnees          # un montage précis
+df -hT                        # la place, avec le type de chaque système monté
+mount | grep sdb              # la liste brute
+```
+
+**`findmnt`** est l'outil le plus lisible : il montre la source, le type et toutes les options effectives de chaque montage, sous forme d'arbre. Il sert aussi à vérifier `/etc/fstab`, comme on va le voir.
+
+## les options de montage
+
+| Option | Effet |
+| --- | --- |
+| `defaults` | `rw`, `suid`, `dev`, `exec`, `auto`, `nouser`, `async` : tout est permis |
+| `ro`, `rw` | lecture seule, ou lecture et écriture |
+| `noexec` | interdit d'exécuter directement un programme qui s'y trouve |
+| `nosuid` | ignore les bits setuid et setgid des fichiers |
+| `nodev` | ignore les fichiers de périphériques qui s'y trouveraient |
+| `noatime` | ne met plus à jour la date de dernier accès à chaque lecture : moins d'écritures |
+| `nofail` | le démarrage continue si le système de fichiers est absent |
+| `_netdev` | attendre le réseau : pour un partage NFS ou un disque iSCSI |
+
+Les trois options de durcissement méritent qu'on comprenne ce qu'elles bloquent. **`nosuid`** neutralise un programme setuid, ce mécanisme du module 4 qui fait tourner un programme avec les droits de son propriétaire : copié sur une partition `nosuid`, un shell setuid root redevient un shell ordinaire. **`nodev`** empêche d'utiliser un fichier de périphérique fabriqué par un attaquant pour accéder directement à un disque ou à la mémoire. **`noexec`** interdit d'exécuter directement un binaire ou un script.
+
+Une limite à connaître : `noexec` n'empêche pas de **lire** un fichier, et donc de le faire exécuter par un interpréteur placé ailleurs, `sh /tmp/script.sh` ou `python3 /tmp/outil.py`. C'est une **protection en profondeur** : elle casse les attaques automatiques et oblige l'attaquant à un effort de plus, sans tout arrêter.
+
+## les montages réseau et amovibles
+
+Deux familles de montages demandent des options particulières. Un **partage réseau**, comme NFS, dépend du réseau : sans précaution, le démarrage attend un serveur qui ne répond pas. On ajoute `_netdev` pour le monter une fois le réseau prêt, `nofail` pour ne pas bloquer le démarrage s'il est absent, et souvent `x-systemd.automount` pour ne le monter qu'au premier accès :
+
+```text
+nas:/export/partage  /srv/partage  nfs  _netdev,nofail,x-systemd.automount,nodev,nosuid  0  0
+```
+
+Les **supports amovibles**, clés USB et disques externes, sont montés automatiquement par le bureau dans `/media/utilisateur/` sur un poste de travail. Sur un serveur, on les monte à la main, toujours en `nodev,nosuid,noexec` : on ne sait jamais d'où vient une clé. Un système de fichiers vfat ou exFAT n'a pas de propriétaires Unix : les options `uid=`, `gid=` et `umask=` fixent celui qui apparaîtra propriétaire de tous les fichiers, et leurs droits.
+
+## /etc/fstab
+
+Le fichier `/etc/fstab` décrit les montages faits au démarrage, une ligne par système de fichiers, en six champs :
+
+```text
+# <source>                                 <point>        <type> <options>                  <dump> <pass>
+UUID=8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2  /              ext4   errors=remount-ro          0      1
+UUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34  /srv/donnees   ext4   defaults,nodev,nosuid,noatime 0   2
+tmpfs                                      /tmp           tmpfs  size=1G,nodev,nosuid,noexec  0    0
+UUID=3e9b21f0-6c7a-4d2e-b8f1-0a9c4d5e6f71  none           swap   sw                         0      0
+```
+
+1. la **source** : `UUID=…` plutôt que `/dev/sdb1`, dont le nom peut changer ; `LABEL=donnees` est possible aussi ;
+2. le **point de montage** (`none` pour l'espace d'échange) ;
+3. le **type** ;
+4. les **options**, séparées par des virgules, sans espace ;
+5. `dump`, une ancienne commande de sauvegarde : toujours `0` aujourd'hui ;
+6. `pass`, l'ordre de vérification par `fsck` au démarrage : `1` pour la racine, `2` pour les autres, `0` pour ne jamais vérifier.
+
+L'option `errors=remount-ro` de la racine mérite un mot : si le noyau détecte une incohérence, il remonte le système de fichiers en lecture seule plutôt que de continuer à écrire sur une structure abîmée. Un serveur dont la racine passe soudain en lecture seule a donc un problème de disque à diagnostiquer.
+
+## vérifier avant de redémarrer
+
+Une erreur dans `/etc/fstab` ne se voit qu'au démarrage suivant, souvent en mode d'urgence. On la cherche donc **avant** :
+
+```bash
+sudo findmnt --verify          # analyse /etc/fstab : syntaxe, sources introuvables, types
+sudo systemctl daemon-reload   # systemd traduit fstab en unités .mount
+sudo mount -a                  # monte tout ce qui ne l'est pas encore : aucune erreur ?
+```
+
+systemd crée en effet une unité `.mount` pour chaque ligne de `/etc/fstab` : `srv-donnees.mount` pour `/srv/donnees`. C'est pour cela qu'il faut un `daemon-reload` après une modification, et c'est pour cela que `systemctl status srv-donnees.mount` et `journalctl -u srv-donnees.mount` aident à diagnostiquer un montage. Une option `x-systemd.automount` monte même un système de fichiers seulement au premier accès, pratique pour un partage réseau.
+
+## les montages d'un serveur durci
+
+Le guide de l'ANSSI recommande des options précises selon les partitions, que l'on peut appliquer dès qu'elles sont séparées :
+
+| Point de montage | Options recommandées |
+| --- | --- |
+| `/tmp`, `/var/tmp`, `/dev/shm` | `nodev,nosuid,noexec` |
+| `/home` | `nodev,nosuid,noexec` |
+| `/var`, `/var/log` | `nodev,nosuid,noexec` |
+| `/srv` | `nodev,nosuid` |
+| `/boot` | `nodev,nosuid,noexec` |
+| supports amovibles | `nodev,nosuid,noexec` |
+
+On adapte à l'usage : `noexec` sur `/home` gêne des développeurs qui compilent et lancent leurs programmes chez eux, et l'on peut alors s'en passer, en connaissance de cause.
+
+Une dernière, sur `/proc` : l'option `hidepid=invisible` (ou `hidepid=2`) empêche chaque utilisateur de voir les processus des autres, et donc leurs lignes de commande, où traînent parfois des mots de passe.
+
+<Diagram caption="Un seul arbre, des systèmes de fichiers accrochés">
+flowchart TD
+  A["/ : sda2, ext4"] --> B["/boot/efi : sda1, vfat"]
+  A --> C["/srv/donnees : sdb1, ext4, nodev nosuid"]
+  A --> D["/tmp : tmpfs, nodev nosuid noexec"]
+  A --> E["/home : sda4, ext4, nodev nosuid"]
+</Diagram>
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas de disque, mais il sait monter **tmpfs**, un système de fichiers en mémoire, avec les mêmes options qu'un disque. Assez pour pratiquer :
+
+1. crée un point de montage et monte un tmpfs de 2 Mo, durci : `mkdir -p /srv/cache`, puis `mount -t tmpfs -o size=2m,nodev,nosuid,noexec tmpfs /srv/cache` ;
+2. regarde-le : `mount | grep cache`, puis `df -h /srv/cache` ;
+3. éprouve `noexec` : `printf '#!/bin/sh\necho exécuté\n' > /srv/cache/test.sh`, `chmod 755 /srv/cache/test.sh`, puis `/srv/cache/test.sh` : refusé. Essaie pourtant `sh /srv/cache/test.sh` ;
+4. démonte-le : `umount /srv/cache`. Le fichier `test.sh` a disparu avec lui, puisqu'il ne vivait qu'en mémoire ;
+5. rends le montage permanent, par `/etc/fstab`. La dernière ligne du fichier de ce petit Linux n'a pas de retour à la ligne final : ajoute le tien devant, sinon ta ligne se collerait à la précédente. `printf '\n%s\n' 'tmpfs /srv/cache tmpfs size=2m,nodev,nosuid,noexec 0 0' >> /etc/fstab`, vérifie avec `tail -2 /etc/fstab`, puis `mount -a` ;
+6. garde la preuve : `mount | grep cache > montage.txt` ;
+7. remonte-le en lecture seule sans le démonter : `mount -o remount,ro /srv/cache`, essaie `touch /srv/cache/essai`, puis ajoute l'état à ta preuve : `mount | grep cache >> montage.txt`.
+
+<LinuxTerminal title="Des montages durcis" expectedCommands={["mkdir -p /srv/cache", "mount -t tmpfs -o size=2m,nodev,nosuid,noexec tmpfs /srv/cache", "/srv/cache/test.sh", "sh /srv/cache/test.sh", "umount /srv/cache", "tail -2 /etc/fstab", "mount -a", "mount | grep cache > montage.txt", "mount -o remount,ro /srv/cache"]} checks={[{"label": "Le montage par fstab porte noexec", "path": "montage.txt", "expect": "file", "contains": "noexec"}, {"label": "Il a été remonté en lecture seule", "path": "montage.txt", "expect": "file", "contains": "(ro,"}]} hints={["Le point de montage doit exister avant le mount.", "Permission denied sur /srv/cache/test.sh : c'est noexec qui joue son rôle.", "mount -a monte les lignes de /etc/fstab qui ne le sont pas encore ; tail -2 montre si ta ligne est bien seule sur la sienne.", ">> ajoute au fichier, là où > l'aurait remplacé."]} />
+
+L'étape 3 montre à la fois la force et la limite de `noexec` : le script ne s'exécute pas directement, mais `sh` le lit et l'exécute quand même. L'étape 5 est exactement ce qu'on fait sur un serveur pour durcir `/tmp`, et son retour à la ligne manquant est un piège réel : ajouter une ligne avec `>>` à un fichier qui ne se termine pas par un saut de ligne fabrique une ligne invalide, que `mount -a` ignore ici sans un mot. D'où le réflexe de relire la fin d'un fichier de configuration après l'avoir modifié. Et le `remount` de l'étape 7 change les options d'un montage actif sans le démonter : c'est ainsi qu'on rend modifiable la racine en mode d'urgence.
+
+Ensuite, le nouveau SSD du serveur Debian, formaté à la leçon précédente, à monter pour de bon sur `/srv/donnees`, dans un terminal simulé :
+
+1. crée le point de montage : `sudo mkdir -p /srv/donnees` ;
+2. relève l'UUID : `sudo blkid /dev/sdb1` ;
+3. ajoute la ligne à `/etc/fstab` : `echo 'UUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34 /srv/donnees ext4 defaults,nodev,nosuid,noatime 0 2' | sudo tee -a /etc/fstab` ;
+4. vérifie avant tout : `sudo findmnt --verify` ;
+5. applique : `sudo systemctl daemon-reload`, puis `sudo mount -a` ;
+6. contrôle : `findmnt /srv/donnees`, puis `df -hT /srv/donnees`.
+
+<SimulatedTerminal shell="bash" title="Monter le disque de données" expectedCommands={["sudo mkdir -p /srv/donnees", "sudo blkid /dev/sdb1", "echo 'UUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34 /srv/donnees ext4 defaults,nodev,nosuid,noatime 0 2' | sudo tee -a /etc/fstab", "sudo findmnt --verify", "sudo systemctl daemon-reload", "sudo mount -a", "findmnt /srv/donnees", "df -hT /srv/donnees"]} hints={["L'UUID est celui du système de fichiers, donné par blkid.", "tee -a ajoute la ligne à la fin du fichier, avec les droits de sudo.", "findmnt --verify relit /etc/fstab sans rien monter.", "systemd traduit fstab en unités .mount : daemon-reload après chaque modification."]} commands={{"sudo mkdir -p /srv/donnees": "", "sudo blkid /dev/sdb1": "/dev/sdb1: LABEL=\"donnees\" UUID=\"3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34\" BLOCK_SIZE=\"4096\" TYPE=\"ext4\" PARTLABEL=\"donnees\" PARTUUID=\"5b1d3e2a-7c4f-4a91-8e6d-2f0a9b3c1d47\"", "echo 'UUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34 /srv/donnees ext4 defaults,nodev,nosuid,noatime 0 2' | sudo tee -a /etc/fstab": "UUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34 /srv/donnees ext4 defaults,nodev,nosuid,noatime 0 2", "sudo findmnt --verify": "Success, no errors or warnings detected", "sudo systemctl daemon-reload": "", "sudo mount -a": "", "findmnt /srv/donnees": "TARGET       SOURCE    FSTYPE OPTIONS\n/srv/donnees /dev/sdb1 ext4   rw,nosuid,nodev,noatime", "df -hT /srv/donnees": "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/sdb1      ext4  229G   28K  227G   1% /srv/donnees", "cat /etc/fstab": "# /etc/fstab: static file system information.\nUUID=8c2f1a0e-5b7d-4c41-9a3e-2f61d0c4b9e2 /               ext4    errors=remount-ro 0       1\nUUID=1D4B-7E22                            /boot/efi       vfat    umask=0077        0       1\nUUID=3e9b21f0-6c7a-4d2e-b8f1-0a9c4d5e6f71 none            swap    sw                0       0\nUUID=3a7d0c2e-9f41-4b6e-8a2d-5c1e7f9b0d34 /srv/donnees ext4 defaults,nodev,nosuid,noatime 0 2", "systemctl status srv-donnees.mount": "● srv-donnees.mount - /srv/donnees\n     Loaded: loaded (/etc/fstab; generated)\n     Active: active (mounted) since Thu 2026-10-01 11:24:05 CEST; 9s ago\n      Where: /srv/donnees\n       What: /dev/sdb1\n       Docs: man:fstab(5)\n             man:systemd-fstab-generator(8)"}} />
+
+## les pièges
+
+- **`/dev/sdb1` dans `/etc/fstab`.** Le nom peut changer, et le mauvais disque être monté : `UUID=`.
+- **Redémarrer sans avoir testé `/etc/fstab`.** `findmnt --verify` et `mount -a` d'abord, sinon le mode d'urgence.
+- **Oublier `nofail` sur un disque amovible ou réseau.** Son absence bloque le démarrage.
+- **`umount -l` pour forcer.** Le problème est masqué et des écritures peuvent se perdre : trouver le processus avec `fuser`.
+- **Croire que `noexec` empêche tout.** `sh fichier` l'exécute quand même : c'est une défense en profondeur.
+- **Monter par-dessus un dossier qui contient des fichiers.** Ils deviennent invisibles, et la place qu'ils occupent aussi.
+- **Laisser `/tmp` sans options.** C'est le premier dossier où un attaquant dépose ses outils.
+
+## pour aller plus loin
+
+<ExternalLink href="https://manpages.debian.org/bookworm/mount/mount.8.fr.html" description="Toutes les options de mount, générales et par système de fichiers, en français">Page de manuel de mount</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/mount/fstab.5.fr.html" description="Le format de /etc/fstab, champ par champ, en français">Page de manuel de fstab</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le guide de durcissement de l'ANSSI, dont le partitionnement et les options de montage, en français">ANSSI : recommandations de configuration d'un système GNU/Linux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que devient le contenu d'un dossier sur lequel on monte un système de fichiers ?" options={["Il est effacé", "Il devient invisible le temps du montage, et réapparaît au démontage", "Il est copié sur le nouveau système", "Il est fusionné"]} correct={1} explanation="C'est une cause classique de place disque qu'on ne retrouve pas." />
+  <Quiz id="q-2" question="umount répond target is busy. Que faire ?" options={["umount -l systématiquement", "Trouver le processus qui l'utilise avec fuser -vm ou lsof, l'arrêter, puis démonter", "Redémarrer la machine", "Supprimer le point de montage"]} correct={1} explanation="Un shell dont le dossier courant est dans le montage suffit à bloquer." />
+  <Quiz id="q-3" question="Que fait l'option nosuid ?" options={["Elle interdit la lecture", "Elle fait ignorer les bits setuid et setgid des fichiers du système monté", "Elle interdit les utilisateurs", "Elle chiffre le disque"]} correct={1} explanation="Un programme setuid apporté sur ce système de fichiers ne donne plus les droits de son propriétaire." />
+  <Quiz id="q-4" question="/tmp est monté en noexec. Que se passe-t-il avec sh /tmp/script.sh ?" options={["Refusé", "Le script s'exécute quand même, car sh le lit comme un fichier", "Le script est supprimé", "La machine redémarre"]} correct={1} explanation="noexec bloque l'exécution directe, pas la lecture par un interpréteur : c'est une défense en profondeur." />
+  <Quiz id="q-5" question="Pourquoi écrire UUID=... plutôt que /dev/sdb1 dans /etc/fstab ?" options={["C'est plus court", "Parce que le nom /dev/sdb1 peut changer d'un démarrage à l'autre, pas l'UUID", "Parce que mount l'exige", "Pour chiffrer le disque"]} correct={1} explanation="L'UUID est créé avec le système de fichiers et ne dépend pas de l'ordre de détection." />
+  <Quiz id="q-6" question="Comment vérifier /etc/fstab avant de redémarrer ?" options={["En redémarrant", "Avec findmnt --verify, puis mount -a", "Avec cat /etc/fstab", "Avec fsck"]} correct={1} explanation="Une erreur non détectée bloque le démarrage en mode d'urgence." />
+  <Quiz id="q-7" question="Que signifie le 2 du dernier champ d'une ligne de fstab ?" options={["Le système est monté en deuxième", "fsck le vérifie au démarrage, après la racine", "Il y a deux copies", "Il est monté en lecture seule"]} correct={1} explanation="1 pour la racine, 2 pour les autres, 0 pour ne jamais vérifier." />
+</QuizGroup>
+
+## à retenir
+
+- **`mount source point`**, **`umount point`** ; **`fuser -vm`** quand le démontage refuse.
+- **`findmnt`** pour voir les montages et leurs options, **`df -hT`** pour la place.
+- Options : **`ro`**, **`noatime`**, **`nofail`**, et le trio de durcissement **`nodev,nosuid,noexec`** ; `noexec` n'arrête pas un interpréteur.
+- **`/etc/fstab`** : source (**`UUID=`**), point, type, options, `0`, ordre de vérification.
+- Avant de redémarrer : **`findmnt --verify`**, **`systemctl daemon-reload`**, **`mount -a`**.
+- **`/tmp`**, **`/var/tmp`**, **`/dev/shm`**, `/var` et `/home` en `nodev,nosuid,noexec`, selon l'usage ; `/proc` avec `hidepid`.
+- **`mount -o remount,ro`** change les options d'un montage actif.
