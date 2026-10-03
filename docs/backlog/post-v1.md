@@ -87,8 +87,9 @@ notes privées revient, créer un sous-dossier dédié gitignoré explicitement.
 
 Fait : Pino, via `@cyberlearn/lib/logger`. Détails et exceptions dans
 docs/security/logging.md, section « Logger structuré : Pino ». Le `requestId`
-est propagé depuis la PR #377 (`requestLogger()`). Reste le drain externe, qui
-demande de choisir un fournisseur.
+est propagé depuis la PR #377 (`requestLogger()`). Drain externe : rien pour
+l'instant (décision du 4 octobre 2026, voir docs/security/logging.md) ; Sentry
+Logs le jour où une trace manque.
 
 Note d'origine :
 

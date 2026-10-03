@@ -132,5 +132,17 @@ const log = await requestLogger();
 log.error({ scope: "forum", err: errorMessage(err) }, "failed to notify participants");
 ```
 
-Reste à faire : un drain vers un fournisseur externe (Axiom, Datadog…), qui
-demande de choisir le fournisseur et d'ajouter sa dépendance.
+### Pas de drain externe, pour l'instant (décision du 4 octobre 2026)
+
+Sur le plan Hobby, Vercel garde les journaux d'exécution une heure (4 000
+lignes au plus), et ses Log Drains demandent le plan Pro. Garder les journaux
+plus longtemps voudrait dire les envoyer depuis l'application vers un
+service tiers. Décision : rien pour l'instant. Avec le trafic actuel, Sentry
+attrape les erreurs, pile comprise, et l'identifiant de requête relie les
+lignes d'une même requête dans l'heure.
+
+Le jour où une trace manque pour comprendre un incident : Sentry Logs d'abord
+(prestataire déjà déclaré, masquage des données personnelles déjà réglé),
+Axiom si l'on veut de vraies recherches et des alertes sur les journaux. L'un
+comme l'autre se déclare dans `/privacy` et le registre des traitements, avec
+sa durée de conservation (6 mois au plus pour les journaux applicatifs).
