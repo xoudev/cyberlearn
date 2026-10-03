@@ -209,23 +209,37 @@ function unescapeJs(raw: string): string {
   );
 }
 
+/** The string props the app reads off a playground or a challenge. */
+type StringPropName = "starterCode" | "title" | "description";
+
 /**
- * A string prop of a tag, written `name="..."`, `` name={`...`} `` or
- * `name={"..."}`. The element's own indent is taken off the lines after the
- * first, as MDX takes it off on the site: it belongs to the list the element
- * sits in, not to the code.
+ * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
+ * `name={"..."}`. Read left to right, so a value is consumed whole: code that
+ * says `title = "x"` is not taken for the title.
  */
-function stringProp(tag: string, name: string, indent: number): string | null {
-  const m = new RegExp(
-    `\\b${name}\\s*=\\s*(?:"([^"]*)"|\\{\\s*\`((?:[^\`\\\\]|\\\\[\\s\\S])*)\`\\s*\\}|\\{\\s*"((?:[^"\\\\]|\\\\.)*)"\\s*\\})`,
-  ).exec(tag);
+const STRING_PROP_RE =
+  /\b(starterCode|title|description)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+
+/** A line without the first `indent` spaces or tabs it starts with. */
+function dropIndent(line: string, indent: number): string {
+  let k = 0;
+  while (k < indent && (line.charAt(k) === " " || line.charAt(k) === "\t")) k++;
+  return line.slice(k);
+}
+
+/**
+ * A string prop of a tag. The element's own indent is taken off the lines
+ * after the first, as MDX takes it off on the site: it belongs to the list the
+ * element sits in, not to the code.
+ */
+function stringProp(tag: string, name: StringPropName, indent: number): string | null {
+  const m = [...tag.matchAll(STRING_PROP_RE)].find((match) => match[1] === name);
   if (!m) return null;
-  const value = m[1] ?? unescapeJs(m[2] ?? m[3] ?? "");
+  const value = m[2] ?? unescapeJs(m[3] ?? m[4] ?? "");
   if (indent === 0) return value;
-  const lead = new RegExp(`^[ \\t]{0,${String(indent)}}`);
   return value
     .split("\n")
-    .map((line, k) => (k === 0 ? line : line.replace(lead, "")))
+    .map((line, k) => (k === 0 ? line : dropIndent(line, indent)))
     .join("\n");
 }
 
