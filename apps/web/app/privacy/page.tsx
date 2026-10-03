@@ -171,7 +171,8 @@ export default function PrivacyPage(): React.JSX.Element {
           <li>
             <strong style={{ color: "#B8B5D1" }}>Compte inactif</strong> : votre compte est
             automatiquement anonymisé après <strong style={{ color: "#B8B5D1" }}>24 mois</strong>{" "}
-            sans connexion, sauf demande de suppression anticipée de votre part.
+            sans connexion, sauf demande de suppression anticipée de votre part. Un e-mail vous
+            prévient au moins 30 jours avant, avec un lien pour garder votre compte.
           </li>
           <li>
             <strong style={{ color: "#B8B5D1" }}>Logs d’authentification</strong> : 12 mois.

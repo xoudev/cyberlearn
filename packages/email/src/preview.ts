@@ -4,6 +4,7 @@ import { AccountDeletionConfirmEmail } from "./templates/account-deletion-confir
 import { BanNoticeEmail } from "./templates/ban-notice.js";
 import { ClassEnrolledEmail } from "./templates/class-enrolled.js";
 import { ClassInvitationEmail } from "./templates/class-invitation.js";
+import { InactivityNoticeEmail } from "./templates/inactivity-notice.js";
 import { MagicLinkEmail } from "./templates/magic-link.js";
 import { ModerationNoticeEmail } from "./templates/moderation-notice.js";
 import { TicketReplyEmail } from "./templates/ticket-reply.js";
@@ -53,6 +54,11 @@ export const EMAIL_SAMPLES: EmailSample[] = [
     when: "demande de l'utilisateur",
   },
   { key: "account-deleted", label: "Compte supprimé", when: "suppression par un administrateur" },
+  {
+    key: "inactivity-notice",
+    label: "Préavis d'inactivité",
+    when: "30 jours avant l'effacement d'un compte inactif",
+  },
 ];
 
 /** The rendered HTML for one sample, or null for a key nothing matches. */
@@ -152,6 +158,15 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           deletedAt: "21 septembre 2026",
           contactEmail: "contact@cyberlearn.fr",
           reason: "Demande de l'utilisateur, après vérification de son identité.",
+        }),
+      );
+    case "inactivity-notice":
+      return render(
+        InactivityNoticeEmail({
+          displayName: "Amélie",
+          eraseOn: "2 novembre 2026",
+          keepUrl: `${SITE}/account/keep?token=exemple`,
+          siteUrl: SITE,
         }),
       );
     default:

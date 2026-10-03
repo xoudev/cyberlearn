@@ -16,7 +16,7 @@
 | Catégories de personnes | Utilisateurs inscrits |
 | Destinataires | Supabase (sous-traitant), Vercel (hébergeur HTTP) |
 | Transferts hors UE | Non (Supabase eu-central-1) ; Vercel multi-région pour les logs HTTP |
-| Durée de conservation | Tant que le compte existe + anonymisation à 24 mois d'inactivité |
+| Durée de conservation | Tant que le compte existe ; effacé (`deleteAccount`) après 24 mois sans connexion ni leçon terminée, au plus tôt 30 jours après un e-mail de préavis dont le lien garde le compte en un clic (`/api/cron/inactive-accounts`, chaque nuit). Les comptes administrateurs n'y passent pas |
 | Mesures de sécurité | TLS 1.3, mot de passe (12 à 128 car.) haché par Supabase Auth, TOTP optionnel et obligatoire côté console, JWT, RLS Postgres, CSP nonce, rate limiting |
 | Clients | Site web, console d'administration, application mobile Expo — une seule identité Supabase, la même base |
 

@@ -107,6 +107,10 @@ function isPublicRoute(pathname: string): boolean {
     // round to /onboarding instead.
     pathname === "/banned" ||
     pathname.startsWith("/account/delete/") ||
+    // The link of an inactivity notice: whoever follows it may no longer
+    // remember how to sign in, which is the point of the link.
+    pathname === "/account/keep" ||
+    pathname.startsWith("/account/keep/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     // Crawler and PWA files. Without these the middleware answered /robots.txt
