@@ -1,6 +1,7 @@
 import React from "react";
 import * as Sentry from "@sentry/nextjs";
 import { compileMDX } from "next-mdx-remote/rsc";
+import { protectPropIndentation } from "@cyberlearn/lib/mdx-check";
 
 /**
  * One section of a lesson, rendered so that its failure is its own.
@@ -48,7 +49,13 @@ export async function LessonSection({
   index: number;
 }): Promise<React.ReactElement> {
   try {
-    const { content } = await compileMDX({ source, components, options });
+    // MDX strips the indentation of code written in props: put it back
+    // first. See protectPropIndentation.
+    const { content } = await compileMDX({
+      source: protectPropIndentation(source),
+      components,
+      options,
+    });
     // SAFETY: compileMDX returns createElement(Content, { components }), so the
     // element's type is the compiled MDX content function. See the note above
     // for why calling it directly is safe.
