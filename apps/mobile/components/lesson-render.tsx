@@ -212,6 +212,83 @@ export function BlockView({
           </ScrollView>
         </View>
       );
+    case "challenge":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.accent,
+            backgroundColor: colors.bgElevated,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: theme.accent }}>
+              ◆ Défi Python
+            </Text>
+            <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+              {block.title}
+            </Text>
+          </View>
+          <View style={{ padding: 12, gap: 10 }}>
+            {block.description !== null ? (
+              <Text variant="bodySm" style={{ lineHeight: 20 }}>
+                {block.description}
+              </Text>
+            ) : null}
+            {block.code !== "" ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ backgroundColor: theme.terminal.background }}
+              >
+                <Text
+                  style={{
+                    fontFamily: `${fonts.mono}_400Regular`,
+                    fontSize: 12,
+                    lineHeight: 19,
+                    color: theme.terminal.foreground,
+                    padding: 12,
+                  }}
+                >
+                  {block.code}
+                </Text>
+              </ScrollView>
+            ) : null}
+            {block.tests.length > 0 ? (
+              <View style={{ gap: 4 }}>
+                <Text variant="micro" style={{ color: colors.textMuted }}>
+                  Tests à faire passer
+                </Text>
+                {block.tests.map((t, i) => (
+                  <Text
+                    key={i}
+                    style={{
+                      fontFamily: `${fonts.mono}_400Regular`,
+                      fontSize: 12,
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    {t.label !== null ? `${t.label} : ` : ""}
+                    {t.input} → {t.expected}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              Les tests se lancent sur le site.
+            </Text>
+          </View>
+        </View>
+      );
     case "terminal":
       return (
         <View
