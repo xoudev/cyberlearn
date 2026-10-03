@@ -3,7 +3,8 @@ import { prisma } from "@cyberlearn/db";
 import { sendModerationNoticeEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 /**
  * Tells somebody what the moderation did with what they wrote.
@@ -80,6 +81,7 @@ export async function announceModeration(input: ModerationAnnouncement): Promise
       siteUrl: env.NEXT_PUBLIC_SITE_URL,
     });
   } catch (error) {
-    logger.error({ scope: "moderation", err: errorMessage(error) }, "failed to announce");
+    const log = await requestLogger();
+    log.error({ scope: "moderation", err: errorMessage(error) }, "failed to announce");
   }
 }

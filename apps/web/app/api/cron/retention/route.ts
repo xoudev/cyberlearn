@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { purgeExpiredRecords } from "@cyberlearn/db";
-import { errorMessage, logger } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
 
@@ -17,10 +18,12 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   try {
     const summary = await purgeExpiredRecords(new Date());
-    logger.info({ scope: "retention", ...summary }, "retention purge done");
+    const log = await requestLogger();
+    log.info({ scope: "retention", ...summary }, "retention purge done");
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
-    logger.error({ scope: "retention", err: errorMessage(err) }, "retention purge failed");
+    const log = await requestLogger();
+    log.error({ scope: "retention", err: errorMessage(err) }, "retention purge failed");
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

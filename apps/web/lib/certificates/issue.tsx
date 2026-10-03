@@ -19,7 +19,7 @@ import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
 import { awardBadges } from "@/lib/badges/award";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
-import { logger } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 const BUCKET = "certificates";
@@ -91,7 +91,8 @@ async function generateCertificatePdf(
     upsert: false,
   });
   if (uploadError) {
-    logger.error({ scope: "certificates", err: uploadError.message }, "PDF upload failed");
+    const log = await requestLogger();
+    log.error({ scope: "certificates", err: uploadError.message }, "PDF upload failed");
     return null;
   }
 

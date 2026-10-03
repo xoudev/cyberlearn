@@ -6,7 +6,8 @@ import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { rolloverDueSeasons } from "@/lib/league/rollover";
 import { LeaderboardClient } from "./_components/LeaderboardClient";
 
-import { errorMessage, logger } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 export const metadata: Metadata = { title: "Classement" };
 export const dynamic = "force-dynamic";
@@ -31,7 +32,8 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
   try {
     await rolloverDueSeasons(new Date(Date.now() - LAZY_ROLLOVER_GRACE_MS));
   } catch (error) {
-    logger.error({ scope: "leaderboard", err: errorMessage(error) }, "lazy season rollover failed");
+    const log = await requestLogger();
+    log.error({ scope: "leaderboard", err: errorMessage(error) }, "lazy season rollover failed");
   }
 
   const [entries, userRank, season, friendsBoard] = await Promise.all([

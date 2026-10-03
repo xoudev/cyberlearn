@@ -12,7 +12,8 @@ import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 /**
  * Writing on the forum.
@@ -281,6 +282,7 @@ async function notifyParticipants(
       ),
     );
   } catch (error) {
-    logger.error({ scope: "forum", err: errorMessage(error) }, "failed to notify participants");
+    const log = await requestLogger();
+    log.error({ scope: "forum", err: errorMessage(error) }, "failed to notify participants");
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@cyberlearn/db";
 import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 
-import { logger } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
 
@@ -71,7 +71,8 @@ export async function GET(request: Request): Promise<NextResponse> {
   const results = await Promise.allSettled(ops);
   const failed = results.filter((r) => r.status === "rejected").length;
   if (failed > 0) {
-    logger.error({ scope: "streak-reset", failed }, "streak writes failed");
+    const log = await requestLogger();
+    log.error({ scope: "streak-reset", failed }, "streak writes failed");
   }
 
   return NextResponse.json({

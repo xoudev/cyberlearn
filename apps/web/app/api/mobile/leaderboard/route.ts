@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { leaderboardRepository, leagueRepository } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 /**
  * Leaderboard + league data for the mobile Leaderboard screen. Served by the
@@ -52,7 +53,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, entries, userRank, league, friendsBoard });
   } catch (err) {
-    logger.error({ scope: "mobile/leaderboard", err: errorMessage(err) }, "error");
+    const log = await requestLogger();
+    log.error({ scope: "mobile/leaderboard", err: errorMessage(err) }, "error");
     return NextResponse.json({ ok: false, error: "Chargement impossible." }, { status: 500 });
   }
 }

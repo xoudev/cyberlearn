@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma, notificationRepository } from "@cyberlearn/db";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
 
@@ -104,7 +105,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       sent++;
     } catch (error) {
       failed++;
-      logger.error(
+      const log = await requestLogger();
+      log.error(
         { scope: "review-reminders", userId, err: errorMessage(error) },
         "notification failed",
       );
