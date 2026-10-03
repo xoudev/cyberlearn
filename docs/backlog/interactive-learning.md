@@ -71,7 +71,7 @@ confirmer par un prototype avec notre image avant d'écrire des leçons dessus.
 | # | Idée | Ce que fait l'élève | Dépendance | Mobile |
 | --- | --- | --- | --- | --- |
 | 7 | **Boîte mail piégée** | Il signale le phishing en cliquant sur les éléments suspects : domaine de l'expéditeur, lien, pièce jointe. | Aucune | Oui |
-| 8 | **Trouve la faille** | Il clique sur la ligne vulnérable d'un extrait de code et nomme la faille. | Aucune | Oui |
+| 8 | ~~**Trouve la faille**~~ | ~~Il clique sur la ligne vulnérable d'un extrait de code et nomme la faille.~~ Fait, PR #379 : `<FindTheFlaw>`, sur le site et dans l'app. | Aucune | Oui |
 | 9 | **Chasse dans les logs (façon SIEM)** | Il filtre un tableau d'événements pour retrouver l'IP et l'heure de l'attaque. | Aucune | Oui |
 | 10 | **Incident à choix** | Il suit une histoire à embranchements où chaque décision a des conséquences. | Aucune | Oui |
 | 11 | **Pare-feu** | Il écrit des règles, envoie des paquets de test et voit s'ils sont acceptés ou bloqués. | Aucune | Oui |
