@@ -210,7 +210,14 @@ Triggers possibles :
 
 
 
-## Audit Zod sur toutes les Server Actions admin
+## Audit Zod sur toutes les Server Actions admin - RÉSOLU par la PR #374
+
+Fait : les 62 actions des 19 fichiers `"use server"` de la console relues une
+par une. Les trous (ids des quiz de parcours, liste des leçons d'un parcours
+lue à la main, ids liés, booléens, couverture de leçon) sont détaillés dans la
+PR. Reste la même règle pour toute action ajoutée.
+
+Note d'origine :
 
 Le security-review PR 5 a flagué 2 Server Actions sans Zod safeParse
 (user-actions, ticket-actions). Bien que les autres CRUD admin

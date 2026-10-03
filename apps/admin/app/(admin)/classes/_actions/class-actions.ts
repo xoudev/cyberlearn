@@ -345,6 +345,7 @@ export async function setClassArchivedAction(
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
   if (!z.guid().safeParse(classId).success) return { ok: false };
+  if (!z.boolean().safeParse(archived).success) return { ok: false };
 
   await classRepository.setArchived(classId, archived);
   await audit(admin.id, archived ? "class.archive" : "class.unarchive", classId, {});
@@ -444,6 +445,7 @@ export async function setEstablishmentArchivedAction(
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
   if (!z.guid().safeParse(establishmentId).success) return { ok: false };
+  if (!z.boolean().safeParse(archived).success) return { ok: false };
 
   await classRepository.setEstablishmentArchived(establishmentId, archived);
   await audit(
@@ -463,6 +465,7 @@ export async function setPromotionArchivedAction(
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
   if (!z.guid().safeParse(promotionId).success) return { ok: false };
+  if (!z.boolean().safeParse(archived).success) return { ok: false };
 
   await classRepository.setPromotionArchived(promotionId, archived);
   await audit(

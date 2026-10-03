@@ -115,4 +115,88 @@ const safe = true;
       },
     ]);
   });
+
+  it("shows the code of a playground written as starterCode", () => {
+    const lesson = parseLesson(
+      [
+        "## Essayer",
+        "",
+        '<CodePlayground language="python" starterCode={`if a > b:',
+        '    print("a")',
+        "\\tprint(\\`b\\`)`} />",
+        "",
+        "Suite du texte.",
+      ].join("\n"),
+    );
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "playground", lang: "python", code: 'if a > b:\n    print("a")\n\tprint(`b`)' },
+      { kind: "paragraph", text: "Suite du texte." },
+    ]);
+  });
+
+  it("takes the list's indent off the code, not the code's own", () => {
+    const lesson = parseLesson(
+      [
+        "## Essayer",
+        "",
+        "- Lance ceci :",
+        "",
+        '  <CodePlayground language="python" starterCode={`for i in range(3):',
+        "      print(i)`} />",
+      ].join("\n"),
+    );
+
+    expect(lesson.sections[0]?.blocks[1]).toEqual({
+      kind: "playground",
+      lang: "python",
+      code: "for i in range(3):\n    print(i)",
+    });
+  });
+
+  it("shows a Python challenge: statement, starting code and tests", () => {
+    const lesson = parseLesson(
+      [
+        "## Le défi",
+        "",
+        '<PythonChallenge id="py-1" title="Somme" description="Renvoie la somme, l\'entier n compris." starterCode="def solution(n):',
+        '    pass" tests={[{ input: "solution(5)", expected: "15" }, { input: "solution({0: 1}[0])", expected: "1", label: "Cas \\"limite\\"" }]} />',
+        "",
+        "Après le défi.",
+      ].join("\n"),
+    );
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "challenge",
+        title: "Somme",
+        description: "Renvoie la somme, l'entier n compris.",
+        code: "def solution(n):\n    pass",
+        tests: [
+          { input: "solution(5)", expected: "15", label: null },
+          { input: "solution({0: 1}[0])", expected: "1", label: 'Cas "limite"' },
+        ],
+      },
+      { kind: "paragraph", text: "Après le défi." },
+    ]);
+  });
+
+  it("still reads a playground written with its code as children", () => {
+    const lesson = parseLesson(
+      [
+        "## Essayer",
+        "",
+        '<CodePlayground language="javascript" starterCode={`a`} />',
+        "",
+        '<CodePlayground language="python">',
+        "print(1)",
+        "</CodePlayground>",
+      ].join("\n"),
+    );
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "playground", lang: "javascript", code: "a" },
+      { kind: "playground", lang: "python", code: "print(1)" },
+    ]);
+  });
 });
