@@ -9,5 +9,6 @@ export * from "./schemas/path-manifest.schema.js";
 export * from "./schemas/lesson-cover.schema.js";
 export * from "./schemas/auth.schema.js";
 export * from "./schemas/challenge.schema.js";
+export * from "./schemas/challenge-machine.schema.js";
 export * from "./schemas/find-the-flaw.schema.js";
 export * from "./schemas/phishing-email.schema.js";
