@@ -109,5 +109,28 @@ Restent volontairement sur `console` :
 - les composants client (avertissements de props en dev seulement) ;
 - les scripts CLI (`content-check.mjs`, scripts de seed).
 
-Reste à faire, hors périmètre de la migration : un `requestId` propagé du
-middleware aux handlers, et un drain vers un fournisseur externe.
+### Identifiant de requête
+
+Le middleware donne à chaque requête un identifiant (`apps/web/lib/request-id.ts`) :
+celui de Vercel (`x-vercel-id`) quand il est là et bien formé, pour retrouver la
+même requête dans les journaux de l'hébergeur, un UUID sinon. Il le pose sur la
+requête transmise sous `x-request-id`, en écrasant ce que le client aurait
+envoyé sous ce nom, et le renvoie dans la réponse, pour qu'une personne qui
+signale un problème puisse le citer.
+
+Côté serveur, `requestLogger()` (`apps/web/lib/request-logger.ts`) rend le
+logger de la requête en cours : chaque ligne porte `requestId`. Hors requête
+(script, test, travail lancé après la réponse), c'est le logger simple. Les
+lignes écrites depuis `packages/` passent par le logger simple aussi : ces
+modules ne savent pas quelle requête ils servent.
+
+Dans `apps/web`, un handler, une Server Action ou un module de `lib/` écrit
+donc :
+
+```ts
+const log = await requestLogger();
+log.error({ scope: "forum", err: errorMessage(err) }, "failed to notify participants");
+```
+
+Reste à faire : un drain vers un fournisseur externe (Axiom, Datadog…), qui
+demande de choisir le fournisseur et d'ajouter sa dépendance.

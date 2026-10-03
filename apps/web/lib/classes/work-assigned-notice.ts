@@ -2,7 +2,8 @@ import { prisma } from "@cyberlearn/db";
 import { type AssignedWorkKind, sendWorkAssignedEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 /**
  * Tells a class that work has been set for them.
@@ -102,7 +103,8 @@ export async function announceAssignedWork(notice: WorkAssignedNotice): Promise<
           });
         } catch (error) {
           // One bad address must not cost the other twenty-seven their e-mail.
-          logger.error(
+          const log = await requestLogger();
+          log.error(
             { scope: "work-assigned", err: errorMessage(error) },
             "e-mail failed for one recipient",
           );
@@ -110,7 +112,8 @@ export async function announceAssignedWork(notice: WorkAssignedNotice): Promise<
       }),
     );
   } catch (error) {
-    logger.error({ scope: "work-assigned", err: errorMessage(error) }, "notice failed");
+    const log = await requestLogger();
+    log.error({ scope: "work-assigned", err: errorMessage(error) }, "notice failed");
   }
   return told;
 }

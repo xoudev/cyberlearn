@@ -4,7 +4,8 @@ import { sendDeletionConfirmEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { pseudonymize } from "@/lib/pseudonymize";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 export interface RequestDeletionSuccess {
   success: true;
@@ -57,7 +58,8 @@ export async function requestDeletion(
       confirmUrl,
     });
   } catch (err) {
-    logger.error({ scope: "rgpd", err: errorMessage(err) }, "sendDeletionConfirmEmail failed");
+    const log = await requestLogger();
+    log.error({ scope: "rgpd", err: errorMessage(err) }, "sendDeletionConfirmEmail failed");
     return { success: false, error: "email_failed" };
   }
 

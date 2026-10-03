@@ -1,7 +1,8 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { pseudonymize } from "./pseudonymize";
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage, logger } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 // ── Shared client settings ──────────────────────────────────────────────────
 
@@ -67,7 +68,8 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
     // Still fail-open - but say so. Swallowing this in silence is how a
     // limiter that answers nobody went unnoticed: it never blocked anyone, it
     // never raised anything, it only made signing in slow.
-    logger.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
+    const log = await requestLogger();
+    log.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
     return true;
   } finally {
     if (timer !== undefined) clearTimeout(timer);
@@ -107,6 +109,7 @@ function getRedis(): Redis | null {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
     if (!_warnedMissing) {
+      // Once per process, and about configuration rather than a request.
       logger.warn(
         { scope: "rate-limit" },
         "UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured - rate limiting disabled (fail-open).",

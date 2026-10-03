@@ -1,5 +1,6 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { REQUEST_ID_HEADER, requestIdFor } from "@/lib/request-id";
 
 // ─── Security headers (ADR-002) ────────────────────────────────────────────
 // Nonce-based CSP: a random nonce is generated per request and forwarded via
@@ -252,6 +253,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Build request headers that include the nonce so layout.tsx can read it.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // One id per request for the server's logs (lib/request-id.ts); set, not
+  // added, so whatever the client sent under that name is gone.
+  const requestId = requestIdFor(request);
+  requestHeaders.set(REQUEST_ID_HEADER, requestId);
 
   // Block /dev/* in production - return 404, not 403 (don't reveal route existence)
   if (isDevRoute(pathname) && process.env.NODE_ENV === "production") {
@@ -270,6 +275,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (!supabaseUrl || !supabaseAnonKey) {
     const res = NextResponse.next({ request: { headers: requestHeaders } });
     applySecurityHeaders(res, nonce);
+    res.headers.set(REQUEST_ID_HEADER, requestId);
     return res;
   }
 
@@ -384,6 +390,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   applySecurityHeaders(response, nonce);
+  response.headers.set(REQUEST_ID_HEADER, requestId);
   return response;
 }
 

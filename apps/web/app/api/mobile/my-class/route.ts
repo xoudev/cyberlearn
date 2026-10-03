@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 /**
  * What a learner's class has set for them, for the mobile My class screen.
@@ -68,7 +69,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })),
     });
   } catch (error) {
-    logger.error({ scope: "api/mobile/my-class", err: errorMessage(error) }, "failed");
+    const log = await requestLogger();
+    log.error({ scope: "api/mobile/my-class", err: errorMessage(error) }, "failed");
     return NextResponse.json({ ok: false, error: "Erreur serveur." }, { status: 500 });
   }
 }

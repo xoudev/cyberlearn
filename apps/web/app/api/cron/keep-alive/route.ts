@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@cyberlearn/db";
 import { Redis } from "@upstash/redis";
 
-import { logger, errorMessage } from "@cyberlearn/lib/logger";
+import { errorMessage } from "@cyberlearn/lib/logger";
+import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
 
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     results.postgres = "ok";
   } catch (err) {
     results.postgres = "error";
-    logger.error({ scope: "keep-alive", err: errorMessage(err) }, "postgres ping failed");
+    const log = await requestLogger();
+    log.error({ scope: "keep-alive", err: errorMessage(err) }, "postgres ping failed");
   }
 
   // Ping Redis (Upstash) - minimal GET to keep the instance warm
@@ -40,7 +42,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       results.redis = "ok";
     } catch (err) {
       results.redis = "error";
-      logger.error({ scope: "keep-alive", err: errorMessage(err) }, "redis ping failed");
+      const log = await requestLogger();
+      log.error({ scope: "keep-alive", err: errorMessage(err) }, "redis ping failed");
     }
   }
 

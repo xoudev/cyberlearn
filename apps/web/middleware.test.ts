@@ -145,3 +145,44 @@ describe("the landing page is for people who are not signed in", () => {
     expect(location(response)).toBe("/auth/callback");
   });
 });
+
+describe("request id", () => {
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+  });
+
+  it("gives the request an id of its own, whatever the client sent, and returns it", async () => {
+    const response = await middleware(
+      new NextRequest("https://cyberlearn.fr/catalogue", {
+        headers: { "x-request-id": "forged-by-the-client" },
+      }),
+    );
+    // What the handlers will read: Next forwards a rewritten request header
+    // to them under this name.
+    const forwarded = response.headers.get("x-middleware-request-x-request-id");
+    expect(forwarded).toMatch(UUID);
+    expect(response.headers.get("x-request-id")).toBe(forwarded);
+  });
+
+  it("takes Vercel's id when there is one, to find the same request in the host's logs", async () => {
+    const vercelId = "cdg1::abcde-1712345678901-0123456789ab";
+    const response = await middleware(
+      new NextRequest("https://cyberlearn.fr/catalogue", { headers: { "x-vercel-id": vercelId } }),
+    );
+    expect(response.headers.get("x-middleware-request-x-request-id")).toBe(vercelId);
+  });
+
+  it("gives two requests two ids", async () => {
+    const ids = await Promise.all(
+      [1, 2].map(async () =>
+        (await middleware(new NextRequest("https://cyberlearn.fr/catalogue"))).headers.get(
+          "x-request-id",
+        ),
+      ),
+    );
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+});
