@@ -697,35 +697,42 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
 
       {total > 0 ? (
         <div style={{ borderTop: "1px solid #1F1B47", padding: "12px 18px" }}>
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "6px 14px",
-            }}
-          >
-            {expected.map((cmd) => {
-              const ok = done.includes(cmd);
-              return (
-                <li
-                  key={cmd}
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 12,
-                    color: ok ? "var(--cosmetic-accent)" : "#6B6890",
-                  }}
-                >
-                  {ok ? "✓" : "○"} {cmd}
-                </li>
-              );
-            })}
-          </ul>
+          {expected.length > 0 ? (
+            // The steps, one per line and numbered: a command is read as a
+            // whole, and the order is the lesson's.
+            <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
+              {expected.map((cmd, i) => {
+                const ok = done.includes(cmd);
+                return (
+                  <li
+                    key={cmd}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      color: ok ? "var(--cosmetic-accent)" : "#6B6890",
+                    }}
+                  >
+                    <span style={{ flexShrink: 0 }}>
+                      {ok ? "✓" : "○"} {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span style={{ overflowWrap: "anywhere" }}>{cmd}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
           {checks.length > 0 ? (
             <ul
-              style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 4 }}
+              style={{
+                margin: expected.length > 0 ? "10px 0 0" : 0,
+                padding: 0,
+                listStyle: "none",
+                display: "grid",
+                gap: 4,
+              }}
             >
               {checks.map((check) => {
                 const ok = passed.includes(check.label);
