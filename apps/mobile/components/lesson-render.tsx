@@ -289,6 +289,56 @@ export function BlockView({
       return <FindTheFlawExercise flaw={block.flaw} />;
     case "phishing":
       return <PhishingEmailExercise mail={block.mail} />;
+    case "sql":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: block.lab ? colors.danger : theme.accent,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: block.lab ? colors.danger : theme.accent }}>
+              {block.lab ? "INJECTION SQL · SUR LE SITE" : "SQL · SUR LE SITE"}
+            </Text>
+            {block.title !== null ? (
+              <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+                {block.title}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ padding: 12, gap: 8 }}>
+            {block.task !== null ? <Text variant="bodySm">{block.task}</Text> : null}
+            {block.query !== null && block.query.trim() !== "" ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <Text
+                  style={{
+                    fontFamily: `${fonts.mono}_400Regular`,
+                    fontSize: 12,
+                    lineHeight: 19,
+                    color: theme.terminal.foreground,
+                  }}
+                >
+                  {block.query}
+                </Text>
+              </ScrollView>
+            ) : null}
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              Une vraie base SQLite tourne dans cette leçon, sur le site : c&apos;est là qu&apos;on
+              lance les requêtes.
+            </Text>
+          </View>
+        </View>
+      );
     case "challenge":
       return (
         <View

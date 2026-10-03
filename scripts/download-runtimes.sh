@@ -161,3 +161,36 @@ if [[ "$(sha256sum "${V86_DEST}/terminfo-linux" | cut -d' ' -f1)" != "$TERMINFO_
   exit 1
 fi
 echo "  ✓ v86/terminfo-linux (ncurses 6.4)"
+
+# ── sql.js (SQLite compiled to WebAssembly, in a Web Worker) ─────────────────
+# The worker build and its .wasm only: the page talks to the worker, nothing
+# of sql.js is bundled into the site.
+SQLJS_VERSION="1.14.2"
+SQLJS_TARBALL_SHA="9d491337e1850df39362be640c23f9751bf0fbd33fc232c2a580bb87b70d62fd"
+SQLJS_DEST="$(dirname "$0")/../apps/web/public/runtimes/sqljs"
+
+declare -A SQLJS_HASHES=(
+  [worker.sql-wasm.js]="92a4031e278cdb20e5841296e0265b0e973f3190c30f2ec86fcb13bffa89ba5c"
+  [sql-wasm.wasm]="38c14f6e379210bc942bdc4ebca44e7bfdb4318ecc1c72ca666a28fdce96670a"
+)
+
+mkdir -p "$SQLJS_DEST" "${WORK}/sqljs"
+echo ""
+echo "=== Downloading sql.js ${SQLJS_VERSION} ==="
+curl -fsSL "https://registry.npmjs.org/sql.js/-/sql.js-${SQLJS_VERSION}.tgz" -o "${WORK}/sqljs.tgz"
+if [[ "$(sha256sum "${WORK}/sqljs.tgz" | cut -d' ' -f1)" != "$SQLJS_TARBALL_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - sql.js tarball"
+  exit 1
+fi
+tar -xzf "${WORK}/sqljs.tgz" -C "${WORK}/sqljs"
+cp "${WORK}/sqljs/package/dist/worker.sql-wasm.js" "${WORK}/sqljs/package/dist/sql-wasm.wasm" "$SQLJS_DEST/"
+cp "${WORK}/sqljs/package/LICENSE" "${SQLJS_DEST}/LICENSE-sqljs.txt"
+for file in "${!SQLJS_HASHES[@]}"; do
+  actual=$(sha256sum "${SQLJS_DEST}/${file}" | cut -d' ' -f1)
+  if [[ "$actual" != "${SQLJS_HASHES[$file]}" ]]; then
+    echo "INTEGRITY CHECK FAILED - sqljs/${file}"
+    exit 1
+  fi
+  echo "  ✓ sqljs/${file}"
+done
+echo "sql.js ${SQLJS_VERSION} ready in ${SQLJS_DEST}"

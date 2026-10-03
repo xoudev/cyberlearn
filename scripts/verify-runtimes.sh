@@ -60,6 +60,12 @@ check_file "${V86}/bash"                     "eb5062d5e2fa6437dc7e7b5623879c3cde
 # Debian's compiled terminfo entry for TERM=linux (ncurses-base 6.4-4), for bash's line editor
 check_file "${V86}/terminfo-linux"           "b70a4941416eb703a01b5a06fd1c914880452302b0e0b2a7dea12600607824a7" "v86/terminfo-linux"
 
+# ── sql.js 1.14.2 (SQLite in WebAssembly, the SQL lessons' real database) ────
+# Update with download-runtimes.sh (SQLJS_VERSION)
+SQLJS="${RUNTIMES}/sqljs"
+check_file "${SQLJS}/worker.sql-wasm.js"     "92a4031e278cdb20e5841296e0265b0e973f3190c30f2ec86fcb13bffa89ba5c" "sqljs/worker.sql-wasm.js"
+check_file "${SQLJS}/sql-wasm.wasm"          "38c14f6e379210bc942bdc4ebca44e7bfdb4318ecc1c72ca666a28fdce96670a" "sqljs/sql-wasm.wasm"
+
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $FAILED -ne 0 ]]; then
   echo ""

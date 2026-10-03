@@ -950,6 +950,72 @@ Un message présenté comme dans une messagerie : l'élève clique (ou touche, d
 
 Laisser des éléments anodins : un message où tout est suspect n'apprend pas à trier. L'éditeur refuse un indice qui vise une partie absente (un lien, une pièce jointe, un paragraphe qui n'existe pas), deux indices sur la même partie, ou un lien sans son adresse.
 
+### 5.9d SqlPlayground - Une vraie base SQL
+
+Une vraie base SQLite (sql.js, dans un Web Worker du navigateur) construite à partir du `schema` de l'exercice. L'élève écrit ses requêtes, les lance (bouton « Exécuter » ou Ctrl+Entrée) et voit le résultat sous forme de tableau, ou l'erreur exacte de SQLite. Ses modifications (`INSERT`, `DROP TABLE`…) restent jusqu'à « Réinitialiser la base » ; une requête qui dépasse 3 s est arrêtée et la base repart du schéma. Rien ne part vers le serveur.
+
+```mdx
+<SqlPlayground
+  id="sqli-union"
+  title="Une page produit qui en dit trop"
+  schema={`CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price INTEGER NOT NULL);
+INSERT INTO products (id, name, price) VALUES (10, 'Clavier mécanique', 89), (11, 'Souris', 25);`}
+  starterQuery="SELECT name, price FROM products WHERE id = 10"
+  task="Fais afficher le produit 10 et, dans les mêmes colonnes, chaque compte."
+  expected={{ "rows": [["Clavier mécanique", 89], ["alice", "secret123"]] }}
+  hint="Ajoute à la fin : UNION SELECT username, password FROM users"
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `schema` | string | Le SQL qui construit la base : `CREATE TABLE` puis `INSERT`. Entre accents graves, pour garder les retours à la ligne |
+| `starterQuery` | string | La requête déjà écrite dans l'éditeur (optionnel) |
+| `task` | string | La consigne, au-dessus de l'éditeur (optionnel) |
+| `expected` | objet | Le résultat attendu (optionnel) : `rows` (les lignes, des chaînes, nombres ou `null`), `columns` (les noms de colonnes, sans tenir compte de la casse) et `ordered` (`true` si l'ordre des lignes compte ; par défaut, non). **Écrire les clés entre guillemets** : `{{ "rows": [[1]] }}` |
+| `hint` | string | Un indice, proposé après deux résultats faux (optionnel) |
+
+`2` et `"2"` comptent comme la même réponse, `null` et `"null"` non. Sans `expected`, l'exercice est un bac à sable : aucune correction, juste la base. L'éditeur refuse un exercice sans `schema`, ou des `rows` qui ne sont pas des lignes ; un `schema` qui ne passe pas dans SQLite s'affiche comme tel à la première requête : lance chaque exercice au moins une fois avant de publier.
+
+### 5.9e SqlInjectionLab - Labo d'injection SQL
+
+Un formulaire de connexion branché sur une vraie base SQLite, avec le code du serveur sous les yeux. En « Code vulnérable », chaque champ est collé tel quel dans la `query` ; en « Code corrigé », la même requête passe les valeurs à part, en paramètres (`?`). À chaque tentative, l'élève voit la requête exactement reçue par la base, puis le compte ouvert : c'est la leçon. Après trois essais, l'indice est proposé.
+
+```mdx
+<SqlInjectionLab
+  id="sqli-admin"
+  title="Le compte administrateur"
+  schema={`CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT);
+INSERT INTO users (username, password, role) VALUES ('alice', 'secret123', 'user'), ('admin', 'Zx9!kQ2#vT', 'admin');`}
+  query="SELECT id, username, role FROM users WHERE username = '{login}' AND password = '{password}'"
+  fields={[{ "name": "login", "label": "Identifiant" }, { "name": "password", "label": "Mot de passe", "secret": true }]}
+  goal="Entre dans le compte dont le rôle est admin, sans connaître son mot de passe."
+  success={{ "column": "role", "equals": "admin" }}
+  hint="Un commentaire SQL commence par --."
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `schema` | string | Le SQL qui construit la base, comme pour `SqlPlayground` |
+| `query` | string | La requête du serveur vulnérable, un `{nom}` à l'endroit de chaque champ. Les apostrophes autour (`'{login}'`) disparaissent en code corrigé, remplacées par `?` |
+| `fields` | objets | De 1 à 4 champs : `name` (en minuscules, comme dans la `query`), `label`, et `secret: true` pour un mot de passe. **Clés entre guillemets** |
+| `goal` | string | Ce que l'élève doit obtenir, au-dessus du formulaire |
+| `success` | objet | Quand l'attaque a réussi (optionnel) : la première ligne renvoyée, le compte que le formulaire ouvre, a `equals` dans la colonne `column`. Sans lui, toute ligne renvoyée est une entrée |
+| `hint` | string | Un indice, proposé après trois essais (optionnel) |
+
+`success` regarde la **première** ligne, comme un vrai formulaire : un `' OR 1=1 --` ouvre le premier compte de la table, pas forcément celui visé. L'éditeur refuse un champ dont le `{nom}` n'apparaît pas dans la `query`, ou un nom de champ qui n'en ferait pas un.
+
+Dans l'app, ces deux exercices s'affichent comme une carte (la consigne et la requête) : la base SQLite ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -963,8 +1029,7 @@ compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
 | Deux `~` sur une même ligne d'un `<Diagram>` | Transformés en texte barré avant Mermaid | Reformuler sans tilde (« répertoire personnel ») |
 | `question="... \"texte\" ..."` | Dans un attribut entre guillemets, `\"` ferme l'attribut : la leçon ne compile plus | Des apostrophes dans le texte, ou reformuler |
 | `options={["un \"texte\""]}` | Correct : dans une expression, ce sont des chaînes JavaScript | Rien à changer |
-| Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `
-` dans la chaîne |
+| Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `\n` dans la chaîne |
 | Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
 
 Le test `packages/lib/src/mdx/content.test.ts` compile chaque leçon, et
@@ -986,7 +1051,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

@@ -13,3 +13,4 @@ export * from "./schemas/challenge-machine.schema.js";
 export * from "./schemas/challenge-file.schema.js";
 export * from "./schemas/find-the-flaw.schema.js";
 export * from "./schemas/phishing-email.schema.js";
+export * from "./schemas/sql-exercise.schema.js";
