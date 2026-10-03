@@ -143,7 +143,7 @@ admin) s'applique aux solutions publiées.
 | 37 | **Assistant d'indices par IA** | Explique une erreur ou donne un indice sans donner la réponse. | Une clé d'API et un coût par question. Les données des élèves, parfois mineurs via les classes, sont à protéger (registre RGPD). |
 
 - Ont pourrais aussi faire que dans les quizs et les certifications il y a de vrai exo avec terminal ou autres
-- Dans le vrai terminal linux en dessus la ou est marqué les step avec les commandes ce n'est pas un liste ils sont tous afficher en 1 seule ligne
+- ~~Dans le vrai terminal linux en dessus la ou est marqué les step avec les commandes ce n'est pas un liste ils sont tous afficher en 1 seule ligne~~ : fait, PR #370, une étape numérotée par ligne.
 - certain code dans les playground pyoxide ou autre ont pas les indentations il faudrais verifier
 ## Ordre proposé
 
