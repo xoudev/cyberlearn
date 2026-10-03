@@ -23,7 +23,7 @@
 
 | # | Idée | Ce que ça apporte | Dépendance | Mobile |
 | --- | --- | --- | --- | --- |
-| 1 | **Défis CTF sur la machine Linux** | Des défis avec un flag à trouver dans une machine préparée : logs à fouiller, droits mal réglés, indice caché. La page « Défis » reprend vie. | Aucune | Saisie du flag oui, machine site seul |
+| 1 | ~~**Défis CTF sur la machine Linux**~~ | ~~Des défis avec un flag à trouver dans une machine préparée : logs à fouiller, droits mal réglés, indice caché. La page « Défis » reprend vie.~~ Fait : PR #381 (machine et flag propre à chaque élève), #382 (trois premiers défis, synchronisés depuis le dépôt), #383 (l'app). | Aucune | Saisie du flag oui, machine site seul |
 | 2 | **Enquête dans les logs** | De faux `auth.log` et `access.log` déposés dans la machine ; l'élève retrouve l'attaque avec `grep` et `awk`. Du contenu seulement. | Aucune | Site seul |
 | 3 | ~~**Parcours Linux au vrai terminal**~~ | ~~Les exercices passent du terminal simulé au vrai Linux quand BusyBox le permet.~~ Fait : PR #354 pour les modules déjà écrits, puis chaque module jusqu'à #367. 61 leçons du parcours F2 ont leur exercice dans le vrai terminal ; le terminal simulé reste pour les mises en situation que BusyBox ne joue pas (serveur distant, services, comptes). | Aucune | Site seul |
 | 4 | **Explication de commande** | Un clic sur une commande tapée dans le terminal affiche le rôle de chaque option. | Aucune | Site seul |
