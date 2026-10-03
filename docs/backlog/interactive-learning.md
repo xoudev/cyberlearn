@@ -25,7 +25,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | **Défis CTF sur la machine Linux** | Des défis avec un flag à trouver dans une machine préparée : logs à fouiller, droits mal réglés, indice caché. La page « Défis » reprend vie. | Aucune | Saisie du flag oui, machine site seul |
 | 2 | **Enquête dans les logs** | De faux `auth.log` et `access.log` déposés dans la machine ; l'élève retrouve l'attaque avec `grep` et `awk`. Du contenu seulement. | Aucune | Site seul |
-| 3 | **Parcours Linux au vrai terminal** | Les exercices passent du terminal simulé au vrai Linux quand BusyBox le permet. | Aucune | Site seul |
+| 3 | ~~**Parcours Linux au vrai terminal**~~ | ~~Les exercices passent du terminal simulé au vrai Linux quand BusyBox le permet.~~ Fait : PR #354 pour les modules déjà écrits, puis chaque module jusqu'à #367. 61 leçons du parcours F2 ont leur exercice dans le vrai terminal ; le terminal simulé reste pour les mises en situation que BusyBox ne joue pas (serveur distant, services, comptes). | Aucune | Site seul |
 | 4 | **Explication de commande** | Un clic sur une commande tapée dans le terminal affiche le rôle de chaque option. | Aucune | Site seul |
 | 5 | **Image Linux complète** | Notre propre image avec bash, git, python3, sqlite3, gcc, nasm et gdb : tout le parcours Linux, et de vrais outils pour le C et l'assembleur. | Aucune (runtime) | Site seul |
 | 6 | **Deux machines reliées** | Une attaquante et une cible dans la même page : scan, SSH, élévation de privilèges. | Aucune (runtime) | Site seul |
@@ -106,7 +106,7 @@ côté serveur. Son poids est à mesurer par un prototype.
 | --- | --- | --- | --- | --- |
 | 26 | **Glossaire** | Les termes techniques des leçons sont soulignés et leur définition s'affiche au survol, avec une page qui les regroupe. | Aucune | Oui (appui long) |
 | 27 | **Fiches de révision PDF** | Une fiche par module, générée à partir des récapitulatifs, avec `@react-pdf/renderer` qui sert déjà aux certificats. | Aucune | Oui |
-| 28 | **Examens blancs chronométrés** | Un examen par certification (LPIC-1 pour le parcours Linux, par exemple), avec un score par domaine. | Aucune | Oui |
+| 28 | **Examens blancs chronométrés** | Un examen par certification (LPIC-1 pour le parcours Linux, par exemple), avec un score par domaine. Déjà là : le chronomètre du vrai terminal (`timeLimitMinutes`, PR #369), qui minute l'épreuve pratique du parcours Linux. | Aucune | Oui |
 | 29 | **Mode hors ligne** | L'élève télécharge un module pour le lire sans réseau. | Aucune | App seule |
 
 ## E. Motivation, social et professeurs
