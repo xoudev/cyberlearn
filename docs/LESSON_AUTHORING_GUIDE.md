@@ -8,10 +8,10 @@ Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (
 ## 1. Format du fichier
 
 ```
-mon-slug.mdx
+content/lessons/f2-linux/02033-linux-surveiller-direct.mdx
 ```
 
-Un fichier = une leçon. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
+Un fichier = une leçon, rangé dans le dossier de son parcours et nommé par le numéro de son refCode (`02033` pour `CL-LSN-02033-V01`) suivi de son slug. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
 
 ---
 
@@ -21,7 +21,7 @@ Le frontmatter se place **en tout premier** dans le fichier, délimité par `---
 
 ```yaml
 ---
-refCode: CL-LSN-001-V01
+refCode: CL-LSN-03001-V01
 slug: introduction-au-reseau
 title: Introduction au réseau TCP/IP
 description: Comprendre les fondements du modèle TCP/IP, les adresses IP, les ports et les protocoles essentiels.
@@ -37,7 +37,7 @@ prerequisites: []
 
 | Champ | Type | Règle | Exemple |
 |---|---|---|---|
-| `refCode` | string | Format exact `CL-LSN-XXX-VYY` (XXX = 3 chiffres, YY = 2 chiffres) | `CL-LSN-042-V01` |
+| `refCode` | string | Format exact `CL-LSN-PPNNN-VYY` : PP = numéro du parcours sur 2 chiffres (ordre de `docs/curriculum/catalogue.md`, F1 = 01 … C8 = 20), NNN = rang de la leçon dans le parcours (901 et suivants pour les bilans de module), YY = version. L'ancien format à 3 chiffres (`CL-LSN-042-V01`) reste accepté pour les leçons du premier catalogue, jamais pour une nouvelle | `CL-LSN-01033-V01` |
 | `slug` | string | Minuscules, chiffres, tirets uniquement. 3–100 caractères. Unique. | `bases-du-chiffrement` |
 | `title` | string | 3–200 caractères | `Les bases du chiffrement symétrique` |
 | `description` | string | 10–500 caractères. Résumé pédagogique visible sur la carte de leçon. | `Découvrez AES, DES, et...` |
@@ -45,7 +45,7 @@ prerequisites: []
 | `difficulty` | enum | `BEGINNER` · `INTERMEDIATE` · `ADVANCED` · `EXPERT` | `INTERMEDIATE` |
 | `estimatedMinutes` | int | 1–600 minutes | `30` |
 | `xpReward` | int | 0–10 000 XP | `200` |
-| `prerequisites` | array | Liste de `refCode` de leçons prérequises. `[]` si aucun. | `["CL-LSN-001-V01"]` |
+| `prerequisites` | array | Liste de `refCode` de leçons prérequises. `[]` si aucun. | `["CL-LSN-03001-V01"]` |
 | `coverImageUrl` | string? | URL HTTPS absolue vers une image (optionnel) | `https://...` |
 
 ### Barème XP indicatif
@@ -912,7 +912,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
@@ -930,7 +930,7 @@ avant de pousser.
 
 ```mdx
 ---
-refCode: CL-LSN-010-V01
+refCode: CL-LSN-04010-V01
 slug: python-boucles-for
 title: Maîtriser les boucles for en Python
 description: Comprendre et utiliser les boucles for en Python avec range(), les listes et les dictionnaires.
@@ -1014,7 +1014,7 @@ print(f"Somme : {total}")  # Attendu : 55
 
 ```mdx
 ---
-refCode: CL-LSN-025-V01
+refCode: CL-LSN-16025-V01
 slug: scan-nmap-bases
 title: Scan réseau avec Nmap
 description: Apprendre à utiliser Nmap pour découvrir des hôtes, scanner des ports et identifier des services.
@@ -1022,7 +1022,7 @@ category: CYBERSEC
 difficulty: INTERMEDIATE
 estimatedMinutes: 35
 xpReward: 400
-prerequisites: ["CL-LSN-001-V01"]
+prerequisites: ["CL-LSN-03001-V01"]
 ---
 
 # Scan réseau avec Nmap
@@ -1082,7 +1082,7 @@ Essayez sur une cible CTF :
 
 ```mdx
 ---
-refCode: CL-LSN-050-V01
+refCode: CL-LSN-09050-V01
 slug: assembly-fonctions-pile
 title: Fonctions et pile en assembleur x86-64
 description: Comprendre les mécanismes de call/ret, la convention d'appel System V AMD64 et la gestion de la pile en assembleur.
@@ -1090,7 +1090,7 @@ category: DEV
 difficulty: ADVANCED
 estimatedMinutes: 45
 xpReward: 900
-prerequisites: ["CL-LSN-048-V01"]
+prerequisites: ["CL-LSN-09048-V01"]
 ---
 
 # Fonctions et pile en assembleur x86-64
@@ -1171,7 +1171,7 @@ main:
 Avant de soumettre le fichier `.mdx` à l'admin, vérifier :
 
 - [ ] Frontmatter complet (tous les champs obligatoires remplis)
-- [ ] `refCode` au format `CL-LSN-XXX-VYY` et **unique** (ne pas réutiliser un refCode existant)
+- [ ] `refCode` au format `CL-LSN-PPNNN-VYY` et **unique** (ne pas réutiliser un refCode existant)
 - [ ] `slug` en minuscules, sans espaces ni caractères spéciaux
 - [ ] Les `prerequisites` référencent des `refCode` qui existent déjà en base
 - [ ] Contenu ≥ 300 mots
@@ -1196,10 +1196,10 @@ Avant de rédiger une nouvelle leçon, réunissez :
 
 ```
 Leçon MDX pour CyberLearn sur "Les injections SQL - détection et exploitation basique".
-- refCode: CL-LSN-031-V01
+- refCode: CL-LSN-15031-V01
 - slug: injection-sql-bases
 - category: CYBERSEC, difficulty: INTERMEDIATE, estimatedMinutes: 40, xpReward: 450
-- prerequisites: ["CL-LSN-025-V01"]
+- prerequisites: ["CL-LSN-16025-V01"]
 - Inclure : explication du mécanisme SQLi, 1 terminal bash avec scenario ctf-web,
   2 CodePlayground python (simulation de requête vulnérable vs sécurisée),
   3 Quiz, callouts warning sur l'éthique
