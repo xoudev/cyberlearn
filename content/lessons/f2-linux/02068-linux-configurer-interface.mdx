@@ -1,0 +1,221 @@
+---
+refCode: CL-LSN-02068-V01
+slug: linux-configurer-interface
+title: "Configurer une interface réseau : ip et NetworkManager"
+description: "Mettre un Linux sur le réseau : les interfaces et leurs noms, la commande ip pour voir et régler l'état des liens, les adresses et les routes, comprendre la route par défaut et la décision de routage, la différence entre une configuration temporaire et une configuration permanente, et les outils qui la rendent permanente selon les distributions (NetworkManager, systemd-networkd, netplan, ifupdown). Adresse fixe ou DHCP, et ce que l'on vérifie après chaque changement. Avec une interface configurée à la main sur un vrai Linux, puis une adresse fixe posée avec nmcli sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02909-V01"]
+---
+
+Un serveur Linux ne sert à presque rien sans le réseau : c'est par lui qu'il rend ses services, reçoit ses mises à jour, envoie ses journaux et se laisse administrer. Le parcours Réseaux t'a appris comment fonctionnent les adresses, les masques et les routes. Ce module t'apprend à les régler **sur une machine Linux** : configurer une interface, diagnostiquer une panne, faire résoudre les noms, administrer à distance par SSH, transférer des fichiers, et fermer tout ce qui ne doit pas être ouvert avec un pare-feu. Premier geste : donner une adresse à une interface, et savoir où va le trafic.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- reconnaître les interfaces réseau et leurs noms ;
+- lire et régler l'état d'un lien, ses adresses et ses routes avec `ip` ;
+- expliquer la route par défaut et la décision de routage, avec `ip route get` ;
+- distinguer une configuration temporaire d'une configuration permanente ;
+- poser une adresse fixe avec NetworkManager, et reconnaître les autres outils ;
+- vérifier une configuration après chaque changement.
+
+## pourquoi ça compte
+
+Une erreur de configuration réseau sur un serveur distant a une conséquence immédiate : on perd la main dessus. Une passerelle mal tapée, une adresse en double, un masque faux, et la session SSH se fige. Il faut alors une console, physique ou chez l'hébergeur, et parfois un déplacement. D'où deux réflexes que cette leçon installe : distinguer ce qui est temporaire de ce qui survivra au redémarrage, et toujours prévoir un moyen de revenir en arrière avant de toucher au réseau d'une machine à distance.
+
+## les interfaces et leurs noms
+
+```bash
+ip link            # les interfaces et l'état de leur lien
+ip -br link        # la même chose, une ligne par interface
+```
+
+Chaque carte réseau, physique ou virtuelle, est une **interface**. `lo`, la **boucle locale**, est toujours là : elle permet à la machine de se parler à elle-même, par l'adresse `127.0.0.1`. Les autres portent des noms **prévisibles**, construits d'après leur emplacement matériel : `enp1s0` (Ethernet, bus PCI 1, emplacement 0), `eno1` (carte intégrée à la carte mère), `wlp2s0` (Wi-Fi). Les anciens noms `eth0`, `eth1`, attribués dans l'ordre de détection, pouvaient changer d'un démarrage à l'autre, exactement comme les noms de disques : sur un pare-feu, cela pouvait inverser l'interface interne et l'interface externe. On les retrouve encore dans les machines virtuelles minimales et les conteneurs.
+
+L'état du lien se lit entre chevrons : `UP` (l'interface est activée par le système), `LOWER_UP` (un câble ou un signal est bien détecté), `NO-CARRIER` (activée, mais rien au bout du câble).
+
+## adresses et routes avec ip
+
+La commande **`ip`** remplace les anciennes `ifconfig` et `route`, que l'on croise encore dans de vieux tutoriels :
+
+```bash
+sudo ip link set enp1s0 up                       # activer l'interface
+sudo ip addr add 192.0.2.10/24 dev enp1s0        # lui donner une adresse, avec son masque
+sudo ip route add default via 192.0.2.1          # la route par défaut, vers la passerelle
+ip -br addr                                      # les adresses, une ligne par interface
+ip route                                         # la table de routage
+```
+
+L'adresse se donne toujours **avec son masque**, en notation CIDR : `/24` veut dire 255.255.255.0. En l'ajoutant, le noyau crée aussi tout seul la route vers le réseau local, `192.0.2.0/24`, joignable directement par cette interface. Pour tout le reste, il lui faut une **route par défaut** : l'adresse de la **passerelle**, le routeur qui sait aller plus loin. Une interface peut porter plusieurs adresses, IPv4 comme IPv6.
+
+## la décision de routage
+
+Pour chaque paquet, le noyau choisit la route **la plus précise** qui correspond à la destination. `ip route get` montre ce choix, pour une adresse donnée :
+
+```bash
+ip route get 192.0.2.25       # sur le réseau local : directement, par l'interface
+ip route get 198.51.100.7     # ailleurs : via la passerelle
+```
+
+C'est l'outil le plus direct pour répondre à « par où part ce trafic ? », et donc pour comprendre pourquoi un serveur joint certaines adresses et pas d'autres : une route plus précise, ajoutée un jour pour un réseau particulier, peut détourner un trafic qu'on croyait envoyé à la passerelle.
+
+## temporaire ou permanent
+
+Tout ce que fait `ip` est **temporaire** : la configuration disparaît au redémarrage, ou dès qu'un gestionnaire de réseau reprend la main sur l'interface. C'est parfait pour essayer ou dépanner. Pour une configuration **permanente**, chaque famille de distributions a son outil :
+
+| Outil | Où | Configuration |
+| --- | --- | --- |
+| **NetworkManager** | Red Hat, Fedora, postes de travail | commande `nmcli`, fichiers dans `/etc/NetworkManager/` |
+| **systemd-networkd** | serveurs minimaux, conteneurs | fichiers `.network` dans `/etc/systemd/network/` |
+| **netplan** | Ubuntu | fichiers YAML dans `/etc/netplan/`, traduits pour l'un des deux précédents |
+| **ifupdown** | Debian classique | le fichier `/etc/network/interfaces` |
+
+Sur un serveur inconnu, on cherche d'abord **lequel est actif**, avec `systemctl is-active NetworkManager systemd-networkd`, avant de modifier quoi que ce soit : deux outils qui se disputent la même interface produisent des configurations qui changent sans raison apparente.
+
+## adresse fixe ou DHCP
+
+Le **DHCP** attribue l'adresse automatiquement : c'est la règle sur les postes de travail. Un **serveur** a presque toujours une adresse **fixe**, que d'autres machines, des règles de pare-feu et des enregistrements DNS désignent. On la pose dans la configuration permanente, avec quatre informations : l'adresse et son masque, la passerelle, et les serveurs DNS. Une alternative, courante dans les réseaux bien tenus, est une **réservation DHCP** : le serveur DHCP donne toujours la même adresse à la même carte, et la configuration reste centralisée.
+
+Avec NetworkManager :
+
+```bash
+nmcli device status
+sudo nmcli connection modify "Wired connection 1" \
+  ipv4.method manual ipv4.addresses 192.0.2.10/24 \
+  ipv4.gateway 192.0.2.1 ipv4.dns 192.0.2.53
+sudo nmcli connection up "Wired connection 1"
+```
+
+`nmcli` enregistre la configuration, puis `connection up` l'applique. Sur un serveur distant, cette dernière commande coupe un instant le réseau : si l'adresse change, ta session SSH ne reviendra pas d'elle-même. On prévoit donc une console de secours, ou un retour en arrière automatique, comme le fait `netplan try` sur Ubuntu, qui annule la modification si on ne la confirme pas dans les deux minutes.
+
+<Diagram caption="Où part un paquet">
+flowchart LR
+  A["un paquet pour 198.51.100.7"] --> B["ip route : quelle route est la plus précise ?"]
+  B -->|"192.0.2.0/24 : non"| C["route par défaut"]
+  C --> D["passerelle 192.0.2.1, par enp1s0"]
+  E["un paquet pour 192.0.2.25"] --> F["192.0.2.0/24 : réseau local"]
+  F --> G["directement, par enp1s0"]
+</Diagram>
+
+## IPv6 en bref
+
+Une interface Linux porte presque toujours une adresse **IPv6**, même quand personne ne l'a configurée : l'adresse **de lien local**, qui commence par `fe80::`, fabriquée automatiquement et valable seulement sur le réseau local. Sur un réseau qui distribue IPv6, la machine reçoit en plus une adresse **globale**, souvent par l'**autoconfiguration** (*SLAAC*) : le routeur annonce le préfixe du réseau, et la machine compose elle-même la suite. Les commandes sont les mêmes, avec `-6` :
+
+```bash
+ip -6 addr show dev enp1s0
+ip -6 route
+sudo ip -6 addr add 2001:db8::10/64 dev enp1s0
+```
+
+Une conséquence de sécurité est souvent oubliée : un service qui écoute sur `[::]` est joignable en IPv6, et un pare-feu qui ne filtre qu'IPv4 le laisse grand ouvert. On configure les deux, ou l'on désactive IPv6 là où il ne sert pas.
+
+## la configuration permanente, fichier par fichier
+
+Sur Ubuntu, la même adresse fixe s'écrit dans un fichier de netplan, `/etc/netplan/50-serveur.yaml` :
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    enp1s0:
+      addresses: [192.0.2.10/24]
+      routes:
+        - to: default
+          via: 192.0.2.1
+      nameservers:
+        addresses: [192.0.2.53]
+```
+
+`sudo netplan try` l'applique, puis attend une confirmation. Sur une Debian classique, c'est un bloc de `/etc/network/interfaces`, appliqué par `sudo ifup enp1s0` :
+
+```text
+auto enp1s0
+iface enp1s0 inet static
+    address 192.0.2.10/24
+    gateway 192.0.2.1
+```
+
+Les formats diffèrent, les informations restent les mêmes : l'adresse et son masque, la passerelle, les serveurs DNS. Le YAML de netplan est sensible à l'indentation : une espace de trop, et le fichier est refusé, d'où l'intérêt de `netplan try`, qui revient en arrière tout seul.
+
+## démonstration : changer l'adresse d'un serveur distant
+
+Un serveur hébergé doit passer de `192.0.2.143` à `192.0.2.10`, et l'on n'y accède que par SSH. La méthode prudente commence par **ajouter** la nouvelle adresse, sans retirer l'ancienne : `sudo ip addr add 192.0.2.10/24 dev enp1s0`. On ouvre ensuite une **seconde** session SSH vers la nouvelle adresse, depuis un autre terminal. Si elle fonctionne, on écrit la configuration permanente, on l'applique, et l'on vérifie qu'on se reconnecte. À aucun moment on n'a scié la branche sur laquelle on était assis. Si quelque chose tourne mal, la console de l'hébergeur reste le dernier recours : on vérifie qu'on sait l'ouvrir **avant** de commencer, pas pendant la panne.
+
+## vérifier après chaque changement
+
+Quelques commandes, toujours dans le même ordre, confirment qu'une configuration est bonne :
+
+```bash
+ip -br link                 # le lien est-il UP ?
+ip -br addr                 # l'adresse est-elle la bonne, avec le bon masque ?
+ip route                    # une route par défaut, une seule ?
+ping -c 2 192.0.2.1         # la passerelle répond-elle ?
+```
+
+Deux routes par défaut, une adresse en `/32` au lieu de `/24`, une interface `DOWN` après un redémarrage : ces erreurs courantes se voient toutes ici. La leçon suivante prolonge cette vérification en une vraie méthode de diagnostic.
+
+## à toi de jouer
+
+Le Linux des exercices a une carte réseau, `eth0`, mais rien n'est configuré, et aucun câble n'est branché derrière. Configure-la à la main, comme sur un serveur qu'on installe :
+
+1. regarde l'état des interfaces : `ip link`. Ni `lo` ni `eth0` n'ont `UP` entre leurs chevrons. Le `ip` de BusyBox ne connaît pas l'option `-br` : la sortie complète fera l'affaire ;
+2. active les deux : `ip link set lo up`, puis `ip link set eth0 up` ;
+3. donne une adresse à `eth0` : `ip addr add 192.0.2.10/24 dev eth0`, puis la route par défaut : `ip route add default via 192.0.2.1` ;
+4. garde l'état obtenu : `ip addr show eth0 > adresses.txt`, puis `ip route > routes.txt` ;
+5. demande au noyau par où partirait un paquet vers une adresse lointaine : `ip route get 198.51.100.7 > chemin.txt`, puis vers une adresse du réseau local : `ip route get 192.0.2.25` ;
+6. enfin, essaie de joindre la passerelle : `ping -c 2 -W 1 192.0.2.1`.
+
+<LinuxTerminal title="Configurer eth0 à la main" expectedCommands={["ip link", "ip link set lo up", "ip link set eth0 up", "ip addr add 192.0.2.10/24 dev eth0", "ip route add default via 192.0.2.1", "ip addr show eth0 > adresses.txt", "ip route > routes.txt", "ip route get 198.51.100.7 > chemin.txt", "ip route get 192.0.2.25"]} checks={[{"label": "eth0 porte l'adresse et son masque", "path": "adresses.txt", "expect": "file", "contains": "192.0.2.10/24"}, {"label": "La route par défaut est en place", "path": "routes.txt", "expect": "file", "contains": "default via 192.0.2.1"}, {"label": "Une adresse lointaine part par la passerelle", "path": "chemin.txt", "expect": "file", "contains": "via 192.0.2.1"}]} hints={["ip link set NOM up active une interface.", "L'adresse se donne avec son masque : 192.0.2.10/24.", "La passerelle doit être sur le réseau local de l'interface pour être acceptée.", "ip route get montre la route choisie pour une destination."]} />
+
+Les deux routes de l'étape 4 montrent la mécanique : celle du réseau local, créée toute seule avec l'adresse, et la route par défaut que tu as ajoutée. Le `ping` de l'étape 6 échoue, et c'est normal : la carte émulée se dit reliée (`LOWER_UP`), mais aucun routeur n'existe au bout, et personne ne répond à `192.0.2.1`. Ta configuration est juste ; c'est le reste du réseau qui manque. Distinguer ces deux cas, une machine mal configurée ou un réseau qui ne répond pas, est le premier travail d'une méthode de diagnostic. Et au prochain redémarrage de cette machine, tout aura disparu, puisque `ip` ne configure que pour la session.
+
+Ensuite, un serveur Rocky Linux sous NetworkManager, dans un terminal simulé. Il a reçu une adresse par DHCP à l'installation ; il lui faut l'adresse fixe `192.0.2.10` :
+
+1. l'état des interfaces et des connexions : `nmcli device status`, puis `ip -br addr show enp1s0` ;
+2. la nouvelle configuration : `sudo nmcli connection modify enp1s0 ipv4.method manual ipv4.addresses 192.0.2.10/24 ipv4.gateway 192.0.2.1 ipv4.dns 192.0.2.53` ;
+3. l'application, depuis la console de l'hébergeur : `sudo nmcli connection up enp1s0` ;
+4. la vérification : `ip -br addr show enp1s0 | tail -1`, puis `ip route`.
+
+<SimulatedTerminal shell="bash" title="Une adresse fixe avec nmcli" expectedCommands={["nmcli device status", "ip -br addr show enp1s0", "sudo nmcli connection modify enp1s0 ipv4.method manual ipv4.addresses 192.0.2.10/24 ipv4.gateway 192.0.2.1 ipv4.dns 192.0.2.53", "sudo nmcli connection up enp1s0", "ip -br addr show enp1s0 | tail -1", "ip route"]} hints={["nmcli device status montre chaque interface et la connexion qui la gère.", "connection modify enregistre la configuration ; connection up l'applique.", "Après connection up, l'interface porte l'adresse fixe."]} commands={{"nmcli device status": "DEVICE  TYPE      STATE                   CONNECTION \nenp1s0  ethernet  connected               enp1s0     \nlo      loopback  connected (externally)  lo         ", "ip -br addr show enp1s0": "enp1s0           UP             192.0.2.143/24 fe80::5054:ff:fe3a:9c11/64 ", "sudo nmcli connection modify enp1s0 ipv4.method manual ipv4.addresses 192.0.2.10/24 ipv4.gateway 192.0.2.1 ipv4.dns 192.0.2.53": "", "sudo nmcli connection up enp1s0": "Connection successfully activated (D-Bus active path: /org/freedesktop/NetworkManager/ActiveConnection/3)", "ip -br addr show enp1s0 | tail -1": "enp1s0           UP             192.0.2.10/24 fe80::5054:ff:fe3a:9c11/64 ", "ip route": "default via 192.0.2.1 dev enp1s0 proto static metric 100 \n192.0.2.0/24 dev enp1s0 proto kernel scope link src 192.0.2.10 metric 100 ", "nmcli connection show enp1s0 | grep -E 'ipv4.(method|addresses|gateway|dns):'": "ipv4.method:                            manual\nipv4.dns:                               192.0.2.53\nipv4.addresses:                         192.0.2.10/24\nipv4.gateway:                           192.0.2.1"}} />
+
+## les pièges
+
+- **Configurer avec `ip` et croire que c'est permanent.** Tout disparaît au redémarrage : il faut l'outil de la distribution.
+- **Oublier le masque.** `192.0.2.10` sans `/24` devient un `/32` : plus aucun voisin n'est joignable directement.
+- **Deux routes par défaut.** Le trafic part par l'une ou l'autre, au gré des métriques : une seule.
+- **Deux gestionnaires de réseau sur la même interface.** La configuration change toute seule : `systemctl is-active` d'abord.
+- **Changer l'adresse d'un serveur distant sans filet.** La session se perd : console de secours, ou `netplan try`.
+- **Se fier aux noms `eth0`.** Ils peuvent changer d'ordre : les noms prévisibles comme `enp1s0` sont stables.
+
+## pour aller plus loin
+
+<ExternalLink href="https://manpages.debian.org/bookworm/iproute2/ip.8.en.html" description="La commande ip et ses sous-commandes, en anglais">Page de manuel d'ip</ExternalLink>
+
+<ExternalLink href="https://networkmanager.dev/docs/api/latest/nmcli.html" description="Toutes les commandes de nmcli, en anglais">Documentation de nmcli</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.network.html" description="La configuration réseau avec systemd-networkd, en anglais">systemd.network(5)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que montre ip -br link ?" options={["Les routes", "Les interfaces et l'état de leur lien, une ligne par interface", "Les connexions ouvertes", "Les adresses DNS"]} correct={1} explanation="-br donne une sortie brève ; ip -br addr fait de même pour les adresses." />
+  <Quiz id="q-2" question="Que signifie NO-CARRIER sur une interface UP ?" options={["Qu'elle n'a pas d'adresse", "Qu'elle est activée, mais qu'aucun câble ni signal n'est détecté", "Qu'elle est désactivée", "Qu'elle n'a pas de route"]} correct={1} explanation="LOWER_UP, à l'inverse, signale un lien physique présent." />
+  <Quiz id="q-3" question="À quoi sert la route par défaut ?" options={["À joindre le réseau local", "À envoyer vers la passerelle tout ce qu'aucune route plus précise ne couvre", "À bloquer le trafic inconnu", "À résoudre les noms"]} correct={1} explanation="Le noyau choisit toujours la route la plus précise qui correspond à la destination." />
+  <Quiz id="q-4" question="Quelle commande montre par où partirait un paquet vers 198.51.100.7 ?" options={["ping 198.51.100.7", "ip route get 198.51.100.7", "ip addr", "nmcli device status"]} correct={1} explanation="Elle montre la route choisie, l'interface et la passerelle éventuelle." />
+  <Quiz id="q-5" question="Une adresse posée avec ip addr add survit-elle au redémarrage ?" options={["Oui", "Non : ip ne configure que pour la session ; il faut l'outil de la distribution", "Seulement en IPv6", "Seulement avec sudo"]} correct={1} explanation="NetworkManager, systemd-networkd, netplan ou ifupdown rendent la configuration permanente." />
+  <Quiz id="q-6" question="Pourquoi les noms comme enp1s0 ont-ils remplacé eth0 ?" options={["Pour la mode", "Parce qu'ils sont stables, construits d'après l'emplacement matériel, là où eth0 dépendait de l'ordre de détection", "Parce qu'ils sont plus courts", "Pour l'IPv6"]} correct={1} explanation="Sur un pare-feu, une inversion d'interfaces pouvait exposer le réseau interne." />
+  <Quiz id="q-7" question="Pourquoi prévoir une console de secours avant de changer l'adresse d'un serveur distant ?" options={["Par habitude", "Parce qu'une erreur coupe la session SSH, et qu'on ne peut plus corriger à distance", "Parce que nmcli l'exige", "Pour la vitesse"]} correct={1} explanation="netplan try annule même tout seul une modification non confirmée." />
+</QuizGroup>
+
+## à retenir
+
+- Les interfaces : **`lo`**, la boucle locale, et des noms prévisibles comme **`enp1s0`**. État du lien : `UP`, `LOWER_UP`, `NO-CARRIER`.
+- **`ip link set … up`**, **`ip addr add adresse/masque dev …`**, **`ip route add default via passerelle`** : temporaire.
+- **`ip -br addr`**, **`ip route`**, **`ip route get`** pour voir et comprendre.
+- Le permanent : **NetworkManager** (`nmcli`), **systemd-networkd**, **netplan**, **ifupdown** ; un seul actif à la fois.
+- Un serveur a une adresse **fixe** : adresse et masque, passerelle, DNS.
+- À distance, toujours un **filet** : console, ou retour en arrière automatique.

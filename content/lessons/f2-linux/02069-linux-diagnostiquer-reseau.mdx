@@ -1,0 +1,189 @@
+---
+refCode: CL-LSN-02069-V01
+slug: linux-diagnostiquer-reseau
+title: "Diagnostiquer le réseau : ping, traceroute, ss et dig"
+description: "Une méthode pour trouver pourquoi « ça ne marche pas » : remonter les couches dans l'ordre, du lien à l'application, avec un outil et une question par étape. ping et ses limites, traceroute pour voir où le chemin s'arrête, ss pour savoir qui écoute et sur quelle adresse, dig pour interroger le DNS, curl et nc pour parler au service, et tcpdump pour voir les paquets eux-mêmes. Avec une panne à trois causes empilées sur un vrai Linux, puis un serveur dont les mises à jour échouent."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02068-V01"]
+---
+
+« Le site ne marche pas. » Derrière cette phrase peuvent se cacher un câble débranché, une adresse fausse, une route manquante, un nom qui ne se résout pas, un service arrêté, un pare-feu trop strict, ou une application qui plante. Chacune de ces causes se diagnostique en une commande, à condition de savoir **laquelle chercher en premier**. Comme pour les services au module 8, la clé est une méthode : remonter les couches du réseau dans l'ordre, et ne passer à la suivante qu'une fois la précédente prouvée. Cette leçon te donne cette méthode, et les outils de chaque étape.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- diagnostiquer une panne réseau couche par couche, du lien à l'application ;
+- utiliser `ping` en connaissant ses limites ;
+- voir où un chemin s'arrête avec `traceroute` ;
+- savoir quel programme écoute, sur quel port et quelle adresse, avec `ss` ;
+- interroger le DNS avec `dig`, et tester un service avec `curl` et `nc` ;
+- observer les paquets eux-mêmes avec `tcpdump`.
+
+## pourquoi ça compte
+
+Le réseau est la cause supposée de la moitié des incidents, et la cause réelle d'une partie seulement. Savoir **prouver** que le réseau fonctionne, ou désigner précisément le maillon qui ne fonctionne pas, évite des heures de discussions entre équipes. C'est aussi un savoir-faire de sécurité : les mêmes outils révèlent un service qui écoute alors qu'il ne devrait pas, une connexion établie vers une adresse inconnue, ou un pare-feu qui laisse passer plus que prévu.
+
+## la méthode : remonter les couches
+
+On part du bas, et l'on ne monte qu'une fois l'étape prouvée :
+
+1. **le lien** : l'interface est-elle `UP`, avec un câble ou un signal ? `ip link` ;
+2. **l'adresse** : a-t-elle la bonne adresse et le bon masque ? `ip addr` ;
+3. **la route** : y a-t-il une route vers la destination, et la passerelle répond-elle ? `ip route`, `ping` vers la passerelle ;
+4. **le chemin** : jusqu'où les paquets vont-ils ? `ping` puis `traceroute` vers la destination ;
+5. **le nom** : le nom se résout-il, en la bonne adresse ? `dig`, `getent hosts` ;
+6. **le port** : le service écoute-t-il, et est-il joignable ? `ss` côté serveur, `nc` ou `curl` côté client ;
+7. **l'application** : que répond-elle, et que disent ses journaux ? `curl -v`, `journalctl`.
+
+Chaque étape réussie élimine toutes les causes en dessous. Si un `ping` vers une adresse IP lointaine répond mais pas vers son nom, inutile de vérifier les câbles : le problème est au niveau du DNS.
+
+<Diagram caption="Remonter les couches, une preuve à la fois">
+flowchart TD
+  A["lien : ip link"] --> B["adresse : ip addr"]
+  B --> C["route : ip route, ping de la passerelle"]
+  C --> D["chemin : ping, traceroute"]
+  D --> E["nom : dig, getent hosts"]
+  E --> F["port : ss côté serveur, nc côté client"]
+  F --> G["application : curl -v, journalctl"]
+</Diagram>
+
+## ping, et ses limites
+
+```bash
+ping -c 4 192.0.2.1          # 4 paquets ICMP vers la passerelle
+ping -c 4 -W 1 9.9.9.9       # une adresse lointaine, une seconde d'attente maximum
+```
+
+`ping` envoie des paquets ICMP *echo request* et attend les réponses. Il mesure la **latence** et la **perte** de paquets. Mais un `ping` sans réponse ne prouve **pas** qu'une machine est injoignable : beaucoup de serveurs et de pare-feu bloquent l'ICMP, et un serveur web peut très bien refuser les `ping` et servir parfaitement ses pages. À l'inverse, un `ping` qui répond ne prouve pas qu'un service fonctionne. C'est un outil de la couche réseau, à interpréter comme tel. Les messages d'erreur, eux, sont précieux : `Network is unreachable` signifie qu'aucune route n'existe, ce qui pointe vers ta propre machine, pas vers la destination.
+
+## traceroute : où le chemin s'arrête
+
+```bash
+traceroute -n 198.51.100.7
+mtr -n 198.51.100.7          # la même chose, en continu, avec les pertes à chaque saut
+```
+
+`traceroute` envoie des paquets à durée de vie croissante : chaque routeur du chemin, en les détruisant, révèle son adresse. On voit ainsi **jusqu'où** le trafic va : une série de `* * *` à partir d'un saut désigne l'endroit où il s'arrête, souvent un pare-feu, parfois un routeur en panne. `-n` évite de résoudre chaque adresse en nom, ce qui accélère et fiabilise l'affichage. `mtr` combine `ping` et `traceroute` et montre les pertes saut par saut, idéal pour une connexion qui fonctionne mal plutôt que pas du tout.
+
+## ss : qui écoute, et sur quelle adresse
+
+Côté serveur, la question décisive est : **le service écoute-t-il, et où ?**
+
+```bash
+sudo ss -ltnp          # les ports TCP en écoute, avec le programme
+sudo ss -lunp          # les ports UDP
+ss -tn state established   # les connexions TCP établies
+```
+
+Les options se lisent : `-l` en écoute, `-t` TCP, `-u` UDP, `-n` adresses numériques, `-p` le programme (avec `sudo`). La colonne **Local Address** est décisive : `0.0.0.0:443` ou `[::]:443` veut dire « sur toutes les adresses », donc joignable de l'extérieur si le pare-feu le permet ; `127.0.0.1:5432` veut dire « seulement depuis la machine elle-même ». C'est exactement ce qu'on veut pour une base de données utilisée par une application locale, et exactement ce qu'on ne veut pas pour un site web. `ss` remplace l'ancien `netstat`, qu'on croise encore.
+
+Côté sécurité, `ss -ltnp` est aussi la façon la plus rapide de dresser la **surface d'attaque réseau** d'une machine : chaque ligne est une porte ouverte, et chacune doit avoir une raison d'exister. `ss -tnp state established` montre, lui, les connexions en cours, où une connexion sortante vers une adresse inconnue peut trahir un logiciel malveillant.
+
+## dig : le DNS
+
+```bash
+dig deb.debian.org              # la question, la réponse, le serveur qui a répondu, le temps
+dig +short deb.debian.org       # seulement les adresses
+dig @9.9.9.9 deb.debian.org     # en interrogeant un autre serveur DNS
+getent hosts srv-web            # comme le résout le système, /etc/hosts compris
+```
+
+`dig` interroge un serveur DNS et montre tout de l'échange. La forme `@serveur` permet de comparer : si le serveur de l'entreprise ne répond pas mais qu'un serveur public répond, le problème est le serveur de l'entreprise, pas le nom. `getent hosts`, lui, résout comme le font les programmes, en passant par `/etc/hosts` : un nom qui répond à `getent` mais pas à `dig` est défini localement. La leçon suivante détaille la résolution des noms.
+
+## parler au service : nc et curl
+
+```bash
+nc -zv srv-base 5432                 # le port est-il joignable ? (sans rien envoyer)
+curl -v http://srv-web:8080/         # la requête HTTP complète, avec les en-têtes
+curl -vk https://srv-web/            # en HTTPS, sans vérifier le certificat
+```
+
+`nc -z` tente juste d'ouvrir la connexion : `succeeded` prouve que le port est joignable de bout en bout, pare-feu compris ; `Connection refused` dit que la machine a répondu mais que rien n'écoute sur ce port ; un délai dépassé suggère un pare-feu qui jette les paquets sans répondre. `curl -v` montre la requête et la réponse, codes d'état compris : une réponse `502` ou `503` vient de l'application, pas du réseau.
+
+## tcpdump : voir les paquets
+
+Quand tout le reste a été vérifié, on regarde les paquets eux-mêmes :
+
+```bash
+sudo tcpdump -ni enp1s0 port 53          # les requêtes et réponses DNS
+sudo tcpdump -ni enp1s0 host 192.0.2.25  # tout le trafic avec une machine
+```
+
+On voit alors si les paquets **partent**, s'ils **reviennent**, et ce qu'ils contiennent. Une requête qui part sans jamais de réponse désigne quelqu'un d'autre ; une requête qui n'apparaît même pas désigne ta propre machine. `tcpdump` voit aussi ce qui circule en clair : c'est un outil puissant, à n'utiliser que sur des réseaux dont tu as la charge.
+
+## démonstration : « le site ne répond plus »
+
+Un collègue signale que `http://srv-web:8080/` ne répond plus depuis son poste. Depuis ce poste, on remonte les couches. `getent hosts srv-web` donne `192.0.2.10` : le nom se résout, et en la bonne adresse. `ping -c 2 192.0.2.10` répond : la machine est joignable. `nc -zv srv-web 8080` affiche `Connection refused` : la machine a répondu, mais rien n'écoute sur ce port. En trois commandes, le réseau est mis hors de cause.
+
+Sur le serveur, `sudo ss -ltnp | grep 8080` ne montre rien : le service ne tourne plus, ou écoute ailleurs. `systemctl status appli` le confirme, arrêté après une erreur que `journalctl -u appli` explique. Si `ss` avait montré `127.0.0.1:8080`, le diagnostic aurait été tout autre : le service tourne, mais n'accepte que les connexions locales, une erreur de configuration fréquente après une mise à jour.
+
+## le pare-feu, cause silencieuse
+
+Un pare-feu qui **rejette** un paquet répond, et `nc` affiche aussitôt une erreur. Un pare-feu qui le **jette** (*drop*) ne répond rien : la connexion attend, puis expire. Ce silence est la signature d'un filtrage, quelque part entre les deux machines ou sur le serveur lui-même. On le vérifie sur le serveur en lisant ses règles, `sudo nft list ruleset`, ou en regardant avec `tcpdump` si le paquet arrive bien jusqu'à lui. Une leçon de ce module est consacrée à l'écriture d'un pare-feu : tu sauras alors, des deux côtés, ce qu'il laisse passer.
+
+## à toi de jouer
+
+Le Linux des exercices joue le rôle du serveur `srv-web`, qui doit servir une page sur le port 8080. Rien ne marche : `wget -qO- http://srv-web:8080/` échoue. Trois causes sont empilées ; trouve-les **dans l'ordre des couches** :
+
+1. le lien : `ip link`. La boucle locale, `lo`, n'a pas `UP` ; vérifie avec `ping -c 1 127.0.0.1` (`Network is unreachable`), puis active-la : `ip link set lo up`, et refais le `ping` ;
+2. le nom : `ping -c 1 srv-web`. Il est inconnu. Ce serveur doit s'appeler `srv-web` ; selon la convention de Debian, son propre nom pointe vers `127.0.1.1`. Ajoute-le : `echo '127.0.1.1 srv-web' >> /etc/hosts`, puis refais le `ping` ;
+3. le port : `netstat -ltn`. Rien n'écoute sur 8080 ! Le service est lancé par `inetd`, selon `inetd.conf` : lis-le avec `cat inetd.conf`, puis démarre-le : `inetd /mnt/inetd.conf`, et vérifie de nouveau `netstat -ltn` ;
+4. l'application : `wget -qO- http://srv-web:8080/ > page.txt`, puis `cat page.txt`.
+
+<LinuxTerminal title="Trois causes empilées" files={{"service.sh": "#!/bin/sh\n# service.sh : un tout petit service web. inetd le lance à chaque connexion,\n# et branche la connexion sur son entrée et sa sortie.\nwhile read -r ligne; do\n  ligne=$(printf '%s' \"$ligne\" | tr -d '\r')\n  [ -z \"$ligne\" ] && break\ndone\nprintf 'HTTP/1.0 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n'\necho \"Bonjour depuis srv-web : le service répond.\"\n", "inetd.conf": "# inetd.conf : les services que lance inetd, un par ligne.\n# port   type    proto  attente  compte  programme  arguments\n8080     stream  tcp    nowait   root    /bin/sh    sh /mnt/service.sh\n"}} expectedCommands={["ip link", "ping -c 1 127.0.0.1", "ip link set lo up", "ping -c 1 srv-web", "echo '127.0.1.1 srv-web' >> /etc/hosts", "netstat -ltn", "inetd /mnt/inetd.conf", "wget -qO- http://srv-web:8080/ > page.txt"]} checks={[{"label": "La page du service a été récupérée", "path": "page.txt", "expect": "file", "contains": "le service répond"}]} hints={["Network is unreachable : il manque une route, ici celle de la boucle locale, éteinte.", "bad address pour wget, Name or service not known pour ping : le nom n'est défini nulle part, ni dans /etc/hosts ni dans un DNS.", "netstat -ltn liste les ports TCP en écoute : 8080 doit y apparaître.", "inetd attend les connexions sur le port de sa configuration, et lance service.sh pour chacune."]} />
+
+Chaque cause masquait la suivante : tant que le lien manquait, inutile de chercher le service. Ce petit Linux n'a pas `ss` : `netstat -ltn` en est l'ancêtre, avec les mêmes colonnes. Sa ligne `0.0.0.0:8080` dit que le service écoute sur toutes les adresses de la machine.
+
+Ensuite, un serveur Debian dont les mises à jour échouent, dans un terminal simulé. Applique la méthode :
+
+1. le symptôme : `sudo apt update` ;
+2. la passerelle, puis une adresse lointaine par son numéro : `ping -c 2 192.0.2.1`, puis `ping -c 2 9.9.9.9` ;
+3. le DNS configuré : `cat /etc/resolv.conf`, puis la question : `dig deb.debian.org` ;
+4. la comparaison avec un serveur public : `dig @9.9.9.9 +short deb.debian.org` ;
+5. le serveur DNS de l'entreprise lui-même : `ping -c 2 192.0.2.53`.
+
+<SimulatedTerminal shell="bash" title="Les mises à jour échouent" expectedCommands={["sudo apt update", "ping -c 2 192.0.2.1", "ping -c 2 9.9.9.9", "cat /etc/resolv.conf", "dig deb.debian.org", "dig @9.9.9.9 +short deb.debian.org", "ping -c 2 192.0.2.53"]} hints={["Temporary failure resolving : un problème de résolution de noms, pas forcément de réseau.", "Si une adresse lointaine répond par son numéro, le réseau et la route fonctionnent.", "dig @serveur interroge un autre résolveur que celui de /etc/resolv.conf.", "Destination Host Unreachable : sur le réseau local, plus personne ne répond à cette adresse."]} commands={{"sudo apt update": "Ign:1 http://deb.debian.org/debian bookworm InRelease\nIgn:2 http://deb.debian.org/debian bookworm-updates InRelease\nIgn:3 http://security.debian.org/debian-security bookworm-security InRelease\nErr:1 http://deb.debian.org/debian bookworm InRelease\n  Temporary failure resolving 'deb.debian.org'\nErr:3 http://security.debian.org/debian-security bookworm-security InRelease\n  Temporary failure resolving 'security.debian.org'\nReading package lists... Done\nW: Failed to fetch http://deb.debian.org/debian/dists/bookworm/InRelease  Temporary failure resolving 'deb.debian.org'\nW: Some index files failed to download. They have been ignored, or old ones used instead.", "ping -c 2 192.0.2.1": "PING 192.0.2.1 (192.0.2.1) 56(84) bytes of data.\n64 bytes from 192.0.2.1: icmp_seq=1 ttl=64 time=0.412 ms\n64 bytes from 192.0.2.1: icmp_seq=2 ttl=64 time=0.388 ms\n\n--- 192.0.2.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1001ms\nrtt min/avg/max/mdev = 0.388/0.400/0.412/0.012 ms", "ping -c 2 9.9.9.9": "PING 9.9.9.9 (9.9.9.9) 56(84) bytes of data.\n64 bytes from 9.9.9.9: icmp_seq=1 ttl=57 time=4.83 ms\n64 bytes from 9.9.9.9: icmp_seq=2 ttl=57 time=4.71 ms\n\n--- 9.9.9.9 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1002ms\nrtt min/avg/max/mdev = 4.710/4.770/4.830/0.060 ms", "cat /etc/resolv.conf": "# Generated by NetworkManager\nsearch labo.example\nnameserver 192.0.2.53", "dig deb.debian.org": ";; communications error to 192.0.2.53#53: timed out\n;; communications error to 192.0.2.53#53: timed out\n;; communications error to 192.0.2.53#53: timed out\n\n; <<>> DiG 9.18.28-1~deb12u2-Debian <<>> deb.debian.org\n;; global options: +cmd\n;; no servers could be reached", "dig @9.9.9.9 +short deb.debian.org": "debian.map.fastlydns.net.\n151.101.2.132\n151.101.66.132\n151.101.130.132\n151.101.194.132", "ping -c 2 192.0.2.53": "PING 192.0.2.53 (192.0.2.53) 56(84) bytes of data.\nFrom 192.0.2.10 icmp_seq=1 Destination Host Unreachable\nFrom 192.0.2.10 icmp_seq=2 Destination Host Unreachable\n\n--- 192.0.2.53 ping statistics ---\n2 packets transmitted, 0 received, +2 errors, 100% packet loss, time 1013ms", "ip route": "default via 192.0.2.1 dev enp1s0 proto static metric 100 \n192.0.2.0/24 dev enp1s0 proto kernel scope link src 192.0.2.10 metric 100 "}} />
+
+Le réseau fonctionne : la passerelle et Internet répondent par adresse. Le nom ne se résout pas, parce que le serveur DNS de l'entreprise, `192.0.2.53`, ne répond plus, alors qu'un serveur public répond. Le `ping` le confirme : `Destination Host Unreachable` signifie que, sur le réseau local, plus aucune machine ne répond à cette adresse. Le serveur DNS est arrêté ou débranché. Le diagnostic tient en une phrase, transmissible à l'équipe concernée : « le résolveur 192.0.2.53 ne répond plus, le réseau est sain ».
+
+## les pièges
+
+- **Commencer par le haut.** Chercher un problème d'application alors que l'interface est `DOWN` : on remonte les couches dans l'ordre.
+- **Conclure d'un `ping` sans réponse.** L'ICMP est souvent filtré : `nc -zv` ou `curl` testent le vrai service.
+- **Oublier `-n`.** Sans lui, `traceroute` et `ss` résolvent chaque adresse, et un DNS en panne les fait paraître bloqués.
+- **Lire `ss` sans regarder l'adresse locale.** `127.0.0.1:8080` n'est pas joignable de l'extérieur.
+- **Confondre « refusé » et « délai dépassé ».** Le premier : rien n'écoute ; le second : un pare-feu, souvent.
+- **Capturer avec `tcpdump` sur un réseau qui n'est pas le tien.** Il voit ce qui circule en clair.
+
+## pour aller plus loin
+
+<ExternalLink href="https://manpages.debian.org/bookworm/iproute2/ss.8.fr.html" description="Toutes les options de ss, en français">Page de manuel de ss</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/bind9-dnsutils/dig.1.en.html" description="Interroger le DNS avec dig, en anglais">Page de manuel de dig</ExternalLink>
+
+<ExternalLink href="https://www.tcpdump.org/manpages/tcpdump.1.html" description="Capturer et filtrer des paquets, en anglais">Page de manuel de tcpdump</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans quel ordre diagnostiquer une panne réseau ?" options={["De l'application vers le lien", "Du lien vers l'application : lien, adresse, route, chemin, nom, port, application", "Au hasard", "En commençant par le pare-feu"]} correct={1} explanation="Chaque étape prouvée élimine toutes les causes en dessous." />
+  <Quiz id="q-2" question="Un ping vers un serveur web ne reçoit aucune réponse. Que peut-on conclure ?" options={["Le serveur est arrêté", "Rien de certain : l'ICMP est souvent filtré ; il faut tester le service lui-même", "Le DNS est en panne", "Le câble est débranché"]} correct={1} explanation="nc -zv ou curl testent le port réellement utilisé." />
+  <Quiz id="q-3" question="Que signifie Network is unreachable ?" options={["Le serveur distant refuse", "Aucune route ne mène à la destination depuis ta machine", "Le DNS ne répond pas", "Le port est fermé"]} correct={1} explanation="Le problème est de ton côté : interface, adresse ou route." />
+  <Quiz id="q-4" question="Dans ss -ltnp, un service écoute sur 127.0.0.1:5432. Qu'est-ce que cela implique ?" options={["Il est joignable de partout", "Il n'est joignable que depuis la machine elle-même", "Il est arrêté", "Il écoute en UDP"]} correct={1} explanation="0.0.0.0 ou [::] veut dire toutes les adresses ; 127.0.0.1, la machine seule." />
+  <Quiz id="q-5" question="dig deb.debian.org échoue, mais dig @9.9.9.9 deb.debian.org répond. Où est le problème ?" options={["Le nom n'existe pas", "Le serveur DNS configuré sur la machine", "Le câble", "Le site de Debian"]} correct={1} explanation="Le réseau et le nom fonctionnent : seul le résolveur habituel est en cause." />
+  <Quiz id="q-6" question="nc -zv srv 443 répond Connection refused. Qu'est-ce que cela indique ?" options={["Un pare-feu qui jette les paquets", "La machine répond, mais rien n'écoute sur ce port", "Le DNS est en panne", "Le certificat est faux"]} correct={1} explanation="Un délai dépassé, à l'inverse, suggère un pare-feu qui jette les paquets sans répondre." />
+  <Quiz id="q-7" question="À quoi sert traceroute ?" options={["À mesurer le débit", "À voir par quels routeurs passe le trafic, et jusqu'où il va", "À ouvrir un port", "À résoudre un nom"]} correct={1} explanation="Une suite de * * * à partir d'un saut désigne l'endroit où le trafic s'arrête." />
+</QuizGroup>
+
+## à retenir
+
+- La méthode : **lien** (`ip link`), **adresse** (`ip addr`), **route** (`ip route`, ping de la passerelle), **chemin** (`traceroute`), **nom** (`dig`, `getent`), **port** (`ss`, `nc`), **application** (`curl -v`, journaux).
+- **`ping`** mesure latence et pertes ; sans réponse, il ne prouve rien.
+- **`ss -ltnp`** : qui écoute, et sur quelle adresse ; c'est aussi la surface d'attaque de la machine.
+- **`dig @autre-serveur`** isole un résolveur en panne.
+- **`nc -zv`** : refusé (rien n'écoute) ou délai (pare-feu) ; **`curl -v`** pour le dialogue complet.
+- **`tcpdump -n`** pour voir si les paquets partent et reviennent, sur ton propre réseau.

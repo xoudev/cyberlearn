@@ -1,0 +1,220 @@
+---
+refCode: CL-LSN-02072-V01
+slug: linux-durcir-ssh
+title: "Durcir SSH : pas de mot de passe, pas de root, des restrictions"
+description: "Configurer le serveur OpenSSH d'une machine exposée : sshd_config et les fichiers de sshd_config.d, la règle de la première valeur, tester avec sshd -t et sshd -T avant d'appliquer, interdire les mots de passe et la connexion de root, restreindre les comptes autorisés, limiter les essais, les tunnels et le transfert d'agent, fail2ban et la surveillance du journal. Avec une configuration réelle corrigée et vérifiée sur un vrai Linux, piège de cloud-init compris, puis son application sans se fermer la porte."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 320
+prerequisites: ["CL-LSN-02071-V01"]
+---
+
+Mets un serveur en ligne avec une adresse publique, et regarde son journal le lendemain : des milliers de lignes `Invalid user admin`, `Invalid user oracle`, `Failed password for root`, venues de centaines d'adresses. Ce sont des robots qui parcourent Internet et essaient, sur chaque serveur SSH qu'ils trouvent, des listes de comptes et de mots de passe courants. Ils ne visent personne en particulier, et c'est justement pour cela qu'ils finissent par trouver : un compte de test oublié, un mot de passe trop simple. La leçon précédente a installé l'authentification par clé. Celle-ci ferme tout le reste.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire la configuration du serveur, `sshd_config` et ses fichiers complémentaires ;
+- appliquer la règle de la première valeur, et éviter le piège qui en découle ;
+- tester une configuration avant de l'appliquer, sans te fermer la porte ;
+- interdire les mots de passe et la connexion directe de root ;
+- restreindre les comptes autorisés et les fonctions inutiles ;
+- surveiller les tentatives, et freiner les robots avec fail2ban.
+
+## pourquoi ça compte
+
+Le service SSH est souvent le **seul** service d'administration exposé d'un serveur : celui qui le franchit a la main sur tout. Les recommandations de l'ANSSI comme celles des référentiels internationaux tiennent en quelques lignes de configuration, mais chacune ferme une attaque réelle : l'essai de mots de passe, la prise de contrôle directe de root, le rebond par un tunnel, le vol d'agent. Et une erreur dans ces mêmes lignes peut couper l'accès de tout le monde, toi compris. Durcir SSH, c'est apprendre à changer ce fichier avec méthode.
+
+## sshd_config et ses fichiers
+
+Le serveur s'appelle **`sshd`** ; son service, `ssh` sur Debian et Ubuntu, `sshd` sur Red Hat. Sa configuration principale est **`/etc/ssh/sshd_config`**, à ne pas confondre avec `ssh_config`, celle du client. Sur les distributions récentes, sa première ligne active est :
+
+```text
+Include /etc/ssh/sshd_config.d/*.conf
+```
+
+Elle insère, à cet endroit, tous les fichiers du dossier `sshd_config.d`, dans l'ordre alphabétique. C'est là qu'on place ses propres réglages, dans un fichier à soi, plutôt que de modifier le fichier principal, que les mises à jour du paquet voudront remplacer.
+
+La règle décisive est celle du client : pour chaque directive, **la première valeur lue gagne**. Comme les fichiers de `sshd_config.d` sont lus en premier, ils l'emportent sur le reste de `sshd_config`. Et entre eux, c'est l'ordre alphabétique qui décide : `10-durcissement.conf` passe avant `50-cloud-init.conf`. Les commentaires du fichier principal, comme `#PermitRootLogin prohibit-password`, montrent seulement les valeurs par défaut : ils ne règlent rien.
+
+## le piège de cloud-init
+
+Les images de serveurs des hébergeurs et des clouds sont préparées par **cloud-init**, qui dépose souvent un fichier `/etc/ssh/sshd_config.d/50-cloud-init.conf` contenant une seule ligne : `PasswordAuthentication yes`. Un administrateur qui écrit `PasswordAuthentication no` à la fin de `sshd_config` croit avoir fermé les mots de passe ; mais le fichier de cloud-init est lu avant, sa valeur gagne, et les mots de passe restent acceptés. Rien ne le signale, sauf la commande qui montre la configuration réellement appliquée.
+
+## tester avant d'appliquer
+
+Deux commandes protègent de presque toutes les erreurs :
+
+```bash
+sudo sshd -t                     # vérifie la syntaxe : rien à l'écran, c'est bon
+sudo sshd -T                     # affiche TOUTE la configuration effective
+sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin)'
+```
+
+`sshd -T` répond à la seule question qui compte : quelle valeur le serveur appliquera-t-il vraiment, fichiers inclus, ordre compris, valeurs par défaut comprises ? Ensuite seulement, on applique :
+
+```bash
+sudo systemctl reload ssh        # relit la configuration, sans couper les sessions ouvertes
+```
+
+Et l'on garde **sa session ouverte** pendant qu'on teste, depuis un **second** terminal, qu'une nouvelle connexion passe encore. Les sessions en cours survivent au rechargement : si la nouvelle connexion échoue, on corrige depuis celle qui reste. Fermer sa seule session avant d'avoir vérifié, c'est parier l'accès au serveur.
+
+## fermer la porte aux mots de passe
+
+```text
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+```
+
+Les deux premières lignes ferment les deux façons de demander un mot de passe : la directe, et l'interactive, qui passe par PAM. Les robots perdent alors tout intérêt : il n'y a plus rien à deviner. Mais l'ordre des gestes compte : on vérifie d'abord, dans une connexion réelle, que **sa clé fonctionne** pour chaque compte qui doit entrer, puis seulement on ferme les mots de passe. Sur un serveur dont la console est lointaine, l'inverse se paie d'un déplacement.
+
+## pas de root
+
+```text
+PermitRootLogin no
+```
+
+Personne ne se connecte directement en root : on se connecte avec son propre compte, puis on utilise `sudo`. Le gain est double. Un attaquant doit deviner un nom de compte en plus du reste, et le journal dit **qui** a fait quoi, au lieu d'un `root` anonyme partagé. La valeur `prohibit-password`, défaut d'OpenSSH, autorise encore root par clé : acceptable pour un outil d'automatisation qui en a besoin, mais `no` est la règle pour les personnes.
+
+## qui a le droit d'entrer
+
+Par défaut, tout compte qui a un shell et une clé peut entrer. On restreint à une liste explicite :
+
+```text
+AllowGroups ssh-users
+```
+
+Seuls les membres du groupe `ssh-users` peuvent alors se connecter ; un compte de service créé demain, ou un compte de test oublié, reste dehors. Le piège est évident : le groupe doit exister, et contenir les administrateurs, **avant** de recharger le service. `sudo groupadd ssh-users` puis `sudo usermod -aG ssh-users alice`, et `id alice` pour vérifier.
+
+Pour des règles différentes selon le compte ou l'origine, les blocs **`Match`** s'écrivent en fin de fichier. Par exemple, un groupe qui ne doit faire que déposer des fichiers :
+
+```text
+Match Group depot-sftp
+    ForceCommand internal-sftp
+    ChrootDirectory /srv/depot
+    AllowTcpForwarding no
+```
+
+## limiter le reste
+
+Chaque fonction inutile est une possibilité de plus pour un attaquant qui aurait mis la main sur un compte :
+
+```text
+# trois essais par connexion, puis déconnexion ; trente secondes pour s'authentifier
+MaxAuthTries 3
+LoginGraceTime 30
+# ni affichage graphique déporté, ni agent transféré, ni tunnels
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding no
+# sonder les sessions inactives toutes les 5 minutes, les fermer après deux sondes sans réponse
+ClientAliveInterval 300
+ClientAliveCountMax 2
+```
+
+Les tunnels sont utiles aux administrateurs, mais ils permettent aussi de contourner un pare-feu depuis un compte compromis : on les interdit en général, et on les rouvre dans un bloc `Match` pour ceux qui en ont besoin.
+
+<Diagram caption="Comment sshd lit sa configuration">
+flowchart TD
+  A["sshd_config, ligne Include"] --> B["sshd_config.d : 10-durcissement.conf"]
+  B --> C["sshd_config.d : 50-cloud-init.conf"]
+  C --> D["suite de sshd_config"]
+  D --> E["blocs Match, en fin de fichier"]
+  B -.->|"première valeur lue : elle gagne"| F["configuration effective : sshd -T"]
+</Diagram>
+
+## changer de port ?
+
+Déplacer SSH du port 22 vers un autre fait chuter le bruit dans le journal : la plupart des robots ne testent que le 22. Ce n'est pas une protection, puisqu'un balayage de ports trouve le service en quelques secondes, mais un journal moins encombré rend les vraies alertes plus visibles. Si on le fait, il faut ouvrir le nouveau port dans le pare-feu, et, sur Red Hat, le déclarer à SELinux, avant de recharger : sinon, plus personne n'entre.
+
+## fail2ban et le filtrage par adresse
+
+**fail2ban** lit le journal, et bannit temporairement, par une règle de pare-feu, les adresses qui accumulent les échecs :
+
+```bash
+sudo apt install fail2ban
+sudo fail2ban-client status sshd      # les adresses bannies en ce moment
+```
+
+Il soulage le journal et ralentit les robots, mais avec des clés seules, ils n'avaient déjà plus rien à deviner. La mesure la plus forte reste de **filtrer par adresse** : si les administrateurs arrivent toujours par le VPN de l'entreprise ou par un bastion, le pare-feu n'ouvre le port SSH qu'à ces adresses, et le service devient invisible au reste d'Internet. C'est l'objet de la leçon sur le pare-feu, qui clôt ce module.
+
+## les clés d'hôte et les algorithmes
+
+Les versions récentes d'OpenSSH ont de bons réglages par défaut pour le chiffrement : on ne touche aux listes d'algorithmes (`KexAlgorithms`, `Ciphers`, `MACs`) que pour suivre une recommandation précise, comme celles de l'ANSSI, et l'on vérifie le résultat avec un outil d'audit comme `ssh-audit`. Les clés d'hôte méritent plus d'attention. Une machine **clonée** depuis une image garde les clés de l'image : toutes ses copies présentent alors la même identité, et l'empreinte ne distingue plus rien. Après un clonage, on régénère les clés (`sudo rm /etc/ssh/ssh_host_*` puis `sudo dpkg-reconfigure openssh-server` sur Debian), et l'on publie les nouvelles empreintes. Les anciennes clés DSA, si elles traînent encore, se suppriment.
+
+## surveiller
+
+```bash
+sudo journalctl -u ssh --since today | grep -E 'Accepted|Failed|Invalid'
+last -n 10                            # les dernières sessions ouvertes
+```
+
+Une ligne `Accepted publickey for alice from 198.51.100.23` dit qui est entré, d'où, et avec quelle clé : l'empreinte figure en fin de ligne. Une connexion acceptée depuis une adresse inhabituelle, à une heure inhabituelle, mérite une question. Envoyer ces journaux vers une machine centrale, comme vu au module précédent, empêche un intrus de les effacer derrière lui.
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas de serveur SSH, mais sa configuration est un simple texte, et ses règles de lecture se reproduisent. Le dossier `ssh` contient une copie de la configuration d'un serveur Debian fraîchement livré par un hébergeur. Le script `effectif.sh` imite `sshd -T` : il lit les fichiers dans l'ordre de `sshd`, et garde la première valeur de chaque directive écrite.
+
+1. les directives actives du fichier principal : `grep -v '^#' ssh/sshd_config | grep -v '^$'` ;
+2. les fichiers complémentaires : `ls ssh/sshd_config.d`, puis `cat ssh/sshd_config.d/50-cloud-init.conf` ;
+3. comment le script reproduit l'ordre de lecture : `cat effectif.sh` ;
+4. la configuration effective, avant tout changement : `sh effectif.sh > avant.txt`, puis `cat avant.txt`. Les mots de passe sont acceptés ;
+5. écris ton fichier de durcissement, nommé pour être lu en premier, en deux fois : `printf '%s\n' 'PermitRootLogin no' 'PasswordAuthentication no' 'KbdInteractiveAuthentication no' > ssh/sshd_config.d/10-durcissement.conf`, puis `printf '%s\n' 'AllowGroups ssh-users' 'MaxAuthTries 3' 'X11Forwarding no' 'AllowAgentForwarding no' >> ssh/sshd_config.d/10-durcissement.conf` ;
+6. corrige aussi la ligne de cloud-init, pour qu'un renommage futur ne rouvre rien : `sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' ssh/sshd_config.d/50-cloud-init.conf` ;
+7. la configuration effective, après : `sh effectif.sh > apres.txt`, puis `diff avant.txt apres.txt`.
+
+<LinuxTerminal title="Une configuration livrée par l'hébergeur" files={{"ssh/sshd_config": "# This is the sshd server system-wide configuration file.  See\n# sshd_config(5) for more information.\n\nInclude /etc/ssh/sshd_config.d/*.conf\n\n#Port 22\n#ListenAddress 0.0.0.0\n\n#LoginGraceTime 2m\n#PermitRootLogin prohibit-password\n#MaxAuthTries 6\n\n#PubkeyAuthentication yes\n#AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2\n\n# To disable tunneled clear text passwords, change to no here!\n#PasswordAuthentication yes\n#PermitEmptyPasswords no\n\n# Change to yes to enable challenge-response passwords (beware issues with\n# some PAM modules and threads)\nKbdInteractiveAuthentication no\n\nUsePAM yes\n\n#AllowAgentForwarding yes\n#AllowTcpForwarding yes\nX11Forwarding yes\nPrintMotd no\n\n# Allow client to pass locale environment variables\nAcceptEnv LANG LC_*\n\n# override default of no subsystems\nSubsystem sftp /usr/lib/openssh/sftp-server\n", "ssh/sshd_config.d/50-cloud-init.conf": "PasswordAuthentication yes\n", "effectif.sh": "#!/bin/sh\n# effectif.sh : imite « sshd -T » pour les directives écrites.\n# sshd lit d'abord les fichiers de sshd_config.d, dans l'ordre alphabétique\n# (c'est la ligne Include, en tête de sshd_config), puis la suite de sshd_config.\n# Pour chaque directive, la première valeur lue gagne : awk ne garde que celle-là.\ncat ssh/sshd_config.d/*.conf ssh/sshd_config |\n  awk '!/^[ \\t]*#/ && NF && tolower($1) != \"include\" {\n    k = tolower($1)\n    if (!(k in vu)) { vu[k] = 1; $1 = k; print }\n  }'\n"}} expectedCommands={["grep -v '^#' ssh/sshd_config | grep -v '^$'", "ls ssh/sshd_config.d", "cat ssh/sshd_config.d/50-cloud-init.conf", "cat effectif.sh", "sh effectif.sh > avant.txt", "cat avant.txt", "printf '%s\\n' 'PermitRootLogin no' 'PasswordAuthentication no' 'KbdInteractiveAuthentication no' > ssh/sshd_config.d/10-durcissement.conf", "printf '%s\\n' 'AllowGroups ssh-users' 'MaxAuthTries 3' 'X11Forwarding no' 'AllowAgentForwarding no' >> ssh/sshd_config.d/10-durcissement.conf", "sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' ssh/sshd_config.d/50-cloud-init.conf", "sh effectif.sh > apres.txt", "diff avant.txt apres.txt"]} checks={[{"label": "Les mots de passe sont refusés", "path": "apres.txt", "expect": "file", "contains": "passwordauthentication no"}, {"label": "Root ne se connecte plus directement", "path": "apres.txt", "expect": "file", "contains": "permitrootlogin no"}, {"label": "Seul le groupe ssh-users peut entrer", "path": "apres.txt", "expect": "file", "contains": "allowgroups ssh-users"}, {"label": "X11 est fermé, malgré sshd_config", "path": "apres.txt", "expect": "file", "contains": "x11forwarding no"}, {"label": "La ligne de cloud-init ne rouvre plus rien", "path": "ssh/sshd_config.d/50-cloud-init.conf", "expect": "file", "contains": "PasswordAuthentication no"}]} hints={["grep -v '^#' retire les lignes de commentaire ; grep -v '^$' les lignes vides.", "Les fichiers de sshd_config.d sont lus avant la suite de sshd_config, dans l'ordre alphabétique.", "Pour chaque directive, la première valeur lue gagne.", "sed -i 's/ancien/nouveau/' FICHIER corrige le fichier lui-même ; ^ ancre le motif en début de ligne."]} />
+
+Le `diff` de l'étape 7 montre les deux effets de la règle de la première valeur. `x11forwarding` passe à `no` alors que `sshd_config` dit toujours `yes` : ton fichier est lu avant. Et sans l'étape 5, l'étape 6 seule n'aurait pas suffi à fermer root, dont la ligne du fichier principal n'est qu'un commentaire. Contrairement au vrai `sshd -T`, ce script n'affiche que les directives écrites, pas les valeurs par défaut : sur un serveur, c'est `sshd -T` qu'on interroge.
+
+Ensuite, sur le vrai serveur, dans un terminal simulé, l'application sans se fermer la porte :
+
+1. la syntaxe : `sudo sshd -t`, puis les valeurs qui comptent : `sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication|allowgroups|maxauthtries|x11forwarding)'` ;
+2. alice est bien dans le groupe autorisé : `id alice` ;
+3. applique : `sudo systemctl reload ssh` ;
+4. depuis ton poste, dans un second terminal, vérifie que root et les mots de passe sont refusés : `ssh root@srv-web`, puis `ssh -o PubkeyAuthentication=no alice@srv-web` ;
+5. et que ta clé passe toujours : `ssh alice@srv-web true && echo ok` ;
+6. le journal en garde la trace : `sudo journalctl -u ssh -n 6 --no-pager`.
+
+<SimulatedTerminal shell="bash" title="Appliquer sans se fermer la porte" expectedCommands={["sudo sshd -t", "sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication|allowgroups|maxauthtries|x11forwarding)'", "id alice", "sudo systemctl reload ssh", "ssh root@srv-web", "ssh -o PubkeyAuthentication=no alice@srv-web", "ssh alice@srv-web true && echo ok", "sudo journalctl -u ssh -n 6 --no-pager"]} hints={["sshd -t ne dit rien quand la syntaxe est bonne.", "AllowGroups ssh-users : alice doit être dans ce groupe avant le rechargement.", "reload relit la configuration sans couper les sessions ouvertes.", "Permission denied (publickey) : le serveur n'accepte plus que les clés."]} commands={{"sudo sshd -t": "", "sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication|allowgroups|maxauthtries|x11forwarding)'": "permitrootlogin no\nmaxauthtries 3\nkbdinteractiveauthentication no\npasswordauthentication no\nx11forwarding no\nallowgroups ssh-users", "id alice": "uid=1000(alice) gid=1000(alice) groups=1000(alice),27(sudo),1001(ssh-users)", "sudo systemctl reload ssh": "", "ssh root@srv-web": "root@srv-web: Permission denied (publickey).", "ssh -o PubkeyAuthentication=no alice@srv-web": "alice@srv-web: Permission denied (publickey).", "ssh alice@srv-web true && echo ok": "ok", "sudo journalctl -u ssh -n 6 --no-pager": "Oct 02 10:41:12 srv-web sshd[1187]: Received SIGHUP; restarting.\nOct 02 10:41:12 srv-web sshd[1187]: Server listening on 0.0.0.0 port 22.\nOct 02 10:41:12 srv-web sshd[1187]: Server listening on :: port 22.\nOct 02 10:42:03 srv-web sshd[2210]: Connection closed by authenticating user root 198.51.100.23 port 51544 [preauth]\nOct 02 10:42:31 srv-web sshd[2214]: Accepted publickey for alice from 198.51.100.23 port 51560 ssh2: ED25519 SHA256:pq2NOWVPI3fNYD+Xn9P4TrjJmYqp4q+AgHfpIsUhb6w\nOct 02 10:42:31 srv-web sshd[2214]: pam_unix(sshd:session): session opened for user alice(uid=1000) by (uid=0)", "sudo journalctl -u ssh --since yesterday | grep -c 'Invalid user'": "4127", "cat /etc/ssh/sshd_config.d/10-durcissement.conf": "PermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nAllowGroups ssh-users\nMaxAuthTries 3\nX11Forwarding no\nAllowAgentForwarding no"}} />
+
+## les pièges
+
+- **Écrire à la fin de `sshd_config` une directive déjà réglée plus haut.** La première valeur gagne : la tienne est ignorée. On vérifie avec `sshd -T`.
+- **Oublier `sshd_config.d`.** Le fichier de cloud-init y rouvre les mots de passe, en silence.
+- **Fermer les mots de passe avant d'avoir testé sa clé.** Ou fermer sa seule session avant d'avoir testé une nouvelle connexion.
+- **`AllowGroups` avant d'avoir créé le groupe et d'y avoir mis les administrateurs.** Personne n'entre plus.
+- **`restart` au lieu de `reload` sur une configuration fautive.** Le service ne redémarre pas, et plus aucune nouvelle connexion n'est possible : `sshd -t` d'abord.
+- **Croire que changer de port protège.** Il réduit le bruit, pas le risque.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/usage-securise-dopenssh" description="Les recommandations de l'ANSSI pour le serveur OpenSSH, directive par directive, en français">ANSSI : usage sécurisé d'(Open)SSH</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-server/sshd_config.5.en.html" description="Toutes les directives du serveur, et les blocs Match, en anglais">Page de manuel de sshd_config</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le durcissement d'un système GNU/Linux dans son ensemble, en français">ANSSI : recommandations pour un système GNU/Linux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="sshd_config contient PasswordAuthentication no en dernière ligne, mais les mots de passe restent acceptés. Cause la plus probable ?" options={["Le service n'a pas de clé d'hôte", "Un fichier de sshd_config.d, lu en premier, règle PasswordAuthentication yes : la première valeur gagne", "La directive s'écrit en minuscules", "Il faut redémarrer la machine"]} correct={1} explanation="C'est le piège classique du fichier 50-cloud-init.conf." />
+  <Quiz id="q-2" question="Quelle commande montre la configuration que sshd appliquera vraiment ?" options={["cat /etc/ssh/sshd_config", "sudo sshd -T", "ssh -G", "systemctl status ssh"]} correct={1} explanation="sshd -T résout les inclusions, l'ordre et les valeurs par défaut ; ssh -G fait la même chose pour le client." />
+  <Quiz id="q-3" question="Avant de recharger SSH sur un serveur distant, quelle précaution prendre ?" options={["Fermer toutes les sessions", "Garder sa session ouverte et tester une nouvelle connexion depuis un second terminal", "Redémarrer la machine", "Désactiver le pare-feu"]} correct={1} explanation="Les sessions ouvertes survivent au rechargement : elles permettent de corriger une erreur." />
+  <Quiz id="q-4" question="Pourquoi interdire la connexion directe de root ?" options={["Root n'a pas de mot de passe", "Un attaquant doit deviner un compte en plus, et le journal dit qui a utilisé sudo", "Pour accélérer SSH", "Parce que root ne peut pas avoir de clé"]} correct={1} explanation="Chacun se connecte avec son compte, puis utilise sudo." />
+  <Quiz id="q-5" question="Que risque-t-on en ajoutant AllowGroups ssh-users ?" options={["Rien", "De bloquer tout le monde si le groupe n'existe pas ou ne contient pas les administrateurs", "D'ouvrir le serveur à tous", "De désactiver les clés"]} correct={1} explanation="On crée le groupe et on y ajoute les comptes avant de recharger." />
+  <Quiz id="q-6" question="Changer le port de SSH, c'est :" options={["Une protection forte", "Un moyen de réduire le bruit des robots dans le journal, pas une protection", "Interdit par OpenSSH", "Obligatoire selon l'ANSSI"]} correct={1} explanation="Un balayage de ports trouve le service en quelques secondes." />
+  <Quiz id="q-7" question="Quelle différence entre reload et restart pour le service ssh ?" options={["Aucune", "reload relit la configuration sans couper les sessions ; restart relance le service, qui ne repart pas si la configuration est fautive", "restart est plus sûr", "reload redémarre la machine"]} correct={1} explanation="Dans les deux cas, sshd -t d'abord." />
+</QuizGroup>
+
+## à retenir
+
+- **`/etc/ssh/sshd_config`**, et ses réglages à soi dans **`sshd_config.d/`**, lus en premier, dans l'ordre alphabétique.
+- **La première valeur gagne** : attention à **`50-cloud-init.conf`**.
+- **`sshd -t`** pour la syntaxe, **`sshd -T`** pour la vérité, **`reload`**, et une session gardée ouverte pendant le test.
+- **`PasswordAuthentication no`**, **`KbdInteractiveAuthentication no`**, **`PermitRootLogin no`**, après avoir testé sa clé.
+- **`AllowGroups`** pour une liste explicite ; **`MaxAuthTries`**, pas de tunnels, de X11 ni d'agent transféré sans besoin.
+- **fail2ban** freine les robots ; le **filtrage par adresse** les fait disparaître ; le **journal** dit qui est entré.

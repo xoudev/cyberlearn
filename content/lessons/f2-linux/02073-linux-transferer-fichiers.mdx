@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-02073-V01
+slug: linux-transferer-fichiers
+title: "Transférer des fichiers : scp, sftp, rsync et tar dans un tube"
+description: "Copier des fichiers entre machines par SSH : scp pour une copie simple, sftp pour une session ou un dépôt restreint, rsync pour ne transférer que ce qui change, avec --delete, la simulation et le piège de la barre oblique finale, tar dans un tube quand rien d'autre n'est installé, et la vérification de ce qui est arrivé avec sha256sum. Avec une archive, son empreinte et un transfert interrompu détecté sur un vrai Linux, puis la mise en ligne d'un site avec rsync."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02072-V01"]
+---
+
+Un administrateur passe une bonne partie de son temps à déplacer des fichiers : publier une nouvelle version d'un site, rapatrier des journaux pour les analyser, envoyer une sauvegarde vers une autre machine, récupérer un rapport. Avec SSH en place, plus besoin de FTP ni de partage réseau : la même connexion chiffrée et authentifiée transporte aussi les fichiers. Encore faut-il choisir le bon outil, éviter les quelques pièges qui écrasent ou dupliquent des dossiers entiers, et surtout **vérifier** que ce qui est arrivé est bien ce qui est parti.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- copier des fichiers et des dossiers avec `scp` ;
+- utiliser `sftp`, en session ou en lot ;
+- synchroniser un dossier avec `rsync`, simuler avant d'agir, et maîtriser la barre oblique finale ;
+- faire passer une archive `tar` dans un tube, à travers SSH ;
+- vérifier l'intégrité d'un fichier transféré avec `sha256sum`.
+
+## pourquoi ça compte
+
+Un transfert raté ne se voit pas toujours. Une copie interrompue laisse un fichier tronqué qui porte le bon nom ; une synchronisation mal écrite crée un dossier dans le dossier, ou efface des fichiers de production. Côté sécurité, les transferts sont aussi ce qu'un intrus fait en dernier : faire sortir des données. Connaître les outils, c'est savoir les utiliser proprement, et savoir reconnaître dans les journaux et les volumes réseau un transfert qui n'aurait pas dû avoir lieu.
+
+## scp : copier, simplement
+
+```bash
+scp rapport.pdf alice@srv-web:/tmp/          # un fichier vers le serveur
+scp srv-web:/var/log/nginx/error.log .       # un fichier depuis le serveur, ici
+scp -r site/ srv-web:/srv/www/               # un dossier entier
+scp -P 2222 rapport.pdf srv-web:             # un autre port ; sans chemin : le dossier personnel
+```
+
+La syntaxe est celle de `cp`, avec `machine:chemin` pour désigner un emplacement distant. Les noms courts de `~/.ssh/config` fonctionnent, avec leurs utilisateurs, ports et clés. Attention à l'option du port, en majuscule pour `scp` (`-P`) alors qu'elle est en minuscule pour `ssh` (`-p`) : une source d'erreurs inépuisable. Depuis la version 9 d'OpenSSH, `scp` utilise en coulisse le protocole de `sftp`, plus sûr que l'ancien protocole de `scp`, qui faisait interpréter les noms de fichiers par le shell distant.
+
+`scp` copie tout, à chaque fois, et reprend de zéro si la connexion tombe. Pour un fichier ou un petit dossier, c'est parfait ; pour un gros dossier qu'on met à jour régulièrement, on passe à `rsync`.
+
+## sftp : une session de transfert
+
+```bash
+sftp srv-web
+sftp> cd /srv/depot
+sftp> put rapport.pdf
+sftp> get journal.tar.gz
+sftp> ls -l
+sftp> bye
+```
+
+`sftp` ouvre une session interactive, avec des commandes proches de celles d'un shell : `cd` et `ls` côté serveur, `lcd` et `lls` côté poste, `put` pour envoyer, `get` pour recevoir. Il sert aussi en **lot** : `sftp -b commandes.txt srv-web` exécute un fichier de commandes, et s'arrête à la première erreur, ce qui en fait un bon outil de script.
+
+C'est surtout le protocole des comptes **restreints**. La leçon précédente a montré le bloc `Match` qui force `internal-sftp` et enferme un compte dans un dossier avec `ChrootDirectory` : un partenaire peut y déposer ses fichiers, sans jamais obtenir de shell sur la machine. C'est la bonne réponse à « il nous faut un FTP pour le prestataire ».
+
+## rsync : ne transférer que ce qui change
+
+**rsync** compare la source et la destination, et ne transfère que les différences : les fichiers nouveaux ou modifiés, et même, dans un gros fichier modifié, seulement les blocs qui ont changé. Il doit être installé des deux côtés, et passe par SSH par défaut.
+
+```bash
+rsync -av site/ srv-web:/srv/www/site/            # synchroniser un dossier
+rsync -avn --delete site/ srv-web:/srv/www/site/   # simuler, avec suppression
+rsync -av --delete site/ srv-web:/srv/www/site/    # puis le faire
+rsync -avP gros.iso srv-sauvegarde:/srv/iso/       # avec progression, et reprise possible
+```
+
+Les options à connaître :
+
+| Option | Effet |
+| --- | --- |
+| `-a` | mode archive : récursif, et conserve droits, dates, liens symboliques, propriétaires |
+| `-v` | affiche les fichiers transférés |
+| `-n` | simulation (*dry run*) : montre ce qui serait fait, sans rien faire |
+| `--delete` | supprime à la destination ce qui n'existe plus à la source |
+| `-z` | compresse pendant le transfert, utile sur un lien lent |
+| `-P` | progression, et garde les fichiers partiels pour reprendre |
+| `--exclude` | ignore un motif : `--exclude '*.log'` |
+
+`--delete` fait de la destination un **miroir** exact de la source : c'est ce qu'on veut pour publier un site, et c'est dangereux pour tout le reste. Une source vide, ou un chemin source mal tapé, et la destination est vidée. D'où la règle : toute commande `rsync` avec `--delete` se lance d'abord avec `-n`, et l'on lit la liste des `deleting` avant de retirer le `-n`.
+
+## la barre oblique finale
+
+C'est le piège qui piège tout le monde une fois. Pour `rsync`, une barre oblique à la fin de la **source** change le sens de la commande :
+
+- `rsync -av site/ dest/` copie le **contenu** de `site` dans `dest` : on obtient `dest/index.html` ;
+- `rsync -av site dest/` copie le **dossier** `site` dans `dest` : on obtient `dest/site/index.html`.
+
+Sans la barre, une publication crée donc un dossier `site` à l'intérieur du site, qui reste en place, inutile ou même exposé. Pour la destination, la barre finale ne change rien. Le plus sûr est d'écrire toujours la barre sur les deux, et de vérifier le résultat avec `-n` la première fois.
+
+## tar dans un tube
+
+Quand `rsync` n'est pas installé sur le serveur, ou pour copier une arborescence d'un seul bloc, on fait passer une archive `tar` dans un **tube**, à travers SSH, sans jamais l'écrire sur le disque :
+
+```bash
+tar czf - site | ssh srv-web 'tar xzf - -C /srv/www'
+ssh srv-web 'tar czf - /var/log/nginx' > journaux-nginx.tar.gz
+```
+
+Le `-` désigne la sortie standard pour la création, l'entrée standard pour l'extraction. Le tube transporte un seul flux continu, ce qui est bien plus rapide que des milliers de petits fichiers copiés un par un, et `tar` conserve droits, dates et liens. Sur un Linux complet, `z` ajoute la compression gzip ; ce n'est qu'un filtre de plus dans le tube, qu'on peut aussi écrire à part : `tar cf - site | gzip`.
+
+<Diagram caption="Quel outil pour quel transfert">
+flowchart TD
+  A["un transfert à faire"] --> B["un fichier, une fois : scp"]
+  A --> C["un dossier mis à jour souvent : rsync"]
+  A --> D["un dépôt restreint, ou un script de commandes : sftp"]
+  A --> E["une arborescence d'un bloc, sans rsync : tar dans un tube"]
+  B --> F["vérifier : sha256sum des deux côtés"]
+  C --> F
+  D --> F
+  E --> F
+</Diagram>
+
+## vérifier ce qui est arrivé
+
+Une **empreinte** SHA-256 résume un fichier en 64 caractères : un seul octet changé, et elle n'a plus rien à voir. On la calcule avant l'envoi, on la recalcule à l'arrivée, on compare :
+
+```bash
+sha256sum site.tar.gz > site.tar.gz.sha256      # au départ
+sha256sum -c site.tar.gz.sha256                 # à l'arrivée : OK ou FAILED
+```
+
+C'est aussi ce que font les éditeurs de logiciels : à côté d'une image ISO, ils publient un fichier `SHA256SUMS`, lui-même **signé**. L'empreinte prouve que le fichier n'a pas été abîmé ; la signature prouve qu'elle vient bien de l'éditeur. Une empreinte téléchargée depuis le même site que le fichier ne protège que contre la corruption, pas contre un site compromis qui aurait changé les deux. MD5 et SHA-1, qu'on croise encore, détectent la corruption accidentelle mais ne résistent plus à une falsification volontaire.
+
+## les gros transferts
+
+Un transfert de plusieurs heures demande quelques précautions. `rsync -P` garde les fichiers partiels : relancée, la commande reprend là où elle s'était arrêtée au lieu de tout recommencer. `--bwlimit=20M` limite le débit, pour ne pas saturer le lien d'un site de production pendant la journée. La compression `-z` aide sur un lien lent, mais ne sert à rien sur des fichiers déjà compressés, comme des archives, des vidéos ou des images. Enfin, une commande longue lancée depuis une session SSH meurt avec elle si la connexion tombe : on la lance dans `tmux`, qu'on retrouve en se reconnectant.
+
+## les transferts et la sécurité
+
+Les comptes qui transfèrent automatiquement, comme une sauvegarde nocturne, utilisent des clés sans phrase de passe : on les restreint côté serveur. Une ligne de `authorized_keys` peut forcer `command="rrsync -ro /srv/sauvegardes"`, qui n'autorise que `rsync`, en lecture seule, dans ce dossier. Côté surveillance, un transfert sortant inhabituel, par son volume, son heure ou sa destination, est l'un des signes d'une exfiltration de données. Enfin, FTP et Telnet n'ont plus leur place : identifiants et fichiers y circulent en clair.
+
+## à toi de jouer
+
+Le Linux des exercices n'a ni `scp` ni `rsync`, mais il a `tar`, `gzip` et `sha256sum`, de quoi préparer un transfert, le simuler, et surtout le vérifier. Le dossier `site` est un petit site web à publier. Son `tar` ne compresse pas tout seul : la compression passe par `gzip`, dans un tube.
+
+1. crée l'archive : `tar cf - site | gzip > site.tar.gz`, puis `ls -l site.tar.gz` ;
+2. calcule son empreinte : `sha256sum site.tar.gz > site.tar.gz.sha256`, puis `cat site.tar.gz.sha256` ;
+3. simule un transfert interrompu au milieu : `mkdir recu`, `head -c 100 site.tar.gz > recu/site.tar.gz`, et envoie aussi l'empreinte : `cp site.tar.gz.sha256 recu/` ;
+4. vérifie à l'arrivée : `(cd recu && sha256sum -c site.tar.gz.sha256)`. Le fichier porte le bon nom, mais il est refusé ;
+5. refais le transfert, complet cette fois : `cp site.tar.gz recu/`, puis vérifie et garde le verdict : `(cd recu && sha256sum -c site.tar.gz.sha256) > verif.txt`, et `cat verif.txt` ;
+6. déballe à l'arrivée et compare avec l'original : `mkdir recu/www`, `gzip -dc recu/site.tar.gz | tar xf - -C recu/www`, puis `diff -r site recu/www/site && echo identiques` ;
+7. enfin, le transfert en un seul tube, sans archive intermédiaire, exactement comme à travers `ssh` : `mkdir copie`, `tar cf - site | tar xf - -C copie`, puis `ls -R copie`.
+
+<LinuxTerminal title="Un transfert vérifié" files={{"site/index.html": "<!doctype html>\n<html lang=\"fr\">\n<head><meta charset=\"utf-8\"><title>Labo</title><link rel=\"stylesheet\" href=\"css/style.css\"></head>\n<body>\n<h1>Le labo</h1>\n<p>Bienvenue sur le site de l'équipe.</p>\n<p><a href=\"contact.html\">Nous contacter</a></p>\n</body>\n</html>\n", "site/contact.html": "<!doctype html>\n<html lang=\"fr\">\n<head><meta charset=\"utf-8\"><title>Contact</title><link rel=\"stylesheet\" href=\"css/style.css\"></head>\n<body>\n<h1>Contact</h1>\n<p>Écris-nous : contact@labo.example</p>\n</body>\n</html>\n", "site/css/style.css": "body { font-family: sans-serif; max-width: 40em; margin: 2em auto; }\nh1 { color: #224; }\n"}} expectedCommands={["tar cf - site | gzip > site.tar.gz", "ls -l site.tar.gz", "sha256sum site.tar.gz > site.tar.gz.sha256", "cat site.tar.gz.sha256", "mkdir recu", "head -c 100 site.tar.gz > recu/site.tar.gz", "cp site.tar.gz.sha256 recu/", "(cd recu && sha256sum -c site.tar.gz.sha256)", "cp site.tar.gz recu/", "(cd recu && sha256sum -c site.tar.gz.sha256) > verif.txt", "cat verif.txt", "mkdir recu/www", "gzip -dc recu/site.tar.gz | tar xf - -C recu/www", "diff -r site recu/www/site && echo identiques", "mkdir copie", "tar cf - site | tar xf - -C copie", "ls -R copie"]} checks={[{"label": "L'empreinte de l'archive est enregistrée", "path": "site.tar.gz.sha256", "expect": "file", "contains": "site.tar.gz"}, {"label": "L'archive arrivée est vérifiée intacte", "path": "verif.txt", "expect": "file", "contains": "site.tar.gz: OK"}, {"label": "Le site est déballé à l'arrivée", "path": "recu/www/site/css/style.css", "expect": "file", "contains": "font-family"}, {"label": "Le site a traversé le tube", "path": "copie/site/contact.html", "expect": "file", "contains": "contact@labo.example"}]} hints={["tar cf - écrit l'archive sur la sortie standard ; gzip la compresse au passage.", "head -c 100 ne garde que les 100 premiers octets : un transfert coupé net.", "sha256sum -c relit le fichier d'empreintes et recalcule chaque empreinte : OK ou FAILED.", "Les parenthèses lancent cd dans un sous-shell : tu restes dans /mnt ensuite.", "gzip -dc décompresse vers la sortie standard ; tar xf - lit l'archive sur l'entrée standard."]} />
+
+L'étape 4 est le cas qu'on rate sans vérification : un fichier tronqué ne se distingue pas d'un fichier complet par son nom, et parfois même pas par sa taille au premier coup d'œil. Seule l'empreinte tranche. Et l'étape 7 montre que `tar` ne voit pas la différence entre un tube local et un tube qui traverse le réseau : remplace le second `tar` par `ssh srv-web 'tar xf - -C /srv/www'`, et c'est un déploiement.
+
+Ensuite, depuis le poste d'alice, dans un terminal simulé, la mise en ligne vers `srv-web` :
+
+1. un fichier, et sa vérification des deux côtés : `scp rapport.pdf srv-web:/tmp/`, puis `sha256sum rapport.pdf` et `ssh srv-web sha256sum /tmp/rapport.pdf` ;
+2. publier le site en miroir, en simulant d'abord : `rsync -avn --delete site/ srv-web:/srv/www/site/`. Lis la ligne `deleting` ;
+3. puis pour de vrai : `rsync -av --delete site/ srv-web:/srv/www/site/` ;
+4. le piège : `rsync -av site srv-web:/srv/www/site/`, sans barre finale, puis `ssh srv-web ls /srv/www/site`. D'où vient ce dossier `site` ? Retire-le : `ssh srv-web rm -r /srv/www/site/site` ;
+5. un dépôt en lot avec `sftp` : `cat depot.txt`, puis `sftp -b depot.txt srv-depot`.
+
+<SimulatedTerminal shell="bash" title="Vers le serveur : scp, rsync, sftp" expectedCommands={["scp rapport.pdf srv-web:/tmp/", "sha256sum rapport.pdf", "ssh srv-web sha256sum /tmp/rapport.pdf", "rsync -avn --delete site/ srv-web:/srv/www/site/", "rsync -av --delete site/ srv-web:/srv/www/site/", "rsync -av site srv-web:/srv/www/site/", "ssh srv-web ls /srv/www/site", "ssh srv-web rm -r /srv/www/site/site", "cat depot.txt", "sftp -b depot.txt srv-depot"]} hints={["Les deux empreintes doivent être identiques, caractère pour caractère.", "-n simule : lis la ligne deleting avant de lancer pour de vrai.", "Sans barre finale, rsync copie le dossier lui-même, pas son contenu.", "sftp -b exécute les commandes du fichier, et s'arrête à la première erreur."]} commands={{"scp rapport.pdf srv-web:/tmp/": "rapport.pdf                                   100%  245KB  12.4MB/s   00:00    ", "sha256sum rapport.pdf": "4b1f6e0c2d9a7f35e8c0b2d4a6f8e1c3b5d7f9a2c4e6b8d0f1a3c5e7b9d2f4a6  rapport.pdf", "ssh srv-web sha256sum /tmp/rapport.pdf": "4b1f6e0c2d9a7f35e8c0b2d4a6f8e1c3b5d7f9a2c4e6b8d0f1a3c5e7b9d2f4a6  /tmp/rapport.pdf", "rsync -avn --delete site/ srv-web:/srv/www/site/": "sending incremental file list\ndeleting ancien.html\n./\ncontact.html\ncss/style.css\n\nsent 214 bytes  received 41 bytes  510.00 bytes/sec\ntotal size is 4,812  speedup is 18.87 (DRY RUN)", "rsync -av --delete site/ srv-web:/srv/www/site/": "sending incremental file list\ndeleting ancien.html\n./\ncontact.html\ncss/style.css\n\nsent 2,391 bytes  received 79 bytes  4,940.00 bytes/sec\ntotal size is 4,812  speedup is 1.95", "rsync -av site srv-web:/srv/www/site/": "sending incremental file list\nsite/\nsite/contact.html\nsite/index.html\nsite/css/\nsite/css/style.css\n\nsent 5,190 bytes  received 104 bytes  10,588.00 bytes/sec\ntotal size is 4,812  speedup is 0.91", "ssh srv-web ls /srv/www/site": "contact.html\ncss\nindex.html\nsite", "ssh srv-web rm -r /srv/www/site/site": "", "cat depot.txt": "put rapport.pdf /depot/\nls -l /depot", "sftp -b depot.txt srv-depot": "sftp> put rapport.pdf /depot/\nUploading rapport.pdf to /depot/rapport.pdf\nsftp> ls -l /depot\n-rw-r--r--    1 1004     1004       250880 Oct  2 11:02 /depot/rapport.pdf", "ls site": "contact.html  css  index.html"}} />
+
+## les pièges
+
+- **`--delete` sans simulation.** Un chemin source faux, et la destination est vidée : `-n` d'abord, toujours.
+- **Oublier la barre oblique finale de la source.** Un dossier `site` apparaît dans le site.
+- **`-p` au lieu de `-P` avec `scp`.** Pour `scp`, `-p` conserve les dates ; le port, c'est `-P`.
+- **Ne pas vérifier un transfert.** Un fichier tronqué porte le bon nom.
+- **Une empreinte téléchargée au même endroit que le fichier.** Elle ne protège que de la corruption ; c'est la signature qui protège de la falsification.
+- **Une longue copie dans une session SSH nue.** La connexion tombe, la copie aussi : `tmux`, et `rsync -P` pour reprendre.
+
+## pour aller plus loin
+
+<ExternalLink href="https://manpages.debian.org/bookworm/rsync/rsync.1.fr.html" description="Toutes les options de rsync, filtres et suppression compris, en français">Page de manuel de rsync</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-client/sftp.1.en.html" description="Les commandes interactives et le mode par lot de sftp, en anglais">Page de manuel de sftp</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-client/scp.1.en.html" description="Les options de scp, dont -P pour le port, en anglais">Page de manuel de scp</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle différence entre rsync -av site/ dest/ et rsync -av site dest/ ?" options={["Aucune", "Avec la barre, le contenu de site va dans dest ; sans, le dossier site lui-même est créé dans dest", "Sans la barre, rien n'est copié", "La barre active la compression"]} correct={1} explanation="Pour la destination, la barre finale ne change rien ; pour la source, elle change tout." />
+  <Quiz id="q-2" question="Avant une commande rsync avec --delete, que faire ?" options={["Rien de particulier", "La lancer avec -n et lire la liste des suppressions", "Ajouter -z", "Supprimer la destination"]} correct={1} explanation="-n simule : rien n'est copié ni supprimé." />
+  <Quiz id="q-3" question="Un fichier transféré porte le bon nom. Comment savoir qu'il est complet et intact ?" options={["Sa date", "Comparer son empreinte SHA-256 avec celle calculée au départ", "L'ouvrir", "Son nom suffit"]} correct={1} explanation="sha256sum -c répond OK ou FAILED." />
+  <Quiz id="q-4" question="Pourquoi rsync est-il préférable à scp pour un gros dossier mis à jour souvent ?" options={["Il chiffre mieux", "Il ne transfère que ce qui a changé, et peut reprendre un transfert interrompu", "Il n'a pas besoin de SSH", "Il est plus ancien"]} correct={1} explanation="scp recopie tout à chaque fois." />
+  <Quiz id="q-5" question="Comment indiquer un port SSH à scp ?" options={["-p 2222", "-P 2222", "--port 2222", "Impossible"]} correct={1} explanation="Pour scp, -p conserve les dates des fichiers." />
+  <Quiz id="q-6" question="Que fait tar czf - site | ssh srv-web 'tar xzf - -C /srv/www' ?" options={["Il crée une archive sur le poste", "Il envoie le dossier site dans un seul flux compressé, et le déballe directement sur le serveur", "Il supprime site", "Il ne fonctionne pas sans rsync"]} correct={1} explanation="Le - désigne la sortie puis l'entrée standard : aucune archive n'est écrite sur le disque." />
+  <Quiz id="q-7" question="Un prestataire doit déposer des fichiers sur un serveur. Quelle solution ?" options={["Un serveur FTP", "Un compte limité à sftp par un bloc Match, enfermé dans un dossier", "Un compte avec shell et sudo", "Lui envoyer la clé privée d'un administrateur"]} correct={1} explanation="ForceCommand internal-sftp et ChrootDirectory : un dépôt, pas un accès à la machine." />
+</QuizGroup>
+
+## à retenir
+
+- **`scp`** pour une copie simple, avec **`-P`** pour le port ; **`sftp`** pour une session, un lot (`-b`) ou un dépôt restreint.
+- **`rsync -av`** ne transfère que ce qui change ; **`--delete`** fait un miroir, toujours précédé de **`-n`**.
+- La **barre oblique finale** de la source : `site/` copie le contenu, `site` copie le dossier.
+- **`tar cf - | ssh hôte 'tar xf - -C dest'`** : un flux unique, sans archive intermédiaire.
+- **`sha256sum`** au départ, **`sha256sum -c`** à l'arrivée ; une **signature** pour se protéger de la falsification.
+- Les clés de transfert automatique se restreignent (`rrsync`), et les gros transferts sortants se surveillent.

@@ -1,0 +1,219 @@
+---
+refCode: CL-LSN-02910-V01
+slug: linux-bilan-module-10
+title: "Bilan du module 10 : un serveur joignable seulement par clé, derrière un pare-feu"
+description: "Le quiz du module Linux en réseau, puis un lab sur la machine virtuelle d'entraînement : lui donner une adresse fixe sur un réseau privé avec l'hôte, vérifier l'empreinte de sa clé d'hôte, s'y connecter par une clé protégée, durcir son serveur SSH, et la placer derrière un pare-feu nftables qui refuse tout par défaut, sans jamais s'enfermer dehors."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02074-V01"]
+---
+
+Le module 10 a relié Linux au réseau : configurer une interface, diagnostiquer une panne couche par couche, résoudre les noms, se connecter avec SSH, durcir le serveur, transférer des fichiers et poser un pare-feu. Ce bilan vérifie les connaissances, puis te fait mettre en œuvre la configuration qu'on attend de tout serveur exposé : on n'y entre qu'avec une clé, et seulement depuis un réseau autorisé.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- donner à une machine une adresse fixe, de façon permanente, et le vérifier ;
+- vérifier l'empreinte d'un serveur avant de lui faire confiance ;
+- t'authentifier par une clé protégée, et organiser ton client SSH ;
+- durcir un serveur SSH, en vérifiant la configuration effective ;
+- écrire un pare-feu qui refuse par défaut, et l'appliquer à distance sans perdre la main.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="m10-q-1" question="Une configuration posée avec ip addr add a disparu après un redémarrage. Pourquoi ?" options={["Le noyau l'a refusée", "ip agit en direct ; une configuration permanente s'écrit dans l'outil de la distribution", "L'adresse était en double", "Il fallait redémarrer deux fois"]} correct={1} explanation="NetworkManager, systemd-networkd, netplan ou /etc/network/interfaces selon la distribution." />
+  <Quiz id="m10-q-2" question="Quelle commande montre la route que prendra un paquet vers une adresse donnée ?" options={["ip link", "ip route get ADRESSE", "ping ADRESSE", "ss -ltn"]} correct={1} explanation="Le noyau choisit la route la plus précise qui correspond." />
+  <Quiz id="m10-q-3" question="Un ping vers 9.9.9.9 répond, mais apt update échoue sur Temporary failure resolving. Où chercher ?" options={["Le câble", "La résolution des noms : les serveurs DNS de la machine", "La passerelle", "Le pare-feu du dépôt"]} correct={1} explanation="Le réseau et la route fonctionnent : il reste le DNS." />
+  <Quiz id="m10-q-4" question="ss -ltn montre 127.0.0.1:5432. Qui peut joindre ce service ?" options={["Tout Internet", "Seulement la machine elle-même", "Le réseau local", "Personne"]} correct={1} explanation="0.0.0.0 ou [::] voudraient dire toutes les adresses." />
+  <Quiz id="m10-q-5" question="Un nom répond avec getent hosts mais pas avec dig. Pourquoi ?" options={["dig est en panne", "Le nom est défini dans /etc/hosts, que dig ne lit pas", "Le DNS est plus rapide", "Le nom n'existe pas"]} correct={1} explanation="getent suit la vraie chaîne de résolution du système." />
+  <Quiz id="m10-q-6" question="Un nom figure deux fois dans /etc/hosts. Quelle ligne gagne ?" options={["La dernière", "La première", "La plus récente", "Aucune"]} correct={1} explanation="Une vieille entrée en tête du fichier masque tout changement fait ailleurs." />
+  <Quiz id="m10-q-7" question="À la première connexion, ssh affiche une empreinte. Que faire ?" options={["Taper yes", "La comparer avec celle obtenue par un autre canal, comme la console du serveur", "Supprimer known_hosts", "Utiliser ssh -A"]} correct={1} explanation="C'est le seul moment où un homme du milieu peut être détecté." />
+  <Quiz id="m10-q-8" question="Pourquoi préférer ProxyJump au transfert d'agent pour passer par un bastion ?" options={["Il est plus rapide", "Le bastion ne voit que du trafic chiffré ; avec ssh -A, root sur le bastion peut utiliser ton agent", "ssh -A n'existe plus", "ProxyJump n'a pas besoin de clé"]} correct={1} explanation="La clé ne quitte jamais le poste, et l'agent reste chez toi." />
+  <Quiz id="m10-q-9" question="PasswordAuthentication no est en fin de sshd_config, mais les mots de passe passent toujours. Cause probable ?" options={["Une faute de frappe", "Un fichier de sshd_config.d, lu en premier, règle yes : la première valeur gagne", "Il faut redémarrer la machine", "Les mots de passe ne se désactivent pas"]} correct={1} explanation="sshd -T montre la valeur réellement appliquée." />
+  <Quiz id="m10-q-10" question="Avant de recharger SSH ou un pare-feu sur un serveur distant, quelle précaution ?" options={["Fermer toutes les sessions", "Garder sa session ouverte et tester une nouvelle connexion depuis un second terminal", "Couper le réseau", "Aucune"]} correct={1} explanation="La session ouverte permet de corriger une erreur." />
+  <Quiz id="m10-q-11" question="Quelle différence entre rsync -av site/ dest/ et rsync -av site dest/ ?" options={["Aucune", "Avec la barre, le contenu va dans dest ; sans, le dossier site est créé dans dest", "Sans la barre, rien n'est copié", "La barre active --delete"]} correct={1} explanation="Et toute commande avec --delete se simule d'abord avec -n." />
+  <Quiz id="m10-q-12" question="Comment s'assurer qu'un fichier transféré est intact ?" options={["Par son nom", "En comparant son empreinte SHA-256 avec celle calculée au départ", "Par sa date", "En l'ouvrant"]} correct={1} explanation="sha256sum -c répond OK ou FAILED." />
+  <Quiz id="m10-q-13" question="L'entrée d'un pare-feu passe en policy drop sans autre changement. Que se passe-t-il ?" options={["Rien", "Les réponses aux connexions du serveur sont jetées elles aussi, faute de règle established,related", "Le serveur s'éteint", "Tout reste ouvert"]} correct={1} explanation="La règle d'état vient en tête, juste après la boucle locale." />
+  <Quiz id="m10-q-14" question="Pourquoi une table nftables de la famille inet ?" options={["Pour filtrer Internet seulement", "Pour couvrir IPv4 et IPv6 avec les mêmes règles", "Pour les conteneurs", "C'est obligatoire"]} correct={1} explanation="Avec ip et ip6 séparées, on oublie souvent IPv6." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. Le réseau, SSH et le pare-feu reviennent tous dans le projet de fin de parcours, avec le serveur d'une petite équipe à mettre en service.
+
+## projet
+
+### la situation
+
+La machine virtuelle d'entraînement devient un serveur, `srv-labo`, administré depuis ton ordinateur, comme un vrai serveur depuis un poste d'administrateur. On ne doit pouvoir y entrer qu'avec ta clé, que depuis le réseau d'administration, et rien d'autre ne doit y être ouvert. Ce lab demande les droits root : fais-le dans la **machine virtuelle d'entraînement**, **jamais sur un serveur réel**. Prends un **instantané** de la machine avant de commencer : si tu t'enfermes dehors, il te ramène au point de départ.
+
+Le réseau d'administration sera un **réseau privé hôte** : dans les réglages de la machine virtuelle, ajoute une seconde carte réseau dans ce mode. Sous VirtualBox, ce réseau est par défaut `192.168.56.0/24`, et l'hôte y a l'adresse `192.168.56.1` ; adapte les adresses si ton hyperviseur en utilise d'autres. La première carte, en NAT, garde l'accès à Internet pour les mises à jour.
+
+### le cahier des charges
+
+1. **Le réseau** : la seconde carte porte l'adresse fixe `192.168.56.10/24`, de façon permanente, sans passerelle. La machine s'appelle `srv-labo`, et sa ligne `127.0.1.1` de `/etc/hosts` le sait.
+2. **L'empreinte** : l'empreinte de la clé d'hôte ED25519 est relevée sur la console de la machine, et comparée à celle qu'affiche ta première connexion.
+3. **La clé** : sur ton ordinateur, une clé ed25519 **protégée par une phrase de passe**, installée dans le `authorized_keys` de ton compte sur `srv-labo`.
+4. **Le client** : une entrée `srv-labo` dans ton `~/.ssh/config`, si bien que `ssh srv-labo` suffit.
+5. **Le serveur durci** : un fichier `/etc/ssh/sshd_config.d/10-durcissement.conf` interdit les mots de passe et la connexion de root, n'autorise que le groupe `ssh-users`, limite les essais à 3 et ferme X11, le transfert d'agent et les tunnels. `sshd -T` le confirme.
+6. **Le pare-feu** : `/etc/nftables.conf` refuse tout en entrée par défaut, laisse passer la boucle locale, les réponses et l'ICMP, et n'ouvre SSH qu'au réseau `192.168.56.0/24`. Il est rechargé à chaque démarrage, et a été appliqué avec un retour arrière programmé.
+7. **Les preuves** : les mots de passe et root sont refusés, ta clé passe, et tout tient après un redémarrage.
+
+### les critères de réussite
+
+| Test | Résultat attendu |
+| --- | --- |
+| `ip -br addr` sur `srv-labo` | `192.168.56.10/24` sur la seconde carte |
+| `ip route` | une seule route par défaut, par la carte NAT |
+| `hostname`, `getent hosts srv-labo` | `srv-labo`, résolu en `127.0.1.1` |
+| `ssh srv-labo hostname` depuis l'hôte | `srv-labo`, sans mot de passe de compte |
+| `ssh -o PubkeyAuthentication=no srv-labo` | `Permission denied (publickey)` |
+| `ssh root@srv-labo` | `Permission denied (publickey)` |
+| `sudo sshd -T` | `passwordauthentication no`, `permitrootlogin no`, `allowgroups ssh-users` |
+| `sudo nft list ruleset` | la chaîne d'entrée en `policy drop`, SSH limité à `192.168.56.0/24` |
+| `systemctl is-enabled nftables` | `enabled` |
+| après `sudo reboot` | `ssh srv-labo hostname` répond toujours |
+
+### la correction commentée
+
+À lire après avoir essayé. La seconde carte s'appelle souvent `enp0s8` sous VirtualBox : vérifie la tienne avec `ip link`.
+
+**1. L'adresse fixe et le nom.** Sur la console de la machine, dans `/etc/network/interfaces`. Sur une Debian sans bureau, c'est ifupdown qui gère le réseau ; avec un bureau, NetworkManager laisse de côté les cartes décrites dans ce fichier :
+
+```text
+auto enp0s8
+iface enp0s8 inet static
+    address 192.168.56.10/24
+```
+
+```bash
+sudo ifup enp0s8
+ip -br addr
+ip route
+sudo hostnamectl set-hostname srv-labo
+sudo sed -i 's/^127\.0\.1\.1.*/127.0.1.1\tsrv-labo/' /etc/hosts
+getent hosts srv-labo
+```
+
+Pas de `gateway` sur cette carte : la route par défaut reste celle de la carte NAT, et deux routes par défaut rendraient la sortie imprévisible. La correction de `/etc/hosts` évite les avertissements `unable to resolve host` de `sudo`.
+
+**2. L'empreinte, relevée sur la console.**
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+Note-la. Si la machine a été clonée depuis une autre, ses clés d'hôte sont celles de l'original : régénère-les d'abord avec `sudo rm /etc/ssh/ssh_host_*` puis `sudo dpkg-reconfigure openssh-server`.
+
+**3. La clé, sur ton ordinateur.** Sur Linux et macOS, ou dans PowerShell sur Windows 10 et 11, qui embarquent le client OpenSSH :
+
+```bash
+ssh-keygen -t ed25519 -C "moi@mon-poste"
+ssh alice@192.168.56.10        # compare l'empreinte affichée à celle de l'étape 2, puis quitte
+ssh-copy-id alice@192.168.56.10
+```
+
+Remplace `alice` par ton compte sur la machine. Windows n'a pas `ssh-copy-id` : la clé publique s'ajoute alors par un tube, `type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh alice@192.168.56.10 "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"`.
+
+**4. Le client.** Dans `~/.ssh/config` sur ton ordinateur :
+
+```text
+Host srv-labo
+    HostName 192.168.56.10
+    User alice
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+```
+
+`ssh srv-labo hostname` doit répondre, en ne demandant que la phrase de passe de la clé, ou rien du tout si l'agent la garde.
+
+**5. Durcir le serveur.** Depuis une session SSH sur `srv-labo`, **gardée ouverte** jusqu'à la fin :
+
+```bash
+sudo groupadd ssh-users
+sudo usermod -aG ssh-users alice
+id alice
+printf '%s\n' 'PermitRootLogin no' 'PasswordAuthentication no' 'KbdInteractiveAuthentication no' \
+  'AllowGroups ssh-users' 'MaxAuthTries 3' 'X11Forwarding no' 'AllowAgentForwarding no' \
+  'AllowTcpForwarding no' | sudo tee /etc/ssh/sshd_config.d/10-durcissement.conf
+sudo sshd -t
+sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin|allowgroups|maxauthtries)'
+sudo systemctl reload ssh
+```
+
+L'appartenance au groupe compte pour les **nouvelles** connexions : la session ouverte n'en a pas besoin, mais la suivante, si. Depuis un **second** terminal, `ssh srv-labo hostname` doit passer avant que tu fermes quoi que ce soit.
+
+**6. Le pare-feu, avec retour arrière.** On garde l'ancien fichier, on programme son retour, puis on applique :
+
+```bash
+sudo apt install nftables
+sudo cp /etc/nftables.conf /etc/nftables.conf.orig
+sudoedit /etc/nftables.conf
+```
+
+```text
+#!/usr/sbin/nft -f
+flush ruleset
+
+table inet filtre {
+    chain entree {
+        type filter hook input priority filter; policy drop;
+        iif "lo" accept
+        ct state established,related accept
+        ct state invalid drop
+        meta l4proto { icmp, ipv6-icmp } accept
+        ip saddr 192.168.56.0/24 tcp dport 22 accept
+    }
+    chain transit {
+        type filter hook forward priority filter; policy drop;
+    }
+    chain sortie {
+        type filter hook output priority filter; policy accept;
+    }
+}
+```
+
+```bash
+sudo nft -c -f /etc/nftables.conf
+sudo systemd-run --unit=retour-pare-feu --on-active=5min /usr/sbin/nft -f /etc/nftables.conf.orig
+sudo nft -f /etc/nftables.conf
+```
+
+Depuis le second terminal, `ssh srv-labo hostname` doit passer. Si c'est le cas, on annule le retour arrière et l'on rend le pare-feu permanent :
+
+```bash
+sudo systemctl stop retour-pare-feu.timer
+sudo systemctl enable nftables
+sudo nft list ruleset
+```
+
+Si tu t'es enfermé dehors, attends cinq minutes : l'ancien jeu de règles revient tout seul. Les mises à jour passent toujours par la carte NAT : ce sont des connexions sortantes, et leurs réponses sont `established`.
+
+**7. Les preuves.** Depuis ton ordinateur :
+
+```bash
+ssh -o PubkeyAuthentication=no srv-labo       # Permission denied (publickey)
+ssh root@192.168.56.10                        # Permission denied (publickey)
+ssh -t srv-labo sudo journalctl -u ssh -n 5 --no-pager
+ssh -t srv-labo sudo reboot
+ssh srv-labo hostname                         # après une minute : srv-labo
+```
+
+L'option `-t` donne un terminal à `sudo`, pour qu'il puisse demander ton mot de passe. Le journal montre une ligne `Accepted publickey for alice`, avec l'empreinte de ta clé, et les refus. Après le redémarrage, l'adresse, la configuration SSH et le pare-feu sont toujours là : c'est la preuve qu'ils sont écrits dans les bons fichiers.
+
+### pour aller plus loin
+
+Installe `fail2ban` et regarde-le bannir l'adresse de l'hôte après trois connexions par mot de passe refusées. Puis filtre aussi la sortie : `policy drop` sur la chaîne `sortie`, en n'autorisant que le DNS, les dépôts de paquets et les réponses SSH, et vérifie que `apt update` fonctionne toujours. Enfin, avec une seconde machine virtuelle sur le même réseau privé, joue le rôle d'un bastion : `srv-labo` n'accepte plus SSH que depuis lui, et ton `~/.ssh/config` y passe avec `ProxyJump`.
+
+## à retenir
+
+- Une adresse fixe s'écrit dans la configuration **permanente**, sans seconde route par défaut.
+- L'**empreinte** se compare à une valeur obtenue par un autre canal, avant d'accepter.
+- Une **clé ed25519 protégée**, installée dans `authorized_keys`, et un **`~/.ssh/config`** pour les noms courts.
+- Le durcissement dans **`sshd_config.d/`**, vérifié par **`sshd -T`**, appliqué par **`reload`**, une session gardée ouverte.
+- Le pare-feu **`policy drop`**, avec **`established,related`** en tête, appliqué avec un **retour arrière programmé**, rendu permanent par **`systemctl enable nftables`**.
+- Une configuration n'est finie que lorsqu'elle a **survécu à un redémarrage**.

@@ -1,0 +1,220 @@
+---
+refCode: CL-LSN-02074-V01
+slug: linux-pare-feu
+title: "Le pare-feu : nftables, ufw et la politique par défaut"
+description: "Filtrer le trafic d'un serveur Linux : ce que fait netfilter, la politique qui refuse par défaut, l'état des connexions, la structure de nftables (tables, chaînes, règles, ensembles), le fichier /etc/nftables.conf et sa vérification, appliquer des règles à distance sans s'enfermer dehors, ufw sur Ubuntu et firewalld sur Red Hat, journaliser les refus, et ce qu'un pare-feu ne protège pas. Avec un pare-feu réel corrigé et audité sur un vrai Linux, puis un pare-feu ufw mis en place sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 320
+prerequisites: ["CL-LSN-02073-V01"]
+---
+
+Un serveur fraîchement installé fait souvent tourner plus de services qu'on ne le croit : une base de données qui écoute sur toutes les adresses, un service de partage installé par défaut, une interface d'administration oubliée après un test. Chacun est une porte, joignable par quiconque atteint la machine. Le **pare-feu** décide quelles portes sont accessibles, et à qui. Ce n'est pas la seule protection, mais c'est celle qui rattrape les oublis des autres : un service qu'on n'aurait pas dû lancer reste invisible s'il n'a jamais été ouvert. Cette leçon termine le module en écrivant celui d'un serveur.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le rôle de netfilter, et la différence entre pare-feu de machine et pare-feu de réseau ;
+- poser une politique qui refuse par défaut, et laisser passer les réponses ;
+- lire et écrire un jeu de règles nftables, et le rendre permanent ;
+- appliquer des règles sur un serveur distant sans t'enfermer dehors ;
+- utiliser ufw sur Ubuntu, et reconnaître firewalld sur Red Hat ;
+- savoir ce qu'un pare-feu ne fait pas.
+
+## pourquoi ça compte
+
+La plupart des intrusions par le réseau visent un service exposé qui n'avait pas besoin de l'être. Des bases de données entières ont fuité parce qu'elles écoutaient sur Internet, sans mot de passe, pendant des mois : un balayage suffit à les trouver, et des moteurs de recherche spécialisés les répertorient. Un pare-feu qui **refuse par défaut** inverse la logique : au lieu de fermer ce qu'on sait dangereux, on n'ouvre que ce qu'on sait nécessaire. Tout ce qui n'a pas été décidé reste fermé, y compris ce qu'on ignore.
+
+## ce que fait un pare-feu
+
+Dans le noyau Linux, c'est **netfilter** qui examine chaque paquet, à plusieurs points de son trajet. Les règles qu'on lui donne regardent les adresses, les ports, le protocole, l'interface, l'état de la connexion, et rendent un **verdict** : accepter, jeter (*drop*) ou rejeter en prévenant l'émetteur (*reject*). Les outils qu'on utilise, `nft`, `ufw`, `firewalld` ou l'ancien `iptables`, ne sont que des façons d'écrire ces règles.
+
+Un pare-feu **de machine** protège la machine qui le porte : c'est l'objet de cette leçon. Un pare-feu **de réseau** se place entre deux réseaux, comme entre Internet et les serveurs d'une entreprise, et filtre le trafic qui le **traverse**. Les deux se complètent : le pare-feu de réseau ne voit pas le trafic entre deux serveurs du même réseau, celui de chaque machine si.
+
+Trois points du trajet comptent pour un serveur :
+
+- **input** : les paquets destinés à la machine elle-même, ceux qu'on filtre d'abord ;
+- **output** : ceux qu'elle émet ;
+- **forward** : ceux qui la traversent, quand elle sert de routeur. Sur un serveur ordinaire, rien ne doit passer par là.
+
+## la politique par défaut
+
+Chaque point a une **politique** : le verdict appliqué au paquet qu'aucune règle n'a accepté. Avec `policy accept`, tout passe sauf ce qu'on refuse ; avec `policy drop`, rien ne passe sauf ce qu'on accepte. Pour l'entrée d'un serveur, c'est toujours `drop` : une **liste blanche**, où chaque ouverture est une décision.
+
+En sortie, on laisse souvent tout passer, par simplicité. Filtrer aussi la sortie est plus exigeant, mais très efficace : un serveur web n'a aucune raison d'ouvrir des connexions vers Internet, sauf vers ses dépôts de paquets et ses serveurs DNS. Un logiciel malveillant qui s'y installerait ne pourrait alors ni appeler son serveur de commande, ni faire sortir des données.
+
+## l'état des connexions
+
+Quand le serveur ouvre une connexion vers un dépôt de paquets, la **réponse** revient en entrée, depuis le port 80 du dépôt vers un port quelconque du serveur. Avec une entrée fermée par défaut, elle serait jetée. Le noyau suit donc chaque connexion (*connection tracking*), et classe chaque paquet :
+
+- `new` : le premier paquet d'une connexion ;
+- `established` : la suite d'une connexion déjà acceptée, dans un sens ou dans l'autre ;
+- `related` : un paquet lié à une connexion existante, comme un message d'erreur ICMP ;
+- `invalid` : un paquet qui ne correspond à rien de cohérent.
+
+La première règle de presque tout pare-feu accepte `established` et `related` : les réponses passent, et les règles suivantes n'ont plus à traiter que les nouvelles connexions. C'est aussi ce qui garde ta session SSH ouverte pendant que tu changes les règles.
+
+## nftables : tables, chaînes, règles
+
+**nftables** est le cadre actuel de netfilter, par défaut sur Debian et Red Hat ; il remplace `iptables`. Un jeu de règles s'organise en trois niveaux :
+
+```text
+table inet filtre {
+    chain entree {
+        type filter hook input priority filter; policy drop;
+
+        iif "lo" accept
+        ct state established,related accept
+        ct state invalid drop
+        meta l4proto { icmp, ipv6-icmp } accept
+        ip saddr 192.0.2.0/24 tcp dport 22 accept
+        tcp dport { 80, 443 } accept
+    }
+}
+```
+
+- une **table**, ici de la famille `inet`, qui couvre à la fois IPv4 et IPv6 : un seul jeu de règles pour les deux, et pas d'IPv6 oublié ;
+- des **chaînes**, accrochées à un point du trajet (`hook input`) avec leur politique ;
+- des **règles**, lues **dans l'ordre** : le premier verdict définitif l'emporte, et la lecture s'arrête.
+
+La boucle locale `lo` est ouverte, car la machine se parle à elle-même ; l'ICMP aussi, car IPv6 ne fonctionne pas sans lui, et le `ping` aide au diagnostic. Les accolades forment un **ensemble** : `{ 80, 443 }` vaut deux règles en une. Enfin, SSH n'est ouvert qu'au réseau d'administration, `192.0.2.0/24` : pour le reste d'Internet, le port 22 n'existe pas.
+
+## lire et modifier les règles en direct
+
+```bash
+sudo nft list ruleset                                        # tout le jeu de règles actif
+sudo nft -a list chain inet filtre entree                    # avec le numéro de chaque règle
+sudo nft add rule inet filtre entree tcp dport 8443 accept   # ajouter une règle, à la fin
+sudo nft delete rule inet filtre entree handle 12            # retirer la règle numéro 12
+```
+
+Ces changements prennent effet aussitôt, et disparaissent au redémarrage. Ils servent à essayer ou à dépanner ; la configuration de référence, elle, vit dans un fichier.
+
+## le fichier /etc/nftables.conf
+
+Sur Debian, le service `nftables` charge au démarrage **`/etc/nftables.conf`**. Le fichier commence par `flush ruleset`, qui efface tout, puis décrit le jeu de règles complet. `nft -f` le charge d'un bloc : si une seule ligne est fausse, rien n'est appliqué, et l'ancien jeu reste en place. On vérifie avant de charger :
+
+```bash
+sudo nft -c -f /etc/nftables.conf      # vérifier, sans rien appliquer
+sudo nft -f /etc/nftables.conf         # appliquer
+sudo systemctl enable nftables         # recharger le fichier à chaque démarrage
+```
+
+Un pare-feu qu'on a réglé à la main, mais pas écrit dans ce fichier, disparaît au premier redémarrage : c'est l'une des surprises les plus fréquentes.
+
+## appliquer à distance sans s'enfermer dehors
+
+Charger un pare-feu fautif sur un serveur distant peut couper sa propre connexion, et toutes les suivantes. Trois précautions :
+
+1. la règle `established,related` vient en tête, pour que la session en cours survive ;
+2. on garde une copie de l'ancien fichier, et l'on programme son retour **avant** d'appliquer : `sudo systemd-run --on-active=5min /usr/sbin/nft -f /etc/nftables.conf.orig`. Si tout va bien, on annule ce minuteur avec `systemctl stop` ; si l'on est enfermé dehors, l'ancien pare-feu revient tout seul dans cinq minutes ;
+3. on teste une **nouvelle** connexion SSH depuis un second terminal, avant de fermer la première.
+
+<Diagram caption="Le trajet d'une nouvelle connexion entrante">
+flowchart TD
+  A["paquet entrant, vers la machine"] --> B["chaîne entree, hook input"]
+  B --> C["established ou related ? accepté"]
+  C -->|"non"| D["SSH depuis le réseau d'administration ? accepté"]
+  D -->|"non"| E["port 80 ou 443 ? accepté"]
+  E -->|"non"| F["aucune règle : la politique drop jette le paquet"]
+</Diagram>
+
+## ufw : la façade simple
+
+Sur Ubuntu, **ufw** (*uncomplicated firewall*) écrit les règles à ta place, en quelques commandes lisibles :
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow from 192.0.2.0/24 to any port 22 proto tcp
+sudo ufw allow 80,443/tcp
+sudo ufw enable
+sudo ufw status verbose
+```
+
+L'ordre compte ici aussi : on autorise SSH **avant** `ufw enable`, sinon la session qu'on utilise est la dernière. `ufw status numbered` numérote les règles, et `ufw delete 3` retire la troisième. ufw suit déjà l'état des connexions : les réponses passent sans règle explicite.
+
+Sur Red Hat et ses dérivées, c'est **firewalld** qui joue ce rôle, avec des **zones** et des **services** nommés : `sudo firewall-cmd --permanent --add-service=https` puis `sudo firewall-cmd --reload`. Sans `--permanent`, la règle disparaît au rechargement ; avec seulement `--permanent`, elle n'est pas encore active. Quel que soit l'outil, on n'en utilise qu'**un** sur une machine : deux outils qui écrivent chacun leurs règles produisent un résultat que personne ne maîtrise.
+
+## journaliser ce qui est refusé
+
+Une règle placée juste avant la fin de la chaîne peut journaliser les paquets que la politique va jeter :
+
+```text
+limit rate 5/minute log prefix "pare-feu refus: " drop
+```
+
+La limite évite qu'un balayage ne noie le journal. Les lignes apparaissent dans `journalctl -k`, avec l'adresse source et le port visé : on y voit les balayages, mais aussi les oublis, comme une application légitime qui essaie un port qu'on n'a pas ouvert.
+
+## ce qu'un pare-feu ne fait pas
+
+- Il ne protège pas un service **ouvert** : un site web vulnérable reste vulnérable, puisque le port 443 doit bien être ouvert. Le pare-feu réduit la surface d'attaque, il ne la supprime pas.
+- Il ne voit pas ce qui passe **dans** une connexion autorisée : un tunnel SSH ou un logiciel malveillant qui parle HTTPS passent.
+- Certains logiciels écrivent leurs **propres** règles : Docker, par exemple, publie les ports des conteneurs en insérant des règles qui passent avant celles d'ufw. Un conteneur publié sur `0.0.0.0` est alors joignable malgré un `ufw deny`. On vérifie toujours le résultat réel, depuis une autre machine.
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas `nft`, mais le fichier qu'il charge est un texte, et ses défauts se lisent. Le fichier `nftables.conf` est celui de `srv-web`, tel qu'on l'a trouvé en arrivant. Le script `verifier.sh` l'audite : il signale les défauts qu'un relecteur repérerait. Sur un vrai serveur, `nft -c -f` vérifierait aussi la syntaxe.
+
+1. lis le fichier : `cat nftables.conf`. Repère la politique de la chaîne d'entrée, et les ports ouverts ;
+2. garde l'original : `cp nftables.conf nftables.conf.orig`, puis audite-le : `sh verifier.sh nftables.conf` ;
+3. ferme l'entrée par défaut, sans toucher à la sortie : `sed -i '/hook input/s/policy accept;/policy drop;/' nftables.conf`, puis relance l'audit. Une nouvelle alerte apparaît ;
+4. laisse passer les réponses, juste après la boucle locale : `sed -i '/iif "lo" accept/a\        ct state established,related accept' nftables.conf` ;
+5. réserve SSH au réseau d'administration : `sed -i 's|tcp dport 22 accept|ip saddr 192.0.2.0/24 tcp dport 22 accept|' nftables.conf`. Le séparateur `|` évite d'échapper la barre oblique de l'adresse ;
+6. supprime le port de test oublié : `sed -i '/dport 8080/d' nftables.conf` ;
+7. audite de nouveau, et garde le rapport : `sh verifier.sh nftables.conf > rapport.txt`, puis `cat rapport.txt` et `diff nftables.conf.orig nftables.conf`.
+
+<LinuxTerminal title="Le pare-feu de srv-web" files={{"nftables.conf": "#!/usr/sbin/nft -f\n# nftables.conf : le pare-feu de srv-web, tel qu'on l'a trouvé.\n\nflush ruleset\n\ntable inet filtre {\n    chain entree {\n        type filter hook input priority filter; policy accept;\n\n        iif \"lo\" accept\n        meta l4proto { icmp, ipv6-icmp } accept\n        tcp dport 22 accept\n        tcp dport { 80, 443 } accept\n        tcp dport 8080 accept comment \"test de l'appli, à retirer\"\n    }\n\n    chain transit {\n        type filter hook forward priority filter; policy drop;\n    }\n\n    chain sortie {\n        type filter hook output priority filter; policy accept;\n    }\n}\n", "verifier.sh": "#!/bin/sh\n# verifier.sh FICHIER : relit un nftables.conf et signale ses défauts.\n# Il ne vérifie pas la syntaxe : sur un vrai serveur, c'est le rôle de nft -c -f.\nf=$1\nok() { echo \"ok     : $1\"; }\nalerte() { echo \"ALERTE : $1\"; }\n\nif grep -q 'hook input.*policy drop' \"$f\"; then\n  ok \"entrée fermée par défaut\"\nelse\n  alerte \"l'entrée accepte tout ce qu'aucune règle ne refuse\"\nfi\n\nif grep -q 'hook input.*policy drop' \"$f\" && ! grep -q 'ct state established,related accept' \"$f\"; then\n  alerte \"entrée fermée sans laisser passer les réponses : plus rien ne revient\"\nelif grep -q 'ct state established,related accept' \"$f\"; then\n  ok \"les réponses aux connexions en cours passent\"\nfi\n\nif grep -q 'hook output.*policy drop' \"$f\"; then\n  alerte \"sortie fermée : vérifie que DNS et dépôts restent joignables\"\nfi\n\nif grep -q 'saddr [0-9./]* tcp dport 22 accept' \"$f\"; then\n  ok \"SSH réservé à un réseau d'administration\"\nelif grep -q 'dport 22 accept' \"$f\"; then\n  alerte \"SSH ouvert au monde entier\"\nelse\n  alerte \"SSH fermé : plus personne n'administrera ce serveur\"\nfi\n\nif grep -q 'dport 8080' \"$f\"; then\n  alerte \"le port 8080 est encore ouvert\"\nelse\n  ok \"port 8080 fermé\"\nfi\n"}} expectedCommands={["cat nftables.conf", "cp nftables.conf nftables.conf.orig", "sh verifier.sh nftables.conf", "sed -i '/hook input/s/policy accept;/policy drop;/' nftables.conf", "sed -i '/iif \"lo\" accept/a\\        ct state established,related accept' nftables.conf", "sed -i 's|tcp dport 22 accept|ip saddr 192.0.2.0/24 tcp dport 22 accept|' nftables.conf", "sed -i '/dport 8080/d' nftables.conf", "sh verifier.sh nftables.conf > rapport.txt", "cat rapport.txt", "diff nftables.conf.orig nftables.conf"]} checks={[{"label": "L'original est gardé", "path": "nftables.conf.orig", "expect": "file", "contains": "policy accept;"}, {"label": "L'entrée est fermée par défaut", "path": "rapport.txt", "expect": "file", "contains": "entrée fermée par défaut"}, {"label": "Les réponses passent", "path": "rapport.txt", "expect": "file", "contains": "les réponses aux connexions en cours passent"}, {"label": "SSH n'est ouvert qu'au réseau d'administration", "path": "rapport.txt", "expect": "file", "contains": "SSH réservé"}, {"label": "Le port de test est fermé", "path": "rapport.txt", "expect": "file", "contains": "port 8080 fermé"}, {"label": "La sortie reste ouverte", "path": "nftables.conf", "expect": "file", "contains": "hook output priority filter; policy accept;"}]} hints={["sed -i '/motif/s/ancien/nouveau/' ne remplace que sur les lignes qui contiennent le motif.", "a\\ ajoute une ligne après chaque ligne qui correspond au motif ; les espaces qui suivent sont gardées.", "Avec s|...|...|, la barre oblique de 192.0.2.0/24 n'a pas besoin d'être échappée.", "sed -i '/motif/d' supprime les lignes qui contiennent le motif."]} />
+
+L'étape 3 montre pourquoi on adresse une commande `sed` : la chaîne de sortie avait elle aussi `policy accept`, et un remplacement global l'aurait fermée, coupant au passage les réponses DNS et les mises à jour. Et l'étape 4 n'est pas un détail : sans elle, l'étape 3 bloquerait toutes les réponses aux connexions que le serveur ouvre lui-même. Le fichier est prêt ; sur `srv-web`, il resterait à le vérifier avec `nft -c -f`, puis à l'appliquer avec le minuteur de retour arrière.
+
+Ensuite, sur un serveur Ubuntu, dans un terminal simulé, le même pare-feu avec ufw :
+
+1. l'état de départ : `sudo ufw status` ;
+2. la politique : `sudo ufw default deny incoming`, puis `sudo ufw default allow outgoing` ;
+3. les ouvertures, SSH d'abord : `sudo ufw allow from 192.0.2.0/24 to any port 22 proto tcp`, puis `sudo ufw allow 80,443/tcp` ;
+4. l'activation : `sudo ufw enable` ;
+5. le résultat : `sudo ufw status verbose` ;
+6. et la preuve depuis l'extérieur, avec un balayage des ports depuis une machine hors du réseau d'administration : `nmap -Pn -p 22,80,443,5432 203.0.113.10`.
+
+<SimulatedTerminal shell="bash" title="Le même pare-feu avec ufw" expectedCommands={["sudo ufw status", "sudo ufw default deny incoming", "sudo ufw default allow outgoing", "sudo ufw allow from 192.0.2.0/24 to any port 22 proto tcp", "sudo ufw allow 80,443/tcp", "sudo ufw enable", "sudo ufw status verbose", "nmap -Pn -p 22,80,443,5432 203.0.113.10"]} hints={["deny incoming : la politique par défaut de l'entrée.", "Autorise SSH avant ufw enable, sinon ta session est la dernière.", "ufw suit l'état des connexions : les réponses passent sans règle.", "filtered : le pare-feu jette les paquets sans répondre ; open : un service répond."]} commands={{"sudo ufw status": "Status: inactive", "sudo ufw default deny incoming": "Default incoming policy changed to 'deny'\n(be sure to update your rules accordingly)", "sudo ufw default allow outgoing": "Default outgoing policy changed to 'allow'\n(be sure to update your rules accordingly)", "sudo ufw allow from 192.0.2.0/24 to any port 22 proto tcp": "Rules updated", "sudo ufw allow 80,443/tcp": "Rules updated\nRules updated (v6)", "sudo ufw enable": "Command may disrupt existing ssh connections. Proceed with operation (y|n)? y\nFirewall is active and enabled on system startup", "sudo ufw status verbose": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), disabled (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    192.0.2.0/24\n80,443/tcp                 ALLOW IN    Anywhere\n80,443/tcp (v6)            ALLOW IN    Anywhere (v6)", "sudo ufw status numbered": "Status: active\n\n     To                         Action      From\n     --                         ------      ----\n[ 1] 22/tcp                     ALLOW IN    192.0.2.0/24\n[ 2] 80,443/tcp                 ALLOW IN    Anywhere\n[ 3] 80,443/tcp (v6)            ALLOW IN    Anywhere (v6)", "nmap -Pn -p 22,80,443,5432 203.0.113.10": "Starting Nmap 7.93 ( https://nmap.org ) at 2026-10-02 11:20 CEST\nNmap scan report for 203.0.113.10\nHost is up (0.012s latency).\n\nPORT     STATE    SERVICE\n22/tcp   filtered ssh\n80/tcp   open     http\n443/tcp  open     https\n5432/tcp filtered postgresql\n\nNmap done: 1 IP address (1 host up) scanned in 1.42 seconds"}} />
+
+## les pièges
+
+- **Fermer l'entrée sans laisser passer `established,related`.** Le serveur ne reçoit plus aucune réponse, et la session en cours peut se figer.
+- **Appliquer à distance sans retour arrière programmé.** Une erreur, et il faut une console.
+- **Activer ufw avant d'avoir autorisé SSH.** La session en cours est la dernière.
+- **Régler les règles à la main sans les écrire dans `/etc/nftables.conf`.** Elles disparaissent au redémarrage.
+- **Filtrer IPv4 et oublier IPv6.** La famille `inet` couvre les deux d'un coup.
+- **Croire ufw seul maître à bord.** Docker et d'autres écrivent leurs propres règles : on vérifie depuis l'extérieur.
+
+## pour aller plus loin
+
+<ExternalLink href="https://wiki.nftables.org/wiki-nftables/index.php/Main_Page" description="Le wiki officiel de nftables, avec ses exemples de jeux de règles, en anglais">Wiki de nftables</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/nftables/nft.8.en.html" description="La syntaxe complète de nft, en anglais">Page de manuel de nft</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/ufw/ufw.8.fr.html" description="Les commandes d'ufw, en français">Page de manuel d'ufw</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie policy drop sur la chaîne d'entrée ?" options={["Tout passe sauf ce qui est refusé", "Rien ne passe sauf ce qu'une règle accepte", "Les paquets sont rejetés avec un message", "Le pare-feu est désactivé"]} correct={1} explanation="C'est une liste blanche : chaque ouverture est une décision." />
+  <Quiz id="q-2" question="Pourquoi accepter ct state established,related en tête de la chaîne d'entrée ?" options={["Pour accélérer le serveur", "Pour laisser passer les réponses aux connexions déjà acceptées, dont celles que le serveur ouvre lui-même", "Pour ouvrir tous les ports", "Pour journaliser"]} correct={1} explanation="Sans elle, une entrée fermée par défaut jette aussi les réponses." />
+  <Quiz id="q-3" question="Dans une chaîne nftables, deux règles correspondent à un paquet. Laquelle s'applique ?" options={["La dernière", "La première qui rend un verdict définitif", "Les deux", "La plus précise"]} correct={1} explanation="Les règles sont lues dans l'ordre, et la lecture s'arrête au premier verdict." />
+  <Quiz id="q-4" question="À quoi sert la famille inet d'une table nftables ?" options={["À filtrer Internet seulement", "À couvrir IPv4 et IPv6 avec les mêmes règles", "À filtrer la boucle locale", "À rien"]} correct={1} explanation="Les familles ip et ip6 ne couvrent chacune qu'une version." />
+  <Quiz id="q-5" question="Avant d'appliquer un nouveau pare-feu sur un serveur distant, quelle précaution prendre ?" options={["Aucune", "Programmer le retour de l'ancien jeu de règles, et tester une nouvelle connexion depuis un second terminal", "Redémarrer le serveur", "Désactiver SSH"]} correct={1} explanation="Un minuteur avec systemd-run ramène l'ancien pare-feu si l'on s'est enfermé dehors." />
+  <Quiz id="q-6" question="Des règles ajoutées avec nft add rule ont disparu après un redémarrage. Pourquoi ?" options={["Un bug", "Elles n'étaient pas écrites dans /etc/nftables.conf, que le service charge au démarrage", "nft efface tout chaque nuit", "Le noyau les a refusées"]} correct={1} explanation="nft agit en direct ; le fichier est la configuration de référence." />
+  <Quiz id="q-7" question="Un conteneur Docker publié sur 0.0.0.0:5432 est joignable malgré ufw deny 5432. Pourquoi ?" options={["ufw est en panne", "Docker insère ses propres règles, évaluées avant celles d'ufw", "Le port 5432 ne peut pas être filtré", "Le conteneur contourne le noyau"]} correct={1} explanation="On vérifie toujours le résultat depuis une autre machine." />
+</QuizGroup>
+
+## à retenir
+
+- **netfilter** filtre dans le noyau ; **`nft`**, **ufw** et **firewalld** écrivent ses règles. Un seul outil par machine.
+- Entrée en **`policy drop`**, et en tête : **`iif "lo" accept`** et **`ct state established,related accept`**.
+- nftables : **table `inet`**, **chaînes** accrochées à `input`, `forward`, `output`, **règles lues dans l'ordre**, **ensembles** `{ 80, 443 }`.
+- **`/etc/nftables.conf`**, vérifié par **`nft -c -f`**, rechargé par le service `nftables`.
+- À distance : **retour arrière programmé**, et une nouvelle connexion testée avant de fermer l'ancienne.
+- Un pare-feu réduit la surface d'attaque ; il ne protège ni un service ouvert, ni ce qui passe dans une connexion autorisée.
