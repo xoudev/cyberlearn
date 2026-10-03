@@ -33,6 +33,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Bloc-notes", route: "/notes" },
   { label: "Casier", route: "/locker" },
   { label: "Révisions", route: "/revisions" },
+  { label: "Glossaire", route: "/glossary" },
   { label: "Forum", route: "/forum" },
   { label: "Aide & demandes", route: "/support" },
   { label: "Notifications", route: "/notifications" },

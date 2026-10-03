@@ -14,6 +14,7 @@ import {
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
+import { glossaryPlan } from "@/lib/glossary";
 import { LessonRatingCard } from "@/components/lesson-rating";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
@@ -311,6 +312,8 @@ function ReadView({
   onPrev: () => void;
   onNext: () => void;
 }): React.JSX.Element {
+  // Which block underlines which glossary word: decided for the section at once.
+  const glossary = useMemo(() => glossaryPlan(blocks), [blocks]);
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -326,7 +329,7 @@ function ReadView({
         <View style={{ gap: 14 }}>
           {blocks.map((b, i) => (
             <Rise key={i} index={Math.min(i + 1, 6)}>
-              <BlockView block={b} index={i} />
+              <BlockView block={b} index={i} glossary={glossary[i]} />
             </Rise>
           ))}
         </View>

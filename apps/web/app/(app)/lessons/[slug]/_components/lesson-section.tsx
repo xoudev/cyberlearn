@@ -1,6 +1,7 @@
 import React from "react";
 import * as Sentry from "@sentry/nextjs";
 import { compileMDX } from "next-mdx-remote/rsc";
+import { rehypeGlossary } from "@cyberlearn/lib/glossary/rehype";
 import { protectPropIndentation } from "@cyberlearn/lib/mdx-check";
 
 /**
@@ -54,7 +55,7 @@ export async function LessonSection({
     const { content } = await compileMDX({
       source: protectPropIndentation(source),
       components,
-      options,
+      options: withGlossary(options, index),
     });
     // SAFETY: compileMDX returns createElement(Content, { components }), so the
     // element's type is the compiled MDX content function. See the note above
@@ -70,6 +71,28 @@ export async function LessonSection({
     });
     return <SectionUnavailable />;
   }
+}
+
+/**
+ * The section's options with the glossary added last: it underlines the
+ * technical words of the prose (see rehypeGlossary). The section's index keeps
+ * the tooltips' ids apart from those of the other sections on the page.
+ */
+function withGlossary(
+  options: NonNullable<Compile["options"]>,
+  index: number,
+): NonNullable<Compile["options"]> {
+  const mdxOptions = options.mdxOptions ?? {};
+  return {
+    ...options,
+    mdxOptions: {
+      ...mdxOptions,
+      rehypePlugins: [
+        ...(mdxOptions.rehypePlugins ?? []),
+        [rehypeGlossary, { idPrefix: `s${String(index)}` }],
+      ],
+    },
+  };
 }
 
 function SectionUnavailable(): React.ReactElement {

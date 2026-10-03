@@ -459,6 +459,49 @@ article.lesson-content a:hover {
   text-decoration-color: rgba(10, 255, 212, 0.5);
 }
 
+/* Glossary words (rehypeGlossary, @cyberlearn/lib/glossary): dotted, so they
+   do not read as links, with the definition shown on hover and on focus. No
+   script: a tap focuses the word, which shows it too. */
+.glossary-term {
+  position: relative;
+  text-decoration: underline dotted rgba(10, 255, 212, 0.6);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.glossary-term:focus-visible {
+  outline: 1px solid var(--cosmetic-accent, #0affd4);
+  outline-offset: 2px;
+}
+.glossary-tip {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  top: calc(100% + 6px);
+  width: max-content;
+  max-width: min(320px, 80vw);
+  padding: 10px 12px;
+  background: #0a0826;
+  border: 1px solid #1f1b47;
+  border-left: 3px solid var(--cosmetic-accent, #0affd4);
+  color: #b8b5d1;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+}
+.glossary-tip strong {
+  color: #f5f5fa;
+  margin-right: 4px;
+}
+.glossary-term:hover > .glossary-tip,
+.glossary-term:focus > .glossary-tip,
+.glossary-term:focus-within > .glossary-tip {
+  display: block;
+}
+
 /* FindTheFlaw (lessons/[slug]/_components/find-the-flaw.tsx): each line is a
    button; the inline styles carry the state, these the pointer and the keyboard. */
 .find-the-flaw__line:not(:disabled):hover {

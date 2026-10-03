@@ -20,6 +20,7 @@ import { LessonRating } from "./_components/lesson-rating";
 import { LessonQA } from "./_components/lesson-qa";
 import { NextBar } from "./_components/next-bar";
 import { LessonAuthor } from "./_components/lesson-author";
+import { LessonGlossaryNote } from "./_components/lesson-glossary-note";
 import { CodeBlock } from "./_components/code-block";
 import { LessonStepper } from "./_components/lesson-stepper";
 import { SectionPane } from "./_components/section-pane";
@@ -450,9 +451,12 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           isCompleted={isCompleted}
           sections={sections}
           railExtra={
-            <Suspense fallback={null}>
-              <LessonAuthor lessonId={lesson.id} />
-            </Suspense>
+            <>
+              <Suspense fallback={null}>
+                <LessonAuthor lessonId={lesson.id} />
+              </Suspense>
+              <LessonGlossaryNote />
+            </>
           }
         >
           {mdxSections.map((src, i) => (
