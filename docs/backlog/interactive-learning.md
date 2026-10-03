@@ -144,6 +144,7 @@ admin) s'applique aux solutions publiées.
 
 - Ont pourrais aussi faire que dans les quizs et les certifications il y a de vrai exo avec terminal ou autres
 - Dans le vrai terminal linux en dessus la ou est marqué les step avec les commandes ce n'est pas un liste ils sont tous afficher en 1 seule ligne
+- certain code dans les playground pyoxide ou autre ont pas les indentations il faudrais verifier
 ## Ordre proposé
 
 1. **Lot 1, sans dépendance** : 1, 26, 8, 7.
