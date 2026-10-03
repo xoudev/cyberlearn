@@ -86,6 +86,25 @@ Mettez la main dessus dans un environnement prévu pour. Trouvez le point d'inje
 
 <SimulatedTerminal shell="bash" scenario="ctf-web" title="Trouver et qualifier un point d'injection" />
 
+Avant le quiz, un dernier extrait : une page de recherche qui rappelle au visiteur ce qu'il a cherché. Trouvez la ligne vulnérable, puis nommez la faille.
+
+<FindTheFlaw
+  id="flaw-xss-search"
+  title="Résultats pour..."
+  language="javascript"
+  code={`
+const params = new URLSearchParams(location.search);
+const recherche = params.get("q") ?? "";
+const titre = document.querySelector("#resultats h2");
+titre.innerHTML = "Résultats pour : " + recherche;
+`}
+  line={4}
+  options={["Injection SQL", "CSRF", "XSS réfléchi", "Aucune : la valeur vient de l'URL du site"]}
+  correct={2}
+  explanation="La recherche vient de l'URL, que n'importe qui peut fabriquer et envoyer en lien. innerHTML interprète ce texte comme du HTML : une balise image piégée dans q exécute du script chez qui ouvre le lien. textContent l'afficherait comme du texte, sans rien interpréter."
+  hint="Quelle propriété transforme le texte reçu en HTML ?"
+/>
+
 <QuizGroup>
 
 <Quiz id="q-1" question="Quelle est la cause directe d'une faille XSS ?" options={["Un mot de passe trop court côté serveur", "Une entrée utilisateur réaffichée sans échappement, que le navigateur interprète comme du code", "Un certificat TLS expiré", "Un port ouvert sur le pare-feu"]} correct={1} />

@@ -200,3 +200,44 @@ const safe = true;
     ]);
   });
 });
+
+describe("FindTheFlaw", () => {
+  it("is played in the app with the props the site reads", () => {
+    const lesson = parseLesson(
+      [
+        "## Trouve la faille",
+        "",
+        '<FindTheFlaw id="f1" title="Connexion" language="python" code={`',
+        'query = "SELECT * FROM users WHERE name = \'" + name + "\'"',
+        "cursor.execute(query)",
+        '`} line={1} options={["Injection SQL", "XSS"]} correct={0} explanation="La requête colle l\'entrée." hint="Regarde la requête." />',
+      ].join("\n"),
+    );
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "flaw",
+        flaw: {
+          id: "f1",
+          title: "Connexion",
+          language: "python",
+          code: '\nquery = "SELECT * FROM users WHERE name = \'" + name + "\'"\ncursor.execute(query)\n',
+          line: 1,
+          options: ["Injection SQL", "XSS"],
+          correct: 0,
+          explanation: "La requête colle l'entrée.",
+          hint: "Regarde la requête.",
+        },
+      },
+    ]);
+  });
+
+  it("shows a placeholder for an exercise the site would refuse", () => {
+    const lesson = parseLesson(
+      '## T\n\n<FindTheFlaw id="f" code={`a = 1`} line={4} options={["a", "b"]} correct={0} explanation="x" />',
+    );
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Trouve la faille" },
+    ]);
+  });
+});

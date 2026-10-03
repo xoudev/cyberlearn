@@ -3,6 +3,7 @@ import { Alert, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import { glossaryHits } from "@/lib/glossary";
@@ -283,6 +284,8 @@ export function BlockView({
           </ScrollView>
         </View>
       );
+    case "flaw":
+      return <FindTheFlawExercise flaw={block.flaw} />;
     case "challenge":
       return (
         <View

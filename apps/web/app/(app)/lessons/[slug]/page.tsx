@@ -35,6 +35,7 @@ import { Callout } from "./_components/callout";
 import { Diagram } from "./_components/diagram";
 import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
+import { FindTheFlaw } from "./_components/find-the-flaw";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -56,6 +57,7 @@ const MDX_COMPONENTS = {
   Diagram,
   QuizGroup,
   PythonChallenge,
+  FindTheFlaw,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

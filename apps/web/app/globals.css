@@ -502,6 +502,16 @@ article.lesson-content a:hover {
   display: block;
 }
 
+/* FindTheFlaw (lessons/[slug]/_components/find-the-flaw.tsx): each line is a
+   button; the inline styles carry the state, these the pointer and the keyboard. */
+.find-the-flaw__line:not(:disabled):hover {
+  color: #f5f5fa !important;
+}
+.find-the-flaw__line:focus-visible {
+  outline: 1px solid var(--cosmetic-accent, #0affd4);
+  outline-offset: -1px;
+}
+
 /* Lists - ► bullets, monospace counters */
 article.lesson-content ul {
   padding-left: 1.5em !important;
