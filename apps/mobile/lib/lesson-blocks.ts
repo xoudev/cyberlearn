@@ -1,9 +1,11 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
-// QuizGroup, CodePlayground, PythonChallenge, SimulatedTerminal, LinuxTerminal,
+// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, SimulatedTerminal, LinuxTerminal,
 // Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
+
+import { type FindTheFlaw, parseFindTheFlaw } from "@cyberlearn/types";
 
 export interface QuizBlock {
   kind: "quiz";
@@ -38,6 +40,11 @@ export type Block =
       timeLimitMinutes?: number;
     }
   | { kind: "callout"; type: "info" | "warning" | "danger" | "success"; text: string }
+  | {
+      /** A FindTheFlaw: the vulnerable line to click, then the flaw to name. */
+      kind: "flaw";
+      flaw: FindTheFlaw;
+    }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
 
@@ -62,6 +69,15 @@ export interface ParsedLesson {
 const EXPECTED_CMDS_RE = /expectedCommands\s*=\s*\{(\[[\s\S]*?\])\}/;
 const HINTS_RE = /hints\s*=\s*\{(\[[\s\S]*?\])\}/;
 const TIME_LIMIT_RE = /timeLimitMinutes\s*=\s*\{\s*(\d+)\s*\}/;
+const LINE_RE = /\bline\s*=\s*\{\s*(\d+)\s*\}/;
+const CORRECT_RE = /\bcorrect\s*=\s*\{\s*(\d+)\s*\}/;
+const OPTIONS_RE = /\boptions\s*=\s*\{(\[[\s\S]*?\])\}/;
+
+/** A `prop={12}` number, or undefined when it is not written so. */
+function numberProp(tag: string, re: RegExp): number | undefined {
+  const raw = re.exec(tag)?.[1];
+  return raw === undefined ? undefined : Number(raw);
+}
 
 /** Extract a `prop={["a","b"]}` string array from a JSX tag's attributes. */
 function extractStringArray(tag: string, re: RegExp): string[] {
@@ -210,7 +226,15 @@ function unescapeJs(raw: string): string {
 }
 
 /** The string props the app reads off a playground or a challenge. */
-type StringPropName = "starterCode" | "title" | "description";
+type StringPropName =
+  | "starterCode"
+  | "title"
+  | "description"
+  | "id"
+  | "language"
+  | "code"
+  | "explanation"
+  | "hint";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -218,7 +242,7 @@ type StringPropName = "starterCode" | "title" | "description";
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -350,6 +374,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       return put({ kind: "playground", lang, code: body.replace(/^\n+|\n+$/g, "") });
     },
   );
+  // FindTheFlaw → the same exercise, played natively; one the site would
+  // refuse (see parseFindTheFlaw) is a placeholder rather than a broken card.
+  text = replaceSelfClosing(text, "FindTheFlaw", (tag, indent) => {
+    const parsed = parseFindTheFlaw({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      language: stringProp(tag, "language", 0) ?? undefined,
+      code: stringProp(tag, "code", indent) ?? undefined,
+      line: numberProp(tag, LINE_RE),
+      options: extractStringArray(tag, OPTIONS_RE),
+      correct: numberProp(tag, CORRECT_RE),
+      explanation: stringProp(tag, "explanation", 0) ?? undefined,
+      hint: stringProp(tag, "hint", 0) ?? undefined,
+    });
+    return put(
+      parsed.ok
+        ? { kind: "flaw", flaw: parsed.flaw }
+        : { kind: "placeholder", label: "Trouve la faille" },
+    );
+  });
   // SimulatedTerminal → a native exercise card (commands to try + hints).
   const terminalToBlock = (tag: string): string =>
     put({

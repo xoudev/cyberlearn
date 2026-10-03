@@ -876,6 +876,45 @@ La valeur comparée est toujours `str(expression)` côté Python. Exemples :
 
 ---
 
+### 5.9b FindTheFlaw - Trouve la faille
+
+Un court extrait de code : l'élève clique (ou touche, dans l'app) la ligne vulnérable, puis choisit le nom de la faille. Chaque étape se recommence jusqu'à la bonne réponse ; un indice apparaît après la deuxième mauvaise ligne, l'explication avec le bon nom. Rien n'est noté ni envoyé : c'est de l'entraînement.
+
+```mdx
+<FindTheFlaw
+  id="flaw-sqli-login"
+  title="Une requête à moitié paramétrée"
+  language="python"
+  code={`
+def connexion(cursor, login, mot_de_passe):
+    empreinte = hacher(mot_de_passe)
+    requete = "SELECT id FROM users WHERE login = '" + login + "' AND hash = ?"
+    cursor.execute(requete, (empreinte,))
+`}
+  line={3}
+  options={["Mot de passe stocké en clair", "Injection SQL", "Faille XSS"]}
+  correct={1}
+  explanation="Le login est collé dans le texte de la requête..."
+  hint="Toutes les valeurs de la requête passent-elles par un paramètre ?"
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `language` | string | Langage affiché (`python`, `javascript`, `php`...). Défaut : `code` |
+| `code` | string | L'extrait, en template literal sur ses propres lignes : les sauts de ligne du début et de la fin ne comptent pas, l'indentation est gardée |
+| `line` | number | La ligne vulnérable, **comptée à partir de 1** comme le lecteur la voit. Jamais une ligne vide |
+| `options` | string[] | De 2 à 6 noms de failles |
+| `correct` | number | La bonne option, **comptée à partir de 0**. Les options ne sont pas mélangées à l'affichage : variez sa place d'un exercice à l'autre |
+| `explanation` | string | Pourquoi cette ligne est vulnérable et comment la corriger, affiché une fois la faille nommée |
+| `hint` | string | Indice affiché après la deuxième mauvaise ligne (optionnel) |
+
+L'éditeur refuse d'enregistrer un exercice dont la ligne n'existe pas, est vide, ou dont `correct` ne désigne aucune option, en disant laquelle de ces règles n'est pas tenue.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -912,7 +951,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

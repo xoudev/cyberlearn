@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import type { Block } from "@/lib/lesson-blocks";
@@ -212,6 +213,8 @@ export function BlockView({
           </ScrollView>
         </View>
       );
+    case "flaw":
+      return <FindTheFlawExercise flaw={block.flaw} />;
     case "challenge":
       return (
         <View

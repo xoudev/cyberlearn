@@ -37,6 +37,30 @@ describe("what renders", () => {
   });
 });
 
+describe("FindTheFlaw", () => {
+  const flaw = (props: string): string =>
+    `## Trouve la faille
+
+<FindTheFlaw id="f" code={\`a = 1
+b = a + input()\`} options={["Injection", "Rien"]} explanation="Parce que." ${props} />`;
+
+  it("accepts an exercise whose line and answer exist", async () => {
+    expect(await checkLessonMdx(flaw("line={2} correct={0}"))).toEqual({ ok: true });
+  });
+
+  it("refuses one pointing past the end of the code, and says so", async () => {
+    const r = await checkLessonMdx(flaw("line={5} correct={0}"));
+    if (r.ok) throw new Error("accepted line 5 of 2");
+    expect(r.section).toBe("Trouve la faille");
+    expect(r.message).toContain("Trouve la faille : line vaut 5");
+  });
+
+  it("refuses one whose answer is not an option", async () => {
+    const r = await checkLessonMdx(flaw("line={2} correct={2}"));
+    expect(r.ok).toBe(false);
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

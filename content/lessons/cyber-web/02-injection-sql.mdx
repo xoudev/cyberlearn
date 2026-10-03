@@ -102,6 +102,26 @@ Relance le scénario et observe l'enchaînement détection, bases, tables, dump.
 
 <SimulatedTerminal shell="bash" scenario="sqli-basic" title="Injection SQL avec sqlmap" />
 
+Puis lis ce code de connexion, écrit par quelqu'un qui croyait bien faire : une partie de la requête est paramétrée. Trouve la ligne qui laisse passer l'injection.
+
+<FindTheFlaw
+  id="flaw-sqli-login"
+  title="Une requête à moitié paramétrée"
+  language="python"
+  code={`
+def connexion(cursor, login, mot_de_passe):
+    empreinte = hacher(mot_de_passe)
+    requete = "SELECT id FROM users WHERE login = '" + login + "' AND hash = ?"
+    cursor.execute(requete, (empreinte,))
+    return cursor.fetchone() is not None
+`}
+  line={3}
+  options={["Mot de passe stocké en clair", "Injection SQL", "Faille XSS", "Aucune : la requête est paramétrée"]}
+  correct={1}
+  explanation="Le login est collé dans le texte de la requête : avec alice' -- comme login, l'apostrophe referme la valeur et le reste, vérification du mot de passe comprise, passe en commentaire. Le ? ne protège que l'empreinte : chaque valeur venue de l'extérieur doit avoir son propre paramètre."
+  hint="Toutes les valeurs de la requête passent-elles par un paramètre ?"
+/>
+
 <Quiz id="q-1" question="Dans le login 'alice OR 1=1 --', pourquoi la connexion réussit-elle sans le bon mot de passe ?" options={["Parce que le mot de passe est deviné par force brute", "Parce que OR 1=1 rend la condition WHERE toujours vraie et que -- met le reste en commentaire", "Parce que sqlmap a déjà volé le mot de passe", "Parce que la base est mal configurée en lecture seule"]} correct={1} />
 
 <Quiz id="q-2" question="Quel rôle joue l'apostrophe dans une injection SQL classique ?" options={["Elle chiffre l'entrée utilisateur", "Elle referme la valeur texte plus tôt que prévu, ce qui laisse écrire du SQL ensuite", "Elle est ignorée par toutes les bases", "Elle sert uniquement à afficher des erreurs"]} correct={1} />
