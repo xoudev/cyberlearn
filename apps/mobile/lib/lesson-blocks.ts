@@ -20,7 +20,14 @@ export type Block =
   | { kind: "list"; ordered: boolean; items: string[] }
   | { kind: "code"; lang: string; code: string }
   | { kind: "playground"; lang: string; code: string }
-  | { kind: "terminal"; title: string | null; commands: string[]; hints: string[] }
+  | {
+      kind: "terminal";
+      title: string | null;
+      commands: string[];
+      hints: string[];
+      /** A timed exercise on the site, such as a path's practical exam. */
+      timeLimitMinutes?: number;
+    }
   | { kind: "callout"; type: "info" | "warning" | "danger" | "success"; text: string }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
@@ -37,6 +44,7 @@ export interface ParsedLesson {
 
 const EXPECTED_CMDS_RE = /expectedCommands\s*=\s*\{(\[[\s\S]*?\])\}/;
 const HINTS_RE = /hints\s*=\s*\{(\[[\s\S]*?\])\}/;
+const TIME_LIMIT_RE = /timeLimitMinutes\s*=\s*\{\s*(\d+)\s*\}/;
 
 /** Extract a `prop={["a","b"]}` string array from a JSX tag's attributes. */
 function extractStringArray(tag: string, re: RegExp): string[] {
@@ -150,6 +158,12 @@ function parseBody(text: string, blocks: Block[]): void {
   }
 }
 
+/** The time limit of a timed terminal, when it has one. */
+function timeLimit(tag: string): { timeLimitMinutes?: number } {
+  const minutes = TIME_LIMIT_RE.exec(tag)?.[1];
+  return minutes === undefined ? {} : { timeLimitMinutes: Number(minutes) };
+}
+
 /** Replace MDX components with sentinel lines, extracting quiz/callout data. */
 function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
   const store = new Map<string, Block>();
@@ -194,6 +208,7 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       title: /title\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1] ?? null,
       commands: extractStringArray(tag, EXPECTED_CMDS_RE),
       hints: extractStringArray(tag, HINTS_RE),
+      ...timeLimit(tag),
     });
   text = text.replace(/<SimulatedTerminal[\s\S]*?\/>/g, terminalToBlock);
   text = text.replace(/<SimulatedTerminal[\s\S]*?<\/SimulatedTerminal>/g, terminalToBlock);

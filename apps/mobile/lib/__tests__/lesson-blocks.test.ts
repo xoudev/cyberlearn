@@ -97,4 +97,22 @@ const safe = true;
       },
     ]);
   });
+
+  it("keeps the time limit of a timed terminal, such as a practical exam", () => {
+    const lesson = parseLesson(`
+## L'épreuve
+
+<LinuxTerminal title="L'épreuve pratique" timeLimitMinutes={30} checks={[{ "label": "a", "path": "a", "expect": "file" }]} hints={["Module 4."]} />
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "terminal",
+        title: "L'épreuve pratique",
+        commands: [],
+        hints: ["Module 4."],
+        timeLimitMinutes: 30,
+      },
+    ]);
+  });
 });

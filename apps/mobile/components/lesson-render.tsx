@@ -247,6 +247,13 @@ export function BlockView({
             </Text>
           </View>
           <View style={{ padding: 12, gap: 6 }}>
+            {block.timeLimitMinutes !== undefined ? (
+              <Text variant="bodySm" style={{ color: colors.warning }}>
+                Épreuve chronométrée : {block.timeLimitMinutes} minute
+                {block.timeLimitMinutes > 1 ? "s" : ""}, à passer dans le vrai terminal, sur le
+                site.
+              </Text>
+            ) : null}
             {block.commands.length > 0 ? (
               <>
                 <Text variant="micro" style={{ color: colors.textMuted }}>
