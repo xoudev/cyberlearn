@@ -512,6 +512,16 @@ article.lesson-content a:hover {
   outline-offset: -1px;
 }
 
+/* PhishingEmail (lessons/[slug]/_components/phishing-email.tsx): each part of
+   the message is a button; same treatment as the lines of FindTheFlaw. */
+.phishing-email__part:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+.phishing-email__part:focus-visible {
+  outline: 1px solid var(--cosmetic-accent, #0affd4);
+  outline-offset: -1px;
+}
+
 /* Lists - ► bullets, monospace counters */
 article.lesson-content ul {
   padding-left: 1.5em !important;

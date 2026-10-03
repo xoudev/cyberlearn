@@ -61,6 +61,28 @@ b = a + input()\`} options={["Injection", "Rien"]} explanation="Parce que." ${pr
   });
 });
 
+describe("PhishingEmail", () => {
+  const mail = (clues: string): string =>
+    '## La boîte\n\n<PhishingEmail id="p" fromName="Banque" fromAddress="a@b.co" subject="Urgent" body={["Bonjour.", "Payez."]} clues={' +
+    clues +
+    "} />";
+
+  it("accepts a message whose clues point at its parts", async () => {
+    expect(
+      await checkLessonMdx(mail('[{ "part": "body-2", "why": "Une demande de paiement." }]')),
+    ).toEqual({
+      ok: true,
+    });
+  });
+
+  it("refuses a clue on a part the message does not have, and says so", async () => {
+    const r = await checkLessonMdx(mail('[{ "part": "link", "why": "Le lien." }]'));
+    if (r.ok) throw new Error("accepted a clue on a missing link");
+    expect(r.section).toBe("La boîte");
+    expect(r.message).toContain("Boîte mail piégée : un indice vise link");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

@@ -915,6 +915,41 @@ def connexion(cursor, login, mot_de_passe):
 
 L'éditeur refuse d'enregistrer un exercice dont la ligne n'existe pas, est vide, ou dont `correct` ne désigne aucune option, en disant laquelle de ces règles n'est pas tenue.
 
+### 5.9c PhishingEmail - Boîte mail piégée
+
+Un message présenté comme dans une messagerie : l'élève clique (ou touche, dans l'app) chaque élément qui le trahit. Un élément suspect reste marqué et son explication s'affiche sous le message ; un élément anodin le dit. Comme dans un vrai client de messagerie, l'adresse réelle du lien s'affiche au survol (à l'appui long dans l'app). Après trois clics sur des éléments anodins, l'élève peut demander à voir les indices.
+
+```mdx
+<PhishingEmail
+  id="f1-phishing-dgfip"
+  title="Un remboursement inattendu"
+  fromName="DGFiP - Finances publiques"
+  fromAddress="remboursement@impots-gouv-fr.net"
+  subject="Remboursement de 238,40 € en attente : action requise sous 48 h"
+  body={["Bonjour,", "Pour le recevoir, confirmez vos coordonnées bancaires sous 48 h."]}
+  linkText="Confirmer mes coordonnées"
+  linkUrl="http://impots.gouv.fr.remboursement-dgfip.net/confirmation"
+  clues={[{ "part": "sender", "why": "Un domaine que n'importe qui peut acheter." }, { "part": "link", "why": "Le vrai domaine est remboursement-dgfip.net." }]}
+  conclusion="Ne clique pas : signale-le, puis supprime-le."
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `fromName`, `fromAddress` | string | Le nom affiché de l'expéditeur, et son adresse |
+| `subject` | string | L'objet du message |
+| `body` | string[] | Les paragraphes du message, de 1 à 8 ; le premier est `body-1` |
+| `linkText`, `linkUrl` | string | Le texte du bouton et l'adresse où il mène vraiment, **toujours ensemble** (optionnels) |
+| `attachment` | string | Le nom d'une pièce jointe (optionnel) |
+| `clues` | objets | Les éléments suspects : `part` vaut `sender`, `subject`, `link`, `attachment` ou `body-N`, `why` dit pourquoi. **Écrire les clés entre guillemets** (`"part"`, `"why"`) : l'app lit cette liste en JSON |
+| `conclusion` | string | Ce qu'il faut faire d'un tel message, affiché une fois tout trouvé (défaut : « Ne clique sur rien : signale le message, puis supprime-le. ») |
+
+Laisser des éléments anodins : un message où tout est suspect n'apprend pas à trier. L'éditeur refuse un indice qui vise une partie absente (un lien, une pièce jointe, un paragraphe qui n'existe pas), deux indices sur la même partie, ou un lien sans son adresse.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -951,7 +986,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
