@@ -5,7 +5,7 @@ import path from "node:path";
 import { evaluate } from "@mdx-js/mdx";
 import * as runtime from "react/jsx-runtime";
 import { beforeAll, describe, expect, it } from "vitest";
-import { LESSON_COMPONENT_NAMES } from "@cyberlearn/lib/mdx-check";
+import { LESSON_COMPONENT_NAMES, protectPropIndentation } from "@cyberlearn/lib/mdx-check";
 
 /**
  * Every Python exercise in the lessons, run twice through the harness, gives
@@ -54,7 +54,11 @@ async function exercisesIn(file: string): Promise<Exercise[]> {
       return null;
     };
   const components = Object.fromEntries(LESSON_COMPONENT_NAMES.map((n) => [n, stub(n)]));
-  const { default: Content } = await evaluate(source, { ...runtime, development: false });
+  // Compiled as the page compiles it, indentation of the code included.
+  const { default: Content } = await evaluate(protectPropIndentation(source), {
+    ...runtime,
+    development: false,
+  });
   // SAFETY: the compiled module's default export is its content function.
   const tree = (Content as (p: { components: unknown }) => unknown)({ components });
   // Components nested in others (a challenge in a Callout) are reached by

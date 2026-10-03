@@ -4,6 +4,7 @@ import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { parseChallengeTests } from "@cyberlearn/types";
+import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
 
@@ -45,6 +46,8 @@ import { splitMdxSections } from "./split-sections.js";
  * gives back the half of that protection that costs nothing: a stray brace in
  * a sentence is dropped rather than run.
  */
+export { protectPropIndentation };
+
 export function remarkStripProseExpressions() {
   return (tree: unknown): void => {
     // SAFETY: a unist Root; only .type and .children are read.
@@ -152,7 +155,8 @@ export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
 /** What is wrong with one piece of MDX, or null when it renders. */
 async function problemIn(source: string): Promise<string | null> {
   try {
-    const { default: Content } = await evaluate(source, {
+    // The same source the page compiles: see indentation.ts.
+    const { default: Content } = await evaluate(protectPropIndentation(source), {
       ...runtime,
       remarkPlugins: LESSON_REMARK_PLUGINS,
       development: false,
