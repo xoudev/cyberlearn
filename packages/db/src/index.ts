@@ -40,6 +40,11 @@ export {
   type DeletionSummary,
 } from "./rgpd/delete-account.js";
 export {
+  purgeExpiredRecords,
+  RETENTION_MONTHS,
+  type RetentionSummary,
+} from "./rgpd/retention.js";
+export {
   resetProgress,
   type ResetProgressOptions,
   type ResetProgressSummary,

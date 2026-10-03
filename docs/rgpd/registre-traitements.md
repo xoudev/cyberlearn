@@ -57,7 +57,7 @@
 | Catégories de données | Email, objet, contenu des messages (demande et réponses) |
 | Destinataires | Supabase (`ContactTicket` + fil de messages), Resend (envoi de la réponse par mail) |
 | Transferts hors UE | Resend US (CCT) |
-| Durée de conservation | 3 mois après résolution / 12 mois si non résolu |
+| Durée de conservation | 3 mois après résolution / 12 mois sans activité si non résolu, appliqués chaque nuit par `/api/cron/retention` (`packages/db/src/rgpd/retention.ts`), fil de messages compris ; l'appel d'un bannissement encore en vigueur est gardé tant qu'il dure, puisque c'est lui qui empêche un second appel |
 | Mesures de sécurité | TLS 1.3, rate limiting, honeypot et seuil de temps de remplissage, RLS sur le fil |
 | Note | Aucune donnée ne part chez Atlassian, et plus aucune variable ne le suggère : les demandes vivent en base et la console y répond. |
 
@@ -71,7 +71,7 @@
 | Catégories de personnes | Utilisateurs et visiteurs |
 | Destinataires | Vercel (logs serveurs), Supabase (AuditLog) |
 | Transferts hors UE | Vercel US |
-| Durée de conservation | 12 mois (logs auth), 6 mois (logs apps) |
+| Durée de conservation | 12 mois pour le journal d'audit (`AuditLog`), purgé chaque nuit par `/api/cron/retention` ; 12 mois pour les logs d'authentification, tenus par Supabase Auth ; 6 mois au plus pour les logs applicatifs, que l'hébergeur garde moins longtemps |
 | Mesures de sécurité | Pseudonymisation, accès restreint, chiffrement at-rest |
 
 ## Traitement 6 - Suivi pédagogique encadré (classes et établissements)

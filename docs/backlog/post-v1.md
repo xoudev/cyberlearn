@@ -31,8 +31,14 @@
 - ~~Endpoint /api/me/delete~~ : résolu PR 2.4.B
 - ~~Page UI /settings/data~~ : résolu PR 2.4.B.3
 - Job de suppression automatique des comptes inactifs (24 mois)
-- Job de purge automatique des logs (12 mois auth, 6 mois apps)
-- Job d'anonymisation des certificats lors d'une suppression de compte
+- ~~Job de purge automatique des logs (12 mois auth, 6 mois apps)~~ : fait, PR #375.
+  `/api/cron/retention` purge chaque nuit le journal d'audit à 12 mois et les tickets
+  (3 mois après résolution, 12 mois sans activité). Les logs d'authentification sont
+  tenus par Supabase Auth, les logs applicatifs par l'hébergeur, qui les garde moins
+  de 6 mois : rien de cela n'est en base.
+- ~~Job d'anonymisation des certificats lors d'une suppression de compte~~ : déjà fait
+  par `deleteAccount` (`packages/db/src/rgpd/delete-account.ts`), qui remplace le nom
+  par « Utilisateur supprimé » dans la même transaction que la suppression.
 
 ### Sentry et observability - RÉSOLU par PR 3 (feat/sentry-init-csp-polish)
 
