@@ -5,27 +5,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Select } from "@cyberlearn/ui";
+import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
 
-export type DisplayStatus = "LOCKED" | "AVAILABLE" | "IN_PROGRESS" | "COMPLETED";
-
-export interface ChallengeItem {
-  id: string;
-  refCode: string;
-  slug: string;
-  title: string;
-  description: string;
-  category: "CYBERSEC" | "DEV" | "NETWORK";
-  difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
-  type: "CTF" | "PUZZLE" | "LAB" | "SCRIPT";
-  xpReward: number;
-  timeLimitMin: number;
-  maxAttempts: number;
-  userAttempts: number;
-  displayStatus: DisplayStatus;
-  lockedByTitle: string | null;
-}
+// Defined with the data that fills them (lib/challenges/catalogue.ts), where
+// the app's routes read them too.
+export type { ChallengeItem, DisplayStatus };
 
 interface Props {
   items: ChallengeItem[];

@@ -24,7 +24,8 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  cinquante-six : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  soixante et une : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`, `challenges`,
+  `challenges/complete`, `challenges/detail`, `challenges/flag`, `challenges/hint`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
@@ -62,6 +63,7 @@ RLS — jamais réécrites côté app.
 | Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site ou une photo, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
 | Test de positionnement, proposé à la fin de l'inscription à qui dit avoir déjà une base : les questions sans leurs réponses (ni l'explication qui les donne), une seule fois, corrigé sur le serveur ; les leçons débutant et intermédiaire des domaines maîtrisés débloquées, le badge, un parcours du catalogue recommandé (même service, `apps/web/lib/onboarding/placement.ts` ; mêmes mots, `@cyberlearn/lib/onboarding/placement`) | ✅ | ✅ (`app/placement.tsx`) |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
+| Défis : la liste avec l'état de chacun (résolu, en cours, disponible, verrouillé par son prérequis), l'énoncé, les indices payés en XP, le flag vérifié sur le serveur (le flag propre à l'élève pour un défi sur machine Linux), un puzzle ou un lab marqué fait ; mêmes fonctions des deux côtés (`apps/web/lib/challenges/catalogue.ts` et `play.ts`). La machine Linux et l'interpréteur Python d'un défi se jouent sur le site (voir les lignes « web seul » du terminal et du code), l'app y mène | ✅ (`/challenges`) | ✅ (écrans Défis, depuis le profil) |
 | Glossaire : les mots techniques d'une leçon soulignés en pointillés la première fois qu'ils apparaissent dans une section, définition au survol ou au focus sur le site, au toucher ou à l'appui long dans l'app ; une page qui les liste tous (même liste, `@cyberlearn/lib/glossary`) | ✅ (`/glossaire`, info-bulle sans script) | ✅ (écran Glossaire, depuis le profil ou une définition) |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | « Trouve la faille » (`<FindTheFlaw>`) : toucher ou cliquer la ligne vulnérable d'un extrait, puis nommer la faille ; indice après la deuxième mauvaise ligne, explication avec le bon nom (mêmes props, lues par `parseFindTheFlaw` de `@cyberlearn/types`) | ✅ (`find-the-flaw.tsx`) | ✅ (`components/find-the-flaw.tsx`) |
@@ -112,7 +114,6 @@ Chacune de ces lignes est une décision, pas une dette.
 | --- | --- |
 | **Ma classe — côté prof** (donner du travail, écrire une leçon, construire un parcours) | Ce sont des tâches où l'on s'assoit devant un clavier. L'éditeur MDX a une barre d'outils, un aperçu en deux colonnes et un guide de composants ; le constructeur de parcours est une liste qu'on réordonne à côté d'un catalogue qu'on filtre. Les porter sur un écran de téléphone donnerait une version dégradée que personne n'utiliserait |
 | **Console d'administration** (`admin.cyberlearn.fr`) | Application séparée, gate ADMIN + TOTP. Hors périmètre de l'app apprenant |
-| **Défis** | Le catalogue est en cours de reconstruction. À rouvrir quand les premiers défis réexistent |
 | **Exécuter le code d'une leçon** (`CodePlayground`, `PythonChallenge`) | Python, JavaScript, C ou l'assembleur tournent dans des moteurs WebAssembly chargés par la page (Pyodide pèse à lui seul une dizaine de Mo) et dans des workers du navigateur, que React Native n'a pas. L'app montre le code de départ, l'énoncé et les tests d'un défi, pour que la leçon se lise en entier, et renvoie au site pour les lancer (`lib/lesson-blocks.ts`) |
 | **Vrai terminal Linux des leçons** (`LinuxTerminal`, machine v86) | Une machine x86 émulée en WebAssembly : 15 Mo à télécharger, un processeur sollicité en continu et un clavier physique pour taper des commandes. Sur un téléphone, ce serait lent, gourmand en batterie et pénible à utiliser. L'app affiche à la place la fiche de l'exercice, commandes et indices (`lib/lesson-blocks.ts`) ; pour un exercice chronométré (`timeLimitMinutes`), comme l'épreuve pratique d'un parcours, la fiche annonce sa durée et renvoie au site, où tourne le compte à rebours |
 | **Export RGPD, suppression de compte** | Actions irréversibles qui demandent une confirmation lue posément. Elles restent sur le web, et l'app y renvoie |
