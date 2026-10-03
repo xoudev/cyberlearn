@@ -14,16 +14,20 @@
  * content/ at the time of writing. No remark plugin can put them back, since
  * the expression is parsed after they are gone.
  *
+ * A quoted attribute that spans lines (`starterCode="def f():` ...) loses its
+ * leading whitespace the same way, all of it.
+ *
  * So the source is fixed up before it is compiled: inside a component's tag,
  * the leading whitespace of each continuation line of a template literal is
- * written as escapes (\x20, \t). MDX does not see whitespace there and keeps
- * it; JavaScript reads the escapes back as the spaces the author typed. The
- * element's own indent stays as it is, since it belongs to the markdown around
- * it (a list item, say), not to the code.
+ * written as escapes (\x20, \t), and that of a quoted attribute as character
+ * references (&#32;, &#9;), since a JSX attribute string has no escapes. MDX
+ * does not see whitespace there and keeps it; the escapes are read back as the
+ * spaces the author typed. The element's own indent stays as it is, since it
+ * belongs to the markdown around it (a list item, say), not to the code.
  *
  * Everything else is left byte for byte: text, children, fenced code blocks,
- * quoted attributes, and templates that hold a `${}` (refused anyway by
- * remarkLiteralValuesOnly, so not worth the risk of rewriting).
+ * the first line of every string, and templates that hold a `${}` (refused
+ * anyway by remarkLiteralValuesOnly, so not worth the risk of rewriting).
  */
 export function protectPropIndentation(mdx: string): string {
   const out: string[] = [];
@@ -143,7 +147,7 @@ function protectTag(tag: string, keep: number): string {
     const c = tag.charAt(i);
     if (depth === 0 && (c === '"' || c === "'")) {
       const end = endOfQuoted(tag, i, false);
-      out += tag.slice(i, end);
+      out += protectLines(tag.slice(i, end), keep, QUOTED);
       i = end;
       continue;
     }
@@ -155,7 +159,8 @@ function protectTag(tag: string, keep: number): string {
     }
     if (depth > 0 && c === "`") {
       const end = endOfTemplate(tag, i);
-      out += protectTemplate(tag.slice(i, end), keep);
+      const template = tag.slice(i, end);
+      out += template.includes("${") ? template : protectLines(template, keep, TEMPLATE);
       i = end;
       continue;
     }
@@ -167,16 +172,30 @@ function protectTag(tag: string, keep: number): string {
   return out;
 }
 
-/** A template literal whose continuation lines keep their leading whitespace. */
-function protectTemplate(template: string, keep: number): string {
-  if (template.includes("${")) return template;
-  const lines = template.split("\n");
-  return lines
+/** How a space and a tab are written so that MDX leaves them be. */
+interface Escapes {
+  space: string;
+  tab: string;
+}
+
+/** In a template literal: JavaScript escapes. */
+const TEMPLATE: Escapes = { space: "\\x20", tab: "\\t" };
+
+/** In a quoted attribute, which has no escapes: character references. */
+const QUOTED: Escapes = { space: "&#32;", tab: "&#9;" };
+
+/** A string whose continuation lines keep their leading whitespace. */
+function protectLines(value: string, keep: number, escapes: Escapes): string {
+  return value
+    .split("\n")
     .map((line, k) => {
       if (k === 0) return line;
       const lead = /^[ \t]*/.exec(line)?.[0] ?? "";
       const kept = lead.slice(0, Math.min(keep, lead.length));
-      const escaped = lead.slice(kept.length).replace(/ /g, "\\x20").replace(/\t/g, "\\t");
+      const escaped = lead
+        .slice(kept.length)
+        .replace(/ /g, escapes.space)
+        .replace(/\t/g, escapes.tab);
       return kept + escaped + line.slice(lead.length);
     })
     .join("\n");

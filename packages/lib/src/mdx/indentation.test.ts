@@ -100,7 +100,16 @@ describe("protectPropIndentation", () => {
     expect(props?.starterCode).toBe("for i in range(3):\n    print(i)");
   });
 
-  it("does not touch prose, children, fenced code or quoted attributes", () => {
+  it("keeps the lines of a quoted attribute too", async () => {
+    const mdx = protectPropIndentation(
+      '<PythonChallenge id="p" starterCode="def f(x):\n    if x:\n\treturn x" tests={[]} />',
+    );
+    expect(mdx).toContain('starterCode="def f(x):\n&#32;&#32;&#32;&#32;if x:\n&#9;return x"');
+    const [props] = await propsOf(mdx);
+    expect(props?.starterCode).toBe("def f(x):\n    if x:\n\treturn x");
+  });
+
+  it("does not touch prose, children, fenced code or one-line attributes", () => {
     const mdx = [
       "Un paragraphe avec `du code` et un {objet}.",
       "",
@@ -130,8 +139,9 @@ describe("protectPropIndentation", () => {
 });
 
 /**
- * Every multi-line template of every lesson in content/ reaches its component
- * with the lines the author wrote: compiled for real, compared with the source.
+ * Every multi-line starterCode of every lesson in content/, template or quoted,
+ * reaches its component with the lines the author wrote: compiled for real,
+ * compared with the source.
  */
 const ROOT = path.resolve(__dirname, "../../../../content/lessons");
 
@@ -143,13 +153,17 @@ function lessonFiles(dir: string): string[] {
   });
 }
 
-/** The multi-line starterCode templates of a lesson, as written. */
+/** The multi-line starterCode of a lesson, templates and quoted, as written. */
 function writtenStarterCode(mdx: string): string[] {
-  return [
+  const templates = [
     ...mdx.matchAll(/^<(?:CodePlayground|PythonChallenge)\b[^\n]*?starterCode=\{`([^`]*)`\}/gms),
   ]
-    .map((m) => m[1] ?? "")
-    .filter((code) => code.includes("\n") && !code.includes("${"));
+    .map((m) => cooked(m[1] ?? ""))
+    .filter((code) => !code.includes("${"));
+  const quoted = [
+    ...mdx.matchAll(/^<(?:CodePlayground|PythonChallenge)\b[^\n]*?starterCode="([^"]*)"/gms),
+  ].map((m) => m[1] ?? "");
+  return [...templates, ...quoted].filter((code) => code.includes("\n"));
 }
 
 /** What a template's escapes come to, for the few the lessons use. */
@@ -172,7 +186,7 @@ describe("the lessons of content/", () => {
       const mdx = readFileSync(file, "utf8")
         .replace(/\r\n/g, "\n")
         .replace(/^---\n[\s\S]*?\n---\n/, "");
-      const written = writtenStarterCode(mdx).map(cooked);
+      const written = writtenStarterCode(mdx);
       const received = (await propsOf(protectPropIndentation(mdx)))
         .map((p) => p.starterCode)
         .filter((c): c is string => typeof c === "string" && c.includes("\n"));
