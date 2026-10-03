@@ -12,9 +12,12 @@ import {
 import { lessonSyncOverview, type LessonUpdate } from "@/lib/services/lesson-sync.service";
 import {
   catalogueDrafts,
+  challengeSyncOverview,
   pathSyncOverview,
   quizSyncOverview,
   type CatalogueDrafts,
+  type ChallengeSyncOverview,
+  type ChallengeSyncState,
   type PathSyncOverview,
   type PathSyncState,
   type QuizSyncOverview,
@@ -271,6 +274,72 @@ function QuizzesSection({ overview }: { overview: QuizSyncOverview }): React.Rea
   );
 }
 
+function challengeState(c: ChallengeSyncState): { label: string; tone: Tone } {
+  if (!c.exists) return { label: "Nouveau", tone: "info" };
+  if (!c.upToDate) return { label: "À synchroniser", tone: "warning" };
+  return c.isActive ? { label: "Actif", tone: "accent" } : { label: "Désactivé", tone: "neutral" };
+}
+
+function ChallengesSection({
+  overview,
+}: {
+  overview: ChallengeSyncOverview;
+}): React.ReactElement | null {
+  if (!overview.available) {
+    return (
+      <EmptyState
+        title="Défis du dépôt introuvables"
+        text="Ce déploiement n'embarque pas content/challenges. Vérifie outputFileTracingIncludes dans apps/admin/next.config.ts."
+      />
+    );
+  }
+  if (overview.challenges.length === 0 && overview.errors.length === 0) return null;
+  const pending = overview.challenges.filter((c) => !c.upToDate);
+  return (
+    <section className="a-card a-sync-extra">
+      <div className="a-card-head">
+        <h2 className="a-card-title">Défis du dépôt</h2>
+      </div>
+      <div className="a-card-pad a-sync-body">
+        <p className="a-sync-file">
+          Chaque fichier de content/challenges est un défi CTF joué sur une machine Linux, avec un
+          flag propre à chaque élève. Les fichiers passent dans leur ordre, qui est celui des
+          prérequis. Un nouveau défi arrive désactivé : active-le depuis la liste des défis.
+        </p>
+        {overview.errors.length > 0 ? (
+          <ul className="a-sync-failures" role="alert">
+            {overview.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        ) : null}
+        {pending.length > 0 ? (
+          <RunAllButton
+            kind="challenge"
+            targets={pending.map((c) => ({ refCode: c.refCode, title: c.title }))}
+          />
+        ) : null}
+        <ul className="a-sync-plain">
+          {overview.challenges.map((c) => {
+            const state = challengeState(c);
+            return (
+              <li key={c.refCode}>
+                <span className="a-sync-ref">{c.refCode}</span> {c.title}{" "}
+                <Tag tone={state.tone}>{state.label}</Tag>{" "}
+                <span className="a-sync-file">
+                  content/challenges/{c.file}
+                  {c.prerequisite !== null ? ` · après ${c.prerequisite}` : ""}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <GhostLink href="/challenges">Liste des défis</GhostLink>
+      </div>
+    </section>
+  );
+}
+
 function PublishSection({ drafts }: { drafts: CatalogueDrafts }): React.ReactElement | null {
   if (drafts.lessons.length === 0 && drafts.paths.length === 0) return null;
   return (
@@ -302,10 +371,11 @@ function PublishSection({ drafts }: { drafts: CatalogueDrafts }): React.ReactEle
 
 export default async function LessonSyncPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const [overview, paths, quizzes, drafts] = await Promise.all([
+  const [overview, paths, quizzes, challenges, drafts] = await Promise.all([
     lessonSyncOverview(),
     pathSyncOverview(),
     quizSyncOverview(),
+    challengeSyncOverview(),
     catalogueDrafts(),
   ]);
 
@@ -382,6 +452,8 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
           <PathsSection overview={paths} />
 
           <QuizzesSection overview={quizzes} />
+
+          <ChallengesSection overview={challenges} />
 
           <PublishSection drafts={drafts} />
 

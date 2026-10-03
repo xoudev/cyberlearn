@@ -1,12 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { lessonRefCodeSchema, pathRefCodeSchema } from "@cyberlearn/types";
+import { CHALLENGE_REF_CODE, lessonRefCodeSchema, pathRefCodeSchema } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { applyLessonUpdate } from "@/lib/services/lesson-sync.service";
 import {
   importLessonFromRepository,
   publishCatalogueDrafts,
+  syncChallengeFromRepository,
   syncPathFromRepository,
   syncQuizFromRepository,
 } from "@/lib/services/repository-import.service";
@@ -107,6 +108,24 @@ export async function syncQuizFromRepositoryAction(input: {
   if (!parsed.success) return { ok: false, message: "Demande invalide.", details: [] };
 
   const result = await syncQuizFromRepository(parsed.data.slug, admin.id);
+  if (!result.ok) return { ok: false, message: result.message, details: result.details };
+  return { ok: true };
+}
+
+const challengeSchema = z.object({ refCode: z.string().regex(CHALLENGE_REF_CODE) });
+
+/**
+ * Writes one CTF challenge from content/challenges: a new one arrives
+ * inactive, to be published from the challenges list.
+ */
+export async function syncChallengeFromRepositoryAction(input: {
+  refCode: string;
+}): Promise<SyncActionResult> {
+  const admin = await requireAdminAction();
+  const parsed = challengeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Demande invalide.", details: [] };
+
+  const result = await syncChallengeFromRepository(parsed.data.refCode, admin.id);
   if (!result.ok) return { ok: false, message: result.message, details: result.details };
   return { ok: true };
 }

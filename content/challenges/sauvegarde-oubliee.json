@@ -1,0 +1,32 @@
+{
+  "refCode": "CL-CHG-003",
+  "slug": "sauvegarde-oubliee",
+  "title": "La sauvegarde oubliée",
+  "description": "La configuration d'une application masque son jeton d'accès. Mais un déploiement raté a laissé une copie de sauvegarde, et un jeton encodé n'est pas un jeton chiffré.",
+  "instructions": "## Le contexte\n\nL'application de la machine lit son jeton d'accès dans `config/app.conf`, où il est masqué. Un déploiement raté, la semaine dernière, a fait restaurer la configuration à la main. Ces restaurations laissent souvent des traces.\n\n## Ta mission\n\n1. Lis `deploy.log` pour comprendre ce qui s'est passé.\n2. Trouve la copie de la configuration restée sur le disque.\n3. Le jeton y est en clair, mais encodé : décode-le. Ce que tu obtiens est le flag.\n\n## Le flag\n\nLe flag a la forme `CL{` suivi de vingt caractères hexadécimaux et de `}`. Il est le tien : la machine de chaque élève a le sien, et celui d'un camarade ne marchera pas sur ton compte.",
+  "category": "CYBERSEC",
+  "difficulty": "INTERMEDIATE",
+  "xpReward": 100,
+  "maxAttempts": 10,
+  "orderIndex": 3,
+  "prerequisite": "CL-CHG-002",
+  "machine": {
+    "title": "L'application de facturation",
+    "files": {
+      "config/app.conf": "[app]\nname = facturation\nport = 8080\n\n[secrets]\napi_token = ******** (masqué, voir le coffre)\n",
+      "config/app.conf.bak": "[app]\nname = facturation\nport = 8080\n\n[secrets]\n# copie avant le déploiement du 26/09, à supprimer\napi_token = {{FLAG_BASE64}}\n",
+      "deploy.log": "2026-09-26 18:02:11 déploiement v2.4.0 : début\n2026-09-26 18:02:15 copie de config/app.conf vers config/app.conf.bak\n2026-09-26 18:02:40 erreur : la migration de la base a échoué\n2026-09-26 18:03:02 restauration manuelle de config/app.conf\n2026-09-26 18:03:05 déploiement annulé\n",
+      "LISEZMOI.txt": "Application de facturation.\nLa configuration est dans config/. Le jeton n'est jamais écrit en clair.\n"
+    }
+  },
+  "hints": [
+    {
+      "content": "ls config montre deux fichiers. Celui en .bak date d'avant la restauration : compare-le avec cat.",
+      "xpCost": 10
+    },
+    {
+      "content": "Une suite de lettres, de chiffres, de + et de / sans espace est souvent du base64. echo VALEUR | base64 -d la décode.",
+      "xpCost": 20
+    }
+  ]
+}

@@ -23,7 +23,7 @@ describe("parseChallengeMachine", () => {
     expect(parseChallengeMachine({ files: { "a.txt": "rien" } })).toEqual({
       ok: false,
       problem:
-        "Aucun fichier ne contient {{FLAG}} : le flag de l'élève n'aurait nulle part où aller.",
+        "Aucun fichier ne contient {{FLAG}} (ni {{FLAG_BASE64}}, ni {{FLAG_HEX}}) : le flag de l'élève n'aurait nulle part où aller.",
     });
   });
 
@@ -52,6 +52,20 @@ describe("machineFilesWithFlag", () => {
       "le code : CL{0123456789abcdef0123}\nencore : CL{0123456789abcdef0123}\n",
     );
     expect(files["logs/auth.log"]).toBe(MACHINE.files["logs/auth.log"]);
+  });
+});
+
+describe("encoded flags", () => {
+  it("accepts a machine whose only flag is encoded", () => {
+    expect(parseChallengeMachine({ files: { "a.bak": "token={{FLAG_BASE64}}" } }).ok).toBe(true);
+  });
+
+  it("writes the flag in base64 and in hexadecimal, as base64 -d and xxd -r -p read them", () => {
+    const files = machineFilesWithFlag(
+      { files: { "a.txt": "{{FLAG_BASE64}} {{FLAG_HEX}} {{FLAG}}" } },
+      "CL{ab}",
+    );
+    expect(files["a.txt"]).toBe("Q0x7YWJ9 434c7b61627d CL{ab}");
   });
 });
 

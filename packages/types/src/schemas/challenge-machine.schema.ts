@@ -16,6 +16,32 @@ import { z } from "zod";
 export const FLAG_PLACEHOLDER = "{{FLAG}}";
 
 /**
+ * The same flag, written so that finding it takes a command more: base64
+ * (`base64 -d`) or hexadecimal (`xxd -r -p`), both in the machine's BusyBox.
+ * The learner submits the flag itself, decoded.
+ */
+export const FLAG_BASE64_PLACEHOLDER = "{{FLAG_BASE64}}";
+export const FLAG_HEX_PLACEHOLDER = "{{FLAG_HEX}}";
+
+const PLACEHOLDERS = [FLAG_PLACEHOLDER, FLAG_BASE64_PLACEHOLDER, FLAG_HEX_PLACEHOLDER];
+
+/** Two hexadecimal digits per character: the flag is ASCII, one byte each. */
+function asciiHex(text: string): string {
+  let hex = "";
+  for (let i = 0; i < text.length; i++) hex += text.charCodeAt(i).toString(16).padStart(2, "0");
+  return hex;
+}
+
+/** The flag as each placeholder writes it. The flag is ASCII: btoa takes it. */
+function encodings(flag: string): Record<string, string> {
+  return {
+    [FLAG_PLACEHOLDER]: flag,
+    [FLAG_BASE64_PLACEHOLDER]: btoa(flag),
+    [FLAG_HEX_PLACEHOLDER]: asciiHex(flag),
+  };
+}
+
+/**
  * A file path in the machine, relative to /mnt: names separated by slashes. No
  * "." or "..", no leading slash. The directories are typed into the shell,
  * quoted, but still kept to plain names: a directory that needs quoting to be
@@ -50,8 +76,8 @@ export const challengeMachineSchema = z.object({
       "Chemin de fichier invalide : des noms séparés par des /, sans . ni .., sans / au début.",
     )
     .refine(
-      (f) => Object.values(f).some((content) => content.includes(FLAG_PLACEHOLDER)),
-      `Aucun fichier ne contient ${FLAG_PLACEHOLDER} : le flag de l'élève n'aurait nulle part où aller.`,
+      (f) => Object.values(f).some((content) => PLACEHOLDERS.some((p) => content.includes(p))),
+      `Aucun fichier ne contient ${FLAG_PLACEHOLDER} (ni ${FLAG_BASE64_PLACEHOLDER}, ni ${FLAG_HEX_PLACEHOLDER}) : le flag de l'élève n'aurait nulle part où aller.`,
     ),
 });
 
@@ -68,15 +94,16 @@ export function parseChallengeMachine(raw: unknown): ChallengeMachineResult {
   return { ok: false, problem: parsed.error.issues[0]?.message ?? "Machine invalide." };
 }
 
-/** The machine's files with the learner's flag where the author wrote {{FLAG}}. */
+/** The machine's files with the learner's flag wherever the author put a placeholder. */
 export function machineFilesWithFlag(
   machine: ChallengeMachine,
   flag: string,
 ): Record<string, string> {
+  const written = Object.entries(encodings(flag));
   return Object.fromEntries(
     Object.entries(machine.files).map(([path, content]) => [
       path,
-      content.split(FLAG_PLACEHOLDER).join(flag),
+      written.reduce((text, [placeholder, value]) => text.split(placeholder).join(value), content),
     ]),
   );
 }

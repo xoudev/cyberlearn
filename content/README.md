@@ -8,6 +8,9 @@ que des copies importées (en DRAFT jusqu'à publication).
 
 ```
 content/lessons/<parcours>/NN-slug.mdx
+content/paths/<slug>.json
+content/quizzes/<slug>.json
+content/challenges/<slug>.json
 ```
 
 Chaque fichier est une leçon : frontmatter YAML (refCode, slug, titre, catégorie,
@@ -165,6 +168,51 @@ par un manifeste, `content/paths/<slug>.json` : ses métadonnées et ses
   resynchroniser après chaque import de module.
 - **Quiz de module** : c'est la dernière leçon du module, écrite avec
   `QuizGroup` (voir le guide d'écriture). Aucun mécanisme à part.
+
+## Les défis CTF : `content/challenges/`
+
+Un fichier JSON par défi, `content/challenges/<slug>.json`, joué sur la machine
+Linux du navigateur (le même terminal que les leçons). Format :
+`challengeFileSchema` dans `packages/types/src/schemas/challenge-file.schema.ts`.
+
+```json
+{
+  "refCode": "CL-CHG-001",
+  "slug": "journal-bavard",
+  "title": "Le journal bavard",
+  "description": "Une ligne, pour la liste des défis.",
+  "instructions": "## Le contexte\n\nDu Markdown, affiché au-dessus de la machine.",
+  "category": "CYBERSEC",
+  "difficulty": "BEGINNER",
+  "xpReward": 50,
+  "maxAttempts": 10,
+  "orderIndex": 1,
+  "prerequisite": "CL-CHG-000",
+  "machine": {
+    "title": "web01",
+    "files": { "logs/auth.log": "... COMMAND=/bin/echo {{FLAG}}\n" }
+  },
+  "hints": [{ "content": "Un indice.", "xpCost": 10 }]
+}
+```
+
+- **Le flag n'est jamais écrit** : on met `{{FLAG}}` là où il va, ou
+  `{{FLAG_BASE64}}` et `{{FLAG_HEX}}` pour le faire décoder (`base64 -d`,
+  `xxd -r -p`). Le site y place le flag de l'élève, propre à chacun (un HMAC du
+  défi et de l'élève sous `CHALLENGE_FLAG_SECRET`) : la machine tourne dans le
+  navigateur, tout ce qu'elle contient peut se lire, et un flag copié sur la
+  machine d'un autre ne vaut rien.
+- **Fichiers de la machine** : 40 au plus, 64 Ko chacun, placés dans `/mnt`.
+  Les noms suivent la règle des leçons (pas de `..`, pas de `/` au début ; un
+  nom caché commence par un point).
+- **XP modérée** (300 au plus) et **indices** payants (5 au plus).
+- **Contrôles** : un test (`challenge-files.test.ts`) refuse un fichier mal
+  formé, mal nommé, un refCode ou un slug pris deux fois, un prérequis absent du
+  dépôt, un tiret cadratin.
+- **Synchronisation** : la console (« Synchroniser avec le dépôt ») écrit les
+  défis dans l'ordre des fichiers. Un nouveau défi arrive **désactivé** ; on
+  l'active depuis la liste des défis. Un défi existant est réécrit et garde son
+  état et la progression de ses élèves.
 
 ## Convention MDX importante
 
