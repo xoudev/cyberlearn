@@ -1,11 +1,16 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
-// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, SimulatedTerminal, LinuxTerminal,
-// Diagram. Code is shown, not run: it runs on the site. Interactive web-only
+// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, SimulatedTerminal,
+// LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
-import { type FindTheFlaw, parseFindTheFlaw } from "@cyberlearn/types";
+import {
+  type FindTheFlaw,
+  type PhishingEmail,
+  parseFindTheFlaw,
+  parsePhishingEmail,
+} from "@cyberlearn/types";
 
 export interface QuizBlock {
   kind: "quiz";
@@ -45,6 +50,11 @@ export type Block =
       kind: "flaw";
       flaw: FindTheFlaw;
     }
+  | {
+      /** A PhishingEmail: the suspicious parts of a message to report. */
+      kind: "phishing";
+      mail: PhishingEmail;
+    }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
 
@@ -72,6 +82,23 @@ const TIME_LIMIT_RE = /timeLimitMinutes\s*=\s*\{\s*(\d+)\s*\}/;
 const LINE_RE = /\bline\s*=\s*\{\s*(\d+)\s*\}/;
 const CORRECT_RE = /\bcorrect\s*=\s*\{\s*(\d+)\s*\}/;
 const OPTIONS_RE = /\boptions\s*=\s*\{(\[[\s\S]*?\])\}/;
+const BODY_RE = /\bbody\s*=\s*\{(\[[\s\S]*?\])\}/;
+const CLUES_RE = /\bclues\s*=\s*\{(\[[\s\S]*?\])\}/;
+
+/**
+ * A `prop={[...]}` of objects written as JSON (keys in double quotes, as the
+ * authoring guide asks), or undefined when it is not.
+ */
+function jsonArrayProp(tag: string, re: RegExp): unknown {
+  const raw = re.exec(tag)?.[1];
+  if (raw === undefined) return undefined;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return value;
+  } catch {
+    return undefined;
+  }
+}
 
 /** A `prop={12}` number, or undefined when it is not written so. */
 function numberProp(tag: string, re: RegExp): number | undefined {
@@ -234,7 +261,14 @@ type StringPropName =
   | "language"
   | "code"
   | "explanation"
-  | "hint";
+  | "hint"
+  | "fromName"
+  | "fromAddress"
+  | "subject"
+  | "linkText"
+  | "linkUrl"
+  | "attachment"
+  | "conclusion";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -242,7 +276,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -392,6 +426,28 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "flaw", flaw: parsed.flaw }
         : { kind: "placeholder", label: "Trouve la faille" },
+    );
+  });
+  // PhishingEmail → the same exercise, played natively; one the site would
+  // refuse is a placeholder.
+  text = replaceSelfClosing(text, "PhishingEmail", (tag) => {
+    const parsed = parsePhishingEmail({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      fromName: stringProp(tag, "fromName", 0) ?? undefined,
+      fromAddress: stringProp(tag, "fromAddress", 0) ?? undefined,
+      subject: stringProp(tag, "subject", 0) ?? undefined,
+      body: extractStringArray(tag, BODY_RE),
+      linkText: stringProp(tag, "linkText", 0) ?? undefined,
+      linkUrl: stringProp(tag, "linkUrl", 0) ?? undefined,
+      attachment: stringProp(tag, "attachment", 0) ?? undefined,
+      clues: jsonArrayProp(tag, CLUES_RE),
+      conclusion: stringProp(tag, "conclusion", 0) ?? undefined,
+    });
+    return put(
+      parsed.ok
+        ? { kind: "phishing", mail: parsed.mail }
+        : { kind: "placeholder", label: "Boîte mail piégée" },
     );
   });
   // SimulatedTerminal → a native exercise card (commands to try + hints).

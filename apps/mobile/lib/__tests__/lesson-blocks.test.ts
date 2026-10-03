@@ -241,3 +241,50 @@ describe("FindTheFlaw", () => {
     ]);
   });
 });
+
+describe("PhishingEmail", () => {
+  const MAIL = [
+    "## La boîte",
+    "",
+    "<PhishingEmail",
+    '  id="ph"',
+    '  fromName="DGFiP"',
+    '  fromAddress="remboursement@impots-gouv-fr.net"',
+    '  subject="Remboursement en attente"',
+    '  body={["Bonjour,", "Confirmez vos coordonnées."]}',
+    '  linkText="Confirmer"',
+    '  linkUrl="http://impots.gouv.fr.remboursement-dgfip.net/c"',
+    '  clues={[{ "part": "sender", "why": "Un faux domaine." }, { "part": "link", "why": "Le vrai domaine, ici : remboursement-dgfip.net." }]}',
+    '  conclusion="Signale-le."',
+    "/>",
+  ].join("\n");
+
+  it("is played in the app with the props the site reads", () => {
+    expect(parseLesson(MAIL).sections[0]?.blocks).toEqual([
+      {
+        kind: "phishing",
+        mail: {
+          id: "ph",
+          fromName: "DGFiP",
+          fromAddress: "remboursement@impots-gouv-fr.net",
+          subject: "Remboursement en attente",
+          body: ["Bonjour,", "Confirmez vos coordonnées."],
+          linkText: "Confirmer",
+          linkUrl: "http://impots.gouv.fr.remboursement-dgfip.net/c",
+          clues: [
+            { part: "sender", why: "Un faux domaine." },
+            { part: "link", why: "Le vrai domaine, ici : remboursement-dgfip.net." },
+          ],
+          conclusion: "Signale-le.",
+        },
+      },
+    ]);
+  });
+
+  it("shows a placeholder when the clues are not written as JSON", () => {
+    const unquoted = MAIL.replace(/"part"/g, "part").replace(/"why"/g, "why");
+    expect(parseLesson(unquoted).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Boîte mail piégée" },
+    ]);
+  });
+});

@@ -121,6 +121,21 @@ Voici six messages. Pour chacun, décide : légitime ou hameçonnage ? Puis comp
 
 Remarque que les verdicts reposent moins sur l'apparence que sur **ce que le message demande** et sur **où mène le lien**.
 
+Le message 3, maintenant, tel qu'il arrive dans une messagerie. Clique sur chaque élément qui le trahit, et survole le bouton pour lire où il mène.
+
+<PhishingEmail
+  id="f1-phishing-dgfip"
+  title="Un remboursement inattendu"
+  fromName="DGFiP - Finances publiques"
+  fromAddress="remboursement@impots-gouv-fr.net"
+  subject="Remboursement de 238,40 € en attente : action requise sous 48 h"
+  body={["Bonjour,", "Après le dernier calcul de votre impôt, vous êtes éligible à un remboursement de 238,40 €.", "Pour le recevoir, confirmez vos coordonnées bancaires sous 48 h. Passé ce délai, le remboursement sera annulé.", "Cordialement, le service des remboursements"]}
+  linkText="Confirmer mes coordonnées"
+  linkUrl="http://impots.gouv.fr.remboursement-dgfip.net/confirmation"
+  clues={[{ "part": "sender", "why": "L'adresse se termine par impots-gouv-fr.net, un domaine que n'importe qui peut acheter. Le nom affiché, lui, ne prouve rien : on y écrit ce qu'on veut." }, { "part": "subject", "why": "Une somme précise, une action requise, un délai de 48 h : l'urgence est là pour que tu agisses avant de réfléchir." }, { "part": "body-3", "why": "L'administration ne demande jamais tes coordonnées bancaires par courriel, et un remboursement ne s'annule pas faute de clic." }, { "part": "link", "why": "Le lien mène à remboursement-dgfip.net : impots.gouv.fr n'est qu'un sous-domaine placé devant pour tromper l'œil. Le vrai domaine est ce qui précède le premier « / »." }]}
+  conclusion="Ne clique pas et ne réponds pas. Signale-le sur signal-spam.fr, puis supprime-le ; pour vérifier, ouvre toi-même impots.gouv.fr."
+/>
+
 Programme maintenant le réflexe de lecture d'adresse. `solution(url, domaine)` renvoie `True` si l'adresse mène bien au domaine officiel donné, ou à l'un de ses sous-domaines, et `False` sinon. Le code de départ propose une fonction `hote` à compléter, qui isole le nom de la machine. Pense à tous les pièges du tableau : la casse, le `@`, le port après `:`, les paramètres, et la différence entre `monameli.fr` et un vrai sous-domaine comme `assure.ameli.fr`.
 
 <PythonChallenge id="f1-phishing-domaine" title="Démasquer les faux domaines" description="Renvoie True si l'hôte de l'adresse est exactement le domaine officiel ou se termine par un point suivi de ce domaine ; False sinon." starterCode="def hote(url):

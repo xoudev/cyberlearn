@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
+import { PhishingEmailExercise } from "@/components/phishing-email";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import { glossaryHits } from "@/lib/glossary";
@@ -286,6 +287,8 @@ export function BlockView({
       );
     case "flaw":
       return <FindTheFlawExercise flaw={block.flaw} />;
+    case "phishing":
+      return <PhishingEmailExercise mail={block.mail} />;
     case "challenge":
       return (
         <View

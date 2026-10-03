@@ -3,7 +3,7 @@ import { quizProblem } from "./quizzes.js";
 import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
-import { parseChallengeTests, parseFindTheFlaw } from "@cyberlearn/types";
+import { parseChallengeTests, parseFindTheFlaw, parsePhishingEmail } from "@cyberlearn/types";
 import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
@@ -93,6 +93,7 @@ export const LESSON_COMPONENT_NAMES = [
   "Diagram",
   "PythonChallenge",
   "FindTheFlaw",
+  "PhishingEmail",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -125,6 +126,10 @@ function FindTheFlawStub(): null {
   return null;
 }
 STUBS.FindTheFlaw = FindTheFlawStub;
+function PhishingEmailStub(): null {
+  return null;
+}
+STUBS.PhishingEmail = PhishingEmailStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -198,7 +203,7 @@ function leadOf(source: string): string | null {
   return lead.trim() === "" ? null : lead;
 }
 
-/** The first misconfigured exercise (a Python challenge, a FindTheFlaw) in an element tree, or null. */
+/** The first misconfigured exercise (Python challenge, FindTheFlaw, PhishingEmail) in a tree, or null. */
 function firstChallengeProblem(node: ReactNode): string | null {
   if (Array.isArray(node)) {
     for (const child of node) {
@@ -210,7 +215,7 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (!isValidElement(node)) return null;
 
   // SAFETY: a React element's props are an object; these two are read, and a
-  // FindTheFlaw's whole object goes to its parser, which takes unknown.
+  // FindTheFlaw's or PhishingEmail's whole object goes to its parser, which takes unknown.
   const props = node.props as { tests?: unknown; children?: ReactNode };
   if (node.type === ChallengeStub) {
     const parsed = parseChallengeTests(props.tests);
@@ -219,6 +224,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === FindTheFlawStub) {
     const parsed = parseFindTheFlaw(props);
     if (!parsed.ok) return `Trouve la faille : ${parsed.problem}`;
+  }
+  if (node.type === PhishingEmailStub) {
+    const parsed = parsePhishingEmail(props);
+    if (!parsed.ok) return `Boîte mail piégée : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }
