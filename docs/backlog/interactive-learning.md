@@ -104,7 +104,7 @@ côté serveur. Son poids est à mesurer par un prototype.
 
 | # | Idée | Ce que ça apporte | Dépendance | Mobile |
 | --- | --- | --- | --- | --- |
-| 26 | **Glossaire** | Les termes techniques des leçons sont soulignés et leur définition s'affiche au survol, avec une page qui les regroupe. | Aucune | Oui (appui long) |
+| 26 | ~~**Glossaire**~~ | ~~Les termes techniques des leçons sont soulignés et leur définition s'affiche au survol, avec une page qui les regroupe.~~ Fait, PR #378 : 96 termes, `/glossaire`, écran Glossaire dans l'app. | Aucune | Oui (appui long) |
 | 27 | **Fiches de révision PDF** | Une fiche par module, générée à partir des récapitulatifs, avec `@react-pdf/renderer` qui sert déjà aux certificats. | Aucune | Oui |
 | 28 | **Examens blancs chronométrés** | Un examen par certification (LPIC-1 pour le parcours Linux, par exemple), avec un score par domaine. Déjà là : le chronomètre du vrai terminal (`timeLimitMinutes`, PR #369), qui minute l'épreuve pratique du parcours Linux. | Aucune | Oui |
 | 29 | **Mode hors ligne** | L'élève télécharge un module pour le lire sans réseau. | Aucune | App seule |
