@@ -37,6 +37,8 @@ import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
 import { FindTheFlaw } from "./_components/find-the-flaw";
 import { PhishingEmail } from "./_components/phishing-email";
+import { SqlInjectionLab } from "./_components/sql-injection-lab";
+import { SqlPlayground } from "./_components/sql-playground";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -60,6 +62,8 @@ const MDX_COMPONENTS = {
   PythonChallenge,
   FindTheFlaw,
   PhishingEmail,
+  SqlPlayground,
+  SqlInjectionLab,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

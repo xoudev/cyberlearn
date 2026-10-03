@@ -89,6 +89,24 @@ JSCPP.run(
 5. Run `bash scripts/verify-runtimes.sh` to confirm
 6. Commit `bundle.js` + `verify-runtimes.sh` + this file together
 
+## sql.js 1.14.2 (SQLite in WebAssembly)
+
+**Source**: npm registry, `sql.js@1.14.2` (MIT), files from `package/dist/`
+**Tarball SHA-256**: `9d491337e1850df39362be640c23f9751bf0fbd33fc232c2a580bb87b70d62fd`
+**Served at**: `/runtimes/sqljs/`
+**Used by**: `<SqlPlayground>` and `<SqlInjectionLab>` (`apps/web/lib/sql/sandbox.ts`)
+
+| File | Size | SHA-256 |
+|------|------|---------|
+| `worker.sql-wasm.js` | 49 972 B | `92a4031e278cdb20e5841296e0265b0e973f3190c30f2ec86fcb13bffa89ba5c` |
+| `sql-wasm.wasm` | 658 410 B | `38c14f6e379210bc942bdc4ebca44e7bfdb4318ecc1c72ca666a28fdce96670a` |
+
+**Total**: ~0.7 MB, loaded only when a learner runs a first query.
+
+The worker build runs SQLite off the page's thread: a query that never ends
+(a recursive CTE without a stop) is cut by terminating the worker, and the
+page never freezes. The worker finds `sql-wasm.wasm` next to itself.
+
 ## v86 0.5.462 and a Buildroot Linux image
 
 The real terminal of the Linux lessons (`<LinuxTerminal>`): an x86 emulator in

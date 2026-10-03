@@ -3,7 +3,13 @@ import { quizProblem } from "./quizzes.js";
 import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
-import { parseChallengeTests, parseFindTheFlaw, parsePhishingEmail } from "@cyberlearn/types";
+import {
+  parseChallengeTests,
+  parseFindTheFlaw,
+  parsePhishingEmail,
+  parseSqlInjectionLab,
+  parseSqlPlayground,
+} from "@cyberlearn/types";
 import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
@@ -94,6 +100,8 @@ export const LESSON_COMPONENT_NAMES = [
   "PythonChallenge",
   "FindTheFlaw",
   "PhishingEmail",
+  "SqlPlayground",
+  "SqlInjectionLab",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -130,6 +138,14 @@ function PhishingEmailStub(): null {
   return null;
 }
 STUBS.PhishingEmail = PhishingEmailStub;
+function SqlPlaygroundStub(): null {
+  return null;
+}
+STUBS.SqlPlayground = SqlPlaygroundStub;
+function SqlInjectionLabStub(): null {
+  return null;
+}
+STUBS.SqlInjectionLab = SqlInjectionLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -228,6 +244,14 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === PhishingEmailStub) {
     const parsed = parsePhishingEmail(props);
     if (!parsed.ok) return `Boîte mail piégée : ${parsed.problem}`;
+  }
+  if (node.type === SqlPlaygroundStub) {
+    const parsed = parseSqlPlayground(props);
+    if (!parsed.ok) return `Exercice SQL : ${parsed.problem}`;
+  }
+  if (node.type === SqlInjectionLabStub) {
+    const parsed = parseSqlInjectionLab(props);
+    if (!parsed.ok) return `Laboratoire d'injection SQL : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

@@ -83,6 +83,37 @@ describe("PhishingEmail", () => {
   });
 });
 
+describe("SqlPlayground and SqlInjectionLab", () => {
+  const lab = (query: string): string =>
+    '## Le formulaire\n\n<SqlInjectionLab id="l" schema={`CREATE TABLE users (id INTEGER, name TEXT);`} query="' +
+    query +
+    '" fields={[{ "name": "login", "label": "Identifiant" }]} goal="Entre." />';
+
+  it("accepts a playground and a lab whose fields all reach the query", async () => {
+    expect(
+      await checkLessonMdx(
+        '## Requêtes\n\n<SqlPlayground id="p" schema={`CREATE TABLE t (n INTEGER);`} expected={{ "rows": [[1]] }} />',
+      ),
+    ).toEqual({ ok: true });
+    expect(await checkLessonMdx(lab("SELECT id FROM users WHERE name = '{login}'"))).toEqual({
+      ok: true,
+    });
+  });
+
+  it("refuses a lab field the query never uses, and says which", async () => {
+    const r = await checkLessonMdx(lab("SELECT id FROM users"));
+    if (r.ok) throw new Error("accepted a field with nowhere to go");
+    expect(r.section).toBe("Le formulaire");
+    expect(r.message).toContain("Laboratoire d'injection SQL : la requête n'a pas de {login}");
+  });
+
+  it("refuses a playground without its schema", async () => {
+    const r = await checkLessonMdx('## Requêtes\n\n<SqlPlayground id="p" />');
+    if (r.ok) throw new Error("accepted a playground without a schema");
+    expect(r.message).toContain("Exercice SQL");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

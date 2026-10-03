@@ -49,6 +49,28 @@ La condition se lit maintenant `username = 'alice' OR 1=1`. En SQL, `OR` renvoie
 Le point clé : l'entrée n'a pas seulement changé une valeur, elle a changé la structure de la requête. Une apostrophe et un OR ont transformé un test d'identité en condition toujours vraie. C'est toute la différence entre une donnée et une instruction, et c'est exactement cette frontière que l'injection SQL fait sauter.
 </Callout>
 
+Essaie-le pour de vrai. Le formulaire ci-dessous envoie ses champs à une vraie base SQLite, qui tourne dans ton navigateur, avec le code du développeur pressé. La requête que la base reçoit s'affiche à chaque tentative : regarde ce que ton apostrophe y change.
+
+<SqlInjectionLab
+  id="sqli-login-bypass"
+  title="Le formulaire de connexion"
+  schema={`CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  username TEXT NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL
+);
+INSERT INTO users (username, password, role) VALUES
+  ('alice', 'secret123', 'user'),
+  ('bob', 'hunter2', 'user'),
+  ('admin', 'Zx9!kQ2#vT', 'admin'),
+  ('chloe', 'soleil2026', 'user');`}
+  query="SELECT id, username, role FROM users WHERE username = '{login}' AND password = '{password}'"
+  fields={[{ "name": "login", "label": "Identifiant" }, { "name": "password", "label": "Mot de passe", "secret": true }]}
+  goal="Connecte-toi sans connaître aucun mot de passe. Commence par un vrai compte (alice, secret123), puis tape la charge vue plus haut dans le champ Identifiant."
+  hint="Dans Identifiant : alice' OR 1=1 --  puis n'importe quoi dans le mot de passe."
+/>
+
 ## ce qu'un attaquant peut faire
 
 Contourner l'authentification, comme on vient de le voir, c'est déjà sérieux. Mais ce n'est qu'un début, parce que la même faille permet aussi de lire des données qui n'ont rien à voir avec la requête d'origine.
@@ -63,6 +85,36 @@ SELECT username, password FROM users;  -- on récupère login et mot de passe à
 ```
 
 La page croyait afficher un nom et un prix. Elle affiche maintenant des logins et des mots de passe, parce que le `UNION` a fait remonter le contenu d'une autre table dans les mêmes deux colonnes. De fil en aiguille, on liste les tables, on dump les comptes, on extrait la base entière. Selon les droits, ça peut même aller jusqu'à écrire des données ou lire des fichiers du serveur.
+
+Rejoue-le sur une vraie base. La requête de départ est celle de la page produit ; greffe-lui un `UNION` jusqu'à faire remonter les comptes de la table `users`.
+
+<SqlPlayground
+  id="sqli-union"
+  title="Une page produit qui en dit trop"
+  schema={`CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  price INTEGER NOT NULL
+);
+INSERT INTO products (id, name, price) VALUES
+  (10, 'Clavier mécanique', 89),
+  (11, 'Souris', 25);
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  username TEXT NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL
+);
+INSERT INTO users (username, password, role) VALUES
+  ('alice', 'secret123', 'user'),
+  ('bob', 'hunter2', 'user'),
+  ('admin', 'Zx9!kQ2#vT', 'admin'),
+  ('chloe', 'soleil2026', 'user');`}
+  starterQuery="SELECT name, price FROM products WHERE id = 10"
+  task="Fais afficher par cette requête le produit 10 et, dans les mêmes deux colonnes, l'identifiant et le mot de passe de chaque compte."
+  expected={{ "rows": [["Clavier mécanique", 89], ["alice", "secret123"], ["bob", "hunter2"], ["admin", "Zx9!kQ2#vT"], ["chloe", "soleil2026"]] }}
+  hint="Ajoute à la fin de la requête : UNION SELECT username, password FROM users"
+/>
 
 ## l'exploitation automatisée
 
@@ -120,6 +172,29 @@ def connexion(cursor, login, mot_de_passe):
   correct={1}
   explanation="Le login est collé dans le texte de la requête : avec alice' -- comme login, l'apostrophe referme la valeur et le reste, vérification du mot de passe comprise, passe en commentaire. Le ? ne protège que l'empreinte : chaque valeur venue de l'extérieur doit avoir son propre paramètre."
   hint="Toutes les valeurs de la requête passent-elles par un paramètre ?"
+/>
+
+Dernier exercice, sur le même formulaire. Ton `OR 1=1` t'ouvrait le premier compte venu ; vise cette fois le compte administrateur, sans son mot de passe. Une fois entré, passe en « Code corrigé » et rejoue exactement la même charge.
+
+<SqlInjectionLab
+  id="sqli-admin"
+  title="Le compte administrateur"
+  schema={`CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  username TEXT NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL
+);
+INSERT INTO users (username, password, role) VALUES
+  ('alice', 'secret123', 'user'),
+  ('bob', 'hunter2', 'user'),
+  ('admin', 'Zx9!kQ2#vT', 'admin'),
+  ('chloe', 'soleil2026', 'user');`}
+  query="SELECT id, username, role FROM users WHERE username = '{login}' AND password = '{password}'"
+  fields={[{ "name": "login", "label": "Identifiant" }, { "name": "password", "label": "Mot de passe", "secret": true }]}
+  goal="Entre dans le compte dont le rôle est admin, sans connaître son mot de passe. Puis passe en code corrigé et rejoue ta charge."
+  success={{ "column": "role", "equals": "admin" }}
+  hint="Le compte s'appelle admin. Il suffit de faire disparaître la vérification du mot de passe : un commentaire SQL commence par --."
 />
 
 <Quiz id="q-1" question="Dans le login 'alice OR 1=1 --', pourquoi la connexion réussit-elle sans le bon mot de passe ?" options={["Parce que le mot de passe est deviné par force brute", "Parce que OR 1=1 rend la condition WHERE toujours vraie et que -- met le reste en commentaire", "Parce que sqlmap a déjà volé le mot de passe", "Parce que la base est mal configurée en lecture seule"]} correct={1} />

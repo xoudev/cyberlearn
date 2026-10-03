@@ -55,6 +55,17 @@ export type Block =
       kind: "phishing";
       mail: PhishingEmail;
     }
+  | {
+      /**
+       * A SqlPlayground or a SqlInjectionLab: played on the site, where SQLite
+       * runs; the app shows what to do and the query in question.
+       */
+      kind: "sql";
+      lab: boolean;
+      title: string | null;
+      task: string | null;
+      query: string | null;
+    }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
 
@@ -268,7 +279,11 @@ type StringPropName =
   | "linkText"
   | "linkUrl"
   | "attachment"
-  | "conclusion";
+  | "conclusion"
+  | "task"
+  | "goal"
+  | "starterQuery"
+  | "query";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -276,7 +291,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -450,6 +465,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
         : { kind: "placeholder", label: "Boîte mail piégée" },
     );
   });
+  // SqlPlayground, SqlInjectionLab → a card: a real SQLite runs on the site
+  // only (docs/MOBILE_PARITY.md); the lesson still says what to practise.
+  text = replaceSelfClosing(text, "SqlPlayground", (tag, indent) =>
+    put({
+      kind: "sql",
+      lab: false,
+      title: stringProp(tag, "title", 0),
+      task: stringProp(tag, "task", 0),
+      query: stringProp(tag, "starterQuery", indent),
+    }),
+  );
+  text = replaceSelfClosing(text, "SqlInjectionLab", (tag, indent) =>
+    put({
+      kind: "sql",
+      lab: true,
+      title: stringProp(tag, "title", 0),
+      task: stringProp(tag, "goal", 0),
+      query: stringProp(tag, "query", indent),
+    }),
+  );
   // SimulatedTerminal → a native exercise card (commands to try + hints).
   const terminalToBlock = (tag: string): string =>
     put({

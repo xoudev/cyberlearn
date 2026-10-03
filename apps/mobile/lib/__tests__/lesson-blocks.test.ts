@@ -288,3 +288,43 @@ describe("PhishingEmail", () => {
     ]);
   });
 });
+
+describe("SqlPlayground and SqlInjectionLab", () => {
+  it("shows what to practise and the query, the database staying on the site", () => {
+    const lesson = [
+      "## Requêtes",
+      "",
+      "<SqlPlayground",
+      '  id="p"',
+      '  title="Une page produit"',
+      "  schema={`CREATE TABLE products (id INTEGER);`}",
+      '  starterQuery="SELECT name FROM products WHERE id = 10"',
+      '  task="Greffe un UNION."',
+      "/>",
+      "",
+      "<SqlInjectionLab",
+      '  id="l"',
+      "  schema={`CREATE TABLE users (id INTEGER);`}",
+      "  query=\"SELECT id FROM users WHERE username = '{login}'\"",
+      '  fields={[{ "name": "login", "label": "Identifiant" }]}',
+      '  goal="Entre sans mot de passe."',
+      "/>",
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "sql",
+        lab: false,
+        title: "Une page produit",
+        task: "Greffe un UNION.",
+        query: "SELECT name FROM products WHERE id = 10",
+      },
+      {
+        kind: "sql",
+        lab: true,
+        title: null,
+        task: "Entre sans mot de passe.",
+        query: "SELECT id FROM users WHERE username = '{login}'",
+      },
+    ]);
+  });
+});
