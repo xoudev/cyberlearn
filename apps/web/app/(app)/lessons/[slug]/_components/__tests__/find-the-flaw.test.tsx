@@ -25,7 +25,7 @@ const PROPS = {
 afterEach(cleanup);
 
 const line = (n: number): HTMLElement =>
-  screen.getByRole("button", { name: new RegExp(`^Ligne ${String(n)}\\b`) });
+  screen.getByRole("button", { name: (name) => name.startsWith(`Ligne ${String(n)} :`) });
 
 describe("FindTheFlaw", () => {
   it("asks for the line, and names nothing before it is found", () => {
