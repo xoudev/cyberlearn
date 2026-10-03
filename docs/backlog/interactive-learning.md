@@ -133,7 +133,7 @@ admin) s'applique aux solutions publiées.
 
 | # | Idée | Ce que ça apporte |
 | --- | --- | --- |
-| 35 | **Corriger le guide de rédaction** | Dans `docs/LESSON_AUTHORING_GUIDE.md` : la section 6 « Sécurité » liste les composants autorisés sans `<LinuxTerminal>`, et la section 2 donne encore le format de code `CL-LSN-XXX-VYY`, alors que le catalogue utilise 5 chiffres (`CL-LSN-01033-V01`). |
+| 35 | ~~**Corriger le guide de rédaction**~~ | ~~Dans `docs/LESSON_AUTHORING_GUIDE.md` : la section 6 « Sécurité » liste les composants autorisés sans `<LinuxTerminal>`, et la section 2 donne encore le format de code `CL-LSN-XXX-VYY`, alors que le catalogue utilise 5 chiffres (`CL-LSN-01033-V01`).~~ Fait, PR #373. |
 
 ## G. V2, si le site a de la demande (payant)
 
