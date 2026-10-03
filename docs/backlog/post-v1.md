@@ -30,7 +30,9 @@
 - ~~Endpoint /api/me/export~~ : résolu PR 2.4.A
 - ~~Endpoint /api/me/delete~~ : résolu PR 2.4.B
 - ~~Page UI /settings/data~~ : résolu PR 2.4.B.3
-- Job de suppression automatique des comptes inactifs (24 mois)
+- ~~Job de suppression automatique des comptes inactifs (24 mois)~~ : fait, PR #376.
+  `/api/cron/inactive-accounts` prévient par e-mail 30 jours avant (lien « Garder mon
+  compte »), puis efface avec `deleteAccount`. Les comptes administrateurs n'y passent pas.
 - ~~Job de purge automatique des logs (12 mois auth, 6 mois apps)~~ : fait, PR #375.
   `/api/cron/retention` purge chaque nuit le journal d'audit à 12 mois et les tickets
   (3 mois après résolution, 12 mois sans activité). Les logs d'authentification sont
