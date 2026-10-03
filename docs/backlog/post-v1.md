@@ -84,8 +84,9 @@ notes privées revient, créer un sous-dossier dédié gitignoré explicitement.
 ### Migration vers structured logger (Pino / Bunyan / etc.) - RÉSOLU
 
 Fait : Pino, via `@cyberlearn/lib/logger`. Détails et exceptions dans
-docs/security/logging.md, section « Logger structuré : Pino ». Restent le
-`requestId` propagé et le drain externe.
+docs/security/logging.md, section « Logger structuré : Pino ». Le `requestId`
+est propagé depuis la PR #377 (`requestLogger()`). Reste le drain externe, qui
+demande de choisir un fournisseur.
 
 Note d'origine :
 
