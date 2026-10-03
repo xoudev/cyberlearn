@@ -1,0 +1,3456 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 50,
+  "questions": [
+    {
+      "question": "Que désigne le mot Linux, au sens strict ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le noyau du système d'exploitation"
+        },
+        {
+          "id": "b",
+          "text": "Une distribution complète, avec ses logiciels"
+        },
+        {
+          "id": "c",
+          "text": "L'interpréteur de commandes bash"
+        },
+        {
+          "id": "d",
+          "text": "Un environnement de bureau graphique"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Linux est le noyau. Avec les outils du projet GNU et d'autres logiciels, il forme une distribution, comme Debian ou Fedora."
+    },
+    {
+      "question": "Quelle famille de distributions utilise les paquets .deb et la commande apt ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Red Hat, Fedora et Rocky Linux"
+        },
+        {
+          "id": "b",
+          "text": "Debian et ses dérivées, comme Ubuntu"
+        },
+        {
+          "id": "c",
+          "text": "Arch Linux et Manjaro"
+        },
+        {
+          "id": "d",
+          "text": "Alpine Linux"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La famille Red Hat utilise les paquets .rpm avec dnf ; Arch utilise pacman ; Alpine utilise apk."
+    },
+    {
+      "question": "L'invite du shell se termine par # au lieu de $. Que cela signale-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que la commande précédente a échoué"
+        },
+        {
+          "id": "b",
+          "text": "Que la session passe par SSH"
+        },
+        {
+          "id": "c",
+          "text": "Que le shell s'exécute avec les droits de root"
+        },
+        {
+          "id": "d",
+          "text": "Que le shell attend la suite d'un commentaire"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Par convention, # signale l'administrateur : chaque commande a alors tous les droits sur la machine."
+    },
+    {
+      "question": "Dans la commande ls -la /etc, que représente -la ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un argument qui désigne un dossier"
+        },
+        {
+          "id": "b",
+          "text": "Une variable d'environnement"
+        },
+        {
+          "id": "c",
+          "text": "Un sous-dossier de /etc"
+        },
+        {
+          "id": "d",
+          "text": "Deux options courtes regroupées, -l et -a"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les options courtes d'une lettre peuvent se regrouper derrière un seul tiret ; /etc est l'argument."
+    },
+    {
+      "question": "Quelle commande indique si cd est une commande interne du shell, un alias ou un programme ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "type cd"
+        },
+        {
+          "id": "b",
+          "text": "man cd"
+        },
+        {
+          "id": "c",
+          "text": "ls cd"
+        },
+        {
+          "id": "d",
+          "text": "echo cd"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "type dit comment le shell interprète un nom : commande interne, alias, fonction ou programme trouvé dans le PATH."
+    },
+    {
+      "question": "Dans une page de manuel affichée par man, comment chercher le mot recursive ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Appuyer sur Ctrl+F"
+        },
+        {
+          "id": "b",
+          "text": "Taper /recursive puis Entrée"
+        },
+        {
+          "id": "c",
+          "text": "Taper :find recursive"
+        },
+        {
+          "id": "d",
+          "text": "Quitter et lancer grep recursive"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "man affiche ses pages avec less : / lance une recherche, n passe à l'occurrence suivante."
+    },
+    {
+      "question": "Que fait Ctrl+R dans bash ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il recharge la configuration du shell"
+        },
+        {
+          "id": "b",
+          "text": "Il relance la dernière commande"
+        },
+        {
+          "id": "c",
+          "text": "Une recherche en arrière dans l'historique des commandes"
+        },
+        {
+          "id": "d",
+          "text": "Il efface la ligne en cours"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On tape un fragment de commande, et bash propose la plus récente qui le contient."
+    },
+    {
+      "question": "Que fait !! dans bash ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il inverse le code de retour de la commande"
+        },
+        {
+          "id": "b",
+          "text": "Il exécute la commande deux fois"
+        },
+        {
+          "id": "c",
+          "text": "Il commente la fin de la ligne"
+        },
+        {
+          "id": "d",
+          "text": "Il rappelle la dernière commande tapée"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "sudo !! relance ainsi la commande précédente avec sudo."
+    },
+    {
+      "question": "Pourquoi ne faut-il pas placer le dossier courant (.) au début du PATH ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un programme piégé, nommé comme une commande courante et déposé dans un dossier, serait exécuté à sa place"
+        },
+        {
+          "id": "b",
+          "text": "Le shell deviendrait beaucoup plus lent"
+        },
+        {
+          "id": "c",
+          "text": "Le PATH ne peut pas contenir de point"
+        },
+        {
+          "id": "d",
+          "text": "Les commandes de /usr/bin cesseraient de fonctionner"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un ls malveillant déposé dans /tmp serait lancé dès qu'on taperait ls dans ce dossier."
+    },
+    {
+      "question": "Quelle différence entre une variable du shell et une variable d'environnement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune, ce sont deux noms pour la même chose"
+        },
+        {
+          "id": "b",
+          "text": "Seule la variable d'environnement, exportée, est transmise aux programmes lancés depuis le shell"
+        },
+        {
+          "id": "c",
+          "text": "La variable d'environnement est réservée à root"
+        },
+        {
+          "id": "d",
+          "text": "La variable du shell survit aux redémarrages"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "export transforme une variable du shell en variable d'environnement, héritée par les processus enfants."
+    },
+    {
+      "question": "Comment rendre permanent, pour son compte, un ajout au PATH avec bash ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Taper export une seule fois"
+        },
+        {
+          "id": "b",
+          "text": "Le modifier dans /etc/passwd"
+        },
+        {
+          "id": "c",
+          "text": "L'écrire dans ~/.bashrc ou ~/.profile"
+        },
+        {
+          "id": "d",
+          "text": "Redémarrer le terminal"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une variable exportée dans le terminal disparaît avec lui ; les fichiers de démarrage la recréent à chaque session."
+    },
+    {
+      "question": "Dans vim, comment enregistrer et quitter ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ctrl+S"
+        },
+        {
+          "id": "b",
+          "text": "Ctrl+X"
+        },
+        {
+          "id": "c",
+          "text": ":q!"
+        },
+        {
+          "id": "d",
+          "text": "Échap, puis :wq"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": ":q! quitte au contraire sans enregistrer les modifications."
+    },
+    {
+      "question": "Dans vim, que fait :q! ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il quitte sans enregistrer les modifications"
+        },
+        {
+          "id": "b",
+          "text": "Il enregistre et quitte"
+        },
+        {
+          "id": "c",
+          "text": "Il force l'enregistrement d'un fichier en lecture seule"
+        },
+        {
+          "id": "d",
+          "text": "Il ouvre un nouveau fichier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le point d'exclamation force l'action : ici, abandonner les modifications."
+    },
+    {
+      "question": "Que fait la touche Tab dans bash ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle insère une indentation"
+        },
+        {
+          "id": "b",
+          "text": "Elle complète le nom de commande ou de fichier en cours de saisie"
+        },
+        {
+          "id": "c",
+          "text": "Elle exécute la commande"
+        },
+        {
+          "id": "d",
+          "text": "Elle affiche l'historique"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Deux appuis affichent les complétions possibles quand il y en a plusieurs."
+    },
+    {
+      "question": "Dans quel dossier se trouvent les fichiers de configuration du système ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "/usr"
+        },
+        {
+          "id": "b",
+          "text": "/var"
+        },
+        {
+          "id": "c",
+          "text": "/etc"
+        },
+        {
+          "id": "d",
+          "text": "/bin"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "/usr contient les programmes et leurs données, /var les données variables, /bin les commandes de base."
+    },
+    {
+      "question": "Quel dossier contient les données variables, comme les journaux et les files d'attente ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "/etc"
+        },
+        {
+          "id": "b",
+          "text": "/usr"
+        },
+        {
+          "id": "c",
+          "text": "/opt"
+        },
+        {
+          "id": "d",
+          "text": "/var"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les journaux sont dans /var/log, les files d'impression et de courrier dans /var/spool."
+    },
+    {
+      "question": "Que fait cd - ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il ramène au dossier précédent"
+        },
+        {
+          "id": "b",
+          "text": "Il ramène au dossier personnel"
+        },
+        {
+          "id": "c",
+          "text": "Il remonte au dossier parent"
+        },
+        {
+          "id": "d",
+          "text": "Il va à la racine"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "cd seul ramène au dossier personnel, cd .. au dossier parent."
+    },
+    {
+      "question": "Que fait cp -r source destination ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il renomme le dossier"
+        },
+        {
+          "id": "b",
+          "text": "Il copie un dossier et tout son contenu"
+        },
+        {
+          "id": "c",
+          "text": "Il copie en lecture seule"
+        },
+        {
+          "id": "d",
+          "text": "Il copie puis supprime l'original"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "-r, ou -R, rend la copie récursive ; -a conserve en plus droits, dates et liens."
+    },
+    {
+      "question": "Que tente la commande rm -rf \"$DOSSIER\"/* si la variable DOSSIER est vide ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rien, la commande est ignorée"
+        },
+        {
+          "id": "b",
+          "text": "De vider le dossier courant"
+        },
+        {
+          "id": "c",
+          "text": "D'effacer tout le contenu de la racine /"
+        },
+        {
+          "id": "d",
+          "text": "Elle provoque une erreur de syntaxe"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le chemin devient /* : on vérifie toujours une variable avant un rm, et set -u arrête un script sur une variable non définie."
+    },
+    {
+      "question": "Que désigne le joker *.log ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les fichiers dont le contenu contient log"
+        },
+        {
+          "id": "b",
+          "text": "Tous les fichiers .log de toute l'arborescence"
+        },
+        {
+          "id": "c",
+          "text": "Un fichier nommé littéralement *.log"
+        },
+        {
+          "id": "d",
+          "text": "Les noms du dossier courant qui se terminent par .log"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est le shell qui développe le joker, avant de lancer la commande, et seulement dans le dossier indiqué."
+    },
+    {
+      "question": "Que produit mkdir -p projet/{doc,src,test} ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trois dossiers : projet/doc, projet/src et projet/test"
+        },
+        {
+          "id": "b",
+          "text": "Un dossier nommé {doc,src,test}"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur, les accolades sont interdites"
+        },
+        {
+          "id": "d",
+          "text": "Trois fichiers vides"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le développement des accolades produit trois arguments ; -p crée aussi le dossier parent au besoin."
+    },
+    {
+      "question": "Quelle différence entre un lien physique et un lien symbolique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune, seule la commande diffère"
+        },
+        {
+          "id": "b",
+          "text": "Le lien physique est un autre nom pour le même inode ; le lien symbolique est un fichier qui contient un chemin"
+        },
+        {
+          "id": "c",
+          "text": "Le lien symbolique est une copie du fichier"
+        },
+        {
+          "id": "d",
+          "text": "Seul le lien physique peut viser un autre système de fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "C'est l'inverse : un lien physique reste dans le même système de fichiers, un lien symbolique peut viser n'importe où."
+    },
+    {
+      "question": "Que devient un lien symbolique quand on supprime sa cible ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il est supprimé automatiquement"
+        },
+        {
+          "id": "b",
+          "text": "Il garde une copie du contenu"
+        },
+        {
+          "id": "c",
+          "text": "Il devient cassé : il désigne un chemin qui n'existe plus"
+        },
+        {
+          "id": "d",
+          "text": "Il recrée la cible"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "ls -l le montre souvent en rouge ; find -xtype l retrouve les liens cassés."
+    },
+    {
+      "question": "Quelle commande trouve les fichiers de plus de 100 Mo sous /var ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "locate /var +100M"
+        },
+        {
+          "id": "b",
+          "text": "ls -R /var --size 100M"
+        },
+        {
+          "id": "c",
+          "text": "grep -r 100M /var"
+        },
+        {
+          "id": "d",
+          "text": "find /var -type f -size +100M"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "find teste chaque fichier : -type f pour les fichiers ordinaires, -size +100M pour la taille."
+    },
+    {
+      "question": "Pourquoi locate peut-il ignorer un fichier créé il y a cinq minutes ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il cherche dans une base de noms mise à jour périodiquement par updatedb"
+        },
+        {
+          "id": "b",
+          "text": "Il ignore les nouveaux fichiers par sécurité"
+        },
+        {
+          "id": "c",
+          "text": "Il ne cherche que dans /usr"
+        },
+        {
+          "id": "d",
+          "text": "Il exige les droits de root"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "find parcourt le disque en direct ; locate est rapide parce qu'il ne le fait pas."
+    },
+    {
+      "question": "Que fait tar czf sauvegarde.tar.gz dossier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il extrait l'archive dans dossier"
+        },
+        {
+          "id": "b",
+          "text": "Il crée une archive du dossier, compressée avec gzip"
+        },
+        {
+          "id": "c",
+          "text": "Il liste le contenu de l'archive"
+        },
+        {
+          "id": "d",
+          "text": "Il chiffre le dossier"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "c crée, z compresse avec gzip, f désigne le fichier de l'archive."
+    },
+    {
+      "question": "Comment lister le contenu d'une archive .tar.gz sans l'extraire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "tar xzf archive.tar.gz"
+        },
+        {
+          "id": "b",
+          "text": "tar czf archive.tar.gz"
+        },
+        {
+          "id": "c",
+          "text": "tar tzf archive.tar.gz"
+        },
+        {
+          "id": "d",
+          "text": "gzip -d archive.tar.gz"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "t liste ; x extrairait, c créerait une nouvelle archive."
+    },
+    {
+      "question": "Que montre la commande stat fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Son contenu"
+        },
+        {
+          "id": "b",
+          "text": "Seulement son type"
+        },
+        {
+          "id": "c",
+          "text": "Les processus qui l'utilisent"
+        },
+        {
+          "id": "d",
+          "text": "Ses métadonnées : taille, droits, propriétaire, inode et dates"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Parmi les dates, mtime change avec le contenu, ctime avec les métadonnées."
+    },
+    {
+      "question": "Que fait commande 2> erreurs.txt ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle envoie la sortie d'erreur dans erreurs.txt"
+        },
+        {
+          "id": "b",
+          "text": "Elle envoie la sortie standard dans erreurs.txt"
+        },
+        {
+          "id": "c",
+          "text": "Elle envoie les deux sorties dans erreurs.txt"
+        },
+        {
+          "id": "d",
+          "text": "Elle lance la commande deux fois"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le descripteur 2 est la sortie d'erreur ; 1, la sortie standard, s'écrit > tout court."
+    },
+    {
+      "question": "Que fait commande > sortie.txt 2>&1 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle laisse les erreurs à l'écran"
+        },
+        {
+          "id": "b",
+          "text": "Elle envoie la sortie standard et la sortie d'erreur dans sortie.txt"
+        },
+        {
+          "id": "c",
+          "text": "Elle envoie seulement les erreurs dans sortie.txt"
+        },
+        {
+          "id": "d",
+          "text": "Elle crée deux fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "2>&1 redirige l'erreur là où va déjà la sortie standard ; l'ordre compte."
+    },
+    {
+      "question": "Quelle différence entre > et >> ?",
+      "options": [
+        {
+          "id": "a",
+          "text": ">> écrase le fichier, > ajoute à sa fin"
+        },
+        {
+          "id": "b",
+          "text": ">> est réservé aux erreurs"
+        },
+        {
+          "id": "c",
+          "text": "> écrase le fichier, >> ajoute à sa fin"
+        },
+        {
+          "id": "d",
+          "text": "Aucune"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un > de trop sur un journal efface tout son historique."
+    },
+    {
+      "question": "Dans le tube a | b, que reçoit la commande b ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les erreurs de a"
+        },
+        {
+          "id": "b",
+          "text": "Les arguments de a"
+        },
+        {
+          "id": "c",
+          "text": "Le code de retour de a"
+        },
+        {
+          "id": "d",
+          "text": "La sortie standard de a, sur son entrée standard"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les erreurs de a vont toujours à l'écran, sauf redirection."
+    },
+    {
+      "question": "Que fait grep -v motif fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il affiche les lignes qui ne contiennent pas le motif"
+        },
+        {
+          "id": "b",
+          "text": "Il affiche plus de détails"
+        },
+        {
+          "id": "c",
+          "text": "Il affiche sa version"
+        },
+        {
+          "id": "d",
+          "text": "Il compte les lignes trouvées"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "-v inverse la sélection ; -c compte, -i ignore la casse."
+    },
+    {
+      "question": "Que fait grep -r motif /etc ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il cherche le motif à l'envers"
+        },
+        {
+          "id": "b",
+          "text": "Il cherche le motif dans tous les fichiers sous /etc, récursivement"
+        },
+        {
+          "id": "c",
+          "text": "Il exige les droits de root"
+        },
+        {
+          "id": "d",
+          "text": "Il remplace le motif"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Ajouter -l n'affiche que les noms des fichiers qui le contiennent."
+    },
+    {
+      "question": "Dans une expression régulière, que désigne ^erreur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les lignes qui se terminent par erreur"
+        },
+        {
+          "id": "b",
+          "text": "Les lignes qui ne contiennent pas erreur"
+        },
+        {
+          "id": "c",
+          "text": "Les lignes qui commencent par erreur"
+        },
+        {
+          "id": "d",
+          "text": "Le mot erreur en majuscules"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "^ ancre le motif en début de ligne, $ en fin de ligne."
+    },
+    {
+      "question": "Quelle commande compte les lignes d'un fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "cat -n fichier"
+        },
+        {
+          "id": "b",
+          "text": "count fichier"
+        },
+        {
+          "id": "c",
+          "text": "grep -n fichier"
+        },
+        {
+          "id": "d",
+          "text": "wc -l fichier"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "wc compte lignes, mots et octets ; -l ne garde que les lignes."
+    },
+    {
+      "question": "Pourquoi écrire sort | uniq -c plutôt que uniq -c seul ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "uniq ne regroupe que les lignes identiques qui se suivent"
+        },
+        {
+          "id": "b",
+          "text": "uniq trie dans le mauvais ordre"
+        },
+        {
+          "id": "c",
+          "text": "sort accélère uniq sans rien changer au résultat"
+        },
+        {
+          "id": "d",
+          "text": "uniq -c exige une entrée triée par la loi"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Sans tri préalable, deux lignes identiques séparées sont comptées à part."
+    },
+    {
+      "question": "Que fait cut -d: -f1 /etc/passwd ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il supprime la première ligne"
+        },
+        {
+          "id": "b",
+          "text": "Il affiche le premier champ de chaque ligne : les noms des comptes"
+        },
+        {
+          "id": "c",
+          "text": "Il affiche les mots de passe"
+        },
+        {
+          "id": "d",
+          "text": "Il compte les comptes"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "-d fixe le séparateur, ici les deux-points ; -f choisit les champs."
+    },
+    {
+      "question": "Que fait sed 's/ancien/nouveau/g' fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il modifie le fichier lui-même"
+        },
+        {
+          "id": "b",
+          "text": "Il ne remplace que la première occurrence du fichier"
+        },
+        {
+          "id": "c",
+          "text": "Il affiche le fichier en remplaçant toutes les occurrences, sans modifier le fichier"
+        },
+        {
+          "id": "d",
+          "text": "Il supprime les lignes qui contiennent ancien"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "g remplace toutes les occurrences de chaque ligne ; -i modifierait le fichier."
+    },
+    {
+      "question": "Quelle option de sed modifie le fichier lui-même ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "-e"
+        },
+        {
+          "id": "b",
+          "text": "-n"
+        },
+        {
+          "id": "c",
+          "text": "-s"
+        },
+        {
+          "id": "d",
+          "text": "-i"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "-i écrit le résultat à la place de l'original ; une copie de sécurité est prudente avant."
+    },
+    {
+      "question": "Dans un programme awk, que représente $3 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le troisième champ de la ligne en cours"
+        },
+        {
+          "id": "b",
+          "text": "La troisième ligne du fichier"
+        },
+        {
+          "id": "c",
+          "text": "La variable 3 du shell"
+        },
+        {
+          "id": "d",
+          "text": "Les trois premiers caractères"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "$0 est la ligne entière, NF le nombre de champs, NR le numéro de la ligne."
+    },
+    {
+      "question": "Que fait diff -u ancien nouveau ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il fusionne les deux fichiers"
+        },
+        {
+          "id": "b",
+          "text": "Il affiche les différences au format unifié, que patch sait appliquer"
+        },
+        {
+          "id": "c",
+          "text": "Il copie ancien sur nouveau"
+        },
+        {
+          "id": "d",
+          "text": "Il compare seulement les tailles"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les lignes retirées commencent par -, les lignes ajoutées par +."
+    },
+    {
+      "question": "Où sont rangées les empreintes des mots de passe des comptes ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Dans /etc/passwd, lisible par tous"
+        },
+        {
+          "id": "b",
+          "text": "Dans /etc/group"
+        },
+        {
+          "id": "c",
+          "text": "Dans /etc/shadow, lisible par root seul"
+        },
+        {
+          "id": "d",
+          "text": "Dans le dossier personnel de chaque compte"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "/etc/passwd reste lisible par tous, et ne contient plus qu'un x à la place du mot de passe."
+    },
+    {
+      "question": "Que signifient les droits rwxr-x--- ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Lecture pour tous, écriture pour le propriétaire"
+        },
+        {
+          "id": "b",
+          "text": "Tout pour tout le monde sauf le groupe"
+        },
+        {
+          "id": "c",
+          "text": "Exécution seule pour tous"
+        },
+        {
+          "id": "d",
+          "text": "Tout pour le propriétaire, lecture et exécution pour le groupe, rien pour les autres"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Trois triplets : propriétaire, groupe, autres. En octal : 750."
+    },
+    {
+      "question": "Quel mode numérique correspond aux droits rw-r----- ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "640"
+        },
+        {
+          "id": "b",
+          "text": "644"
+        },
+        {
+          "id": "c",
+          "text": "600"
+        },
+        {
+          "id": "d",
+          "text": "750"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "r vaut 4, w vaut 2, x vaut 1 : rw- fait 6, r-- fait 4, --- fait 0."
+    },
+    {
+      "question": "Sur un dossier, que permet le droit x ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "D'exécuter le dossier comme un programme"
+        },
+        {
+          "id": "b",
+          "text": "D'y entrer et d'accéder aux fichiers qu'il contient"
+        },
+        {
+          "id": "c",
+          "text": "De lister son contenu"
+        },
+        {
+          "id": "d",
+          "text": "De le supprimer"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Lister demande r ; créer ou supprimer dedans demande w et x."
+    },
+    {
+      "question": "Avec un umask de 027, quels droits reçoit un nouveau fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "750"
+        },
+        {
+          "id": "b",
+          "text": "027"
+        },
+        {
+          "id": "c",
+          "text": "640"
+        },
+        {
+          "id": "d",
+          "text": "644"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un fichier part de 666, dont l'umask retire des droits : 666 moins 027 donne 640. Un dossier partirait de 777 et donnerait 750."
+    },
+    {
+      "question": "Que fait le bit setuid sur un programme ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il empêche quiconque de l'exécuter"
+        },
+        {
+          "id": "b",
+          "text": "Il le rend invisible"
+        },
+        {
+          "id": "c",
+          "text": "Il le lance au démarrage"
+        },
+        {
+          "id": "d",
+          "text": "Le programme s'exécute avec les droits de son propriétaire, et non de celui qui le lance"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est ainsi que passwd modifie /etc/shadow. Chaque programme setuid root est une cible pour un attaquant."
+    },
+    {
+      "question": "À quoi sert le sticky bit sur /tmp ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Chacun ne peut supprimer ou renommer que ses propres fichiers"
+        },
+        {
+          "id": "b",
+          "text": "Il chiffre les fichiers temporaires"
+        },
+        {
+          "id": "c",
+          "text": "Il les efface au redémarrage"
+        },
+        {
+          "id": "d",
+          "text": "Il interdit l'écriture à tous"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Sans lui, tout utilisateur pourrait supprimer les fichiers des autres dans ce dossier ouvert à tous."
+    },
+    {
+      "question": "Que fait usermod -aG docker alice ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il remplace tous les groupes d'alice par docker"
+        },
+        {
+          "id": "b",
+          "text": "Il ajoute alice au groupe docker, sans la retirer de ses autres groupes"
+        },
+        {
+          "id": "c",
+          "text": "Il crée le groupe docker"
+        },
+        {
+          "id": "d",
+          "text": "Il retire alice du groupe docker"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sans -a, usermod -G remplacerait la liste des groupes secondaires."
+    },
+    {
+      "question": "Pourquoi préférer sudo au partage du mot de passe de root ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "sudo est plus rapide"
+        },
+        {
+          "id": "b",
+          "text": "root ne peut pas avoir de mot de passe"
+        },
+        {
+          "id": "c",
+          "text": "Chaque action est attribuée à une personne et journalisée, et les droits peuvent être limités"
+        },
+        {
+          "id": "d",
+          "text": "sudo évite toute erreur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Avec un mot de passe root partagé, personne ne sait qui a fait quoi, et un départ oblige à le changer partout."
+    },
+    {
+      "question": "Comment désactiver un compte sans le supprimer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Supprimer son dossier personnel"
+        },
+        {
+          "id": "b",
+          "text": "Mettre son dossier en 000"
+        },
+        {
+          "id": "c",
+          "text": "Retirer son nom de /etc/group"
+        },
+        {
+          "id": "d",
+          "text": "Le verrouiller avec usermod -L et le faire expirer avec chage -E 0"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le compte et ses fichiers restent, mais plus aucune session ne peut s'ouvrir, même avec une clé SSH."
+    },
+    {
+      "question": "Que permet une ACL que les droits classiques ne permettent pas ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Donner des droits précis à un utilisateur ou à un groupe supplémentaire"
+        },
+        {
+          "id": "b",
+          "text": "Chiffrer un fichier"
+        },
+        {
+          "id": "c",
+          "text": "Cacher un fichier à root"
+        },
+        {
+          "id": "d",
+          "text": "Contourner les droits du propriétaire"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "setfacl -m u:auditrice:r fichier, par exemple ; getfacl les affiche, et ls -l montre un + ."
+    },
+    {
+      "question": "Quelle commande modifie la configuration de sudo en toute sécurité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "nano /etc/sudoers"
+        },
+        {
+          "id": "b",
+          "text": "visudo"
+        },
+        {
+          "id": "c",
+          "text": "echo ... >> /etc/sudoers"
+        },
+        {
+          "id": "d",
+          "text": "chmod 777 /etc/sudoers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "visudo vérifie la syntaxe avant d'enregistrer : une erreur dans sudoers peut priver tout le monde de sudo."
+    },
+    {
+      "question": "Que fait chown alice:projets rapport.txt ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il copie le fichier pour alice"
+        },
+        {
+          "id": "b",
+          "text": "Il ajoute alice au groupe projets"
+        },
+        {
+          "id": "c",
+          "text": "Il donne le fichier à alice et au groupe projets"
+        },
+        {
+          "id": "d",
+          "text": "Il change les droits en lecture seule"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "chgrp ne change que le groupe ; chown peut changer les deux."
+    },
+    {
+      "question": "À quoi servent les limites de PAM, dans /etc/security/limits.conf ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Stocker les mots de passe"
+        },
+        {
+          "id": "b",
+          "text": "Définir les droits des fichiers"
+        },
+        {
+          "id": "c",
+          "text": "Planifier des tâches"
+        },
+        {
+          "id": "d",
+          "text": "Fixer des limites de ressources par compte ou par groupe, comme le nombre de processus ou de fichiers ouverts"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Elles bornent, par exemple, ce qu'un compte compromis ou un programme emballé peut consommer."
+    },
+    {
+      "question": "Que montre ps aux ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tous les processus de la machine, avec leur propriétaire, leur part de processeur et de mémoire"
+        },
+        {
+          "id": "b",
+          "text": "Les services activés au démarrage"
+        },
+        {
+          "id": "c",
+          "text": "Les fichiers ouverts"
+        },
+        {
+          "id": "d",
+          "text": "Les connexions réseau"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "a et x incluent les processus des autres et ceux sans terminal ; u ajoute les colonnes utiles."
+    },
+    {
+      "question": "Quel processus porte le numéro 1 sur une distribution moderne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "bash"
+        },
+        {
+          "id": "b",
+          "text": "systemd"
+        },
+        {
+          "id": "c",
+          "text": "le noyau"
+        },
+        {
+          "id": "d",
+          "text": "sshd"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le noyau lance un premier processus, systemd, qui démarre tout le reste."
+    },
+    {
+      "question": "Une charge moyenne de 4,0 sur une machine à quatre cœurs signifie :",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que le processeur est utilisé à 4 %"
+        },
+        {
+          "id": "b",
+          "text": "Qu'une panne est imminente"
+        },
+        {
+          "id": "c",
+          "text": "Qu'il y a en moyenne autant de tâches prêtes ou en cours que de cœurs : la machine est pleinement occupée"
+        },
+        {
+          "id": "d",
+          "text": "Qu'exactement quatre processus tournent"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La charge se lit toujours par rapport au nombre de cœurs ; nproc le donne."
+    },
+    {
+      "question": "Quelle différence entre SIGTERM et SIGKILL ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "SIGKILL peut être ignoré, SIGTERM non"
+        },
+        {
+          "id": "c",
+          "text": "SIGTERM redémarre le processus"
+        },
+        {
+          "id": "d",
+          "text": "SIGTERM demande l'arrêt et peut être intercepté ; SIGKILL arrête le processus sans lui laisser le temps de rien"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "On envoie SIGTERM d'abord : le programme ferme proprement ses fichiers. SIGKILL est le dernier recours."
+    },
+    {
+      "question": "Quel signal envoie kill PID, sans autre option ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "SIGTERM, le numéro 15"
+        },
+        {
+          "id": "b",
+          "text": "SIGKILL, le numéro 9"
+        },
+        {
+          "id": "c",
+          "text": "SIGHUP, le numéro 1"
+        },
+        {
+          "id": "d",
+          "text": "SIGINT, le numéro 2"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "kill -9 PID enverrait SIGKILL."
+    },
+    {
+      "question": "Que fait Ctrl+Z sur un programme au premier plan ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il le termine"
+        },
+        {
+          "id": "b",
+          "text": "Il le suspend"
+        },
+        {
+          "id": "c",
+          "text": "Il ferme le terminal"
+        },
+        {
+          "id": "d",
+          "text": "Il le place en arrière-plan en le laissant tourner"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le programme suspendu reprend au premier plan avec fg, ou en arrière-plan avec bg."
+    },
+    {
+      "question": "Comment relancer en arrière-plan une tâche suspendue par Ctrl+Z ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "fg"
+        },
+        {
+          "id": "b",
+          "text": "jobs"
+        },
+        {
+          "id": "c",
+          "text": "bg"
+        },
+        {
+          "id": "d",
+          "text": "nohup"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "jobs liste les tâches du shell, fg en ramène une au premier plan."
+    },
+    {
+      "question": "À quoi sert nohup ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À baisser sa priorité"
+        },
+        {
+          "id": "b",
+          "text": "À l'empêcher d'écrire sur le disque"
+        },
+        {
+          "id": "c",
+          "text": "À la relancer si elle échoue"
+        },
+        {
+          "id": "d",
+          "text": "À laisser une commande tourner après la fermeture du terminal, en ignorant SIGHUP"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Pour une longue tâche interactive, tmux ou screen offrent en plus de retrouver la session."
+    },
+    {
+      "question": "Que signifie une valeur nice de 19 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La priorité la plus faible : le processus cède le processeur aux autres"
+        },
+        {
+          "id": "b",
+          "text": "La priorité la plus forte"
+        },
+        {
+          "id": "c",
+          "text": "Un processus temps réel"
+        },
+        {
+          "id": "d",
+          "text": "Un processus suspendu"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les valeurs vont de -20, la plus prioritaire, à 19."
+    },
+    {
+      "question": "Qui peut abaisser la valeur nice d'un processus, c'est-à-dire augmenter sa priorité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tout utilisateur"
+        },
+        {
+          "id": "b",
+          "text": "Seulement root"
+        },
+        {
+          "id": "c",
+          "text": "Le propriétaire du processus"
+        },
+        {
+          "id": "d",
+          "text": "Personne, c'est impossible"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un utilisateur ordinaire peut seulement rendre ses processus plus gentils, pas plus prioritaires."
+    },
+    {
+      "question": "Dans la sortie de free -h, quelle colonne indique la mémoire réellement disponible pour de nouveaux programmes ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "free"
+        },
+        {
+          "id": "b",
+          "text": "used"
+        },
+        {
+          "id": "c",
+          "text": "available"
+        },
+        {
+          "id": "d",
+          "text": "shared"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "free ignore le cache, que le noyau libère à la demande ; available en tient compte."
+    },
+    {
+      "question": "df montre un disque plein, mais du ne trouve pas les fichiers responsables. Cause fréquente ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un défaut de la commande du"
+        },
+        {
+          "id": "b",
+          "text": "Un disque en lecture seule"
+        },
+        {
+          "id": "c",
+          "text": "Trop de dossiers vides"
+        },
+        {
+          "id": "d",
+          "text": "Un fichier supprimé mais encore ouvert par un processus"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La place n'est rendue qu'à la fermeture du fichier ; lsof +L1 retrouve le processus, qu'on redémarre."
+    },
+    {
+      "question": "Que contient le dossier /proc/PID/ ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Des informations sur le processus, fournies en direct par le noyau"
+        },
+        {
+          "id": "b",
+          "text": "Une copie du programme sur le disque"
+        },
+        {
+          "id": "c",
+          "text": "Les journaux du processus"
+        },
+        {
+          "id": "d",
+          "text": "Ses fichiers de configuration"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "cmdline, status, fd, environ : /proc n'existe qu'en mémoire."
+    },
+    {
+      "question": "Qu'est-ce qu'un processus zombie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un processus bloqué en attente du disque"
+        },
+        {
+          "id": "b",
+          "text": "Un processus terminé dont le parent n'a pas encore lu le code de retour"
+        },
+        {
+          "id": "c",
+          "text": "Un logiciel malveillant caché"
+        },
+        {
+          "id": "d",
+          "text": "Un processus qui consomme tout le processeur"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Il n'occupe plus qu'une ligne dans la table des processus ; c'est son parent qu'il faut corriger."
+    },
+    {
+      "question": "Quelle différence entre apt update et apt upgrade ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "update installe, upgrade vérifie"
+        },
+        {
+          "id": "c",
+          "text": "update rafraîchit la liste des paquets disponibles ; upgrade installe les nouvelles versions"
+        },
+        {
+          "id": "d",
+          "text": "upgrade ne concerne que le noyau"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On lance update avant upgrade, sinon apt ignore les versions publiées depuis le dernier rafraîchissement."
+    },
+    {
+      "question": "Que fait apt purge par rapport à apt remove ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il supprime aussi les données des utilisateurs"
+        },
+        {
+          "id": "b",
+          "text": "Il vide le cache d'apt"
+        },
+        {
+          "id": "c",
+          "text": "Il interdit de réinstaller le paquet"
+        },
+        {
+          "id": "d",
+          "text": "Il supprime aussi les fichiers de configuration du paquet"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "remove laisse la configuration, utile pour une réinstallation ; purge ne laisse rien."
+    },
+    {
+      "question": "Sur Debian, quelle commande indique à quel paquet appartient un fichier installé ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "dpkg -S /chemin/du/fichier"
+        },
+        {
+          "id": "b",
+          "text": "apt show fichier"
+        },
+        {
+          "id": "c",
+          "text": "dpkg -l fichier"
+        },
+        {
+          "id": "d",
+          "text": "apt search fichier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un fichier qu'aucun paquet ne revendique a été installé à la main."
+    },
+    {
+      "question": "Quel gestionnaire de paquets joue le rôle d'apt sur Fedora et Red Hat ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "pacman"
+        },
+        {
+          "id": "b",
+          "text": "dnf"
+        },
+        {
+          "id": "c",
+          "text": "apk"
+        },
+        {
+          "id": "d",
+          "text": "emerge"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "pacman est celui d'Arch, apk celui d'Alpine, emerge celui de Gentoo."
+    },
+    {
+      "question": "Pourquoi les dépôts de paquets sont-ils signés ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour les compresser"
+        },
+        {
+          "id": "b",
+          "text": "Pour accélérer les téléchargements"
+        },
+        {
+          "id": "c",
+          "text": "Pour vérifier que les paquets viennent bien de l'éditeur et n'ont pas été modifiés"
+        },
+        {
+          "id": "d",
+          "text": "Pour les rendre payants"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un miroir compromis ne peut pas produire de signature valide sans la clé de l'éditeur."
+    },
+    {
+      "question": "Comment ajouter proprement un dépôt tiers sur Debian ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Désactiver la vérification des signatures"
+        },
+        {
+          "id": "b",
+          "text": "Ajouter la clé à toutes les sources avec apt-key"
+        },
+        {
+          "id": "c",
+          "text": "Télécharger les paquets à la main"
+        },
+        {
+          "id": "d",
+          "text": "Ranger sa clé dans un fichier dédié, comme /etc/apt/keyrings, et l'associer au seul dépôt avec signed-by"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une clé réservée à son dépôt ne peut pas servir à signer des paquets se faisant passer pour ceux de Debian."
+    },
+    {
+      "question": "Que fait apt-mark hold paquet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il empêche ce paquet d'être mis à jour"
+        },
+        {
+          "id": "b",
+          "text": "Il le supprime à la prochaine mise à jour"
+        },
+        {
+          "id": "c",
+          "text": "Il le marque comme installé à la main"
+        },
+        {
+          "id": "d",
+          "text": "Il le télécharge sans l'installer"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Utile pour bloquer temporairement une version ; à noter dans la documentation, et à lever ensuite."
+    },
+    {
+      "question": "Après la mise à jour du noyau, que faut-il faire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rien, il est utilisé immédiatement"
+        },
+        {
+          "id": "b",
+          "text": "Redémarrer, pour que le nouveau noyau soit utilisé"
+        },
+        {
+          "id": "c",
+          "text": "Relancer apt update"
+        },
+        {
+          "id": "d",
+          "text": "Réinstaller le chargeur de démarrage"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Tant que l'ancien noyau tourne, ses failles restent présentes."
+    },
+    {
+      "question": "Quelles sont les trois étapes classiques d'une compilation depuis les sources ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "apt source, apt build, apt install"
+        },
+        {
+          "id": "b",
+          "text": "gcc, ld, run"
+        },
+        {
+          "id": "c",
+          "text": "./configure, make, puis make install"
+        },
+        {
+          "id": "d",
+          "text": "make, make test, reboot"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "configure prépare la compilation selon le système, make compile, make install copie les fichiers."
+    },
+    {
+      "question": "Pourquoi installer un logiciel compilé à la main dans /usr/local plutôt que dans /usr ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que /usr est en lecture seule"
+        },
+        {
+          "id": "b",
+          "text": "Parce que /usr/local est plus rapide"
+        },
+        {
+          "id": "c",
+          "text": "Pour qu'il soit mis à jour automatiquement"
+        },
+        {
+          "id": "d",
+          "text": "Pour ne pas entrer en conflit avec les fichiers gérés par le gestionnaire de paquets"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le gestionnaire de paquets ne touche jamais à /usr/local."
+    },
+    {
+      "question": "Quel est l'avantage principal d'une application Flatpak ou Snap ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle embarque ses dépendances et s'exécute isolée, quelle que soit la distribution"
+        },
+        {
+          "id": "b",
+          "text": "Elle est toujours plus légère"
+        },
+        {
+          "id": "c",
+          "text": "Elle n'a jamais besoin de mises à jour"
+        },
+        {
+          "id": "d",
+          "text": "Elle s'exécute avec les droits de root"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "En contrepartie, elle occupe plus de place, et ses dépendances suivent le rythme de son éditeur."
+    },
+    {
+      "question": "Quel est le risque d'un binaire autonome téléchargé depuis un site ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il ne peut pas s'exécuter sous Linux"
+        },
+        {
+          "id": "b",
+          "text": "Personne ne le met à jour automatiquement, et sa provenance doit être vérifiée à la main"
+        },
+        {
+          "id": "c",
+          "text": "Il remplace les paquets du système"
+        },
+        {
+          "id": "d",
+          "text": "Il est toujours malveillant"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "On vérifie sa somme de contrôle et sa signature, et l'on note dans la documentation qu'il faut le suivre."
+    },
+    {
+      "question": "À quoi sert unattended-upgrades sur Debian ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À mettre à niveau vers la version suivante de Debian"
+        },
+        {
+          "id": "b",
+          "text": "À supprimer les paquets inutilisés"
+        },
+        {
+          "id": "c",
+          "text": "À appliquer automatiquement les mises à jour de sécurité"
+        },
+        {
+          "id": "d",
+          "text": "À planifier les sauvegardes"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La plupart des intrusions exploitent des failles déjà corrigées : les appliquer vite compte."
+    },
+    {
+      "question": "À quoi sert la première ligne #!/bin/bash d'un script ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est un simple commentaire"
+        },
+        {
+          "id": "b",
+          "text": "Elle rend le script exécutable"
+        },
+        {
+          "id": "c",
+          "text": "Elle active le mode strict"
+        },
+        {
+          "id": "d",
+          "text": "À indiquer le programme qui doit interpréter le script"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est le shebang ; le droit d'exécution se donne à part, avec chmod +x."
+    },
+    {
+      "question": "Dans un script, que contient $1 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le premier argument passé au script"
+        },
+        {
+          "id": "b",
+          "text": "Le nom du script"
+        },
+        {
+          "id": "c",
+          "text": "Le nombre d'arguments"
+        },
+        {
+          "id": "d",
+          "text": "Le code de retour de la dernière commande"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "$0 est le nom du script, $# le nombre d'arguments, $? le dernier code de retour."
+    },
+    {
+      "question": "Que contient la variable $? ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le numéro du processus en cours"
+        },
+        {
+          "id": "b",
+          "text": "Le code de retour de la dernière commande"
+        },
+        {
+          "id": "c",
+          "text": "Le nombre d'arguments"
+        },
+        {
+          "id": "d",
+          "text": "Le dernier argument"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "0 signifie succès ; toute autre valeur, un échec."
+    },
+    {
+      "question": "Pourquoi écrire \"$fichier\" entre guillemets dans un script ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour accélérer le script"
+        },
+        {
+          "id": "b",
+          "text": "Pour rendre la variable constante"
+        },
+        {
+          "id": "c",
+          "text": "Pour qu'un nom contenant des espaces ou des jokers reste un seul argument"
+        },
+        {
+          "id": "d",
+          "text": "Pour l'exporter"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Sans guillemets, rapport final.txt deviendrait deux arguments, rapport et final.txt."
+    },
+    {
+      "question": "Quelle différence entre 'Bonjour $USER' et \"Bonjour $USER\" ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "Les guillemets empêchent le remplacement, les apostrophes le permettent"
+        },
+        {
+          "id": "c",
+          "text": "Les apostrophes sont interdites en bash"
+        },
+        {
+          "id": "d",
+          "text": "Les apostrophes empêchent le remplacement de la variable, les guillemets le permettent"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Entre apostrophes, tout est littéral ; entre guillemets, $ et les substitutions restent actifs."
+    },
+    {
+      "question": "Que teste [ -f \"$f\" ] ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que le chemin existe et désigne un fichier ordinaire"
+        },
+        {
+          "id": "b",
+          "text": "Que c'est un dossier"
+        },
+        {
+          "id": "c",
+          "text": "Que le fichier est vide"
+        },
+        {
+          "id": "d",
+          "text": "Que le fichier est exécutable"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "-d teste un dossier, -s un fichier non vide, -x un fichier exécutable."
+    },
+    {
+      "question": "Quelle est la bonne façon de lire un fichier ligne par ligne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "for ligne in $(cat fichier); do ...; done"
+        },
+        {
+          "id": "b",
+          "text": "while IFS= read -r ligne; do ...; done < fichier"
+        },
+        {
+          "id": "c",
+          "text": "cat fichier | for ligne; do ...; done"
+        },
+        {
+          "id": "d",
+          "text": "read fichier"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La boucle for découpe sur les espaces, pas sur les lignes ; -r garde les barres obliques inverses."
+    },
+    {
+      "question": "Que fait set -e au début d'un script ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il affiche chaque commande"
+        },
+        {
+          "id": "b",
+          "text": "Il interdit les variables non définies"
+        },
+        {
+          "id": "c",
+          "text": "Il arrête le script dès qu'une commande échoue"
+        },
+        {
+          "id": "d",
+          "text": "Il exporte toutes les variables"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "set -u refuse les variables non définies, set -x affiche les commandes."
+    },
+    {
+      "question": "Que fait set -o pipefail ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il interdit les tubes"
+        },
+        {
+          "id": "b",
+          "text": "Il ne garde que la sortie de la première commande"
+        },
+        {
+          "id": "c",
+          "text": "Il ignore les erreurs des tubes"
+        },
+        {
+          "id": "d",
+          "text": "Un tube échoue si l'une quelconque de ses commandes échoue"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Sans lui, seul le code de la dernière commande compte : tar en échec suivi d'un gzip réussi passerait pour un succès."
+    },
+    {
+      "question": "À quoi sert trap 'rm -f \"$tmp\"' EXIT dans un script ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À supprimer le fichier temporaire à la sortie du script, quelle qu'en soit la cause"
+        },
+        {
+          "id": "b",
+          "text": "À supprimer le script après exécution"
+        },
+        {
+          "id": "c",
+          "text": "À ignorer Ctrl+C"
+        },
+        {
+          "id": "d",
+          "text": "À relancer le script en cas d'erreur"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le nettoyage a lieu aussi bien après un succès qu'après une erreur avec set -e."
+    },
+    {
+      "question": "Que fait bash -x script.sh ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il vérifie la syntaxe sans exécuter"
+        },
+        {
+          "id": "b",
+          "text": "Il exécute le script en affichant chaque commande après développement"
+        },
+        {
+          "id": "c",
+          "text": "Il rend le script exécutable"
+        },
+        {
+          "id": "d",
+          "text": "Il exécute le script en root"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "bash -n vérifie la syntaxe sans exécuter ; ShellCheck va beaucoup plus loin."
+    },
+    {
+      "question": "Quel outil signale, sans exécuter le script, les erreurs courantes d'un script shell ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "strace"
+        },
+        {
+          "id": "b",
+          "text": "gdb"
+        },
+        {
+          "id": "c",
+          "text": "ShellCheck"
+        },
+        {
+          "id": "d",
+          "text": "make"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Variables sans guillemets, tests mal écrits, commandes inexistantes : il les repère avant qu'elles ne frappent."
+    },
+    {
+      "question": "Que signifie la ligne de crontab 30 2 * * 1 /usr/local/bin/rapport.sh ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le lancer le 30 février"
+        },
+        {
+          "id": "b",
+          "text": "Le lancer toutes les 30 minutes"
+        },
+        {
+          "id": "c",
+          "text": "Le lancer le 2 de chaque mois à 1 h 30"
+        },
+        {
+          "id": "d",
+          "text": "Lancer le script chaque lundi à 2 h 30"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les champs : minute, heure, jour du mois, mois, jour de la semaine (1 pour lundi)."
+    },
+    {
+      "question": "Quel avantage un minuteur systemd a-t-il sur une ligne de cron ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le journal du service, ses protections, et le rattrapage d'une exécution manquée avec Persistent=true"
+        },
+        {
+          "id": "b",
+          "text": "Il est toujours plus rapide"
+        },
+        {
+          "id": "c",
+          "text": "Il n'a pas besoin de service"
+        },
+        {
+          "id": "d",
+          "text": "Il fonctionne sans systemd"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "cron reste simple et universel ; l'important est de savoir où regarder."
+    },
+    {
+      "question": "Dans quel ordre se déroule le démarrage d'un Linux moderne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "systemd, noyau, chargeur, micrologiciel"
+        },
+        {
+          "id": "b",
+          "text": "Micrologiciel, chargeur de démarrage, noyau et initramfs, puis systemd"
+        },
+        {
+          "id": "c",
+          "text": "Noyau, micrologiciel, systemd, chargeur"
+        },
+        {
+          "id": "d",
+          "text": "Chargeur, systemd, micrologiciel, noyau"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "GRUB charge le noyau et l'initramfs ; le noyau lance systemd, qui démarre les services."
+    },
+    {
+      "question": "Quelle différence entre systemctl enable et systemctl start ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "start le rend permanent, enable le démarre une fois"
+        },
+        {
+          "id": "c",
+          "text": "enable fait démarrer le service aux prochains démarrages ; start le démarre maintenant"
+        },
+        {
+          "id": "d",
+          "text": "enable est réservé aux minuteurs"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un service démarré mais pas activé ne revient pas après un redémarrage."
+    },
+    {
+      "question": "Que fait systemctl enable --now nginx ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il le redémarre maintenant"
+        },
+        {
+          "id": "b",
+          "text": "Il le démarre sans l'activer"
+        },
+        {
+          "id": "c",
+          "text": "Il le désactive"
+        },
+        {
+          "id": "d",
+          "text": "Il active nginx au démarrage et le démarre tout de suite"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le pendant pour arrêter et désactiver est disable --now."
+    },
+    {
+      "question": "Après avoir modifié un fichier d'unité, quelle commande faut-il lancer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "systemctl daemon-reload"
+        },
+        {
+          "id": "b",
+          "text": "systemctl reboot"
+        },
+        {
+          "id": "c",
+          "text": "systemctl reset-failed"
+        },
+        {
+          "id": "d",
+          "text": "journalctl --rotate"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "systemd garde les unités en mémoire ; daemon-reload les relit."
+    },
+    {
+      "question": "Où ranger les unités systemd qu'on écrit soi-même ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Dans /lib/systemd/system"
+        },
+        {
+          "id": "b",
+          "text": "Dans /etc/systemd/system"
+        },
+        {
+          "id": "c",
+          "text": "Dans /usr/bin"
+        },
+        {
+          "id": "d",
+          "text": "Dans /var/log"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "/lib/systemd/system appartient aux paquets, qui l'écrasent à chaque mise à jour."
+    },
+    {
+      "question": "Pourquoi utiliser systemctl edit plutôt que modifier l'unité fournie par un paquet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il est le seul à vérifier la syntaxe"
+        },
+        {
+          "id": "b",
+          "text": "Il redémarre la machine"
+        },
+        {
+          "id": "c",
+          "text": "Il crée un fichier de surcharge, qui survit aux mises à jour du paquet"
+        },
+        {
+          "id": "d",
+          "text": "Il supprime l'unité d'origine"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La surcharge est rangée dans /etc/systemd/system/nom.service.d/."
+    },
+    {
+      "question": "Que fait la directive Restart=on-failure dans une unité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle redémarre la machine en cas d'erreur"
+        },
+        {
+          "id": "b",
+          "text": "Elle relance le service chaque nuit"
+        },
+        {
+          "id": "c",
+          "text": "Elle empêche tout redémarrage"
+        },
+        {
+          "id": "d",
+          "text": "Elle relance le service s'il s'arrête en erreur"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "RestartSec fixe l'attente entre deux tentatives."
+    },
+    {
+      "question": "À quoi sert User= dans une unité de service ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À exécuter le service sous un compte non privilégié"
+        },
+        {
+          "id": "b",
+          "text": "À désigner l'administrateur à prévenir"
+        },
+        {
+          "id": "c",
+          "text": "À limiter le service à un utilisateur connecté"
+        },
+        {
+          "id": "d",
+          "text": "À créer un compte"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un service détourné n'a alors que les droits de ce compte."
+    },
+    {
+      "question": "Quelle cible systemd correspond à un serveur démarré sans interface graphique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "graphical.target"
+        },
+        {
+          "id": "b",
+          "text": "multi-user.target"
+        },
+        {
+          "id": "c",
+          "text": "rescue.target"
+        },
+        {
+          "id": "d",
+          "text": "emergency.target"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "rescue et emergency servent au dépannage ; graphical ajoute l'interface graphique."
+    },
+    {
+      "question": "Comment afficher les messages d'un service depuis ce matin ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "systemctl log nom.service"
+        },
+        {
+          "id": "b",
+          "text": "cat /var/log/nom.service"
+        },
+        {
+          "id": "c",
+          "text": "journalctl -u nom.service --since today"
+        },
+        {
+          "id": "d",
+          "text": "dmesg nom.service"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "-u filtre par unité, --since par date ; -f suit le journal en direct."
+    },
+    {
+      "question": "Que faut-il pour que le journal de systemd survive aux redémarrages ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rien, il est toujours conservé"
+        },
+        {
+          "id": "b",
+          "text": "Installer rsyslog"
+        },
+        {
+          "id": "c",
+          "text": "Lancer journalctl --flush à chaque arrêt"
+        },
+        {
+          "id": "d",
+          "text": "Un stockage persistant : le dossier /var/log/journal, ou Storage=persistent"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Sans cela, le journal vit en mémoire, dans /run, et disparaît à l'arrêt."
+    },
+    {
+      "question": "À quoi sert logrotate ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À faire tourner, compresser et supprimer les vieux journaux, pour ne pas remplir le disque"
+        },
+        {
+          "id": "b",
+          "text": "À envoyer les journaux par courriel"
+        },
+        {
+          "id": "c",
+          "text": "À chiffrer les journaux"
+        },
+        {
+          "id": "d",
+          "text": "À réparer les journaux abîmés"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Il est lancé chaque jour ; chaque paquet dépose ses règles dans /etc/logrotate.d."
+    },
+    {
+      "question": "Un service est à l'état failed. Que faire en premier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Redémarrer la machine"
+        },
+        {
+          "id": "b",
+          "text": "Lire systemctl status nom puis journalctl -u nom"
+        },
+        {
+          "id": "c",
+          "text": "Réinstaller le paquet"
+        },
+        {
+          "id": "d",
+          "text": "Supprimer son unité"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le statut donne le code de sortie, le journal la cause."
+    },
+    {
+      "question": "systemctl status affiche status=203/EXEC. Que signifie ce code ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le service a manqué de mémoire"
+        },
+        {
+          "id": "b",
+          "text": "Le port est déjà utilisé"
+        },
+        {
+          "id": "c",
+          "text": "Le programme de ExecStart est introuvable ou non exécutable"
+        },
+        {
+          "id": "d",
+          "text": "Le service a été arrêté par un administrateur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On vérifie le chemin, le droit d'exécution et le shebang du programme."
+    },
+    {
+      "question": "Quel avantage la table de partitions GPT a-t-elle sur MBR ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle chiffre le disque"
+        },
+        {
+          "id": "b",
+          "text": "Elle est la seule lisible par Linux"
+        },
+        {
+          "id": "c",
+          "text": "Elle rend le disque plus rapide"
+        },
+        {
+          "id": "d",
+          "text": "Elle gère les disques de plus de 2 To et bien plus de partitions"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "MBR se limite à 2 To et à quatre partitions principales."
+    },
+    {
+      "question": "Quelle commande montre les disques, leurs partitions et leurs points de montage en arbre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "lsblk"
+        },
+        {
+          "id": "b",
+          "text": "df -h"
+        },
+        {
+          "id": "c",
+          "text": "du -sh"
+        },
+        {
+          "id": "d",
+          "text": "free -h"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "lsblk -f ajoute le type de système de fichiers, l'étiquette et l'UUID."
+    },
+    {
+      "question": "Pourquoi désigner un système de fichiers par son UUID dans /etc/fstab ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'UUID accélère le montage"
+        },
+        {
+          "id": "b",
+          "text": "Le nom /dev/sdX peut changer d'un démarrage à l'autre, pas l'UUID"
+        },
+        {
+          "id": "c",
+          "text": "fstab n'accepte pas les noms de périphériques"
+        },
+        {
+          "id": "d",
+          "text": "Pour chiffrer le système de fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "blkid donne l'UUID de chaque système de fichiers."
+    },
+    {
+      "question": "Que fait l'option de montage noexec ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle interdit toute écriture"
+        },
+        {
+          "id": "b",
+          "text": "Elle cache les fichiers"
+        },
+        {
+          "id": "c",
+          "text": "Elle interdit d'exécuter les programmes de ce système de fichiers"
+        },
+        {
+          "id": "d",
+          "text": "Elle empêche le montage au démarrage"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Avec nodev et nosuid, elle durcit /tmp ou un disque de données."
+    },
+    {
+      "question": "Comment vérifier /etc/fstab avant de redémarrer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "cat /etc/fstab"
+        },
+        {
+          "id": "b",
+          "text": "Redémarrer pour voir"
+        },
+        {
+          "id": "c",
+          "text": "fsck /etc/fstab"
+        },
+        {
+          "id": "d",
+          "text": "findmnt --verify, puis mount -a"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une ligne fausse dans fstab peut bloquer le démarrage en mode de secours."
+    },
+    {
+      "question": "Pourquoi ne jamais lancer fsck sur un système de fichiers monté ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il risque d'aggraver les dégâts en modifiant des structures que le système utilise"
+        },
+        {
+          "id": "b",
+          "text": "Il est plus lent"
+        },
+        {
+          "id": "c",
+          "text": "Il efface les fichiers ouverts"
+        },
+        {
+          "id": "d",
+          "text": "Il ne trouve aucune erreur"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On le lance sur un système démonté, ou depuis un système de secours."
+    },
+    {
+      "question": "Dans LVM, comment s'articulent PV, VG et LV ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un LV contient plusieurs VG, qui contiennent des PV"
+        },
+        {
+          "id": "b",
+          "text": "Des volumes physiques sont regroupés en un groupe de volumes, découpé en volumes logiques"
+        },
+        {
+          "id": "c",
+          "text": "Ce sont trois noms du même disque"
+        },
+        {
+          "id": "d",
+          "text": "PV et LV sont deux systèmes de fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les volumes logiques peuvent ensuite grandir tant que le groupe a de la place."
+    },
+    {
+      "question": "Que fait lvextend -r -L +10G vg/lv ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il crée un nouveau volume de 10 Go"
+        },
+        {
+          "id": "b",
+          "text": "Il réduit le volume de 10 Go"
+        },
+        {
+          "id": "c",
+          "text": "Il ajoute 10 Go au volume logique et agrandit son système de fichiers dans la foulée"
+        },
+        {
+          "id": "d",
+          "text": "Il sauvegarde 10 Go du volume"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "-r appelle l'outil d'agrandissement du système de fichiers ; ext4 et XFS grandissent à chaud."
+    },
+    {
+      "question": "Un RAID 1 de deux disques peut perdre combien de disques sans perte de données ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucun"
+        },
+        {
+          "id": "b",
+          "text": "Deux"
+        },
+        {
+          "id": "c",
+          "text": "Trois"
+        },
+        {
+          "id": "d",
+          "text": "Un"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Chaque disque porte une copie complète ; il faut remplacer le disque perdu au plus vite."
+    },
+    {
+      "question": "Le RAID est-il une sauvegarde ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Non : il protège de la panne d'un disque, pas d'un effacement, d'un rançongiciel ou d'un sinistre"
+        },
+        {
+          "id": "b",
+          "text": "Oui, s'il a plus de deux disques"
+        },
+        {
+          "id": "c",
+          "text": "Oui, en RAID 1"
+        },
+        {
+          "id": "d",
+          "text": "Oui, si les disques sont neufs"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un fichier effacé l'est aussitôt sur tous les disques de la grappe."
+    },
+    {
+      "question": "Contre quoi protège le chiffrement d'un disque avec LUKS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Contre un logiciel malveillant sur la machine allumée"
+        },
+        {
+          "id": "b",
+          "text": "Contre la lecture des données d'un disque volé ou perdu, machine éteinte"
+        },
+        {
+          "id": "c",
+          "text": "Contre la panne du disque"
+        },
+        {
+          "id": "d",
+          "text": "Contre l'effacement par erreur"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une fois le volume ouvert, les données sont lisibles par tout ce qui tourne sur la machine."
+    },
+    {
+      "question": "Pourquoi sauvegarder l'en-tête d'un volume LUKS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour accélérer l'ouverture"
+        },
+        {
+          "id": "b",
+          "text": "Pour changer d'algorithme"
+        },
+        {
+          "id": "c",
+          "text": "S'il est abîmé, les données sont perdues, même avec la bonne phrase de passe"
+        },
+        {
+          "id": "d",
+          "text": "Pour pouvoir se passer de phrase de passe"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'en-tête contient la clé maîtresse, chiffrée par chaque phrase de passe."
+    },
+    {
+      "question": "Que fait rsync --delete lors d'une copie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il supprime la source après la copie"
+        },
+        {
+          "id": "b",
+          "text": "Il supprime les fichiers modifiés"
+        },
+        {
+          "id": "c",
+          "text": "Il vide la destination avant de copier"
+        },
+        {
+          "id": "d",
+          "text": "Il supprime de la destination ce qui n'existe plus dans la source"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La destination devient un miroir : une suppression par erreur dans la source s'y propage. On simule d'abord avec -n."
+    },
+    {
+      "question": "Que dit la règle de sauvegarde 3-2-1 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trois copies des données, sur deux supports différents, dont une hors du site"
+        },
+        {
+          "id": "b",
+          "text": "Trois sauvegardes par jour, deux par nuit, une par semaine"
+        },
+        {
+          "id": "c",
+          "text": "Trois disques en RAID, deux serveurs, un site"
+        },
+        {
+          "id": "d",
+          "text": "Trois mois de conservation, deux restaurations, un test"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Contre le rançongiciel, la copie hors du site doit aussi être hors de portée d'un attaquant maître du serveur."
+    },
+    {
+      "question": "Une adresse posée avec ip addr add survit-elle à un redémarrage ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Oui, toujours"
+        },
+        {
+          "id": "b",
+          "text": "Non : ip agit en direct, la configuration permanente s'écrit dans l'outil de la distribution"
+        },
+        {
+          "id": "c",
+          "text": "Oui, si elle est en /24"
+        },
+        {
+          "id": "d",
+          "text": "Seulement sur Debian"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "NetworkManager, systemd-networkd, netplan ou /etc/network/interfaces, selon la distribution."
+    },
+    {
+      "question": "Que montre ip route get 198.51.100.7 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Si la machine distante répond"
+        },
+        {
+          "id": "b",
+          "text": "Le nom associé à cette adresse"
+        },
+        {
+          "id": "c",
+          "text": "La route que le noyau choisit pour joindre cette adresse"
+        },
+        {
+          "id": "d",
+          "text": "Le chemin complet, routeur par routeur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "C'est traceroute qui montre les routeurs successifs."
+    },
+    {
+      "question": "Un ping vers une adresse IP lointaine répond, mais pas vers un nom. Où chercher ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Dans le câble réseau"
+        },
+        {
+          "id": "b",
+          "text": "Dans la passerelle"
+        },
+        {
+          "id": "c",
+          "text": "Dans le pare-feu du serveur distant"
+        },
+        {
+          "id": "d",
+          "text": "Dans la résolution des noms : /etc/hosts et les serveurs DNS"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le réseau et la route fonctionnent, puisque l'adresse répond."
+    },
+    {
+      "question": "Que montre ss -ltnp ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les ports TCP en écoute, avec le programme qui écoute"
+        },
+        {
+          "id": "b",
+          "text": "Les connexions établies vers Internet"
+        },
+        {
+          "id": "c",
+          "text": "La table de routage"
+        },
+        {
+          "id": "d",
+          "text": "Les règles du pare-feu"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "-l en écoute, -t TCP, -n numérique, -p le programme (avec sudo)."
+    },
+    {
+      "question": "Un service écoute sur 127.0.0.1:5432. Qui peut le joindre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Toute la machine et son réseau local"
+        },
+        {
+          "id": "b",
+          "text": "Seulement la machine elle-même"
+        },
+        {
+          "id": "c",
+          "text": "Tout Internet"
+        },
+        {
+          "id": "d",
+          "text": "Personne"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "0.0.0.0 ou [::] signifieraient toutes les adresses de la machine."
+    },
+    {
+      "question": "Un même nom figure deux fois dans /etc/hosts, avec deux adresses. Laquelle est utilisée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Celle de la dernière ligne"
+        },
+        {
+          "id": "b",
+          "text": "Les deux, en alternance"
+        },
+        {
+          "id": "c",
+          "text": "Celle de la première ligne"
+        },
+        {
+          "id": "d",
+          "text": "Aucune, c'est une erreur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une vieille entrée en tête du fichier peut masquer pendant des mois un changement fait dans le DNS."
+    },
+    {
+      "question": "Quelle différence entre dig et getent hosts ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "getent hosts n'interroge que le DNS"
+        },
+        {
+          "id": "c",
+          "text": "dig lit seulement /etc/hosts"
+        },
+        {
+          "id": "d",
+          "text": "dig interroge seulement le DNS ; getent hosts suit la chaîne de résolution du système, /etc/hosts compris"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Un nom qui répond à getent mais pas à dig est défini localement."
+    },
+    {
+      "question": "Que contient le fichier ~/.ssh/known_hosts ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les clés des serveurs auxquels on s'est déjà connecté"
+        },
+        {
+          "id": "b",
+          "text": "Les clés publiques autorisées à se connecter au compte"
+        },
+        {
+          "id": "c",
+          "text": "Les mots de passe des serveurs"
+        },
+        {
+          "id": "d",
+          "text": "La liste des serveurs autorisés par le pare-feu"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Si un serveur présente une autre clé, le client refuse de se connecter : c'est la protection contre l'homme du milieu."
+    },
+    {
+      "question": "Quels droits SSH exige-t-il pour ~/.ssh et pour la clé privée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "755 et 644"
+        },
+        {
+          "id": "b",
+          "text": "700 pour le dossier, 600 pour la clé privée"
+        },
+        {
+          "id": "c",
+          "text": "777 et 600"
+        },
+        {
+          "id": "d",
+          "text": "700 et 644"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une clé privée lisible par d'autres est refusée par le client : UNPROTECTED PRIVATE KEY FILE."
+    },
+    {
+      "question": "Dans la configuration de sshd, une directive est réglée deux fois. Quelle valeur s'applique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La dernière lue"
+        },
+        {
+          "id": "b",
+          "text": "La plus restrictive"
+        },
+        {
+          "id": "c",
+          "text": "La première lue"
+        },
+        {
+          "id": "d",
+          "text": "Aucune, sshd refuse de démarrer"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les fichiers de sshd_config.d étant lus en premier, ils l'emportent sur la suite de sshd_config."
+    },
+    {
+      "question": "Que montre sudo sshd -T ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les tentatives de connexion"
+        },
+        {
+          "id": "b",
+          "text": "Les clés autorisées"
+        },
+        {
+          "id": "c",
+          "text": "La version de SSH"
+        },
+        {
+          "id": "d",
+          "text": "La configuration effective du serveur SSH, fichiers inclus et valeurs par défaut comprises"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "sshd -t, en minuscule, vérifie seulement la syntaxe."
+    },
+    {
+      "question": "Quelle différence entre rsync -av site/ dest/ et rsync -av site dest/ ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec la barre finale, le contenu de site va dans dest ; sans, le dossier site est créé dans dest"
+        },
+        {
+          "id": "b",
+          "text": "Aucune"
+        },
+        {
+          "id": "c",
+          "text": "Sans la barre, rien n'est copié"
+        },
+        {
+          "id": "d",
+          "text": "La barre active la suppression des fichiers en trop"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Pour la destination, la barre finale ne change rien ; pour la source, elle change tout."
+    },
+    {
+      "question": "Pourquoi accepter ct state established,related en tête de la chaîne d'entrée d'un pare-feu ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour ouvrir tous les ports"
+        },
+        {
+          "id": "b",
+          "text": "Pour laisser passer les réponses aux connexions déjà acceptées, dont celles que la machine ouvre elle-même"
+        },
+        {
+          "id": "c",
+          "text": "Pour journaliser les connexions"
+        },
+        {
+          "id": "d",
+          "text": "Pour bloquer les balayages"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sans elle, une entrée fermée par défaut jette aussi les réponses du DNS et des dépôts."
+    },
+    {
+      "question": "Pourquoi utiliser une table nftables de la famille inet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour ne filtrer que le trafic Internet"
+        },
+        {
+          "id": "b",
+          "text": "Parce que c'est la seule famille possible"
+        },
+        {
+          "id": "c",
+          "text": "Pour couvrir IPv4 et IPv6 avec les mêmes règles"
+        },
+        {
+          "id": "d",
+          "text": "Pour filtrer la boucle locale"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Avec deux familles séparées, ip et ip6, on oublie souvent IPv6."
+    },
+    {
+      "question": "Dans un cahier des charges, quelle différence entre un besoin et une exigence ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "L'exigence vient toujours du client"
+        },
+        {
+          "id": "c",
+          "text": "Le besoin est toujours technique"
+        },
+        {
+          "id": "d",
+          "text": "Le besoin est exprimé par le client dans ses mots ; l'exigence est un engagement vérifiable"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "« Des sauvegardes » est un besoin ; « une archive chaque nuit, une restauration testée chaque mois » est une exigence."
+    },
+    {
+      "question": "Que désigne la perte de données maximale admissible (RPO) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La quantité de travail qu'on accepte de perdre, qui fixe la fréquence des sauvegardes"
+        },
+        {
+          "id": "b",
+          "text": "Le temps maximal d'interruption"
+        },
+        {
+          "id": "c",
+          "text": "La taille maximale d'une sauvegarde"
+        },
+        {
+          "id": "d",
+          "text": "Le nombre de copies à garder"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La durée d'interruption admissible est le RTO."
+    },
+    {
+      "question": "Pourquoi poser le bit setgid sur un dossier partagé par une équipe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour que les fichiers s'exécutent en root"
+        },
+        {
+          "id": "b",
+          "text": "Pour que les fichiers créés dedans héritent du groupe du dossier"
+        },
+        {
+          "id": "c",
+          "text": "Pour empêcher la suppression des fichiers"
+        },
+        {
+          "id": "d",
+          "text": "Pour cacher le dossier"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sans lui, chaque fichier prendrait le groupe principal de son auteur."
+    },
+    {
+      "question": "Quel umask permet aux membres d'une équipe de modifier les fichiers des autres, sans rien ouvrir au reste de la machine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "022"
+        },
+        {
+          "id": "b",
+          "text": "000"
+        },
+        {
+          "id": "c",
+          "text": "007"
+        },
+        {
+          "id": "d",
+          "text": "077"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les fichiers sont créés en 660 et les dossiers en 770."
+    },
+    {
+      "question": "Pourquoi la racine d'un ChrootDirectory SSH doit-elle appartenir à root ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour accélérer les transferts"
+        },
+        {
+          "id": "b",
+          "text": "Pour que l'utilisateur puisse y écrire"
+        },
+        {
+          "id": "c",
+          "text": "Parce que nginx le demande"
+        },
+        {
+          "id": "d",
+          "text": "sshd l'exige, pour qu'un utilisateur enfermé ne puisse pas y placer de fichiers qui le feraient sortir"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "L'utilisateur écrit dans un sous-dossier qui lui appartient."
+    },
+    {
+      "question": "Pourquoi un script générant une page web l'écrit-il dans un fichier temporaire avant de la renommer avec mv ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour qu'un visiteur ne voie jamais une page à moitié écrite, et qu'une erreur laisse l'ancienne intacte"
+        },
+        {
+          "id": "b",
+          "text": "Pour la compresser"
+        },
+        {
+          "id": "c",
+          "text": "Pour la chiffrer"
+        },
+        {
+          "id": "d",
+          "text": "Parce que nginx ne lit que les fichiers renommés"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un renommage dans le même système de fichiers est atomique."
+    },
+    {
+      "question": "Pourquoi chiffrer la copie distante des sauvegardes avec une clé publique dont la clé privée n'est pas sur le serveur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour réduire leur taille"
+        },
+        {
+          "id": "b",
+          "text": "Le serveur peut chiffrer sans pouvoir déchiffrer : ni un attaquant ni l'hébergeur ne lisent les copies"
+        },
+        {
+          "id": "c",
+          "text": "Pour se passer de restauration"
+        },
+        {
+          "id": "d",
+          "text": "Pour accélérer rsync"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La clé privée est conservée hors ligne, pour les restaurations."
+    },
+    {
+      "question": "Pourquoi une vigie envoie-t-elle aussi un rapport régulier quand tout va bien ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour remplir la boîte de réception"
+        },
+        {
+          "id": "b",
+          "text": "Parce que le courriel l'exige"
+        },
+        {
+          "id": "c",
+          "text": "Parce que l'absence du rapport révèle une vigie arrêtée, qui sinon n'enverrait plus aucune alerte"
+        },
+        {
+          "id": "d",
+          "text": "Pour tester le réseau"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le silence d'une supervision ne prouve rien tant qu'on ne sait pas qu'elle tourne."
+    },
+    {
+      "question": "Pourquoi écrire les mesures de durcissement qu'on n'applique pas ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour allonger le dossier"
+        },
+        {
+          "id": "b",
+          "text": "C'est une obligation légale"
+        },
+        {
+          "id": "c",
+          "text": "Pour ne plus avoir à les appliquer"
+        },
+        {
+          "id": "d",
+          "text": "Un écart écrit, avec sa raison et sa compensation, est une décision ; non écrit, c'est un oubli"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Il peut alors être relu, accepté ou remis en question par le client ou l'assureur."
+    },
+    {
+      "question": "Qu'est-ce que la dérive de configuration ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'éloignement progressif d'un serveur de sa configuration de référence, par des changements faits à la main"
+        },
+        {
+          "id": "b",
+          "text": "Une panne matérielle progressive"
+        },
+        {
+          "id": "c",
+          "text": "Le décalage de l'horloge"
+        },
+        {
+          "id": "d",
+          "text": "La mise à jour automatique des paquets"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Une vérification automatique régulière la détecte, et les scripts de référence la corrigent."
+    },
+    {
+      "question": "Que doit contenir un dossier d'exploitation au sujet des mots de passe et des clés ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tous les mots de passe, en annexe"
+        },
+        {
+          "id": "b",
+          "text": "L'endroit où chaque secret est rangé, jamais le secret lui-même"
+        },
+        {
+          "id": "c",
+          "text": "Les clés privées, pour les restaurations"
+        },
+        {
+          "id": "d",
+          "text": "Rien, les secrets ne se documentent pas"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le dossier est imprimé et copié ; il dit par exemple que la clé de restauration est au coffre."
+    }
+  ]
+}

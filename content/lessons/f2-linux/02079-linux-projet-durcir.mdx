@@ -1,0 +1,185 @@
+---
+refCode: CL-LSN-02079-V01
+slug: linux-projet-durcir
+title: "Projet final : durcir le serveur selon les recommandations de l'ANSSI"
+description: "Cinquième étape du projet de fin de parcours : utiliser le guide de l'ANSSI pour GNU/Linux et ses niveaux, tenir un registre des mesures avec le risque couvert, la mise en œuvre et la vérification, réduire la surface d'attaque, durcir les comptes, les droits, le noyau, le réseau, les mises à jour et la journalisation, et documenter les écarts. Avec les réglages du noyau corrigés, appliqués et audités sur un vrai Linux, puis le contrôle du durcissement complet du serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02078-V01"]
+---
+
+L'assureur de l'atelier demande de « suivre les recommandations de l'ANSSI ». La phrase est courte, le guide qu'elle désigne compte plusieurs dizaines de recommandations. Les appliquer toutes, sans réfléchir, produirait un serveur difficile à administrer, et certaines n'ont aucun sens ici. N'en appliquer aucune laisserait l'atelier sans réponse le jour où l'assureur posera la question. La bonne démarche est celle d'un professionnel : choisir le niveau qui convient, appliquer chaque mesure retenue, la **vérifier**, et écrire noir sur blanc ce qu'on n'a pas appliqué et pourquoi. Une grande partie du travail est déjà faite dans les étapes précédentes ; celle-ci le complète, et le rend démontrable.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire le guide de l'ANSSI pour GNU/Linux et choisir son niveau ;
+- tenir un registre des mesures : risque couvert, mise en œuvre, vérification ;
+- durcir les comptes, les droits des fichiers et les réglages du noyau ;
+- finaliser le pare-feu, les mises à jour automatiques et la journalisation ;
+- documenter et justifier les écarts ;
+- prouver le durcissement par un audit qu'on peut relancer.
+
+## pourquoi ça compte
+
+Un serveur durci n'est pas un serveur invulnérable : c'est un serveur sur lequel chaque attaque coûte plus cher, et laisse plus de traces. Les attaques réelles contre une petite structure sont rarement sophistiquées : un mot de passe deviné, une faille connue mais pas corrigée, un service oublié. Le durcissement ferme justement ces portes-là. Et il doit être **démontrable** : face à un assureur, un client ou après un incident, « nous avons suivi les recommandations » ne vaut que si l'on peut montrer lesquelles, comment, et la preuve qu'elles sont toujours en place.
+
+## le guide de l'ANSSI et ses niveaux
+
+Le guide « Recommandations de configuration d'un système GNU/Linux » classe ses recommandations par **niveau** : **minimal**, **intermédiaire**, **renforcé** et **élevé**. Chaque niveau s'ajoute au précédent. Le niveau minimal s'applique à tout système ; l'intermédiaire convient à la plupart des serveurs ; les niveaux renforcé et élevé visent des systèmes sensibles, avec les moyens qui vont avec.
+
+Pour l'atelier, petite structure aux données confidentielles mais sans enjeu vital, la cible est le **niveau intermédiaire**, avec quelques mesures renforcées quand elles ne coûtent presque rien. Ses recommandations s'adaptent au contexte, et un écart justifié vaut mieux qu'une mesure appliquée sans être comprise.
+
+## le registre des mesures
+
+Le livrable de cette étape est un **registre** : une ligne par mesure, avec quatre colonnes.
+
+| Mesure | Risque couvert | Mise en œuvre | Vérification |
+| --- | --- | --- | --- |
+| SSH par clé seulement | mots de passe devinés | `10-durcissement.conf` | `sshd -T` |
+| pare-feu en refus par défaut | services exposés par erreur | `/etc/nftables.conf` | `nft list ruleset`, balayage externe |
+| réglages de sécurité du noyau | fuites d'adresses, redirections réseau | `/etc/sysctl.d/99-atelier.conf` | `audit.sh` |
+| mises à jour de sécurité automatiques | failles connues non corrigées | `unattended-upgrades` | `20auto-upgrades`, journal d'apt |
+
+La colonne **vérification** est la plus importante : c'est elle qui transforme une affirmation en preuve, et elle se rejoue à chaque contrôle. La dernière étape regroupera ces vérifications dans un seul script.
+
+## réduire la surface d'attaque
+
+Le premier principe du guide est la **minimisation** : moins il y a de logiciels, de services et de comptes, moins il y a de failles possibles. Les étapes précédentes l'ont déjà appliqué : CUPS et Avahi retirés, compte `demo` supprimé, seuls nginx et `sshd` à l'écoute. On le vérifie, et on le note au registre :
+
+```bash
+sudo ss -ltnup                                  # ce qui écoute encore
+systemctl list-unit-files --state=enabled       # ce qui démarre avec la machine
+```
+
+Chaque ligne de ces deux listes doit correspondre à un besoin du cahier des charges. Celles qui n'y correspondent pas sont désactivées avec `systemctl disable --now`.
+
+## les comptes et l'authentification
+
+Les mesures sur les comptes sont en place depuis l'étape 2 : un compte nominatif par personne, aucun compte partagé, l'administration par `sudo`, l'expiration programmée du compte de Paul. On les complète : le mot de passe de root est **verrouillé** (`sudo passwd -l root`), SSH n'accepte que les clés et que les groupes autorisés, et le délai d'inactivité ferme les sessions oubliées. Les comptes de service, comme `catalogue`, n'ont ni shell ni mot de passe.
+
+## les droits des fichiers
+
+Trois contrôles réguliers :
+
+- l'**umask** des sessions : `027` pour les comptes d'administration, réglé dans `/etc/login.defs`, pour que les fichiers créés ne soient jamais lisibles par tous ; les dossiers d'équipe gardent leur `007` ;
+- les fichiers **setuid** : chaque programme qui s'exécute avec les droits de son propriétaire est une cible. On en tient la liste (`find / -xdev -perm -4000 -type f`), et l'on retire le bit à ceux qui n'en ont pas besoin ;
+- les **montages** : `/tmp` en `tmpfs` avec `nodev,nosuid,noexec`, comme au module 9, pour qu'un fichier déposé là ne puisse pas s'exécuter.
+
+## le noyau
+
+Une série de réglages du noyau, écrits dans `/etc/sysctl.d/99-atelier.conf`, ferme des comportements utiles sur un poste de développeur mais inutiles, voire dangereux, sur un serveur :
+
+| Réglage | Effet |
+| --- | --- |
+| `kernel.kptr_restrict = 2` | masque les adresses du noyau, précieuses pour qui écrit une attaque |
+| `kernel.dmesg_restrict = 1` | réserve le journal du noyau aux administrateurs |
+| `fs.protected_symlinks = 1`, `fs.protected_hardlinks = 1` | déjoue les pièges par liens dans les dossiers partagés comme `/tmp` |
+| `fs.suid_dumpable = 0` | aucun vidage mémoire d'un programme privilégié, qui pourrait contenir des secrets |
+| `kernel.randomize_va_space = 2` | placement aléatoire complet de la mémoire |
+| `net.ipv4.ip_forward = 0` | le serveur n'est pas un routeur |
+| `net.ipv4.conf.all.rp_filter = 1` | rejette les paquets à l'adresse source incohérente |
+| `accept_redirects = 0`, `send_redirects = 0` | ignore les redirections ICMP, qui permettent de détourner du trafic |
+| `net.ipv4.conf.all.log_martians = 1` | journalise les paquets aux adresses impossibles |
+
+On les applique avec `sudo sysctl --system`, et l'on vérifie chaque valeur avec `sysctl -n` : un réglage mal orthographié est ignoré, et une valeur copiée d'un forum peut être exactement l'inverse de ce qu'on voulait.
+
+## le réseau
+
+Le pare-feu définitif reprend le module 10 et le cahier des charges : en entrée, `policy drop` ; SSH ouvert au réseau de l'atelier et à la seule adresse de l'imprimeur ; HTTP ouvert au seul réseau de l'atelier ; l'ICMP et les réponses. Il est appliqué avec un retour arrière programmé, puis vérifié **depuis l'extérieur**, par un balayage depuis une autre connexion, qui doit ne montrer que le port 22, et seulement depuis l'adresse de l'imprimeur.
+
+## les mises à jour
+
+La plupart des intrusions exploitent des failles **déjà corrigées** par l'éditeur. `unattended-upgrades` applique chaque nuit les mises à jour de sécurité de Debian. Restent les mises à jour du noyau, qui demandent un redémarrage : on le planifie un soir par mois, et la vigie signale le fichier `/var/run/reboot-required` quand il apparaît. Les autres mises à jour sont appliquées à la main, une fois par mois, après lecture de ce qu'elles changent.
+
+## la journalisation
+
+Les journaux servent après un incident, à condition qu'ils existent encore et qu'ils soient datés juste. Le journal de systemd est rendu **persistant** (`Storage=persistent`), avec une taille maximale pour ne pas remplir le disque ; l'heure est synchronisée par `systemd-timesyncd` ; et l'on garde au moins trois mois d'historique. Pour une structure plus grande, le guide recommande d'envoyer les journaux vers une machine centrale, hors de portée d'un intrus : c'est un écart accepté ici, faute de seconde machine, et noté comme tel.
+
+<Diagram caption="Les couches du durcissement de srv-ebene">
+flowchart TD
+  A["surface : paquets, services, ports réduits au besoin"] --> B["comptes : nominatifs, sudo, root verrouillé, SSH par clé"]
+  B --> C["fichiers : umask, setuid inventoriés, /tmp noexec"]
+  C --> D["noyau : réglages sysctl"]
+  D --> E["réseau : pare-feu en refus par défaut"]
+  E --> F["maintien : mises à jour automatiques, journaux persistants"]
+  F --> G["preuve : registre et audit rejoué"]
+</Diagram>
+
+## les écarts, et pourquoi
+
+Ce qu'on n'applique pas s'écrit avec la même rigueur que ce qu'on applique. Pour l'atelier, par exemple :
+
+- **pas de partitions séparées** pour `/var` et `/home`, recommandées pour isoler les remplissages : le SSD a été installé en une partition par le vendeur. Compensation : la vigie surveille l'espace disque ;
+- **pas de mot de passe sur le chargeur de démarrage** : le serveur est dans un placard fermé à clé, et l'accès physique est limité à Hélène et Karim ;
+- **pas de journalisation centralisée** : il n'y a pas de seconde machine. À revoir avec la phase 2 et le VPN.
+
+Chaque écart a sa raison et, si possible, sa **compensation**. Un écart non écrit est un oubli ; un écart écrit est une décision, que l'assureur peut lire et accepter.
+
+## à toi de jouer
+
+Le dossier `durcissement` contient le brouillon de `99-atelier.conf`, que Karim a rédigé à partir d'un forum, et `audit.sh` vérifie, mesure par mesure, les réglages du noyau et les droits de `/etc/shadow`. Ce Linux a des réglages par défaut faibles : l'audit va le montrer.
+
+1. l'état de départ : `sh audit.sh > avant.txt`, puis `cat avant.txt` ;
+2. lis le brouillon de Karim : `cat durcissement/99-atelier.conf`. Une valeur est l'inverse de ce qu'annonce son commentaire, et une mesure du tableau de la leçon manque ;
+3. corrige la valeur : `sed -i 's/^kernel.kptr_restrict = 0$/kernel.kptr_restrict = 2/' durcissement/99-atelier.conf` ;
+4. ajoute la mesure manquante, avec sa justification : `printf '%s\n' '# interdire les liens physiques vers les fichiers des autres' 'fs.protected_hardlinks = 1' >> durcissement/99-atelier.conf` ;
+5. applique le fichier : `sysctl -p durcissement/99-atelier.conf` ;
+6. l'état d'arrivée : `sh audit.sh > apres.txt`, puis `diff avant.txt apres.txt` ;
+7. inventorie les programmes setuid, et compare-les à la liste attendue : `find / -xdev -perm -4000 -type f > suid.txt`, puis `diff durcissement/suid-attendus.txt suid.txt && echo aucun setuid inattendu`.
+
+<LinuxTerminal title="Le noyau, mesure par mesure" files={{"durcissement/99-atelier.conf": "# 99-atelier.conf : réglages de sécurité du noyau de srv-ebene.\n# Sur le serveur : /etc/sysctl.d/99-atelier.conf, appliqué par sysctl --system.\n# Chaque réglage est précédé de la raison qui le justifie.\n\n# masquer les adresses du noyau aux comptes ordinaires\nkernel.kptr_restrict = 0\n# réserver le journal du noyau (dmesg) aux administrateurs\nkernel.dmesg_restrict = 1\n# déjouer les pièges par liens symboliques dans les dossiers partagés\nfs.protected_symlinks = 1\n# pas de vidage mémoire des programmes privilégiés\nfs.suid_dumpable = 0\n# placement aléatoire complet de la mémoire\nkernel.randomize_va_space = 2\n# le serveur n'est pas un routeur\nnet.ipv4.ip_forward = 0\n# rejeter les paquets à l'adresse source incohérente\nnet.ipv4.conf.all.rp_filter = 1\n# ignorer les redirections ICMP, et ne pas en envoyer\nnet.ipv4.conf.all.accept_redirects = 0\nnet.ipv4.conf.all.send_redirects = 0\n# journaliser les paquets aux adresses impossibles\nnet.ipv4.conf.all.log_martians = 1\n", "durcissement/suid-attendus.txt": "/bin/busybox\n/bin/ping\n/usr/bin/clockdiff\n", "audit.sh": "#!/bin/sh\n# audit.sh : vérifie les mesures de durcissement du noyau et des fichiers.\n# Il interroge le noyau lui-même : un réglage écrit mais pas appliqué est KO.\nconformes=0\ntotal=0\n\nmesure() {   # mesure CLÉ VALEUR_ATTENDUE\n  total=$((total + 1))\n  trouve=$(sysctl -n \"$1\" 2>/dev/null)\n  if [ \"$trouve\" = \"$2\" ]; then\n    echo \"ok : $1 = $2\"\n    conformes=$((conformes + 1))\n  else\n    echo \"KO : $1 = $trouve, attendu $2\"\n  fi\n}\n\nmesure kernel.kptr_restrict 2\nmesure kernel.dmesg_restrict 1\nmesure fs.protected_symlinks 1\nmesure fs.protected_hardlinks 1\nmesure fs.suid_dumpable 0\nmesure kernel.randomize_va_space 2\nmesure net.ipv4.ip_forward 0\nmesure net.ipv4.conf.all.rp_filter 1\nmesure net.ipv4.conf.all.accept_redirects 0\nmesure net.ipv4.conf.all.send_redirects 0\nmesure net.ipv4.conf.all.log_martians 1\n\ntotal=$((total + 1))\nif ls -l /etc/shadow | grep -q '^-rw-------'; then     # Debian : -rw-r----- root shadow\n  echo \"ok : /etc/shadow lisible par root seul\"\n  conformes=$((conformes + 1))\nelse\n  echo \"KO : /etc/shadow trop ouvert\"\nfi\n\necho \"$conformes mesures conformes sur $total\"\n"}} expectedCommands={["sh audit.sh > avant.txt", "cat avant.txt", "cat durcissement/99-atelier.conf", "sed -i 's/^kernel.kptr_restrict = 0$/kernel.kptr_restrict = 2/' durcissement/99-atelier.conf", "printf '%s\\n' '# interdire les liens physiques vers les fichiers des autres' 'fs.protected_hardlinks = 1' >> durcissement/99-atelier.conf", "sysctl -p durcissement/99-atelier.conf", "sh audit.sh > apres.txt", "diff avant.txt apres.txt", "find / -xdev -perm -4000 -type f > suid.txt", "diff durcissement/suid-attendus.txt suid.txt && echo aucun setuid inattendu"]} checks={[{"label": "L'état de départ est audité", "path": "avant.txt", "expect": "file", "contains": "KO : kernel.kptr_restrict = 0"}, {"label": "La valeur fausse est corrigée", "path": "durcissement/99-atelier.conf", "expect": "file", "contains": "kernel.kptr_restrict = 2"}, {"label": "La mesure manquante est ajoutée", "path": "durcissement/99-atelier.conf", "expect": "file", "contains": "fs.protected_hardlinks = 1"}, {"label": "Toutes les mesures sont appliquées", "path": "apres.txt", "expect": "file", "contains": "12 mesures conformes sur 12"}, {"label": "Les programmes setuid sont inventoriés", "path": "suid.txt", "expect": "file", "contains": "/usr/bin/clockdiff"}]} hints={["Compare chaque commentaire du brouillon à la valeur qui le suit, et au tableau de la leçon.", "sysctl -p FICHIER applique les réglages du fichier, et affiche chacun.", "L'audit interroge le noyau avec sysctl -n : il voit ce qui est appliqué, pas ce qui est écrit.", "-perm -4000 trouve les fichiers dont le bit setuid est posé ; -xdev reste sur le même système de fichiers."]} />
+
+L'étape 2 est la plus instructive : un réglage copié d'ailleurs, commenté comme une protection, qui faisait l'inverse. Seule la vérification de la valeur réelle, par l'audit, l'a révélé. C'est pour cela que la colonne vérification du registre existe. Note aussi que l'audit ne se contente pas de lire le fichier : il interroge le noyau, ce qui prouve que les réglages sont **appliqués**, pas seulement écrits.
+
+Ensuite, sur `srv-ebene`, dans un terminal simulé, le contrôle du durcissement complet :
+
+1. un audit généraliste, pour repérer ce qu'on aurait oublié : `sudo lynis audit system --quick 2>/dev/null | grep -A2 'Hardening index'` ;
+2. les mises à jour automatiques : `cat /etc/apt/apt.conf.d/20auto-upgrades` ;
+3. le montage de `/tmp` : `findmnt /tmp` ;
+4. root verrouillé : `sudo passwd -l root`, puis `sudo passwd -S root` ;
+5. le pare-feu définitif : `sudo nft list chain inet filtre entree` ;
+6. le journal persistant : `journalctl --disk-usage`.
+
+<SimulatedTerminal shell="bash" title="Le durcissement complet de srv-ebene" expectedCommands={["sudo lynis audit system --quick 2>/dev/null | grep -A2 'Hardening index'", "cat /etc/apt/apt.conf.d/20auto-upgrades", "findmnt /tmp", "sudo passwd -l root", "sudo passwd -S root", "sudo nft list chain inet filtre entree", "journalctl --disk-usage"]} hints={["L'indice de Lynis n'est pas une note à maximiser : ses suggestions se lisent une à une.", "Unattended-Upgrade \"1\" : les mises à jour de sécurité s'appliquent chaque nuit.", "L dans passwd -S : le mot de passe est verrouillé.", "SSH n'est ouvert qu'au réseau de l'atelier et à l'adresse de l'imprimeur."]} commands={{"sudo lynis audit system --quick 2>/dev/null | grep -A2 'Hardening index'": "  Hardening index : 78 [###############     ]\n  Tests performed : 262\n  Plugins enabled : 0", "cat /etc/apt/apt.conf.d/20auto-upgrades": "APT::Periodic::Update-Package-Lists \"1\";\nAPT::Periodic::Unattended-Upgrade \"1\";", "findmnt /tmp": "TARGET SOURCE FSTYPE OPTIONS\n/tmp   tmpfs  tmpfs  rw,nosuid,nodev,noexec,relatime,size=2097152k,inode64", "sudo passwd -l root": "passwd: password changed.", "sudo passwd -S root": "root L 2026-10-03 0 99999 7 -1", "sudo nft list chain inet filtre entree": "table inet filtre {\n    chain entree {\n        type filter hook input priority filter; policy drop;\n        iif \"lo\" accept\n        ct state established,related accept\n        ct state invalid drop\n        meta l4proto { icmp, ipv6-icmp } accept\n        ip saddr 192.168.10.0/24 tcp dport 22 accept\n        ip saddr 203.0.113.45 tcp dport 22 accept comment \"imprimeur\"\n        ip saddr 192.168.10.0/24 tcp dport 80 accept\n        limit rate 5/minute log prefix \"pare-feu refus: \" drop\n    }\n}", "journalctl --disk-usage": "Archived and active journals take 48.0M in the file system.", "sysctl kernel.kptr_restrict fs.protected_hardlinks": "kernel.kptr_restrict = 2\nfs.protected_hardlinks = 1", "sudo ss -ltnup": "Netid State  Recv-Q Send-Q Local Address:Port Peer Address:Port Process\ntcp   LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:((\"nginx\",pid=1022,fd=5))\ntcp   LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:((\"sshd\",pid=611,fd=3))\ntcp   LISTEN 0      128             [::]:22           [::]:*    users:((\"sshd\",pid=611,fd=4))"}} />
+
+## les pièges
+
+- **Appliquer tout le guide sans réfléchir.** Certaines mesures n'ont pas de sens ici ; d'autres rendent le serveur inadministrable.
+- **Copier des réglages d'un forum.** Un commentaire rassurant au-dessus d'une valeur fausse : on vérifie la valeur réelle.
+- **Écrire un réglage sans l'appliquer.** `sysctl.d` n'est lu qu'au démarrage ou par `sysctl --system` ; l'audit interroge le noyau.
+- **Ne pas écrire les écarts.** Un écart non documenté passe pour un oubli.
+- **Un durcissement sans vérification rejouable.** Dans six mois, personne ne saura s'il est toujours en place.
+- **Oublier les redémarrages après une mise à jour du noyau.** La faille corrigée reste active tant que l'ancien noyau tourne.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le guide de référence de cette étape, avec ses niveaux, en français">ANSSI : recommandations pour un système GNU/Linux</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/UnattendedUpgrades" description="Configurer les mises à jour automatiques de Debian, en anglais">Debian : unattended-upgrades</ExternalLink>
+
+<ExternalLink href="https://cisofy.com/lynis/" description="L'outil d'audit généraliste utilisé pour repérer les oublis, en anglais">Lynis</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quels sont les niveaux du guide de l'ANSSI pour GNU/Linux ?" options={["Bas, moyen, haut", "Minimal, intermédiaire, renforcé, élevé", "Débutant, confirmé, expert", "Il n'y a pas de niveaux"]} correct={1} explanation="Chaque niveau s'ajoute au précédent ; on choisit selon le contexte." />
+  <Quiz id="q-2" question="Quelle colonne du registre transforme une affirmation en preuve ?" options={["La mesure", "La vérification, rejouable à chaque contrôle", "Le risque couvert", "La date"]} correct={1} explanation="Sans elle, rien ne dit que la mesure est toujours en place." />
+  <Quiz id="q-3" question="Que fait kernel.kptr_restrict = 2 ?" options={["Il accélère le noyau", "Il masque les adresses du noyau, utiles à qui écrit une attaque", "Il désactive le réseau", "Il interdit sudo"]} correct={1} explanation="Avec 0, elles sont visibles par tous les comptes." />
+  <Quiz id="q-4" question="Un réglage est écrit dans /etc/sysctl.d/ mais l'audit le trouve faux. Cause probable ?" options={["Le fichier est trop long", "Il n'a pas été appliqué, ou son nom est mal orthographié", "Le noyau refuse toute modification", "L'audit est faux"]} correct={1} explanation="sysctl --system l'applique ; un nom inconnu est signalé ou ignoré." />
+  <Quiz id="q-5" question="Pourquoi documenter les mesures qu'on n'applique pas ?" options={["Pour allonger le dossier", "Un écart écrit, avec sa raison et sa compensation, est une décision ; non écrit, c'est un oubli", "C'est inutile", "Pour l'assureur seulement"]} correct={1} explanation="Il pourra être relu, accepté ou remis en question." />
+  <Quiz id="q-6" question="Pourquoi faut-il redémarrer après une mise à jour du noyau ?" options={["Pour libérer la mémoire", "Parce que l'ancien noyau, avec sa faille, tourne tant qu'on n'a pas redémarré", "Pour mettre à jour nginx", "Ce n'est pas nécessaire"]} correct={1} explanation="Le fichier /var/run/reboot-required le signale." />
+  <Quiz id="q-7" question="Que vérifie-t-on en comparant la liste des programmes setuid à une liste attendue ?" options={["La vitesse du disque", "Qu'aucun programme privilégié inattendu n'est apparu, par une installation ou une intrusion", "Les mots de passe", "Les mises à jour"]} correct={1} explanation="Un setuid ajouté par un attaquant est une porte dérobée classique." />
+</QuizGroup>
+
+## à retenir
+
+- Le guide de l'ANSSI : **minimal**, **intermédiaire**, **renforcé**, **élevé** ; l'intermédiaire pour une petite structure.
+- Un **registre** : mesure, risque couvert, mise en œuvre, **vérification**.
+- **Minimiser**, puis durcir comptes, **droits** (umask, setuid, `/tmp`), **noyau** (`sysctl.d`), **réseau**, **mises à jour**, **journaux**.
+- On vérifie la **valeur réelle**, pas le fichier : un réglage écrit n'est pas un réglage appliqué.
+- Les **écarts** s'écrivent, avec leur raison et leur compensation.
+- Le durcissement se prouve par un **audit rejouable**.

@@ -3,6 +3,14 @@
 DÉBUTANT → INTERMÉDIAIRE · ~60 h · 11 modules · 80 leçons · refCodes
 `CL-LSN-02001` à `CL-LSN-02080`
 
+**État** : rédigé. Les 80 leçons sont dans `content/lessons/f2-linux`, avec un
+bilan par module du 1 au 10 (`CL-LSN-02901` à `CL-LSN-02910`), le manifeste
+`content/paths/linux.json` et l'examen final `content/quizzes/linux.json`
+(150 questions, 50 tirées, seuil 75 %). L'épreuve pratique est le dernier
+terminal de la leçon `CL-LSN-02080` : sept tâches vérifiées par l'état final
+de la machine, en trente minutes que l'apprenant chronomètre lui-même, le
+terminal ne mesurant pas le temps.
+
 **Pour qui** : quelqu'un qui a suivi F1 ou sait déjà se servir d'un terminal.
 Prérequis : F1 module 5 (ou le test de positionnement).
 

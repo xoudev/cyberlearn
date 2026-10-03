@@ -1,0 +1,179 @@
+---
+refCode: CL-LSN-02080-V01
+slug: linux-projet-rendu
+title: "Projet final : le rendu, dossier d'exploitation, vérification et épreuve pratique"
+description: "Dernière étape du projet de fin de parcours : écrire le dossier d'exploitation du serveur de l'atelier, sans aucun secret, avec des procédures que quelqu'un d'autre peut suivre, vérifier automatiquement tout l'état du serveur exigence par exigence, détecter la dérive d'une configuration modifiée à la main, remettre le serveur au client, relire la correction commentée du projet, puis passer l'épreuve pratique chronométrée du parcours. Avec la reconstruction, la vérification et la réparation d'un serveur sur un vrai Linux, puis trente minutes de tâches à accomplir seul."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02079-V01"]
+---
+
+Le serveur fonctionne, il est sauvegardé, surveillé et durci. Pour toi, le travail technique est fini. Pour l'atelier, il commence : dans un an, quand le disque de sauvegarde lâchera, quand Paul partira, quand une nouvelle designer arrivera, quelqu'un devra intervenir, et ce ne sera peut-être pas toi. Un serveur bien configuré mais que personne d'autre ne sait faire vivre est une dette. Cette dernière étape transforme ton travail en quelque chose de transmissible : un **dossier d'exploitation**, une **vérification automatique** de l'état du serveur, et une **remise** en bonne et due forme. Elle se termine par l'**épreuve pratique** du parcours.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- structurer un dossier d'exploitation, et savoir ce qui ne doit pas y figurer ;
+- écrire des procédures que quelqu'un d'autre peut suivre sans toi ;
+- vérifier automatiquement l'état d'un serveur, exigence par exigence ;
+- détecter et corriger la dérive d'une configuration modifiée à la main ;
+- remettre un serveur à son client, et lui rendre ses accès ;
+- résoudre seul, en temps limité, des tâches d'administration variées.
+
+## pourquoi ça compte
+
+Les serveurs de petites structures meurent rarement d'une attaque spectaculaire. Ils meurent d'oubli : l'administrateur est parti, personne ne sait où sont les sauvegardes ni comment les restaurer, le mot de passe de la clé de chiffrement était dans sa tête, et la configuration a dérivé au fil de modifications faites à la hâte. Le dossier d'exploitation et la vérification automatique sont les deux remèdes : l'un dit comment le serveur doit être et comment le faire vivre, l'autre prouve à tout moment qu'il est bien ainsi.
+
+## le dossier d'exploitation
+
+Le dossier suit une structure prévisible, pour qu'on y trouve vite ce qu'on cherche un soir de panne :
+
+1. **présentation** : à quoi sert le serveur, qui le possède, qui contacter ;
+2. **architecture** : le schéma, les adresses, les disques, les services et leurs ports ;
+3. **comptes et droits** : le tableau des données, des groupes et des dossiers ;
+4. **services** : pour chacun, ses fichiers de configuration, son journal, comment le redémarrer ;
+5. **sauvegardes** : ce qui est sauvegardé, où, combien de temps, et la **procédure de restauration** pas à pas ;
+6. **supervision** : chaque alerte de la vigie, ce qu'elle signifie, et quoi faire ;
+7. **sécurité** : le registre des mesures, les écarts et leurs compensations ;
+8. **procédures courantes** : l'arrivée et le départ d'une personne, la perte d'un portable, la mise à jour mensuelle, le redémarrage ;
+9. **journal des changements** : chaque modification, datée, avec son auteur et sa raison.
+
+Les scripts du projet, la liste de l'équipe et les fichiers de configuration y sont joints en annexe : ils documentent mieux que des phrases.
+
+## ce qui ne doit pas y figurer
+
+Le dossier sera imprimé, copié, envoyé par courriel : il ne contient **aucun secret**. Ni mot de passe, ni clé privée, ni phrase de passe. À la place, il dit **où** se trouve chaque secret : la clé de déchiffrement des sauvegardes au coffre, les accès de l'hébergeur dans le gestionnaire de mots de passe de Karim, le mot de passe de root verrouillé et inutile. Les données personnelles aussi se limitent au nécessaire : des identifiants et des rôles, pas d'adresses ni de numéros personnels.
+
+Le dossier ne vit pas seulement sur le serveur : le jour où le serveur est en panne, c'est précisément le jour où l'on en a besoin. Une copie imprimée rejoint le classeur de l'atelier, une autre le poste de Karim.
+
+## des procédures pour quelqu'un d'autre
+
+Une procédure s'écrit pour un lecteur qui n'est pas toi, un soir de panne, sous pression. Elle est faite d'étapes **numérotées**, à l'**impératif**, chacune avec la **commande exacte** et la **vérification** qui prouve qu'elle a marché :
+
+```text
+Restaurer un fichier effacé depuis la sauvegarde de la nuit
+1. Se connecter : ssh srv-ebene
+2. Trouver la dernière archive : cat /mnt/sauvegardes/DERNIERE
+3. Vérifier son intégrité : cd /mnt/sauvegardes && sha256sum -c "$(cat DERNIERE).sha256"
+   Attendu : OK. Sinon, prendre l'archive de la veille.
+4. Restaurer à part : mkdir /tmp/restau && tar xzf "$(cat DERNIERE)" -C /tmp/restau
+5. Copier le fichier à sa place, puis vérifier qu'il s'ouvre.
+6. Supprimer /tmp/restau, et noter la restauration au journal des changements.
+```
+
+La seule façon de savoir si une procédure est bonne est de la faire **suivre par quelqu'un d'autre**. Karim restaure un fichier en suivant la procédure, sans ton aide : chaque hésitation est une phrase à réécrire.
+
+## la vérification automatique de l'état
+
+Chaque exigence du cahier des charges a une vérification. Réunies dans un seul script, `verifier-serveur.sh`, elles répondent en quelques secondes à la question « le serveur est-il toujours conforme ? ». Le script affiche une ligne par exigence, `ok` ou `KO` avec la raison, et sort avec un code non nul s'il trouve un écart. La vigie le lance chaque lundi et joint son résultat au rapport hebdomadaire. Il sert aussi après chaque intervention : on vérifie qu'on n'a rien cassé ailleurs.
+
+## la dérive
+
+Un serveur bien configuré ne le reste pas tout seul. Au fil des mois, des changements faits à la main, souvent pour dépanner, l'éloignent de sa configuration de référence : un `chmod 777` pour « débloquer » un dossier un vendredi soir, un réglage modifié pour un test et jamais remis, une tâche planifiée supprimée par erreur. C'est la **dérive de configuration**. La vérification automatique la détecte, et les scripts du projet permettent de revenir à l'état de référence : relancer un script d'installation idempotent, réappliquer un fichier de réglages, réinstaller une crontab. C'est l'idée qui, à plus grande échelle, conduit aux outils de gestion de configuration comme Ansible : décrire l'état voulu, et laisser l'outil y ramener la machine.
+
+<Diagram caption="De la configuration de référence à la preuve de conformité">
+flowchart LR
+  A["scripts du projet : état de référence"] --> B["installer.sh"]
+  B --> C["serveur conforme"]
+  C -->|"changements à la main"| D["dérive"]
+  D --> E["verifier-serveur.sh : KO avec la raison"]
+  E --> F["correction, ou relance des scripts"]
+  F --> C
+  C --> G["verifier-serveur.sh : état conforme"]
+</Diagram>
+
+## la remise au client
+
+La remise est un moment formel. On présente le serveur à Hélène et Karim, en le faisant fonctionner devant eux : un fichier déposé par SFTP, le catalogue ouvert depuis un poste, une restauration faite par Karim. On parcourt la liste des exigences, et chacune est cochée avec sa vérification : c'est le **procès-verbal de recette**, que l'atelier signe. On leur remet le dossier, et l'on règle les accès : ton compte d'intervention est **supprimé**, ou conservé avec leur accord écrit pour la maintenance, et dans ce cas noté au dossier. La clé privée de restauration est remise sous enveloppe, et tu n'en gardes aucune copie.
+
+## la correction commentée du projet
+
+Pour chaque étape, les choix qui comptaient, et les erreurs qu'on voit le plus souvent :
+
+- **le cahier des charges** : des besoins numérotés, des exigences vérifiables, et un périmètre écrit. L'erreur fréquente est de commencer par installer ;
+- **installer et organiser** : des groupes tirés du tableau des données, le setgid et l'umask `007` sur les partages, l'expiration programmée. L'erreur fréquente est un `usermod -G` sans `-a`, ou un `777` ;
+- **les services** : SFTP sans shell, l'imprimeur enfermé, nginx réservé au réseau local, un service maison qui journalise et écrit de façon atomique. L'erreur fréquente est une racine de chroot qui n'appartient pas à root ;
+- **sauvegarder et superviser** : 3-2-1, une copie chiffrée que le serveur ne sait pas déchiffrer, une restauration prouvée, une vigie sobre. L'erreur fréquente est de ne jamais restaurer ;
+- **durcir** : un niveau choisi, un registre avec ses vérifications, des écarts écrits. L'erreur fréquente est un réglage copié d'un forum et jamais vérifié ;
+- **le rendu** : un dossier sans secret, des procédures testées par quelqu'un d'autre, une vérification automatique. L'erreur fréquente est un dossier qui n'existe que sur le serveur qu'il documente.
+
+D'autres choix étaient défendables : Samba plutôt que SFTP si l'équipe y tenait, un minuteur systemd plutôt que cron, un autre outil que `age` pour le chiffrement. Ce qui compte est que chaque choix soit **justifié** par un besoin, et **écrit**.
+
+## à toi de jouer : la vérification et la dérive
+
+Le dossier contient les scripts du projet : `creer-comptes.sh` et la liste de l'équipe, `durcissement/99-atelier.conf`, `planning.txt`, et deux nouveaux venus : `installer.sh`, qui reconstruit l'état de référence en les enchaînant, et `verifier-serveur.sh`, qui vérifie cet état exigence par exigence. `incident.sh` simule ce qu'un collègue pressé aurait fait à la main pendant ton absence.
+
+1. lis le script d'installation, puis reconstruis le serveur : `cat installer.sh`, puis `sh installer.sh` ;
+2. lis la vérification, puis lance-la et garde son résultat : `cat verifier-serveur.sh`, puis `sh verifier-serveur.sh > etat-1.txt` et `cat etat-1.txt` ;
+3. un vendredi soir, quelqu'un intervient à la main : `sh incident.sh` ;
+4. la vérification du lundi : `sh verifier-serveur.sh`. Lis chaque ligne `KO` ;
+5. ramène le serveur à son état de référence : `chmod 2770 srv/partage/compta`, `sysctl -p durcissement/99-atelier.conf`, `crontab planning.txt` ;
+6. et prouve-le : `sh verifier-serveur.sh > etat-2.txt`, puis `cat etat-2.txt`.
+
+<LinuxTerminal title="La vérification et la dérive" files={{"mission/equipe.csv": "identifiant,nom,role,equipes,fin\nhelene,Hélène Ruiz,gérante,direction;projets;compta,\nkarim,Karim Benali,associé designer,direction;projets,\nlea,Léa Martin,designer,projets,\nmarc,Marc Dubois,designer,projets,\nnina,Nina Petit,comptable,compta,\npaul,Paul Girard,stagiaire,projets,2027-03-31\n", "creer-comptes.sh": "#!/bin/sh\n# creer-comptes.sh : crée les groupes et les comptes de l'atelier, depuis\n# mission/equipe.csv. Avec -n, il affiche ce qu'il ferait, sans rien faire.\n#\n# Sur Debian, on écrirait groupadd, useradd -m -c et usermod -aG. Ce Linux\n# n'a que les commandes de BusyBox : addgroup, adduser -D -H, et pas de\n# usermod, d'où la fonction ajouter_au_groupe, qui complète /etc/group.\nset -eu\n\nessai=0\n[ \"${1:-}\" = \"-n\" ] && essai=1\n\nfaire() {\n  if [ \"$essai\" = 1 ]; then echo \"+ $*\"; else \"$@\"; fi\n}\n\najouter_au_groupe() {   # ajouter_au_groupe COMPTE GROUPE\n  if grep -q \"^$2:.*:$\" /etc/group; then\n    sed -i \"s/^\\($2:.*:\\)\\$/\\1$1/\" /etc/group     # premier membre\n  else\n    sed -i \"/^$2:/s/\\$/,$1/\" /etc/group           # membres suivants\n  fi\n}\n\nfor groupe in equipe direction projets compta; do\n  grep -q \"^$groupe:\" /etc/group || faire addgroup \"$groupe\"\ndone\n\ntail -n +2 mission/equipe.csv | while IFS=, read -r id nom role equipes fin; do\n  if grep -q \"^$id:\" /etc/passwd; then\n    echo \"$id existe déjà : rien à faire\"\n    continue\n  fi\n  faire adduser -D -H -G equipe -g \"$nom\" -s /bin/sh \"$id\"\n  for g in $(echo \"$equipes\" | tr ';' ' '); do\n    faire ajouter_au_groupe \"$id\" \"$g\"\n  done\n  if [ -n \"$fin\" ]; then\n    echo \"$id : compte à faire expirer le $fin\"\n  fi\ndone\n", "durcissement/99-atelier.conf": "# 99-atelier.conf : réglages de sécurité du noyau de srv-ebene.\n# Sur le serveur : /etc/sysctl.d/99-atelier.conf, appliqué par sysctl --system.\n# Chaque réglage est précédé de la raison qui le justifie.\n\n# masquer les adresses du noyau aux comptes ordinaires\nkernel.kptr_restrict = 2\n# réserver le journal du noyau (dmesg) aux administrateurs\nkernel.dmesg_restrict = 1\n# déjouer les pièges par liens symboliques dans les dossiers partagés\nfs.protected_symlinks = 1\n# pas de vidage mémoire des programmes privilégiés\nfs.suid_dumpable = 0\n# placement aléatoire complet de la mémoire\nkernel.randomize_va_space = 2\n# le serveur n'est pas un routeur\nnet.ipv4.ip_forward = 0\n# rejeter les paquets à l'adresse source incohérente\nnet.ipv4.conf.all.rp_filter = 1\n# ignorer les redirections ICMP, et ne pas en envoyer\nnet.ipv4.conf.all.accept_redirects = 0\nnet.ipv4.conf.all.send_redirects = 0\n# journaliser les paquets aux adresses impossibles\nnet.ipv4.conf.all.log_martians = 1\n# interdire les liens physiques vers les fichiers des autres\nfs.protected_hardlinks = 1\n", "planning.txt": "# planning.txt : les tâches de l'atelier, à installer avec crontab\n# minute heure jour mois jour-de-la-semaine  commande\n30 2 * * * /usr/local/bin/sauvegarde.sh\n0 7 * * * /usr/local/bin/surveiller.sh\n", "installer.sh": "#!/bin/sh\n# installer.sh : ramène le serveur à son état de référence, en enchaînant les\n# scripts du projet. Idempotent : on peut le relancer sans risque.\nset -eu\ncd /mnt\n\necho \"== comptes et groupes\"\nsh creer-comptes.sh\n\necho \"== dossiers partagés\"\nfor d in projets:projets compta:compta commun:equipe; do\n  dossier=srv/partage/${d%%:*}\n  mkdir -p \"$dossier\"\n  chgrp \"${d##*:}\" \"$dossier\"\n  chmod 2770 \"$dossier\"\ndone\n\necho \"== réglages du noyau\"\nsysctl -p durcissement/99-atelier.conf > /dev/null\n\necho \"== tâches planifiées\"\nmkdir -p /var/spool/cron/crontabs\ncrontab planning.txt\n\necho \"installation terminée\"\n", "verifier-serveur.sh": "#!/bin/sh\n# verifier-serveur.sh : vérifie l'état du serveur, exigence par exigence.\n# Une ligne par contrôle ; le code de sortie est le nombre d'écarts.\ncd /mnt\necarts=0\nok() { echo \"ok : $1\"; }\nko() { echo \"KO : $1\"; ecarts=$((ecarts + 1)); }\n\n# B1, B2 : un compte par personne de la liste\nfor id in $(tail -n +2 mission/equipe.csv | cut -d, -f1); do\n  if grep -q \"^$id:\" /etc/passwd; then ok \"compte $id\"; else ko \"compte $id absent\"; fi\ndone\n\n# B1, B2 : les dossiers partagés, leur groupe et leurs droits\nfor d in projets:projets compta:compta commun:equipe; do\n  dossier=srv/partage/${d%%:*}\n  attendu=\"drwxrws--- ${d##*:}\"\n  trouve=$(ls -ld \"$dossier\" 2>/dev/null | awk '{print $1, $4}')\n  if [ \"$trouve\" = \"$attendu\" ]; then ok \"$dossier : $attendu\"; else ko \"$dossier : $trouve, attendu $attendu\"; fi\ndone\n\n# B7 : chaque réglage du noyau, comparé au fichier de référence\nfor ligne in $(grep -E '^[a-z]' durcissement/99-atelier.conf | tr -d ' '); do\n  cle=${ligne%%=*}\n  valeur=${ligne#*=}\n  trouve=$(sysctl -n \"$cle\")\n  if [ \"$trouve\" = \"$valeur\" ]; then ok \"noyau : $cle = $valeur\"; else ko \"noyau : $cle = $trouve, attendu $valeur\"; fi\ndone\n\n# B5 : la sauvegarde planifiée\nif crontab -l 2>/dev/null | grep -q 'sauvegarde.sh'; then ok \"sauvegarde planifiée\"; else ko \"sauvegarde non planifiée\"; fi\n\nif [ \"$ecarts\" -eq 0 ]; then echo \"état conforme\"; else echo \"$ecarts écart(s)\"; fi\nexit \"$ecarts\"\n", "incident.sh": "#!/bin/sh\n# incident.sh : simule des changements faits à la main, un vendredi soir.\ncd /mnt\nchmod 777 srv/partage/compta                                  # « ça bloquait, j'ai tout ouvert »\nsysctl -w net.ipv4.conf.all.accept_redirects=1 > /dev/null    # un test réseau jamais annulé\ncrontab -r                                                     # la crontab effacée par erreur\ndate '+%F %H:%M : changements faits à la main' > incident.txt\necho \"Pendant ton absence, quelqu'un est intervenu sur le serveur.\"\n"}} expectedCommands={["cat installer.sh", "sh installer.sh", "cat verifier-serveur.sh", "sh verifier-serveur.sh > etat-1.txt", "cat etat-1.txt", "sh incident.sh", "sh verifier-serveur.sh", "chmod 2770 srv/partage/compta", "sysctl -p durcissement/99-atelier.conf", "crontab planning.txt", "sh verifier-serveur.sh > etat-2.txt", "cat etat-2.txt"]} checks={[{"label": "Le serveur reconstruit est conforme", "path": "etat-1.txt", "expect": "file", "contains": "état conforme"}, {"label": "L'incident a eu lieu", "path": "incident.txt", "expect": "file", "contains": "changements faits à la main"}, {"label": "La comptabilité est refermée", "path": "srv/partage/compta", "expect": "dir", "mode": "2770"}, {"label": "Le serveur est de nouveau conforme", "path": "etat-2.txt", "expect": "file", "contains": "état conforme"}]} hints={["installer.sh enchaîne les scripts du projet ; il peut être relancé sans risque.", "Chaque ligne KO dit ce qui a été trouvé, et ce qui était attendu.", "sysctl -p réapplique tout le fichier de référence ; crontab réinstalle la planification.", "Relance installer.sh si tu préfères : il ramène lui aussi le serveur à son état de référence."]} />
+
+Les trois écarts de l'étape 4 sont typiques : aucun ne bloque le travail de l'équipe, tous affaiblissent le serveur, et aucun ne se serait vu sans la vérification. La comptabilité ouverte à tous les comptes de la machine, des redirections réseau de nouveau acceptées, et plus aucune sauvegarde planifiée : c'est la dernière qui aurait fait le plus de dégâts, découverte le jour où l'on aurait eu besoin d'une sauvegarde.
+
+Sur le vrai `srv-ebene`, la même vérification couvre toutes les exigences du projet, services compris. Dans un terminal simulé :
+
+1. la vérification complète, et son code de sortie : `sudo verifier-serveur.sh; echo "code de sortie : $?"` ;
+2. le contenu du dossier remis à l'atelier : `ls dossier-exploitation`.
+
+<SimulatedTerminal shell="bash" title="La remise de srv-ebene" expectedCommands={["sudo verifier-serveur.sh; echo \"code de sortie : $?\"", "ls dossier-exploitation"]} hints={["Une ligne par exigence du cahier des charges, et un code de sortie nul si tout est conforme.", "Le dossier suit la structure de la leçon : un fichier par partie, et les annexes."]} commands={{"sudo verifier-serveur.sh; echo \"code de sortie : $?\"": "ok : compte helene\nok : compte karim\nok : compte lea\nok : compte marc\nok : compte nina\nok : compte paul\nok : /srv/partage/projets : drwxrws--- projets\nok : /srv/partage/compta : drwxrws--- compta\nok : /srv/partage/commun : drwxrws--- equipe\nok : /srv/depot : root, /srv/depot/epreuves : imprimeur projets 2770\nok : sshd : passwordauthentication no, permitrootlogin no\nok : sftp : groupe sftp-seul limité à internal-sftp\nok : nginx : configuration valide, site réservé à 192.168.10.0/24\nok : catalogue.timer actif, dernière exécution réussie\nok : pare-feu : entrée en policy drop, SSH limité\nok : noyau : 12 réglages conformes\nok : sauvegarde du jour : atelier-2026-10-03-0230.tar.gz, empreinte vérifiée\nok : copie distante du jour présente chez l'hébergeur\nok : dernière restauration testée : 2026-10-01\nok : mises à jour automatiques actives, pas de redémarrage en attente\nok : aucun service en échec\nétat conforme\ncode de sortie : 0", "ls dossier-exploitation": "01-presentation.md          06-supervision.md\n02-architecture.md          07-securite-registre.md\n03-comptes-et-droits.md     08-procedures.md\n04-services.md              09-journal-des-changements.md\n05-sauvegardes.md           annexes", "ls dossier-exploitation/annexes": "catalogue.service  creer-comptes.sh  nftables.conf    sauvegarde.sh\ncatalogue.timer    equipe.csv        planning.txt     surveiller.sh\n99-atelier.conf    installer.sh      proces-verbal-recette.md  verifier-serveur.sh"}} />
+
+## l'épreuve pratique
+
+Voici l'épreuve pratique du parcours. Elle se passe dans le terminal ci-dessous, seul, en **trente minutes** : lance un chronomètre avant de commencer, le terminal ne mesure pas le temps pour toi. Aucune commande n'est donnée ; seul l'état final est vérifié, par les cases qui se cochent d'elles-mêmes. La médiathèque de Saint-Roch te confie son petit serveur, avec sept tâches :
+
+1. le dossier `partage/animations` doit être réservé à son groupe, avec héritage du groupe pour les nouveaux fichiers (`2770`) ;
+2. le journal `journaux/acces.log` montre des refus d'accès : écris dans `suspect.txt` l'adresse, seule, qui a reçu le plus de réponses `401` ;
+3. le script `scripts/nettoyer-cache.sh` doit supprimer les seuls fichiers `.tmp` du dossier `cache`, et il a un défaut grave : **lis-le avant de le lancer**, corrige-le, puis lance-le ;
+4. archive le dossier `catalogue` dans `sauvegarde/catalogue.tar.gz`, avec son empreinte dans `sauvegarde/catalogue.tar.gz.sha256`, et garde le résultat de sa vérification dans `sauvegarde/verif.txt` ;
+5. dans `config/sshd_config.d/10-durcissement.conf`, interdis la connexion de root et l'authentification par mot de passe ;
+6. dans `config/nftables.conf`, ferme l'entrée par défaut, sans toucher à la sortie ;
+7. dans `config/crontab.txt`, ajoute la ligne qui lance `/mnt/scripts/nettoyer-cache.sh` chaque jour à 4 h 45.
+
+<LinuxTerminal title="L'épreuve pratique : trente minutes" files={{"partage/animations/programme.txt": "Octobre : heure du conte le mercredi, atelier d'écriture le samedi.\n", "journaux/acces.log": "192.168.20.14 - - [03/Oct/2026:09:00:07 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:00:20 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n203.0.113.9 - - [03/Oct/2026:09:00:33 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"curl/8.5\"\n192.168.20.31 - - [03/Oct/2026:09:00:46 +0200] \"GET /agenda HTTP/1.1\" 200 3880 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:00:59 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n203.0.113.9 - - [03/Oct/2026:09:01:12 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"curl/8.5\"\n192.168.20.31 - - [03/Oct/2026:09:01:25 +0200] \"GET /agenda HTTP/1.1\" 200 3880 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:01:38 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n203.0.113.9 - - [03/Oct/2026:09:01:51 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"curl/8.5\"\n192.168.20.31 - - [03/Oct/2026:09:02:04 +0200] \"GET /agenda HTTP/1.1\" 200 3880 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:02:17 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n203.0.113.9 - - [03/Oct/2026:09:02:30 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"curl/8.5\"\n192.168.20.31 - - [03/Oct/2026:09:02:43 +0200] \"GET /agenda HTTP/1.1\" 200 3880 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:02:56 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:03:09 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n192.168.20.31 - - [03/Oct/2026:09:03:22 +0200] \"GET /admin/ HTTP/1.1\" 403 290 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:03:35 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:03:48 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n192.168.20.31 - - [03/Oct/2026:09:04:01 +0200] \"GET /admin/ HTTP/1.1\" 403 290 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:04:14 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:04:27 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n192.168.20.31 - - [03/Oct/2026:09:04:40 +0200] \"GET /admin/ HTTP/1.1\" 403 290 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:04:53 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:05:06 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:05:19 +0200] \"GET /favicon.ico HTTP/1.1\" 200 401 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:05:32 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:05:45 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:05:58 +0200] \"GET /favicon.ico HTTP/1.1\" 200 401 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:06:11 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:06:24 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:06:37 +0200] \"GET /favicon.ico HTTP/1.1\" 200 401 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:06:50 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:07:03 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:07:16 +0200] \"GET /favicon.ico HTTP/1.1\" 200 401 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:07:29 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:07:42 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:07:55 +0200] \"GET /favicon.ico HTTP/1.1\" 200 401 \"-\" \"Mozilla/5.0\"\n192.168.20.14 - - [03/Oct/2026:09:08:08 +0200] \"GET /catalogue/recherche?q=roman HTTP/1.1\" 200 5120 \"-\" \"Mozilla/5.0\"\n198.51.100.23 - - [03/Oct/2026:09:08:21 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"python-requests/2.31\"\n203.0.113.9 - - [03/Oct/2026:09:08:34 +0200] \"POST /admin/login HTTP/1.1\" 401 512 \"-\" \"curl/8.5\"\n", "scripts/nettoyer-cache.sh": "#!/bin/sh\n# nettoyer-cache.sh : supprime les fichiers temporaires (.tmp) du cache.\nCACHE=/mnt/cache\nfor f in $CACHE/*; do\n  rm -f \"$f\"\ndone\nlogger -t nettoyage \"cache nettoyé\"\n", "cache/session-1.tmp": "session expirée\n", "cache/session-2.tmp": "session expirée\n", "cache/notices.db": "base des notices : ne pas supprimer\n", "cache/index.idx": "index de recherche : ne pas supprimer\n", "catalogue/livres.csv": "cote,titre\nR ROW,Le Chardon bleu\nP HUG,Les Contemplations\n", "catalogue/dvd.csv": "cote,titre\nF VAR,Les Glaneurs\n", "config/sshd_config.d/LISEZMOI": "Les réglages locaux de sshd, un fichier .conf par sujet.\n", "config/nftables.conf": "#!/usr/sbin/nft -f\nflush ruleset\n\ntable inet filtre {\n    chain entree {\n        type filter hook input priority filter; policy accept;\n        iif \"lo\" accept\n        ct state established,related accept\n        ip saddr 192.168.20.0/24 tcp dport 22 accept\n        tcp dport { 80, 443 } accept\n    }\n    chain sortie {\n        type filter hook output priority filter; policy accept;\n    }\n}\n", "config/crontab.txt": "0 3 * * * /mnt/scripts/sauvegarde.sh\n"}} checks={[{"label": "1. Le dossier des animations est en 2770", "path": "partage/animations", "expect": "dir", "mode": "2770"}, {"label": "2. L'adresse suspecte est trouvée", "path": "suspect.txt", "expect": "file", "contains": "198.51.100.23"}, {"label": "3. La base des notices est intacte", "path": "cache/notices.db", "expect": "file"}, {"label": "3. L'index de recherche est intact", "path": "cache/index.idx", "expect": "file"}, {"label": "3. Le premier fichier temporaire est supprimé", "path": "cache/session-1.tmp", "expect": "absent"}, {"label": "3. Le second fichier temporaire est supprimé", "path": "cache/session-2.tmp", "expect": "absent"}, {"label": "4. L'archive du catalogue existe", "path": "sauvegarde/catalogue.tar.gz", "expect": "file"}, {"label": "4. L'archive est vérifiée par son empreinte", "path": "sauvegarde/verif.txt", "expect": "file", "contains": "catalogue.tar.gz: OK"}, {"label": "5. Root ne se connecte plus", "path": "config/sshd_config.d/10-durcissement.conf", "expect": "file", "contains": "PermitRootLogin no"}, {"label": "5. Les mots de passe sont refusés", "path": "config/sshd_config.d/10-durcissement.conf", "expect": "file", "contains": "PasswordAuthentication no"}, {"label": "6. L'entrée est fermée par défaut", "path": "config/nftables.conf", "expect": "file", "contains": "hook input priority filter; policy drop;"}, {"label": "6. La sortie reste ouverte", "path": "config/nftables.conf", "expect": "file", "contains": "hook output priority filter; policy accept;"}, {"label": "7. Le nettoyage est planifié à 4 h 45", "path": "config/crontab.txt", "expect": "file", "contains": "45 4 * * * /mnt/scripts/nettoyer-cache.sh"}]} hints={["Tâche 1 : les permissions spéciales, au module 4.", "Tâche 2 : le code de réponse est le neuvième champ d'une ligne du journal ; attention aux autres champs qui contiennent 401.", "Tâche 3 : un motif plus précis que * dans la boucle.", "Tâche 4 : le tar de ce Linux ne compresse pas seul ; l'empreinte se vérifie avec sha256sum -c.", "Tâche 6 : une commande sed adressée à une seule ligne."]} />
+
+Si toutes les cases sont cochées en moins de trente minutes, tu as le niveau attendu à la sortie du parcours : prêt pour l'examen final. Sinon, note les tâches qui t'ont arrêté, et reprends les modules correspondants : les permissions au module 4, le traitement de texte au module 3, les scripts au module 7, les sauvegardes au module 9, SSH et le pare-feu au module 10.
+
+## les pièges
+
+- **Un dossier d'exploitation qui contient des mots de passe.** Il dit où sont les secrets, jamais ce qu'ils sont.
+- **Un dossier rangé seulement sur le serveur.** Il disparaît avec la panne pendant laquelle on en a besoin.
+- **Des procédures jamais suivies par quelqu'un d'autre.** Leurs trous ne se voient qu'en situation.
+- **Une vérification qui ne teste pas tout le cahier des charges.** La dérive se loge dans ce qui n'est pas vérifié.
+- **Garder ses accès après la remise.** Un accès oublié est une porte ouverte, et une responsabilité.
+- **Lancer un script sans l'avoir lu.** Surtout celui d'un autre, surtout s'il supprime des fichiers.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-relatives-ladministration-securisee-des-si" description="Organiser l'administration d'un système d'information, en français">ANSSI : administration sécurisée des SI</ExternalLink>
+
+<ExternalLink href="https://debian-handbook.info/browse/fr-FR/stable/" description="La référence pour continuer à administrer Debian, en français">Le cahier de l'administrateur Debian</ExternalLink>
+
+<ExternalLink href="https://docs.ansible.com/ansible/latest/getting_started/index.html" description="Décrire l'état voulu d'un serveur et l'y ramener automatiquement, en anglais">Ansible : premiers pas</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Un dossier d'exploitation doit-il contenir le mot de passe de l'hébergeur ?" options={["Oui, pour qu'on le retrouve", "Non : il dit où se trouve ce secret, jamais ce qu'il est", "Oui, dans une annexe", "Seulement s'il est imprimé"]} correct={1} explanation="Le dossier est copié et imprimé : il ne contient aucun secret." />
+  <Quiz id="q-2" question="Comment savoir si une procédure de restauration est bonne ?" options={["En la relisant soi-même", "En la faisant suivre par quelqu'un d'autre, sans aide", "En la faisant valider par l'assureur", "En la mettant à jour chaque année"]} correct={1} explanation="Chaque hésitation du lecteur est une phrase à réécrire." />
+  <Quiz id="q-3" question="Qu'est-ce que la dérive de configuration ?" options={["Une panne matérielle", "L'éloignement progressif d'un serveur de sa configuration de référence, par des changements faits à la main", "Une mise à jour automatique", "Un changement d'adresse IP"]} correct={1} explanation="Une vérification automatique régulière la détecte." />
+  <Quiz id="q-4" question="Que doit faire verifier-serveur.sh quand il trouve un écart ?" options={["Le corriger sans rien dire", "Afficher KO avec la raison, et sortir avec un code non nul", "Redémarrer le serveur", "Supprimer la configuration"]} correct={1} explanation="Le code de sortie permet à la vigie et aux autres scripts de réagir." />
+  <Quiz id="q-5" question="Où ranger le dossier d'exploitation ?" options={["Seulement sur le serveur", "Hors du serveur aussi : une copie imprimée et une copie chez le client", "Sur une clé USB dans le serveur", "Nulle part, tout est dans les scripts"]} correct={1} explanation="On en a besoin précisément quand le serveur est en panne." />
+  <Quiz id="q-6" question="Que devient ton compte d'intervention après la remise ?" options={["Il reste actif au cas où", "Il est supprimé, ou conservé avec l'accord écrit du client et noté au dossier", "Il est partagé avec Karim", "Il devient root"]} correct={1} explanation="Un accès oublié est une porte ouverte." />
+  <Quiz id="q-7" question="Avant de lancer le script de nettoyage d'un autre administrateur, que faire ?" options={["Le lancer pour voir", "Le lire, et vérifier ce qu'il supprime vraiment", "Le lancer en root", "Le supprimer"]} correct={1} explanation="Un script qui supprime des fichiers se lit avant de s'exécuter." />
+</QuizGroup>
+
+## à retenir
+
+- Le **dossier d'exploitation** : architecture, comptes, services, sauvegardes, supervision, sécurité, procédures, journal des changements.
+- **Aucun secret** dedans : il dit où ils sont. Et une copie **hors du serveur**.
+- Des **procédures** numérotées, avec commandes et vérifications, testées par **quelqu'un d'autre**.
+- Une **vérification automatique** par exigence, avec un code de sortie, lancée chaque semaine.
+- La **dérive** se détecte par la vérification et se corrige par les scripts de référence.
+- La **remise** : démonstration, procès-verbal de recette, dossier remis, **accès rendus**.
