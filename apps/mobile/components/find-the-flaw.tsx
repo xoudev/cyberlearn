@@ -90,7 +90,7 @@ export function FindTheFlawExercise({ flaw }: { flaw: FindTheFlaw }): React.JSX.
                   }}
                   disabled={blank || stage !== "line"}
                   accessibilityRole="button"
-                  accessibilityLabel={`Ligne ${String(n)}`}
+                  accessibilityLabel={`Ligne ${String(n)} : ${text.trim()}`}
                   style={{
                     flexDirection: "row",
                     gap: 12,

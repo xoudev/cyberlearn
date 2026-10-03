@@ -128,7 +128,8 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
                   pickLine(n);
                 }}
                 disabled={blank || stage !== "line"}
-                aria-label={`Ligne ${String(n)}${isWrong ? ", pas celle-ci" : ""}${isFlaw ? ", la ligne vulnérable" : ""}`}
+                // The number and the code, read together; then what was decided.
+                aria-label={`Ligne ${String(n)} : ${text.trim()}${isWrong ? ", pas celle-ci" : ""}${isFlaw ? ", la ligne vulnérable" : ""}`}
                 style={{
                   display: "flex",
                   gap: 14,
