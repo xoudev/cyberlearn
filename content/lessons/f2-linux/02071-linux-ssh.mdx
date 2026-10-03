@@ -1,0 +1,227 @@
+---
+refCode: CL-LSN-02071-V01
+slug: linux-ssh
+title: "SSH : se connecter, les clés, l'agent et la configuration du client"
+description: "Administrer une machine à distance avec SSH : la connexion et ce qu'elle protège, l'empreinte de l'hôte et known_hosts à la première connexion, la paire de clés ed25519 et sa phrase de passe, installer sa clé avec ssh-copy-id, l'agent qui garde la clé déverrouillée, le fichier ~/.ssh/config, le rebond par un bastion, les tunnels et les droits du dossier .ssh. Avec un dossier .ssh remis en ordre et une empreinte calculée à la main sur un vrai Linux, puis une clé créée et installée sur un serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 320
+prerequisites: ["CL-LSN-02070-V01"]
+---
+
+Presque tous les serveurs Linux du monde s'administrent à distance, et presque tous par **SSH** (*Secure Shell*). C'est par lui qu'on ouvre un terminal sur une machine à l'autre bout du pays, qu'on y copie des fichiers, qu'on y lance des scripts. C'est aussi la porte d'entrée la plus attaquée d'un serveur exposé à Internet : des robots y essaient des mots de passe en continu, jour et nuit. Bien utiliser SSH, c'est à la fois gagner un confort considérable et fermer la porte que les attaquants essaient en premier. Cette leçon couvre le côté **client** : se connecter, s'authentifier par clé, et organiser ses connexions. La suivante durcit le côté serveur.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- te connecter à une machine et y lancer une commande avec `ssh` ;
+- vérifier l'empreinte d'un serveur à la première connexion, et comprendre `known_hosts` ;
+- créer une paire de clés, la protéger par une phrase de passe, et installer la clé publique sur un serveur ;
+- utiliser `ssh-agent` pour ne taper la phrase de passe qu'une fois ;
+- écrire un fichier `~/.ssh/config`, avec rebond par un bastion ;
+- donner au dossier `.ssh` les droits qu'exige SSH.
+
+## pourquoi ça compte
+
+Avant SSH, on administrait à distance avec `telnet` et `rsh`, qui faisaient circuler les mots de passe **en clair** : n'importe quelle machine sur le chemin pouvait les lire. SSH chiffre tout, et surtout **authentifie** les deux côtés : le client vérifie qu'il parle au bon serveur, le serveur vérifie qui se connecte. Mais ces garanties dépendent de gestes que l'outil laisse à l'utilisateur : vérifier une empreinte plutôt que taper `yes` par réflexe, protéger sa clé privée, ne pas transférer son agent n'importe où. Les compromissions par SSH viennent rarement d'une faille du protocole, et presque toujours d'une clé mal gardée ou d'un avertissement ignoré.
+
+## se connecter
+
+```bash
+ssh alice@192.0.2.10                 # un terminal sur la machine, en tant qu'alice
+ssh -p 2222 alice@srv-web            # sur un autre port que le 22
+ssh alice@srv-web 'df -h /'          # lancer une seule commande, et revenir
+exit                                 # fermer la session
+```
+
+Sans nom d'utilisateur, `ssh` prend le tien, celui du poste. La forme avec une commande est précieuse dans les scripts : la commande s'exécute sur le serveur, sa sortie revient sur ton terminal, et l'on peut la combiner avec des tubes locaux, comme `ssh srv-web 'journalctl -u nginx --since today' | grep error`. Une session figée, après une coupure réseau, se ferme avec la séquence d'échappement **`~.`** tapée en début de ligne : plus besoin de fermer le terminal.
+
+## la première connexion : l'empreinte de l'hôte
+
+Chaque serveur SSH possède sa propre **clé d'hôte**, créée à l'installation, dans `/etc/ssh/ssh_host_ed25519_key`. À la première connexion, le client ne la connaît pas encore, et le dit :
+
+```text
+The authenticity of host 'srv-web.labo.example (192.0.2.10)' can't be established.
+ED25519 key fingerprint is SHA256:dBubBaDSQNXAV02FFDiYDnlOb1SuXVRQeqJq3sUXC/A.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+```
+
+L'**empreinte** est un condensé de la clé publique du serveur. C'est le moment où l'on peut détecter une **attaque de l'homme du milieu** : une machine qui s'interpose et présente sa propre clé. La bonne réponse n'est pas `yes` par réflexe, mais une comparaison avec l'empreinte communiquée **par un autre canal** : la documentation de l'équipe, l'administrateur, la console de l'hébergeur, ou `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` lancé sur le serveur lui-même. On peut aussi coller l'empreinte attendue à la place de `yes` : le client compare alors à ta place.
+
+Une fois acceptée, la clé est rangée dans **`~/.ssh/known_hosts`**, une ligne par serveur : le nom, le type de clé, la clé. Aux connexions suivantes, le client vérifie que le serveur présente toujours la même. Si elle change, il refuse de se connecter, avec un avertissement impossible à manquer :
+
+```text
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+```
+
+Il y a deux explications. Soit le serveur a été réinstallé, et sa clé régénérée : on s'en assure auprès de qui l'a réinstallé, puis on retire l'ancienne ligne avec `ssh-keygen -R srv-web.labo.example`. Soit quelqu'un s'interpose : on ne se connecte pas, et l'on prévient. Supprimer `known_hosts` en entier pour faire taire le message est le pire réflexe possible.
+
+## les clés : une paire, deux rôles
+
+Le mot de passe a deux défauts : il se devine, et il circule jusqu'au serveur, qui pourrait être compromis. L'authentification par **clé** n'a ni l'un ni l'autre. Elle repose sur une **paire** : une **clé privée**, qui reste sur ton poste et ne se montre jamais, et une **clé publique**, qu'on peut donner à qui l'on veut. Le serveur connaît ta clé publique ; à la connexion, il te lance un défi que seule la clé privée correspondante sait relever. La clé privée ne quitte jamais ton poste, même pendant la connexion.
+
+```bash
+ssh-keygen -t ed25519 -C "alice@poste-alice"
+```
+
+Le type **ed25519** est aujourd'hui le choix par défaut : clés courtes, rapides, sûres. On croise encore des clés **RSA**, qui doivent alors faire au moins 3 072 bits ; les anciennes clés DSA sont refusées par les versions récentes d'OpenSSH. Le commentaire `-C` sert seulement à reconnaître la clé dans une liste. La commande crée deux fichiers : `~/.ssh/id_ed25519`, la clé privée, et `~/.ssh/id_ed25519.pub`, la clé publique, une seule ligne de texte.
+
+La **phrase de passe** demandée pendant la création chiffre la clé privée sur le disque. Sans elle, quiconque copie le fichier, par une sauvegarde mal protégée ou un portable volé, se connecte à ta place sur tous tes serveurs. On ne la laisse vide que pour une clé de service, utilisée par un script, et alors très restreinte côté serveur.
+
+## installer sa clé sur le serveur
+
+Côté serveur, les clés autorisées à se connecter à un compte sont rangées dans **`~/.ssh/authorized_keys`** de ce compte, une clé publique par ligne. `ssh-copy-id` les y ajoute, en se connectant une dernière fois avec le mot de passe :
+
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub alice@srv-web
+```
+
+Sans `ssh-copy-id`, on colle simplement la ligne de la clé publique à la fin de ce fichier. Une ligne de `authorized_keys` peut aussi porter des **restrictions**, placées devant la clé : `from="192.0.2.0/24"` n'accepte la clé que depuis ce réseau, `command="/usr/local/bin/sauvegarde"` force une seule commande, quoi que demande le client. C'est la bonne façon d'autoriser une clé de service sans phrase de passe : même volée, elle ne sert qu'à une chose.
+
+## l'agent : taper sa phrase une fois
+
+Une clé protégée par une phrase de passe demande cette phrase à chaque connexion. L'**agent SSH** garde la clé déverrouillée en mémoire, le temps de la session :
+
+```bash
+eval "$(ssh-agent -s)"      # démarrer un agent (les bureaux le font déjà)
+ssh-add                     # lui confier la clé : la phrase est demandée une fois
+ssh-add -t 4h               # ... ou seulement pour quatre heures
+ssh-add -l                  # les clés qu'il garde
+ssh-add -D                  # les oublier toutes
+```
+
+L'agent ne donne jamais la clé : il signe les défis à sa place. D'où une option tentante et dangereuse, le **transfert d'agent** (`ssh -A`) : il permet, depuis le serveur, d'utiliser ta clé pour rebondir ailleurs. Mais pendant toute la session, root sur ce serveur peut lui aussi utiliser ton agent, et se connecter partout où ta clé ouvre. On le remplace par le rebond, présenté plus bas, qui n'expose rien.
+
+## le fichier de configuration du client
+
+Taper `ssh -p 2222 -i ~/.ssh/cle_projet alice@srv-web.labo.example` chaque jour lasse vite. Le fichier **`~/.ssh/config`** donne des noms courts à ses serveurs :
+
+```text
+Host srv-web
+    HostName srv-web.labo.example
+    User alice
+    Port 2222
+    IdentityFile ~/.ssh/id_ed25519
+
+Host *.labo.example
+    User alice
+    IdentitiesOnly yes
+```
+
+`ssh srv-web` suffit alors. Pour chaque option, la **première** valeur trouvée gagne : on écrit les blocs précis en tête, et les blocs génériques, comme `Host *`, à la fin. `IdentitiesOnly yes` évite que le client ne présente toutes les clés de l'agent, l'une après l'autre, jusqu'à ce que le serveur coupe pour trop d'essais. Pour savoir ce que le client fera vraiment, `ssh -G srv-web` affiche la configuration résolue, sans se connecter.
+
+## rebondir par un bastion
+
+Dans un réseau bien tenu, les serveurs ne sont pas joignables directement : on passe par un **bastion**, une seule machine exposée, surveillée et journalisée. Le rebond se déclare dans la configuration :
+
+```text
+Host bastion
+    HostName bastion.labo.example
+    User alice
+
+Host srv-base
+    HostName 10.0.5.20
+    ProxyJump bastion
+```
+
+`ssh srv-base` ouvre d'abord une connexion vers le bastion, puis, **à travers elle**, une seconde connexion chiffrée jusqu'au serveur. La clé privée reste sur ton poste, et le bastion ne voit passer que du trafic chiffré : c'est ce qui le rend préférable au transfert d'agent. En ligne de commande, l'équivalent est `ssh -J bastion srv-base`.
+
+<Diagram caption="Une connexion par clé, à travers un bastion">
+flowchart LR
+  A["poste : clé privée, agent"] -->|"connexion chiffrée"| B["bastion"]
+  B -->|"tunnel vers srv-base"| C["srv-base : authorized_keys"]
+  A -.->|"seconde connexion, chiffrée de bout en bout"| C
+  D["known_hosts : clés d'hôte attendues"] --> A
+</Diagram>
+
+## les tunnels
+
+SSH sait aussi faire passer d'autres connexions dans sa connexion chiffrée. Le cas le plus courant : joindre un service qui n'écoute que sur la boucle locale du serveur, comme une base de données.
+
+```bash
+ssh -L 5433:127.0.0.1:5432 srv-base
+```
+
+Tant que la session est ouverte, une connexion vers le port 5433 de **ton** poste ressort sur le port 5432 du serveur, comme si elle venait de lui-même. La base n'a jamais été exposée au réseau. Le même mécanisme peut servir à contourner un pare-feu, ce qui explique que les durcissements interdisent souvent les tunnels aux comptes qui n'en ont pas besoin.
+
+## les droits du dossier .ssh
+
+SSH vérifie les droits de ses fichiers, et refuse de travailler avec des fichiers trop ouverts. Les règles :
+
+| Chemin | Droits | Pourquoi |
+| --- | --- | --- |
+| `~/.ssh/` | `700` | personne d'autre ne doit y lister, ni y créer de fichier |
+| `~/.ssh/id_ed25519` | `600` | la clé privée : à toi seul |
+| `~/.ssh/id_ed25519.pub` | `644` | publique, par définition |
+| `~/.ssh/authorized_keys` | `600` | qui ajoute une ligne ici entre dans le compte |
+| `~/.ssh/config` | `600` | il ne doit pas être modifiable par d'autres |
+
+Une clé privée lisible par d'autres déclenche `WARNING: UNPROTECTED PRIVATE KEY FILE!`, et le client refuse de s'en servir. Côté serveur, un `authorized_keys` ou un dossier personnel modifiable par d'autres fait refuser la connexion par clé, en silence côté client : le motif n'apparaît que dans le journal du serveur, `journalctl -u ssh`.
+
+## à toi de jouer
+
+Le Linux des exercices n'a pas de client SSH, mais il a tout le reste : des fichiers, des droits, et de quoi calculer une empreinte. Le dossier `alice/.ssh`, copié depuis le poste d'alice, a perdu ses droits en route. Le fichier `srv-web.pub` est la clé d'hôte que présente `srv-web` ; l'administrateur a annoncé son empreinte dans la documentation de l'équipe : `SHA256:dBubBaDSQNXAV02FFDiYDnlOb1SuXVRQeqJq3sUXC/A`.
+
+1. constate le problème : `ls -la alice/.ssh`. Le dossier et la clé privée sont lisibles par tous ;
+2. referme-les : `chmod 700 alice/.ssh`, puis `chmod 600 alice/.ssh/id_ed25519`, et vérifie avec `ls -la alice/.ssh` ;
+3. regarde la clé d'hôte : `cat srv-web.pub`. Le deuxième champ est la clé elle-même, encodée en base64 ;
+4. calcule son empreinte comme le fait SSH, un condensé SHA-256 de la clé décodée, réencodé en base64 : `cut -d' ' -f2 srv-web.pub | base64 -d | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 > empreinte.txt`, puis `cat empreinte.txt`. À un `=` final près, ajouté par `base64` et que SSH n'affiche pas, c'est l'empreinte annoncée ;
+5. elle correspond : enregistre la clé dans `known_hosts`, sous le nom complet du serveur : `echo "srv-web.labo.example $(cut -d' ' -f1,2 srv-web.pub)" >> alice/.ssh/known_hosts` ;
+6. donne un raccourci à ce serveur : `printf '%s\n' 'Host srv-web' '    HostName srv-web.labo.example' '    User alice' '    IdentityFile ~/.ssh/id_ed25519' > alice/.ssh/config`, puis `chmod 600 alice/.ssh/config` et `cat alice/.ssh/config`.
+
+<LinuxTerminal title="Le dossier .ssh d'alice" files={{"alice/.ssh/id_ed25519": "Clé privée fictive, pour l'exercice.\nUne vraie clé privée ne quitte jamais le poste de sa propriétaire.\n", "alice/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJswq63fC132plmNRCRCRt2BRdNdlyY7VvR1N7/jtRGh alice@poste-alice\n", "srv-web.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFjy3YW1+9lsaByE4zNJ0VPZf5qA/joA8DFP5PZfTD2 root@srv-web\n"}} expectedCommands={["ls -la alice/.ssh", "chmod 700 alice/.ssh", "chmod 600 alice/.ssh/id_ed25519", "cat srv-web.pub", "cut -d' ' -f2 srv-web.pub | base64 -d | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 > empreinte.txt", "cat empreinte.txt", "echo \"srv-web.labo.example $(cut -d' ' -f1,2 srv-web.pub)\" >> alice/.ssh/known_hosts", "printf '%s\\n' 'Host srv-web' '    HostName srv-web.labo.example' '    User alice' '    IdentityFile ~/.ssh/id_ed25519' > alice/.ssh/config", "chmod 600 alice/.ssh/config", "cat alice/.ssh/config"]} checks={[{"label": "Le dossier .ssh n'est ouvert qu'à sa propriétaire", "path": "alice/.ssh", "expect": "dir", "mode": "700"}, {"label": "La clé privée n'est lisible que par sa propriétaire", "path": "alice/.ssh/id_ed25519", "expect": "file", "mode": "600"}, {"label": "L'empreinte de srv-web est la bonne", "path": "empreinte.txt", "expect": "file", "contains": "dBubBaDSQNXAV02FFDiYDnlOb1SuXVRQeqJq3sUXC/A"}, {"label": "srv-web est connu sous son nom complet", "path": "alice/.ssh/known_hosts", "expect": "file", "contains": "srv-web.labo.example ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFjy3YW1"}, {"label": "Le raccourci srv-web est configuré, et protégé", "path": "alice/.ssh/config", "expect": "file", "contains": "HostName srv-web.labo.example", "mode": "600"}]} hints={["chmod 700 : tout pour la propriétaire, rien pour les autres ; 600 : lecture et écriture pour elle seule.", "cut -d' ' -f2 garde le deuxième champ d'une ligne, les champs étant séparés par des espaces.", "xxd -r -p transforme l'empreinte hexadécimale de sha256sum en octets, que base64 réencode.", "Une ligne de known_hosts : le nom du serveur, le type de clé, la clé."]} />
+
+L'étape 4 démystifie l'empreinte : ce n'est qu'un condensé de la clé publique, que n'importe qui peut recalculer. C'est pour cela qu'elle sert à comparer, à condition que la valeur attendue arrive par un autre chemin que la connexion elle-même. Un attaquant qui s'interpose peut présenter n'importe quelle clé, mais pas une clé dont l'empreinte serait celle de la documentation.
+
+Ensuite, sur le vrai poste d'alice, dans un terminal simulé :
+
+1. crée la paire de clés : `ssh-keygen -t ed25519 -C alice@poste-alice` ;
+2. installe la clé publique sur le serveur : `ssh-copy-id srv-web`. Le mot de passe est demandé une dernière fois ;
+3. démarre un agent et confie-lui la clé : `eval "$(ssh-agent -s)"`, puis `ssh-add`, puis `ssh-add -l` ;
+4. connecte-toi, sans mot de passe, pour une seule commande : `ssh srv-web hostname` ;
+5. regarde ce que `ssh-copy-id` a écrit côté serveur : `ssh srv-web 'cat ~/.ssh/authorized_keys'` ;
+6. et ce que le client a retenu de sa configuration : `ssh -G srv-web | head -4`.
+
+<SimulatedTerminal shell="bash" title="Une clé, un agent, un serveur" expectedCommands={["ssh-keygen -t ed25519 -C alice@poste-alice", "ssh-copy-id srv-web", "eval \"$(ssh-agent -s)\"", "ssh-add", "ssh-add -l", "ssh srv-web hostname", "ssh srv-web 'cat ~/.ssh/authorized_keys'", "ssh -G srv-web | head -4"]} hints={["La phrase de passe chiffre la clé privée sur le disque : ne la laisse pas vide.", "ssh-copy-id se connecte une dernière fois avec le mot de passe, et ajoute la clé publique à authorized_keys.", "ssh-add demande la phrase une fois ; ensuite, l'agent signe à ta place.", "ssh -G affiche la configuration résolue, sans se connecter."]} commands={{"ssh-keygen -t ed25519 -C alice@poste-alice": "Generating public/private ed25519 key pair.\nEnter file in which to save the key (/home/alice/.ssh/id_ed25519): \nEnter passphrase (empty for no passphrase): \nEnter same passphrase again: \nYour identification has been saved in /home/alice/.ssh/id_ed25519\nYour public key has been saved in /home/alice/.ssh/id_ed25519.pub\nThe key fingerprint is:\nSHA256:pq2NOWVPI3fNYD+Xn9P4TrjJmYqp4q+AgHfpIsUhb6w alice@poste-alice\nThe key's randomart image is:\n+--[ED25519 256]--+\n|                 |\n|                 |\n|. .              |\n|.= . .      o    |\n|o B o   S  . =  .|\n| * +   ++ + . =o.|\n|E o o .o.= o  .+=|\n| . . .o=  .o ..Oo|\n|     .*=+.o ..*o+|\n+----[SHA256]-----+", "ssh-copy-id srv-web": "/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: \"/home/alice/.ssh/id_ed25519.pub\"\n/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed\n/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys\nalice@srv-web.labo.example's password: \n\nNumber of key(s) added: 1\n\nNow try logging into the machine, with:   \"ssh 'srv-web'\"\nand check to make sure that only the key(s) you wanted were added.", "eval \"$(ssh-agent -s)\"": "Agent pid 2741", "ssh-add": "Enter passphrase for /home/alice/.ssh/id_ed25519: \nIdentity added: /home/alice/.ssh/id_ed25519 (alice@poste-alice)", "ssh-add -l": "256 SHA256:pq2NOWVPI3fNYD+Xn9P4TrjJmYqp4q+AgHfpIsUhb6w alice@poste-alice (ED25519)", "ssh srv-web hostname": "srv-web", "ssh srv-web 'cat ~/.ssh/authorized_keys'": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJswq63fC132plmNRCRCRt2BRdNdlyY7VvR1N7/jtRGh alice@poste-alice", "ssh -G srv-web | head -4": "host srv-web\nuser alice\nhostname srv-web.labo.example\nport 22", "cat ~/.ssh/config": "Host srv-web\n    HostName srv-web.labo.example\n    User alice\n    IdentityFile ~/.ssh/id_ed25519", "ls -la ~/.ssh": "total 24\ndrwx------  2 alice alice 4096 Oct  2 10:21 .\ndrwx------ 14 alice alice 4096 Oct  2 10:20 ..\n-rw-------  1 alice alice  107 Sep 12 09:03 config\n-rw-------  1 alice alice  464 Oct  2 10:21 id_ed25519\n-rw-r--r--  1 alice alice  100 Oct  2 10:21 id_ed25519.pub\n-rw-------  1 alice alice  978 Sep 12 09:05 known_hosts"}} />
+
+## les pièges
+
+- **Taper `yes` sans regarder l'empreinte.** C'est le seul moment où l'on peut détecter un homme du milieu.
+- **Supprimer `known_hosts` pour faire taire un avertissement.** On retire une seule ligne, avec `ssh-keygen -R`, et seulement après avoir compris pourquoi la clé a changé.
+- **Une clé privée sans phrase de passe sur un portable.** Le vol du portable donne accès à tous les serveurs.
+- **Copier sa clé privée sur un serveur pour rebondir.** On utilise `ProxyJump`, pas une copie, et pas `ssh -A`.
+- **Des droits trop ouverts sur `.ssh`.** Le client refuse la clé, le serveur refuse la connexion, et le motif est dans le journal du serveur.
+- **Un bloc `Host *` en tête de `~/.ssh/config`.** La première valeur gagne : il écrase tous les blocs suivants.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/usage-securise-dopenssh" description="Les recommandations de l'ANSSI pour configurer et utiliser OpenSSH, en français">ANSSI : usage sécurisé d'(Open)SSH</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-client/ssh_config.5.en.html" description="Toutes les options du fichier de configuration du client, en anglais">Page de manuel de ssh_config</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-client/ssh-keygen.1.en.html" description="Créer, convertir et inspecter des clés, en anglais">Page de manuel de ssh-keygen</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="À la première connexion, le client affiche l'empreinte du serveur. Que faire ?" options={["Taper yes, c'est toujours le cas", "La comparer avec une empreinte obtenue par un autre canal avant d'accepter", "Supprimer known_hosts", "Se connecter avec ssh -A"]} correct={1} explanation="C'est le seul moment où une interposition peut être détectée." />
+  <Quiz id="q-2" question="Le client refuse de se connecter : REMOTE HOST IDENTIFICATION HAS CHANGED. Quelle réaction est la bonne ?" options={["Supprimer known_hosts et recommencer", "Vérifier pourquoi la clé a changé, puis retirer l'ancienne ligne avec ssh-keygen -R si le changement est légitime", "Ignorer le message", "Changer de clé privée"]} correct={1} explanation="Un serveur réinstallé change de clé ; un attaquant qui s'interpose aussi." />
+  <Quiz id="q-3" question="Quel fichier, sur le serveur, liste les clés autorisées à se connecter à un compte ?" options={["~/.ssh/known_hosts", "~/.ssh/authorized_keys", "~/.ssh/config", "/etc/ssh/ssh_host_ed25519_key"]} correct={1} explanation="known_hosts, côté client, liste les clés des serveurs." />
+  <Quiz id="q-4" question="À quoi sert la phrase de passe d'une clé privée ?" options={["À rien, la clé suffit", "À chiffrer la clé sur le disque, pour qu'une copie volée soit inutilisable", "À se connecter sans clé", "À accélérer la connexion"]} correct={1} explanation="L'agent permet de ne la taper qu'une fois par session." />
+  <Quiz id="q-5" question="Pourquoi préférer ProxyJump au transfert d'agent (ssh -A) pour rebondir ?" options={["Il est plus rapide", "Avec ssh -A, root sur le serveur intermédiaire peut utiliser ton agent ; avec ProxyJump, il ne voit que du trafic chiffré", "ssh -A n'existe plus", "ProxyJump n'utilise pas de clé"]} correct={1} explanation="La clé privée ne quitte pas le poste dans les deux cas, mais l'agent transféré reste utilisable par d'autres." />
+  <Quiz id="q-6" question="Quels droits doit avoir une clé privée ?" options={["644", "600", "755", "777"]} correct={1} explanation="Lisible par d'autres, elle est refusée par le client : UNPROTECTED PRIVATE KEY FILE." />
+  <Quiz id="q-7" question="Comment voir la configuration que le client appliquera vraiment pour un hôte ?" options={["cat ~/.ssh/known_hosts", "ssh -G hôte", "ssh-add -l", "ssh-keygen -lf"]} correct={1} explanation="ssh -G résout ~/.ssh/config et les valeurs par défaut, sans se connecter." />
+</QuizGroup>
+
+## à retenir
+
+- **`ssh utilisateur@hôte`**, ou avec une commande pour un seul geste ; **`~.`** ferme une session figée.
+- La première connexion : comparer l'**empreinte** par un autre canal ; **`known_hosts`** retient les clés des serveurs ; **`ssh-keygen -R`** pour en retirer une.
+- **`ssh-keygen -t ed25519`**, une **phrase de passe**, et **`ssh-copy-id`** pour remplir `authorized_keys`.
+- **`ssh-agent`** et **`ssh-add`** : la phrase une fois par session ; jamais **`ssh -A`** vers une machine qu'on ne maîtrise pas.
+- **`~/.ssh/config`** : des noms courts, la première valeur gagne, **`ProxyJump`** pour le bastion, **`ssh -G`** pour vérifier.
+- Droits : **`700`** pour `.ssh`, **`600`** pour la clé privée, `authorized_keys` et `config`.
