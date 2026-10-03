@@ -573,6 +573,7 @@ tourne sur nos serveurs.
 | `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "link" \| "absent", contains?, mode?, target?, links? }`. `contains` : un texte que le fichier doit contenir ; `mode` : les permissions en octal, comme chmod les écrit (`"640"`, `"4755"`) ; `target` : la cible d'un lien symbolique, telle qu'écrite par `ln -s` ; `links` : le nombre de liens physiques (`2` après `ln`). Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement, de liens ou de permissions |
 | `hints` | Indices affichés sous le terminal |
 | `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
+| `timeLimitMinutes` | Exercice chronométré, de 1 à 180 minutes, comme l'épreuve pratique d'un parcours. Le compte à rebours démarre quand la machine est prête, s'arrête dès que tout est fait, et garde le score atteint à la fin du temps ; l'élève peut ensuite finir, hors délai. Redémarrer la machine relance le chronomètre |
 
 À savoir en écrivant :
 

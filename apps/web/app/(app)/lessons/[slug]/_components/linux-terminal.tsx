@@ -19,6 +19,7 @@ import {
   type PathObservation,
   type StateCheck,
 } from "@/lib/linux-terminal/session";
+import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-terminal/timer";
 
 /**
  * A real Linux in the lesson: v86, an x86 emulator in WebAssembly, boots a
@@ -69,6 +70,12 @@ const propsSchema = z.object({
     .max(30)
     .optional(),
   hints: z.array(z.string().max(500)).max(20).optional(),
+  /**
+   * A timed exercise, such as a path's practical exam: the clock starts when
+   * the machine is ready, stops when everything asked is done, and the score
+   * at the limit is kept. The learner may still finish past it.
+   */
+  timeLimitMinutes: z.number().int().min(1).max(180).optional(),
 });
 
 export type LinuxTerminalProps = z.input<typeof propsSchema>;
@@ -135,7 +142,16 @@ async function probe(emulator: V86Emulator, path: string): Promise<PathObservati
       links: inode ? inode.nlinks : null,
     };
   } catch {
-    return NOTHING;
+    // v86 rejects reading an empty file as it does a missing one. A file the
+    // filesystem just found is there, and empty: what touch or : > leaves.
+    if (inode === null) return NOTHING;
+    return {
+      ...NOTHING,
+      state: "file",
+      text: "",
+      mode: octalMode(inode.mode),
+      links: inode.nlinks,
+    };
   }
 }
 
@@ -220,6 +236,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const expected = (props.expectedCommands ?? []).map(normalizeCommand);
   const checks: StateCheck[] = props.checks ?? [];
   const hints = props.hints ?? [];
+  const limitMinutes = props.timeLimitMinutes ?? null;
+  const limitMs = limitMinutes === null ? null : limitMinutes * 60_000;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<TerminalType | null>(null);
@@ -227,6 +245,12 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const [phase, setPhase] = useState<Phase>("idle");
   const [done, setDone] = useState<string[]>([]);
   const [passed, setPassed] = useState<string[]>([]);
+  // The clock of a timed exercise: when the machine became ready, the time
+  // last read, when everything asked was done, and the score at the limit.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  const [finishedAt, setFinishedAt] = useState<number | null>(null);
+  const [scoreAtLimit, setScoreAtLimit] = useState<number | null>(null);
 
   const filesRef = useRef(files);
   filesRef.current = files;
@@ -440,6 +464,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     stop();
     setDone([]);
     setPassed([]);
+    // Starting over starts the clock over: the work is gone with the machine.
+    setStartedAt(null);
+    setFinishedAt(null);
+    setScoreAtLimit(null);
     setPhase("idle");
     // The container is empty again once React has re-rendered the idle state.
     setTimeout(() => void start(), 0);
@@ -453,6 +481,52 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     total > 0 &&
     expected.every((c) => done.includes(c)) &&
     checks.every((c) => passed.includes(c.label));
+
+  // The clock starts when the learner can type, not while the machine
+  // downloads or boots.
+  useEffect(() => {
+    if (limitMs === null || phase !== "ready" || startedAt !== null) return;
+    const t = Date.now();
+    setStartedAt(t);
+    setNow(t);
+  }, [limitMs, phase, startedAt]);
+
+  const reading =
+    limitMs !== null && startedAt !== null ? readTimer(limitMs, startedAt, now, finishedAt) : null;
+  const expired = reading?.expired ?? false;
+  const finished = reading?.finished ?? false;
+  const running = reading !== null && !finished && scoreAtLimit === null;
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setNow(Date.now());
+    }, 500);
+    return () => {
+      clearInterval(id);
+    };
+  }, [running]);
+
+  useEffect(() => {
+    if (startedAt !== null && allDone && finishedAt === null) setFinishedAt(Date.now());
+  }, [startedAt, allDone, finishedAt]);
+
+  // At the limit, the score is kept: it is the result of the exercise, even
+  // if the learner goes on to finish.
+  useEffect(() => {
+    if (expired && !finished && scoreAtLimit === null) setScoreAtLimit(count);
+  }, [expired, finished, scoreAtLimit, count]);
+
+  const clockColor =
+    reading === null
+      ? "#B8B5D1"
+      : finished && !expired
+        ? "var(--cosmetic-accent)"
+        : expired
+          ? "#FF4757"
+          : reading.remaining < 5 * 60_000
+            ? "#FFB020"
+            : "#B8B5D1";
 
   if (!parsed.success) {
     return (
@@ -500,6 +574,23 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         >
           {title}
         </span>
+        {limitMs !== null ? (
+          <span
+            role="timer"
+            aria-label={finished ? "Temps mis" : "Temps restant"}
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              fontVariantNumeric: "tabular-nums",
+              color: clockColor,
+              flexShrink: 0,
+            }}
+          >
+            ⏱ {reading ? clockText(reading) : formatClock(limitMs / 1000)}
+          </span>
+        ) : null}
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
@@ -564,6 +655,12 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                   Un vrai Linux tourne ici, dans ton navigateur : toutes les commandes marchent, et
                   rien ne sort de cet onglet. Le premier démarrage télécharge environ 15 Mo.
                 </p>
+                {limitMinutes !== null ? (
+                  <p style={{ margin: 0, maxWidth: 520, color: "#FFB020" }}>
+                    Épreuve chronométrée : {minutesLabel(limitMinutes)}, à partir du moment où la
+                    machine est prête. Le chronomètre s&apos;arrête dès que tout est fait.
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void start()}
@@ -647,18 +744,41 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               })}
             </ul>
           ) : null}
-          {allDone ? (
-            <p
-              style={{
-                margin: "10px 0 0",
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 12,
-                color: "var(--cosmetic-accent)",
-              }}
-            >
-              ✓ Exercice complété : tout ce qui était demandé est fait.
-            </p>
-          ) : null}
+          <div aria-live="polite">
+            {allDone && limitMinutes === null ? (
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 12,
+                  color: "var(--cosmetic-accent)",
+                }}
+              >
+                ✓ Exercice complété : tout ce qui était demandé est fait.
+              </p>
+            ) : null}
+            {limitMinutes !== null && reading !== null && (finished || expired) ? (
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 12,
+                  color: finished && !expired ? "var(--cosmetic-accent)" : "#FFB020",
+                }}
+              >
+                {finished && !expired
+                  ? `✓ Épreuve réussie en ${clockText(reading)}, pour un temps imparti de ${minutesLabel(limitMinutes)}.`
+                  : finished
+                    ? // The score at the limit is unknown if the tab slept through it.
+                      `✓ Tout est fait, en ${clockText(reading)} : hors délai.${
+                        scoreAtLimit === null
+                          ? ""
+                          : ` À la fin du temps imparti, ${String(scoreAtLimit)} sur ${String(total)}.`
+                      }`
+                    : `Temps imparti écoulé (${minutesLabel(limitMinutes)}) : ${String(scoreAtLimit ?? count)} sur ${String(total)}. Tu peux continuer pour finir, hors délai.`}
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
