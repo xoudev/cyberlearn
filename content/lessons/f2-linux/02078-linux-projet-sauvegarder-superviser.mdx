@@ -1,0 +1,168 @@
+---
+refCode: CL-LSN-02078-V01
+slug: linux-projet-sauvegarder-superviser
+title: "Projet final : sauvegarder et superviser le serveur de l'atelier"
+description: "Quatrième étape du projet de fin de parcours : appliquer la règle 3-2-1, choisir ce qu'on sauvegarde, écrire un script de sauvegarde avec empreinte, rotation et journal, envoyer une copie chiffrée hors de l'atelier sans pouvoir la déchiffrer depuis le serveur, prouver la restauration, puis surveiller le disque, la fraîcheur et l'intégrité des sauvegardes avec une vigie qui alerte, et planifier le tout. Avec la sauvegarde, la restauration et une corruption détectée sur un vrai Linux, puis le disque, la copie chiffrée et les alertes sur le serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02077-V01"]
+---
+
+C'est la demande qu'Hélène a écrite avec le plus d'émotion : l'an dernier, un disque mort a coûté trois semaines de travail à l'atelier. Le serveur ne vaudra rien s'il devient le nouvel endroit unique où tout peut disparaître d'un coup. Cette étape construit les sauvegardes, et surtout la preuve qu'elles servent : une restauration réussie. Elle installe aussi la **vigie**, un script qui vérifie chaque matin ce qui pourrait mal tourner et prévient avant que l'équipe ne s'en aperçoive. Une sauvegarde qui échoue en silence depuis trois mois est pire qu'aucune sauvegarde : elle donne une fausse assurance.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- appliquer la règle 3-2-1 à une petite structure ;
+- choisir ce qu'on sauvegarde, et ce qu'on peut reconstruire ;
+- écrire un script de sauvegarde avec empreinte, rotation, journal et gestion des erreurs ;
+- envoyer une copie chiffrée hors du site, sans que le serveur puisse la déchiffrer ;
+- prouver une sauvegarde par une restauration ;
+- surveiller l'essentiel et alerter, sans noyer l'équipe sous les messages.
+
+## pourquoi ça compte
+
+Les petites structures perdent leurs données de quatre façons : la panne d'un disque, l'erreur humaine, le vol ou le sinistre, et de plus en plus le **rançongiciel**, qui chiffre tout ce qu'il atteint, sauvegardes comprises si elles sont à sa portée. Chacune appelle une protection différente : une seconde copie contre la panne, un historique contre l'erreur, une copie ailleurs contre l'incendie, une copie hors d'atteinte contre le rançongiciel. La vigie, elle, répond à la cause la plus banale de perte : une sauvegarde qui ne tournait plus, et dont personne ne savait rien.
+
+## la règle 3-2-1 à l'atelier
+
+La règle tient en trois chiffres : **3** copies des données, sur **2** supports différents, dont **1** hors du site. Pour l'atelier :
+
+- les **originaux**, sur le SSD du serveur ;
+- une **archive chaque nuit** sur le disque dur de 2 To du serveur, gardée sept jours : elle répare une erreur de la veille en quelques minutes ;
+- une **copie chiffrée chez un hébergeur**, qui survit à l'incendie et au vol du mini-PC.
+
+Contre le rançongiciel, la copie distante doit être hors de portée d'un attaquant qui aurait pris le contrôle du serveur. Le serveur peut **déposer** de nouvelles archives, mais pas **effacer** les anciennes : l'espace de l'hébergeur garde ses propres versions, que seul un accès séparé, celui d'Hélène, peut supprimer. Une sauvegarde que l'attaquant peut détruire avec les mêmes droits que les originaux n'en est pas une.
+
+## ce qu'on sauvegarde
+
+On sauvegarde ce qu'on ne peut pas reconstruire : les **partages** (`/srv/partage`), le **dépôt** de l'imprimeur, la **configuration** (`/etc`), les **scripts** maison (`/usr/local/bin`) et la **liste des paquets installés** (`dpkg --get-selections`). On ne sauvegarde pas le système lui-même : une Debian se réinstalle en vingt minutes, et la configuration sauvegardée la remet dans son état. Avec la documentation de l'étape finale, c'est ce qui permet de reconstruire le serveur sur une autre machine, dans la demi-journée fixée par le cahier des charges.
+
+## le disque de sauvegarde
+
+Le disque dur de 2 To reçoit une partition GPT, un système de fichiers ext4 étiqueté `sauvegardes`, et un montage par UUID dans `/mnt/sauvegardes`, avec les options du module 9 : `nodev,nosuid,noexec`, et `nofail`, pour que le serveur démarre même si le disque lâche. Ses archives, qui contiennent la comptabilité, sont réservées à root : dossier en `700`.
+
+## le script de sauvegarde
+
+Le script reprend tout ce que le parcours a appris sur les scripts robustes :
+
+- le **mode strict** de bash (`set -euo pipefail`) et un **`trap ERR`** qui écrit dans le journal la ligne où il a échoué ;
+- un **nom daté** (`atelier-2026-10-03-0230.tar.gz`) : l'ordre des noms est celui du temps, ce qui simplifie la rotation ;
+- une **écriture en deux temps** : l'archive est écrite sous un nom provisoire, puis renommée une fois complète. Une archive interrompue ne passe jamais pour bonne ;
+- une **empreinte** SHA-256 à côté de chaque archive, pour vérifier plus tard qu'elle n'a pas été abîmée ;
+- une **rotation** qui ne garde que les sept archives les plus récentes, sans quoi le disque finit plein, et la sauvegarde avec lui ;
+- un **journal** de ce qui a été fait, avec la taille de l'archive : une archive qui passe soudain de 3 Go à 40 Mo trahit un dossier qui a disparu.
+
+## le piège du disque absent
+
+L'option `nofail` a un revers. Si le disque de sauvegarde n'est pas monté, après une panne ou un câble débranché, `/mnt/sauvegardes` existe toujours : c'est un dossier vide du disque système. Le script y écrit alors ses archives sans broncher, chaque nuit, jusqu'à remplir le SSD, et le serveur entier s'arrête faute de place. La parade tient en une ligne, au début du script : `mountpoint -q /mnt/sauvegardes || { journal err "disque de sauvegarde absent"; exit 1; }`. La sauvegarde échoue alors franchement, le journal le dit, et la vigie le signale le matin même. C'est un principe général : un script doit vérifier que les conditions de son travail sont réunies, plutôt que de supposer qu'elles le sont.
+
+## la copie hors de l'atelier, chiffrée
+
+Avant de quitter l'atelier, chaque archive est **chiffrée** avec `age`, à l'aide d'une **clé publique**. La clé privée correspondante n'est **pas** sur le serveur : elle est imprimée et rangée dans le coffre d'Hélène, et copiée dans le gestionnaire de mots de passe de Karim. Le serveur sait donc chiffrer, mais pas déchiffrer : un attaquant qui le prendrait ne pourrait pas lire les copies distantes, et l'hébergeur non plus.
+
+```bash
+age -R /etc/sauvegarde/destinataires.txt -o atelier-2026-10-03-0230.tar.gz.age atelier-2026-10-03-0230.tar.gz
+rsync -a /mnt/sauvegardes/chiffrees/ sauvegarde@stockage.example.net:atelier/
+```
+
+Le compte `sauvegarde` de l'hébergeur n'accepte que la clé SSH du serveur, et seulement pour `rsync`, comme vu au module 10. Une restauration depuis l'hébergeur demande la clé privée du coffre : c'est voulu, et la procédure le dit.
+
+## la restauration, seule preuve
+
+Une sauvegarde n'est prouvée que par une **restauration**. Chaque mois, la vigie ou un rappel du calendrier déclenche un test : restaurer la dernière archive **à part**, dans un dossier temporaire, jamais par-dessus les originaux, et comparer avec `diff -r`. Une fois par an, on va plus loin : restaurer depuis la copie distante, avec la clé du coffre, sur une machine virtuelle, et chronométrer. Le temps mesuré se compare à la durée d'interruption admissible du cahier des charges ; s'il la dépasse, ce n'est pas le test qui a échoué, c'est la solution qu'il faut revoir.
+
+## superviser : ce qu'on surveille
+
+La vigie vérifie chaque matin, à 7 h, avant l'arrivée de l'équipe, peu de choses, mais les bonnes :
+
+- l'**espace disque**, avec un seuil, par exemple 80 % : un disque plein arrête les sauvegardes, puis le partage ;
+- la **sauvegarde du jour** : elle existe, et elle date bien de cette nuit ;
+- son **intégrité** : son empreinte correspond ;
+- les **services en échec** : `systemctl --failed` doit être vide ;
+- les **mises à jour** de sécurité en attente, que les mises à jour automatiques auraient dû appliquer.
+
+Le piège de la supervision est l'excès : une vigie qui envoie dix messages par jour finit filtrée, et la vraie alerte passe inaperçue. On n'alerte que sur ce qui demande une action, une fois par problème. Et l'on se protège de la panne de la vigie elle-même : un **rapport hebdomadaire**, envoyé même quand tout va bien, dont l'absence un lundi matin est en soi une alerte.
+
+<Diagram caption="Une nuit de l'atelier, et le matin suivant">
+flowchart TD
+  A["2 h 30 : sauvegarde.sh"] --> B["archive datée et empreinte, sur le disque de 2 To"]
+  B --> C["rotation : sept archives gardées"]
+  B --> D["3 h 30 : chiffrement avec age, copie chez l'hébergeur"]
+  E["7 h : surveiller.sh"] --> F["disque, sauvegarde du jour, empreinte, services"]
+  F -->|"un problème"| G["ALERTE : journal et courriel"]
+  F -->|"tout va bien"| H["rien, sauf le rapport du lundi"]
+</Diagram>
+
+## planifier
+
+Les tâches sont planifiées avec cron, dans la crontab de root, à des heures qui ne se chevauchent pas : la sauvegarde à 2 h 30, la copie distante à 3 h 30, la vigie à 7 h. Un minuteur systemd, comme celui du catalogue, conviendrait aussi ; l'important est de savoir où regarder, et de l'écrire dans la documentation. Chaque tâche écrit dans le journal, et la vigie vérifie le travail des autres : c'est elle qui découvrira qu'une sauvegarde n'a pas tourné.
+
+## à toi de jouer
+
+Le dossier `srv` contient les partages de l'atelier, et `etc` sa configuration. Le dossier `sauvegardes` contient déjà les archives des sept nuits précédentes, et `sauvegarde.sh` et `surveiller.sh` sont les deux scripts. Ce Linux n'a pas de disque dédié : les archives restent dans `/mnt/sauvegardes`.
+
+1. démarre la journalisation : `syslogd -O /mnt/journal.log` ;
+2. lis le script de sauvegarde : `cat sauvegarde.sh`, puis regarde les archives existantes : `ls sauvegardes` ;
+3. lance la sauvegarde de cette nuit : `bash sauvegarde.sh`, puis `ls sauvegardes` et `cat sauvegardes/DERNIERE`. La plus ancienne archive a disparu ;
+4. prouve-la par une restauration à part : `mkdir restauration`, `gzip -dc "sauvegardes/$(cat sauvegardes/DERNIERE)" | tar xf - -C restauration`, puis `diff -r srv restauration/srv && echo restauration identique` ;
+5. lis la vigie, puis lance-la : `cat surveiller.sh`, puis `bash surveiller.sh` ;
+6. simule une archive abîmée : `echo abime >> "sauvegardes/$(cat sauvegardes/DERNIERE)"`, relance `bash surveiller.sh`, puis `cat alertes.txt` ;
+7. planifie le tout : `cat planning.txt`, `mkdir -p /var/spool/cron/crontabs`, `crontab planning.txt`, puis garde ce qui est installé : `crontab -l > planning-installe.txt` ;
+8. relis ce que les deux scripts ont écrit dans le journal : `grep -E 'sauvegarde|vigie' journal.log`.
+
+<LinuxTerminal title="Les sauvegardes et la vigie" files={{"srv/partage/projets/2026-017-buffet-noyer/fiche.txt": "client: Restaurant Le Cèdre\npiece: Buffet en noyer\netat: finitions\n", "srv/partage/compta/factures-2026-09.csv": "numero,client,montant\nF2026-091,Restaurant Le Cèdre,4800\nF2026-092,Famille Moreau,2350\n", "srv/partage/commun/planning.txt": "Semaine 41 : livraison du buffet jeudi, salon du meuble samedi.\n", "etc/catalogue.conf": "SOURCE=/srv/partage/projets\nDESTINATION=/srv/www/catalogue\n", "etc/nginx/sites-available/catalogue": "server {\n    listen 80;\n    root /srv/www/catalogue;\n}\n", "sauvegardes/atelier-2026-09-26-0230.tar.gz": "archive de la nuit du 2026-09-26\n", "sauvegardes/atelier-2026-09-26-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-09-26-0230.tar.gz\n", "sauvegardes/atelier-2026-09-27-0230.tar.gz": "archive de la nuit du 2026-09-27\n", "sauvegardes/atelier-2026-09-27-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-09-27-0230.tar.gz\n", "sauvegardes/atelier-2026-09-28-0230.tar.gz": "archive de la nuit du 2026-09-28\n", "sauvegardes/atelier-2026-09-28-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-09-28-0230.tar.gz\n", "sauvegardes/atelier-2026-09-29-0230.tar.gz": "archive de la nuit du 2026-09-29\n", "sauvegardes/atelier-2026-09-29-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-09-29-0230.tar.gz\n", "sauvegardes/atelier-2026-09-30-0230.tar.gz": "archive de la nuit du 2026-09-30\n", "sauvegardes/atelier-2026-09-30-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-09-30-0230.tar.gz\n", "sauvegardes/atelier-2026-10-01-0230.tar.gz": "archive de la nuit du 2026-10-01\n", "sauvegardes/atelier-2026-10-01-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-10-01-0230.tar.gz\n", "sauvegardes/atelier-2026-10-02-0230.tar.gz": "archive de la nuit du 2026-10-02\n", "sauvegardes/atelier-2026-10-02-0230.tar.gz.sha256": "0000000000000000000000000000000000000000000000000000000000000000  atelier-2026-10-02-0230.tar.gz\n", "sauvegardes/DERNIERE": "atelier-2026-10-02-0230.tar.gz\n", "sauvegarde.sh": "#!/bin/bash\n# sauvegarde.sh : archive les partages et la configuration de l'atelier, avec\n# leur empreinte, et ne garde que les GARDER archives les plus récentes.\n# Sur le serveur : /usr/local/bin/sauvegarde.sh, lancé chaque nuit par cron.\nset -euo pipefail\n\nSOURCES=(srv etc)            # sur le serveur : /srv/partage /srv/depot /etc ...\nDEST=/mnt/sauvegardes        # sur le serveur : le disque de 2 To\nGARDER=7\n\njournal() { logger -t sauvegarde -p \"user.$1\" \"$2\"; }\ntrap 'journal err \"échec de la sauvegarde, ligne $LINENO\"' ERR\n\ncd /mnt\nnom=\"atelier-$(date +%Y-%m-%d-%H%M).tar.gz\"\ntar cf - \"${SOURCES[@]}\" | gzip > \"$DEST/$nom.partiel\"\nmv \"$DEST/$nom.partiel\" \"$DEST/$nom\"            # complète, elle prend son vrai nom\n(cd \"$DEST\" && sha256sum \"$nom\" > \"$nom.sha256\")\necho \"$nom\" > \"$DEST/DERNIERE\"\njournal info \"archive $nom : $(du -k \"$DEST/$nom\" | cut -f1) Ko\"\n\n# rotation : les noms portent la date, leur ordre est celui du temps\nls -1 \"$DEST\"/atelier-*.tar.gz | sort -r | tail -n +$((GARDER + 1)) | while read -r vieux; do\n  rm -f \"$vieux\" \"$vieux.sha256\"\n  journal info \"rotation : $(basename \"$vieux\") supprimée\"\ndone\n", "surveiller.sh": "#!/bin/bash\n# surveiller.sh : la vigie de l'atelier. Vérifie l'espace disque, la\n# sauvegarde du jour et l'intégrité de la dernière archive ; chaque problème\n# devient une ALERTE, dans le journal et dans alertes.txt. Sur le serveur,\n# l'alerte part aussi par courriel.\nset -uo pipefail     # pas de -e : un contrôle qui échoue ne doit pas arrêter les autres\n\nSEUIL=${SEUIL:-80}   # occupation du disque, en %, au-delà de laquelle on alerte\nDEST=/mnt/sauvegardes\nproblemes=0\n\nok() { echo \"ok     : $1\"; }\nalerte() {\n  echo \"ALERTE : $1\"\n  echo \"$(date '+%F %H:%M') $1\" >> /mnt/alertes.txt\n  logger -t vigie -p user.warning \"ALERTE : $1\"\n  problemes=$((problemes + 1))\n}\n\noccupation=$(df -P /mnt | awk 'NR == 2 { sub(\"%\", \"\", $5); print $5 }')\nif [ \"$occupation\" -ge \"$SEUIL\" ]; then\n  alerte \"disque occupé à $occupation %\"\nelse\n  ok \"disque occupé à $occupation %\"\nfi\n\nderniere=$(cat \"$DEST/DERNIERE\" 2>/dev/null || true)\nif [[ \"$derniere\" == atelier-$(date +%F)-* ]]; then\n  ok \"sauvegarde du jour : $derniere\"\nelse\n  alerte \"pas de sauvegarde aujourd'hui\"\nfi\n\nif [ -n \"$derniere\" ] && (cd \"$DEST\" && sha256sum -c \"$derniere.sha256\" > /dev/null 2>&1); then\n  ok \"archive intègre\"\nelse\n  alerte \"archive corrompue ou absente : $derniere\"\nfi\n\nexit \"$problemes\"\n", "planning.txt": "# planning.txt : les tâches de l'atelier, à installer avec crontab\n# minute heure jour mois jour-de-la-semaine  commande\n30 2 * * * /usr/local/bin/sauvegarde.sh\n0 7 * * * /usr/local/bin/surveiller.sh\n"}} expectedCommands={["syslogd -O /mnt/journal.log", "cat sauvegarde.sh", "ls sauvegardes", "bash sauvegarde.sh", "cat sauvegardes/DERNIERE", "mkdir restauration", "gzip -dc \"sauvegardes/$(cat sauvegardes/DERNIERE)\" | tar xf - -C restauration", "diff -r srv restauration/srv && echo restauration identique", "cat surveiller.sh", "bash surveiller.sh", "echo abime >> \"sauvegardes/$(cat sauvegardes/DERNIERE)\"", "cat alertes.txt", "cat planning.txt", "mkdir -p /var/spool/cron/crontabs", "crontab planning.txt", "crontab -l > planning-installe.txt", "grep -E 'sauvegarde|vigie' journal.log"]} checks={[{"label": "La plus ancienne archive est partie", "path": "sauvegardes/atelier-2026-09-26-0230.tar.gz", "expect": "absent"}, {"label": "Les plus récentes restent", "path": "sauvegardes/atelier-2026-09-27-0230.tar.gz", "expect": "file"}, {"label": "La rotation est écrite dans le journal", "path": "journal.log", "expect": "file", "contains": "rotation : atelier-2026-09-26-0230.tar.gz supprimée"}, {"label": "La sauvegarde est restaurée à part", "path": "restauration/srv/partage/compta/factures-2026-09.csv", "expect": "file", "contains": "F2026-092"}, {"label": "La vigie a vu l'archive abîmée", "path": "alertes.txt", "expect": "file", "contains": "archive corrompue"}, {"label": "Les tâches sont planifiées", "path": "planning-installe.txt", "expect": "file", "contains": "30 2 * * * /usr/local/bin/sauvegarde.sh"}]} hints={["Les noms des archives portent la date : sort -r les range de la plus récente à la plus ancienne.", "gzip -dc décompresse vers la sortie standard, que tar xf - lit ; -C choisit où déballer.", "La vigie recalcule l'empreinte de la dernière archive et la compare au fichier .sha256.", "crontab a besoin du dossier /var/spool/cron/crontabs, absent de ce Linux au démarrage."]} />
+
+L'étape 3 montre la rotation : huit archives après la sauvegarde, sept gardées, et la ligne du journal qui dit laquelle est partie. L'étape 6 montre pourquoi l'empreinte est enregistrée : l'archive abîmée porte toujours le bon nom et presque la bonne taille, rien ne la distingue d'une bonne, sauf son empreinte. Sans la vigie, on l'aurait découvert le jour d'une restauration, c'est-à-dire trop tard.
+
+Ensuite, sur `srv-ebene`, dans un terminal simulé, le disque, la copie distante et les alertes :
+
+1. le disque de sauvegarde et son montage : `lsblk -f /dev/sda`, puis `grep sauvegardes /etc/fstab` ;
+2. la copie chiffrée de la dernière archive : `cat /etc/sauvegarde/destinataires.txt`, puis `age -R /etc/sauvegarde/destinataires.txt -o /mnt/sauvegardes/chiffrees/atelier-2026-10-03-0230.tar.gz.age /mnt/sauvegardes/atelier-2026-10-03-0230.tar.gz` ;
+3. son envoi chez l'hébergeur : `rsync -a --stats /mnt/sauvegardes/chiffrees/ sauvegarde@stockage.example.net:atelier/ | tail -4` ;
+4. la planification de root : `sudo crontab -l` ;
+5. une alerte de test par courriel : `echo 'test de la vigie' | mail -s 'srv-ebene : test' karim@atelier-ebene.example`, puis les traces de la vigie : `journalctl -t vigie --since -7d --no-pager`.
+
+<SimulatedTerminal shell="bash" title="Le disque, la copie distante et les alertes" expectedCommands={["lsblk -f /dev/sda", "grep sauvegardes /etc/fstab", "cat /etc/sauvegarde/destinataires.txt", "age -R /etc/sauvegarde/destinataires.txt -o /mnt/sauvegardes/chiffrees/atelier-2026-10-03-0230.tar.gz.age /mnt/sauvegardes/atelier-2026-10-03-0230.tar.gz", "rsync -a --stats /mnt/sauvegardes/chiffrees/ sauvegarde@stockage.example.net:atelier/ | tail -4", "sudo crontab -l", "echo 'test de la vigie' | mail -s 'srv-ebene : test' karim@atelier-ebene.example", "journalctl -t vigie --since -7d --no-pager"]} hints={["nofail : le serveur démarre même si le disque de sauvegarde lâche.", "La clé publique sert à chiffrer ; la clé privée, au coffre, sert à déchiffrer.", "rsync ne renvoie que ce qui a changé : chaque nuit, une nouvelle archive.", "Aucune entrée : la vigie n'a rien eu à signaler cette semaine."]} commands={{"lsblk -f /dev/sda": "NAME   FSTYPE FSVER LABEL       UUID                                 FSAVAIL FSUSE% MOUNTPOINTS\nsda                                                                                 \n└─sda1 ext4   1.0   sauvegardes 3f6c1e2a-8d4b-4c71-9a0e-5b2d7e914c08    1.6T     2% /mnt/sauvegardes", "grep sauvegardes /etc/fstab": "UUID=3f6c1e2a-8d4b-4c71-9a0e-5b2d7e914c08 /mnt/sauvegardes ext4 defaults,nodev,nosuid,noexec,nofail 0 2", "cat /etc/sauvegarde/destinataires.txt": "# clé publique de restauration de l'atelier ; la clé privée est au coffre\nage1uauvt7txunf9zeu2qyrzv0pa5uvwjlq9a369s5wjpyxexjcypqddr7ce6y", "age -R /etc/sauvegarde/destinataires.txt -o /mnt/sauvegardes/chiffrees/atelier-2026-10-03-0230.tar.gz.age /mnt/sauvegardes/atelier-2026-10-03-0230.tar.gz": "", "rsync -a --stats /mnt/sauvegardes/chiffrees/ sauvegarde@stockage.example.net:atelier/ | tail -4": "Total bytes received: 412\n\nsent 3,214,882,113 bytes  received 412 bytes  21,432,550.17 bytes/sec\ntotal size is 3,214,076,416  speedup is 1.00", "sudo crontab -l": "# m h dom mon dow command\n30 2 * * * /usr/local/bin/sauvegarde.sh\n30 3 * * * /usr/local/bin/copie-distante.sh\n0 7 * * * /usr/local/bin/surveiller.sh\n0 8 * * 1 /usr/local/bin/rapport-hebdo.sh", "echo 'test de la vigie' | mail -s 'srv-ebene : test' karim@atelier-ebene.example": "", "journalctl -t vigie --since -7d --no-pager": "-- No entries --", "ls /mnt/sauvegardes": "atelier-2026-09-27-0230.tar.gz         atelier-2026-10-01-0230.tar.gz\natelier-2026-09-27-0230.tar.gz.sha256  atelier-2026-10-01-0230.tar.gz.sha256\natelier-2026-09-28-0230.tar.gz         atelier-2026-10-02-0230.tar.gz\natelier-2026-09-28-0230.tar.gz.sha256  atelier-2026-10-02-0230.tar.gz.sha256\natelier-2026-09-29-0230.tar.gz         atelier-2026-10-03-0230.tar.gz\natelier-2026-09-29-0230.tar.gz.sha256  atelier-2026-10-03-0230.tar.gz.sha256\natelier-2026-09-30-0230.tar.gz         chiffrees\natelier-2026-09-30-0230.tar.gz.sha256  DERNIERE"}} />
+
+## les pièges
+
+- **Sauvegarder sur le même disque.** La panne emporte les originaux et les copies.
+- **Une copie distante effaçable depuis le serveur.** Le rançongiciel l'efface avec le reste.
+- **Garder la clé de déchiffrement sur le serveur.** Le chiffrement ne protège plus rien.
+- **Pas de rotation.** Le disque se remplit, et les sauvegardes s'arrêtent sans bruit.
+- **Ne jamais restaurer.** Une sauvegarde jamais restaurée est une hypothèse.
+- **Une vigie trop bavarde.** Ses messages finissent filtrés ; on n'alerte que sur ce qui demande une action.
+- **Ne surveiller que les problèmes.** Si la vigie s'arrête, plus rien n'arrive : un rapport régulier, même quand tout va bien.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cnil.fr/fr/securite-sauvegarder" description="Les recommandations de la CNIL sur les sauvegardes, en français">CNIL : sauvegarder</ExternalLink>
+
+<ExternalLink href="https://age-encryption.org/" description="L'outil de chiffrement de fichiers utilisé pour la copie distante, en anglais">age</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/cron/crontab.5.en.html" description="La syntaxe d'une crontab, en anglais">Page de manuel crontab(5)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie la règle 3-2-1 ?" options={["Trois sauvegardes par jour", "Trois copies, sur deux supports différents, dont une hors du site", "Trois disques en RAID 1", "Trois mois de conservation"]} correct={1} explanation="Pour l'atelier : les originaux, le disque de sauvegarde, la copie chez l'hébergeur." />
+  <Quiz id="q-2" question="Pourquoi le serveur ne doit-il pas pouvoir effacer la copie distante ?" options={["Pour économiser de la place", "Pour qu'un attaquant ou un rançongiciel maître du serveur ne puisse pas la détruire", "Parce que l'hébergeur l'interdit", "Ce n'est pas nécessaire"]} correct={1} explanation="Une sauvegarde destructible avec les mêmes droits que les originaux n'en est pas une." />
+  <Quiz id="q-3" question="Pourquoi chiffrer la copie distante avec une clé publique dont la clé privée n'est pas sur le serveur ?" options={["C'est plus rapide", "Le serveur peut chiffrer sans pouvoir déchiffrer : ni un attaquant ni l'hébergeur ne lisent les copies", "Pour compresser", "Pour éviter rsync"]} correct={1} explanation="La clé privée est au coffre, pour les restaurations." />
+  <Quiz id="q-4" question="Pourquoi écrire l'archive sous un nom provisoire, puis la renommer ?" options={["Pour la cacher", "Pour qu'une archive interrompue ne passe jamais pour une archive complète", "Pour la chiffrer", "Par convention"]} correct={1} explanation="Le renommage n'a lieu qu'une fois l'archive entièrement écrite." />
+  <Quiz id="q-5" question="Qu'est-ce qui prouve qu'une sauvegarde est bonne ?" options={["Sa taille", "Une restauration à part, comparée aux originaux", "Le message du script", "Sa date"]} correct={1} explanation="Une sauvegarde jamais restaurée est une hypothèse." />
+  <Quiz id="q-6" question="La vigie n'a envoyé aucune alerte depuis un mois. Que peut-on en conclure ?" options={["Que tout va bien", "Rien, tant qu'un rapport régulier ne prouve pas que la vigie tourne encore", "Que le serveur est éteint", "Que les sauvegardes sont parfaites"]} correct={1} explanation="C'est le rôle du rapport hebdomadaire : son absence est une alerte." />
+  <Quiz id="q-7" question="Pourquoi garder seulement sept archives sur le disque de sauvegarde ?" options={["Par superstition", "Pour que le disque ne se remplisse pas, ce qui arrêterait les sauvegardes", "Parce que tar ne gère pas plus", "Pour la loi"]} correct={1} explanation="La rotation fixe la durée d'historique local ; la copie distante peut garder plus longtemps." />
+</QuizGroup>
+
+## à retenir
+
+- **3-2-1** : trois copies, deux supports, une hors du site, et hors de portée d'un attaquant maître du serveur.
+- On sauvegarde ce qu'on ne reconstruit pas : **partages**, **`/etc`**, **scripts**, **liste des paquets**.
+- Le script : **mode strict**, **`trap ERR`**, **nom daté**, **écriture en deux temps**, **empreinte**, **rotation**, **journal**.
+- La copie distante est **chiffrée** avec une **clé publique** ; la clé privée est au **coffre**.
+- Une sauvegarde se prouve par une **restauration à part**, mensuelle, et chronométrée une fois par an.
+- La **vigie** : disque, sauvegarde du jour, empreinte, services ; une alerte par problème, et un **rapport régulier**.

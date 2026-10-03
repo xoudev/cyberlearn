@@ -1,0 +1,176 @@
+---
+refCode: CL-LSN-02075-V01
+slug: linux-projet-cahier-des-charges
+title: "Projet final : le cahier des charges du serveur de l'atelier"
+description: "Première étape du projet de fin de parcours : mettre en service le serveur d'une petite équipe. Lire la demande d'un client, en tirer des besoins puis des exigences vérifiables, classer les données selon ce qu'elles valent, dessiner l'architecture cible, fixer le périmètre et le cadre de l'intervention, et faire l'état des lieux du serveur livré. Avec le dossier de mission traité en ligne de commande sur un vrai Linux, puis l'inspection du serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02910-V01"]
+---
+
+Tout le parcours t'a appris des gestes : créer un compte, écrire un script, configurer un service, monter un disque, fermer un port. Un administrateur ne reçoit pourtant jamais une liste de gestes. Il reçoit une demande, souvent un simple courriel, de quelqu'un qui ne connaît ni Linux ni les permissions, et qui veut que « ça marche, et que ce soit sûr ». Ce dernier module est une mission complète : mettre en service le serveur d'une petite équipe, de la lecture de la demande jusqu'au dossier qu'on lui remet. Il se déroule en six étapes, une par leçon, et cette première étape décide de toutes les autres.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire une demande et en tirer une liste de besoins numérotés ;
+- traduire chaque besoin en exigences vérifiables ;
+- classer les données selon leur sensibilité, et en déduire qui doit y accéder ;
+- décrire l'architecture cible d'un serveur, et ce qui reste hors du périmètre ;
+- fixer le cadre d'une intervention : autorisation, accès, traçabilité ;
+- faire l'état des lieux d'un serveur avant d'y toucher.
+
+## pourquoi ça compte
+
+La plupart des projets qui échouent n'échouent pas sur la technique, mais sur un malentendu. Le client voulait des sauvegardes « en cas de problème » ; l'administrateur a sauvegardé chaque nuit sur le disque du serveur, et l'incendie de l'atelier a emporté les deux. Un besoin mal compris produit un serveur parfaitement configuré qui ne répond pas à la question posée. Écrire, avant de commencer, ce qu'on va livrer et comment on prouvera que c'est fait protège tout le monde : le client sait ce qu'il aura, et toi ce que tu dois faire, ni plus ni moins.
+
+## la demande
+
+L'**atelier Ébène** dessine et fabrique des meubles. L'équipe compte six personnes : Hélène, la gérante, et Karim, son associé, Léa et Marc, designers, Nina, la comptable à temps partiel, et Paul, stagiaire jusqu'à la fin mars. Les fichiers circulent aujourd'hui par clés USB et pièces jointes, et un disque mort a coûté trois semaines de travail l'an dernier. Hélène a acheté un mini-PC, sur lequel le vendeur a installé Debian 12, et t'écrit pour le mettre en service.
+
+Sa demande, que tu liras en entier dans l'exercice, tient en sept points : partager les fichiers de projets entre designers, sans exposer la comptabilité ; un espace commun pour toute l'équipe ; le petit site interne qui présente le catalogue des pièces en cours ; un dépôt où l'imprimeur pourra déposer ses épreuves ; des sauvegardes ; être prévenu avant que quelque chose casse ; et suivre les recommandations de l'ANSSI, que l'assureur de l'atelier exige.
+
+## des besoins aux exigences
+
+Un **besoin** est ce que dit le client, dans ses mots : « des sauvegardes ». Une **exigence** est ce que tu t'engages à livrer, dans des termes qu'on peut vérifier : « chaque nuit à 2 h 30, une archive de `/srv/partage` et de `/etc` est créée, avec son empreinte ; les sept dernières sont conservées ; une copie part hors de l'atelier ; une restauration est testée chaque mois ». La seconde phrase peut être contrôlée par quelqu'un d'autre que toi, et c'est tout son intérêt.
+
+On numérote les besoins (B1, B2…), puis l'on rattache chaque exigence à son besoin. Cette **traçabilité** sert deux fois : elle montre qu'aucun besoin n'a été oublié, et elle explique chaque réglage du serveur par une raison. Une exigence qui ne se rattache à aucun besoin est souvent une envie de l'administrateur ; un besoin sans exigence, un oubli.
+
+Pour les sauvegardes, deux questions précisent le besoin. Combien de travail l'atelier accepte-t-il de perdre ? C'est la **perte de données maximale admissible** (*RPO*) : une journée, si l'on sauvegarde chaque nuit. Combien de temps peut-il rester sans ses fichiers ? C'est la **durée maximale d'interruption admissible** (*RTO*) : une demi-journée, peut-être, le temps de restaurer sur une autre machine. Ces deux chiffres, posés au client, dimensionnent toute la solution.
+
+## les données et ce qu'elles valent
+
+Toutes les données ne se valent pas, et ne doivent pas être accessibles aux mêmes personnes :
+
+| Données | Sensibilité | Qui y accède |
+| --- | --- | --- |
+| comptabilité, salaires | confidentielles, données personnelles | Nina et Hélène |
+| projets des clients | confidentielles : plans de clients, contrats | designers et associés |
+| espace commun | internes : modèles, logos, planning | toute l'équipe |
+| dépôt de l'imprimeur | échangées avec un tiers | l'imprimeur, et ceux qui récupèrent ses épreuves |
+| catalogue interne | internes | l'atelier, pas Internet |
+
+Ce tableau dicte directement les groupes, les permissions et les règles de pare-feu des étapes suivantes. Les salaires sont des **données personnelles** : le RGPD impose de les protéger, et une fuite se déclare. Le principe qui guide tout le reste est celui du **moindre privilège** : chacun accède à ce dont il a besoin pour travailler, et à rien d'autre. Paul, stagiaire, n'a pas à lire la comptabilité, et son compte doit s'éteindre de lui-même le jour de son départ.
+
+## l'architecture cible
+
+Le serveur, `srv-ebene`, reste dans l'atelier, sur le réseau local `192.168.10.0/24`, à l'adresse fixe `192.168.10.5`. Ce qu'il fera :
+
+- **les comptes** : un compte par personne, des groupes par équipe (`projets`, `compta`, `equipe`), et un compte d'administration nominatif pour Karim et pour toi ;
+- **le partage** : `/srv/partage/projets`, `/srv/partage/compta` et `/srv/partage/commun`, accessibles par SFTP, chacun réservé à son groupe ;
+- **le dépôt** : un compte `imprimeur`, limité à SFTP et enfermé dans `/srv/depot` ;
+- **le site interne** : nginx, qui sert le catalogue, généré chaque nuit par un script maison, et joignable seulement depuis le réseau de l'atelier ;
+- **les sauvegardes** : une archive chaque nuit sur un second disque, et une copie chiffrée chez un hébergeur ;
+- **la supervision** : un script qui surveille l'espace disque, les services et la fraîcheur des sauvegardes, et prévient par courriel ;
+- **la sécurité** : SSH par clé seulement, pare-feu qui refuse par défaut, mises à jour de sécurité automatiques, réglages du noyau et journalisation selon les recommandations de l'ANSSI.
+
+<Diagram caption="Le serveur de l'atelier, et qui y accède">
+flowchart LR
+  A["postes de l'équipe, réseau 192.168.10.0/24"] -->|"SFTP par clé"| S["srv-ebene"]
+  A -->|"HTTP, réseau local seulement"| S
+  I["imprimeur, Internet"] -->|"SFTP, dépôt enfermé"| S
+  S -->|"archive chiffrée chaque nuit"| H["stockage chez un hébergeur"]
+  S -->|"alertes par courriel"| K["Karim et l'administrateur"]
+</Diagram>
+
+## le périmètre
+
+Ce qu'on ne fait pas compte autant que ce qu'on fait, et doit être écrit. Ici : pas de serveur de messagerie, l'atelier garde son offre actuelle ; pas d'accès à distance pour l'équipe, ce sera une seconde phase avec un VPN ; pas de partage Windows (Samba), puisque tous les postes savent parler SFTP avec un client graphique. Un périmètre écrit évite qu'une demande ajoutée au détour d'un couloir ne devienne, trois mois plus tard, un reproche : « vous deviez aussi faire la messagerie ».
+
+## le cadre de l'intervention
+
+Avant de toucher au serveur, trois points sont réglés par écrit :
+
+- **l'autorisation** : Hélène, qui représente l'atelier, confirme par courriel que tu interviens sur ce serveur, et sur rien d'autre ;
+- **les accès** : tu reçois un compte nominatif, jamais le mot de passe de Karim ni celui de root. À la fin de la mission, ton accès est retiré ou documenté s'il reste nécessaire pour la maintenance ;
+- **la traçabilité** : chaque action est notée dans un **journal de bord**, daté. C'est lui qui permettra d'expliquer un réglage dans six mois, ou de comprendre ce qui a changé avant une panne.
+
+Les données de l'atelier restent dans l'atelier : pas de copie des fichiers clients sur ton portable pour « tester ». Si une manipulation exige des données, on utilise des fichiers fictifs.
+
+## la méthode et les étapes
+
+Le projet suit six étapes, chacune avec un livrable et une vérification :
+
+1. **le cahier des charges** : les besoins, les exigences, l'architecture, le périmètre (cette leçon) ;
+2. **installer et organiser** : paquets, comptes, groupes, dossiers partagés et leurs droits ;
+3. **les services** : le partage par SFTP, le dépôt de l'imprimeur, le site interne et son script ;
+4. **sauvegarder et superviser** : les scripts, leur planification, les alertes ;
+5. **durcir** : les recommandations de l'ANSSI, appliquées et justifiées une à une ;
+6. **le rendu** : le dossier d'exploitation, un script qui vérifie tout l'état du serveur, et la remise au client.
+
+Chaque étape se termine par une **vérification**, pas par une impression. On ne passe à la suivante qu'une fois la précédente prouvée.
+
+## l'état des lieux
+
+Un serveur livré par un vendeur n'est jamais vierge. Avant toute modification, on regarde ce qu'il est, et l'on note tout dans le journal de bord : la version du système, les disques, la mémoire, les adresses, les services qui tournent et les ports qui écoutent, les mises à jour en attente, les comptes existants. Cet état initial sert de point de comparaison. Il révèle aussi des surprises : un service d'impression installé par défaut et ouvert sur le réseau, un compte de démonstration laissé par le vendeur, un second disque jamais formaté. Chacune devient une ligne du plan de travail.
+
+## à toi de jouer
+
+Le dossier `mission` contient la demande d'Hélène, la liste de l'équipe et la fiche du matériel. Tu vas les exploiter en ligne de commande, et ouvrir le dossier du projet :
+
+1. découvre le dossier : `ls mission`, puis `cat mission/courriel-helene.txt` ;
+2. combien de comptes faudra-t-il ? `tail -n +2 mission/equipe.csv | wc -l`. La première ligne est l'en-tête ;
+3. garde la liste des identifiants : `tail -n +2 mission/equipe.csv | cut -d, -f1 > comptes.txt` ;
+4. qui travaille sur les projets ? `grep projets mission/equipe.csv | cut -d, -f1` ;
+5. quel compte doit expirer, et quand ? `tail -n +2 mission/equipe.csv | awk -F, '$5 != "" {print $1, $5}'` ;
+6. ouvre le dossier du projet : `mkdir -p projet/doc projet/config projet/scripts projet/journal` ;
+7. numérote les besoins de la demande, qui sont les lignes en tiret : `grep '^- ' mission/courriel-helene.txt | awk '{sub(/^- /, ""); print "B" NR " : " $0}' > projet/doc/besoins.txt`, puis `cat projet/doc/besoins.txt` ;
+8. ouvre le journal de bord : `echo "$(date +%F) : demande reçue, $(wc -l < projet/doc/besoins.txt) besoins identifiés" >> projet/journal/journal.txt`, puis `cat projet/journal/journal.txt`.
+
+<LinuxTerminal title="Le dossier de mission" files={{"mission/courriel-helene.txt": "De : Hélène Ruiz <helene@atelier-ebene.example>\nObjet : le serveur de l'atelier\n\nBonjour,\n\nComme convenu au téléphone, voici ce dont l'atelier a besoin.\nNous sommes six, la liste est jointe. Aujourd'hui, nos fichiers\ncirculent par clés USB et par courriel, et un disque mort nous a\ncoûté trois semaines de travail l'an dernier. Nous voudrions :\n\n- partager les fichiers de projets entre designers, sans que la comptabilité soit visible de tous\n- un espace commun pour toute l'équipe : modèles, logos, planning\n- notre site interne, le catalogue des pièces en cours, visible seulement depuis l'atelier\n- un dépôt où notre imprimeur peut déposer ses épreuves sans voir le reste\n- des sauvegardes, pour ne plus jamais perdre notre travail\n- être prévenus quand quelque chose ne va pas, avant que ça casse\n- que ce soit sûr : notre assureur demande de suivre les recommandations de l'ANSSI\n\nLe mini-PC est acheté, le vendeur y a installé Debian 12. Karim a un\ncompte administrateur dessus. Paul, notre stagiaire, nous quitte le\n31 mars. Nous aimerions que tout soit prêt pour le 1er novembre, avec\nune documentation qu'on puisse suivre sans toi.\n\nMerci !\nHélène\n", "mission/equipe.csv": "identifiant,nom,role,equipes,fin\nhelene,Hélène Ruiz,gérante,direction;projets;compta,\nkarim,Karim Benali,associé designer,direction;projets,\nlea,Léa Martin,designer,projets,\nmarc,Marc Dubois,designer,projets,\nnina,Nina Petit,comptable,compta,\npaul,Paul Girard,stagiaire,projets,2027-03-31\n", "mission/materiel.txt": "srv-ebene : fiche du vendeur\nMini-PC, processeur Intel N100, 16 Go de mémoire\nSSD NVMe 512 Go : système Debian 12\nDisque dur 2 To : livré vide\nUne carte réseau Ethernet, branchée sur la box de l'atelier (192.168.10.1)\nCompte administrateur créé à la livraison : karim\n"}} expectedCommands={["ls mission", "cat mission/courriel-helene.txt", "tail -n +2 mission/equipe.csv | wc -l", "tail -n +2 mission/equipe.csv | cut -d, -f1 > comptes.txt", "grep projets mission/equipe.csv | cut -d, -f1", "tail -n +2 mission/equipe.csv | awk -F, '$5 != \"\" {print $1, $5}'", "mkdir -p projet/doc projet/config projet/scripts projet/journal", "grep '^- ' mission/courriel-helene.txt | awk '{sub(/^- /, \"\"); print \"B\" NR \" : \" $0}' > projet/doc/besoins.txt", "cat projet/doc/besoins.txt", "echo \"$(date +%F) : demande reçue, $(wc -l < projet/doc/besoins.txt) besoins identifiés\" >> projet/journal/journal.txt", "cat projet/journal/journal.txt"]} checks={[{"label": "Les six identifiants sont listés", "path": "comptes.txt", "expect": "file", "contains": "paul"}, {"label": "Le dossier du projet est ouvert", "path": "projet/scripts", "expect": "dir"}, {"label": "Les sept besoins sont numérotés", "path": "projet/doc/besoins.txt", "expect": "file", "contains": "B7 : que ce soit sûr"}, {"label": "Le journal de bord a sa première entrée", "path": "projet/journal/journal.txt", "expect": "file", "contains": "7 besoins identifiés"}]} hints={["tail -n +2 commence à la deuxième ligne : l'en-tête du CSV est sauté.", "cut -d, -f1 garde le premier champ, les champs étant séparés par des virgules.", "Dans awk, $5 est le cinquième champ : la date de fin, vide pour la plupart.", "NR est le numéro de la ligne lue par awk ; sub retire le tiret du début."]} />
+
+Les commandes de l'étape 2 à 5 répondent aux premières questions du projet sans rien ressaisir : six comptes, cinq membres de l'équipe projets (Nina n'en fait pas partie), et une date de fin pour Paul, qui deviendra une expiration de compte. L'étape 7 produit la base de la traçabilité : chaque exigence des étapes suivantes renverra à un numéro de B1 à B7.
+
+Ensuite, l'état des lieux du serveur livré, `srv-ebene`, dans un terminal simulé :
+
+1. le système : `cat /etc/os-release | head -4`, puis `uname -r` ;
+2. le matériel : `lsblk`, puis `free -h` ;
+3. le réseau : `ip -br addr` ;
+4. ce qui écoute : `sudo ss -ltnp`, et comment SSH accepte les connexions : `sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin)'` ;
+5. les comptes humains, ceux dont l'UID dépasse 1000 : `awk -F: '$3 >= 1000 && $3 < 65534 {print $1, $7}' /etc/passwd` ;
+6. les mises à jour en attente : `apt list --upgradable 2>/dev/null | tail -n +2 | wc -l`.
+
+<SimulatedTerminal shell="bash" title="L'état des lieux de srv-ebene" expectedCommands={["cat /etc/os-release | head -4", "uname -r", "lsblk", "free -h", "ip -br addr", "sudo ss -ltnp", "sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin)'", "awk -F: '$3 >= 1000 && $3 < 65534 {print $1, $7}' /etc/passwd", "apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"]} hints={["lsblk montre les disques et leurs partitions ; un disque sans partition n'a jamais servi.", "Une adresse donnée par DHCP peut changer : un serveur a une adresse fixe.", "0.0.0.0 dans ss : le service écoute sur toutes les adresses de la machine.", "Les comptes humains ont un UID à partir de 1000 ; 65534 est nobody."]} commands={{"cat /etc/os-release | head -4": "PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"", "uname -r": "6.1.0-26-amd64", "lsblk": "NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsda           8:0    0   1.8T  0 disk \nnvme0n1     259:0    0 476.9G  0 disk \n├─nvme0n1p1 259:1    0   512M  0 part /boot/efi\n├─nvme0n1p2 259:2    0 475.5G  0 part /\n└─nvme0n1p3 259:3    0   977M  0 part [SWAP]", "free -h": "               total        used        free      shared  buff/cache   available\nMem:            15Gi       612Mi        14Gi       1.2Mi       487Mi        14Gi\nSwap:          976Mi          0B       976Mi", "ip -br addr": "lo               UNKNOWN        127.0.0.1/8 ::1/128 \nenp1s0           UP             192.168.10.137/24 fe80::7a55:36ff:fe02:4c1d/64 ", "sudo ss -ltnp": "State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process\nLISTEN 0      128          0.0.0.0:22         0.0.0.0:*     users:((\"sshd\",pid=611,fd=3))\nLISTEN 0      128          0.0.0.0:631        0.0.0.0:*     users:((\"cupsd\",pid=598,fd=7))\nLISTEN 0      128             [::]:22            [::]:*     users:((\"sshd\",pid=611,fd=4))\nLISTEN 0      128             [::]:631           [::]:*     users:((\"cupsd\",pid=598,fd=8))", "sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin)'": "permitrootlogin without-password\npasswordauthentication yes", "awk -F: '$3 >= 1000 && $3 < 65534 {print $1, $7}' /etc/passwd": "karim /bin/bash\ndemo /bin/bash", "apt list --upgradable 2>/dev/null | tail -n +2 | wc -l": "37", "hostname": "srv-ebene", "systemctl list-units --type=service --state=running --no-pager --plain | head -12": "UNIT                        LOAD   ACTIVE SUB     DESCRIPTION\navahi-daemon.service        loaded active running Avahi mDNS/DNS-SD Stack\ncron.service                loaded active running Regular background program processing daemon\ncups-browsed.service        loaded active running Make remote CUPS printers available locally\ncups.service                loaded active running CUPS Scheduler\ndbus.service                loaded active running D-Bus System Message Bus\ngetty@tty1.service          loaded active running Getty on tty1\nssh.service                 loaded active running OpenBSD Secure Shell server\nsystemd-journald.service    loaded active running Journal Service\nsystemd-logind.service      loaded active running User Login Management\nsystemd-timesyncd.service   loaded active running Network Time Synchronization\nsystemd-udevd.service       loaded active running Rule-based Manager for Device Events and Files"}} />
+
+Note ce que tu as trouvé : à côté du SSD système, un disque dur `sda` de 2 To (affiché 1,8 Tio) jamais partitionné, qui recevra les sauvegardes ; une adresse donnée par DHCP, à rendre fixe ; le service d'impression CUPS qui écoute sur toutes les adresses, et SSH qui accepte les mots de passe ; un compte `demo` laissé par le vendeur ; 37 mises à jour en attente. Chacun de ces constats deviendra une action des étapes suivantes.
+
+## les pièges
+
+- **Commencer par la technique.** Installer avant d'avoir écrit les exigences, c'est livrer ce qu'on sait faire, pas ce qui est demandé.
+- **Des exigences invérifiables.** « Des sauvegardes fiables » ne se vérifie pas ; « une restauration testée chaque mois » si.
+- **Oublier le périmètre.** Ce qui n'est pas écrit comme exclu finit par être attendu.
+- **Travailler avec le compte de quelqu'un d'autre.** Un compte nominatif, et un journal de bord : sinon, personne ne sait qui a fait quoi.
+- **Copier les données du client pour tester.** On teste avec des données fictives.
+- **Modifier avant l'état des lieux.** Sans point de départ, impossible de dire ce qu'on a changé.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Le guide qui servira de référence au durcissement du serveur, en français">ANSSI : recommandations pour un système GNU/Linux</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les mesures de base pour une petite structure, en français">ANSSI : guide d'hygiène informatique</ExternalLink>
+
+<ExternalLink href="https://debian-handbook.info/browse/fr-FR/stable/" description="Le livre de référence pour administrer Debian, en français">Le cahier de l'administrateur Debian</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle différence entre un besoin et une exigence ?" options={["Aucune", "Le besoin est dit par le client dans ses mots ; l'exigence est un engagement vérifiable", "L'exigence vient toujours du client", "Le besoin est technique"]} correct={1} explanation="Une exigence peut être contrôlée par quelqu'un d'autre que celui qui l'a réalisée." />
+  <Quiz id="q-2" question="À quoi sert de rattacher chaque exigence à un besoin numéroté ?" options={["À faire plus long", "À montrer qu'aucun besoin n'est oublié, et à justifier chaque réglage", "C'est une obligation légale", "À rien"]} correct={1} explanation="C'est la traçabilité : un besoin sans exigence est un oubli, une exigence sans besoin une envie." />
+  <Quiz id="q-3" question="L'atelier accepte de perdre au plus une journée de travail. Quelle notion cela fixe-t-il ?" options={["La durée d'interruption", "La perte de données maximale admissible, qui impose au moins une sauvegarde par jour", "Le budget", "La taille du disque"]} correct={1} explanation="Le RPO ; la durée d'interruption admissible est le RTO." />
+  <Quiz id="q-4" question="Pourquoi classer les données avant de créer les comptes ?" options={["Pour la décoration", "Parce que leur sensibilité décide des groupes, des permissions et des règles d'accès", "Pour choisir la distribution", "Ce n'est pas utile"]} correct={1} explanation="C'est l'application du moindre privilège." />
+  <Quiz id="q-5" question="Pourquoi écrire ce qui est hors du périmètre ?" options={["Pour faire plaisir au client", "Pour éviter qu'un travail jamais demandé ne soit attendu plus tard", "C'est inutile", "Pour allonger le devis"]} correct={1} explanation="Ce qui n'est pas écrit comme exclu finit par être attendu." />
+  <Quiz id="q-6" question="Avec quel compte intervenir sur le serveur du client ?" options={["Celui de Karim", "Un compte nominatif à toi, et sudo", "root, partagé", "Un compte de démonstration"]} correct={1} explanation="Le journal du système dit alors qui a fait quoi." />
+  <Quiz id="q-7" question="Pourquoi faire l'état des lieux avant toute modification ?" options={["Pour gagner du temps", "Pour avoir un point de comparaison, et découvrir ce que le vendeur a laissé", "Parce que le client le demande", "Ce n'est pas nécessaire"]} correct={1} explanation="Services inutiles, comptes oubliés, disques non formatés : chaque constat devient une action." />
+</QuizGroup>
+
+## à retenir
+
+- Une mission commence par la **demande**, des **besoins numérotés**, puis des **exigences vérifiables**, rattachées à leur besoin.
+- **RPO** et **RTO** dimensionnent les sauvegardes : combien de travail perdre, combien de temps attendre.
+- Classer les **données** décide des groupes, des droits et des accès : le **moindre privilège**.
+- L'**architecture cible** et le **périmètre** sont écrits, ce qui est exclu aussi.
+- Le **cadre** : autorisation écrite, compte nominatif, **journal de bord** daté.
+- L'**état des lieux** précède toute modification.

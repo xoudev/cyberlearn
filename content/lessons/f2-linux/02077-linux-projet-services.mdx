@@ -1,0 +1,221 @@
+---
+refCode: CL-LSN-02077-V01
+slug: linux-projet-services
+title: "Projet final : les services, partage, dépôt, site interne et service maison"
+description: "Troisième étape du projet de fin de parcours : ouvrir le partage de fichiers par SFTP avec le bon umask, enfermer l'imprimeur dans son dépôt, servir le site interne avec nginx pour le seul réseau de l'atelier, écrire le service maison qui génère le catalogue, le planifier avec un minuteur systemd sous un compte dédié, et lire ses journaux. Avec un générateur de catalogue dépanné grâce au journal puis servi au nom de nobody sur un vrai Linux, puis la configuration de nginx et de sshd sur le serveur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02076-V01"]
+---
+
+Les comptes existent, les dossiers partagés ont leurs droits. Il reste à ouvrir les portes : celle par laquelle l'équipe atteint ses fichiers, celle de l'imprimeur, qui ne doit mener qu'à un seul dossier, et celle du site interne, qui ne doit s'ouvrir que depuis l'atelier. Il faut aussi écrire le premier logiciel propre à l'atelier, le petit **service maison** qui fabrique chaque matin la page du catalogue. Chaque service ouvert est un accès de plus au serveur : on le règle au plus juste, sous le compte le moins privilégié possible, et l'on s'assure qu'il laisse des traces lisibles quand il échoue.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- ouvrir un partage de fichiers par SFTP, avec un umask d'équipe et sans shell pour ceux qui n'en ont pas besoin ;
+- enfermer un partenaire extérieur dans un dépôt avec `ChrootDirectory` ;
+- servir un site avec nginx, réservé à un réseau ;
+- écrire un service maison robuste : configuration séparée, journal, écriture atomique ;
+- le planifier avec un service et un minuteur systemd, sous un compte dédié ;
+- diagnostiquer une panne d'un service grâce à son journal.
+
+## pourquoi ça compte
+
+Un service se juge le jour où il échoue. Celui qui écrit dans le journal ce qui ne va pas, et pourquoi, se répare en deux minutes ; celui qui échoue en silence laisse l'équipe découvrir, une semaine plus tard, que le catalogue n'a plus changé depuis lundi. Côté sécurité, chaque service est une surface d'attaque : le dépôt de l'imprimeur est le seul accès au serveur depuis Internet, et un réglage trop large y donnerait accès à tous les fichiers de l'atelier. Les deux exigences se rejoignent : un service bien fait en fait le moins possible, avec le moins de droits possible, et dit tout ce qu'il fait.
+
+## le partage par SFTP
+
+L'équipe accède à ses fichiers par **SFTP**, le transfert de fichiers de SSH : chiffré, authentifié par clé, sans nouveau service à ouvrir. Sur les postes, un client graphique comme FileZilla, WinSCP ou Cyberduck présente les dossiers du serveur comme un explorateur de fichiers. Chaque personne a sa clé, installée dans son `authorized_keys`.
+
+Les designers et la comptable n'ont pas besoin d'un shell sur le serveur : on les limite au transfert de fichiers. Un groupe `sftp-seul` les réunit, et un bloc `Match` de `sshd` les traite :
+
+```text
+Match Group sftp-seul
+    ForceCommand internal-sftp -u 007
+    AllowTcpForwarding no
+    X11Forwarding no
+```
+
+`ForceCommand internal-sftp` remplace toute commande demandée par le serveur SFTP intégré : pas de shell, même en le demandant. `-u 007` impose l'umask d'équipe vu à l'étape précédente, pour que les fichiers déposés soient modifiables par le groupe. Karim et toi, qui administrez, n'êtes pas dans ce groupe.
+
+## les clés de l'équipe
+
+Chaque personne crée sa paire de clés sur son propre poste, avec une phrase de passe, et n'envoie que la **clé publique**. On ne génère jamais les clés à la place des gens pour leur envoyer la clé privée par courriel. À réception, on vérifie que la clé vient bien de la bonne personne, en comparant son empreinte de vive voix ou par un autre canal, puis on l'installe dans le `authorized_keys` de son compte, en `600`, dans un dossier `.ssh` en `700`. La documentation garde, pour chaque compte, l'empreinte de sa clé et la date de son installation : le jour où un portable est perdu, on sait quelle ligne retirer, et le journal de `sshd`, qui note l'empreinte de chaque clé acceptée, dit si elle a servi depuis.
+
+## le dépôt de l'imprimeur
+
+L'imprimeur dépose ses épreuves depuis Internet. C'est l'accès le plus exposé du serveur, et il doit mener à un seul dossier :
+
+```text
+Match User imprimeur
+    ChrootDirectory /srv/depot
+    ForceCommand internal-sftp -u 007
+    AllowTcpForwarding no
+    X11Forwarding no
+```
+
+`ChrootDirectory` fait de `/srv/depot` la racine apparente de sa session : il ne voit rien au-dessus. Ce dossier, et chacun de ses parents, doit appartenir à root et n'être modifiable par personne d'autre, sinon `sshd` refuse la connexion. L'imprimeur écrit donc dans un sous-dossier, `/srv/depot/epreuves`, qui lui appartient avec le groupe `projets` en `2770` : les designers y récupèrent les épreuves. Son compte n'a ni shell (`/usr/sbin/nologin`), ni mot de passe, seulement une clé.
+
+Pour qu'il atteigne le serveur, la box de l'atelier redirige le port 22 vers `srv-ebene`. L'imprimeur ayant une adresse fixe, le pare-feu n'ouvrira le port 22 depuis Internet qu'à **cette seule adresse** : pour le reste du monde, le serveur restera invisible.
+
+## le site interne avec nginx
+
+Le catalogue est une simple page HTML, servie par nginx. Sa configuration, dans `/etc/nginx/sites-available/catalogue`, tient en quelques lignes :
+
+```text
+server {
+    listen 80;
+    server_name srv-ebene;
+    root /srv/www/catalogue;
+    index index.html;
+
+    allow 192.168.10.0/24;
+    allow 127.0.0.1;
+    deny all;
+}
+```
+
+Les directives `allow` et `deny`, lues dans l'ordre, réservent le site au réseau de l'atelier et à la machine elle-même : le pare-feu le fera aussi, mais deux barrières valent mieux qu'une. On active le site par un lien dans `sites-enabled`, on retire le site d'exemple de Debian, on vérifie avec `nginx -t`, puis on recharge. Le site ne passe pas en HTTPS : il ne sort jamais du réseau local et ne transporte aucun secret, un choix écrit dans la documentation, à revoir si le site s'ouvre un jour à l'extérieur.
+
+## le service maison
+
+Le catalogue est généré chaque matin à partir des fiches des projets en cours. Le script qui le fait est court, mais il suit quatre règles qui valent pour tout service maison :
+
+- **la configuration est à part**, dans `/etc/catalogue.conf` : on change un chemin sans toucher au code, et une mise à jour du script n'écrase pas les réglages ;
+- **il écrit dans le journal**, avec `logger` et une étiquette, ce qu'il a fait et ce qui l'a empêché de le faire, avec un code de sortie différent de zéro en cas d'échec ;
+- **il écrit de façon atomique** : la page est construite dans un fichier temporaire, puis renommée d'un coup avec `mv`. Un visiteur ne voit jamais une page à moitié écrite, et une erreur au milieu laisse l'ancienne page intacte ;
+- **il ne publie que le nécessaire** : la fiche d'un projet contient le nom du client, la page du catalogue n'affiche que la pièce et son état.
+
+## un service et un minuteur
+
+Le script tourne sous un compte **dédié**, `catalogue`, qui peut lire les fiches et écrire la page, et rien d'autre. On le planifie avec systemd plutôt qu'avec cron, pour profiter du journal et des protections du module 8 :
+
+```text
+# /etc/systemd/system/catalogue.service
+[Unit]
+Description=Génération du catalogue interne
+
+[Service]
+Type=oneshot
+User=catalogue
+ExecStart=/usr/local/bin/generer-catalogue.sh
+ProtectSystem=strict
+ReadWritePaths=/srv/www/catalogue
+NoNewPrivileges=yes
+```
+
+```text
+# /etc/systemd/system/catalogue.timer
+[Timer]
+OnCalendar=*-*-* 06:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+`Persistent=true` rattrape une exécution manquée, si le serveur était éteint à 6 h. `ProtectSystem=strict` rend tout le système en lecture seule pour le service, sauf le dossier de la page : même détourné, il ne pourrait rien modifier d'autre. On active le minuteur, pas le service : `sudo systemctl enable --now catalogue.timer`.
+
+<Diagram caption="Les services de srv-ebene, et qui les atteint">
+flowchart LR
+  E["postes de l'équipe"] -->|"SFTP, groupe sftp-seul, umask 007"| P["/srv/partage"]
+  I["imprimeur, adresse fixe"] -->|"SFTP enfermé"| D["/srv/depot/epreuves"]
+  T["catalogue.timer, 6 h"] --> G["generer-catalogue.sh, compte catalogue"]
+  P -->|"fiches des projets"| G
+  G -->|"page écrite d'un coup"| W["/srv/www/catalogue"]
+  E -->|"HTTP, réseau local"| N["nginx"]
+  N --> W
+</Diagram>
+
+## les journaux
+
+Chaque service laisse ses traces, à un endroit qu'il faut connaître :
+
+```bash
+journalctl -u catalogue.service -n 20        # le service maison, via son unité
+journalctl -t catalogue --since today        # ses messages, par leur étiquette
+sudo tail /var/log/nginx/access.log          # qui a consulté le site
+journalctl -u ssh | grep imprimeur           # les connexions du dépôt
+```
+
+Un service qui échoue apparaît aussi dans `systemctl --failed`. C'est cette commande que le script de supervision de l'étape suivante interrogera chaque matin.
+
+## démonstration : le dépôt refuse l'imprimeur
+
+Le premier essai de l'imprimeur échoue : son client affiche seulement `Connection closed`. Côté serveur, le journal est plus bavard :
+
+```text
+sshd[3127]: fatal: bad ownership or modes for chroot directory "/srv/depot"
+```
+
+Pour faciliter les choses, quelqu'un avait donné le dossier à l'imprimeur : `chown imprimeur /srv/depot`. Or `sshd` exige que la racine du chroot et tous ses parents appartiennent à root et ne soient modifiables que par lui, faute de quoi un utilisateur pourrait y placer des fichiers qui tromperaient le système une fois enfermé. On rend le dossier à root (`sudo chown root:root /srv/depot` et `sudo chmod 755 /srv/depot`), et l'on vérifie que seul le sous-dossier `epreuves` appartient à l'imprimeur. La connexion suivante passe. Sans le journal, on aurait pu chercher longtemps du côté de la clé.
+
+## à toi de jouer
+
+Le dossier `srv/partage/projets` contient les fiches de trois projets en cours. `generer-catalogue.sh` est le service maison, `catalogue.conf` sa configuration, et `http-catalogue.sh` un petit serveur web en shell, que lancera `inetd`, faute de nginx dans ce Linux. Les chemins commencent par `/mnt`, là où le serveur aurait `/etc` et `/srv`.
+
+1. démarre le service de journalisation, qui écrira dans `journal.log` : `syslogd -O /mnt/journal.log` ;
+2. lis le script et sa configuration : `cat generer-catalogue.sh`, puis `cat catalogue.conf` ;
+3. lance-le : `sh generer-catalogue.sh`. Il échoue ;
+4. le journal dit pourquoi : `grep catalogue journal.log` ;
+5. corrige la configuration : `sed -i 's|partage/projet$|partage/projets|' catalogue.conf`, puis relance : `sh generer-catalogue.sh`, et relis le journal : `grep catalogue journal.log` ;
+6. regarde la page produite : `cat www/catalogue/index.html`. Les noms des clients n'y figurent pas ;
+7. sers-la : `cat inetd.conf`, réveille la boucle locale, éteinte au démarrage, avec `ip link set lo up`, puis lance `inetd /mnt/inetd.conf` ;
+8. consulte-la comme un navigateur, et garde la réponse : `wget -qO- http://127.0.0.1:8080/ > page.txt`, puis `cat page.txt`.
+
+<LinuxTerminal title="Le service maison de l'atelier" files={{"srv/partage/projets/2026-014-table-chene/fiche.txt": "client: Famille Moreau\npiece: Table en chêne massif\netat: assemblage\n", "srv/partage/projets/2026-017-buffet-noyer/fiche.txt": "client: Restaurant Le Cèdre\npiece: Buffet en noyer\netat: finitions\n", "srv/partage/projets/2026-019-chaises-frene/fiche.txt": "client: M. et Mme Lambert\npiece: Six chaises en frêne\netat: dessin\n", "generer-catalogue.sh": "#!/bin/sh\n# generer-catalogue.sh : construit la page du catalogue interne à partir des\n# fiches des projets en cours. Sur le serveur, un minuteur systemd le lance\n# chaque matin ; ses messages vont au journal, avec l'étiquette « catalogue ».\nset -eu\n. /mnt/catalogue.conf      # sur le serveur : /etc/catalogue.conf\n\njournal() { logger -t catalogue -p \"user.$1\" \"$2\"; }\n\nif [ ! -d \"$SOURCE\" ]; then\n  journal err \"dossier source introuvable : $SOURCE\"\n  echo \"erreur : dossier source introuvable, voir le journal\" >&2\n  exit 1\nfi\n\nmkdir -p \"$DESTINATION\"\ntmp=\"$DESTINATION/index.html.tmp\"\n{\n  echo '<!doctype html><html lang=\"fr\"><meta charset=\"utf-8\"><title>Catalogue de l&#39;atelier</title>'\n  echo '<h1>Pièces en cours</h1><ul>'\n  for fiche in \"$SOURCE\"/*/fiche.txt; do\n    [ -f \"$fiche\" ] || continue\n    piece=$(sed -n 's/^piece: //p' \"$fiche\")\n    etat=$(sed -n 's/^etat: //p' \"$fiche\")\n    echo \"<li>$piece : $etat</li>\"      # le client n'est pas publié\n  done\n  echo '</ul></html>'\n} > \"$tmp\"\nmv \"$tmp\" \"$DESTINATION/index.html\"    # la page change d'un coup, jamais à moitié\n\njournal info \"catalogue généré : $(grep -c '<li>' \"$DESTINATION/index.html\") pièces\"\n", "catalogue.conf": "# catalogue.conf : réglages du générateur de catalogue\nSOURCE=/mnt/srv/partage/projet\nDESTINATION=/mnt/www/catalogue\n", "http-catalogue.sh": "#!/bin/sh\n# http-catalogue.sh : sert la page du catalogue. inetd le lance à chaque\n# connexion et branche la connexion sur son entrée et sa sortie.\nwhile read -r ligne; do\n  ligne=$(printf '%s' \"$ligne\" | tr -d '\\r')\n  [ -z \"$ligne\" ] && break      # une ligne vide termine la requête\ndone\nprintf 'HTTP/1.0 200 OK\\r\\nContent-Type: text/html; charset=utf-8\\r\\n\\r\\n'\ncat /mnt/www/catalogue/index.html\n", "inetd.conf": "# inetd.conf : un service par ligne.\n# port   type    proto  attente  compte  programme  arguments\n8080     stream  tcp    nowait   nobody  /bin/sh    sh /mnt/http-catalogue.sh\n"}} expectedCommands={["syslogd -O /mnt/journal.log", "cat generer-catalogue.sh", "cat catalogue.conf", "sh generer-catalogue.sh", "grep catalogue journal.log", "sed -i 's|partage/projet$|partage/projets|' catalogue.conf", "cat www/catalogue/index.html", "cat inetd.conf", "ip link set lo up", "inetd /mnt/inetd.conf", "wget -qO- http://127.0.0.1:8080/ > page.txt", "cat page.txt"]} checks={[{"label": "L'échec est écrit dans le journal", "path": "journal.log", "expect": "file", "contains": "catalogue: dossier source introuvable"}, {"label": "La configuration pointe vers les projets", "path": "catalogue.conf", "expect": "file", "contains": "SOURCE=/mnt/srv/partage/projets"}, {"label": "Le succès est écrit dans le journal", "path": "journal.log", "expect": "file", "contains": "catalogue généré : 3 pièces"}, {"label": "La page du catalogue est servie", "path": "page.txt", "expect": "file", "contains": "Buffet en noyer : finitions"}]} hints={["syslogd -O écrit les messages du système dans le fichier indiqué ; logger y envoie ceux du script.", "Le journal donne le chemin que le script n'a pas trouvé : compare-le aux dossiers de srv/partage.", "Avec s|...|...|, les barres obliques du chemin n'ont pas à être échappées ; $ ancre la fin de ligne.", "lo est éteinte au démarrage : sans elle, 127.0.0.1 est injoignable."]} />
+
+L'étape 3 est la situation de tous les matins difficiles : un service qui ne fait pas son travail. L'étape 4 montre ce qu'apporte un script qui journalise : la cause est écrite, avec le chemin fautif, et la correction prend une ligne. Remarque aussi `inetd.conf` : le petit serveur tourne au nom de `nobody`, le compte qui n'a aucun droit, et non de root. Sur le vrai serveur, nginx fait de même, avec son compte `www-data`.
+
+Ensuite, sur `srv-ebene`, dans un terminal simulé, la mise en place du site et des accès SFTP :
+
+1. la configuration du site : `cat /etc/nginx/sites-available/catalogue` ;
+2. son activation, à la place du site d'exemple : `sudo ln -s /etc/nginx/sites-available/catalogue /etc/nginx/sites-enabled/`, puis `sudo rm /etc/nginx/sites-enabled/default` ;
+3. la vérification, puis le rechargement : `sudo nginx -t`, puis `sudo systemctl reload nginx` ;
+4. le minuteur du service maison : `systemctl list-timers catalogue.timer --no-pager` ;
+5. les accès SFTP : `cat /etc/ssh/sshd_config.d/20-partage.conf`, puis `sudo sshd -t` ;
+6. et la preuve qu'un shell est refusé à l'imprimeur : `ssh imprimeur@srv-ebene`.
+
+<SimulatedTerminal shell="bash" title="nginx et SFTP sur srv-ebene" expectedCommands={["cat /etc/nginx/sites-available/catalogue", "sudo ln -s /etc/nginx/sites-available/catalogue /etc/nginx/sites-enabled/", "sudo rm /etc/nginx/sites-enabled/default", "sudo nginx -t", "sudo systemctl reload nginx", "systemctl list-timers catalogue.timer --no-pager", "cat /etc/ssh/sshd_config.d/20-partage.conf", "sudo sshd -t", "ssh imprimeur@srv-ebene"]} hints={["Un site s'active par un lien dans sites-enabled.", "nginx -t vérifie toute la configuration avant le rechargement.", "NEXT : la prochaine exécution du service maison ; LAST : la dernière.", "This service allows sftp connections only : ForceCommand internal-sftp fait son travail."]} commands={{"cat /etc/nginx/sites-available/catalogue": "server {\n    listen 80;\n    server_name srv-ebene;\n    root /srv/www/catalogue;\n    index index.html;\n\n    allow 192.168.10.0/24;\n    allow 127.0.0.1;\n    deny all;\n}", "sudo ln -s /etc/nginx/sites-available/catalogue /etc/nginx/sites-enabled/": "", "sudo rm /etc/nginx/sites-enabled/default": "", "sudo nginx -t": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful", "sudo systemctl reload nginx": "", "systemctl list-timers catalogue.timer --no-pager": "NEXT                        LEFT     LAST                        PASSED  UNIT            ACTIVATES\nSun 2026-10-04 06:00:00 CEST 18h left Sat 2026-10-03 06:00:02 CEST 5h ago catalogue.timer catalogue.service\n\n1 timers listed.", "cat /etc/ssh/sshd_config.d/20-partage.conf": "# 20-partage.conf : les accès SFTP de l'atelier\nMatch Group sftp-seul\n    ForceCommand internal-sftp -u 007\n    AllowTcpForwarding no\n    X11Forwarding no\n\nMatch User imprimeur\n    ChrootDirectory /srv/depot\n    ForceCommand internal-sftp -u 007\n    AllowTcpForwarding no\n    X11Forwarding no", "sudo sshd -t": "", "ssh imprimeur@srv-ebene": "This service allows sftp connections only.\nConnection to srv-ebene closed.", "curl -s http://srv-ebene/ | head -3": "<!doctype html><html lang=\"fr\"><meta charset=\"utf-8\"><title>Catalogue de l&#39;atelier</title>\n<h1>Pièces en cours</h1><ul>\n<li>Table en chêne massif : assemblage</li>", "journalctl -t catalogue --since today --no-pager": "Oct 03 06:00:02 srv-ebene catalogue[48211]: catalogue généré : 3 pièces", "ls -ld /srv/depot /srv/depot/epreuves": "drwxr-xr-x 3 root      root    4096 Oct  3 11:42 /srv/depot\ndrwxrws--- 2 imprimeur projets 4096 Oct  3 11:42 /srv/depot/epreuves"}} />
+
+## les pièges
+
+- **Un service maison qui échoue en silence.** Sans journal ni code de sortie, la panne se découvre des jours plus tard.
+- **Écrire la page directement à sa place.** Une erreur au milieu publie une page tronquée : fichier temporaire, puis `mv`.
+- **Faire tourner un service en root par facilité.** Un compte dédié, et `ProtectSystem` pour borner ce qu'il peut modifier.
+- **Un `ChrootDirectory` modifiable par l'utilisateur.** `sshd` refuse la connexion : la racine du chroot appartient à root.
+- **Oublier `-u 007` pour le SFTP de l'équipe.** Les fichiers déposés ne sont plus modifiables par les collègues.
+- **Laisser le site d'exemple de nginx actif.** Il répond à toute requête qui ne correspond à aucun autre site.
+
+## pour aller plus loin
+
+<ExternalLink href="https://nginx.org/en/docs/http/ngx_http_access_module.html" description="Les directives allow et deny de nginx, en anglais">nginx : le module d'accès</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/systemd/systemd.timer.5.en.html" description="Tous les réglages d'un minuteur systemd, en anglais">Page de manuel de systemd.timer</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/openssh-server/sshd_config.5.en.html" description="Match, ChrootDirectory et ForceCommand, en anglais">Page de manuel de sshd_config</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que fait ForceCommand internal-sftp dans un bloc Match ?" options={["Il active le chiffrement", "Il remplace toute commande demandée par le serveur SFTP intégré : pas de shell, même en le demandant", "Il ouvre un shell restreint", "Il désactive SFTP"]} correct={1} explanation="C'est ce qui limite un compte au transfert de fichiers." />
+  <Quiz id="q-2" question="Pourquoi l'imprimeur écrit-il dans /srv/depot/epreuves, et non dans /srv/depot ?" options={["Par habitude", "La racine d'un chroot doit appartenir à root et n'être modifiable par personne d'autre", "Pour économiser de la place", "Parce que nginx le demande"]} correct={1} explanation="Sinon sshd refuse la connexion." />
+  <Quiz id="q-3" question="Que font allow 192.168.10.0/24 puis deny all dans la configuration d'un site nginx ?" options={["Rien", "Elles réservent le site au réseau de l'atelier, et refusent toute autre origine", "Elles bloquent le réseau de l'atelier", "Elles activent HTTPS"]} correct={1} explanation="Les directives sont lues dans l'ordre, la première qui correspond s'applique." />
+  <Quiz id="q-4" question="Pourquoi générer la page dans un fichier temporaire puis la renommer avec mv ?" options={["Pour la compresser", "Pour qu'un visiteur ne voie jamais une page à moitié écrite, et qu'une erreur laisse l'ancienne page intacte", "Pour la chiffrer", "Parce que nginx ne lit que les fichiers renommés"]} correct={1} explanation="Un renommage dans le même système de fichiers est atomique." />
+  <Quiz id="q-5" question="À quoi sert Persistent=true dans un minuteur systemd ?" options={["À garder le service actif", "À rattraper une exécution manquée pendant que la machine était éteinte", "À journaliser davantage", "À relancer en cas d'échec"]} correct={1} explanation="Le service est lancé au démarrage suivant." />
+  <Quiz id="q-6" question="Le catalogue n'a pas changé depuis lundi. Par où commencer ?" options={["Réinstaller nginx", "Le journal du service maison : journalctl -u catalogue.service", "Redémarrer le serveur", "Changer de navigateur"]} correct={1} explanation="Un service qui journalise dit lui-même pourquoi il a échoué." />
+  <Quiz id="q-7" question="Pourquoi faire tourner le générateur sous un compte dédié plutôt que root ?" options={["C'est plus rapide", "Pour qu'un défaut ou un détournement du script ne puisse toucher qu'à ce que ce compte peut modifier", "Parce que root ne peut pas lancer de minuteur", "Ce n'est pas utile"]} correct={1} explanation="Avec ProtectSystem=strict, il ne peut écrire que dans le dossier de la page." />
+</QuizGroup>
+
+## à retenir
+
+- Le partage par **SFTP** : une clé par personne, un groupe **`sftp-seul`** avec **`ForceCommand internal-sftp -u 007`**.
+- Le partenaire extérieur : **`ChrootDirectory`** appartenant à root, un sous-dossier pour écrire, pas de shell, et le pare-feu ouvert à sa seule adresse.
+- **nginx** : un site par fichier, **`allow`** et **`deny`**, **`nginx -t`** avant **`reload`**.
+- Un service maison : **configuration à part**, **journal** avec `logger`, **écriture atomique**, données réduites au nécessaire.
+- Un **service `oneshot`** et un **minuteur**, sous un **compte dédié**, avec `ProtectSystem=strict`.
+- Une panne se lit d'abord dans le **journal**.

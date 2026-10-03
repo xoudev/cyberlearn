@@ -1,0 +1,200 @@
+---
+refCode: CL-LSN-02076-V01
+slug: linux-projet-installer-organiser
+title: "Projet final : installer et organiser, comptes, droits, logiciels"
+description: "Deuxième étape du projet de fin de parcours : mettre à jour le serveur de l'atelier, retirer ce qui ne sert pas et installer ce qui servira, créer un compte nominatif par personne et des groupes qui reflètent la sensibilité des données, préparer les dossiers partagés avec le bit setgid et un umask de groupe, confier l'administration par sudo et programmer le départ du stagiaire. Avec un script de création de comptes, essayé à blanc puis appliqué sur un vrai Linux, et les droits prouvés par des refus."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02075-V01"]
+---
+
+Le cahier des charges est écrit, l'état des lieux est fait. Il est temps de toucher au serveur. Cette étape pose les fondations sur lesquelles reposent toutes les autres : un système à jour et dépouillé de ce qui ne sert pas, un compte par personne, des groupes qui reproduisent le tableau des données, et des dossiers partagés dont les droits disent exactement qui lit et qui écrit. Une erreur ici se paie partout ensuite : un groupe trop large ouvre la comptabilité au stagiaire, un dossier mal réglé empêche deux designers de travailler sur le même fichier.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- mettre à jour un serveur et réduire ses logiciels au nécessaire ;
+- créer des comptes nominatifs et des groupes à partir d'une liste, par un script essayé à blanc ;
+- régler des dossiers partagés avec le bit setgid et un umask de groupe ;
+- confier l'administration par `sudo`, sans partager de mot de passe ;
+- programmer l'expiration d'un compte temporaire ;
+- prouver qu'un droit fonctionne, en vérifiant aussi ce qui doit être refusé.
+
+## pourquoi ça compte
+
+Les droits d'un serveur de fichiers ne se voient pas tant que tout va bien. Ils se révèlent le jour où un stagiaire copie le dossier des salaires, où un compte partagé ne permet pas de savoir qui a effacé un projet, où le compte d'un ancien salarié sert encore, des mois après son départ. Toutes ces situations ont la même origine : des droits posés à la main, au fil des demandes, sans plan ni vérification. Ici, chaque droit découle du tableau de la leçon précédente, est appliqué par un script qu'on peut relire et relancer, et est vérifié, y compris dans ce qu'il doit interdire.
+
+## d'abord, la mise à jour
+
+Avant d'installer quoi que ce soit, on applique les 37 mises à jour en attente : un système livré il y a quelques semaines a déjà des failles corrigées depuis.
+
+```bash
+sudo apt update
+sudo apt full-upgrade
+sudo reboot                       # si le noyau a été mis à jour
+```
+
+`full-upgrade` accepte d'ajouter ou de retirer des paquets quand une mise à jour l'exige, ce que `upgrade` refuse. Après un nouveau noyau, on redémarre tout de suite, pendant qu'on est devant la machine, plutôt que de découvrir un problème de démarrage dans trois mois.
+
+## installer le nécessaire, retirer le superflu
+
+Chaque logiciel installé est du code qui peut contenir une faille, et chaque service qui écoute est une porte. Le principe est simple : n'installer que ce que le cahier des charges demande, et retirer ce que le vendeur a laissé.
+
+```bash
+sudo apt purge cups cups-browsed avahi-daemon        # impression et découverte réseau : inutiles ici
+sudo apt install nginx nftables rsync unattended-upgrades
+sudo apt autoremove --purge
+```
+
+`purge` retire aussi les fichiers de configuration, là où `remove` les laisse. Le serveur n'imprime pas, n'a pas à s'annoncer sur le réseau : CUPS et Avahi partent. Restent les briques prévues : nginx pour le site interne, nftables pour le pare-feu, rsync pour la copie des sauvegardes, et les mises à jour automatiques de sécurité.
+
+## l'adresse et le nom
+
+L'état des lieux a montré une adresse donnée par DHCP, `192.168.10.137`. Le serveur prend son adresse définitive, `192.168.10.5`, de façon permanente, et son nom, `srv-ebene`, avec la ligne `127.0.1.1` qui va avec, comme au module précédent. La box de l'atelier ne doit pas distribuer cette adresse à un autre appareil : on la retire de sa plage DHCP, ou l'on y fait une réservation.
+
+## un compte par personne
+
+Chaque personne a son propre compte, et il n'existe aucun compte partagé, comme un `atelier` dont tout le monde connaîtrait le mot de passe. Un compte nominatif permet de savoir qui a fait quoi, de retirer l'accès d'une seule personne, et d'appliquer à chacun ses propres droits. Sur Debian :
+
+```bash
+sudo useradd -m -s /bin/bash -c "Léa Martin" -G equipe,projets lea
+sudo passwd -e lea               # mot de passe provisoire, à changer à la première connexion
+```
+
+Debian donne aussi à chaque compte son **groupe personnel**, du même nom, comme groupe principal : les fichiers privés de Léa ne sont ainsi partagés avec personne par défaut. Les groupes d'équipe s'ajoutent en **groupes secondaires**, avec `-G` à la création ou `usermod -aG` ensuite ; sans le `-a`, `usermod -G` remplacerait la liste au lieu d'y ajouter, et retirerait silencieusement le compte de ses autres groupes.
+
+Le compte `demo` laissé par le vendeur est supprimé avec son dossier personnel, `sudo userdel -r demo`, après avoir vérifié qu'il ne possède rien d'utile ailleurs : `sudo find / -xdev -user demo`.
+
+## des groupes qui reflètent les données
+
+Les groupes ne se choisissent pas selon l'organigramme, mais selon le tableau des données : un groupe par ensemble de personnes qui partagent un accès.
+
+| Groupe | Membres | Ouvre |
+| --- | --- | --- |
+| `equipe` | les six | l'espace commun |
+| `projets` | Hélène, Karim, Léa, Marc, Paul | les fichiers de projets |
+| `compta` | Hélène, Nina | la comptabilité |
+| `direction` | Hélène, Karim | les décisions qui leur reviennent |
+
+Le compte de l'imprimeur, lui, n'appartient à aucun de ces groupes. Il sera créé à l'étape suivante, sans shell, limité à SFTP et enfermé dans son dépôt.
+
+## les dossiers partagés
+
+Un dossier partagé appartient à root et à son groupe, avec les droits **`2770`** :
+
+```bash
+sudo mkdir -p /srv/partage/projets
+sudo chgrp projets /srv/partage/projets
+sudo chmod 2770 /srv/partage/projets
+```
+
+Le `770` ouvre tout au propriétaire et au groupe, rien aux autres. Le `2` est le bit **setgid** sur un dossier : tout fichier créé dedans hérite du groupe du dossier, `projets`, et non du groupe principal de son auteur. Sans lui, un fichier créé par Léa appartiendrait à son groupe personnel, et Marc ne pourrait pas le modifier.
+
+Reste l'**umask** : par défaut `022`, il crée les fichiers sans droit d'écriture pour le groupe. Pour qu'une équipe travaille sur les mêmes fichiers, on règle `007` pour ses membres, ce qui donne des fichiers en `660` et des dossiers en `770`. Pour les transferts par SFTP, l'étape suivante le réglera dans `sshd`, avec l'option `-u 007` de `internal-sftp`. Et l'on n'utilise jamais `777` pour « débloquer » un partage : c'est ouvrir le dossier à tous les comptes de la machine, services compris.
+
+<Diagram caption="Des personnes aux dossiers, par les groupes">
+flowchart LR
+  L["lea, marc, paul"] --> P["groupe projets"]
+  H["helene"] --> P
+  H --> C["groupe compta"]
+  N["nina"] --> C
+  K["karim"] --> P
+  P --> DP["/srv/partage/projets : root, projets, 2770"]
+  C --> DC["/srv/partage/compta : root, compta, 2770"]
+  E["groupe equipe : les six"] --> DE["/srv/partage/commun : root, equipe, 2770"]
+</Diagram>
+
+## l'administration par sudo
+
+Personne n'utilise le mot de passe de root. Karim et toi, chacun avec son compte, administrez par `sudo`, réservé aux membres du groupe `sudo` sur Debian : `sudo usermod -aG sudo karim`. Chaque commande passée par `sudo` est journalisée avec le nom de son auteur. Le mot de passe de root, s'il existe, est long, aléatoire, et rangé sous enveloppe chez Hélène pour une urgence ; mieux, il est désactivé (`sudo passwd -l root`), une fois qu'au moins deux comptes savent utiliser `sudo`. Hélène, la gérante, n'a pas besoin des droits d'administration pour diriger l'atelier : elle ne les reçoit pas.
+
+## le départ annoncé
+
+Paul quitte l'atelier le 31 mars. Plutôt que de compter sur la mémoire de quelqu'un, on programme dès aujourd'hui l'expiration de son compte :
+
+```bash
+sudo chage -E 2027-03-31 paul
+sudo chage -l paul
+```
+
+Le 31 mars, le compte ne peut plus ouvrir de session, même avec une clé SSH valide. La procédure de départ, écrite dans la documentation, fera le reste : retirer sa clé, archiver puis supprimer ses fichiers personnels, vérifier ce qu'il possède dans les partages avec `find /srv -user paul`.
+
+## automatiser plutôt que taper
+
+Six comptes, quatre groupes et une douzaine d'appartenances : une quarantaine de commandes, autant d'occasions de se tromper. Un **script** qui lit la liste de l'équipe les enchaîne sans faute, se relit avant d'agir, et se relance à l'arrivée d'une nouvelle personne. Deux qualités en font un bon outil d'administration :
+
+- un mode **à blanc** (`-n`), qui affiche ce qu'il ferait sans rien faire, pour vérifier avant d'agir ;
+- l'**idempotence** : relancé, il ne refait pas ce qui existe déjà, et ne casse rien.
+
+Le script et la liste de l'équipe rejoignent le dossier du projet : ils documentent mieux qu'une page de texte comment les comptes ont été créés.
+
+## à toi de jouer
+
+Le dossier `mission` contient la liste de l'équipe, et `creer-comptes.sh` le script qui en tire les comptes. Ce Linux n'a que les commandes de BusyBox : le script utilise `addgroup` et `adduser`, et complète `/etc/group` lui-même, faute de `usermod`. Les dossiers partagés sont créés dans `srv/partage`, à la place de `/srv/partage`.
+
+1. lis le script : `cat creer-comptes.sh`. Repère le mode à blanc et la boucle sur la liste ;
+2. essaie-le à blanc : `sh creer-comptes.sh -n`. Rien n'est créé, tout est affiché ;
+3. applique-le : `sh creer-comptes.sh`, puis relance-le une seconde fois, pour vérifier qu'il ne refait rien : `sh creer-comptes.sh` ;
+4. garde l'état des groupes : `grep -E '^(equipe|direction|projets|compta):' /etc/group > groupes.txt`, puis `cat groupes.txt` et `id paul` ;
+5. crée les dossiers partagés : `mkdir -p srv/partage/projets srv/partage/compta srv/partage/commun` ;
+6. donne à chacun son groupe : `chgrp projets srv/partage/projets`, `chgrp compta srv/partage/compta`, `chgrp equipe srv/partage/commun` ;
+7. et ses droits : `chmod 2770 srv/partage/projets srv/partage/compta srv/partage/commun`, puis `ls -l srv/partage` ;
+8. vérifie ce qui doit marcher, au nom de Léa et avec l'umask de l'équipe : `su lea -c 'umask 007; echo esquisse > srv/partage/projets/essai.txt'`, puis `ls -l srv/partage/projets` ;
+9. et ce qui doit être refusé : `su lea -c 'ls srv/partage/compta' 2> refus.txt`, puis `cat refus.txt`.
+
+<LinuxTerminal title="Les comptes et les partages de l'atelier" files={{"mission/equipe.csv": "identifiant,nom,role,equipes,fin\nhelene,Hélène Ruiz,gérante,direction;projets;compta,\nkarim,Karim Benali,associé designer,direction;projets,\nlea,Léa Martin,designer,projets,\nmarc,Marc Dubois,designer,projets,\nnina,Nina Petit,comptable,compta,\npaul,Paul Girard,stagiaire,projets,2027-03-31\n", "creer-comptes.sh": "#!/bin/sh\n# creer-comptes.sh : crée les groupes et les comptes de l'atelier, depuis\n# mission/equipe.csv. Avec -n, il affiche ce qu'il ferait, sans rien faire.\n#\n# Sur Debian, on écrirait groupadd, useradd -m -c et usermod -aG. Ce Linux\n# n'a que les commandes de BusyBox : addgroup, adduser -D -H, et pas de\n# usermod, d'où la fonction ajouter_au_groupe, qui complète /etc/group.\nset -eu\n\nessai=0\n[ \"${1:-}\" = \"-n\" ] && essai=1\n\nfaire() {\n  if [ \"$essai\" = 1 ]; then echo \"+ $*\"; else \"$@\"; fi\n}\n\najouter_au_groupe() {   # ajouter_au_groupe COMPTE GROUPE\n  if grep -q \"^$2:.*:$\" /etc/group; then\n    sed -i \"s/^\\($2:.*:\\)\\$/\\1$1/\" /etc/group     # premier membre\n  else\n    sed -i \"/^$2:/s/\\$/,$1/\" /etc/group           # membres suivants\n  fi\n}\n\nfor groupe in equipe direction projets compta; do\n  grep -q \"^$groupe:\" /etc/group || faire addgroup \"$groupe\"\ndone\n\ntail -n +2 mission/equipe.csv | while IFS=, read -r id nom role equipes fin; do\n  if grep -q \"^$id:\" /etc/passwd; then\n    echo \"$id existe déjà : rien à faire\"\n    continue\n  fi\n  faire adduser -D -H -G equipe -g \"$nom\" -s /bin/sh \"$id\"\n  for g in $(echo \"$equipes\" | tr ';' ' '); do\n    faire ajouter_au_groupe \"$id\" \"$g\"\n  done\n  if [ -n \"$fin\" ]; then\n    echo \"$id : compte à faire expirer le $fin\"\n  fi\ndone\n"}} expectedCommands={["cat creer-comptes.sh", "sh creer-comptes.sh -n", "sh creer-comptes.sh", "grep -E '^(equipe|direction|projets|compta):' /etc/group > groupes.txt", "cat groupes.txt", "id paul", "mkdir -p srv/partage/projets srv/partage/compta srv/partage/commun", "chgrp projets srv/partage/projets", "chgrp compta srv/partage/compta", "chgrp equipe srv/partage/commun", "chmod 2770 srv/partage/projets srv/partage/compta srv/partage/commun", "ls -l srv/partage", "su lea -c 'umask 007; echo esquisse > srv/partage/projets/essai.txt'", "ls -l srv/partage/projets", "su lea -c 'ls srv/partage/compta' 2> refus.txt", "cat refus.txt"]} checks={[{"label": "L'équipe projets a ses cinq membres", "path": "groupes.txt", "expect": "file", "contains": ":helene,karim,lea,marc,paul"}, {"label": "La comptabilité est réservée à Hélène et Nina", "path": "groupes.txt", "expect": "file", "contains": ":helene,nina"}, {"label": "Le dossier des projets est en 2770", "path": "srv/partage/projets", "expect": "dir", "mode": "2770"}, {"label": "Le dossier de la comptabilité est en 2770", "path": "srv/partage/compta", "expect": "dir", "mode": "2770"}, {"label": "L'espace commun est en 2770", "path": "srv/partage/commun", "expect": "dir", "mode": "2770"}, {"label": "Le fichier de Léa est modifiable par son équipe", "path": "srv/partage/projets/essai.txt", "expect": "file", "mode": "660"}, {"label": "Léa ne lit pas la comptabilité", "path": "refus.txt", "expect": "file", "contains": "Permission denied"}]} hints={["sh creer-comptes.sh -n n'exécute rien : il affiche chaque commande précédée de +.", "chgrp change le groupe ; chmod 2770 ajoute le setgid aux droits rwxrwx---.", "umask 007 retire tout droit aux autres : un nouveau fichier est en 660.", "su lea -c 'commande' lance la commande au nom de lea ; 2> garde son message d'erreur."]} />
+
+Le fichier de l'étape 8 appartient à `lea` et au groupe `projets`, grâce au setgid, avec les droits `rw-rw----` grâce à l'umask : Marc pourra le modifier, Nina ne le verra pas. L'étape 9 compte autant que l'étape 8 : une vérification qui ne teste que ce qui doit fonctionner laisse passer un dossier ouvert à tous. Note aussi la seconde exécution de l'étape 3 : six fois « existe déjà », et rien de modifié.
+
+Ensuite, sur le vrai `srv-ebene`, dans un terminal simulé, les gestes équivalents de Debian :
+
+1. la mise à jour : `sudo apt full-upgrade -y` ;
+2. le ménage : `sudo apt purge -y cups cups-browsed avahi-daemon`, puis l'installation : `sudo apt install -y nginx nftables rsync unattended-upgrades` ;
+3. le compte du vendeur, après avoir vérifié qu'il ne possède rien d'autre : `sudo find / -xdev -user demo -not -path '/home/demo*'`, puis `sudo userdel -r demo` ;
+4. un compte à la manière de Debian : `sudo useradd -m -s /bin/bash -c 'Léa Martin' -G equipe,projets lea`, puis `id lea` ;
+5. l'expiration du compte de Paul : `sudo chage -E 2027-03-31 paul`, puis `sudo chage -l paul` ;
+6. qui peut administrer : `getent group sudo`. On doit y trouver Karim et ton compte d'intervention, `adm-ext`, et personne d'autre.
+
+<SimulatedTerminal shell="bash" title="Les mêmes gestes sur srv-ebene" expectedCommands={["sudo apt full-upgrade -y", "sudo apt purge -y cups cups-browsed avahi-daemon", "sudo apt install -y nginx nftables rsync unattended-upgrades", "sudo find / -xdev -user demo -not -path '/home/demo*'", "sudo userdel -r demo", "sudo useradd -m -s /bin/bash -c 'Léa Martin' -G equipe,projets lea", "id lea", "sudo chage -E 2027-03-31 paul", "sudo chage -l paul", "getent group sudo"]} hints={["full-upgrade peut ajouter ou retirer des paquets quand une mise à jour l'exige.", "purge retire aussi les fichiers de configuration.", "find -user liste ce qu'un compte possède : rien ici, hors de son dossier personnel.", "Account expires : la date à laquelle le compte ne pourra plus ouvrir de session."]} commands={{"sudo apt full-upgrade -y": "Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nCalculating upgrade... Done\nThe following NEW packages will be installed:\n  linux-image-6.1.0-27-amd64\nThe following packages will be upgraded:\n  base-files bind9-host curl libc6 libssl3 linux-image-amd64 openssh-client\n  openssh-server openssh-sftp-server openssl systemd tzdata ...\n37 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 112 MB of archives.\n...\nProcessing triggers for initramfs-tools (0.142+deb12u1) ...\nupdate-initramfs: Generating /boot/initrd.img-6.1.0-27-amd64", "sudo apt purge -y cups cups-browsed avahi-daemon": "The following packages will be REMOVED:\n  avahi-daemon* cups* cups-browsed* cups-daemon* cups-core-drivers*\n0 upgraded, 0 newly installed, 5 to remove and 0 not upgraded.\nAfter this operation, 9,804 kB disk space will be freed.\nRemoving cups-browsed (2.0.0-3) ...\nRemoving cups (2.4.2-3+deb12u8) ...\nRemoving avahi-daemon (0.8-10+deb12u1) ...\nPurging configuration files for cups (2.4.2-3+deb12u8) ...\nPurging configuration files for avahi-daemon (0.8-10+deb12u1) ...", "sudo apt install -y nginx nftables rsync unattended-upgrades": "nftables is already the newest version (1.0.6-2+deb12u2).\nThe following NEW packages will be installed:\n  nginx nginx-common rsync unattended-upgrades python3-distro-info ...\n0 upgraded, 9 newly installed, 0 to remove and 0 not upgraded.\n...\nSetting up nginx (1.22.1-9+deb12u1) ...\nSetting up unattended-upgrades (2.9.1+nmu3) ...\nCreated symlink /etc/systemd/system/multi-user.target.wants/unattended-upgrades.service", "sudo find / -xdev -user demo -not -path '/home/demo*'": "", "sudo userdel -r demo": "userdel: demo mail spool (/var/mail/demo) not found", "sudo useradd -m -s /bin/bash -c 'Léa Martin' -G equipe,projets lea": "", "id lea": "uid=1002(lea) gid=1002(lea) groups=1002(lea),1100(equipe),1102(projets)", "sudo chage -E 2027-03-31 paul": "", "sudo chage -l paul": "Last password change                                : Oct 03, 2026\nPassword expires                                    : never\nPassword inactive                                   : never\nAccount expires                                     : Mar 31, 2027\nMinimum number of days between password change      : 0\nMaximum number of days between password change      : 99999\nNumber of days of warning before password expires   : 7", "getent group sudo": "sudo:x:27:karim,adm-ext", "ls -ld /srv/partage/*": "drwxrws--- 5 root compta  4096 Oct  3 11:20 /srv/partage/compta\ndrwxrws--- 9 root equipe  4096 Oct  3 11:20 /srv/partage/commun\ndrwxrws--- 7 root projets 4096 Oct  3 11:20 /srv/partage/projets"}} />
+
+## les pièges
+
+- **Un compte partagé.** Personne ne sait plus qui a fait quoi, et l'on ne peut retirer l'accès d'une seule personne.
+- **`usermod -G` sans `-a`.** Le compte perd tous ses autres groupes.
+- **Oublier le setgid.** Les fichiers prennent le groupe de leur auteur, et l'équipe ne peut plus les modifier.
+- **Un umask `022` sur un dossier d'équipe.** Les fichiers ne sont modifiables que par leur auteur.
+- **`chmod 777` pour débloquer un partage.** Le dossier est ouvert à tous les comptes de la machine.
+- **Vérifier seulement ce qui doit marcher.** Un refus attendu qui ne se produit pas est une faille.
+- **Compter sur sa mémoire pour un départ.** L'expiration se programme le jour de l'arrivée.
+
+## pour aller plus loin
+
+<ExternalLink href="https://debian-handbook.info/browse/fr-FR/stable/sect.user-group-databases.html" description="Les fichiers des comptes et des groupes, et les commandes pour les gérer, en français">Le cahier de l'administrateur Debian : utilisateurs et groupes</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/passwd/useradd.8.fr.html" description="Toutes les options de useradd, en français">Page de manuel de useradd</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/passwd/chage.1.fr.html" description="L'âge des mots de passe et l'expiration des comptes, en français">Page de manuel de chage</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi un compte par personne plutôt qu'un compte partagé ?" options={["C'est plus rapide à créer", "Pour savoir qui a fait quoi, retirer l'accès d'une seule personne et donner à chacun ses droits", "Pour économiser des licences", "Ce n'est pas utile sur un petit serveur"]} correct={1} explanation="Un compte partagé rend le journal muet et les départs impossibles à gérer proprement." />
+  <Quiz id="q-2" question="Que fait le 2 de chmod 2770 sur un dossier ?" options={["Il double les droits", "Il active le setgid : les fichiers créés dedans héritent du groupe du dossier", "Il interdit la suppression", "Il rend le dossier caché"]} correct={1} explanation="Sans lui, chaque fichier prend le groupe de son auteur." />
+  <Quiz id="q-3" question="Quel umask permet à une équipe de modifier les fichiers des autres membres ?" options={["022", "007", "777", "000"]} correct={1} explanation="Fichiers en 660, dossiers en 770 : rien pour les autres comptes." />
+  <Quiz id="q-4" question="Que se passe-t-il avec usermod -G projets lea, sans -a ?" options={["Léa est ajoutée à projets", "Léa n'appartient plus qu'à projets : ses autres groupes secondaires sont retirés", "Rien", "Une erreur"]} correct={1} explanation="-a ajoute à la liste au lieu de la remplacer." />
+  <Quiz id="q-5" question="Comment préparer le départ du stagiaire prévu le 31 mars ?" options={["Le noter dans un agenda", "Programmer l'expiration du compte dès aujourd'hui avec chage -E", "Supprimer le compte maintenant", "Changer son mot de passe le jour venu"]} correct={1} explanation="Le compte ne peut plus ouvrir de session à cette date, même avec une clé." />
+  <Quiz id="q-6" question="À quoi sert le mode à blanc d'un script de création de comptes ?" options={["À aller plus vite", "À voir tout ce qu'il ferait avant de le laisser agir", "À créer des comptes temporaires", "À rien"]} correct={1} explanation="On relit la liste des actions, puis on lance pour de vrai." />
+  <Quiz id="q-7" question="Pourquoi vérifier aussi que Léa ne peut pas lire la comptabilité ?" options={["Par curiosité", "Parce qu'un refus attendu qui ne se produit pas est une faille, invisible si l'on ne teste que ce qui doit marcher", "Pour remplir le journal", "Ce n'est pas nécessaire"]} correct={1} explanation="Une vérification complète teste les accès permis et les accès interdits." />
+</QuizGroup>
+
+## à retenir
+
+- D'abord **`apt full-upgrade`**, puis **`purge`** de ce qui ne sert pas, et l'installation du seul nécessaire.
+- **Un compte par personne**, son groupe personnel, et des **groupes d'équipe** tirés du tableau des données ; **`usermod -aG`**, jamais sans `-a`.
+- Dossiers partagés : **root, le groupe, `2770`** ; **umask `007`** pour travailler ensemble ; jamais `777`.
+- L'administration par **`sudo`** et des comptes nominatifs ; root verrouillé.
+- **`chage -E`** dès l'arrivée d'un compte temporaire.
+- Un **script** à blanc puis réel, **idempotent**, et une vérification qui teste aussi les **refus**.
