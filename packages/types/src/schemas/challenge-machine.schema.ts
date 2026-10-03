@@ -25,14 +25,19 @@ export const FLAG_HEX_PLACEHOLDER = "{{FLAG_HEX}}";
 
 const PLACEHOLDERS = [FLAG_PLACEHOLDER, FLAG_BASE64_PLACEHOLDER, FLAG_HEX_PLACEHOLDER];
 
+/** Two hexadecimal digits per character: the flag is ASCII, one byte each. */
+function asciiHex(text: string): string {
+  let hex = "";
+  for (let i = 0; i < text.length; i++) hex += text.charCodeAt(i).toString(16).padStart(2, "0");
+  return hex;
+}
+
 /** The flag as each placeholder writes it. The flag is ASCII: btoa takes it. */
 function encodings(flag: string): Record<string, string> {
   return {
     [FLAG_PLACEHOLDER]: flag,
     [FLAG_BASE64_PLACEHOLDER]: btoa(flag),
-    [FLAG_HEX_PLACEHOLDER]: [...flag]
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join(""),
+    [FLAG_HEX_PLACEHOLDER]: asciiHex(flag),
   };
 }
 
