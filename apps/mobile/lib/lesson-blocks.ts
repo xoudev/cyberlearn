@@ -1,6 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
-// QuizGroup, CodePlayground, SimulatedTerminal, Diagram. Interactive web-only
+// QuizGroup, CodePlayground, PythonChallenge, SimulatedTerminal, LinuxTerminal,
+// Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
@@ -21,6 +22,14 @@ export type Block =
   | { kind: "code"; lang: string; code: string }
   | { kind: "playground"; lang: string; code: string }
   | {
+      /** A PythonChallenge: the statement, the starting code and the tests to pass. */
+      kind: "challenge";
+      title: string;
+      description: string | null;
+      code: string;
+      tests: ChallengeTest[];
+    }
+  | {
       kind: "terminal";
       title: string | null;
       commands: string[];
@@ -31,6 +40,14 @@ export type Block =
   | { kind: "callout"; type: "info" | "warning" | "danger" | "success"; text: string }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
+
+export interface ChallengeTest {
+  /** The Python expression evaluated, `solution(5)`. */
+  input: string;
+  /** What `str()` of it must give. */
+  expected: string;
+  label: string | null;
+}
 
 export interface LessonSection {
   title: string;
@@ -158,6 +175,105 @@ function parseBody(text: string, blocks: Block[]): void {
   }
 }
 
+/**
+ * The index just past the `>` that closes the tag opening at `start`. Quoted
+ * attributes and everything in braces are skipped: the code of a playground
+ * holds `>` and `/>` of its own (`if a > b:`).
+ */
+function endOfTag(s: string, start: number): number {
+  let depth = 0;
+  let i = start + 1;
+  while (i < s.length) {
+    const c = s.charAt(i);
+    if (c === '"' || c === "'" || (c === "`" && depth > 0)) {
+      // A JSX attribute string has no escapes; a JavaScript one, in braces, has.
+      i++;
+      while (i < s.length && s.charAt(i) !== c) i += depth > 0 && s.charAt(i) === "\\" ? 2 : 1;
+      i++;
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}") depth--;
+    else if (c === ">" && depth === 0) return i + 1;
+    i++;
+  }
+  return s.length;
+}
+
+const JS_ESCAPES: Record<string, string> = { n: "\n", t: "\t", r: "\r" };
+
+/** What a JavaScript string's escapes come to. */
+function unescapeJs(raw: string): string {
+  return raw.replace(/\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[\s\S])/g, (_m, e: string) =>
+    e.length > 1 ? String.fromCharCode(parseInt(e.slice(1), 16)) : (JS_ESCAPES[e] ?? e),
+  );
+}
+
+/**
+ * A string prop of a tag, written `name="..."`, `` name={`...`} `` or
+ * `name={"..."}`. The element's own indent is taken off the lines after the
+ * first, as MDX takes it off on the site: it belongs to the list the element
+ * sits in, not to the code.
+ */
+function stringProp(tag: string, name: string, indent: number): string | null {
+  const m = new RegExp(
+    `\\b${name}\\s*=\\s*(?:"([^"]*)"|\\{\\s*\`((?:[^\`\\\\]|\\\\[\\s\\S])*)\`\\s*\\}|\\{\\s*"((?:[^"\\\\]|\\\\.)*)"\\s*\\})`,
+  ).exec(tag);
+  if (!m) return null;
+  const value = m[1] ?? unescapeJs(m[2] ?? m[3] ?? "");
+  if (indent === 0) return value;
+  const lead = new RegExp(`^[ \\t]{0,${String(indent)}}`);
+  return value
+    .split("\n")
+    .map((line, k) => (k === 0 ? line : line.replace(lead, "")))
+    .join("\n");
+}
+
+const TEST_CASE_RE =
+  /"?input"?\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"?expected"?\s*:\s*"((?:[^"\\]|\\.)*)"(?:\s*,\s*"?label"?\s*:\s*"((?:[^"\\]|\\.)*)")?/g;
+
+/** The test cases of a PythonChallenge, `{ input: "...", expected: "..." }` each. */
+function challengeTests(tag: string): ChallengeTest[] {
+  const from = tag.search(/\btests\s*=\s*\{/);
+  if (from === -1) return [];
+  return [...tag.slice(from).matchAll(TEST_CASE_RE)].map((m) => ({
+    input: unescapeJs(m[1] ?? ""),
+    expected: unescapeJs(m[2] ?? ""),
+    label: m[3] === undefined ? null : unescapeJs(m[3]),
+  }));
+}
+
+/**
+ * Each self-closing `<name ... />` of the text, replaced by what `toBlock`
+ * makes of its tag and of the indent it is written at. A paired element is
+ * left for the caller.
+ */
+function replaceSelfClosing(
+  text: string,
+  name: string,
+  toBlock: (tag: string, indent: number) => string,
+): string {
+  let out = "";
+  let i = 0;
+  for (;;) {
+    const start = text.indexOf(`<${name}`, i);
+    if (start === -1) break;
+    const end = endOfTag(text, start);
+    const tag = text.slice(start, end);
+    if (!/[\s/]/.test(text.charAt(start + name.length + 1)) || !tag.endsWith("/>")) {
+      out += text.slice(i, end);
+      i = end;
+      continue;
+    }
+    const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+    const before = text.slice(lineStart, start);
+    const indent = /^[ \t]*$/.test(before) ? before.length : 0;
+    out += text.slice(i, start) + toBlock(tag, indent);
+    i = end;
+  }
+  return out + text.slice(i);
+}
+
 /** The time limit of a timed terminal, when it has one. */
 function timeLimit(tag: string): { timeLimitMinutes?: number } {
   const minutes = TIME_LIMIT_RE.exec(tag)?.[1];
@@ -193,7 +309,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
     },
   );
   // CodePlayground → a runnable-code block (the source is shown natively so the
-  // lesson reads in full; execution stays on the web sandbox).
+  // lesson reads in full; execution stays on the web sandbox). The code is
+  // either the starterCode prop of a self-closing element or the children.
+  text = replaceSelfClosing(text, "CodePlayground", (tag, indent) =>
+    put({
+      kind: "playground",
+      lang: /language\s*=\s*"(\w+)"/.exec(tag)?.[1] ?? "code",
+      code: stringProp(tag, "starterCode", indent) ?? "",
+    }),
+  );
+  // PythonChallenge → the statement, the starting code and the tests; the
+  // tests run on the site, like the playgrounds.
+  text = replaceSelfClosing(text, "PythonChallenge", (tag, indent) =>
+    put({
+      kind: "challenge",
+      title: stringProp(tag, "title", 0) ?? "Python Challenge",
+      description: stringProp(tag, "description", 0),
+      code: stringProp(tag, "starterCode", indent) ?? "",
+      tests: challengeTests(tag),
+    }),
+  );
   text = text.replace(
     /<CodePlayground([^>]*)>([\s\S]*?)<\/CodePlayground>/g,
     (_m, attrs: string, body: string) => {
