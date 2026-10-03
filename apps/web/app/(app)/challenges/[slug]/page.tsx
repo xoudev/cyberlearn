@@ -7,6 +7,10 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { requireRequestUser } from "@/lib/auth";
 import { challengeRepository, userRepository } from "@cyberlearn/db";
+import { machineFilesWithFlag, parseChallengeMachine } from "@cyberlearn/types";
+import { personalFlag } from "@/lib/challenges/flag";
+import { env } from "@/lib/env";
+import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
 import { ChallengeAction } from "./_components/challenge-action";
 import { HintsPanel } from "./_components/hints-panel";
 import { CopyButton } from "./_components/copy-button";
@@ -210,6 +214,16 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   } else {
     displayStatus = "AVAILABLE";
   }
+
+  // The machine, with the learner's own flag where the author wrote {{FLAG}}.
+  // Not handed out while the challenge is locked; unavailable, and said so,
+  // when it cannot be read or the key of the flags is missing.
+  const machine = challenge.machine === null ? null : parseChallengeMachine(challenge.machine);
+  const flagSecret = env.CHALLENGE_FLAG_SECRET;
+  const machineFiles =
+    machine?.ok === true && flagSecret !== undefined && displayStatus !== "LOCKED"
+      ? machineFilesWithFlag(machine.machine, personalFlag(flagSecret, challenge.id, user.id))
+      : null;
 
   const initialRevealed: Record<string, string> = {};
   for (const { hintId, content } of revealedHintsData) {
@@ -594,6 +608,24 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               />
             </div>
           </div>
+
+          {/* Linux machine - a CTF played in the browser */}
+          {machine !== null && displayStatus !== "LOCKED" && (
+            <div style={{ marginBottom: 32 }}>
+              <SectionHead label="Machine" meta="Linux · dans ton navigateur · ton propre flag" />
+              {machineFiles !== null ? (
+                <LinuxTerminal
+                  id={`challenge-${challenge.id}`}
+                  title={machine.ok ? (machine.machine.title ?? challenge.title) : challenge.title}
+                  files={machineFiles}
+                />
+              ) : (
+                <p role="note" style={{ color: "#B8B5D1", fontSize: 14 }}>
+                  La machine de ce défi est indisponible pour le moment.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Python sandbox - SCRIPT type only */}
           {challenge.type === "SCRIPT" && (

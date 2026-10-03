@@ -5,11 +5,33 @@ import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
 import { dayKey, registerActivity } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { flagsMatch, personalFlag } from "@/lib/challenges/flag";
+import { env } from "@/lib/env";
 import { recordQuestProgress } from "@/lib/quests/progress";
 import { checkHintReveal } from "@/lib/rate-limit";
 import { creditXp } from "@/lib/xp/credit";
 
 // ── Submit flag (CTF) ──────────────────────────────────────────────────────────
+
+/**
+ * The flag a learner must find. On a Linux machine it is their own (see
+ * lib/challenges/flag.ts), and without the key to compute it the challenge is
+ * unavailable rather than open to a flag anyone could work out; otherwise it is
+ * the one the author wrote.
+ */
+function expectedFlag(
+  challenge: { id: string; flag: string | null; machine: unknown },
+  userId: string,
+): { ok: true; flag: string } | { ok: false; error: string } {
+  if (challenge.machine !== null) {
+    const secret = env.CHALLENGE_FLAG_SECRET;
+    if (secret === undefined)
+      return { ok: false, error: "Ce défi est indisponible pour le moment." };
+    return { ok: true, flag: personalFlag(secret, challenge.id, userId) };
+  }
+  if (!challenge.flag) return { ok: false, error: "Aucun flag configuré." };
+  return { ok: true, flag: challenge.flag };
+}
 
 export async function submitFlagAction(
   challengeId: string,
@@ -23,18 +45,22 @@ export async function submitFlagAction(
 
   const challenge = await prisma.challenge.findUnique({
     where: { id: challengeId, isActive: true, type: { in: ["CTF", "SCRIPT"] } },
-    select: { flag: true, xpReward: true, title: true, maxAttempts: true },
+    select: { id: true, flag: true, machine: true, xpReward: true, title: true, maxAttempts: true },
   });
   if (!challenge) return { correct: false, error: "Challenge introuvable." };
-  if (!challenge.flag) return { correct: false, error: "Aucun flag configuré." };
+  const expected = expectedFlag(challenge, authUser.id);
+  if (!expected.ok) return { correct: false, error: expected.error };
 
   const existing = await challengeRepository.getUserProgress(authUser.id, challengeId);
   if (existing?.status === "COMPLETED") return { correct: true };
+  // The last attempt was the last: an answer past it is not looked at, right
+  // or wrong. It used to be, so the limit only changed the message.
+  if (existing && existing.attempts >= challenge.maxAttempts) {
+    return { correct: false, error: "Plus de tentatives disponibles." };
+  }
 
   const attempts = (existing?.attempts ?? 0) + 1;
-
-  // Case-insensitive trim comparison
-  const correct = flagParsed.data.toLowerCase() === challenge.flag.toLowerCase();
+  const correct = flagsMatch(flagParsed.data, expected.flag);
 
   if (!correct) {
     if (existing) {

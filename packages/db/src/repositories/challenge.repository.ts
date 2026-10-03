@@ -90,6 +90,9 @@ export const challengeRepository = {
         starterCode: true,
         attachmentUrl: true,
         resourceUrl: true,
+        // The files only: the flag in them is a placeholder, the learner's own
+        // is written in by the page.
+        machine: true,
         prerequisiteId: true,
         prerequisite: { select: { title: true } },
         hints: {

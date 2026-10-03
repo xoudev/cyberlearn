@@ -43,6 +43,11 @@ export const env = createEnv({
 
     // Cron job security token (validated in /api/cron/* handlers)
     CRON_SECRET: z.string().min(32).optional(),
+
+    // Key of the learners' own CTF flags (lib/challenges/flag.ts). Optional so a
+    // deployment without it still builds: a challenge played on a machine then
+    // says it is unavailable rather than handing out a flag anyone could compute.
+    CHALLENGE_FLAG_SECRET: z.string().min(32).optional(),
   },
 
   client: {
@@ -84,6 +89,7 @@ export const env = createEnv({
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     CRON_SECRET: process.env.CRON_SECRET,
+    CHALLENGE_FLAG_SECRET: process.env.CHALLENGE_FLAG_SECRET,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,

@@ -771,6 +771,10 @@ model Challenge {
   starterCode    String? // SCRIPT only - pre-populated Python code in the runner
   attachmentUrl  String? // URL to downloadable challenge file (binary, pcap, zip…)
   resourceUrl    String? // Target URL or connection info (e.g. nc host 1337)
+  /// CTF on a Linux machine: { title?, files } as <LinuxTerminal> takes them,
+  /// one file holding {{FLAG}}. With it, the flag is each learner's own
+  /// (apps/web/lib/challenges/flag.ts) and `flag` is not used.
+  machine        Json?
   isActive       Boolean       @default(true)
   orderIndex     Int           @default(0)
   prerequisiteId String?       @db.Uuid

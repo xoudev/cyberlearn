@@ -26,6 +26,8 @@ interface ChallengeData {
   timeLimitMin: number;
   maxAttempts: number;
   flag: string | null;
+  /** The machine as JSON text, "" when the challenge has none. */
+  machine: string;
   starterCode: string | null;
   isActive: boolean;
   orderIndex: number;
@@ -34,6 +36,15 @@ interface ChallengeData {
   resourceUrl: string | null;
   solveCount: number;
 }
+
+/** What a machine looks like, in the field's placeholder. */
+const MACHINE_PLACEHOLDER = `{
+  "title": "Le serveur oublié",
+  "files": {
+    "logs/auth.log": "Oct  3 12:00:01 srv sshd[812]: Accepted password for admin\n",
+    ".cache/.notes.txt": "{{FLAG}}"
+  }
+}`;
 
 interface Props {
   challenge: ChallengeData;
@@ -500,6 +511,30 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                   autoComplete="off"
                 />
               </Field>
+            </div>
+          )}
+
+          {type === "CTF" && (
+            <div style={{ marginTop: 16 }}>
+              <Field label="Machine Linux (JSON, optionnelle)" name="machine" error={fe.machine}>
+                <textarea
+                  id="machine"
+                  name="machine"
+                  rows={10}
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                  }}
+                  defaultValue={challenge.machine}
+                  placeholder={MACHINE_PLACEHOLDER}
+                />
+              </Field>
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--fg-tertiary, #7F7BA9)" }}>
+                Les fichiers placés dans /mnt de la machine du navigateur. Écris {"{{FLAG}}"} là où
+                va le flag : chaque élève y reçoit le sien, et le champ Flag ne sert plus.
+              </p>
             </div>
           )}
 

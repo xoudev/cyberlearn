@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { prisma, JSON_NULL_IN_DB } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
+import { type ChallengeMachine, parseChallengeMachine } from "@cyberlearn/types";
 
 // ── Shared form state ──────────────────────────────────────────────────────────
 
@@ -68,6 +69,32 @@ function parseFormData(formData: FormData): ReturnType<typeof challengeSchema.sa
   });
 }
 
+/**
+ * The machine field of a CTF: empty is no machine; anything else must be JSON
+ * the site can play (parseChallengeMachine), one file holding {{FLAG}}.
+ */
+function readMachine(
+  formData: FormData,
+): { ok: true; machine: ChallengeMachine | null } | { ok: false; error: string } {
+  const raw = formData.get("machine");
+  if (typeof raw !== "string" || raw.trim() === "") return { ok: true, machine: null };
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "Ce n'est pas du JSON valide." };
+  }
+  const parsed = parseChallengeMachine(value);
+  return parsed.ok ? { ok: true, machine: parsed.machine } : { ok: false, error: parsed.problem };
+}
+
+/** The machine as the Json column stores it: no undefined in it. */
+function machineJson(machine: ChallengeMachine): { title?: string; files: Record<string, string> } {
+  return machine.title === undefined
+    ? { files: machine.files }
+    : { title: machine.title, files: machine.files };
+}
+
 // ── Create ─────────────────────────────────────────────────────────────────────
 
 export async function createChallengeAction(
@@ -84,6 +111,8 @@ export async function createChallengeAction(
     }
     return { fieldErrors };
   }
+  const machine = readMachine(formData);
+  if (!machine.ok) return { fieldErrors: { machine: machine.error } };
 
   const { prerequisiteId, flag, starterCode, attachmentUrl, resourceUrl, ...rest } = parsed.data;
 
@@ -93,6 +122,7 @@ export async function createChallengeAction(
       data: {
         ...rest,
         ...(flag ? { flag } : {}),
+        ...(machine.machine ? { machine: machineJson(machine.machine) } : {}),
         ...(prerequisiteId ? { prerequisiteId } : {}),
         starterCode: starterCode ?? null,
         attachmentUrl: attachmentUrl ?? null,
@@ -131,6 +161,8 @@ export async function updateChallengeAction(
     }
     return { fieldErrors };
   }
+  const machine = readMachine(formData);
+  if (!machine.ok) return { fieldErrors: { machine: machine.error } };
 
   const { prerequisiteId, flag, starterCode, attachmentUrl, resourceUrl, ...rest } = parsed.data;
 
@@ -140,6 +172,7 @@ export async function updateChallengeAction(
       data: {
         ...rest,
         flag: flag ?? null,
+        machine: machine.machine ? machineJson(machine.machine) : JSON_NULL_IN_DB,
         starterCode: starterCode ?? null,
         prerequisiteId: prerequisiteId ?? null,
         attachmentUrl: attachmentUrl ?? null,

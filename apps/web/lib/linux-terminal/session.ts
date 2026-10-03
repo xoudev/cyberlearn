@@ -12,24 +12,10 @@
 export const LESSON_DIR = "/mnt";
 
 /**
- * A lesson file path, relative to LESSON_DIR: names separated by slashes. No
- * "." or "..", no leading slash. The directories are typed into the shell by
- * setupCommand, quoted, but still kept to plain names: a directory that needs
- * quoting to be safe is not one a lesson should use. The file's own name is
- * written by v86 over 9p, never by the shell, so it may also hold spaces or
- * start with a dash: "rapport final.txt" and "-notes.txt" are what the
- * lessons on quoting and on "--" are about. A name may start with a dot:
- * hidden files are part of what the lessons teach.
+ * A lesson file path, relative to LESSON_DIR. The rule lives in
+ * @cyberlearn/types, where the challenges' machine reads it too.
  */
-const PLAIN_NAME = /^[A-Za-z0-9_.][A-Za-z0-9_.-]*$/;
-const FILE_NAME = /^[A-Za-z0-9_.-](?:[A-Za-z0-9_. -]*[A-Za-z0-9_.-])?$/;
-
-export function isLessonFilePath(path: string): boolean {
-  const parts = path.split("/");
-  const name = parts.pop() ?? "";
-  if (!FILE_NAME.test(name) || name === "." || name === "..") return false;
-  return parts.every((part) => PLAIN_NAME.test(part) && part !== "." && part !== "..");
-}
+export { isLessonFilePath } from "@cyberlearn/types";
 
 /** The directories the files need, parents first, each once. */
 export function directoriesOf(paths: readonly string[]): string[] {
