@@ -1,9 +1,68 @@
 import React from "react";
-import { ScrollView, View } from "react-native";
+import { Alert, ScrollView, View } from "react-native";
+import { router } from "expo-router";
+import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
+import { glossaryHits } from "@/lib/glossary";
 import type { Block } from "@/lib/lesson-blocks";
+
+// ── Glossary words ───────────────────────────────────────────────────────────
+
+/** A glossary word's definition, with the way to the whole glossary. */
+function showDefinition(term: GlossaryTerm): void {
+  Alert.alert(term.term, term.definition, [
+    {
+      text: "Tout le glossaire",
+      onPress: () => {
+        router.push("/glossary");
+      },
+    },
+    { text: "OK", style: "cancel" },
+  ]);
+}
+
+/**
+ * Plain text with the glossary words of `remaining` underlined in dots: a
+ * press, short or long, shows the definition (see lib/glossary.ts).
+ */
+function withGlossary(
+  text: string,
+  keyBase: string,
+  theme: MobileCosmeticTheme,
+  remaining: Set<string> | undefined,
+): React.ReactNode[] {
+  if (remaining === undefined) return [text];
+  const out: React.ReactNode[] = [];
+  let at = 0;
+  for (const hit of glossaryHits(text, remaining)) {
+    if (hit.start > at) out.push(text.slice(at, hit.start));
+    out.push(
+      <Text
+        key={`${keyBase}-g${String(hit.start)}`}
+        accessibilityRole="button"
+        accessibilityHint="Affiche la définition"
+        onPress={() => {
+          showDefinition(hit.term);
+        }}
+        onLongPress={() => {
+          showDefinition(hit.term);
+        }}
+        style={{
+          textDecorationLine: "underline",
+          textDecorationStyle: "dotted",
+          textDecorationColor: theme.accent,
+        }}
+      >
+        {hit.text}
+      </Text>,
+    );
+    at = hit.end;
+  }
+  if (at < text.length) out.push(text.slice(at));
+  return out;
+}
 
 // ── Inline markdown (bold / italic / inline code) ────────────────────────────
 
@@ -11,6 +70,8 @@ function renderInline(
   text: string,
   keyBase: string,
   theme: MobileCosmeticTheme,
+  /** The glossary words this block still has to underline, if any. */
+  glossary?: Set<string>,
 ): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   // Tokenize on **bold**, `code`, *italic* - longest markers first.
@@ -19,7 +80,10 @@ function renderInline(
   let k = 0;
   for (const m of text.matchAll(re)) {
     const idx = m.index ?? 0;
-    if (idx > last) out.push(text.slice(last, idx));
+    if (idx > last)
+      out.push(
+        ...withGlossary(text.slice(last, idx), `${keyBase}-${String(last)}`, theme, glossary),
+      );
     const tok = m[0];
     if (tok.startsWith("**")) {
       out.push(
@@ -56,7 +120,9 @@ function renderInline(
     }
     last = idx + tok.length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) {
+    out.push(...withGlossary(text.slice(last), `${keyBase}-${String(last)}`, theme, glossary));
+  }
   return out;
 }
 
@@ -74,11 +140,16 @@ const CALLOUT: Record<string, { color: string; label: string }> = {
 export function BlockView({
   block,
   index,
+  glossary,
 }: {
   block: Block;
   index: number;
+  /** The glossary words this block is the first of its section to use (glossaryPlan). */
+  glossary?: ReadonlySet<string>;
 }): React.JSX.Element | null {
   const { theme } = useCosmetics();
+  // A copy per render: the pieces of the block take their words out of it in order.
+  const remaining = glossary === undefined ? undefined : new Set(glossary);
 
   switch (block.kind) {
     case "h3":
@@ -90,7 +161,7 @@ export function BlockView({
     case "paragraph":
       return (
         <Text variant="body" style={{ lineHeight: 22 }}>
-          {renderInline(block.text, `p${String(index)}`, theme)}
+          {renderInline(block.text, `p${String(index)}`, theme, remaining)}
         </Text>
       );
     case "list":
@@ -102,7 +173,7 @@ export function BlockView({
                 {block.ordered ? `${String(i + 1)}.` : "›"}
               </Text>
               <Text variant="body" style={{ flex: 1, lineHeight: 22 }}>
-                {renderInline(item, `l${String(index)}-${String(i)}`, theme)}
+                {renderInline(item, `l${String(index)}-${String(i)}`, theme, remaining)}
               </Text>
             </View>
           ))}
@@ -164,7 +235,7 @@ export function BlockView({
             {c.label}
           </Text>
           <Text variant="body" style={{ lineHeight: 21 }}>
-            {renderInline(block.text, `co${String(index)}`, theme)}
+            {renderInline(block.text, `co${String(index)}`, theme, remaining)}
           </Text>
         </View>
       );

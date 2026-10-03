@@ -25,7 +25,8 @@
     "./quiz/*": "./src/quiz/*.ts",
     "./revisions/*": "./src/revisions/*.ts",
     "./settings/*": "./src/settings/*.ts",
-    "./changelog/*": "./src/changelog/*.ts"
+    "./changelog/*": "./src/changelog/*.ts",
+    "./glossary/*": "./src/glossary/*.ts"
   },
   "scripts": {
     "build": "tsc",
