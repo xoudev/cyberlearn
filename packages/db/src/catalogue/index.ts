@@ -25,3 +25,15 @@ export {
   type QuizFileQuestion,
 } from "./quiz-files";
 export { quizMatches, syncQuiz, type QuizSyncResult, type StoredQuiz } from "./quiz-sync";
+export {
+  findChallengeDir,
+  loadChallengeFiles,
+  type LoadedChallengeFile,
+} from "./challenge-files";
+export {
+  ChallengeSyncError,
+  challengeMatches,
+  syncChallenge,
+  type ChallengeSyncResult,
+  type StoredChallenge,
+} from "./challenge-sync";

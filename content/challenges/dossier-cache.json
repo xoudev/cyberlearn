@@ -1,0 +1,35 @@
+{
+  "refCode": "CL-CHG-002",
+  "slug": "dossier-cache",
+  "title": "Le dossier caché",
+  "description": "Un ancien employé a laissé ses projets sur un poste partagé. Il disait garder ses notes là où personne ne regarde : sous les points.",
+  "instructions": "## Le contexte\n\nLe poste de Marc, parti il y a un an, est passé à quelqu'un d'autre. Avant de l'effacer, on vérifie qu'il n'y a rien laissé de sensible. Ses fichiers sont dans le dossier `projets/` de la machine.\n\n## Ta mission\n\nMarc disait garder ses vraies notes « là où `ls` ne regarde pas ». Trouve-les : le flag y est.\n\nSous Linux, un nom qui commence par un point est caché. `ls -a` les montre, `find` aussi.\n\n## Le flag\n\nLe flag a la forme `CL{` suivi de vingt caractères hexadécimaux et de `}`. Il est le tien : la machine de chaque élève a le sien, et celui d'un camarade ne marchera pas sur ton compte.",
+  "category": "CYBERSEC",
+  "difficulty": "BEGINNER",
+  "xpReward": 75,
+  "maxAttempts": 10,
+  "orderIndex": 2,
+  "prerequisite": "CL-CHG-001",
+  "machine": {
+    "title": "Le poste de Marc",
+    "files": {
+      "projets/notes.txt": "Liste de courses pour le pot de départ :\n- jus de pomme\n- gobelets\n\nLes vraies notes ne se montrent pas à un simple ls.\n",
+      "projets/site/index.html": "<!doctype html>\n<title>Projet vitrine</title>\n<h1>Bientôt en ligne</h1>\n",
+      "projets/site/style.css": "body { font-family: sans-serif; }\nh1 { color: #0024ff; }\n",
+      "projets/budget-2024.csv": "poste;montant\nserveur;1200\nlicences;800\nformation;650\n",
+      "projets/.archive/2024/compte-rendu.txt": "Réunion du 12 mars : migration du serveur reportée.\n",
+      "projets/.archive/2024/.ne-pas-lire.txt": "Mot de passe de la base de test : changeme\nCode d'accès au coffre : {{FLAG}}\n",
+      "projets/.archive/2023/.vieux.txt": "Rien d'intéressant ici, désolé.\n"
+    }
+  },
+  "hints": [
+    {
+      "content": "ls -a projets montre un dossier de plus que ls. Recommence dans ce dossier, puis dans ses sous-dossiers.",
+      "xpCost": 10
+    },
+    {
+      "content": "find projets -name \".*\" liste tous les noms cachés d'un coup.",
+      "xpCost": 20
+    }
+  ]
+}

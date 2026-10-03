@@ -3,6 +3,11 @@ import matter from "gray-matter";
 import { prisma } from "@cyberlearn/db";
 import {
   catalogueFromManifest,
+  ChallengeSyncError,
+  challengeMatches,
+  findChallengeDir,
+  loadChallengeFiles,
+  syncChallenge,
   findPathManifestDir,
   findQuizDir,
   loadPathManifests,
@@ -490,6 +495,160 @@ export async function syncQuizFromRepository(
     },
   });
   return { ok: true, created: result.created, questions: result.questions };
+}
+
+// ── Challenges ───────────────────────────────────────────────────────────────
+
+export interface ChallengeSyncState {
+  refCode: string;
+  slug: string;
+  title: string;
+  /** content/challenges/<file> */
+  file: string;
+  prerequisite: string | null;
+  /** In the database, under this refCode. */
+  exists: boolean;
+  /** Played on the site: a new challenge arrives inactive. */
+  isActive: boolean;
+  /** The database already holds what a sync would write. */
+  upToDate: boolean;
+}
+
+export interface ChallengeSyncOverview {
+  /** False when content/challenges did not ship with this deployment. */
+  available: boolean;
+  /** A file that fails its check is listed here and cannot be synced. */
+  errors: string[];
+  challenges: ChallengeSyncState[];
+}
+
+/** Every challenge of content/challenges against the database. Reads, writes nothing. */
+export async function challengeSyncOverview(
+  dir = findChallengeDir(),
+): Promise<ChallengeSyncOverview> {
+  if (dir === null) return { available: false, errors: [], challenges: [] };
+  const { challenges, errors } = loadChallengeFiles(dir);
+  const rows = await prisma.challenge.findMany({
+    where: { refCode: { in: challenges.map((c) => c.challenge.refCode) } },
+    select: {
+      refCode: true,
+      slug: true,
+      title: true,
+      description: true,
+      instructions: true,
+      category: true,
+      difficulty: true,
+      type: true,
+      xpReward: true,
+      maxAttempts: true,
+      orderIndex: true,
+      machine: true,
+      isActive: true,
+      prerequisite: { select: { refCode: true } },
+      hints: { orderBy: { orderIndex: "asc" }, select: { content: true, xpCost: true } },
+    },
+  });
+  const byRefCode = new Map(rows.map((r) => [r.refCode, r]));
+
+  return {
+    available: true,
+    errors,
+    challenges: challenges.map(({ file, challenge }): ChallengeSyncState => {
+      const row = byRefCode.get(challenge.refCode);
+      return {
+        refCode: challenge.refCode,
+        slug: challenge.slug,
+        title: challenge.title,
+        file,
+        prerequisite: challenge.prerequisite ?? null,
+        exists: row !== undefined,
+        isActive: row?.isActive ?? false,
+        upToDate:
+          row !== undefined &&
+          challengeMatches(
+            { ...row, prerequisiteRefCode: row.prerequisite?.refCode ?? null },
+            challenge,
+          ),
+      };
+    }),
+  };
+}
+
+export type ChallengeSyncResult =
+  | { ok: true; created: boolean }
+  | {
+      ok: false;
+      reason: "unavailable" | "invalid" | "not_found" | "refused" | "conflict";
+      message: string;
+      details: string[];
+    };
+
+/**
+ * Writes one challenge from content/challenges: a new one arrives inactive, an
+ * existing one is rewritten and stays as active as it was. Its prerequisite
+ * must already be in the database: the page syncs them in file order, which
+ * is the order they are played in.
+ */
+export async function syncChallengeFromRepository(
+  refCode: string,
+  actorId: string,
+  dir = findChallengeDir(),
+): Promise<ChallengeSyncResult> {
+  if (dir === null) {
+    return {
+      ok: false,
+      reason: "unavailable",
+      message: "Les défis du dépôt ne sont pas disponibles ici.",
+      details: [],
+    };
+  }
+  const { challenges, errors } = loadChallengeFiles(dir);
+  const loaded = challenges.find((c) => c.challenge.refCode === refCode);
+  if (!loaded) {
+    return {
+      ok: false,
+      reason: "not_found",
+      message: `Aucun défi du dépôt n'a le refCode ${refCode}.`,
+      details: [],
+    };
+  }
+  const own = errors.filter((e) => e.startsWith(`[${loaded.file}]`));
+  if (own.length > 0) {
+    return {
+      ok: false,
+      reason: "invalid",
+      message: `content/challenges/${loaded.file} ne passe pas ses contrôles.`,
+      details: own,
+    };
+  }
+
+  let result: Awaited<ReturnType<typeof syncChallenge>>;
+  try {
+    result = await syncChallenge(prisma, loaded.challenge);
+  } catch (error) {
+    if (error instanceof ChallengeSyncError) {
+      return { ok: false, reason: "refused", message: error.message, details: [] };
+    }
+    if (isUniqueViolation(error)) {
+      return {
+        ok: false,
+        reason: "conflict",
+        message: `Le slug ${loaded.challenge.slug} est déjà pris par un autre défi.`,
+        details: [],
+      };
+    }
+    throw error;
+  }
+  await prisma.auditLog.create({
+    data: {
+      actorId,
+      action: "challenge.sync",
+      targetType: "challenge",
+      targetId: result.challengeId,
+      metadata: { refCode, file: loaded.file, created: result.created, hints: result.hints },
+    },
+  });
+  return { ok: true, created: result.created };
 }
 
 // ── Publication ──────────────────────────────────────────────────────────────

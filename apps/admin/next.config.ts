@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
       "../../content/lessons/**/*.mdx",
       "../../content/paths/*.json",
       "../../content/quizzes/*.json",
+      "../../content/challenges/*.json",
     ],
   },
   // Same as apps/web: Sentry uploads the server source maps and then leaves

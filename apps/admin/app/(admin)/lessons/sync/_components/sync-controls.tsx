@@ -9,14 +9,15 @@ import { useRouter } from "next/navigation";
 import {
   importLessonFromRepositoryAction,
   publishCatalogueFromRepositoryAction,
+  syncChallengeFromRepositoryAction,
   syncPathFromRepositoryAction,
   syncQuizFromRepositoryAction,
   updateLessonFromRepositoryAction,
   type SyncActionResult,
 } from "../actions";
 
-/** What a button does: update a lesson, import a new one, write a path or its exam. */
-export type SyncKind = "update" | "import" | "path" | "quiz";
+/** What a button does: update a lesson, import a new one, write a path, its exam or a challenge. */
+export type SyncKind = "update" | "import" | "path" | "quiz" | "challenge";
 
 export interface SyncTarget {
   /** What the item is known by: a refCode, or a path's slug for an exam. */
@@ -80,6 +81,15 @@ const COPY: Record<
       `${String(count)} examen${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/quizzes : seuil, nombre de questions tirées et pool de questions. Une question retirée du fichier est désactivée, jamais supprimée : les tentatives en cours et passées restent valides.`,
     progress: "Synchronisation",
   },
+  challenge: {
+    one: "Synchroniser",
+    running: "Synchronisation…",
+    done: "Synchronisé",
+    all: (count) => `Synchroniser les défis (${count})`,
+    confirm: (count) =>
+      `${String(count)} défi${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/challenges, dans l'ordre des fichiers : énoncé, machine et indices. Un nouveau défi arrive désactivé ; un défi existant garde son état et la progression de ses élèves.`,
+    progress: "Synchronisation",
+  },
 };
 
 async function run(kind: SyncKind, target: SyncTarget): Promise<SyncActionResult> {
@@ -95,6 +105,9 @@ async function run(kind: SyncKind, target: SyncTarget): Promise<SyncActionResult
     }
     if (kind === "quiz") {
       return await syncQuizFromRepositoryAction({ slug: target.refCode });
+    }
+    if (kind === "challenge") {
+      return await syncChallengeFromRepositoryAction({ refCode: target.refCode });
     }
     return await syncPathFromRepositoryAction({ refCode: target.refCode });
   } catch {

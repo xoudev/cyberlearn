@@ -10,16 +10,19 @@ const importLessonFromRepository = vi.fn();
 const syncPathFromRepository = vi.fn();
 const publishCatalogueDrafts = vi.fn();
 const syncQuizFromRepository = vi.fn();
+const syncChallengeFromRepository = vi.fn();
 vi.mock("@/lib/services/repository-import.service", () => ({
   importLessonFromRepository,
   syncPathFromRepository,
   syncQuizFromRepository,
+  syncChallengeFromRepository,
   publishCatalogueDrafts,
 }));
 
 const {
   importLessonFromRepositoryAction,
   publishCatalogueFromRepositoryAction,
+  syncChallengeFromRepositoryAction,
   syncPathFromRepositoryAction,
   syncQuizFromRepositoryAction,
   updateLessonFromRepositoryAction,
@@ -213,5 +216,38 @@ describe("publishCatalogueFromRepositoryAction", () => {
     publishCatalogueDrafts.mockResolvedValue({ lessons: 60, paths: 2 });
     expect(await publishCatalogueFromRepositoryAction()).toEqual({ lessons: 60, paths: 2 });
     expect(publishCatalogueDrafts).toHaveBeenCalledWith("admin-1");
+  });
+});
+
+describe("syncChallengeFromRepositoryAction", () => {
+  it("refuses what is not a challenge refCode, before reading anything", async () => {
+    expect(await syncChallengeFromRepositoryAction({ refCode: "../content/x" })).toEqual({
+      ok: false,
+      message: "Demande invalide.",
+      details: [],
+    });
+    expect(syncChallengeFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("writes the challenge on behalf of the admin, from its refCode only", async () => {
+    syncChallengeFromRepository.mockResolvedValue({ ok: true, created: true });
+    expect(await syncChallengeFromRepositoryAction({ refCode: "CL-CHG-001" })).toEqual({
+      ok: true,
+    });
+    expect(syncChallengeFromRepository).toHaveBeenCalledWith("CL-CHG-001", "admin-1");
+  });
+
+  it("passes on why the service refused", async () => {
+    syncChallengeFromRepository.mockResolvedValue({
+      ok: false,
+      reason: "refused",
+      message: "Le prérequis CL-CHG-001 n'est pas encore en base : synchronise-le d'abord.",
+      details: [],
+    });
+    expect(await syncChallengeFromRepositoryAction({ refCode: "CL-CHG-002" })).toEqual({
+      ok: false,
+      message: "Le prérequis CL-CHG-001 n'est pas encore en base : synchronise-le d'abord.",
+      details: [],
+    });
   });
 });
