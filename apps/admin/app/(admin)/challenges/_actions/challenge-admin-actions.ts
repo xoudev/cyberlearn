@@ -165,6 +165,7 @@ export async function setChallengeActiveAction(
 ): Promise<{ error?: string }> {
   await requireAdminAction();
   if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
+  if (!z.boolean().safeParse(isActive).success) return { error: "État invalide." };
 
   await prisma.challenge.update({ where: { id }, data: { isActive } });
   revalidatePath("/challenges");

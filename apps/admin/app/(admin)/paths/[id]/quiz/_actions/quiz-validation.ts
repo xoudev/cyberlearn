@@ -6,7 +6,7 @@ import { z } from "zod";
 export const quizSettingsSchema = z.object({
   passThreshold: z.coerce.number().int().min(0).max(100),
   questionsToDraw: z.coerce.number().int().min(1).max(100),
-  isActive: z.coerce.boolean(),
+  isActive: z.boolean(),
 });
 
 const optionSchema = z.object({
@@ -27,13 +27,19 @@ export const questionSchema = z
     correctOptionId: z.string().trim().min(1),
     explanation: z.string().trim().max(2000).optional(),
     orderIndex: z.coerce.number().int().min(0).max(1000),
-    isActive: z.coerce.boolean(),
+    isActive: z.boolean(),
   })
   // The answer key must point to one of the options, else the question is unscorable.
   .refine((q) => q.options.some((o) => o.id === q.correctOptionId), {
     message: "La bonne réponse doit correspondre à l'une des options",
     path: ["correctOptionId"],
   });
+
+// The ids an action is called with: the path, whose page is revalidated, and
+// the quiz or question acted on. They reach Prisma, so they are checked too.
+export const quizTargetSchema = z.object({ pathId: z.guid() });
+export const newQuestionTargetSchema = z.object({ pathId: z.guid(), quizId: z.guid() });
+export const questionTargetSchema = z.object({ pathId: z.guid(), questionId: z.guid() });
 
 export type QuizSettingsInput = z.infer<typeof quizSettingsSchema>;
 export type QuestionInput = z.infer<typeof questionSchema>;
