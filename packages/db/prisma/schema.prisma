@@ -43,6 +43,12 @@ model User {
   longestStreak Int      @default(0) // Record streak (all-time best)
   streakFreezes Int      @default(1) // Freeze tokens in reserve (auto-cover one missed day)
   lastActiveAt  DateTime @default(now())
+  /// When the account was told it would be erased for inactivity: 24 months
+  /// without signing in or learning, 30 days' notice (rgpd/inactive-accounts).
+  /// Void as soon as lastActiveAt passes it. Not granted to any client role.
+  inactivityNoticeAt      DateTime?
+  /// SHA-256 of the "keep my account" link that notice carried.
+  inactivityKeepTokenHash String?   @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -99,6 +105,7 @@ model User {
 
   @@index([username])
   @@index([role])
+  @@index([lastActiveAt])
   @@map("users")
 }
 

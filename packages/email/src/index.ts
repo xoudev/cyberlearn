@@ -15,6 +15,11 @@ export {
 export { TicketReplyEmail, sendTicketReplyEmail } from "./templates/ticket-reply";
 export { BanNoticeEmail, sendBanNoticeEmail } from "./templates/ban-notice";
 export {
+  InactivityNoticeEmail,
+  inactivityNoticeSubject,
+  sendInactivityNoticeEmail,
+} from "./templates/inactivity-notice";
+export {
   ModerationNoticeEmail,
   sendModerationNoticeEmail,
 } from "./templates/moderation-notice";

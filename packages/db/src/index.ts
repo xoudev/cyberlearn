@@ -45,6 +45,15 @@ export {
   type RetentionSummary,
 } from "./rgpd/retention.js";
 export {
+  erasureDate,
+  findAccountsToErase,
+  findAccountsToWarn,
+  INACTIVITY,
+  keepAccountByToken,
+  recordInactivityNotice,
+  type InactiveAccount,
+} from "./rgpd/inactive-accounts.js";
+export {
   resetProgress,
   type ResetProgressOptions,
   type ResetProgressSummary,
