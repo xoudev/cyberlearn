@@ -38,6 +38,9 @@ export async function updateLessonAction(
   _prev: UpdateLessonState,
   formData: FormData,
 ): Promise<UpdateLessonState> {
+  // Bound by the page, but sent back by the browser like any other argument.
+  if (!z.guid().safeParse(id).success) notFound();
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = updateLessonSchema.safeParse(raw);
 

@@ -7,6 +7,7 @@ import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { pathRefCodeSchema } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { readPathLessonIds } from "./lesson-ids";
 
 const createPathSchema = z.object({
   refCode: pathRefCodeSchema,
@@ -50,23 +51,9 @@ export async function createPathAction(
 
   const { coverImageUrl, publishNow, ...data } = parsed.data;
 
-  // Parse ordered lesson IDs from the hidden JSON input; cap at 500 to prevent oversized transactions
-  const lessonIdsRaw = formData.get("lessonIds");
-  let orderedLessonIds: string[] = [];
-  if (typeof lessonIdsRaw === "string" && lessonIdsRaw.length > 2) {
-    try {
-      // SAFETY: JSON.parse returns any; validated as string array below
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const parsed = JSON.parse(lessonIdsRaw);
-      if (Array.isArray(parsed)) {
-        orderedLessonIds = (parsed as unknown[])
-          .filter((v): v is string => typeof v === "string")
-          .slice(0, 500);
-      }
-    } catch {
-      /* ignore parse errors */
-    }
-  }
+  const lessonIds = readPathLessonIds(formData);
+  if (!lessonIds.ok) return { error: lessonIds.error, fieldErrors: { lessonIds: lessonIds.error } };
+  const orderedLessonIds = lessonIds.ids;
 
   try {
     const path = await prisma.path.create({
@@ -119,7 +106,9 @@ export async function updatePathStatusAction(
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
   if (!z.guid().safeParse(pathId).success) return { error: "ID invalide." };
-  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
+  if (!z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).safeParse(status).success) {
+    return { error: "Statut invalide." };
+  }
 
   const [admin, path] = await Promise.all([
     requireAdminAction(),

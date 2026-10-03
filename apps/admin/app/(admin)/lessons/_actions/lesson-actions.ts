@@ -123,7 +123,9 @@ export async function updateLessonStatusAction(
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
   if (!z.guid().safeParse(lessonId).success) return { error: "ID invalide." };
-  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
+  if (!z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).safeParse(status).success) {
+    return { error: "Statut invalide." };
+  }
 
   const [admin, lesson] = await Promise.all([
     requireAdminAction(),

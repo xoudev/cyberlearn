@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma, quizRepository } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
-import { questionSchema, quizSettingsSchema } from "./quiz-validation";
+import {
+  newQuestionTargetSchema,
+  questionSchema,
+  questionTargetSchema,
+  quizSettingsSchema,
+  quizTargetSchema,
+} from "./quiz-validation";
 
 export interface ActionState {
   ok: boolean;
@@ -34,6 +40,10 @@ export async function saveQuizSettingsAction(input: {
 }): Promise<ActionState> {
   const admin = await requireAdminAction();
 
+  const target = quizTargetSchema.safeParse(input);
+  if (!target.success) return invalid("Parcours invalide.");
+  const { pathId } = target.data;
+
   const parsed = quizSettingsSchema.safeParse(input);
   if (!parsed.success) {
     return invalid(
@@ -42,7 +52,7 @@ export async function saveQuizSettingsAction(input: {
     );
   }
 
-  const quiz = await quizRepository.upsertQuizByPath({ pathId: input.pathId, ...parsed.data });
+  const quiz = await quizRepository.upsertQuizByPath({ pathId, ...parsed.data });
 
   await prisma.auditLog.create({
     data: {
@@ -50,11 +60,11 @@ export async function saveQuizSettingsAction(input: {
       action: "quiz.upsert",
       targetType: "Quiz",
       targetId: quiz.id,
-      metadata: { pathId: input.pathId, isActive: parsed.data.isActive },
+      metadata: { pathId, isActive: parsed.data.isActive },
     },
   });
 
-  revalidatePath(`/paths/${input.pathId}/quiz`);
+  revalidatePath(`/paths/${pathId}/quiz`);
   return { ok: true };
 }
 
@@ -72,6 +82,10 @@ export async function createQuestionAction(input: {
 }): Promise<ActionState> {
   const admin = await requireAdminAction();
 
+  const target = newQuestionTargetSchema.safeParse(input);
+  if (!target.success) return invalid("Quiz invalide.");
+  const { pathId, quizId } = target.data;
+
   const parsed = questionSchema.safeParse(input);
   if (!parsed.success) {
     return invalid(
@@ -82,7 +96,7 @@ export async function createQuestionAction(input: {
   const d = parsed.data;
 
   const created = await quizRepository.createQuestion({
-    quizId: input.quizId,
+    quizId,
     question: d.question,
     options: d.options,
     correctOptionId: d.correctOptionId,
@@ -97,11 +111,11 @@ export async function createQuestionAction(input: {
       action: "quiz_question.create",
       targetType: "QuizQuestion",
       targetId: created.id,
-      metadata: { quizId: input.quizId },
+      metadata: { quizId },
     },
   });
 
-  revalidatePath(`/paths/${input.pathId}/quiz`);
+  revalidatePath(`/paths/${pathId}/quiz`);
   return { ok: true };
 }
 
@@ -117,7 +131,11 @@ export async function updateQuestionAction(input: {
 }): Promise<ActionState> {
   const admin = await requireAdminAction();
 
-  const existing = await quizRepository.findQuestionById(input.questionId);
+  const target = questionTargetSchema.safeParse(input);
+  if (!target.success) return invalid("Question introuvable.");
+  const { pathId, questionId } = target.data;
+
+  const existing = await quizRepository.findQuestionById(questionId);
   if (!existing) return invalid("Question introuvable.");
 
   const parsed = questionSchema.safeParse(input);
@@ -129,7 +147,7 @@ export async function updateQuestionAction(input: {
   }
   const d = parsed.data;
 
-  await quizRepository.updateQuestion(input.questionId, {
+  await quizRepository.updateQuestion(questionId, {
     question: d.question,
     options: d.options,
     correctOptionId: d.correctOptionId,
@@ -143,12 +161,12 @@ export async function updateQuestionAction(input: {
       actorId: admin.id,
       action: "quiz_question.update",
       targetType: "QuizQuestion",
-      targetId: input.questionId,
+      targetId: questionId,
       metadata: { quizId: existing.quizId },
     },
   });
 
-  revalidatePath(`/paths/${input.pathId}/quiz`);
+  revalidatePath(`/paths/${pathId}/quiz`);
   return { ok: true };
 }
 
@@ -158,21 +176,25 @@ export async function deleteQuestionAction(input: {
 }): Promise<ActionState> {
   const admin = await requireAdminAction();
 
-  const existing = await quizRepository.findQuestionById(input.questionId);
+  const target = questionTargetSchema.safeParse(input);
+  if (!target.success) return invalid("Question introuvable.");
+  const { pathId, questionId } = target.data;
+
+  const existing = await quizRepository.findQuestionById(questionId);
   if (!existing) return invalid("Question introuvable.");
 
-  await quizRepository.deleteQuestion(input.questionId);
+  await quizRepository.deleteQuestion(questionId);
 
   await prisma.auditLog.create({
     data: {
       actorId: admin.id,
       action: "quiz_question.delete",
       targetType: "QuizQuestion",
-      targetId: input.questionId,
+      targetId: questionId,
       metadata: { quizId: existing.quizId },
     },
   });
 
-  revalidatePath(`/paths/${input.pathId}/quiz`);
+  revalidatePath(`/paths/${pathId}/quiz`);
   return { ok: true };
 }

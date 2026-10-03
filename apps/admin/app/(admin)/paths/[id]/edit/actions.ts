@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { pathRefCodeSchema } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { readPathLessonIds } from "../../_actions/lesson-ids";
 
 const updatePathSchema = z.object({
   refCode: pathRefCodeSchema,
@@ -34,6 +35,9 @@ export async function updatePathAction(
   _prev: UpdatePathState,
   formData: FormData,
 ): Promise<UpdatePathState> {
+  // Bound by the page, but sent back by the browser like any other argument.
+  if (!z.guid().safeParse(id).success) notFound();
+
   const raw = Object.fromEntries(formData.entries());
   const parsed = updatePathSchema.safeParse(raw);
 
@@ -44,6 +48,10 @@ export async function updatePathAction(
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }
+
+  const lessonIds = readPathLessonIds(formData);
+  if (!lessonIds.ok) return { error: lessonIds.error, fieldErrors: { lessonIds: lessonIds.error } };
+  const orderedLessonIds = lessonIds.ids;
 
   const [admin, existing] = await Promise.all([
     requireAdminAction(),
@@ -78,23 +86,6 @@ export async function updatePathAction(
       return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
     if (slugConflict)
       return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
-  }
-
-  const lessonIdsRaw = formData.get("lessonIds");
-  let orderedLessonIds: string[] = [];
-  if (typeof lessonIdsRaw === "string" && lessonIdsRaw.length > 2) {
-    try {
-      // SAFETY: JSON.parse returns any; validated as string array below
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const arr = JSON.parse(lessonIdsRaw);
-      if (Array.isArray(arr)) {
-        orderedLessonIds = (arr as unknown[])
-          .filter((v): v is string => typeof v === "string")
-          .slice(0, 500);
-      }
-    } catch {
-      /* ignore parse errors */
-    }
   }
 
   const publishedAt =
