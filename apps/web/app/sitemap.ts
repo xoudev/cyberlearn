@@ -15,6 +15,7 @@ const PUBLIC_PAGES: PublicPage[] = [
   ["", 1, "weekly"],
   ["/download", 0.7, "monthly"],
   ["/catalogue", 0.8, "weekly"],
+  ["/glossaire", 0.6, "monthly"],
   ["/verify", 0.6, "monthly"],
   ["/contact", 0.4, "yearly"],
   ["/legal", 0.3, "yearly"],

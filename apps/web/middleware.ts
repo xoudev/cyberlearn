@@ -97,6 +97,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
     pathname === "/catalogue" ||
+    pathname === "/glossaire" ||
     pathname === "/download" ||
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
