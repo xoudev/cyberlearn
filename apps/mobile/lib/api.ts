@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
+import type { ChallengeDetail, ChallengeItem } from "@/lib/challenges";
 import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
@@ -1157,5 +1158,75 @@ export async function replySupportTicketApi(
     return readActionResponse(await res.json());
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── Challenges (the site's /challenges, apps/web/lib/challenges) ─────────────
+
+/** The active challenges, with where the caller stands. */
+export async function fetchChallengesApi(): Promise<ChallengeItem[]> {
+  const res = await authedFetch("/api/mobile/challenges");
+  const body = (await res.json()) as
+    | { ok: true; items: ChallengeItem[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.items;
+}
+
+/** One challenge: statement, state, revealed hints. Never the flag. */
+export async function fetchChallengeApi(slug: string): Promise<ChallengeDetail> {
+  const res = await authedFetch(`/api/mobile/challenges/detail?slug=${encodeURIComponent(slug)}`);
+  const body = (await res.json()) as
+    | { ok: true; challenge: ChallengeDetail }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.challenge;
+}
+
+/** A flag, checked on the server as the site checks it. */
+export async function submitChallengeFlagApi(
+  challengeId: string,
+  flag: string,
+): Promise<{ correct: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/challenges/flag", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, flag }),
+    });
+    const body = (await res.json()) as { ok: boolean; correct?: boolean; error?: string };
+    return { correct: body.correct === true, ...(body.error ? { error: body.error } : {}) };
+  } catch {
+    return { correct: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** A hint, for the XP it costs. */
+export async function revealChallengeHintApi(
+  hintId: string,
+): Promise<{ content?: string; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/challenges/hint", {
+      method: "POST",
+      body: JSON.stringify({ hintId }),
+    });
+    const body = (await res.json()) as { ok: boolean; content?: string; error?: string };
+    if (body.content !== undefined) return { content: body.content };
+    return { error: body.error ?? "Indice indisponible." };
+  } catch {
+    return { error: "Connexion au serveur impossible." };
+  }
+}
+
+/** A puzzle or a lab marked done, on trust, as on the site. */
+export async function completeChallengeApi(challengeId: string): Promise<{ error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/challenges/complete", {
+      method: "POST",
+      body: JSON.stringify({ challengeId }),
+    });
+    const body = (await res.json()) as { ok: boolean; error?: string };
+    return body.error ? { error: body.error } : {};
+  } catch {
+    return { error: "Connexion au serveur impossible." };
   }
 }

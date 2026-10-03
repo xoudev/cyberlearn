@@ -2,7 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
-import { fetchLessonAccessApi, fetchMyRankApi } from "@/lib/api";
+import {
+  fetchChallengeApi,
+  fetchChallengesApi,
+  fetchLessonAccessApi,
+  fetchMyRankApi,
+} from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   fetchExamStatusApi,
@@ -1284,5 +1289,23 @@ export function useSupportThread(userId: string | undefined, id: string | undefi
     queryKey: ["support-thread", id, userId],
     enabled: Boolean(userId && id),
     queryFn: () => fetchSupportThreadApi(id as string), // gated by `enabled`
+  });
+}
+
+/** The site's /challenges: the active challenges with where the learner stands. */
+export function useChallenges(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["challenges", userId],
+    enabled: Boolean(userId),
+    queryFn: fetchChallengesApi,
+  });
+}
+
+/** One challenge, for its screen. */
+export function useChallenge(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["challenge", slug, userId],
+    enabled: Boolean(userId && slug),
+    queryFn: () => fetchChallengeApi(slug as string), // gated by `enabled`
   });
 }
