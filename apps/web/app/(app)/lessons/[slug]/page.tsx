@@ -46,6 +46,8 @@ import { StepAnimation } from "./_components/step-animation";
 import { PhpLab } from "./_components/php-lab";
 import { SubnetDrill } from "./_components/subnet-drill";
 import { PacketDissector } from "./_components/packet-dissector";
+import { PutInOrder } from "./_components/put-in-order";
+import { MatchPairs } from "./_components/match-pairs";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -78,6 +80,8 @@ const MDX_COMPONENTS = {
   PhpLab,
   SubnetDrill,
   PacketDissector,
+  PutInOrder,
+  MatchPairs,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

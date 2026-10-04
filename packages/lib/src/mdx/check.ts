@@ -7,11 +7,13 @@ import {
   parseChallengeTests,
   parseFindTheFlaw,
   parseGitSandbox,
+  parseMatchPairs,
   parseNetworkLab,
   parsePacketDissector,
   parsePhpLab,
   parsePhishingEmail,
   parsePhotoOsint,
+  parsePutInOrder,
   parseStepAnimation,
   parseSqlInjectionLab,
   parseSqlPlayground,
@@ -119,6 +121,8 @@ export const LESSON_COMPONENT_NAMES = [
   "PhpLab",
   "SubnetDrill",
   "PacketDissector",
+  "PutInOrder",
+  "MatchPairs",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -191,6 +195,14 @@ function PacketDissectorStub(): null {
   return null;
 }
 STUBS.PacketDissector = PacketDissectorStub;
+function PutInOrderStub(): null {
+  return null;
+}
+STUBS.PutInOrder = PutInOrderStub;
+function MatchPairsStub(): null {
+  return null;
+}
+STUBS.MatchPairs = MatchPairsStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -375,6 +387,14 @@ function firstChallengeProblem(node: ReactNode): string | null {
     if (missing.length > 0) {
       return `Décortiquer un paquet : find nomme ${missing.map((id) => `« ${id} »`).join(", ")}, que cette trame n'a pas.`;
     }
+  }
+  if (node.type === PutInOrderStub) {
+    const parsed = parsePutInOrder(props);
+    if (!parsed.ok) return `Dans l'ordre : ${parsed.problem}`;
+  }
+  if (node.type === MatchPairsStub) {
+    const parsed = parseMatchPairs(props);
+    if (!parsed.ok) return `Associe : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

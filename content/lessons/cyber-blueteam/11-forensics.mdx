@@ -92,6 +92,15 @@ La discipline n'est pas un frein, c'est ce qui donne du poids à ton travail. Co
 
 Tu arrives sur une machine compromise, encore allumée. Avant de penser au disque, tu captures ce qui s'évapore : la mémoire, les processus, les connexions. Puis tu scelles avec une empreinte.
 
+<PutInOrder
+  id="ordre-volatilite"
+  title="L'ordre de volatilité"
+  task="Place les traces dans l'ordre où on les collecte, de la plus fugace à la plus durable."
+  items={["Registres et cache du processeur", "Mémoire vive : processus, connexions réseau", "Fichiers temporaires, sessions actives", "Disque dur : fichiers, journaux", "Sauvegardes, archives, journaux distants"]}
+  explanation="On capture d'abord ce qui disparaît le plus vite : les registres vivent des millisecondes, la mémoire vive jusqu'à l'extinction, les fichiers temporaires des minutes ou des heures ; le disque et les sauvegardes attendront. On capture la mémoire avant de toucher au disque, jamais l'inverse."
+  hint="Que perds-tu si la machine s'éteint à l'instant ? C'est cela qu'on collecte en premier."
+/>
+
 <SimulatedTerminal shell="bash" scenario="bash" title="Réflexes des premières minutes" commands={{"netstat -tunp": "tcp 192.168.1.20:51000 203.0.113.9:443 ESTABLISHED 4127/x.sh", "ps aux | grep x.sh": "user 4127 0.6 ./x.sh", "sha256sum mem.dump": "3a7c...b92 mem.dump", "last -n 2": "user pts/0 2026-01-10 03:12 still logged in"}} />
 
 <Quiz id="q-1" question="Pourquoi enquête-t-on sur une copie du disque plutôt que sur l'original ?" options={["Parce que la copie est plus rapide à lire", "Parce que toute action sur l'original peut écraser des traces et le rendre contestable", "Parce que l'original est trop volumineux", "Parce que la copie contient plus de données"]} correct={1} />

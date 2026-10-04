@@ -278,6 +278,35 @@ describe("PacketDissector", () => {
   });
 });
 
+describe("PutInOrder and MatchPairs", () => {
+  it("accepts an order and pairs that are well-formed", async () => {
+    expect(
+      await checkLessonMdx(
+        '## Les couches\n\n<PutInOrder id="o" task="De bas en haut." items={["Physique", "Liaison", "Réseau"]} explanation="Parce que." />\n\n<MatchPairs id="m" task="Chaque port à son service." pairs={[{ "left": "22", "right": "SSH" }, { "left": "53", "right": "DNS" }, { "left": "80", "right": "HTTP" }]} />',
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses an item written twice, and says so", async () => {
+    const r = await checkLessonMdx(
+      '## Les couches\n\n<PutInOrder id="o" task="De bas en haut." items={["Physique", "Liaison", "Physique"]} />',
+    );
+    if (r.ok) throw new Error("accepted a repeated item");
+    expect(r.section).toBe("Les couches");
+    expect(r.message).toBe(
+      "Dans l'ordre : items répète « Physique » : deux éléments identiques n'ont pas d'ordre.",
+    );
+  });
+
+  it("refuses pairs whose right side repeats, and names the column", async () => {
+    const r = await checkLessonMdx(
+      '## Les ports\n\n<MatchPairs id="m" task="Associe." pairs={[{ "left": "80", "right": "HTTP" }, { "left": "8080", "right": "HTTP" }, { "left": "22", "right": "SSH" }]} />',
+    );
+    if (r.ok) throw new Error("accepted a repeated right side");
+    expect(r.message).toContain("Associe : pairs répète « HTTP » à droite");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(
