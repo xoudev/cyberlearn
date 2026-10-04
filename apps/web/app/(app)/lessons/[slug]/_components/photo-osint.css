@@ -1,0 +1,44 @@
+/* The map of <PhotoOsint>: Leaflet without tiles. The sea is the container,
+   the land is drawn by the GeoJSON layer, the towns are permanent tooltips. */
+
+.osint-map.leaflet-container {
+  background: #08072a;
+  font-family: var(--font-mono, monospace);
+}
+
+.osint-map.leaflet-grab {
+  cursor: crosshair;
+}
+
+.osint-map .leaflet-tooltip.osint-town {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #b8b5d1;
+  font-size: 11px;
+  text-shadow: 0 0 3px #030219;
+}
+
+.osint-map .leaflet-tooltip.osint-town::before {
+  display: none;
+}
+
+.osint-map .osint-town-minor {
+  display: none;
+}
+
+.osint-map.osint-close .osint-town-minor {
+  display: block;
+}
+
+.osint-map .leaflet-control-attribution {
+  background: rgba(3, 2, 25, 0.75);
+  color: #7f7ba9;
+}
+
+.osint-map .leaflet-control-zoom a {
+  background: #0a0826;
+  color: #d8d6ea;
+  border-color: #2a2560;
+}

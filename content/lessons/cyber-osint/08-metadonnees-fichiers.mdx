@@ -74,7 +74,21 @@ La bonne habitude : pour toute photo ou document destiné à être public, lis d
 
 ## à toi de jouer
 
-Reprends le terminal plus haut et suis l'enchaînement complet : lecture de la photo, lecture du document, effacement, vérification. Observe ce que chaque commande révèle ou efface avant de répondre.
+Commence par ta propre photo. Tu rentres de vacances et tu t'apprêtes à publier celle-ci : avant de l'envoyer, regarde ce qu'elle raconte à ton insu. Les métadonnées sont lues pour de vrai, dans ton navigateur, depuis le fichier lui-même.
+
+<PhotoOsint
+  id="osint-photo-vacances"
+  title="Avant de publier"
+  src="/osint/lac-de-montagne.jpg"
+  alt="Illustration : un lac bordé de montagnes enneigées, un voilier, un ponton en bois au premier plan."
+  task="Lis les métadonnées de ta photo, puis place sur la carte l'endroit qu'elle révèle. Les coordonnées GPS sont en degrés, minutes, secondes : recopie-les telles quelles, ou convertis-les en décimal."
+  answer={{"latitude": 45.8992, "longitude": 6.1294, "radiusKm": 15}}
+  place="Annecy, au bord du lac"
+  conclusion="N'importe qui récupère cette image sait où tu étais, à quelques mètres près, et à quelle minute. Sur un réseau public, c'est ce qu'on retire avant d'envoyer."
+  hints={["45° 53′ 57″ N se convertit en 45 + 53/60 + 57/3600, soit environ 45,90.", "6° 7′ 46″ E donne environ 6,13 : à l'est de la France, près de la Suisse.", "Zoome sur les Alpes : les petites villes se nomment quand la carte est assez proche."]}
+/>
+
+Ensuite, reprends le terminal plus haut et suis l'enchaînement complet : lecture de la photo, lecture du document, effacement, vérification. Observe ce que chaque commande révèle ou efface avant de répondre.
 
 <SimulatedTerminal shell="bash" scenario="bash" title="Inspecter puis nettoyer" commands={{"exiftool photo.jpg": "Camera Model Name: iPhone 13\nDate/Time Original: 2026:01:08 14:32:10\nGPS Position: 48.8584 N, 2.2945 E", "exiftool document.pdf": "Author: jdupont\nCreator: Microsoft Word\nCreate Date: 2026:01:05", "exiftool -all= photo.jpg": "1 image files updated", "exiftool photo.jpg": "Camera Model Name: -\nGPS Position: -"}} />
 

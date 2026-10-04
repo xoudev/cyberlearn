@@ -1060,6 +1060,46 @@ Il connaît `git init`, `status`, `add`, `rm`, `commit` (avec `-m`, `-a`), `log`
 
 Choisis des vérifications fausses au départ : une case déjà cochée avant la première commande n'apprend rien (un dépôt propre, une version de fichier déjà là). L'éditeur rejoue le `setup` à l'enregistrement et refuse une commande qui échoue, en la nommant, ainsi qu'une vérification inconnue ou à qui il manque un champ.
 
+### 5.9g PhotoOsint - OSINT sur photo
+
+Une photo, ses vraies métadonnées lues dans le fichier (exifr, dans le navigateur, comme le ferait `exiftool`), et une carte pour placer le lieu de prise de vue. La carte est dessinée par le site lui-même, sans aucune tuile externe : les contours de la France et de ses voisins (Natural Earth, `public/maps`), les grandes villes, puis les plus petites quand on zoome. Rien ne part vers un serveur de cartes, et l'adresse IP de l'élève ne quitte pas le site. L'élève clique sur la carte ou tape des coordonnées (décimales, ou en degrés-minutes-secondes comme `exiftool` les affiche), valide, et le verdict donne la distance au lieu réel. Une fois trouvé, la photo est nettoyée dans le navigateur (redessinée sur un canvas) et relue : plus rien.
+
+```mdx
+<PhotoOsint
+  id="osint-legende-trompeuse"
+  title="Une légende à vérifier"
+  src="/osint/quais-inondes.jpg"
+  alt="Illustration : des quais inondés devant des façades colorées, une basilique blanche sur une colline."
+  caption="Inondations à Marseille, hier matin. Partagez !"
+  task="Lis les métadonnées, place le lieu sur la carte, puis compare avec la légende."
+  answer={{ "latitude": 45.7623, "longitude": 4.827, "radiusKm": 15 }}
+  place="Lyon, sur les quais de Saône"
+  conclusion="La photo a été prise à Lyon le 21 mai 2024 : ni à Marseille, ni hier."
+  hints={["45° 45′ N, c'est bien plus au nord que Marseille (43° 18′ N)."]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `src` | string | La photo, un `.jpg` de `apps/web/public/osint` (`/osint/nom.jpg`). Aucune adresse extérieure |
+| `alt` | string | Ce que montre l'image, pour qui ne la voit pas |
+| `caption` | string | La légende qui circule avec la photo, affichée sous elle (optionnel) |
+| `task` | string | La consigne |
+| `answer` | objet | Le lieu de prise de vue : `latitude`, `longitude`, et `radiusKm`, la distance à laquelle le point de l'élève est accepté (défaut : 20 km). **Clés entre guillemets** |
+| `place` | string | Le nom du lieu, révélé une fois trouvé |
+| `conclusion` | string | Ce qu'il faut en retenir, après le lieu (optionnel) |
+| `hints` | string[] | Des indices, proposés après deux points faux (optionnel) |
+
+**Les photos.** Aucune vraie photo de personne : les deux images sont des illustrations dessinées en SVG, rendues en JPEG et dotées de métadonnées écrites pour l'exercice (appareil, date, position GPS d'un lieu public) par `node scripts/build-osint-photos.mjs`. Pour en ajouter une, on l'ajoute à ce script : les fichiers de `public/osint` doivent toujours pouvoir être reconstruits à l'identique. Le script vérifie la cohérence : le test `apps/web/lib/osint/__tests__/osint.test.ts` relit chaque `<PhotoOsint>` des leçons et exige que le GPS de sa photo tombe dans le rayon de sa réponse.
+
+**La carte.** `public/maps/france-voisins.geojson` vient de Natural Earth (domaine public) par `node scripts/build-lesson-map.mjs`, qui vérifie l'empreinte du fichier source. Le lieu d'un exercice doit donc être en France ou dans un pays voisin ; ailleurs, l'élève verrait la mer.
+
+Dans l'app, l'exercice s'affiche comme une carte (la consigne et la légende) : la lecture des métadonnées et la carte ne tournent que sur le site (`docs/MOBILE_PARITY.md`).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1095,7 +1135,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

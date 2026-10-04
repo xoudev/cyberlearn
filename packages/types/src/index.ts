@@ -15,3 +15,4 @@ export * from "./schemas/find-the-flaw.schema.js";
 export * from "./schemas/phishing-email.schema.js";
 export * from "./schemas/sql-exercise.schema.js";
 export * from "./schemas/git-sandbox.schema.js";
+export * from "./schemas/photo-osint.schema.js";

@@ -1,6 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
-// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, SimulatedTerminal,
+// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
+// SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -72,6 +73,16 @@ export type Block =
       title: string | null;
       task: string | null;
       query: string | null;
+    }
+  | {
+      /**
+       * A PhotoOsint: the photo's metadata and the map are read on the site,
+       * where exifr and Leaflet run; the app shows what to look for.
+       */
+      kind: "osint";
+      title: string | null;
+      task: string | null;
+      caption: string | null;
     }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
@@ -292,7 +303,8 @@ type StringPropName =
   | "task"
   | "goal"
   | "starterQuery"
-  | "query";
+  | "query"
+  | "caption";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -300,7 +312,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -509,6 +521,16 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       title: stringProp(tag, "title", 0),
       task: stringProp(tag, "goal", 0),
       query: stringProp(tag, "query", indent),
+    }),
+  );
+  // PhotoOsint → a card: the metadata and the map are read on the site only
+  // (docs/MOBILE_PARITY.md); the lesson still says what to look for.
+  text = replaceSelfClosing(text, "PhotoOsint", (tag) =>
+    put({
+      kind: "osint",
+      title: stringProp(tag, "title", 0),
+      task: stringProp(tag, "task", 0),
+      caption: stringProp(tag, "caption", 0),
     }),
   );
   // SimulatedTerminal → a native exercise card (commands to try + hints).
