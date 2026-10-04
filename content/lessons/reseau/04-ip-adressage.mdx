@@ -99,6 +99,18 @@ Repère sur ta propre machine ce qui est privé et ce qui est public, puis véri
 
 <SimulatedTerminal shell="bash" scenario="bash" title="Distinguer privé, public et loopback" commands={{"ip addr show eth0": "inet 192.168.1.42/24 brd 192.168.1.255 scope global eth0", "hostname -I": "192.168.1.42", "curl -s ifconfig.me": "203.0.113.55", "ping -c1 127.0.0.1": "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.03 ms"}} />
 
+Mets ces notions à l'épreuve sur un vrai petit réseau. Les trois machines sont reliées au même switch ; pourtant l'une d'elles ne répond pas.
+
+<NetworkLab
+  id="net-un-reseau"
+  title="Un réseau, trois machines"
+  task="PC1 ne joint pas PC2 : lance un ping, puis compare leurs deux adresses. Corrige celle de PC2 pour qu'elle soit dans le réseau de PC1, 192.168.1.0/24. Ajoute ensuite un troisième PC, relie-le à SW1, donne-lui une adresse libre du même réseau et vérifie que PC1 le joint."
+  devices={[{"id": "sw1", "kind": "switch", "name": "SW1", "x": 260, "y": 40}, {"id": "pc1", "kind": "pc", "name": "PC1", "x": 80, "y": 200, "addresses": {"eth0": "192.168.1.10/24"}}, {"id": "pc2", "kind": "pc", "name": "PC2", "x": 440, "y": 200, "addresses": {"eth0": "192.168.2.20/24"}}]}
+  links={[["pc1", "sw1"], ["pc2", "sw1"]]}
+  checks={[{"label": "PC2 a une adresse dans 192.168.1.0/24", "expect": "address", "device": "PC2", "in": "192.168.1.0/24"}, {"label": "PC1 joint PC2", "expect": "ping", "from": "PC1", "to": "PC2"}, {"label": "Un troisième PC existe", "expect": "count", "kind": "pc", "min": 3}, {"label": "PC1 joint PC3", "expect": "ping", "from": "PC1", "to": "PC3"}]}
+  hints={["Un ping de PC1 vers 192.168.2.20 répond « Network is unreachable » : pour PC1, cette adresse est dans un autre réseau, et il n'a pas de passerelle pour y aller.", "Les 24 premiers bits de l'adresse sont le réseau : 192.168.1 d'un côté, 192.168.2 de l'autre. Donne à PC2 une adresse 192.168.1.x/24, par exemple 192.168.1.20/24.", "Le bouton + PC ajoute PC3 ; tire un câble depuis le point sous PC3 jusqu'à SW1, puis donne-lui 192.168.1.30/24."]}
+/>
+
 <Quiz id="q-1" question="Combien de bits compose une adresse IPv4 ?" options={["8 bits", "32 bits", "64 bits", "128 bits"]} correct={1} />
 
 <Quiz id="q-2" question="Parmi ces adresses, laquelle est une adresse privée non routable sur Internet ?" options={["203.0.113.55", "8.8.8.8", "192.168.1.42", "1.1.1.1"]} correct={2} />

@@ -77,10 +77,11 @@ catalog:
   "gray-matter": "^4.0.3"
   "@mdx-js/mdx": "^3.1.0"
 
-  # Lesson exercises: photo metadata, maps without external tiles
+  # Lesson exercises: photo metadata, maps without external tiles, network canvas
   exifr: "^7.1.3"
   leaflet: "^1.9.4"
   "@types/leaflet": "^1.9.22"
+  "@xyflow/react": "^12.12.0"
 
   # Typography (Tailwind plugin - used in apps/web for lesson content)
   "@tailwindcss/typography": "^0.5.20"

@@ -27,7 +27,8 @@
     "./settings/*": "./src/settings/*.ts",
     "./changelog/*": "./src/changelog/*.ts",
     "./glossary/*": "./src/glossary/*.ts",
-    "./git/*": "./src/git/*.ts"
+    "./git/*": "./src/git/*.ts",
+    "./network/*": "./src/network/*.ts"
   },
   "scripts": {
     "build": "tsc",

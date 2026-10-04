@@ -160,6 +160,26 @@ describe("PhotoOsint", () => {
   });
 });
 
+describe("NetworkLab", () => {
+  const lab = (links: string): string =>
+    `## Le réseau
+
+<NetworkLab id="n" task="Relie." devices={[{ "id": "pc1", "kind": "pc", "name": "PC1", "x": 0, "y": 0, "addresses": { "eth0": "192.168.1.10/24" } }, { "id": "sw1", "kind": "switch", "name": "SW1", "x": 100, "y": 0 }]} links={${links}} />`;
+
+  it("accepts a network whose cables join devices that exist", async () => {
+    expect(await checkLessonMdx(lab('[["pc1", "sw1"]]'))).toEqual({ ok: true });
+  });
+
+  it("refuses a cable to a device that does not exist, and says which", async () => {
+    const r = await checkLessonMdx(lab('[["pc1", "r9"]]'));
+    if (r.ok) throw new Error("accepted a cable to nowhere");
+    expect(r.section).toBe("Le réseau");
+    expect(r.message).toContain(
+      "Atelier réseau : le câble pc1 - r9 relie un appareil qui n'existe pas.",
+    );
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

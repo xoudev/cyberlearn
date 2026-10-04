@@ -16,3 +16,4 @@ export * from "./schemas/phishing-email.schema.js";
 export * from "./schemas/sql-exercise.schema.js";
 export * from "./schemas/git-sandbox.schema.js";
 export * from "./schemas/photo-osint.schema.js";
+export * from "./schemas/network-lab.schema.js";

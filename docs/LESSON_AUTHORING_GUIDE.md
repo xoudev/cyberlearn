@@ -1100,6 +1100,52 @@ Une photo, ses vraies métadonnées lues dans le fichier (exifr, dans le navigat
 
 Dans l'app, l'exercice s'affiche comme une carte (la consigne et la légende) : la lecture des métadonnées et la carte ne tournent que sur le site (`docs/MOBILE_PARITY.md`).
 
+### 5.9h NetworkLab - Atelier réseau
+
+Un petit réseau sur un canevas : des PC, des switches et des routeurs que l'élève câble, adresse et teste avec `ping`. Le moteur (`@cyberlearn/lib/network`) fait ce qu'un vrai réseau ferait : la machine regarde si la destination est dans son réseau, sinon donne le paquet à sa passerelle ; chaque routeur consulte sa table (réseaux de ses ports, routes statiques, route par défaut) et passe au suivant ; la destination répond, et la réponse doit retrouver son propre chemin. Le résultat s'affiche comme un vrai `ping` (`Destination Host Unreachable`, `Destination Net Unreachable`, `100% packet loss`, `ttl=63`), suivi, en français, de ce que chaque appareil a fait du paquet ; les câbles traversés s'allument sur le schéma.
+
+Le modèle : un PC a un port (`eth0`), une adresse et une passerelle ; un routeur quatre ports (`eth0` à `eth3`), une adresse par port et des routes statiques ; un switch huit ports et aucune adresse. Le TTL part de 64 et baisse d'un par routeur traversé ; une boucle finit en `Time to live exceeded`. Un PC pris pour passerelle ne fait pas suivre : 100 % de perte. Pas de DHCP, pas de DNS, pas de NAT : c'est le réseau des leçons 04 à 06.
+
+```mdx
+<NetworkLab
+  id="net-passerelles"
+  title="Deux réseaux, un routeur"
+  task="Donne à eth1 l'adresse 192.168.2.1/24, puis à chaque PC la passerelle de son réseau, et ping PC2 depuis PC1."
+  devices={[{ "id": "pc1", "kind": "pc", "name": "PC1", "x": 40, "y": 200, "addresses": { "eth0": "192.168.1.10/24" } }, { "id": "sw1", "kind": "switch", "name": "SW1", "x": 190, "y": 110 }, { "id": "r1", "kind": "router", "name": "R1", "x": 340, "y": 30, "addresses": { "eth0": "192.168.1.1/24" } }]}
+  links={[["pc1", "sw1"], ["sw1", "r1"]]}
+  checks={[{ "label": "La passerelle de PC1 est 192.168.1.1", "expect": "gateway", "device": "PC1", "is": "192.168.1.1" }, { "label": "PC1 joint R1", "expect": "ping", "from": "PC1", "to": "R1" }]}
+  hints={["La passerelle de PC1 est l'adresse de R1 sur son réseau."]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `task` | string | La consigne |
+| `devices` | objets | Les appareils de départ, de 1 à 12 : `id` (minuscules, chiffres, tirets), `kind` (`pc`, `switch`, `router`), `name` (ce que l'élève voit et tape : `PC1`, `R1`), `x` et `y` (position sur le canevas, dans un cadre d'environ 700 × 260), `addresses` (par port : `{ "eth0": "192.168.1.10/24" }`, toujours avec le préfixe), `gateway` (un PC), `routes` (un routeur : `[{ "to": "0.0.0.0/0", "via": "10.0.0.2" }]`). **Clés entre guillemets** |
+| `links` | paires | Les câbles, par `id` : `[["pc1", "sw1"]]`, branchés sur les premiers ports libres dans l'ordre d'écriture (optionnel) |
+| `checks` | objets | Ce que l'élève doit obtenir, vérifié après chaque changement (voir ci-dessous) |
+| `hints` | string[] | Des indices, repliés sous « Indices » (optionnel) |
+| `locked` | boolean | `true` : l'élève configure les appareils mais n'en ajoute ni n'en retire, ni aucun câble (défaut : `false`) |
+
+**Les vérifications** (`expect`, toutes avec un `label`) :
+
+| `expect` | Autres champs | Cochée quand |
+|---|---|---|
+| `ping` | `from` (nom), `to` (adresse ou nom) | le ping part de l'appareil, arrive, et la réponse revient |
+| `address` | `device`, `in` (réseau : `192.168.1.0/24`) | l'appareil a une adresse de machine dans ce réseau, avec ce préfixe |
+| `gateway` | `device`, `is` | la passerelle du PC est cette adresse |
+| `route` | `device`, `to` (réseau ; `0.0.0.0/0` pour la route par défaut), `via` (optionnel) | le routeur a cette route statique, par ce prochain saut s'il est donné |
+| `link` | `between` (deux noms) | les deux appareils sont câblés ensemble |
+| `count` | `kind`, `min` | au moins `min` appareils de ce type existent |
+
+Choisis des vérifications fausses au départ, et un exercice où le premier `ping` échoue d'une façon lisible : c'est la réponse de `ping` qui enseigne. L'éditeur reconstruit le réseau à l'enregistrement et refuse un câble vers un appareil qui n'existe pas, un PC avec deux câbles, deux appareils du même nom, une adresse sans préfixe ou qui est celle du réseau ou de diffusion.
+
+Dans l'app, l'exercice s'affiche comme une carte (la consigne et les appareils de départ) : le canevas et le ping ne tournent que sur le site (`docs/MOBILE_PARITY.md`).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1135,7 +1181,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
