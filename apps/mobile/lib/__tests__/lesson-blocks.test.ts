@@ -427,6 +427,82 @@ describe("NetworkLab", () => {
   });
 });
 
+describe("PhpLab", () => {
+  const LAB = [
+    "## Le serveur",
+    "",
+    "<PhpLab",
+    '  id="idor"',
+    '  title="Les factures de la boutique"',
+    '  task="Lisez la facture d\'une autre cliente, puis corrigez le code."',
+    '  file="invoice.php"',
+    "  code={`<?php",
+    "$id = (int) ($_GET['id'] ?? 0);",
+    "if ($id > 1) { echo $id; }",
+    "?>`}",
+    '  support={{ "auth.php": `<?php $title = "Admin"; $file = "x.php"; $code = "y";` }}',
+    '  requests={[{"label": "Bob lit sa facture", "url": "/invoice.php?id=2", "cookie": "session=tok-bob"}]}',
+    '  checks={[{"kind": "seen", "label": "Vu", "expect": {"status": 200}}]}',
+    "/>",
+  ].join("\n");
+
+  it("shows the task and the page; the PHP stays on the site", () => {
+    expect(parseLesson(LAB).sections[0]?.blocks).toEqual([
+      {
+        kind: "php",
+        title: "Les factures de la boutique",
+        task: "Lisez la facture d'une autre cliente, puis corrigez le code.",
+        file: "invoice.php",
+        code: "<?php\n$id = (int) ($_GET['id'] ?? 0);\nif ($id > 1) { echo $id; }\n?>",
+      },
+    ]);
+  });
+
+  it("takes index.php for the file when the lab names none", () => {
+    const unnamed = LAB.replace('  file="invoice.php"\n', "");
+    expect(parseLesson(unnamed).sections[0]?.blocks[0]).toMatchObject({
+      kind: "php",
+      file: "index.php",
+    });
+  });
+
+  it("does not read the support pages for props of the lab, wherever they are written", () => {
+    // `$title = "Admin"` in a support page is PHP, not the title of the exercise.
+    const supportFirst = [
+      "<PhpLab",
+      '  support={{ "auth.php": `<?php $title = "Admin"; $file = "x.php"; $code = "y"; $task = "z";` }}',
+      '  id="idor"',
+      '  title="Les factures"',
+      '  task="Corrigez."',
+      '  file="invoice.php"',
+      "  code={`<?php echo 1;`}",
+      "/>",
+    ].join("\n");
+    expect(parseLesson(`## A\n\n${supportFirst}`).sections[0]?.blocks).toEqual([
+      {
+        kind: "php",
+        title: "Les factures",
+        task: "Corrigez.",
+        file: "invoice.php",
+        code: "<?php echo 1;",
+      },
+    ]);
+  });
+
+  it("shows a placeholder for a lab without a page", () => {
+    const noCode = ["## A", "", '<PhpLab id="x" title="Sans page" task="Rien." />'].join("\n");
+    expect(parseLesson(noCode).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Site vulnérable" },
+    ]);
+  });
+
+  it("keeps the text around the lab, and the one after it", () => {
+    const lesson = `## Serveur\n\nAvant.\n\n${LAB.split("\n").slice(2).join("\n")}\n\nAprès.`;
+    const kinds = parseLesson(lesson).sections[0]?.blocks.map((b) => b.kind);
+    expect(kinds).toEqual(["paragraph", "php", "paragraph"]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

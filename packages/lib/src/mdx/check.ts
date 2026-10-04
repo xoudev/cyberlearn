@@ -8,6 +8,7 @@ import {
   parseFindTheFlaw,
   parseGitSandbox,
   parseNetworkLab,
+  parsePhpLab,
   parsePhishingEmail,
   parsePhotoOsint,
   parseStepAnimation,
@@ -112,6 +113,7 @@ export const LESSON_COMPONENT_NAMES = [
   "PhotoOsint",
   "NetworkLab",
   "StepAnimation",
+  "PhpLab",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -172,6 +174,10 @@ function StepAnimationStub(): null {
   return null;
 }
 STUBS.StepAnimation = StepAnimationStub;
+function PhpLabStub(): null {
+  return null;
+}
+STUBS.PhpLab = PhpLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -202,6 +208,42 @@ export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
     }
   }
   return { ok: true };
+}
+
+/**
+ * The props each `<name>` of a lesson is given, as the page compiles them: the
+ * same sections, the same plugins, the same protection for indentation. For
+ * the tests that play a lesson's exercises on their engines, which must read
+ * what the lesson says rather than a copy of it. Nothing is rendered: the
+ * element tree is only read.
+ */
+export async function componentPropsOf(
+  mdx: string,
+  name: (typeof LESSON_COMPONENT_NAMES)[number],
+): Promise<Record<string, unknown>[]> {
+  const found: Record<string, unknown>[] = [];
+  const capture = (): null => null;
+  const collect = (node: ReactNode): void => {
+    if (Array.isArray(node)) {
+      for (const child of node) collect(child as ReactNode);
+      return;
+    }
+    if (!isValidElement(node)) return;
+    // SAFETY: a React element's props are an object; children is read as a node.
+    const props = node.props as Record<string, unknown> & { children?: ReactNode };
+    if (node.type === capture) found.push(props);
+    if (props.children !== undefined) collect(props.children);
+  };
+  for (const source of splitMdxSections(mdx)) {
+    const { default: Content } = await evaluate(protectPropIndentation(source), {
+      ...runtime,
+      remarkPlugins: LESSON_REMARK_PLUGINS,
+      development: false,
+    });
+    // SAFETY: as in problemIn, the default export is the content function.
+    collect((Content as unknown as MdxContent)({ components: { ...STUBS, [name]: capture } }));
+  }
+  return found;
 }
 
 /** What is wrong with one piece of MDX, or null when it renders. */
@@ -303,6 +345,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === StepAnimationStub) {
     const parsed = parseStepAnimation(props);
     if (!parsed.ok) return `Animation : ${parsed.problem}`;
+  }
+  if (node.type === PhpLabStub) {
+    const parsed = parsePhpLab(props);
+    if (!parsed.ok) return `Laboratoire PHP : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

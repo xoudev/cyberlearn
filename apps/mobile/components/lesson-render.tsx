@@ -462,6 +462,57 @@ export function BlockView({
           </View>
         </View>
       );
+    case "php":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: colors.danger,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: colors.danger }}>
+              SITE VULNÉRABLE · PHP · SUR LE SITE
+            </Text>
+            {block.title !== null ? (
+              <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+                {block.title}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ padding: 12, gap: 8 }}>
+            {block.task !== null ? <Text variant="bodySm">{block.task}</Text> : null}
+            <Text variant="micro" style={{ color: colors.textSecondary }}>
+              {block.file}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <Text
+                style={{
+                  fontFamily: `${fonts.mono}_400Regular`,
+                  fontSize: 12,
+                  lineHeight: 19,
+                  color: theme.terminal.foreground,
+                }}
+              >
+                {block.code}
+              </Text>
+            </ScrollView>
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              Un vrai PHP tourne dans le navigateur, sur le site : c&apos;est là qu&apos;on attaque
+              la page, puis qu&apos;on corrige son code.
+            </Text>
+          </View>
+        </View>
+      );
     case "challenge":
       return (
         <View

@@ -180,6 +180,46 @@ describe("NetworkLab", () => {
   });
 });
 
+describe("PhpLab", () => {
+  const lab = (props: string): string =>
+    `## Le serveur
+
+<PhpLab id="p" task="Corrige." code={\`<?php echo 1;\`} ${props} />`;
+
+  it("accepts a lab whose pages and checks are well-formed", async () => {
+    expect(
+      await checkLessonMdx(
+        lab(
+          'file="page.php" support={{ "lib/data.php": `<?php return [];` }} requests={[{ "label": "Voir", "url": "/page.php" }]} checks={[{ "kind": "fixed", "label": "Répond", "request": { "url": "/page.php" }, "expect": { "status": 200 } }]}',
+        ),
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a page that is not a PHP file of the lab, and says which prop", async () => {
+    const r = await checkLessonMdx(lab('file="../page.php"'));
+    if (r.ok) throw new Error("accepted a path leaving the lab");
+    expect(r.section).toBe("Le serveur");
+    expect(r.message).toContain("Laboratoire PHP : file : chemin de page invalide");
+  });
+
+  it("refuses a page that names the bridge to JavaScript", async () => {
+    const r = await checkLessonMdx(
+      '## Le serveur\n\n<PhpLab id="p" task="Corrige." code={`<?php $v = new Vrzno();`} />',
+    );
+    if (r.ok) throw new Error("accepted the Vrzno bridge");
+    expect(r.message).toContain("Laboratoire PHP : index.php nomme Vrzno");
+  });
+
+  it("refuses a check that expects nothing", async () => {
+    const r = await checkLessonMdx(
+      lab('checks={[{ "kind": "seen", "label": "Rien", "expect": {} }]}'),
+    );
+    if (r.ok) throw new Error("accepted an empty expectation");
+    expect(r.message).toContain("Laboratoire PHP : une attente vide");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

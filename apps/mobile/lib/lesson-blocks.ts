@@ -1,7 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, StepAnimation, SimulatedTerminal,
+// NetworkLab, PhpLab, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -94,6 +94,17 @@ export type Block =
       title: string | null;
       task: string | null;
       devices: string[];
+    }
+  | {
+      /**
+       * A PhpLab: a real PHP runs in the browser on the site only; the app
+       * shows what to do and the page the exercise starts with, to read.
+       */
+      kind: "php";
+      title: string | null;
+      task: string | null;
+      file: string;
+      code: string;
     }
   | {
       /**
@@ -208,6 +219,30 @@ function jsonProp(tag: string, name: string): unknown {
     }
   }
   return undefined;
+}
+
+/**
+ * The tag without its `name={...}` prop. The braces are counted, strings and
+ * template literals skipped, so that what the prop holds (the PHP pages of a
+ * PhpLab, where `$title = "x"` is common) is not read as props of the element.
+ */
+function withoutProp(tag: string, name: string): string {
+  const open = openingBraceOf(tag, name);
+  if (open === -1) return tag;
+  let depth = 0;
+  for (let i = open; i < tag.length; i++) {
+    const ch = tag.charAt(i);
+    if (ch === '"' || ch === "`") {
+      i++;
+      while (i < tag.length && tag.charAt(i) !== ch) i += tag.charAt(i) === "\\" ? 2 : 1;
+    } else if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) return tag.slice(0, tag.lastIndexOf(name, open)) + tag.slice(i + 1);
+    }
+  }
+  return tag;
 }
 
 /** A `prop={12}` number, or undefined when it is not written so. */
@@ -384,7 +419,8 @@ type StringPropName =
   | "starterQuery"
   | "query"
   | "caption"
-  | "scene";
+  | "scene"
+  | "file";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -392,7 +428,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -631,6 +667,20 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       title: stringProp(tag, "title", 0),
       task: stringProp(tag, "task", 0),
       devices: names.filter((n): n is string => n !== null),
+    });
+  });
+  // PhpLab → a card: PHP runs in the browser on the site only
+  // (docs/MOBILE_PARITY.md); the lesson still says what to attack and shows the page.
+  text = replaceSelfClosing(text, "PhpLab", (whole, indent) => {
+    const tag = withoutProp(whole, "support");
+    const code = stringProp(tag, "code", indent);
+    if (code === null) return put({ kind: "placeholder", label: "Site vulnérable" });
+    return put({
+      kind: "php",
+      title: stringProp(tag, "title", 0),
+      task: stringProp(tag, "task", 0),
+      file: stringProp(tag, "file", 0) ?? "index.php",
+      code,
     });
   });
   // StepAnimation → its steps as a list: the drawing is the site's

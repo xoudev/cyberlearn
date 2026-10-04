@@ -79,15 +79,21 @@ confirmer par un prototype avec notre image avant d'écrire des leçons dessus.
 | 13 | **Casser des mots de passe** | Il lance une attaque par dictionnaire sur des hash faibles, dans le navigateur, et voit pourquoi la longueur compte. | Aucune | Oui |
 | 14 | **Atelier crypto** | Base64, hexadécimal, César, Vigénère, XOR, SHA-256, avec un message à déchiffrer pour valider. | Aucune | Oui |
 | 15 | **Vraie crypto et JWT** | Il manipule des clés RSA et EC, des signatures, et forge des JWT (`alg: none`, secret faible). | @noble/curves, jose | Oui |
-| 16 | **Site vulnérable** | Il attaque un site : injection SQL, XSS, accès aux données d'un autre, upload piégé. Version simulée, ou vrai site PHP qui tourne dans la page. | Aucune, ou php-wasm | Simulée oui, PHP site seul |
+| 16 | ~~**Site vulnérable**~~ | ~~Il attaque un site : injection SQL, XSS, accès aux données d'un autre, upload piégé. Version simulée, ou vrai site PHP qui tourne dans la page.~~ Fait, PR #390 : `<PhpLab>` sur php-wasm 0.2.0 (PHP 8.4.1, 13 Mo de WebAssembly dans un Web Worker, chaque requête sur une instance neuve et sans réseau), un exercice XSS dans la leçon 03 et un exercice sur l'accès aux données d'un autre dans la leçon 05, que l'élève attaque puis corrige ; une carte dans l'app. | php-wasm | Site seul |
 | 17 | ~~**Vraie base SQL**~~ | ~~Il apprend le SQL, puis réussit une injection sur une vraie base.~~ Fait, PR #385 : `<SqlPlayground>` et `<SqlInjectionLab>` sur sql.js 1.14.2 (SQLite dans un Web Worker, 700 Ko), trois exercices dans la leçon sur l'injection SQL ; une carte dans l'app. | sql.js | Site seul |
 | 18 | ~~**OSINT sur photo**~~ | ~~Il lit les métadonnées d'une photo et retrouve le lieu sur une carte.~~ Fait, PR #387 : `<PhotoOsint>`, les EXIF lus dans le navigateur, une carte sans tuile externe (contours Natural Earth servis par le site), deux exercices dans les leçons OSINT 07 et 08 ; une carte dans l'app. | exifr, Leaflet | Site seul |
 
-**16. Site vulnérable.** Les leçons du parcours Web montrent aujourd'hui une
-sortie de sqlmap figée (`<SimulatedTerminal scenario="sqli-basic">`) ; depuis
-#385, l'injection elle-même se joue sur une vraie base SQLite (`<SqlInjectionLab>`),
-mais sans site autour. La version php-wasm fait tourner un vrai PHP dans la
-page, sans réseau ni rien côté serveur. Son poids est à mesurer par un prototype.
+**16. Site vulnérable.** Fait avec php-wasm, après mesure : 13 Mo de
+WebAssembly (PHP 8.4.1), téléchargés au premier envoi d'une requête seulement,
+dans un Web Worker, chaque requête sur une instance neuve (disque vide, pas de
+réseau, pas de processus, pont `Vrzno` vers JavaScript fermé par le `php.ini`,
+5 s et 64 Mo par page). L'élève lit le code d'une page, l'attaque, voit ce que
+le navigateur ferait de la réponse, puis corrige le code ; ses correctifs sont
+rejoués sur des attaques qu'il n'a pas envoyées. php-wasm n'a pas SQLite :
+l'injection SQL reste dans `<SqlInjectionLab>` (#385), et le labo PHP porte les
+défauts qui se jouent sans base de données, XSS et accès aux données d'un
+autre. Pas fait : l'upload piégé, qui demande un corps multipart et un disque
+qui survive à la requête.
 
 ## C. Réseau, Git et programmation
 

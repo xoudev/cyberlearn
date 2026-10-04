@@ -94,6 +94,58 @@ Mets en pratique sur l'environnement d'entraînement, puis vérifie ta compréhe
 
 <SimulatedTerminal shell="bash" scenario="ctf-web" title="exploiter un IDOR sur une cible d'entraînement" />
 
+Maintenant côté serveur, pour de vrai. Voici la page des factures d'une boutique, en PHP : elle tourne dans votre navigateur, rien n'est envoyé nulle part. Le défaut est celui que le test décisif met en évidence, et c'est à vous de le fermer.
+
+<PhpLab
+  id="php-idor-factures"
+  title="Les factures de la boutique"
+  task="Vous êtes Bob, connecté à la boutique : votre jeton de session voyage dans le cookie. Lisez votre facture, puis cherchez celle d'une autre cliente en changeant l'adresse. Corrigez ensuite le code : c'est le serveur qui doit refuser, quelle que soit l'adresse demandée."
+  file="invoice.php"
+  code={`<?php
+require __DIR__ . '/auth.php';
+$factures = require __DIR__ . '/data.php';
+
+$user = utilisateurConnecte();
+if ($user === null) {
+    http_response_code(401);
+    exit('Connectez-vous pour voir vos factures.');
+}
+
+$id = (int) ($_GET['id'] ?? 0);
+$facture = $factures[$id] ?? null;
+if ($facture === null) {
+    http_response_code(404);
+    exit('Facture introuvable.');
+}
+?>
+<h1>Facture n°<?php echo $id; ?></h1>
+<p>Client : <?php echo htmlspecialchars($facture['client']); ?></p>
+<p><?php echo htmlspecialchars($facture['libelle']); ?> : <?php echo htmlspecialchars($facture['montant']); ?></p>
+<p>Livraison : <?php echo htmlspecialchars($facture['adresse']); ?></p>
+`}
+  support={{ "auth.php": `<?php
+// Qui est connecté ? Le jeton du cookie "session" le dit.
+function utilisateurConnecte(): ?array
+{
+    $sessions = [
+        'tok-alice' => ['id' => 1, 'nom' => 'Alice Martin'],
+        'tok-bob' => ['id' => 2, 'nom' => 'Bob Durand'],
+    ];
+    return $sessions[$_COOKIE['session'] ?? ''] ?? null;
+}
+`, "data.php": `<?php
+// Les factures de la boutique. Le propriétaire de chacune est son champ 'proprietaire'.
+return [
+    1 => ['proprietaire' => 1, 'client' => 'Alice Martin', 'libelle' => 'Abonnement annuel', 'montant' => '480,00 €', 'adresse' => '12 rue des Lilas, Lyon'],
+    2 => ['proprietaire' => 2, 'client' => 'Bob Durand', 'libelle' => 'Clavier mécanique', 'montant' => '89,00 €', 'adresse' => '4 allée des Tilleuls, Nantes'],
+    3 => ['proprietaire' => 1, 'client' => 'Alice Martin', 'libelle' => 'Formation sécurité', 'montant' => '1 200,00 €', 'adresse' => '12 rue des Lilas, Lyon'],
+];
+` }}
+  requests={[{"label": "Bob lit sa facture", "url": "/invoice.php?id=2", "cookie": "session=tok-bob"}, {"label": "Alice lit sa facture", "url": "/invoice.php?id=3", "cookie": "session=tok-alice"}, {"label": "Sans être connecté", "url": "/invoice.php?id=2"}]}
+  checks={[{"kind": "seen", "label": "En étant Bob, vous avez lu la facture d'Alice", "when": {"cookie": "tok-bob"}, "expect": {"status": 200, "contains": "Alice Martin"}}, {"kind": "fixed", "label": "Bob ne peut plus lire la facture n°1, celle d'Alice", "request": {"url": "/invoice.php?id=1", "cookie": "session=tok-bob"}, "expect": {"status": [403, 404], "notContains": "Alice Martin"}}, {"kind": "fixed", "label": "Ni la n°3, une autre facture d'Alice", "request": {"url": "/invoice.php?id=3", "cookie": "session=tok-bob"}, "expect": {"status": [403, 404], "notContains": "Alice Martin"}}, {"kind": "fixed", "label": "Alice ne peut pas lire celle de Bob", "request": {"url": "/invoice.php?id=2", "cookie": "session=tok-alice"}, "expect": {"status": [403, 404], "notContains": "Bob Durand"}}, {"kind": "fixed", "label": "Bob lit toujours sa propre facture", "request": {"url": "/invoice.php?id=2", "cookie": "session=tok-bob"}, "expect": {"status": 200, "contains": "Clavier mécanique"}}, {"kind": "fixed", "label": "Alice lit toujours les siennes", "request": {"url": "/invoice.php?id=1", "cookie": "session=tok-alice"}, "expect": {"status": 200, "contains": "Abonnement annuel"}}, {"kind": "fixed", "label": "Sans connexion, la porte reste fermée", "request": {"url": "/invoice.php?id=2"}, "expect": {"status": 401}}]}
+  hints={["Bob est bien connecté, le cookie le prouve. Mais c'est l'adresse qui désigne la facture : que se passe-t-il quand on y change id ?", "Le serveur connaît deux choses : qui est connecté ($user) et à qui appartient la facture ($facture['proprietaire']). Les compare-t-il quelque part ?", "Une fois la facture trouvée, ajoutez un contrôle : si son propriétaire n'est pas l'utilisateur connecté, répondez 403 et arrêtez-vous."]}
+/>
+
 <Quiz id="q-1" question="Quelle est la cause directe d'un IDOR ?" options={["Les mots de passe des utilisateurs sont trop faibles", "Le serveur récupère un objet par son identifiant sans vérifier que l'objet appartient à l'utilisateur connecté", "Le site utilise du HTTP au lieu du HTTPS", "Le navigateur stocke trop de cookies"]} correct={1} />
 
 <Quiz id="q-2" question="Un bouton 'Supprimer' est caché aux utilisateurs normaux dans l'interface. Est-ce du contrôle d'accès ?" options={["Oui, si le bouton est caché personne ne peut supprimer", "Non, c'est seulement de l'affichage ; tant que la route serveur n'est pas protégée, on peut l'appeler à la main", "Oui, à condition de cacher aussi le lien dans le menu", "Non, mais c'est suffisant si le site est en HTTPS"]} correct={1} />

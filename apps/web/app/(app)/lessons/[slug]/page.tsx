@@ -43,6 +43,7 @@ import { GitSandbox } from "./_components/git-sandbox";
 import { PhotoOsint } from "./_components/photo-osint";
 import { NetworkLab } from "./_components/network-lab";
 import { StepAnimation } from "./_components/step-animation";
+import { PhpLab } from "./_components/php-lab";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -72,6 +73,7 @@ const MDX_COMPONENTS = {
   PhotoOsint,
   NetworkLab,
   StepAnimation,
+  PhpLab,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

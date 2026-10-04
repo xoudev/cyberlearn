@@ -194,3 +194,56 @@ for file in "${!SQLJS_HASHES[@]}"; do
   echo "  ✓ sqljs/${file}"
 done
 echo "sql.js ${SQLJS_VERSION} ready in ${SQLJS_DEST}"
+
+# ── php-wasm: PHP 8.4 in WebAssembly, the web labs' real server ──────────────
+# The build for the page (php8.4-web.mjs and its .wasm), its wrapper and the
+# four files the wrapper imports: nothing else of the package. The other PHP
+# versions it carries (8.0 to 8.5, 12 to 16 MB each) are left out. Taken under
+# the Apache-2.0 option of the package's "Apache-2.0 OR GPL-2.0-only"; PHP
+# itself is under the PHP License 3.01, whose text travels with the binary.
+PHP_WASM_VERSION="0.2.0"
+PHP_WASM_TARBALL_SHA="c8f15b8dca23da7de3effd40db713efc4abcf8bac7647f1aeaba6943d512b6e2"
+PHP_LICENSE_URL="https://raw.githubusercontent.com/php/php-src/php-8.4.1/LICENSE"
+PHP_LICENSE_SHA="b42e4df5e50e6ecda1047d503d6d91d71032d09ed1027ba1ef29eed26f890c5a"
+PHP_DEST="$(dirname "$0")/../apps/web/public/runtimes/php"
+
+declare -A PHP_HASHES=(
+  [php8.4-web.mjs]="504312263241f39008f3ea1c9dd305c8984156eb31c163e9be560d8438cd9c7c"
+  [6733ae879e026f8b36961884052b87de4def4e15.wasm]="7da04fb61f9be008c79eb1eee385dab5ed3d3702f7bed07dd65fd82ba3bf3729"
+  [PhpBase.mjs]="2edb5379b4ebafe7e450021cd651cd92cb3022857d6be81de4a6e4f52fb96dc1"
+  [OutputBuffer.mjs]="fdf73a3e360c715bdc8f745b5aa148dbfdf2a9c5808c18cf2e422ecf97061785"
+  [_Event.mjs]="bbfd97aa6bfd6820733a2be211db73c8e7075ea5e2dbaa1ae29fba3d7a328d00"
+  [fsOps.mjs]="bcc046e37c3d6cf1d39756b47c7d0dc31eec1f9dd7c901e160735bcb9b21b501"
+  [resolveDependencies.mjs]="f70c7f469d6d47ee268421e976e0f3e536f418f6b1bc8988b0c77d1c912ed08b"
+  [LICENSE-php-wasm.txt]="becde03a3c8b9b2e3d58c7b65ca7ffd9e18e98162396cc374052983c1faaa47c"
+  [NOTICE-php-wasm.txt]="8bfd3338b7e408a48fa53f74a13a3bf71a553a70ada869c090e1a7d7070d32f8"
+)
+
+mkdir -p "$PHP_DEST" "${WORK}/php"
+echo ""
+echo "=== Downloading php-wasm ${PHP_WASM_VERSION} ==="
+curl -fsSL "https://registry.npmjs.org/php-wasm/-/php-wasm-${PHP_WASM_VERSION}.tgz" -o "${WORK}/php.tgz"
+if [[ "$(sha256sum "${WORK}/php.tgz" | cut -d' ' -f1)" != "$PHP_WASM_TARBALL_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - php-wasm tarball"
+  exit 1
+fi
+tar -xzf "${WORK}/php.tgz" -C "${WORK}/php"
+for file in PhpBase.mjs OutputBuffer.mjs _Event.mjs fsOps.mjs resolveDependencies.mjs php8.4-web.mjs 6733ae879e026f8b36961884052b87de4def4e15.wasm; do
+  cp "${WORK}/php/package/${file}" "${PHP_DEST}/${file}"
+done
+cp "${WORK}/php/package/LICENSE" "${PHP_DEST}/LICENSE-php-wasm.txt"
+cp "${WORK}/php/package/NOTICE" "${PHP_DEST}/NOTICE-php-wasm.txt"
+curl -fsSL "$PHP_LICENSE_URL" -o "${PHP_DEST}/LICENSE-php.txt"
+if [[ "$(sha256sum "${PHP_DEST}/LICENSE-php.txt" | cut -d' ' -f1)" != "$PHP_LICENSE_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - php/LICENSE-php.txt"
+  exit 1
+fi
+for file in "${!PHP_HASHES[@]}"; do
+  actual=$(sha256sum "${PHP_DEST}/${file}" | cut -d' ' -f1)
+  if [[ "$actual" != "${PHP_HASHES[$file]}" ]]; then
+    echo "INTEGRITY CHECK FAILED - php/${file}"
+    exit 1
+  fi
+  echo "  ✓ php/${file}"
+done
+echo "php-wasm ${PHP_WASM_VERSION} ready in ${PHP_DEST}"
