@@ -111,6 +111,16 @@ Un bon chiffrement ne se cache pas. AES est publié, audité, attaqué depuis de
 
 Tentez d'écrire le cassage complet de Vigenère (retrouver la longueur de clé, puis casser chaque sous-texte au César), ou chiffrez un message avec une clé convenue et faites-le déchiffrer par un camarade.
 
+Et sans Python, tout de suite : l'établi chiffre et déchiffre en César et en Vigenère. Le message ci-dessous a été chiffré en César. Vous n'avez pas la clé : essayez les décalages un à un dans l'outil, ou comptez la lettre la plus fréquente du chiffré, c'est un E.
+
+<CryptoWorkshop
+  id="atelier-classiques"
+  title="César et Vigenère, sans la clé"
+  tools={["caesar", "vigenere"]}
+  input="BONJOUR LE MONDE"
+  challenge={{ "ciphertext": "uj bnldarcn wn ernwc yjb md bnlanc mn uj vncqxmn", "answer": "la securite ne vient pas du secret de la methode", "hint": "Vingt-cinq décalages possibles seulement. La lettre la plus fréquente du chiffré est n : si c'est un e, le décalage est de 9." }}
+/>
+
 ## à toi de jouer
 
 <Quiz id="q-1" question="Pourquoi le chiffre de César est-il facile à casser, même sans connaître la clé ?" options={["Parce que son algorithme est secret", "Parce qu'il n'existe que 25 décalages possibles, tous testables en un instant", "Parce qu'il chiffre aussi les espaces", "Parce qu'il faut une clé de 128 bits"]} correct={1} />

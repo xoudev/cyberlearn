@@ -43,6 +43,16 @@ def solution(texte):
 
 Une fois que ça marche, faites l'expérience qui compte. Hachez abc, puis hachez abd. Une seule lettre de différence, la dernière, décalée d'un cran. Comparez les deux empreintes côte à côte. Vous ne verrez aucun motif commun, aucun bloc préservé. C'est l'avalanche : la modification minuscule en entrée se propage à toute la sortie. C'est aussi pour ça qu'une empreinte est un excellent détecteur de changement, on y revient plus bas.
 
+Vous pouvez aussi le faire sans Python : l'établi calcule l'empreinte au fil de la frappe. Hachez abc, puis abd, et comparez. Ensuite, le défi : une empreinte vous est donnée, retrouvez le mot. Vous ne la déchiffrerez pas, personne ne peut ; vous essaierez des candidats jusqu'à ce que l'empreinte corresponde.
+
+<CryptoWorkshop
+  id="atelier-sha256"
+  title="Une empreinte, puis une autre"
+  tools={["sha256", "hex"]}
+  input="abc"
+  challenge={{ "ciphertext": "a52d159f262b2c6ddb724a61840befc36eb30c88877a4030b65cbe86298449c9", "answer": "abd", "hint": "Le mot ne diffère d'abc que par sa dernière lettre, décalée d'un cran : hachez les candidats et comparez." }}
+/>
+
 ## hachage n'est pas chiffrement
 
 Beaucoup de gens confondent les deux, alors posons la frontière nettement.

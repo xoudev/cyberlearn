@@ -5,6 +5,7 @@ import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
+import { CryptoWorkshopExercise } from "@/components/crypto-workshop";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
 import { PhishingEmailExercise } from "@/components/phishing-email";
@@ -304,6 +305,8 @@ export function BlockView({
       return <PutInOrderExercise exercise={block.exercise} />;
     case "match":
       return <MatchPairsExercise exercise={block.exercise} />;
+    case "crypto":
+      return <CryptoWorkshopExercise workshop={block.workshop} />;
     case "animation":
       return (
         <View

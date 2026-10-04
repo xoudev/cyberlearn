@@ -30,7 +30,8 @@
     "./git/*": "./src/git/*.ts",
     "./network/*": "./src/network/*.ts",
     "./animations/*": "./src/animations/*.ts",
-    "./exercises/*": "./src/exercises/*.ts"
+    "./exercises/*": "./src/exercises/*.ts",
+    "./crypto/*": "./src/crypto/*.ts"
   },
   "scripts": {
     "build": "tsc",

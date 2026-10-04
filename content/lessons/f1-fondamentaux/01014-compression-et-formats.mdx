@@ -165,6 +165,16 @@ def solution(code):
     octets = b''  # décode le Base64
     return octets.decode('utf-8')" tests={[{ input: "solution('Qm9uam91cg==')", expected: "Bonjour" }, { input: "solution('Q2Fmw6k=')", expected: "Café" }, { input: "solution('Q3liZXJMZWFybg==')", expected: "CyberLearn" }, { input: "solution('QnJhdm8sIHR1IGFzIGTDqWNvZMOpIGxlIG1lc3NhZ2UgIQ==')", expected: "Bravo, tu as décodé le message !" }]} />
 
+Pour finir, à la main et sans Python : l'établi encode et décode. Colle le message ci-dessous dans l'entrée, décode-le, et lis-le. Il n'y avait aucune clé à trouver, et c'est tout le propos.
+
+<CryptoWorkshop
+  id="atelier-base64"
+  title="Base64, dans les deux sens"
+  tools={["base64", "hex"]}
+  input="Man"
+  challenge={{ "ciphertext": "QmFzZTY0IG4nZXN0IHBhcyBkdSBjaGlmZnJlbWVudA==", "answer": "Base64 n'est pas du chiffrement", "hint": "Les deux = à la fin disent tout : c'est du Base64, et il se décode sans clé." }}
+/>
+
 ## les pièges
 
 - **Recompresser avec perte à chaque modification.** Chaque enregistrement en JPEG dégrade l'image : garde un original sans perte.

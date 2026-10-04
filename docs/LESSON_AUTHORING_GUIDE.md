@@ -1371,6 +1371,46 @@ Deux colonnes à apparier : un port et son service, un protocole et sa couche. L
 
 Ces deux exercices ne comptent pas de points et ne sont pas enregistrés : c'est de l'entraînement, comme « Trouve la faille ». Garde les textes courts (un élément tient sur une ligne de téléphone) et évite deux éléments qui ne se distinguent que par un détail.
 
+### 5.9o CryptoWorkshop - Atelier crypto
+
+Un établi avec les encodages et les chiffrements jouets que les leçons expliquent, et SHA-256 : un outil ouvert à la fois, un sens (encoder ou décoder, chiffrer ou déchiffrer), une clé quand l'outil en prend une, et le texte à transformer, dont la sortie suit la frappe. Un bouton reprend la sortie comme entrée dans l'autre sens, pour voir l'aller-retour. Avec `challenge`, un message à déchiffrer : l'élève le met dans l'entrée, trouve l'outil et la clé, et propose le texte en clair (la casse et les espaces ne comptent pas) ; l'indice vient après une première réponse fausse. Les outils tournent dans `@cyberlearn/lib/crypto` (UTF-8, Base64, SHA-256 écrits à la main, les mêmes sur le site et dans l'app).
+
+```mdx
+<CryptoWorkshop
+  id="atelier-xor"
+  title="Le XOR à la main"
+  tools={["xor", "hex"]}
+  input="BONJOUR"
+  challenge={{ "ciphertext": "79 73 67 6f 7e 78 63 7b 7f 6f", "answer": "SYMETRIQUE", "hint": "La clé est celle du code ci-dessus : 42." }}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | Une consigne au-dessus de l'établi (optionnel) |
+| `tools` | string[] | Les outils proposés, dans cet ordre, le premier ouvert : `base64`, `hex`, `caesar`, `vigenere`, `xor`, `sha256` (défaut : les six) |
+| `input` | string | Ce que l'entrée contient au départ, pour que l'outil réponde tout de suite (optionnel) |
+| `challenge` | objet | `{ "ciphertext": ..., "answer": ..., "hint": ... }` : le message à déchiffrer, sa réponse en clair, un indice (optionnel). **Clés entre guillemets** |
+
+**Les outils et leurs clés :**
+
+| Outil | Sens | Clé | Notes |
+|---|---|---|---|
+| `base64` | encoder, décoder | aucune | le décodage accepte l'absence de `=` et ignore les espaces |
+| `hex` | encoder, décoder | aucune | deux chiffres par octet, séparés d'une espace en sortie ; l'entrée les accepte collés |
+| `caesar` | chiffrer, déchiffrer | un décalage entier, `3` ou `-3` | lettres sans accent seulement, la casse gardée, le reste inchangé |
+| `vigenere` | chiffrer, déchiffrer | un mot-clé (ses lettres) | la clé avance sur les lettres seulement, comme le Python du projet |
+| `xor` | chiffrer, déchiffrer | un nombre de 0 à 255 (`42` ou `0x2a`), sinon un texte | le chiffré sort en hexadécimal, et se déchiffre depuis l'hexadécimal |
+| `sha256` | un seul sens | aucune | 64 caractères hexadécimaux ; pour un « message à déchiffrer », donne une empreinte et un indice qui borne les candidats |
+
+Écris le `ciphertext` tel que l'outil le produit (l'hexadécimal du XOR avec ses espaces, le Base64 avec son `=`) : l'élève doit pouvoir le coller dans l'entrée et retrouver la réponse. Le test `packages/lib/src/crypto/lessons.test.ts` relit chaque atelier des leçons et vérifie que son message se déchiffre bien en sa réponse avec l'outil et la clé attendus.
+
+Ces chiffrements sont des jouets, et l'établi le dit sous chaque outil : l'exercice sert à comprendre pourquoi ils tombent, pas à protéger quoi que ce soit.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1406,7 +1446,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
