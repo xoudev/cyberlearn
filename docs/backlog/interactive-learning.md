@@ -96,7 +96,7 @@ page, sans réseau ni rien côté serveur. Son poids est à mesurer par un proto
 | 19 | **Décortiquer un paquet** | Un clic sur les octets d'une trame (Ethernet, IP, TCP, HTTP) montre à quel champ ils correspondent. | Aucune | Oui |
 | 20 | **Calcul de sous-réseaux** | Des exercices d'adresses IP et de masques générés au hasard et corrigés automatiquement. | Aucune | Oui |
 | 21 | **Mini Packet Tracer** | L'élève place PC, switch et routeur, règle les IP et les routes, puis teste le ping. | React Flow | Site seul |
-| 22 | **Git** | Un bac à sable simulé, ou du vrai Git, avec le graphe des branches qui se dessine en direct. | Aucune, ou isomorphic-git | Simulé oui |
+| 22 | ~~**Git**~~ | ~~Un bac à sable simulé, ou du vrai Git, avec le graphe des branches qui se dessine en direct.~~ Fait, PR #386 : `<GitSandbox>`, un Git simulé (fusion ligne par ligne, rebase, reset) et son graphe, sur le site et dans l'app ; trois exercices dans les leçons Git 02 et 03. isomorphic-git n'a pas servi : il lui faut un système de fichiers et ne dessine rien. | Aucune | Oui |
 | 23 | **Bibliothèques Python en plus** | pycryptodome et cryptography pour la crypto, pandas pour l'analyse de logs. | Aucune (paquets Pyodide) | Site seul |
 | 24 | **Animations pilotables** | Poignée de main TCP, chiffrement, pile d'appels, que l'élève avance pas à pas. | @remotion/player (Remotion est déjà dans `apps/marketing`) | Site seul |
 | 25 | **Remettre dans l'ordre, associer** | Classer les couches OSI ou les étapes d'une attaque, associer un port à son protocole. | Aucune | Oui |

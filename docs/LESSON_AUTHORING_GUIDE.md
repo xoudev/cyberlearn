@@ -1016,6 +1016,50 @@ INSERT INTO users (username, password, role) VALUES ('alice', 'secret123', 'user
 
 Dans l'app, ces deux exercices s'affichent comme une carte (la consigne et la requête) : la base SQLite ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
 
+### 5.9f GitSandbox - Bac à sable Git
+
+Un dépôt Git simulé dans la page, un terminal pour le piloter, et le graphe des branches qui se redessine à chaque commande. Le moteur (`@cyberlearn/lib/git`) est le même sur le site et dans l'app : l'exercice s'y joue de la même façon, avec une rangée de commandes toutes prêtes au-dessus du clavier du téléphone.
+
+Il connaît `git init`, `status`, `add`, `rm`, `commit` (avec `-m`, `-a`), `log` (`--oneline`, `--all`), `diff` (`--staged`), `branch` (`-d`, `-D`, `-m`), `switch` (`-c`), `checkout` (`-b`, `-- fichier`), `merge` (`--no-ff`, `--abort`), `rebase`, `reset` (`--hard`, `--soft`) et `restore` (`--staged`) ; côté fichiers, `echo "texte" > fichier` (`>>` ajoute une ligne), `cat`, `ls`, `touch`, `rm`, et `&&` pour enchaîner. Les messages de Git restent en anglais, comme dans un vrai terminal. Une fusion compare les fichiers ligne par ligne : un conflit n'encadre que les lignes en cause, comme chez Git. Pas de dépôt distant (`push`, `pull`), pas d'éditeur (le message de commit passe par `-m`), pas de HEAD détachée, et un rebase qui tomberait sur un conflit est refusé sans rien changer.
+
+```mdx
+<GitSandbox
+  id="git-branches-cycle"
+  title="Corriger sur une branche"
+  setup={["git init", "echo 'Bienvenu sur le projet' > README.md", "git add README.md", "git commit -m \"Ajoute le README\""]}
+  task="Corrige la faute sur une branche fix/typo, fusionne-la dans main, puis supprime-la."
+  checks={[{ "label": "README.md dit « Bienvenue » sur main", "expect": "file", "branch": "main", "path": "README.md", "contains": "Bienvenue sur" }, { "label": "La branche fix/typo a servi, puis a été supprimée", "expect": "no-branch", "branch": "fix/typo" }]}
+  hints={["git switch -c fix/typo crée la branche et s'y place."]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `setup` | string[] | Les commandes jouées avant que l'élève commence, sans afficher leur sortie : le dépôt de départ. Jusqu'à 60 ; sans elles, l'élève part d'un dossier vide et tape `git init`. Une fusion laissée en conflit est un départ possible (l'exercice est alors de la résoudre) |
+| `task` | string | La consigne, au-dessus du terminal (optionnel) |
+| `checks` | objets | Ce que l'élève doit laisser derrière lui, vérifié après chaque commande (voir ci-dessous). **Clés entre guillemets** : l'app lit cette liste en JSON |
+| `hints` | string[] | Des indices, repliés sous « Indices » (optionnel) |
+
+**Les vérifications** (`expect`, toutes avec un `label`) :
+
+| `expect` | Autres champs | Cochée quand |
+|---|---|---|
+| `branch` | `branch` | la branche existe |
+| `no-branch` | `branch` | la branche a existé, puis a été supprimée |
+| `on-branch` | `branch` | HEAD est sur la branche |
+| `commit` | `branch`, `message` | un commit de ce message (première ligne) est dans l'historique de la branche |
+| `commits` | `branch`, `min` | l'historique de la branche compte au moins `min` commits |
+| `file` | `path`, `branch` (optionnel), `contains`, `lacks` (optionnels) | le fichier, tel que commité sur la branche (ou dans le dossier de travail sans `branch`), existe, contient `contains` et pas `lacks` (`"lacks": "<<<<<<<"` : aucun marqueur de conflit oublié) |
+| `merge-commit` | `branch` | l'historique de la branche a un commit de fusion |
+| `linear` | `branch` | il n'en a aucun (après un rebase) |
+| `clean` | | rien d'indexé, rien de modifié, aucun fichier non suivi, aucune fusion en cours |
+
+Choisis des vérifications fausses au départ : une case déjà cochée avant la première commande n'apprend rien (un dépôt propre, une version de fichier déjà là). L'éditeur rejoue le `setup` à l'enregistrement et refuse une commande qui échoue, en la nommant, ainsi qu'une vérification inconnue ou à qui il manque un champ.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1051,7 +1095,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
