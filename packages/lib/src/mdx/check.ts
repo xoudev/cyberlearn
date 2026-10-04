@@ -8,6 +8,7 @@ import {
   parseFindTheFlaw,
   parseGitSandbox,
   parsePhishingEmail,
+  parsePhotoOsint,
   parseSqlInjectionLab,
   parseSqlPlayground,
 } from "@cyberlearn/types";
@@ -105,6 +106,7 @@ export const LESSON_COMPONENT_NAMES = [
   "SqlPlayground",
   "SqlInjectionLab",
   "GitSandbox",
+  "PhotoOsint",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -153,6 +155,10 @@ function GitSandboxStub(): null {
   return null;
 }
 STUBS.GitSandbox = GitSandboxStub;
+function PhotoOsintStub(): null {
+  return null;
+}
+STUBS.PhotoOsint = PhotoOsintStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -269,6 +275,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
       const why = setup.output.split("\n")[0] ?? "";
       return `Bac à sable Git : la commande de préparation « ${setup.command} » échoue (${why}).`;
     }
+  }
+  if (node.type === PhotoOsintStub) {
+    const parsed = parsePhotoOsint(props);
+    if (!parsed.ok) return `Exercice OSINT : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

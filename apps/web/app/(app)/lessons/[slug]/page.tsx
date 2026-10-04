@@ -40,6 +40,7 @@ import { PhishingEmail } from "./_components/phishing-email";
 import { SqlInjectionLab } from "./_components/sql-injection-lab";
 import { SqlPlayground } from "./_components/sql-playground";
 import { GitSandbox } from "./_components/git-sandbox";
+import { PhotoOsint } from "./_components/photo-osint";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -66,6 +67,7 @@ const MDX_COMPONENTS = {
   SqlPlayground,
   SqlInjectionLab,
   GitSandbox,
+  PhotoOsint,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

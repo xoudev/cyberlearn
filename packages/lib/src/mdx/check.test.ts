@@ -142,6 +142,24 @@ describe("GitSandbox", () => {
   });
 });
 
+describe("PhotoOsint", () => {
+  const photo = (src: string): string =>
+    `## La photo
+
+<PhotoOsint id="p" src="${src}" alt="Un lac." task="Trouve le lieu." answer={{ "latitude": 45.9, "longitude": 6.1 }} place="Annecy" />`;
+
+  it("accepts a photo shipped with the site", async () => {
+    expect(await checkLessonMdx(photo("/osint/lac-de-montagne.jpg"))).toEqual({ ok: true });
+  });
+
+  it("refuses a photo from elsewhere, and says where one goes", async () => {
+    const r = await checkLessonMdx(photo("https://example.org/photo.jpg"));
+    if (r.ok) throw new Error("accepted a photo from elsewhere");
+    expect(r.section).toBe("La photo");
+    expect(r.message).toContain("Exercice OSINT : src : la photo est un .jpg de public/osint");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

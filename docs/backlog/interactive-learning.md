@@ -81,7 +81,7 @@ confirmer par un prototype avec notre image avant d'écrire des leçons dessus.
 | 15 | **Vraie crypto et JWT** | Il manipule des clés RSA et EC, des signatures, et forge des JWT (`alg: none`, secret faible). | @noble/curves, jose | Oui |
 | 16 | **Site vulnérable** | Il attaque un site : injection SQL, XSS, accès aux données d'un autre, upload piégé. Version simulée, ou vrai site PHP qui tourne dans la page. | Aucune, ou php-wasm | Simulée oui, PHP site seul |
 | 17 | ~~**Vraie base SQL**~~ | ~~Il apprend le SQL, puis réussit une injection sur une vraie base.~~ Fait, PR #385 : `<SqlPlayground>` et `<SqlInjectionLab>` sur sql.js 1.14.2 (SQLite dans un Web Worker, 700 Ko), trois exercices dans la leçon sur l'injection SQL ; une carte dans l'app. | sql.js | Site seul |
-| 18 | **OSINT sur photo** | Il lit les métadonnées d'une photo et retrouve le lieu sur une carte. | exifr, Leaflet | Site seul |
+| 18 | ~~**OSINT sur photo**~~ | ~~Il lit les métadonnées d'une photo et retrouve le lieu sur une carte.~~ Fait, PR #387 : `<PhotoOsint>`, les EXIF lus dans le navigateur, une carte sans tuile externe (contours Natural Earth servis par le site), deux exercices dans les leçons OSINT 07 et 08 ; une carte dans l'app. | exifr, Leaflet | Site seul |
 
 **16. Site vulnérable.** Les leçons du parcours Web montrent aujourd'hui une
 sortie de sqlmap figée (`<SimulatedTerminal scenario="sqli-basic">`) ; depuis

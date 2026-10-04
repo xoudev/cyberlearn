@@ -374,3 +374,30 @@ describe("GitSandbox", () => {
     ]);
   });
 });
+
+describe("PhotoOsint", () => {
+  it("shows what to look for; the metadata and the map stay on the site", () => {
+    const lesson = [
+      "## La photo",
+      "",
+      "<PhotoOsint",
+      '  id="p"',
+      '  title="Une légende à vérifier"',
+      '  src="/osint/quais-inondes.jpg"',
+      '  alt="Des quais."',
+      '  caption="Inondations à Marseille, hier."',
+      '  task="Lis les métadonnées, puis place le lieu."',
+      '  answer={{ "latitude": 45.7623, "longitude": 4.827 }}',
+      '  place="Lyon"',
+      "/>",
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "osint",
+        title: "Une légende à vérifier",
+        task: "Lis les métadonnées, puis place le lieu.",
+        caption: "Inondations à Marseille, hier.",
+      },
+    ]);
+  });
+});
