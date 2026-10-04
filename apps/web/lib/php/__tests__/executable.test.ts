@@ -52,6 +52,23 @@ describe("findExecutableContent", () => {
     expect(kinds(`<iframe src="javascript:alert(1)"></iframe>`)).toEqual(["javascript-url"]);
   });
 
+  it("finds a vbscript: address too, whatever the capitals", () => {
+    expect(kinds(`<a href="vbscript:msgbox(1)">x</a>`)).toEqual(["vbscript-url"]);
+    expect(kinds(`<a href="VBScript:x">x</a>`)).toEqual(["vbscript-url"]);
+  });
+
+  it("finds a data: page where an element loads it as a page of its own", () => {
+    expect(kinds(`<iframe src="data:text/html,<p>x</p>"></iframe>`)).toEqual(["data-url"]);
+    expect(kinds(`<embed src="data:text/html;base64,PHA+eDwvcD4=">`)).toEqual(["data-url"]);
+    expect(kinds(`<object data="data:text/html,x"></object>`)).toEqual(["data-url"]);
+  });
+
+  it("leaves alone a data: address that runs nothing: an image, a link, a broken address", () => {
+    expect(kinds(`<img src="data:image/png;base64,iVBORw0KGgo=" alt="">`)).toEqual([]);
+    expect(kinds(`<a href="data:text/html,x">x</a>`)).toEqual([]);
+    expect(kinds(`<a href="http://[::1">x</a>`)).toEqual([]);
+  });
+
   it("leaves alone what was written as text: the escaped payload", () => {
     expect(
       findExecutableContent(
@@ -71,6 +88,12 @@ describe("findExecutableContent", () => {
     );
     expect(describeFinding({ kind: "javascript-url", detail: 'href="javascript:x"' })).toBe(
       'une adresse javascript: (href="javascript:x")',
+    );
+    expect(describeFinding({ kind: "vbscript-url", detail: 'href="vbscript:x"' })).toBe(
+      'une adresse vbscript: (href="vbscript:x")',
+    );
+    expect(describeFinding({ kind: "data-url", detail: 'src="data:text/html,x"' })).toBe(
+      'une page data: chargée dans un cadre (src="data:text/html,x")',
     );
   });
 
