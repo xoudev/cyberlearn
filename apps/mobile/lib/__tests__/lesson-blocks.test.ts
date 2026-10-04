@@ -328,3 +328,49 @@ describe("SqlPlayground and SqlInjectionLab", () => {
     ]);
   });
 });
+
+describe("GitSandbox", () => {
+  const SANDBOX = [
+    "## Le cycle",
+    "",
+    "<GitSandbox",
+    '  id="cycle"',
+    '  title="Le cycle d\'un commit"',
+    '  setup={["git init", "echo \'<h1>Mon site</h1>\' > index.html", "git commit -m \\"vide\\""]}',
+    '  task="Enregistre index.html."',
+    '  checks={[{"label": "Le commit est dans main", "expect": "commit", "branch": "main", "message": "add"}, {"label": "Propre", "expect": "clean"}]}',
+    '  hints={["git add index.html", "git commit -m \\"add\\""]}',
+    "/>",
+  ].join("\n");
+
+  it("is played in the app with the props the site reads", () => {
+    expect(parseLesson(SANDBOX).sections[0]?.blocks).toEqual([
+      {
+        kind: "git",
+        sandbox: {
+          id: "cycle",
+          title: "Le cycle d'un commit",
+          setup: ["git init", "echo '<h1>Mon site</h1>' > index.html", 'git commit -m "vide"'],
+          task: "Enregistre index.html.",
+          checks: [
+            {
+              label: "Le commit est dans main",
+              expect: "commit",
+              branch: "main",
+              message: "add",
+            },
+            { label: "Propre", expect: "clean" },
+          ],
+          hints: ["git add index.html", 'git commit -m "add"'],
+        },
+      },
+    ]);
+  });
+
+  it("shows a placeholder for a check the site would refuse", () => {
+    const wrong = SANDBOX.replace('"expect": "clean"', '"expect": "tidy"');
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Bac à sable Git" },
+    ]);
+  });
+});

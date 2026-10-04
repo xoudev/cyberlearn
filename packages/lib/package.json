@@ -26,7 +26,8 @@
     "./revisions/*": "./src/revisions/*.ts",
     "./settings/*": "./src/settings/*.ts",
     "./changelog/*": "./src/changelog/*.ts",
-    "./glossary/*": "./src/glossary/*.ts"
+    "./glossary/*": "./src/glossary/*.ts",
+    "./git/*": "./src/git/*.ts"
   },
   "scripts": {
     "build": "tsc",

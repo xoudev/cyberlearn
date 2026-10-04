@@ -6,10 +6,12 @@ import remarkGfm from "remark-gfm";
 import {
   parseChallengeTests,
   parseFindTheFlaw,
+  parseGitSandbox,
   parsePhishingEmail,
   parseSqlInjectionLab,
   parseSqlPlayground,
 } from "@cyberlearn/types";
+import { runSetup } from "../git/sandbox";
 import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
@@ -102,6 +104,7 @@ export const LESSON_COMPONENT_NAMES = [
   "PhishingEmail",
   "SqlPlayground",
   "SqlInjectionLab",
+  "GitSandbox",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -146,6 +149,10 @@ function SqlInjectionLabStub(): null {
   return null;
 }
 STUBS.SqlInjectionLab = SqlInjectionLabStub;
+function GitSandboxStub(): null {
+  return null;
+}
+STUBS.GitSandbox = GitSandboxStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -219,7 +226,7 @@ function leadOf(source: string): string | null {
   return lead.trim() === "" ? null : lead;
 }
 
-/** The first misconfigured exercise (Python challenge, FindTheFlaw, PhishingEmail) in a tree, or null. */
+/** The first misconfigured exercise (Python challenge, FindTheFlaw, PhishingEmail, SQL, Git) in a tree, or null. */
 function firstChallengeProblem(node: ReactNode): string | null {
   if (Array.isArray(node)) {
     for (const child of node) {
@@ -252,6 +259,16 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === SqlInjectionLabStub) {
     const parsed = parseSqlInjectionLab(props);
     if (!parsed.ok) return `Laboratoire d'injection SQL : ${parsed.problem}`;
+  }
+  if (node.type === GitSandboxStub) {
+    const parsed = parseGitSandbox(props);
+    if (!parsed.ok) return `Bac à sable Git : ${parsed.problem}`;
+    // The repository the exercise starts from must exist: each setup line is played.
+    const setup = runSetup(parsed.value.setup ?? []);
+    if (!setup.ok) {
+      const why = setup.output.split("\n")[0] ?? "";
+      return `Bac à sable Git : la commande de préparation « ${setup.command} » échoue (${why}).`;
+    }
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

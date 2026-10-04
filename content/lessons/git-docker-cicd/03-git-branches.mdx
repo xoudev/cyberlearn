@@ -117,6 +117,17 @@ Une fois le fichier remis au propre, tu signales à Git que c'est réglé avec `
 Ne supprime jamais un fichier en conflit pour "faire plus vite", et ne laisse jamais traîner un marqueur `=======` dans ton code. Un projet qui contient encore des marqueurs de conflit ne compilera pas, ou pire, partira en production tel quel. Relis le fichier entièrement avant de faire `git add`.
 </Callout>
 
+Vis-en un. Dans ce dépôt, `main` et `feature/accueil` ont chacune changé la même ligne de `accueil.txt`, chacune à sa façon. Regarde le graphe : deux branches qui divergent depuis le même commit.
+
+<GitSandbox
+  id="git-branches-conflict"
+  title="Un conflit à résoudre"
+  setup={["git init", "echo 'Titre : Mon projet' > accueil.txt && echo 'Message : Bonjour' >> accueil.txt && echo 'Auteur : Equipe' >> accueil.txt", "git add accueil.txt", "git commit -m \"Ajoute la page d'accueil\"", "git switch -c feature/accueil", "echo 'Titre : Mon projet' > accueil.txt && echo 'Message : Salut' >> accueil.txt && echo 'Auteur : Equipe' >> accueil.txt", "git commit -am \"Message plus court\"", "git switch main", "echo 'Titre : Mon projet' > accueil.txt && echo 'Message : Bonjour à tous' >> accueil.txt && echo 'Auteur : Equipe' >> accueil.txt", "git commit -am \"Message plus chaleureux\""]}
+  task="Fusionne feature/accueil dans main. Git s'arrête sur un conflit : lis accueil.txt, puis réécris-le sans les marqueurs en mêlant les deux versions de la ligne, Message : Salut à tous. Termine ensuite la fusion."
+  checks={[{"label": "main a un commit de fusion", "expect": "merge-commit", "branch": "main"}, {"label": "accueil.txt dit « Salut à tous », sans marqueur", "expect": "file", "branch": "main", "path": "accueil.txt", "contains": "Message : Salut à tous", "lacks": "<<<<<<<"}]}
+  hints={["git merge feature/accueil : Git annonce CONFLICT et s'arrête.", "cat accueil.txt montre les deux versions de la ligne Message, entre les marqueurs. Les autres lignes n'ont pas bougé.", "Réécris le fichier : echo 'Titre : Mon projet' > accueil.txt, puis echo 'Message : Salut à tous' >> accueil.txt, puis echo 'Auteur : Equipe' >> accueil.txt.", "git add accueil.txt marque le conflit résolu, git commit termine la fusion avec un message tout prêt."]}
+/>
+
 ## supprimer une branche fusionnée
 
 Une fois `feature/login` fusionnée dans `main`, l'étiquette ne sert plus à rien : son travail vit maintenant dans `main`. Tu peux la supprimer pour garder une liste de branches propre.
@@ -129,9 +140,16 @@ Le `-d` minuscule est prudent : Git refuse de supprimer une branche qui contient
 
 ## à toi de jouer
 
-Voici un cycle complet : on part de `main`, on crée une branche, on revient sur `main`, on fusionne, on nettoie.
+Voici un cycle complet : on part de `main`, on crée une branche, on y corrige une faute, on revient sur `main`, on fusionne, on nettoie. Le graphe montre la branche partir de `main`, puis `main` la rattraper.
 
-<SimulatedTerminal shell="bash" commands={{ "git switch -c fix/typo": "Switched to a new branch 'fix/typo'", "git switch main": "Switched to branch 'main'", "git merge fix/typo": "Updating a1b2c3d..e4f5g6h\nFast-forward\n README.md | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)", "git branch -d fix/typo": "Deleted branch fix/typo (was e4f5g6h)." }} />
+<GitSandbox
+  id="git-branches-cycle"
+  title="Corriger sur une branche"
+  setup={["git init", "echo 'Bienvenu sur le projet' > README.md", "git add README.md", "git commit -m \"Ajoute le README\""]}
+  task="README.md contient une faute (Bienvenu). Corrige-la sur une branche fix/typo, avec le message « Corrige la faute de frappe », reviens sur main, fusionne la branche, puis supprime-la."
+  checks={[{"label": "README.md dit « Bienvenue » sur main", "expect": "file", "branch": "main", "path": "README.md", "contains": "Bienvenue sur"}, {"label": "Le commit « Corrige la faute de frappe » est dans main", "expect": "commit", "branch": "main", "message": "Corrige la faute de frappe"}, {"label": "La branche fix/typo a servi, puis a été supprimée", "expect": "no-branch", "branch": "fix/typo"}]}
+  hints={["git switch -c fix/typo crée la branche et s'y place.", "echo 'Bienvenue sur le projet' > README.md corrige le fichier, git commit -am \"Corrige la faute de frappe\" l'enregistre.", "git switch main, puis git merge fix/typo : une avance rapide (Fast-forward).", "git branch -d fix/typo supprime l'étiquette ; le travail reste dans main."]}
+/>
 
 <Quiz id="q-1" question="Qu'est-ce qu'une branche Git, concrètement ?" options={["Une copie complète de tous les fichiers du projet", "Un pointeur léger vers un commit", "Un dossier caché contenant une sauvegarde", "Un serveur distant séparé"]} correct={1} />
 

@@ -1,14 +1,16 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
-// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, SimulatedTerminal,
+// QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
 import {
   type FindTheFlaw,
+  type GitSandbox,
   type PhishingEmail,
   parseFindTheFlaw,
+  parseGitSandbox,
   parsePhishingEmail,
 } from "@cyberlearn/types";
 
@@ -56,6 +58,11 @@ export type Block =
       mail: PhishingEmail;
     }
   | {
+      /** A GitSandbox: the same simulated repository as the site's, played natively. */
+      kind: "git";
+      sandbox: GitSandbox;
+    }
+  | {
       /**
        * A SqlPlayground or a SqlInjectionLab: played on the site, where SQLite
        * runs; the app shows what to do and the query in question.
@@ -95,6 +102,8 @@ const CORRECT_RE = /\bcorrect\s*=\s*\{\s*(\d+)\s*\}/;
 const OPTIONS_RE = /\boptions\s*=\s*\{(\[[\s\S]*?\])\}/;
 const BODY_RE = /\bbody\s*=\s*\{(\[[\s\S]*?\])\}/;
 const CLUES_RE = /\bclues\s*=\s*\{(\[[\s\S]*?\])\}/;
+const SETUP_RE = /\bsetup\s*=\s*\{(\[[\s\S]*?\])\}/;
+const CHECKS_RE = /\bchecks\s*=\s*\{(\[[\s\S]*?\])\}/;
 
 /**
  * A `prop={[...]}` of objects written as JSON (keys in double quotes, as the
@@ -463,6 +472,23 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "phishing", mail: parsed.mail }
         : { kind: "placeholder", label: "Boîte mail piégée" },
+    );
+  });
+  // GitSandbox → the same exercise, played natively on the same engine; one the
+  // site would refuse is a placeholder.
+  text = replaceSelfClosing(text, "GitSandbox", (tag) => {
+    const parsed = parseGitSandbox({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      setup: jsonArrayProp(tag, SETUP_RE),
+      task: stringProp(tag, "task", 0) ?? undefined,
+      checks: jsonArrayProp(tag, CHECKS_RE),
+      hints: jsonArrayProp(tag, HINTS_RE),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "git", sandbox: parsed.value }
+        : { kind: "placeholder", label: "Bac à sable Git" },
     );
   });
   // SqlPlayground, SqlInjectionLab → a card: a real SQLite runs on the site

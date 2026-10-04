@@ -114,6 +114,34 @@ describe("SqlPlayground and SqlInjectionLab", () => {
   });
 });
 
+describe("GitSandbox", () => {
+  const sandbox = (setup: string): string =>
+    `## Le dépôt\n\n<GitSandbox id="g" setup={${setup}} checks={[{ "label": "Propre", "expect": "clean" }]} />`;
+
+  it("accepts a sandbox whose setup plays to the end", async () => {
+    expect(
+      await checkLessonMdx(sandbox('["git init", "echo \'a\' > a.txt", "git add ."]')),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a setup line that fails, and says which and why", async () => {
+    const r = await checkLessonMdx(sandbox('["git init", "git commit -m \\"vide\\""]'));
+    if (r.ok) throw new Error("accepted a setup that fails");
+    expect(r.section).toBe("Le dépôt");
+    expect(r.message).toContain(
+      'Bac à sable Git : la commande de préparation « git commit -m "vide" » échoue (On branch main).',
+    );
+  });
+
+  it("refuses a check the sandbox does not know", async () => {
+    const r = await checkLessonMdx(
+      '## Le dépôt\n\n<GitSandbox id="g" checks={[{ "label": "x", "expect": "tidy" }]} />',
+    );
+    if (r.ok) throw new Error("accepted an unknown check");
+    expect(r.message).toContain("Bac à sable Git");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
+import { GitSandboxExercise } from "@/components/git-sandbox";
 import { PhishingEmailExercise } from "@/components/phishing-email";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
@@ -289,6 +290,8 @@ export function BlockView({
       return <FindTheFlawExercise flaw={block.flaw} />;
     case "phishing":
       return <PhishingEmailExercise mail={block.mail} />;
+    case "git":
+      return <GitSandboxExercise sandbox={block.sandbox} />;
     case "sql":
       return (
         <View
