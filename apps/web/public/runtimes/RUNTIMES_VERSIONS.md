@@ -107,6 +107,46 @@ The worker build runs SQLite off the page's thread: a query that never ends
 (a recursive CTE without a stop) is cut by terminating the worker, and the
 page never freezes. The worker finds `sql-wasm.wasm` next to itself.
 
+## php-wasm 0.2.0 (PHP 8.4 in WebAssembly)
+
+**Source**: npm registry, `php-wasm@0.2.0`, under the Apache-2.0 option of its "Apache-2.0 OR GPL-2.0-only" licence
+**Tarball SHA-256**: `c8f15b8dca23da7de3effd40db713efc4abcf8bac7647f1aeaba6943d512b6e2`
+**PHP**: 8.4.1, under the PHP License 3.01 (`LICENSE-php.txt`, from the php-src tag `php-8.4.1`)
+**Served at**: `/runtimes/php/`
+**Used by**: `<PhpLab>` (`apps/web/public/workers/php-lab.mjs`, `apps/web/lib/php/sandbox.ts`)
+
+| File | Size | SHA-256 |
+|------|------|---------|
+| `php8.4-web.mjs` | 716 676 B | `504312263241f39008f3ea1c9dd305c8984156eb31c163e9be560d8438cd9c7c` |
+| `6733ae879e026f8b36961884052b87de4def4e15.wasm` | 12 868 946 B | `7da04fb61f9be008c79eb1eee385dab5ed3d3702f7bed07dd65fd82ba3bf3729` |
+| `PhpBase.mjs` | 16 928 B | `2edb5379b4ebafe7e450021cd651cd92cb3022857d6be81de4a6e4f52fb96dc1` |
+| `OutputBuffer.mjs` | 1 939 B | `fdf73a3e360c715bdc8f745b5aa148dbfdf2a9c5808c18cf2e422ecf97061785` |
+| `_Event.mjs` | 432 B | `bbfd97aa6bfd6820733a2be211db73c8e7075ea5e2dbaa1ae29fba3d7a328d00` |
+| `fsOps.mjs` | 5 450 B | `bcc046e37c3d6cf1d39756b47c7d0dc31eec1f9dd7c901e160735bcb9b21b501` |
+| `resolveDependencies.mjs` | 3 089 B | `f70c7f469d6d47ee268421e976e0f3e536f418f6b1bc8988b0c77d1c912ed08b` |
+| `LICENSE-php-wasm.txt` | 9 144 B | `becde03a3c8b9b2e3d58c7b65ca7ffd9e18e98162396cc374052983c1faaa47c` |
+| `NOTICE-php-wasm.txt` | 1 279 B | `8bfd3338b7e408a48fa53f74a13a3bf71a553a70ada869c090e1a7d7070d32f8` |
+| `LICENSE-php.txt` | 3 204 B | `b42e4df5e50e6ecda1047d503d6d91d71032d09ed1027ba1ef29eed26f890c5a` |
+
+**Total**: 13.6 MB of runtime, loaded only when a learner sends a first request, then cached by the browser.
+
+Only the PHP 8.4 build for the page, its wrapper and the files the wrapper
+imports are kept. The package carries six PHP versions of 12 to 16 MB each, and
+SDL, CGI and Node variants: none of them is used. Nothing in the vendored files
+is modified. What the site adds lives in `public/workers/php-lab*.mjs`:
+
+- the wrapper's page build runs in a Web Worker (a module worker), where it
+  finds no `document`: the worker gives it two empty stand-ins before loading it;
+- each request gets a PHP instance of its own, built from one compiled module,
+  and thrown away after: PHP keeps its state between two runs of the same
+  instance, and loses its `php.ini` on a refresh, so an instance is never reused;
+- the `php.ini` closes what a lab has no use for: the bridge to JavaScript
+  (`vrzno_*` and the `Vrzno` class), `exec` and its kin, `mail`, sockets, and
+  `allow_url_fopen`. The harness checks it is in force before running anything.
+
+A page that never ends is cut by terminating the worker; a page that eats all
+the memory ends with PHP's own refusal, and the next request is unaffected.
+
 ## v86 0.5.462 and a Buildroot Linux image
 
 The real terminal of the Linux lessons (`<LinuxTerminal>`): an x86 emulator in

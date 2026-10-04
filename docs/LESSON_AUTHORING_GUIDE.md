@@ -1167,6 +1167,73 @@ Une animation que l'élève fait avancer étape par étape : chaque étape se jo
 
 Dans l'app, l'animation s'affiche comme une carte avec ses étapes numérotées : le dessin ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
 
+### 5.9j PhpLab - Site vulnérable, en vrai PHP
+
+Une petite page web en PHP que l'élève lit, attaque avec une requête, puis corrige en modifiant son code. C'est un vrai PHP 8.4 (php-wasm, du WebAssembly) qui tourne dans un Web Worker du navigateur : rien n'est envoyé nulle part. Chaque requête est jouée sur un PHP neuf, dont le disque ne contient que les pages du labo : ni réseau, ni processus, ni pont vers JavaScript (`Vrzno`). Une page qui boucle est arrêtée au bout de 5 s, une page qui avale la mémoire répond par une erreur fatale, et le serveur redémarre pour la requête suivante.
+
+La réponse s'affiche dans un cadre isolé (`sandbox` vide : rien n'y est exécuté, pas même un script que l'attaque aurait réussi à glisser). Quand la réponse contient du code qu'un navigateur exécuterait (une balise script, un gestionnaire comme `onerror=`, une adresse `javascript:`), le labo l'annonce : c'est ce qui rend une XSS visible sans la lancer. Le PHP (13 Mo) n'est téléchargé qu'au premier envoi.
+
+```mdx
+<PhpLab
+  id="php-idor-factures"
+  title="Les factures de la boutique"
+  task="Vous êtes Bob. Lisez votre facture, puis celle d'une autre cliente en changeant l'adresse. Corrigez ensuite le code : c'est le serveur qui doit refuser."
+  file="invoice.php"
+  code={`<?php
+require __DIR__ . '/auth.php';
+$factures = require __DIR__ . '/data.php';
+$user = utilisateurConnecte();
+$facture = $factures[(int) ($_GET['id'] ?? 0)] ?? null;
+?>
+<h1>Facture</h1>`}
+  support={{ "auth.php": `<?php function utilisateurConnecte(): ?array { return null; }`, "data.php": `<?php return [];` }}
+  requests={[{ "label": "Bob lit sa facture", "url": "/invoice.php?id=2", "cookie": "session=tok-bob" }]}
+  checks={[{ "kind": "seen", "label": "Bob a lu la facture d'Alice", "when": { "cookie": "tok-bob" }, "expect": { "status": 200, "contains": "Alice" } }, { "kind": "fixed", "label": "Bob ne peut plus lire la facture n°1", "request": { "url": "/invoice.php?id=1", "cookie": "session=tok-bob" }, "expect": { "status": [403, 404], "notContains": "Alice" } }]}
+  hints={["Le serveur connaît qui est connecté et à qui appartient la facture : les compare-t-il ?"]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `task` | string | La consigne, 800 caractères au plus |
+| `file` | string | La page que l'élève lit et modifie : `search.php`, `lib/page.php` (minuscules, chiffres, `-` et `_`, fin en `.php` ; défaut `index.php`) |
+| `code` | string | Le code de départ de cette page, **entre accents graves** : `` code={`<?php ...`} `` (8 000 caractères au plus) |
+| `support` | objet | Les pages dont elle dépend (`auth.php`, `data.php`), montrées en lecture seule : `{{ "auth.php": `...` }}`, cinq au plus. La page à modifier n'y figure pas |
+| `requests` | objets | Des requêtes toutes faites, en boutons : `label`, `url`, et au choix `method` (`GET` par défaut ou `POST`), `cookie` (`session=tok-bob`), `body` (`nom=Bea&x=1`). Huit au plus |
+| `checks` | objets | Ce que l'élève doit obtenir (voir ci-dessous), douze au plus |
+| `hints` | string[] | Des indices, repliés sous « Indices » (optionnel) |
+
+**Les vérifications** (toutes avec un `label`, et un `expect` dont chaque champ donné doit tenir) :
+
+| `kind` | Autres champs | Cochée quand |
+|---|---|---|
+| `seen` | `when` (optionnel : `url` et `cookie`, un morceau de ce que la requête de l'élève contient) | une requête que l'élève a envoyée a obtenu cette réponse, au moins une fois : l'attaque a marché. Sert à lui faire *voir* le défaut avant de le corriger |
+| `fixed` | `request` (`url`, et au choix `method`, `cookie`, `body`) | cette requête, rejouée sur le code tel qu'il est quand l'élève demande « Vérifier mon correctif », obtient cette réponse : l'attaque ne marche plus, et la page continue de servir |
+
+| `expect` | Tient quand |
+|---|---|
+| `status` | le code de la réponse est celui-ci, ou l'un de ceux-ci (`[403, 404]`) |
+| `contains` | le corps de la réponse contient ce texte |
+| `notContains` | le corps de la réponse ne le contient plus |
+| `executable` | `true` : le corps contient du code qu'un navigateur exécuterait ; `false` : il n'en contient pas. Les pages d'un labo n'en ont aucun de leur cru, donc tout ce qu'il y a vient de la requête |
+
+**Écrire un exercice sans le fausser :**
+
+- **Une vérification `fixed` par façon de contourner le correctif.** Un correctif doit être refusé s'il ne ferme qu'un des deux endroits vulnérables (`$q` dans le texte *et* dans un attribut), s'il ne ferme qu'une facture, ou s'il ferme tout le monde dehors. Ajoute donc des vérifications qui disent « la page marche toujours » (`status: 200`, un `contains` sur le contenu normal) à côté de celles qui disent « l'attaque échoue ». Une attente sur `executable: false` ou `notContains` doit toujours s'accompagner d'un `status`, ou d'un `contains` sur la page : une page cassée (erreur 500) ne contient rien d'exécutable, et ne doit pas passer pour un correctif.
+- **Le test de départ doit échouer.** Chaque vérification `fixed` qui parle de l'attaque doit être fausse sur le code de départ.
+- **Pas d'état d'une requête à l'autre.** Chaque requête part d'un PHP neuf : une « session » se joue avec un jeton dans le cookie de la requête (`session=tok-bob`), lu dans une liste de la page d'appui, et il n'y a pas de base de données (php-wasm n'a pas SQLite : les données sont un tableau dans `data.php`). `exit` et `die` fonctionnent, comme `header()` et `http_response_code()`.
+- **Les attaques s'écrivent codées pour l'adresse, jamais en clair** : `%3Cscript%3Ealert(1)%3C/script%3E`. L'import refuse une balise script dans le corps d'une leçon, même dans une prop. Pour la même raison, un indice parle d'« une balise script » sans l'écrire. Les pages elles-mêmes n'ont ni balise script ni gestionnaire `on...=` : l'import les refuserait, et la vérification `executable` ne saurait plus distinguer ce qui vient de la requête de ce qui est de la page.
+- **Le PHP est écrit dans un gabarit JavaScript** : pas d'accent grave, pas de `${`, pas d'antislash dans le code (le MDX les lirait comme du JavaScript). Une chaîne qui en aurait besoin s'écrit autrement (`chr(10)`, `PHP_EOL`).
+- **Tester l'exercice sur le vrai PHP.** Chaque nouvel exercice a son bloc dans `apps/web/lib/php/__tests__/lessons.test.ts`, qui lit le labo dans sa leçon (ce qui est testé est ce qui est publié) et le joue comme l'élève : le code de départ échoue chaque vérification qui parle de l'attaque, un correctif honnête les réussit toutes, et les mauvais correctifs que l'élève essaiera (un seul endroit corrigé, tout refusé) sont refusés.
+
+Le labo ne sert qu'à *comprendre* le défaut dans une page isolée : l'élève n'attaque jamais un vrai site. La même leçon peut garder son terminal simulé pour la sortie d'un outil (`sqlmap`), qui fait un autre apprentissage.
+
+Dans l'app, l'exercice s'affiche comme une carte : la consigne et le code de la page à corriger, à lire. PHP ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1202,7 +1269,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

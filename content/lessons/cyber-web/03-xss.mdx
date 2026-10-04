@@ -105,6 +105,47 @@ titre.innerHTML = "Résultats pour : " + recherche;
   hint="Quelle propriété transforme le texte reçu en HTML ?"
 />
 
+Pour finir, le même défaut dans un vrai serveur. Voici la page de recherche d'un blog, en PHP : elle tourne dans votre navigateur, rien n'est envoyé nulle part, et chaque requête est jouée sur un PHP neuf. Attaquez-la d'abord, puis corrigez son code.
+
+<PhpLab
+  id="php-xss-recherche"
+  title="Le moteur de recherche du blog"
+  task="Le blog de Léa rappelle au visiteur ce qu'il a cherché. Envoyez une recherche piégée et regardez ce que le navigateur ferait de la page, puis corrigez le code PHP pour qu'aucune recherche ne puisse plus y glisser du code. Le bouton de vérification rejoue des attaques sur votre version."
+  file="search.php"
+  code={`<?php
+$q = $_GET['q'] ?? '';
+$articles = [
+    'Introduction à PHP',
+    'Les tableaux en PHP',
+    'Sécuriser un formulaire',
+    'Docker pour débutants',
+];
+$trouves = array_filter($articles, fn ($titre) => $q === '' || stripos($titre, $q) !== false);
+?>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Blog de Léa</title>
+</head>
+<body>
+  <h1>Blog de Léa</h1>
+  <form method="get" action="/search.php">
+    <input name="q" value="<?php echo $q; ?>">
+    <button>Rechercher</button>
+  </form>
+  <p>Résultats pour : <?php echo $q; ?></p>
+  <ul>
+    <?php foreach ($trouves as $titre) { echo "<li>$titre</li>"; } ?>
+  </ul>
+</body>
+</html>
+`}
+  requests={[{"label": "Recherche normale", "url": "/search.php?q=php"}, {"label": "Page sans recherche", "url": "/search.php"}]}
+  checks={[{"kind": "seen", "label": "Une recherche a fait apparaître du code exécutable dans la page", "expect": {"executable": true}}, {"kind": "fixed", "label": "Une balise piégée dans la recherche ne s'exécute plus", "request": {"url": "/search.php?q=%3Cscript%3Ealert(1)%3C/script%3E"}, "expect": {"executable": false, "contains": "alert(1)"}}, {"kind": "fixed", "label": "Un guillemet ne permet plus de sortir de l'attribut value", "request": {"url": "/search.php?q=%22%20autofocus%20onfocus%3D%22alert(1)"}, "expect": {"status": 200, "executable": false}}, {"kind": "fixed", "label": "La recherche normale fonctionne toujours", "request": {"url": "/search.php?q=PHP"}, "expect": {"status": 200, "contains": "Introduction à PHP"}}]}
+  hints={["Cherchez où le texte de la recherche est écrit dans la page : $q apparaît deux fois dans le code, et ce ne sont pas deux endroits du même genre.", "Le paramètre q se lit dans l'adresse. Une balise script qui appelle alert(1), avec ses chevrons codés pour l'adresse (%3C et %3E), s'y glisse sans qu'aucun contrôle ne la voie.", "Pour le second endroit, un guillemet ferme l'attribut value : ce qui suit devient de nouveaux attributs du champ de recherche, comme onfocus.", "htmlspecialchars transforme les chevrons, le et commercial et les guillemets en entités que le navigateur affiche comme du texte. Pensez à son paramètre ENT_QUOTES, et à l'appliquer aux deux endroits."]}
+/>
+
 <QuizGroup>
 
 <Quiz id="q-1" question="Quelle est la cause directe d'une faille XSS ?" options={["Un mot de passe trop court côté serveur", "Une entrée utilisateur réaffichée sans échappement, que le navigateur interprète comme du code", "Un certificat TLS expiré", "Un port ouvert sur le pare-feu"]} correct={1} />
