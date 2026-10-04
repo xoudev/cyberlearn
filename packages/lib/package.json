@@ -29,7 +29,8 @@
     "./glossary/*": "./src/glossary/*.ts",
     "./git/*": "./src/git/*.ts",
     "./network/*": "./src/network/*.ts",
-    "./animations/*": "./src/animations/*.ts"
+    "./animations/*": "./src/animations/*.ts",
+    "./exercises/*": "./src/exercises/*.ts"
   },
   "scripts": {
     "build": "tsc",

@@ -117,6 +117,15 @@ Regarde une dernière fois ce qu'une machine te montre de sa couche transport, p
 
 La première commande liste les ports TCP en écoute (SSH sur 22, HTTPS sur 443). La deuxième liste les ports UDP, avec l'état UNCONN, sans connexion, parce qu'UDP n'établit rien : on y voit le DNS sur 53. La troisième montre une connexion TCP établie, avec ses deux extrémités.
 
+<MatchPairs
+  id="ports-services"
+  title="Chaque port à son service"
+  task="Associe chaque numéro de port au service qui écoute dessus par convention."
+  pairs={[{ "left": "22", "right": "SSH" }, { "left": "25", "right": "SMTP, l'envoi de mail" }, { "left": "53", "right": "DNS" }, { "left": "80", "right": "HTTP, le web non chiffré" }, { "left": "443", "right": "HTTPS, le web sécurisé" }]}
+  explanation="Ce sont des conventions, écrites dans /etc/services : un serveur peut écouter ailleurs, mais les clients cherchent là par défaut. Tous les cinq sont sous 1024, les ports réservés aux services standards."
+  hint="Les deux ports du web se suivent dans la table de la leçon : le non chiffré est le plus petit."
+/>
+
 <Quiz id="q-1" question="Sur une machine, à quoi sert le numéro de port en plus de l'adresse IP ?" options={["À chiffrer les données échangées", "À désigner l'application destinataire sur la machine", "À indiquer la vitesse de la connexion", "À remplacer l'adresse IP quand elle est inconnue"]} correct={1} />
 
 <Quiz id="q-2" question="Quelle est la séquence correcte de la poignée de main TCP en trois temps ?" options={["ACK, SYN, SYN-ACK", "SYN, ACK, SYN-ACK", "SYN, SYN-ACK, ACK", "SYN-ACK, SYN, ACK"]} correct={2} />

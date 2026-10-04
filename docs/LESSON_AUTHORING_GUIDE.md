@@ -1318,6 +1318,59 @@ Une trame, octet par octet, comme un analyseur la montre : un clic sur un octet 
 
 Les ports connus (22, 53, 80, 443, 25...) sont nommés dans l'explication ; un port au-dessus de 1023 est présenté comme éphémère. Prends les adresses des leçons (`192.168.1.42`, la passerelle `00:0c:29:1a:2b:3c`) pour que l'élève retrouve ce qu'il a vu dans les terminaux.
 
+### 5.9m PutInOrder - Remettre dans l'ordre
+
+Des étapes ou des couches à remettre dans l'ordre : les sept couches OSI, les phases d'un pentest, la chaîne de démarrage. L'élève voit les éléments mélangés, en place un à la fois dans la prochaine case libre (ou le retire), puis demande la vérification : les cases justes se verrouillent, les autres éléments redescendent, et l'indice apparaît. L'ordre affiché est tiré de l'`id` de l'exercice : le même pour tout le monde, aucun élément à sa place au départ. Sur le site et dans l'app (`@cyberlearn/lib/exercises/arrange`).
+
+```mdx
+<PutInOrder
+  id="ordre-osi"
+  title="Les sept couches, du câble au programme"
+  task="Place les couches de la plus basse (1) à la plus haute (7)."
+  items={["Physique", "Liaison de données", "Réseau", "Transport", "Session", "Présentation", "Application"]}
+  explanation="De bas en haut : le signal, les trames, les adresses IP, les ports, puis le dialogue, le format et le programme."
+  hint="La couche 1 est la plus matérielle."
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) ; il fixe aussi l'ordre mélangé |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne : dans quel sens va l'ordre |
+| `items` | string[] | Les éléments, **écrits dans le bon ordre**, de 3 à 10, chacun une fois |
+| `explanation` | string | Pourquoi cet ordre, montré une fois l'ordre trouvé (optionnel) |
+| `hint` | string | Un indice, montré après une première vérification fausse (optionnel) |
+
+### 5.9n MatchPairs - Associer
+
+Deux colonnes à apparier : un port et son service, un protocole et sa couche. La colonne de gauche garde l'ordre écrit, celle de droite est mélangée (tirée de l'`id`, comme ci-dessus). L'élève remplit la ligne en cours en cliquant un élément de droite, vide une ligne en cliquant ce qu'elle contient, puis vérifie : les paires justes se verrouillent, les autres redescendent. Sur le site et dans l'app.
+
+```mdx
+<MatchPairs
+  id="ports-services"
+  title="Chaque port à son service"
+  task="Associe chaque numéro de port au service qui écoute dessus par convention."
+  pairs={[{ "left": "22", "right": "SSH" }, { "left": "53", "right": "DNS" }, { "left": "80", "right": "HTTP" }, { "left": "443", "right": "HTTPS" }]}
+  explanation="Des conventions écrites dans /etc/services."
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) ; il fixe aussi l'ordre de la colonne de droite |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne : ce qui va avec quoi |
+| `pairs` | objets | De 3 à 8 paires `{ "left": ..., "right": ... }`, **clés entre guillemets** ; chaque élément d'une colonne une seule fois, sinon l'association serait ambiguë |
+| `explanation` | string | Montrée quand tout est associé (optionnel) |
+| `hint` | string | Montré après une première vérification fausse (optionnel) |
+
+Ces deux exercices ne comptent pas de points et ne sont pas enregistrés : c'est de l'entraînement, comme « Trouve la faille ». Garde les textes courts (un élément tient sur une ligne de téléphone) et évite deux éléments qui ne se distinguent que par un détail.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1353,7 +1406,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

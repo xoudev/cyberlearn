@@ -119,6 +119,25 @@ Quand quelqu'un dit qu'un paquet est perdu, vous savez qu'il parle du niveau IP.
 
 ## à toi de jouer
 
+Remets d'abord les sept couches à leur place, puis range quelques protocoles à leur étage.
+
+<PutInOrder
+  id="ordre-osi"
+  title="Les sept couches, du câble au programme"
+  task="Place les couches du modèle OSI de la plus basse (1) à la plus haute (7)."
+  items={["Physique", "Liaison de données", "Réseau", "Transport", "Session", "Présentation", "Application"]}
+  explanation="De bas en haut : le signal sur le support, puis les trames et les adresses MAC, puis l'adresse IP et le routage, puis les ports et la fiabilité, puis le dialogue, le format, et enfin le programme. Le moyen mnémotechnique de la leçon se lit dans l'autre sens, de 7 à 1."
+  hint="La couche 1 est la plus matérielle : le câble, la fibre, les ondes. Tout le reste s'empile dessus."
+/>
+
+<MatchPairs
+  id="protocoles-couches"
+  title="Chaque protocole à son étage"
+  task="Associe chaque exemple à la couche OSI où il travaille."
+  pairs={[{ "left": "HTTP", "right": "7 Application" }, { "left": "TLS", "right": "6 Présentation" }, { "left": "TCP", "right": "4 Transport" }, { "left": "IP", "right": "3 Réseau" }, { "left": "Ethernet", "right": "2 Liaison" }, { "left": "Fibre optique", "right": "1 Physique" }]}
+  explanation="HTTP parle aux programmes, TLS met en forme et chiffre, TCP gère les ports et la fiabilité, IP adresse et route, Ethernet fait les trames du réseau local, et la fibre transporte les signaux."
+/>
+
 <QuizGroup>
 
 <Quiz id="q-1" question="Dans quel ordre, de la plus basse à la plus haute, se trouvent les premières couches du modèle OSI ?" options={["Reseau, physique, liaison, transport", "Physique, liaison, reseau, transport", "Liaison, physique, transport, reseau", "Transport, reseau, liaison, physique"]} correct={1} />

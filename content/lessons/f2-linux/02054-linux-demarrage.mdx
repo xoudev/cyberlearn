@@ -105,6 +105,17 @@ journalctl -b -p err              # les erreurs du démarrage en cours
 
 ## à toi de jouer
 
+Remets d'abord la chaîne de démarrage dans l'ordre : chaque maillon charge le suivant.
+
+<PutInOrder
+  id="chaine-demarrage"
+  title="La chaîne du démarrage"
+  task="Place les maillons dans l'ordre où ils se passent la main, de la mise sous tension à l'invite de connexion."
+  items={["Le micrologiciel, BIOS ou UEFI", "Le chargeur d'amorçage, GRUB", "Le noyau Linux", "L'initramfs, qui trouve et monte la racine", "PID 1, systemd", "Les services, les montages et les invites de connexion"]}
+  explanation="Le micrologiciel teste le matériel et cherche un support, le chargeur charge le noyau en mémoire, le noyau initialise le processeur, la mémoire et les pilotes, l'initramfs trouve et monte la vraie racine, puis le noyau lance PID 1, qui démarre tout le reste. Celui qui contrôle le début de cette chaîne contrôle tout ce qui suit : c'est pour cela que Secure Boot vérifie les signatures dès le chargeur."
+  hint="Le noyau ne peut pas monter la racine tout seul : l'initramfs vient après lui et avant PID 1."
+/>
+
 Le Linux des exercices est minimal : il n'a pas systemd. Il démarre avec l'init de BusyBox, comme un routeur ou un objet connecté. C'est l'occasion d'observer une chaîne de démarrage entière, en petit. Mène l'enquête et garde tes preuves dans le dossier de travail :
 
 1. la version du noyau et la façon dont il a été construit, dans la première ligne de ses messages : `dmesg | head -1 > noyau.txt` ;

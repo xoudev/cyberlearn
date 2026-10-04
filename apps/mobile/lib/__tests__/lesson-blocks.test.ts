@@ -582,6 +582,62 @@ describe("PacketDissector", () => {
   });
 });
 
+describe("PutInOrder and MatchPairs", () => {
+  it("are played in the app with the props the site reads", () => {
+    const lesson = [
+      "## Les couches",
+      "",
+      "<PutInOrder",
+      '  id="osi"',
+      '  title="Du câble au programme"',
+      '  task="De la plus basse à la plus haute."',
+      '  items={["Physique", "Liaison", "Réseau"]}',
+      '  explanation="Le support d\'abord."',
+      '  hint="Le câble d\'abord."',
+      "/>",
+      "",
+      '<MatchPairs id="ports" task="Chaque port à son service." pairs={[{ "left": "22", "right": "SSH" }, { "left": "53", "right": "DNS" }, { "left": "80", "right": "HTTP" }]} />',
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "order",
+        exercise: {
+          id: "osi",
+          title: "Du câble au programme",
+          task: "De la plus basse à la plus haute.",
+          items: ["Physique", "Liaison", "Réseau"],
+          explanation: "Le support d'abord.",
+          hint: "Le câble d'abord.",
+        },
+      },
+      {
+        kind: "match",
+        exercise: {
+          id: "ports",
+          task: "Chaque port à son service.",
+          pairs: [
+            { left: "22", right: "SSH" },
+            { left: "53", right: "DNS" },
+            { left: "80", right: "HTTP" },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it("show a placeholder for an exercise the site would refuse", () => {
+    const two = '## A\n\n<PutInOrder id="o" task="Ordre." items={["a", "b"]} />';
+    expect(parseLesson(two).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Dans l'ordre" },
+    ]);
+    const twice =
+      '## A\n\n<MatchPairs id="m" task="Associe." pairs={[{ "left": "1", "right": "x" }, { "left": "2", "right": "x" }, { "left": "3", "right": "z" }]} />';
+    expect(parseLesson(twice).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Associe" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

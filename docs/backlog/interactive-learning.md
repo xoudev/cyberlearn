@@ -105,7 +105,7 @@ qui survive à la requête.
 | 22 | ~~**Git**~~ | ~~Un bac à sable simulé, ou du vrai Git, avec le graphe des branches qui se dessine en direct.~~ Fait, PR #386 : `<GitSandbox>`, un Git simulé (fusion ligne par ligne, rebase, reset) et son graphe, sur le site et dans l'app ; trois exercices dans les leçons Git 02 et 03. isomorphic-git n'a pas servi : il lui faut un système de fichiers et ne dessine rien. | Aucune | Oui |
 | 23 | **Bibliothèques Python en plus** | pycryptodome et cryptography pour la crypto, pandas pour l'analyse de logs. | Aucune (paquets Pyodide) | Site seul |
 | 24 | ~~**Animations pilotables**~~ | ~~Poignée de main TCP, chiffrement, pile d'appels, que l'élève avance pas à pas.~~ Fait, PR #389 : `<StepAnimation>` sur `@remotion/player`, trois scènes (poignée de main TCP, chiffrement symétrique, pile d'appels) dont les étapes et les textes sont partagés avec l'app, qui les liste. | @remotion/player | Site seul |
-| 25 | **Remettre dans l'ordre, associer** | Classer les couches OSI ou les étapes d'une attaque, associer un port à son protocole. | Aucune | Oui |
+| 25 | ~~**Remettre dans l'ordre, associer**~~ | ~~Classer les couches OSI ou les étapes d'une attaque, associer un port à son protocole.~~ Fait, PR #393 : `<PutInOrder>` et `<MatchPairs>`, l'ordre mélangé tiré de l'id (aucun élément à sa place au départ), les cases justes verrouillées à la vérification ; sept exercices dans les leçons réseau 02 et 07, pentest 01, fondamentaux 10, Linux 02054, blue team 11 ; sur le site et dans l'app. | Aucune | Oui |
 
 ## D. Aides pour apprendre
 

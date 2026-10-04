@@ -5,8 +5,10 @@ import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
+import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
 import { PhishingEmailExercise } from "@/components/phishing-email";
+import { PutInOrderExercise } from "@/components/put-in-order";
 import { SubnetDrillExercise } from "@/components/subnet-drill";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
@@ -298,6 +300,10 @@ export function BlockView({
       return <SubnetDrillExercise drill={block.drill} />;
     case "packet":
       return <PacketDissectorExercise dissector={block.dissector} />;
+    case "order":
+      return <PutInOrderExercise exercise={block.exercise} />;
+    case "match":
+      return <MatchPairsExercise exercise={block.exercise} />;
     case "animation":
       return (
         <View

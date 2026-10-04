@@ -86,6 +86,17 @@ Documente, aussi. Écris ce qui s'est passé, ce que vous avez fait, ce qui a bi
 
 ## à toi de jouer
 
+Avant les questions, remets le cycle de la réponse à incident dans l'ordre.
+
+<PutInOrder
+  id="etapes-reponse-incident"
+  title="Le cycle de la réponse à incident"
+  task="Place les six étapes dans l'ordre, de ce qu'on fait avant l'incident à ce qu'on en retire après."
+  items={["Préparation", "Détection et identification", "Confinement", "Éradication", "Récupération", "Leçons apprises"]}
+  explanation="On se prépare à froid, on repère et on confirme l'incident, on l'empêche de s'étendre, on retire sa cause, on remet le service en route en surveillant, et on tire les leçons pour que ça ne recommence pas. Puis le cycle reprend : les leçons nourrissent la préparation."
+  hint="Confiner avant d'éradiquer : on arrête l'hémorragie avant de soigner. Et on ne remet en service qu'une fois la cause retirée."
+/>
+
 <Quiz id="q-1" question="Un poste affiche un message de rançon. Quel est le bon premier réflexe ?" options={["Éteindre immédiatement la machine pour stopper le chiffrement", "Isoler la machine du réseau en la laissant allumée", "Payer vite pour limiter les dégâts", "Supprimer les fichiers suspects pour nettoyer"]} correct={1} />
 
 <Quiz id="q-2" question="Pourquoi évite-t-on d éteindre une machine compromise si on peut l isoler ?" options={["Parce que le redémarrage est trop long", "Parce que la mémoire vive contient des indices qui disparaissent à l arrêt", "Parce que l antivirus a besoin que la machine reste allumée", "Parce qu éteindre annule les sauvegardes"]} correct={1} />

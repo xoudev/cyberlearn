@@ -1,7 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, PhpLab, SubnetDrill, PacketDissector, StepAnimation, SimulatedTerminal,
+// NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -10,13 +10,17 @@ import { sceneById } from "@cyberlearn/lib/animations/scenes";
 import {
   type FindTheFlaw,
   type GitSandbox,
+  type MatchPairs,
   type PacketDissector,
   type PhishingEmail,
+  type PutInOrder,
   type SubnetDrill,
   parseFindTheFlaw,
   parseGitSandbox,
+  parseMatchPairs,
   parsePacketDissector,
   parsePhishingEmail,
+  parsePutInOrder,
   parseSubnetDrill,
 } from "@cyberlearn/types";
 
@@ -77,6 +81,16 @@ export type Block =
       /** A PacketDissector: the same frame as the site's, built and read natively. */
       kind: "packet";
       dissector: PacketDissector;
+    }
+  | {
+      /** A PutInOrder: the same shuffled items as the site's, placed natively. */
+      kind: "order";
+      exercise: PutInOrder;
+    }
+  | {
+      /** A MatchPairs: the same shuffled right column as the site's, paired natively. */
+      kind: "match";
+      exercise: MatchPairs;
     }
   | {
       /**
@@ -729,6 +743,38 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "packet", dissector: parsed.value }
         : { kind: "placeholder", label: "Décortiquer un paquet" },
+    );
+  });
+  // PutInOrder, MatchPairs → the same exercises, played natively; one the site
+  // would refuse is a placeholder.
+  text = replaceSelfClosing(text, "PutInOrder", (tag) => {
+    const parsed = parsePutInOrder({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      items: jsonProp(tag, "items"),
+      explanation: stringProp(tag, "explanation", 0) ?? undefined,
+      hint: stringProp(tag, "hint", 0) ?? undefined,
+    });
+    return put(
+      parsed.ok
+        ? { kind: "order", exercise: parsed.value }
+        : { kind: "placeholder", label: "Dans l'ordre" },
+    );
+  });
+  text = replaceSelfClosing(text, "MatchPairs", (tag) => {
+    const parsed = parseMatchPairs({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      pairs: jsonProp(tag, "pairs"),
+      explanation: stringProp(tag, "explanation", 0) ?? undefined,
+      hint: stringProp(tag, "hint", 0) ?? undefined,
+    });
+    return put(
+      parsed.ok
+        ? { kind: "match", exercise: parsed.value }
+        : { kind: "placeholder", label: "Associe" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's
