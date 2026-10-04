@@ -28,7 +28,8 @@
     "./changelog/*": "./src/changelog/*.ts",
     "./glossary/*": "./src/glossary/*.ts",
     "./git/*": "./src/git/*.ts",
-    "./network/*": "./src/network/*.ts"
+    "./network/*": "./src/network/*.ts",
+    "./animations/*": "./src/animations/*.ts"
   },
   "scripts": {
     "build": "tsc",

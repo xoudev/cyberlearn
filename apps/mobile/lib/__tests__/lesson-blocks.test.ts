@@ -426,3 +426,22 @@ describe("NetworkLab", () => {
     ]);
   });
 });
+
+describe("StepAnimation", () => {
+  it("lists the steps of the scene; the drawing stays on the site", () => {
+    const lesson =
+      '## TCP\n\n<StepAnimation id="a" scene="tcp-handshake" caption="Trois segments." />';
+    const blocks = parseLesson(lesson).sections[0]?.blocks ?? [];
+    expect(blocks[0]?.kind).toBe("animation");
+    if (blocks[0]?.kind !== "animation") throw new Error("not an animation");
+    expect(blocks[0].title).toBe("La poignée de main TCP");
+    expect(blocks[0].steps).toHaveLength(5);
+    expect(blocks[0].steps[1]?.title).toBe("SYN");
+  });
+
+  it("shows a placeholder for a scene the site does not have", () => {
+    expect(parseLesson('## X\n\n<StepAnimation id="a" scene="dns" />').sections[0]?.blocks).toEqual(
+      [{ kind: "placeholder", label: "Animation" }],
+    );
+  });
+});

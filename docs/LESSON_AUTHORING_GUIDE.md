@@ -1146,6 +1146,27 @@ Choisis des vérifications fausses au départ, et un exercice où le premier `pi
 
 Dans l'app, l'exercice s'affiche comme une carte (la consigne et les appareils de départ) : le canevas et le ping ne tournent que sur le site (`docs/MOBILE_PARITY.md`).
 
+### 5.9i StepAnimation - Animation pas à pas
+
+Une animation que l'élève fait avancer étape par étape : chaque étape se joue puis s'arrête, avec, à côté, ce qu'il faut y voir. Il peut revenir en arrière, rejouer une étape, ou laisser tout défiler. Les scènes sont dessinées par le site (Remotion, `@remotion/player`, chargé seulement sur une leçon qui en a une) ; leurs étapes et leurs textes vivent dans `packages/lib/src/animations/scenes.ts`, où l'app les lit aussi.
+
+```mdx
+<StepAnimation id="anim-tcp-handshake" scene="tcp-handshake" caption="Trois segments avant le moindre octet de données." />
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `scene` | string | La scène : `tcp-handshake` (la poignée de main en trois temps, puis les données), `symmetric-encryption` (le message d'Alice chiffré avec la clé partagée, capté par Ève, déchiffré par Bob) ou `call-stack` (un programme Python, ses cadres empilés et dépilés) |
+| `title` | string | Remplace le titre de la scène dans l'en-tête (optionnel) |
+| `caption` | string | Une phrase sous l'animation, pour ce que la leçon veut faire remarquer (optionnel) |
+
+**Ajouter une scène** : ses étapes (titre, texte, durée en images à 30 par seconde) dans `scenes.ts`, son identifiant dans `ANIMATION_SCENE_IDS` (`packages/types`), et son dessin dans `apps/web/app/(app)/lessons/[slug]/_components/animation-scenes/`, un composant Remotion dont les durées suivent celles des étapes. Le texte d'une étape dit ce qui se passe à l'écran, pas ce que l'élève doit faire : l'animation montre, le texte nomme.
+
+Dans l'app, l'animation s'affiche comme une carte avec ses étapes numérotées : le dessin ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1181,7 +1202,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

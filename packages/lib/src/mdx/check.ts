@@ -10,6 +10,7 @@ import {
   parseNetworkLab,
   parsePhishingEmail,
   parsePhotoOsint,
+  parseStepAnimation,
   parseSqlInjectionLab,
   parseSqlPlayground,
 } from "@cyberlearn/types";
@@ -110,6 +111,7 @@ export const LESSON_COMPONENT_NAMES = [
   "GitSandbox",
   "PhotoOsint",
   "NetworkLab",
+  "StepAnimation",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -166,6 +168,10 @@ function NetworkLabStub(): null {
   return null;
 }
 STUBS.NetworkLab = NetworkLabStub;
+function StepAnimationStub(): null {
+  return null;
+}
+STUBS.StepAnimation = StepAnimationStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -293,6 +299,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
     // Cables to devices that exist, addresses that parse: the engine builds the network.
     const built = buildNetwork(parsed.value);
     if (!built.ok) return `Atelier réseau : ${built.problem}`;
+  }
+  if (node.type === StepAnimationStub) {
+    const parsed = parseStepAnimation(props);
+    if (!parsed.ok) return `Animation : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

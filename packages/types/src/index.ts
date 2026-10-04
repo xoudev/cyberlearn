@@ -17,3 +17,4 @@ export * from "./schemas/sql-exercise.schema.js";
 export * from "./schemas/git-sandbox.schema.js";
 export * from "./schemas/photo-osint.schema.js";
 export * from "./schemas/network-lab.schema.js";
+export * from "./schemas/step-animation.schema.js";
