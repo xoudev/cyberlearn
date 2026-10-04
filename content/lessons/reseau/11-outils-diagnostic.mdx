@@ -96,6 +96,16 @@ Pour tester un service web de bout en bout, `curl` envoie une vraie requête HTT
 
 Quand les outils précédents ne suffisent pas, on descend au niveau du paquet. `tcpdump` capture le trafic qui passe par une interface et l'affiche en direct. `tcpdump -i eth0 port 53` montre par exemple toutes les requêtes DNS. Ça sert quand le comportement est bizarre et qu'on veut voir ce qui part réellement sur le câble, pas ce qu'on croit qui part.
 
+Voici ce que tcpdump verrait passer pour `ping -c1 192.168.1.1` : une trame Ethernet vers la MAC de la passerelle, un paquet IP, et dedans la demande d'écho ICMP. Clique sur les octets : le type 8 dit « demande d'écho », le numéro de séquence est celui que ping affiche en `icmp_seq`, et le TTL est ce que chaque routeur fait baisser.
+
+<PacketDissector
+  id="trame-ping"
+  title="Un ping, octet par octet"
+  task="Retrouve le type ICMP, le numéro de séquence et le TTL."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "192.168.1.1", "id": 21564 }, "icmp": { "type": "echo-request", "id": 4242, "seq": 1 }, "payload": "abcdefghijklmnop" }}
+  find={["icmp.type", "icmp.seq", "ip.ttl"]}
+/>
+
 Pour analyser plus confortablement, on enregistre la capture dans un fichier `.pcap` et on l'ouvre dans Wireshark, qui offre une interface graphique, des filtres puissants et le décodage de centaines de protocoles. Wireshark sert à comprendre en détail un échange déjà capturé ; tcpdump sert à capturer vite, souvent sur un serveur sans écran.
 
 <Callout type="warning">

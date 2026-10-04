@@ -248,6 +248,36 @@ describe("SubnetDrill", () => {
   });
 });
 
+describe("PacketDissector", () => {
+  const dissector = (frame: string, find = ""): string =>
+    `## La trame\n\n<PacketDissector id="p" frame={${frame}} ${find} />`;
+  const SYN =
+    '{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34" }, "tcp": { "sport": 50324, "dport": 443, "flags": ["SYN"] } }';
+
+  it("accepts a frame it can write, and the fields it has to find", async () => {
+    expect(await checkLessonMdx(dissector(SYN, 'find={["ip.dst", "tcp.flags"]}'))).toEqual({
+      ok: true,
+    });
+  });
+
+  it("refuses a field to find that the frame does not have, and names it", async () => {
+    const r = await checkLessonMdx(dissector(SYN, 'find={["udp.len", "arp.op"]}'));
+    if (r.ok) throw new Error("accepted fields the frame has not");
+    expect(r.section).toBe("La trame");
+    expect(r.message).toBe(
+      "Décortiquer un paquet : find nomme « udp.len », « arp.op », que cette trame n'a pas.",
+    );
+  });
+
+  it("refuses a frame with nothing above Ethernet", async () => {
+    const r = await checkLessonMdx(
+      dissector('{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" } }'),
+    );
+    if (r.ok) throw new Error("accepted an empty frame");
+    expect(r.message).toContain("Décortiquer un paquet : une trame porte arp ou ip");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

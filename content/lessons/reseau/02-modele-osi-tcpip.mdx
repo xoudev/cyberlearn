@@ -96,6 +96,16 @@ flowchart TD
 Le point clé : chaque couche ne dialogue qu'avec son homologue de l'autre côté. La couche transport de l'expéditeur écrit un en-tête que seule la couche transport du destinataire lira. Les couches intermédiaires l'ignorent et le transportent tel quel.
 </Callout>
 
+Voici ces enveloppes pour de vrai : les octets d'une trame qui porte une requête HTTP, tels qu'ils passent sur le câble. Clique sur un octet, il te dit à quelle couche et à quel champ il appartient. De gauche à droite, les enveloppes se présentent dans l'ordre où le destinataire les ouvre : Ethernet d'abord, puis IP, puis TCP, et enfin la lettre elle-même, la requête en texte.
+
+<PacketDissector
+  id="trame-encapsulation"
+  title="Quatre enveloppes dans une trame"
+  task="Retrouve les quatre champs demandés, un par couche : à qui la trame est remise sur le réseau local, à quelle machine le paquet est destiné, à quelle application, et ce que dit la lettre."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34", "id": 7238 }, "tcp": { "sport": 50324, "dport": 80, "seq": 1001, "ack": 5001, "flags": ["PSH", "ACK"], "window": 64240 }, "payload": "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n" }}
+  find={["eth.dst", "ip.dst", "tcp.dport", "payload.data"]}
+/>
+
 ## les noms à chaque couche
 
 Comme chaque couche ajoute son emballage, l'unité de données change de nom au fil de la descente. Ce n'est pas du pédantisme, ça permet de savoir tout de suite de quel étage on parle.

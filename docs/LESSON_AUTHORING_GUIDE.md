@@ -1277,6 +1277,47 @@ Une réponse tapée a droit à un second essai avant la correction ; un oui ou n
 
 Une série prend les sortes dans un ordre mélangé, chacune une fois avant de repasser par la première : un `count` égal au nombre de sortes les montre toutes. `subnets` demande deux préfixes différents : l'éditeur refuse ce `kind` quand `prefixes.min` et `prefixes.max` sont égaux. Pour une leçon qui n'a pas encore vu le masque, limite-toi aux sortes qu'elle a introduites : la leçon sur le routage ne pose que `same-subnet`, la question que se pose une machine avant d'envoyer un paquet.
 
+### 5.9l PacketDissector - Décortiquer un paquet
+
+Une trame, octet par octet, comme un analyseur la montre : un clic sur un octet dit à quelle couche et à quel champ il appartient, ce qu'il vaut et à quoi il sert. Tu ne tapes pas les octets : tu décris la trame (les adresses, les ports, les drapeaux, le texte transporté) et le site l'écrit comme elle passerait sur le câble, sommes de contrôle comprises, avec le bourrage d'une trame courte et, si tu le demandes, la séquence de contrôle de trame. Le même moteur tourne sur le site et dans l'app (`@cyberlearn/lib/network/packet`), et l'exercice se joue dans les deux.
+
+```mdx
+<PacketDissector
+  id="segment-syn"
+  title="Le SYN, octet par octet"
+  task="Retrouve les deux ports, le numéro de séquence et les drapeaux."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34", "id": 7238 }, "tcp": { "sport": 50324, "dport": 443, "seq": 1000, "flags": ["SYN"], "window": 64240 } }}
+  find={["tcp.sport", "tcp.dport", "tcp.seq", "tcp.flags"]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne, au-dessus de la trame (optionnel) |
+| `frame` | objet | La trame décrite (voir ci-dessous). **Clés entre guillemets** |
+| `find` | string[] | Les champs à retrouver, dans l'ordre, nommés `couche.champ` : l'élève clique sur un octet de chacun. Un clic à côté nomme le champ touché, pour que l'erreur apprenne aussi. Dix au plus (optionnel : sans `find`, la trame s'explore librement) |
+
+**La trame** (`frame`) : `eth` toujours, puis `arp` seul, ou `ip` avec un seul de `tcp`, `udp`, `icmp`.
+
+| Clé | Champs | Notes |
+|---|---|---|
+| `eth` | `src`, `dst` : des MAC `08:00:27:4e:66:a1` | `ff:ff:ff:ff:ff:ff` est la diffusion |
+| `arp` | `op` (`request` ou `reply`), `senderMac`, `senderIp`, `targetMac`, `targetIp` | pour une requête, `targetMac` vaut `00:00:00:00:00:00` |
+| `ip` | `src`, `dst`, `ttl` (défaut 64), `id` (défaut 0), `dontFragment` (défaut `true`) | en-tête de 20 octets, sans option |
+| `tcp` | `sport`, `dport`, `seq` (défaut 0), `ack` (défaut 0), `flags` (parmi `SYN`, `ACK`, `PSH`, `FIN`, `RST`, `URG` ; défaut `["ACK"]`), `window` (défaut 65535) | la somme de contrôle est calculée avec le pseudo-en-tête |
+| `udp` | `sport`, `dport` | |
+| `icmp` | `type` (`echo-request` ou `echo-reply`), `id` (défaut 1), `seq` (défaut 1) | |
+| `payload` | le texte transporté, 400 caractères au plus : `"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"` | avec `tcp`, `udp` ou `icmp` ; un texte qui commence par une méthode HTTP est expliqué comme une requête |
+| `fcs` | `true` pour ajouter la séquence de contrôle de trame (CRC-32) | défaut `false` |
+
+**Les champs** (`find`) : `eth.dst`, `eth.src`, `eth.type` ; `arp.htype`, `arp.ptype`, `arp.hlen`, `arp.plen`, `arp.op`, `arp.sender_mac`, `arp.sender_ip`, `arp.target_mac`, `arp.target_ip` ; `ip.version`, `ip.tos`, `ip.len`, `ip.id`, `ip.flags`, `ip.ttl`, `ip.proto`, `ip.checksum`, `ip.src`, `ip.dst` ; `tcp.sport`, `tcp.dport`, `tcp.seq`, `tcp.ack`, `tcp.flags`, `tcp.window`, `tcp.checksum`, `tcp.urgent` ; `udp.sport`, `udp.dport`, `udp.len`, `udp.checksum` ; `icmp.type`, `icmp.code`, `icmp.checksum`, `icmp.id`, `icmp.seq` ; `payload.data` ; `padding.zeros` (quand la trame fait moins de 60 octets) ; `fcs.crc` (avec `fcs`). L'éditeur refuse un `find` que la trame décrite n'a pas.
+
+Les ports connus (22, 53, 80, 443, 25...) sont nommés dans l'explication ; un port au-dessus de 1023 est présenté comme éphémère. Prends les adresses des leçons (`192.168.1.42`, la passerelle `00:0c:29:1a:2b:3c`) pour que l'élève retrouve ce qu'il a vu dans les terminaux.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1312,7 +1353,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

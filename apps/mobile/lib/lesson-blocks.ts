@@ -1,7 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, PhpLab, SubnetDrill, StepAnimation, SimulatedTerminal,
+// NetworkLab, PhpLab, SubnetDrill, PacketDissector, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -10,10 +10,12 @@ import { sceneById } from "@cyberlearn/lib/animations/scenes";
 import {
   type FindTheFlaw,
   type GitSandbox,
+  type PacketDissector,
   type PhishingEmail,
   type SubnetDrill,
   parseFindTheFlaw,
   parseGitSandbox,
+  parsePacketDissector,
   parsePhishingEmail,
   parseSubnetDrill,
 } from "@cyberlearn/types";
@@ -70,6 +72,11 @@ export type Block =
       /** A SubnetDrill: the same questions as the site's, drawn and corrected natively. */
       kind: "subnet";
       drill: SubnetDrill;
+    }
+  | {
+      /** A PacketDissector: the same frame as the site's, built and read natively. */
+      kind: "packet";
+      dissector: PacketDissector;
     }
   | {
       /**
@@ -706,6 +713,22 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "subnet", drill: parsed.value }
         : { kind: "placeholder", label: "Calcul de sous-réseaux" },
+    );
+  });
+  // PacketDissector → the same frame, built and read natively; one the site
+  // would refuse is a placeholder.
+  text = replaceSelfClosing(text, "PacketDissector", (tag) => {
+    const parsed = parsePacketDissector({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      frame: jsonProp(tag, "frame"),
+      find: jsonProp(tag, "find"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "packet", dissector: parsed.value }
+        : { kind: "placeholder", label: "Décortiquer un paquet" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's

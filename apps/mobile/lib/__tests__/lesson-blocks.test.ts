@@ -549,6 +549,39 @@ describe("SubnetDrill", () => {
   });
 });
 
+describe("PacketDissector", () => {
+  const FRAME = [
+    "## La trame",
+    "",
+    "<PacketDissector",
+    '  id="syn"',
+    '  title="Le SYN, octet par octet"',
+    '  task="Retrouve les ports."',
+    '  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34" }, "tcp": { "sport": 50324, "dport": 443, "flags": ["SYN"] }, "payload": "GET / HTTP/1.1\\r\\n" }}',
+    '  find={["tcp.sport", "tcp.dport"]}',
+    "/>",
+  ].join("\n");
+
+  it("is played in the app with the frame the site builds", () => {
+    const [block] = parseLesson(FRAME).sections[0]?.blocks ?? [];
+    expect(block?.kind).toBe("packet");
+    if (block?.kind !== "packet") throw new Error("not a packet");
+    expect(block.dissector.title).toBe("Le SYN, octet par octet");
+    expect(block.dissector.find).toEqual(["tcp.sport", "tcp.dport"]);
+    expect(block.dissector.frame.tcp).toMatchObject({ sport: 50324, dport: 443, flags: ["SYN"] });
+    expect(block.dissector.frame.ip).toMatchObject({ ttl: 64 });
+    // The JSON escapes of the payload are the line break itself.
+    expect(block.dissector.frame.payload).toBe("GET / HTTP/1.1\r\n");
+  });
+
+  it("shows a placeholder for a frame the site would refuse", () => {
+    const wrong = FRAME.replace('"dport": 443', '"dport": 70000');
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Décortiquer un paquet" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =
