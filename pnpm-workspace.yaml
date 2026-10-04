@@ -43,6 +43,7 @@ catalog:
   # Animation
   remotion: "4.0.496"
   "@remotion/cli": "4.0.496"
+  "@remotion/player": "4.0.496"
 
   # Server state (the mobile app; the site reads on the server)
   "@tanstack/react-query": "^5.104.0"

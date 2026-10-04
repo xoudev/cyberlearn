@@ -1,11 +1,12 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, SimulatedTerminal,
+// NetworkLab, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
+import { sceneById } from "@cyberlearn/lib/animations/scenes";
 import {
   type FindTheFlaw,
   type GitSandbox,
@@ -93,6 +94,15 @@ export type Block =
       title: string | null;
       task: string | null;
       devices: string[];
+    }
+  | {
+      /**
+       * A StepAnimation: drawn on the site; the app lists its steps, which
+       * carry what the animation says (@cyberlearn/lib/animations/scenes).
+       */
+      kind: "animation";
+      title: string;
+      steps: { title: string; text: string }[];
     }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
@@ -373,7 +383,8 @@ type StringPropName =
   | "goal"
   | "starterQuery"
   | "query"
-  | "caption";
+  | "caption"
+  | "scene";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -381,7 +392,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -620,6 +631,17 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       title: stringProp(tag, "title", 0),
       task: stringProp(tag, "task", 0),
       devices: names.filter((n): n is string => n !== null),
+    });
+  });
+  // StepAnimation → its steps as a list: the drawing is the site's
+  // (docs/MOBILE_PARITY.md), the words are shared.
+  text = replaceSelfClosing(text, "StepAnimation", (tag) => {
+    const scene = sceneById(stringProp(tag, "scene", 0) ?? "");
+    if (!scene) return put({ kind: "placeholder", label: "Animation" });
+    return put({
+      kind: "animation",
+      title: stringProp(tag, "title", 0) ?? scene.title,
+      steps: scene.steps.map((s) => ({ title: s.title, text: s.text })),
     });
   });
   // SimulatedTerminal → a native exercise card (commands to try + hints).

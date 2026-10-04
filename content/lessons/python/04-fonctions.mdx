@@ -116,6 +116,10 @@ print(appliquer_tva(100))      # 120.0`} />
 
 Lire une globale depuis une fonction marche. La modifier directement demande des précautions qu'on verra plus tard. Pour l'instant, retiens la règle simple : ce qui naît dans une fonction reste dans la fonction. Si tu veux qu'un résultat sorte, tu le fais sortir avec `return`.
 
+Pour voir ce que deviennent ces variables locales, suis un appel de bout en bout. Chaque fonction appelée reçoit un cadre dans la pile, avec ses propres variables ; il disparaît au `return`.
+
+<StepAnimation id="anim-pile-appels" scene="call-stack" caption="Deux appels de carre, deux n différents, et aucun ne survit à son return." />
+
 ## à toi de jouer
 
 Écris une fonction `solution` qui prend deux nombres et renvoie leur somme. Attention au verbe : on demande de renvoyer, pas d'afficher. Donc `return`, pas `print`.

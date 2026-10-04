@@ -292,6 +292,46 @@ export function BlockView({
       return <PhishingEmailExercise mail={block.mail} />;
     case "git":
       return <GitSandboxExercise sandbox={block.sandbox} />;
+    case "animation":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.accent,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: theme.accent }}>
+              ANIMATION · PAS À PAS · SUR LE SITE
+            </Text>
+            <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+              {block.title}
+            </Text>
+          </View>
+          <View style={{ padding: 12, gap: 10 }}>
+            {block.steps.map((step, i) => (
+              <View key={step.title} style={{ gap: 2 }}>
+                <Text variant="bodySm" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+                  {String(i + 1)}. {step.title}
+                </Text>
+                <Text variant="bodySm">{step.text}</Text>
+              </View>
+            ))}
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              L&apos;animation se joue sur le site, étape par étape : en voici les étapes.
+            </Text>
+          </View>
+        </View>
+      );
     case "network":
       return (
         <View

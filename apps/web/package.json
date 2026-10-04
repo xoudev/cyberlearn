@@ -29,6 +29,7 @@
     "@radix-ui/react-slot": "catalog:",
     "@radix-ui/react-tooltip": "catalog:",
     "@react-pdf/renderer": "^4.9.0",
+    "@remotion/player": "catalog:",
     "@sentry/nextjs": "catalog:",
     "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
@@ -54,6 +55,7 @@
     "rehype-highlight": "catalog:",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "catalog:",
+    "remotion": "catalog:",
     "sonner": "catalog:",
     "tailwind-merge": "catalog:",
     "zod": "catalog:"
