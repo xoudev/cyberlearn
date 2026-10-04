@@ -90,6 +90,17 @@ Relance les commandes du terminal et relis-les avec ce que tu sais maintenant. Q
 
 <SimulatedTerminal shell="bash" scenario="bash" title="Table de routage et chemin d'un paquet" commands={{"ip route": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.42", "traceroute example.com": "1 192.168.1.1 0.5 ms\n2 10.0.0.1 4 ms\n3 203.0.113.1 12 ms\n4 93.184.216.34 22 ms", "ip route get 8.8.8.8": "8.8.8.8 via 192.168.1.1 dev eth0 src 192.168.1.42"}} />
 
+Avant de câbler, la question que ta machine se pose à chaque paquet : la destination est-elle sur mon réseau ? Les mêmes premiers octets ne veulent pas dire le même sous-réseau, tout dépend du masque. Entraîne-toi à trancher vite.
+
+<SubnetDrill
+  id="drill-meme-reseau"
+  title="Même sous-réseau, ou pas ?"
+  task="Si oui, le paquet part directement ; sinon, il passe par la passerelle. Calcule le réseau de chaque adresse avec le masque donné avant de répondre."
+  kinds={["same-subnet"]}
+  prefixes={{ "min": 24, "max": 28 }}
+  count={5}
+/>
+
 Puis construis-le toi-même. Deux ateliers : le premier sur les passerelles, le second sur les routes statiques entre deux routeurs. Dans les deux, lance le ping avant de régler quoi que ce soit, et relis la réponse après chaque changement : c'est elle qui dit où le paquet s'arrête.
 
 <NetworkLab

@@ -6,6 +6,7 @@ import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
 import { PhishingEmailExercise } from "@/components/phishing-email";
+import { SubnetDrillExercise } from "@/components/subnet-drill";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import { glossaryHits } from "@/lib/glossary";
@@ -292,6 +293,8 @@ export function BlockView({
       return <PhishingEmailExercise mail={block.mail} />;
     case "git":
       return <GitSandboxExercise sandbox={block.sandbox} />;
+    case "subnet":
+      return <SubnetDrillExercise drill={block.drill} />;
     case "animation":
       return (
         <View

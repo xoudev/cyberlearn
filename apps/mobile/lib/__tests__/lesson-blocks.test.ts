@@ -503,6 +503,52 @@ describe("PhpLab", () => {
   });
 });
 
+describe("SubnetDrill", () => {
+  const DRILL = [
+    "## Les calculs",
+    "",
+    "<SubnetDrill",
+    '  id="drill"',
+    '  title="Pose le calcul"',
+    '  task="Deux essais."',
+    '  kinds={["hosts", "same-subnet"]}',
+    '  prefixes={{ "min": 24, "max": 28 }}',
+    "  count={6}",
+    "/>",
+  ].join("\n");
+
+  it("is played in the app with the props the site reads", () => {
+    expect(parseLesson(DRILL).sections[0]?.blocks).toEqual([
+      {
+        kind: "subnet",
+        drill: {
+          id: "drill",
+          title: "Pose le calcul",
+          task: "Deux essais.",
+          kinds: ["hosts", "same-subnet"],
+          prefixes: { min: 24, max: 28 },
+          count: 6,
+        },
+      },
+    ]);
+  });
+
+  it("fills in what the lesson leaves out, as the site does", () => {
+    const bare = '## A\n\n<SubnetDrill id="drill" />';
+    expect(parseLesson(bare).sections[0]?.blocks[0]).toMatchObject({
+      kind: "subnet",
+      drill: { prefixes: { min: 24, max: 30 }, count: 5 },
+    });
+  });
+
+  it("shows a placeholder for a drill the site would refuse", () => {
+    const wrong = DRILL.replace('"max": 28', '"max": 32');
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Calcul de sous-réseaux" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

@@ -220,6 +220,34 @@ describe("PhpLab", () => {
   });
 });
 
+describe("SubnetDrill", () => {
+  it("accepts a drill with its kinds and prefixes, and one with nothing but an id", async () => {
+    expect(
+      await checkLessonMdx(
+        '## Calculs\n\n<SubnetDrill id="s" kinds={["hosts", "network"]} prefixes={{ "min": 24, "max": 28 }} count={6} />',
+      ),
+    ).toEqual({ ok: true });
+    expect(await checkLessonMdx('## Calculs\n\n<SubnetDrill id="s" />')).toEqual({ ok: true });
+  });
+
+  it("refuses a prefix no question can be asked on, and says which", async () => {
+    const r = await checkLessonMdx(
+      '## Calculs\n\n<SubnetDrill id="s" prefixes={{ "min": 24, "max": 32 }} />',
+    );
+    if (r.ok) throw new Error("accepted a /32");
+    expect(r.section).toBe("Calculs");
+    expect(r.message).toContain("Calcul de sous-réseaux : prefixes.max : ");
+  });
+
+  it("refuses cutting a network with a single prefix to draw", async () => {
+    const r = await checkLessonMdx(
+      '## Calculs\n\n<SubnetDrill id="s" kinds={["subnets"]} prefixes={{ "min": 26, "max": 26 }} />',
+    );
+    if (r.ok) throw new Error("accepted a cut with one prefix");
+    expect(r.message).toContain("Calcul de sous-réseaux : découper un réseau (subnets)");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

@@ -104,7 +104,18 @@ Le réflexe qui sauve : avant de répondre, calcule d'abord les bits d'hôte (32
 
 ## à toi de jouer
 
-Reprends le CodePlayground et fais varier le préfixe entre /24 et /30 pour sentir l'effet sur les bornes et le nombre d'hôtes. Ensuite, vérifie ta compréhension.
+Reprends le CodePlayground et fais varier le préfixe entre /24 et /30 pour sentir l'effet sur les bornes et le nombre d'hôtes.
+
+Puis pose les calculs toi-même, sans Python. Les questions sont tirées au hasard : adresse de réseau, diffusion, premier et dernier hôte, nombre d'hôtes, masque, découpage. À chaque réponse, la correction refait le raisonnement dans l'ordre vu plus haut : bits d'hôte, puissance de deux, bloc de l'octet. Refais des séries jusqu'à ce que les tiroirs de 64, de 32 et de 16 te viennent sans compter.
+
+<SubnetDrill
+  id="drill-sous-reseaux"
+  title="Pose le calcul"
+  task="Réponds en notation décimale pointée pour une adresse ou un masque (192.168.1.64), en chiffres pour un nombre ou un préfixe (62, ou /26). Tu as deux essais."
+  count={6}
+/>
+
+Ensuite, vérifie ta compréhension.
 
 <Quiz id="q-1" question="Dans la notation CIDR, que désigne le nombre après la barre, comme dans /26 ?" options={["Le nombre d hotes utilisables", "Le nombre de bits a 1 dans le masque, c est a dire la partie reseau", "Le numero du sous-reseau", "Le nombre d octets de l adresse"]} correct={1} />
 

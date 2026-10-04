@@ -14,6 +14,7 @@ import {
   parseStepAnimation,
   parseSqlInjectionLab,
   parseSqlPlayground,
+  parseSubnetDrill,
 } from "@cyberlearn/types";
 import { runSetup } from "../git/sandbox";
 import { buildNetwork } from "../network/topology";
@@ -114,6 +115,7 @@ export const LESSON_COMPONENT_NAMES = [
   "NetworkLab",
   "StepAnimation",
   "PhpLab",
+  "SubnetDrill",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -178,6 +180,10 @@ function PhpLabStub(): null {
   return null;
 }
 STUBS.PhpLab = PhpLabStub;
+function SubnetDrillStub(): null {
+  return null;
+}
+STUBS.SubnetDrill = SubnetDrillStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -349,6 +355,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === PhpLabStub) {
     const parsed = parsePhpLab(props);
     if (!parsed.ok) return `Laboratoire PHP : ${parsed.problem}`;
+  }
+  if (node.type === SubnetDrillStub) {
+    const parsed = parseSubnetDrill(props);
+    if (!parsed.ok) return `Calcul de sous-réseaux : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }
