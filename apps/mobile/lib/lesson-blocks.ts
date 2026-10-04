@@ -1,7 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// SimulatedTerminal,
+// NetworkLab, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -84,6 +84,16 @@ export type Block =
       task: string | null;
       caption: string | null;
     }
+  | {
+      /**
+       * A NetworkLab: the canvas, the cables and the ping run on the site;
+       * the app shows what to do and the devices the exercise starts with.
+       */
+      kind: "network";
+      title: string | null;
+      task: string | null;
+      devices: string[];
+    }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
 
@@ -129,6 +139,65 @@ function jsonArrayProp(tag: string, re: RegExp): unknown {
   } catch {
     return undefined;
   }
+}
+
+const SPACE = /\s/;
+const WORD = /[A-Za-z0-9_]/;
+
+/**
+ * The index of the `{` opening `name={`, the name read as a whole word with
+ * spaces allowed around the `=`; -1 when the tag has no such prop. Written
+ * without a regex built from `name`: a pattern made of a string is what a
+ * lesson could not be trusted with, so none is ever built.
+ */
+function openingBraceOf(tag: string, name: string): number {
+  let from = 0;
+  for (;;) {
+    const at = tag.indexOf(name, from);
+    if (at === -1) return -1;
+    from = at + 1;
+    if (at > 0 && WORD.test(tag.charAt(at - 1))) continue;
+    let i = at + name.length;
+    while (SPACE.test(tag.charAt(i))) i++;
+    if (tag.charAt(i) !== "=") continue;
+    i++;
+    while (SPACE.test(tag.charAt(i))) i++;
+    if (tag.charAt(i) === "{") return i;
+  }
+}
+
+/**
+ * A `prop={...}` written as JSON with nested arrays inside (a device's
+ * routes in a NetworkLab), which the lazy regexes above would cut short:
+ * the braces are counted instead, strings skipped.
+ */
+function jsonProp(tag: string, name: string): unknown {
+  const open = openingBraceOf(tag, name);
+  if (open === -1) return undefined;
+  let depth = 0;
+  let inString = false;
+  for (let i = open; i < tag.length; i++) {
+    const ch = tag.charAt(i);
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") depth++;
+    else if (ch === "}" || ch === "]") {
+      depth--;
+      if (depth === 0) {
+        try {
+          const value: unknown = JSON.parse(tag.slice(open + 1, i));
+          return value;
+        } catch {
+          return undefined;
+        }
+      }
+    }
+  }
+  return undefined;
 }
 
 /** A `prop={12}` number, or undefined when it is not written so. */
@@ -533,6 +602,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       caption: stringProp(tag, "caption", 0),
     }),
   );
+  // NetworkLab → a card: the canvas and the ping run on the site only
+  // (docs/MOBILE_PARITY.md); the lesson still says what to build.
+  text = replaceSelfClosing(text, "NetworkLab", (tag) => {
+    const devices = jsonProp(tag, "devices");
+    const names = Array.isArray(devices)
+      ? devices.map((d: unknown) => {
+          const device =
+            typeof d === "object" && d !== null ? (d as { name?: unknown; kind?: unknown }) : {};
+          const kind =
+            device.kind === "pc" ? "PC" : device.kind === "switch" ? "switch" : "routeur";
+          return typeof device.name === "string" ? `${device.name} (${kind})` : null;
+        })
+      : [];
+    return put({
+      kind: "network",
+      title: stringProp(tag, "title", 0),
+      task: stringProp(tag, "task", 0),
+      devices: names.filter((n): n is string => n !== null),
+    });
+  });
   // SimulatedTerminal → a native exercise card (commands to try + hints).
   const terminalToBlock = (tag: string): string =>
     put({

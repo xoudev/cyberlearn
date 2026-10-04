@@ -292,6 +292,45 @@ export function BlockView({
       return <PhishingEmailExercise mail={block.mail} />;
     case "git":
       return <GitSandboxExercise sandbox={block.sandbox} />;
+    case "network":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.accent,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: theme.accent }}>
+              RÉSEAU · ATELIER · SUR LE SITE
+            </Text>
+            {block.title !== null ? (
+              <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+                {block.title}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ padding: 12, gap: 8 }}>
+            {block.task !== null ? <Text variant="bodySm">{block.task}</Text> : null}
+            {block.devices.length > 0 ? (
+              <Text variant="mono">{block.devices.join(" · ")}</Text>
+            ) : null}
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              Le schéma, les câbles et le ping se jouent sur le site : c&apos;est là que
+              l&apos;exercice se fait.
+            </Text>
+          </View>
+        </View>
+      );
     case "osint":
       return (
         <View

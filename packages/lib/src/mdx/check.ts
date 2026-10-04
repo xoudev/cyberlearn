@@ -7,12 +7,14 @@ import {
   parseChallengeTests,
   parseFindTheFlaw,
   parseGitSandbox,
+  parseNetworkLab,
   parsePhishingEmail,
   parsePhotoOsint,
   parseSqlInjectionLab,
   parseSqlPlayground,
 } from "@cyberlearn/types";
 import { runSetup } from "../git/sandbox";
+import { buildNetwork } from "../network/topology";
 import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
@@ -107,6 +109,7 @@ export const LESSON_COMPONENT_NAMES = [
   "SqlInjectionLab",
   "GitSandbox",
   "PhotoOsint",
+  "NetworkLab",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -159,6 +162,10 @@ function PhotoOsintStub(): null {
   return null;
 }
 STUBS.PhotoOsint = PhotoOsintStub;
+function NetworkLabStub(): null {
+  return null;
+}
+STUBS.NetworkLab = NetworkLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -279,6 +286,13 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === PhotoOsintStub) {
     const parsed = parsePhotoOsint(props);
     if (!parsed.ok) return `Exercice OSINT : ${parsed.problem}`;
+  }
+  if (node.type === NetworkLabStub) {
+    const parsed = parseNetworkLab(props);
+    if (!parsed.ok) return `Atelier réseau : ${parsed.problem}`;
+    // Cables to devices that exist, addresses that parse: the engine builds the network.
+    const built = buildNetwork(parsed.value);
+    if (!built.ok) return `Atelier réseau : ${built.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

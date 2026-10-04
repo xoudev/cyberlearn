@@ -401,3 +401,28 @@ describe("PhotoOsint", () => {
     ]);
   });
 });
+
+describe("NetworkLab", () => {
+  it("shows the task and the devices; the canvas and the ping stay on the site", () => {
+    const lesson = [
+      "## Le réseau",
+      "",
+      "<NetworkLab",
+      '  id="n"',
+      '  title="Deux réseaux, un routeur"',
+      '  task="Donne une passerelle à chaque PC."',
+      '  devices={[{"id": "pc1", "kind": "pc", "name": "PC1", "x": 40, "y": 200}, {"id": "r1", "kind": "router", "name": "R1", "x": 300, "y": 30, "addresses": {"eth0": "192.168.1.1/24"}, "routes": [{"to": "0.0.0.0/0", "via": "10.0.0.2"}]}, {"id": "sw1", "kind": "switch", "name": "SW1", "x": 170, "y": 100}]}',
+      '  links={[["pc1", "sw1"], ["sw1", "r1"]]}',
+      '  checks={[{"label": "PC1 joint R1", "expect": "ping", "from": "PC1", "to": "R1"}]}',
+      "/>",
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "network",
+        title: "Deux réseaux, un routeur",
+        task: "Donne une passerelle à chaque PC.",
+        devices: ["PC1 (PC)", "R1 (routeur)", "SW1 (switch)"],
+      },
+    ]);
+  });
+});

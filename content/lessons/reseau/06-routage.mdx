@@ -90,6 +90,29 @@ Relance les commandes du terminal et relis-les avec ce que tu sais maintenant. Q
 
 <SimulatedTerminal shell="bash" scenario="bash" title="Table de routage et chemin d'un paquet" commands={{"ip route": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.42", "traceroute example.com": "1 192.168.1.1 0.5 ms\n2 10.0.0.1 4 ms\n3 203.0.113.1 12 ms\n4 93.184.216.34 22 ms", "ip route get 8.8.8.8": "8.8.8.8 via 192.168.1.1 dev eth0 src 192.168.1.42"}} />
 
+Puis construis-le toi-même. Deux ateliers : le premier sur les passerelles, le second sur les routes statiques entre deux routeurs. Dans les deux, lance le ping avant de régler quoi que ce soit, et relis la réponse après chaque changement : c'est elle qui dit où le paquet s'arrête.
+
+<NetworkLab
+  id="net-passerelles"
+  title="Deux réseaux, un routeur"
+  task="R1 relie 192.168.1.0/24 et 192.168.2.0/24, mais son port eth1 n'a pas d'adresse et aucun PC n'a de passerelle. Donne à eth1 l'adresse 192.168.2.1/24, puis à chaque PC la passerelle qui est dans son réseau. Ping PC2 depuis PC1 après chaque réglage, et lis ce que la réponse change."
+  devices={[{"id": "pc1", "kind": "pc", "name": "PC1", "x": 40, "y": 200, "addresses": {"eth0": "192.168.1.10/24"}}, {"id": "sw1", "kind": "switch", "name": "SW1", "x": 190, "y": 110}, {"id": "r1", "kind": "router", "name": "R1", "x": 340, "y": 30, "addresses": {"eth0": "192.168.1.1/24"}}, {"id": "sw2", "kind": "switch", "name": "SW2", "x": 490, "y": 110}, {"id": "pc2", "kind": "pc", "name": "PC2", "x": 640, "y": 200, "addresses": {"eth0": "192.168.2.10/24"}}]}
+  links={[["pc1", "sw1"], ["sw1", "r1"], ["r1", "sw2"], ["sw2", "pc2"]]}
+  checks={[{"label": "R1 a une adresse dans 192.168.2.0/24", "expect": "address", "device": "R1", "in": "192.168.2.0/24"}, {"label": "La passerelle de PC1 est 192.168.1.1", "expect": "gateway", "device": "PC1", "is": "192.168.1.1"}, {"label": "La passerelle de PC2 est 192.168.2.1", "expect": "gateway", "device": "PC2", "is": "192.168.2.1"}, {"label": "PC1 joint PC2, et la réponse revient", "expect": "ping", "from": "PC1", "to": "PC2"}]}
+  hints={["Sans passerelle, PC1 répond « Network is unreachable » : 192.168.2.10 n'est pas dans son réseau, il ne sait pas à qui donner le paquet.", "La passerelle de PC1 est l'adresse de R1 sur son réseau : 192.168.1.1. Celle de PC2 sera l'adresse que tu donnes à eth1.", "Si la passerelle de PC1 est réglée mais pas celle de PC2, le ping perd 100 % des paquets : la requête arrive, mais PC2 ne sait pas répondre. Un ping, c'est un aller et un retour."]}
+/>
+
+<NetworkLab
+  id="net-routes-statiques"
+  title="Saut par saut : deux routeurs"
+  task="PC1 et PC2 sont séparés par deux routeurs, reliés entre eux par le lien 10.0.0.0/30. Chaque routeur ne connaît que les réseaux de ses propres ports : R1 ignore 192.168.2.0/24, R2 ignore 192.168.1.0/24. Ajoute à chacun la route statique qui lui manque, via l'adresse de son voisin, puis ping PC2 depuis PC1 : la réponse doit revenir avec un TTL de 62."
+  devices={[{"id": "pc1", "kind": "pc", "name": "PC1", "x": 40, "y": 170, "addresses": {"eth0": "192.168.1.10/24"}, "gateway": "192.168.1.1"}, {"id": "r1", "kind": "router", "name": "R1", "x": 230, "y": 60, "addresses": {"eth0": "192.168.1.1/24", "eth1": "10.0.0.1/30"}}, {"id": "r2", "kind": "router", "name": "R2", "x": 430, "y": 60, "addresses": {"eth0": "10.0.0.2/30", "eth1": "192.168.2.1/24"}}, {"id": "pc2", "kind": "pc", "name": "PC2", "x": 620, "y": 170, "addresses": {"eth0": "192.168.2.10/24"}, "gateway": "192.168.2.1"}]}
+  links={[["pc1", "r1"], ["r1", "r2"], ["r2", "pc2"]]}
+  checks={[{"label": "R1 route 192.168.2.0/24 via 10.0.0.2", "expect": "route", "device": "R1", "to": "192.168.2.0/24", "via": "10.0.0.2"}, {"label": "R2 route 192.168.1.0/24 via 10.0.0.1", "expect": "route", "device": "R2", "to": "192.168.1.0/24", "via": "10.0.0.1"}, {"label": "PC1 joint PC2 à travers les deux routeurs", "expect": "ping", "from": "PC1", "to": "PC2"}]}
+  hints={["Au départ, R1 répond « Destination Net Unreachable » : il n'a aucune route vers 192.168.2.10, il jette le paquet et prévient.", "Sur R1, ajoute la route 192.168.2.0/24 via 10.0.0.2 : « pour ce réseau, passe par mon voisin R2 ». Puis le ping perd 100 % des paquets : la requête arrive à PC2, mais R2 ne sait pas renvoyer la réponse vers 192.168.1.0/24.", "Sur R2, la route 192.168.1.0/24 via 10.0.0.1 ferme la boucle. Le TTL de la réponse, 62, compte les deux routeurs traversés."]}
+  locked={true}
+/>
+
 <Quiz id="q-1" question="Ta machine veut envoyer un paquet à une adresse qui n'est pas sur son réseau local. Où l'envoie-t-elle ?" options={["Directement à la destination finale, qu'elle connaît par coeur", "À la passerelle par défaut, sa porte de sortie vers les autres réseaux", "À tous les routeurs d'Internet en même temps", "Nulle part, un paquet ne peut pas quitter le réseau local"]} correct={1} />
 
 <Quiz id="q-2" question="Dans le routage saut par saut, que connaît un routeur donné ?" options={["Le chemin complet du paquet, de la source à la destination", "Uniquement le prochain saut vers lequel transmettre le paquet", "La liste de toutes les machines connectées à Internet", "Rien, il transmet les paquets au hasard"]} correct={1} />

@@ -103,6 +103,21 @@ Tu viens d'utiliser tout le parcours d'un coup : adressage, DHCP, passerelle, ro
 
 Reprends les terminaux et lis-les comme une enquête. Pour chacun, demande-toi : à quelle couche s'arrête le diagnostic, et qu'est-ce que ça élimine ?
 
+Commence par mener l'enquête sur un vrai petit réseau, avec de vrais pings : deux pannes y sont cachées.
+
+<NetworkLab
+  id="net-diagnostic"
+  title="Enquête : où ça casse ?"
+  task="Depuis PC1, ping 203.0.113.10 (le serveur SRV) ne passe pas. Applique la méthode : la passerelle d'abord (ping 192.168.1.1), puis la sortie. Il y a deux pannes, une de chaque côté. Corrige-les jusqu'à ce que le ping revienne."
+  devices={[{"id": "pc1", "kind": "pc", "name": "PC1", "x": 40, "y": 190, "addresses": {"eth0": "192.168.1.42/24"}, "gateway": "192.168.1.254"}, {"id": "sw1", "kind": "switch", "name": "SW1", "x": 200, "y": 100}, {"id": "r1", "kind": "router", "name": "R1", "x": 370, "y": 30, "addresses": {"eth0": "192.168.1.1/24", "eth1": "203.0.113.1/24"}}, {"id": "srv", "kind": "pc", "name": "SRV", "x": 560, "y": 190, "addresses": {"eth0": "203.0.113.10/24"}}]}
+  links={[["pc1", "sw1"], ["sw1", "r1"], ["r1", "srv"]]}
+  checks={[{"label": "La passerelle de PC1 est bien R1 (192.168.1.1)", "expect": "gateway", "device": "PC1", "is": "192.168.1.1"}, {"label": "SRV a une passerelle, 203.0.113.1", "expect": "gateway", "device": "SRV", "is": "203.0.113.1"}, {"label": "PC1 joint SRV", "expect": "ping", "from": "PC1", "to": "203.0.113.10"}]}
+  hints={["Ping 192.168.1.254 depuis PC1 : « Destination Host Unreachable ». Personne ne répond à cette adresse. Regarde l'adresse de R1 sur eth0.", "Une fois la passerelle de PC1 corrigée, le ping vers SRV perd 100 % des paquets : la requête arrive, mais SRV ne sait pas répondre. Un serveur a besoin d'une passerelle aussi."]}
+  locked={true}
+/>
+
+Puis la même enquête, en ligne de commande cette fois :
+
 <SimulatedTerminal shell="bash" scenario="bash" title="Enquête : où ça casse ?" commands={{"ip addr show eth0": "inet 192.168.1.42/24 state UP", "ping -c1 192.168.1.1": "64 bytes from 192.168.1.1: time=0.4 ms", "ping -c1 8.8.8.8": "64 bytes from 8.8.8.8: time=11 ms", "ping -c1 example.com": "ping: example.com: Name or service not known"}} />
 
 <QuizGroup>
