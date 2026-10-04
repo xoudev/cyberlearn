@@ -1,7 +1,7 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, PhpLab, StepAnimation, SimulatedTerminal,
+// NetworkLab, PhpLab, SubnetDrill, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -11,9 +11,11 @@ import {
   type FindTheFlaw,
   type GitSandbox,
   type PhishingEmail,
+  type SubnetDrill,
   parseFindTheFlaw,
   parseGitSandbox,
   parsePhishingEmail,
+  parseSubnetDrill,
 } from "@cyberlearn/types";
 
 export interface QuizBlock {
@@ -63,6 +65,11 @@ export type Block =
       /** A GitSandbox: the same simulated repository as the site's, played natively. */
       kind: "git";
       sandbox: GitSandbox;
+    }
+  | {
+      /** A SubnetDrill: the same questions as the site's, drawn and corrected natively. */
+      kind: "subnet";
+      drill: SubnetDrill;
     }
   | {
       /**
@@ -146,6 +153,7 @@ const BODY_RE = /\bbody\s*=\s*\{(\[[\s\S]*?\])\}/;
 const CLUES_RE = /\bclues\s*=\s*\{(\[[\s\S]*?\])\}/;
 const SETUP_RE = /\bsetup\s*=\s*\{(\[[\s\S]*?\])\}/;
 const CHECKS_RE = /\bchecks\s*=\s*\{(\[[\s\S]*?\])\}/;
+const COUNT_RE = /\bcount\s*=\s*\{\s*(\d+)\s*\}/;
 
 /**
  * A `prop={[...]}` of objects written as JSON (keys in double quotes, as the
@@ -682,6 +690,23 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       file: stringProp(tag, "file", 0) ?? "index.php",
       code,
     });
+  });
+  // SubnetDrill → the same exercise, drawn and corrected natively; one the
+  // site would refuse is a placeholder.
+  text = replaceSelfClosing(text, "SubnetDrill", (tag) => {
+    const parsed = parseSubnetDrill({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      kinds: jsonProp(tag, "kinds"),
+      prefixes: jsonProp(tag, "prefixes"),
+      count: numberProp(tag, COUNT_RE),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "subnet", drill: parsed.value }
+        : { kind: "placeholder", label: "Calcul de sous-réseaux" },
+    );
   });
   // StepAnimation → its steps as a list: the drawing is the site's
   // (docs/MOBILE_PARITY.md), the words are shared.

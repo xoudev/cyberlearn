@@ -1234,6 +1234,49 @@ Le labo ne sert qu'à *comprendre* le défaut dans une page isolée : l'élève 
 
 Dans l'app, l'exercice s'affiche comme une carte : la consigne et le code de la page à corriger, à lire. PHP ne tourne que sur le site (`docs/MOBILE_PARITY.md`).
 
+### 5.9k SubnetDrill - Calcul de sous-réseaux
+
+Des exercices d'adressage IPv4 tirés au hasard et corrigés à chaque réponse, par séries. Une question demande une chose sur une adresse et un préfixe : son adresse de réseau, sa diffusion, son premier ou son dernier hôte, le nombre d'hôtes d'un préfixe, le masque d'un préfixe ou le préfixe d'un masque, si deux adresses sont dans le même sous-réseau, combien de sous-réseaux donne un découpage. Les adresses viennent des plages privées (10/8, 172.16/12, 192.168/16), celles des leçons. Le tirage et la correction sont les mêmes sur le site et dans l'app (`@cyberlearn/lib/network/subnet-drill`), et l'exercice se joue dans les deux.
+
+Une réponse tapée a droit à un second essai avant la correction ; un oui ou non n'en a pas, l'autre réponse étant la bonne. La correction donne toujours le raisonnement de la leçon : les bits d'hôte, la puissance de deux, le bloc de l'octet que le préfixe coupe (« Le /26 coupe le 4e octet en blocs de 64 (0, 64, 128, 192) : 77 tombe dans le bloc qui commence à 64. »). La série finie, l'élève voit combien il en a trouvé et peut en lancer une autre. Rien n'est enregistré : c'est de l'entraînement.
+
+```mdx
+<SubnetDrill
+  id="drill-sous-reseaux"
+  title="Pose le calcul"
+  task="Réponds en notation décimale pointée pour une adresse, en chiffres pour un nombre. Tu as deux essais."
+  kinds={["network", "broadcast", "hosts", "same-subnet"]}
+  prefixes={{ "min": 24, "max": 30 }}
+  count={6}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court de l'exercice (optionnel) |
+| `task` | string | Une consigne au-dessus des questions, par exemple la forme attendue des réponses (optionnel) |
+| `kinds` | string[] | Les sortes de questions, parmi le tableau ci-dessous, chacune écrite une fois (défaut : toutes) |
+| `prefixes` | objet | `{ "min": 24, "max": 30 }` : les préfixes dans lesquels les questions sont tirées, bornes comprises, de /8 à /30 (défaut : /24 à /30, ceux de la leçon sur le sous-réseautage). Pas de /31 ni de /32 : ils n'ont ni réseau ni diffusion à distinguer |
+| `count` | number | Le nombre de questions d'une série, de 1 à 20 (défaut : 5) |
+
+**Les sortes de questions** (`kinds`) :
+
+| `kind` | La question | Ce que l'élève répond |
+|---|---|---|
+| `network` | l'adresse de réseau de a.b.c.d/n | une adresse (avec ou sans son /n) |
+| `broadcast` | l'adresse de diffusion du sous-réseau de a.b.c.d/n | une adresse |
+| `first-host`, `last-host` | le premier ou le dernier hôte utilisable de ce sous-réseau | une adresse |
+| `hosts` | le nombre d'hôtes utilisables d'un /n | un nombre |
+| `mask` | le masque d'un /n, en notation pointée | une adresse |
+| `prefix` | le préfixe d'un masque en notation pointée | un nombre (26 ou /26) |
+| `same-subnet` | deux adresses et un masque : même sous-réseau ? Quand la réponse est non, la seconde adresse est dans le bloc voisin, avec les mêmes premiers octets : le piège de la leçon | Oui ou Non |
+| `subnets` | combien de sous-réseaux /m dans un réseau /n, six bits d'écart au plus | un nombre |
+
+Une série prend les sortes dans un ordre mélangé, chacune une fois avant de repasser par la première : un `count` égal au nombre de sortes les montre toutes. `subnets` demande deux préfixes différents : l'éditeur refuse ce `kind` quand `prefixes.min` et `prefixes.max` sont égaux. Pour une leçon qui n'a pas encore vu le masque, limite-toi aux sortes qu'elle a introduites : la leçon sur le routage ne pose que `same-subnet`, la question que se pose une machine avant d'envoyer un paquet.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1269,7 +1312,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
