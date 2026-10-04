@@ -193,7 +193,7 @@ describe("an HTTP request over TCP", () => {
     expect(built.bytes.length).toBe(14 + 20 + 20 + HTTP.length);
     expectContiguous(built);
     expect(built.layers.map((s) => s.layer)).toEqual(["eth", "ip", "tcp", "payload"]);
-    expect(bytesOf(built, "payload.data")).toEqual([...HTTP].map((c) => c.charCodeAt(0)));
+    expect(bytesOf(built, "payload.data")).toEqual(Array.from(HTTP, (c) => c.charCodeAt(0)));
     expect(field(built, "ip.len").value).toBe(`${String(40 + HTTP.length)} octets`);
   });
 
@@ -266,7 +266,7 @@ describe("UDP and ICMP", () => {
 
 describe("the frame check sequence", () => {
   it("is Ethernet's CRC-32, appended low byte first", () => {
-    expect(crc32([..."123456789"].map((c) => c.charCodeAt(0)))).toBe(0xcbf43926);
+    expect(crc32(Array.from("123456789", (c) => c.charCodeAt(0)))).toBe(0xcbf43926);
     const built = buildFrame({ ...ARP_REQUEST, fcs: true });
     expect(built.bytes.length).toBe(64);
     const crc = crc32(Array.from(built.bytes.slice(0, 60)));

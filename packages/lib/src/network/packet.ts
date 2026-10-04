@@ -730,7 +730,7 @@ function spansOf(fields: readonly PacketField[]): PacketLayerSpan[] {
   const spans: PacketLayerSpan[] = [];
   for (const field of fields) {
     const last = spans[spans.length - 1];
-    if (last !== undefined && last.layer === field.layer) {
+    if (last?.layer === field.layer) {
       spans[spans.length - 1] = { ...last, length: last.length + field.length };
     } else {
       spans.push({ layer: field.layer, offset: field.offset, length: field.length });
