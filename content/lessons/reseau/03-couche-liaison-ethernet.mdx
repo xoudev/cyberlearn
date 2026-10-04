@@ -38,6 +38,16 @@ En tête de trame, on trouve l'adresse MAC de destination, puis l'adresse MAC so
 
 Retiens surtout ceci : une trame Ethernet sait toujours de quelle MAC elle vient et vers quelle MAC elle va. Le reste du réseau local s'appuie sur ces deux champs pour acheminer la donnée au bon endroit.
 
+La voici en vrai, octet par octet. Cette trame porte une question ARP, que tu verras plus bas : « qui possède 192.168.1.20 ? », envoyée à tout le segment. Clique sur ses octets. Les six premiers sont la MAC de destination, et ils valent tous ff : la diffusion. Viennent la MAC source, le type de contenu, puis la question. La trame est complétée par des zéros jusqu'au minimum de 60 octets, et finit par le contrôle d'erreur.
+
+<PacketDissector
+  id="trame-arp"
+  title="Une trame Ethernet, octet par octet"
+  task="Retrouve la MAC de destination, la MAC source, le type de contenu transporté et l'adresse IP dont on cherche la MAC."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "ff:ff:ff:ff:ff:ff" }, "arp": { "op": "request", "senderMac": "08:00:27:4e:66:a1", "senderIp": "192.168.1.42", "targetMac": "00:00:00:00:00:00", "targetIp": "192.168.1.20" }, "fcs": true }}
+  find={["eth.dst", "eth.src", "eth.type", "arp.target_ip"]}
+/>
+
 ## le commutateur
 
 Posons une question concrète. Tu as cinq machines branchées sur un même appareil au centre du réseau. Une trame arrive, destinée à une seule de ces machines. Que fait l'appareil ?

@@ -8,6 +8,7 @@ import {
   parseFindTheFlaw,
   parseGitSandbox,
   parseNetworkLab,
+  parsePacketDissector,
   parsePhpLab,
   parsePhishingEmail,
   parsePhotoOsint,
@@ -17,6 +18,7 @@ import {
   parseSubnetDrill,
 } from "@cyberlearn/types";
 import { runSetup } from "../git/sandbox";
+import { buildFrame, missingFields } from "../network/packet";
 import { buildNetwork } from "../network/topology";
 import { protectPropIndentation } from "./indentation.js";
 import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
@@ -116,6 +118,7 @@ export const LESSON_COMPONENT_NAMES = [
   "StepAnimation",
   "PhpLab",
   "SubnetDrill",
+  "PacketDissector",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -184,6 +187,10 @@ function SubnetDrillStub(): null {
   return null;
 }
 STUBS.SubnetDrill = SubnetDrillStub;
+function PacketDissectorStub(): null {
+  return null;
+}
+STUBS.PacketDissector = PacketDissectorStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -359,6 +366,15 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === SubnetDrillStub) {
     const parsed = parseSubnetDrill(props);
     if (!parsed.ok) return `Calcul de sous-réseaux : ${parsed.problem}`;
+  }
+  if (node.type === PacketDissectorStub) {
+    const parsed = parsePacketDissector(props);
+    if (!parsed.ok) return `Décortiquer un paquet : ${parsed.problem}`;
+    // The fields to find must be in the frame as described: the frame is built.
+    const missing = missingFields(buildFrame(parsed.value.frame), parsed.value.find ?? []);
+    if (missing.length > 0) {
+      return `Décortiquer un paquet : find nomme ${missing.map((id) => `« ${id} »`).join(", ")}, que cette trame n'a pas.`;
+    }
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

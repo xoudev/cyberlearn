@@ -73,6 +73,16 @@ Regarde-la se faire. Avance l'animation étape par étape : à chaque segment, l
 
 <StepAnimation id="anim-tcp-handshake" scene="tcp-handshake" caption="Trois segments avant le moindre octet de données : c'est le prix de la fiabilité." />
 
+Et voici le premier de ces trois segments, le SYN, octet par octet, dans sa trame. Dans l'en-tête TCP, cherche les deux ports, le numéro de séquence de départ et les drapeaux : un seul bit est levé, celui de SYN.
+
+<PacketDissector
+  id="segment-syn"
+  title="Le SYN, octet par octet"
+  task="Retrouve le port source, le port de destination, le numéro de séquence et les drapeaux."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34", "id": 7238 }, "tcp": { "sport": 50324, "dport": 443, "seq": 1000, "flags": ["SYN"], "window": 64240 } }}
+  find={["tcp.sport", "tcp.dport", "tcp.seq", "tcp.flags"]}
+/>
+
 ## UDP, rapide et sans garantie
 
 UDP prend le parti inverse. Pas de connexion, pas de poignée de main, pas de confirmation. La machine met les données dans un paquet, l'envoie à une IP et un port, et passe à la suite. Elle ne sait pas si le paquet est arrivé, et elle ne cherche pas à le savoir.

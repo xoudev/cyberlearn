@@ -5,6 +5,7 @@ import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
+import { PacketDissectorExercise } from "@/components/packet-dissector";
 import { PhishingEmailExercise } from "@/components/phishing-email";
 import { SubnetDrillExercise } from "@/components/subnet-drill";
 import { Text } from "@/components/ui";
@@ -295,6 +296,8 @@ export function BlockView({
       return <GitSandboxExercise sandbox={block.sandbox} />;
     case "subnet":
       return <SubnetDrillExercise drill={block.drill} />;
+    case "packet":
+      return <PacketDissectorExercise dissector={block.dissector} />;
     case "animation":
       return (
         <View

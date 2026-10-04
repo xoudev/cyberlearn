@@ -20,3 +20,4 @@ export * from "./schemas/network-lab.schema.js";
 export * from "./schemas/step-animation.schema.js";
 export * from "./schemas/php-lab.schema.js";
 export * from "./schemas/subnet-drill.schema.js";
+export * from "./schemas/packet-dissector.schema.js";
