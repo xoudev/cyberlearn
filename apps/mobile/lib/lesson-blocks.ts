@@ -141,15 +141,39 @@ function jsonArrayProp(tag: string, re: RegExp): unknown {
   }
 }
 
+const SPACE = /\s/;
+const WORD = /[A-Za-z0-9_]/;
+
+/**
+ * The index of the `{` opening `name={`, the name read as a whole word with
+ * spaces allowed around the `=`; -1 when the tag has no such prop. Written
+ * without a regex built from `name`: a pattern made of a string is what a
+ * lesson could not be trusted with, so none is ever built.
+ */
+function openingBraceOf(tag: string, name: string): number {
+  let from = 0;
+  for (;;) {
+    const at = tag.indexOf(name, from);
+    if (at === -1) return -1;
+    from = at + 1;
+    if (at > 0 && WORD.test(tag.charAt(at - 1))) continue;
+    let i = at + name.length;
+    while (SPACE.test(tag.charAt(i))) i++;
+    if (tag.charAt(i) !== "=") continue;
+    i++;
+    while (SPACE.test(tag.charAt(i))) i++;
+    if (tag.charAt(i) === "{") return i;
+  }
+}
+
 /**
  * A `prop={...}` written as JSON with nested arrays inside (a device's
  * routes in a NetworkLab), which the lazy regexes above would cut short:
  * the braces are counted instead, strings skipped.
  */
 function jsonProp(tag: string, name: string): unknown {
-  const at = tag.search(new RegExp(`\\b${name}\\s*=\\s*\\{`, "u"));
-  if (at === -1) return undefined;
-  const open = tag.indexOf("{", at);
+  const open = openingBraceOf(tag, name);
+  if (open === -1) return undefined;
   let depth = 0;
   let inString = false;
   for (let i = open; i < tag.length; i++) {
