@@ -1,30 +1,37 @@
 // Enum unions + label/colour maps mirrored from the Prisma schema, so the mobile
 // app never imports @cyberlearn/db (Prisma / server-only). Tables are snake_case,
 // columns camelCase - keep that in mind for every supabase query.
-import { category as categoryColor, rarity as rarityColor } from "@cyberlearn/tokens";
+import { rarity as rarityColor } from "@cyberlearn/tokens";
+import {
+  CATEGORY_META,
+  DIFFICULTY_META,
+  type ContentCategory,
+  type ContentDifficulty,
+} from "@cyberlearn/lib/content/vocabulary";
 
-export type Category = "DEV" | "CYBERSEC" | "NETWORK";
-export type Difficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+export type Category = ContentCategory;
+export type Difficulty = ContentDifficulty;
 export type ProgressStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 export type Rarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY";
 
+// The words and colours are the site's (packages/lib, content/vocabulary).
 export const CATEGORY_LABEL: Record<Category, string> = {
-  DEV: "Dev",
-  CYBERSEC: "Cybersec",
-  NETWORK: "Réseau",
+  DEV: CATEGORY_META.DEV.short,
+  CYBERSEC: CATEGORY_META.CYBERSEC.short,
+  NETWORK: CATEGORY_META.NETWORK.short,
 };
 
 export const CATEGORY_COLOR: Record<Category, string> = {
-  DEV: categoryColor.DEV,
-  CYBERSEC: categoryColor.CYBERSEC,
-  NETWORK: categoryColor.NETWORK,
+  DEV: CATEGORY_META.DEV.color,
+  CYBERSEC: CATEGORY_META.CYBERSEC.color,
+  NETWORK: CATEGORY_META.NETWORK.color,
 };
 
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
+  BEGINNER: DIFFICULTY_META.BEGINNER.label,
+  INTERMEDIATE: DIFFICULTY_META.INTERMEDIATE.label,
+  ADVANCED: DIFFICULTY_META.ADVANCED.label,
+  EXPERT: DIFFICULTY_META.EXPERT.label,
 };
 
 export const RARITY_COLOR: Record<Rarity, string> = {
@@ -34,5 +41,4 @@ export const RARITY_COLOR: Record<Rarity, string> = {
   LEGENDARY: rarityColor.LEGENDARY,
 };
 
-export const CATEGORY_ORDER: Category[] = ["CYBERSEC", "DEV", "NETWORK"];
-export const DIFFICULTY_ORDER: Difficulty[] = ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"];
+export { CATEGORY_ORDER, DIFFICULTY_ORDER } from "@cyberlearn/lib/content/vocabulary";

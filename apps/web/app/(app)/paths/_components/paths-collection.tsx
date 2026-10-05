@@ -2,7 +2,15 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { PathCatalogCard, RatingStat } from "@/app/_components/path-catalog-card";
+import {
+  barsOf,
+  CATEGORY_KIND,
+  DiffBars,
+  KindGlyph,
+  PathCatalogCard,
+  RatingStat,
+} from "@/app/_components/path-catalog-card";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
@@ -49,21 +57,6 @@ interface Props {
 
 // ── Design meta ─────────────────────────────────────────────────────────────────
 
-type Kind = "cyber" | "dev" | "net";
-
-const CATEGORY_META: Record<string, { label: string; kind: Kind }> = {
-  CYBERSEC: { label: "Cybersec", kind: "cyber" },
-  DEV: { label: "Dev", kind: "dev" },
-  NETWORK: { label: "Réseau", kind: "net" },
-};
-
-const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3 }> = {
-  BEGINNER: { label: "Débutant", level: 1 },
-  INTERMEDIATE: { label: "Intermédiaire", level: 2 },
-  ADVANCED: { label: "Avancé", level: 3 },
-  EXPERT: { label: "Expert", level: 3 },
-};
-
 // A path is either a competence or a job. Kept separate from the domain chip:
 // they answer different questions and a learner filters on one or the other.
 const TRACK_META: Record<string, { label: string; short: string }> = {
@@ -71,9 +64,6 @@ const TRACK_META: Record<string, { label: string; short: string }> = {
   CAREER: { label: "Métier", short: "Métier" },
 };
 const TRACK_DEFAULT = { label: "Compétence", short: "Compétence" };
-
-const CATEGORY_DEFAULT = { label: "?", kind: "cyber" as Kind };
-const DIFF_DEFAULT = { label: "?", level: 1 as const };
 
 type Filter = DomainFilter;
 const TRACK_PILLS: { id: TrackFilter; label: string }[] = [
@@ -127,55 +117,6 @@ const CERT_ICON = (
   </svg>
 );
 
-function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
-  return (
-    <span className={`diff-bars lv${String(level)}`}>
-      <span />
-      <span />
-      <span />
-    </span>
-  );
-}
-
-function KindGlyph({ kind, size }: { kind: Kind; size: number }): React.JSX.Element {
-  const s = {
-    width: size,
-    height: size,
-    viewBox: "0 0 64 64",
-    fill: "none" as const,
-    stroke: "currentColor",
-    strokeWidth: 1.3,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-  if (kind === "cyber") {
-    return (
-      <svg className="kind-ico" {...s}>
-        <path d="M32 5 L53 13 V31 C53 44 43 53 32 59 C21 53 11 44 11 31 V13 Z" />
-        <path d="M23 32 L29 38 L42 23" />
-      </svg>
-    );
-  }
-  if (kind === "dev") {
-    return (
-      <svg className="kind-ico" {...s}>
-        <path d="M22 19 L7 32 L22 45" />
-        <path d="M42 19 L57 32 L42 45" />
-        <path d="M37 12 L27 52" />
-      </svg>
-    );
-  }
-  return (
-    <svg className="kind-ico" {...s}>
-      <circle cx="32" cy="12" r="4.5" />
-      <circle cx="12" cy="48" r="4.5" />
-      <circle cx="52" cy="48" r="4.5" />
-      <path d="M32 16.5 L13 43 M32 16.5 L51 43 M16 48 L48 48" />
-      <circle cx="32" cy="32" r="2.2" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX.Element {
   return (
     <div className="pc2-section">
@@ -189,11 +130,12 @@ function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX
 // ── Tier cards ──────────────────────────────────────────────────────────────────
 
 function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
-  const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
-  const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
+  const cat = categoryMeta(path.category);
+  const kind = CATEGORY_KIND[path.category] ?? "cyber";
+  const diff = difficultyMeta(path.difficulty);
   const pct = pctOf(path);
   return (
-    <article className={`hero-path hero-path--${cat.kind}`}>
+    <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
       <div className="hero-path__main">
         <div className="hero-path__topline">
@@ -203,11 +145,11 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </span>
           <span className="dom-tag">
             <span className="dom-tag__dot" />
-            {cat.label}
+            {cat.short}
           </span>
           <span className="track-tag">{TRACK_META[path.track]?.short ?? TRACK_DEFAULT.short}</span>
           <span className="diff-tag">
-            <DiffBars level={diff.level} />
+            <DiffBars level={barsOf(diff.level)} />
             {diff.label}
           </span>
           <span className="refcode">
@@ -266,7 +208,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
       <div className="hero-path__console">
         <div className="hero-glyph">
           <span className="hero-glyph__halo" />
-          <KindGlyph kind={cat.kind} size={132} />
+          <KindGlyph kind={kind} size={132} />
         </div>
         {path.nextLesson && (
           <Link href={`/lessons/${path.nextLesson.slug}`} className="hero-next">
@@ -286,13 +228,13 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
 }
 
 function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
-  const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
+  const kind = CATEGORY_KIND[path.category] ?? "cyber";
   const pct = pctOf(path);
   return (
-    <Link href={`/paths/${path.slug}`} className={`active-card active-card--${cat.kind}`}>
+    <Link href={`/paths/${path.slug}`} className={`active-card active-card--${kind}`}>
       <Brackets />
       <div className="active-card__glyph">
-        <KindGlyph kind={cat.kind} size={56} />
+        <KindGlyph kind={kind} size={56} />
       </div>
       <div className="active-card__body">
         <div className="active-card__top">

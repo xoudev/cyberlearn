@@ -13,6 +13,8 @@ import { BossNode } from "./_components/boss-node";
 import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 
 export async function generateMetadata({
   params,
@@ -26,24 +28,14 @@ export async function generateMetadata({
 
 // ── Design meta maps ────────────────────────────────────────────────────────────
 
-const CAT_META: Record<string, { label: string; color: string; tagClass: string }> = {
-  CYBERSEC: { label: "Cybersec", color: "#FF4757", tagClass: "cyber" },
-  DEV: { label: "Dev", color: "#6E8BFF", tagClass: "dev" },
-  NETWORK: { label: "Réseau", color: "#0AFFD4", tagClass: "net" },
+/** The stylesheet's names: the category on the hero tag, the difficulty on a lesson's. */
+const TAG_CLASS: Record<string, string> = { CYBERSEC: "cyber", DEV: "dev", NETWORK: "net" };
+const DIFF_ABBR: Record<string, string> = {
+  BEGINNER: "beg",
+  INTERMEDIATE: "int",
+  ADVANCED: "adv",
+  EXPERT: "exp",
 };
-
-const DIFF_META: Record<
-  string,
-  { label: string; level: number; color: string; abbr: "beg" | "int" | "adv" | "exp" }
-> = {
-  BEGINNER: { label: "Débutant", level: 1, color: "var(--cosmetic-accent)", abbr: "beg" },
-  INTERMEDIATE: { label: "Intermédiaire", level: 2, color: "#6E8BFF", abbr: "int" },
-  ADVANCED: { label: "Avancé", level: 3, color: "#FF4757", abbr: "adv" },
-  EXPERT: { label: "Expert", level: 3, color: "#FFB020", abbr: "exp" },
-};
-
-const CAT_DEFAULT = { label: "?", color: "#B8B5D1", tagClass: "cyber" };
-const DIFF_DEFAULT = { label: "?", level: 1, color: "#B8B5D1", abbr: "beg" as const };
 
 // ── Shared markup ───────────────────────────────────────────────────────────────
 
@@ -85,7 +77,8 @@ function PathLessonCard({
   state: CardState;
   num: string;
 }): React.JSX.Element {
-  const ld = DIFF_META[lesson.difficulty] ?? DIFF_DEFAULT;
+  const ld = difficultyMeta(lesson.difficulty);
+  const abbr = DIFF_ABBR[lesson.difficulty] ?? "beg";
   const inner = (
     <>
       {state === "active" && <Brackets />}
@@ -107,7 +100,7 @@ function PathLessonCard({
       </div>
       <h3 className="cp-card__title">{lesson.title}</h3>
       <div className="cp-card__meta">
-        <span className={`diff diff--${ld.abbr}`}>{ld.label}</span>
+        <span className={`diff diff--${abbr}`}>{ld.label}</span>
         <span className="xp">+{lesson.xpReward} XP</span>
         <span className="sep">·</span>
         <span>{lesson.estimatedMinutes} min</span>
@@ -221,8 +214,9 @@ export default async function PathDetailPage({
 
   if (!path) notFound();
 
-  const cat = CAT_META[path.category] ?? CAT_DEFAULT;
-  const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
+  const cat = categoryMeta(path.category);
+  const tagClass = TAG_CLASS[path.category] ?? "cyber";
+  const diff = difficultyMeta(path.difficulty);
   const trackLabel = path.track === "CAREER" ? "Métier" : "Compétence";
 
   // Fetch user's completed lessons for this path
@@ -311,9 +305,9 @@ export default async function PathDetailPage({
       <section className="pd2-hero">
         <div>
           <div className="pd2-hero__tags">
-            <span className={`pd2-tag pd2-tag--${cat.tagClass}`}>
+            <span className={`pd2-tag pd2-tag--${tagClass}`}>
               <span className="dom-dot" />
-              {cat.label}
+              {cat.short}
             </span>
             <span className="pd2-tag pd2-tag--track">{trackLabel}</span>
             {path.avgRating !== null && path.ratingsCount > 0 && (
@@ -328,12 +322,7 @@ export default async function PathDetailPage({
               </span>
             )}
             <span className="pd2-tag pd2-tag--diff">
-              <span className={`diff-bars lv${String(diff.level)}`}>
-                <span />
-                <span />
-                <span />
-              </span>{" "}
-              {diff.label}
+              <DiffBars level={barsOf(diff.level)} /> {diff.label}
             </span>
           </div>
           <h1 className="pd2-title">{path.title}</h1>

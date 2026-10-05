@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.15",
+    date: "2026-10-05",
+    title: "Les mêmes mots pour les mêmes choses",
+    changes: [
+      {
+        type: "fixed",
+        text: "Une catégorie et une difficulté s'écrivent désormais pareil d'une page à l'autre, et dans l'app : « Réseau » plutôt que « Réseaux » ici et « RÉSEAU » là, « Débutant » sur les défis aussi, où il s'appelait « Facile ». La couleur de chaque catégorie est la même partout : la page des révisions peignait Cybersec en rose et Dev en turquoise, à l'inverse du reste du site.",
+      },
+    ],
+  },
+  {
     version: "3.14",
     date: "2026-10-05",
     title: "Une seule fenêtre pour tout le site",

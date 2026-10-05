@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { Brackets } from "./corner-brackets";
 
 export interface PathCatalogCardData {
@@ -18,28 +19,24 @@ export interface PathCatalogCardData {
   rating?: PathRating | null;
 }
 
-type Kind = "cyber" | "dev" | "net";
+export type Kind = "cyber" | "dev" | "net";
 
-const CATEGORY_META: Record<string, { label: string; kind: Kind }> = {
-  CYBERSEC: { label: "Cybersec", kind: "cyber" },
-  DEV: { label: "Dev", kind: "dev" },
-  NETWORK: { label: "Réseau", kind: "net" },
+/** The stylesheet's name for each category, on the cards' modifier classes. */
+export const CATEGORY_KIND: Record<string, Kind> = {
+  CYBERSEC: "cyber",
+  DEV: "dev",
+  NETWORK: "net",
 };
 
-const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3 }> = {
-  BEGINNER: { label: "Débutant", level: 1 },
-  INTERMEDIATE: { label: "Intermédiaire", level: 2 },
-  ADVANCED: { label: "Avancé", level: 3 },
-  EXPERT: { label: "Expert", level: 3 },
-};
+/** Three bars: the fourth level lights them all, like the third. */
+export function barsOf(level: number): 1 | 2 | 3 {
+  return level <= 1 ? 1 : level === 2 ? 2 : 3;
+}
 
 const TRACK_META: Record<string, string> = {
   SKILL: "Compétence",
   CAREER: "Métier",
 };
-
-const CATEGORY_DEFAULT = { label: "?", kind: "cyber" as Kind };
-const DIFF_DEFAULT = { label: "?", level: 1 as const };
 
 /** The learners' average, once somebody has rated the path. */
 export interface PathRating {
@@ -75,7 +72,8 @@ export function RatingStat({
   );
 }
 
-function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
+/** Three bars, the first `level` lit: the difficulty gauge on every card and hero. */
+export function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
   return (
     <span className={`diff-bars lv${String(level)}`}>
       <span />
@@ -85,10 +83,11 @@ function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
   );
 }
 
-function KindGlyph({ kind }: { kind: Kind }): React.JSX.Element {
+/** The category's line drawing: a shield, brackets, a network. */
+export function KindGlyph({ kind, size = 64 }: { kind: Kind; size?: number }): React.JSX.Element {
   const props = {
-    width: 64,
-    height: 64,
+    width: size,
+    height: size,
     viewBox: "0 0 64 64",
     fill: "none" as const,
     stroke: "currentColor",
@@ -136,21 +135,22 @@ export function PathCatalogCard({
   href?: string;
   id?: string;
 }): React.JSX.Element {
-  const category = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
-  const difficulty = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
+  const category = categoryMeta(path.category);
+  const kind = CATEGORY_KIND[path.category] ?? "cyber";
+  const difficulty = difficultyMeta(path.difficulty);
 
   return (
-    <Link id={id} href={href} className={`game-card game-card--${category.kind}`}>
+    <Link id={id} href={href} className={`game-card game-card--${kind}`}>
       <Brackets />
       <div className="game-card__cover">
-        <span className="game-card__cat">{category.label}</span>
+        <span className="game-card__cat">{category.short}</span>
         <span className="game-card__track">{TRACK_META[path.track] ?? "Compétence"}</span>
         <span className="game-card__diff">
-          <DiffBars level={difficulty.level} />
+          <DiffBars level={barsOf(difficulty.level)} />
           {difficulty.label}
         </span>
         <span className="game-card__glyph">
-          <KindGlyph kind={category.kind} />
+          <KindGlyph kind={kind} />
         </span>
         <span className="game-card__id">
           {"// "}

@@ -5,24 +5,11 @@ import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 export const metadata: Metadata = { title: "Mes certificats" };
 
 const GOLD = "#FFB547";
-
-const DIFF_COLORS: Record<string, { color: string; label: string }> = {
-  BEGINNER: { color: "var(--cosmetic-accent)", label: "Débutant" },
-  INTERMEDIATE: { color: "#4D8BFF", label: "Intermédiaire" },
-  ADVANCED: { color: "#B14DFF", label: "Avancé" },
-  EXPERT: { color: "#FFB020", label: "Expert" },
-};
-const DIFF_DEFAULT = { color: "#7F7BA9", label: "-" };
-
-const CAT_LABEL: Record<string, string> = {
-  DEV: "Développement",
-  CYBERSEC: "Cybersécurité",
-  NETWORK: "Réseau",
-};
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
@@ -306,8 +293,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
           }}
         >
           {certs.map((cert) => {
-            const diff = DIFF_COLORS[cert.path.difficulty] ?? DIFF_DEFAULT;
-            const cat = CAT_LABEL[cert.path.category] ?? cert.path.category;
+            const diff = difficultyMeta(cert.path.difficulty);
+            const cat = categoryMeta(cert.path.category).label;
             const issuedAt = new Intl.DateTimeFormat("fr-FR", {
               day: "2-digit",
               month: "long",

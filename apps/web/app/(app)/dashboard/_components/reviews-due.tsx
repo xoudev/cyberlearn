@@ -1,16 +1,11 @@
 import React from "react";
 import Link from "next/link";
+import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 const CAT_COLORS: Record<string, string> = {
   CYBERSEC: "#FF4757",
   DEV: "#6E8BFF",
   NETWORK: "#0AFFD4",
-};
-
-const CAT_LABELS: Record<string, string> = {
-  CYBERSEC: "Cybersécurité",
-  DEV: "Développement",
-  NETWORK: "Réseau",
 };
 
 export interface ReviewRow {
@@ -83,7 +78,7 @@ export function ReviewsDue({
                     />
                     <span className="dash-rev-title">
                       {row.lesson.title}
-                      <small>{CAT_LABELS[row.lesson.category] ?? row.lesson.category}</small>
+                      <small>{categoryMeta(row.lesson.category).label}</small>
                     </span>
                     <span className={`dash-rev-due${due.late ? " dash-rev-due--late" : ""}`}>
                       {due.text}

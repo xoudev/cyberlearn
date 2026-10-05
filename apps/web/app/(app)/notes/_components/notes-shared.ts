@@ -1,4 +1,5 @@
 import type { Category } from "@cyberlearn/db";
+import { CATEGORY_META } from "@cyberlearn/lib/content/vocabulary";
 
 /** A note as serialized by the server for the library + reader. */
 export interface SerializedNote {
@@ -56,10 +57,11 @@ export type FolderIconName = (typeof FOLDER_ICON_NAMES)[number];
 /** Icon shown for a folder with no icon set. */
 export const FOLDER_DEFAULT_ICON: FolderIconName = "folder";
 
+/** A note's category on its chip: the short name and the colour, from the shared table. */
 export const CAT: Record<Category, { label: string; color: string }> = {
-  CYBERSEC: { label: "Cybersec", color: "#FF4757" },
-  DEV: { label: "Dev", color: "#6E8BFF" },
-  NETWORK: { label: "Réseau", color: "#0AFFD4" },
+  CYBERSEC: { label: CATEGORY_META.CYBERSEC.short, color: CATEGORY_META.CYBERSEC.color },
+  DEV: { label: CATEGORY_META.DEV.short, color: CATEGORY_META.DEV.color },
+  NETWORK: { label: CATEGORY_META.NETWORK.short, color: CATEGORY_META.NETWORK.color },
 };
 
 /** Fixed accent palette for folders (validated server-side too). */

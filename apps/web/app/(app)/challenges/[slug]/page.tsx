@@ -16,6 +16,7 @@ import { HintsPanel } from "./_components/hints-panel";
 import { CopyButton } from "@/components/copy-button";
 import { ScriptRunner } from "./_components/script-runner";
 import type { DisplayStatus } from "../_components/challenges-client";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -28,32 +29,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // ── Color maps ────────────────────────────────────────────────────────────────
-
-const DIFF_COLOR: Record<string, string> = {
-  BEGINNER: "var(--cosmetic-accent)",
-  INTERMEDIATE: "#4D8BFF",
-  ADVANCED: "#B14DFF",
-  EXPERT: "#FFB020",
-};
-
-const DIFF_LABEL: Record<string, string> = {
-  BEGINNER: "Facile",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
-};
-
-const CAT_COLOR: Record<string, string> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#4D8BFF",
-  NETWORK: "#0AFFD4",
-};
-
-const CAT_LABEL: Record<string, string> = {
-  CYBERSEC: "Cybersec",
-  DEV: "Dev",
-  NETWORK: "Réseau",
-};
 
 const TYPE_COLOR: Record<string, string> = {
   CTF: "#FF4D6D",
@@ -230,9 +205,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
     initialRevealed[hintId] = content;
   }
 
-  const catLabel = CAT_LABEL[challenge.category] ?? challenge.category;
-  const catColor = CAT_COLOR[challenge.category] ?? "#7F7BA9";
-  const diffColor = DIFF_COLOR[challenge.difficulty] ?? "#7F7BA9";
+  const catLabel = categoryMeta(challenge.category).short;
+  const catColor = categoryMeta(challenge.category).color;
+  const diffColor = difficultyMeta(challenge.difficulty).color;
   const typeColor = TYPE_COLOR[challenge.type] ?? "#7F7BA9";
   const userAttempts = userProgress?.attempts ?? 0;
   const remaining = Math.max(0, challenge.maxAttempts - userAttempts);
@@ -347,7 +322,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               border={`${catColor}66`}
             />
             <AngularTag
-              label={DIFF_LABEL[challenge.difficulty] ?? challenge.difficulty}
+              label={difficultyMeta(challenge.difficulty).label}
               color={diffColor}
               bg={`${diffColor}14`}
               border={`${diffColor}66`}
