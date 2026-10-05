@@ -26,9 +26,9 @@ import { type CryptoTool, parseCryptoWorkshop } from "@cyberlearn/types";
 
 const field: React.CSSProperties = {
   padding: "8px 10px",
-  border: "1px solid #2A2560",
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  background: "var(--color-bg-elevated)",
+  color: "var(--color-text-primary)",
   fontFamily: MONO,
   fontSize: 13,
   width: "100%",
@@ -37,9 +37,9 @@ const field: React.CSSProperties = {
 
 const chip = (active: boolean): React.CSSProperties => ({
   padding: "6px 12px",
-  border: `1px solid ${active ? ACCENT : "#2A2560"}`,
+  border: `1px solid ${active ? ACCENT : "var(--color-border-default)"}`,
   background: active ? ACCENT : "transparent",
-  color: active ? "#030219" : "#B8B5D1",
+  color: active ? "var(--color-bg-base)" : "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -47,9 +47,9 @@ const chip = (active: boolean): React.CSSProperties => ({
 
 const small: React.CSSProperties = {
   padding: "6px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -73,7 +73,7 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -118,7 +118,7 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -129,13 +129,17 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
           ATELIER CRYPTO
         </span>
         {workshop.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{workshop.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {workshop.title}
+          </span>
         ) : null}
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
         {workshop.task ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{workshop.task}</p>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+            {workshop.task}
+          </p>
         ) : null}
 
         {workshop.tools.length > 1 ? (
@@ -159,8 +163,9 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
             ))}
           </div>
         ) : null}
-        <p style={{ margin: 0, color: "#7F7BA9", fontSize: 13, lineHeight: 1.5 }}>
-          <strong style={{ color: "#B8B5D1" }}>{TOOL_NAMES[tool]}.</strong> {TOOL_NOTES[tool]}
+        <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 13, lineHeight: 1.5 }}>
+          <strong style={{ color: "var(--color-text-secondary)" }}>{TOOL_NAMES[tool]}.</strong>{" "}
+          {TOOL_NOTES[tool]}
         </p>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -184,7 +189,12 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
           {keyName !== null ? (
             <label style={{ display: "flex", gap: 8, alignItems: "center", flex: "1 1 220px" }}>
               <span
-                style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", whiteSpace: "nowrap" }}
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  color: "var(--color-text-muted)",
+                  whiteSpace: "nowrap",
+                }}
               >
                 {keyName}
               </span>
@@ -244,8 +254,15 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
         </div>
 
         {challenge !== undefined ? (
-          <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 8 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+          <div
+            style={{
+              borderTop: "1px solid var(--color-border-subtle)",
+              paddingTop: 10,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
               MESSAGE À DÉCHIFFRER
             </span>
             <pre
@@ -254,7 +271,7 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
                 margin: 0,
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-all",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
               }}
             >
               {challenge.ciphertext}
@@ -317,7 +334,10 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
                 <p style={{ margin: 0, color: RED, fontSize: 14 }}>
                   Non, ce n&apos;est pas encore ça.
                   {challenge.hint ? (
-                    <span style={{ color: "#B8B5D1" }}> Indice : {challenge.hint}</span>
+                    <span style={{ color: "var(--color-text-secondary)" }}>
+                      {" "}
+                      Indice : {challenge.hint}
+                    </span>
                   ) : null}
                 </p>
               ) : null}

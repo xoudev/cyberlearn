@@ -89,8 +89,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
         @keyframes rv-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         @media (prefers-reduced-motion:reduce){.rv-caret,.rv-typed::after{animation:none!important}}
         .rv-row:hover{background:rgba(255,255,255,0.025)!important}
-        .rv-row:hover .rv-go{color:#F5F5FA!important}
-        .rv-row:hover .rv-go svg stroke{stroke:#F5F5FA!important}
+        .rv-row:hover .rv-go{color:var(--color-text-primary)!important}
+        .rv-row:hover .rv-go svg stroke{stroke:var(--color-text-primary)!important}
       `}</style>
 
       <div className="page-container">
@@ -101,11 +101,11 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
         <div
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 14,
           }}
         >
-          <span style={{ color: "#44406B" }}>{"// "}</span>
+          <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
           SESSION · <b style={{ color: "var(--cosmetic-accent)", fontWeight: 500 }}>SM-2</b> ·
           COURBE D&apos;OUBLI
         </div>
@@ -118,7 +118,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             fontSize: "clamp(40px, 5.5vw, 72px)",
             lineHeight: 1.1,
             letterSpacing: "-0.035em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 24px",
             maxWidth: 920,
           }}
@@ -129,7 +129,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(180deg, var(--cosmetic-accent), #0024FF)",
+                  background:
+                    "linear-gradient(180deg, var(--cosmetic-accent), var(--color-brand-blue))",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",
@@ -144,7 +145,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(180deg, #FFB547, #FF4757)",
+                  background:
+                    "linear-gradient(180deg, var(--color-rarity-legendary), var(--color-category-cybersec))",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",
@@ -163,7 +165,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             fontFamily: "var(--font-sans)",
             fontSize: 15,
             lineHeight: 1.55,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             maxWidth: 620,
             margin: "0 0 44px",
           }}
@@ -202,7 +204,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 14,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   margin: 0,
                 }}
               >
@@ -238,7 +240,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                 href="/dashboard"
                 className="back-link mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   textDecoration: "none",
                   padding: "16px 8px",
                 }}
@@ -265,7 +267,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                     background: "#050416",
                     fontFamily: "var(--font-mono)",
                     fontSize: 10.5,
-                    color: "#44406B",
+                    color: "var(--color-text-faint)",
                     letterSpacing: "0.06em",
                   }}
                 >
@@ -273,7 +275,10 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                     Courbe d&apos;oubli · algorithme SM-2 · {REVIEW_SESSION_SIZE} par jour au plus
                   </span>
                   <span>
-                    Total · <b style={{ color: "#B8B5D1" }}>~{String(totalMinutes)} minutes</b>
+                    Total ·{" "}
+                    <b style={{ color: "var(--color-text-secondary)" }}>
+                      ~{String(totalMinutes)} minutes
+                    </b>
                   </span>
                 </div>
               </div>
@@ -286,7 +291,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   letterSpacing: "0.06em",
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 {waiting}
@@ -299,7 +304,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                 href="/dashboard"
                 className="back-link mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   textDecoration: "none",
                   padding: "16px 8px",
                 }}
@@ -335,11 +340,11 @@ function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date 
       <div
         className="mono-label"
         style={{
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           marginBottom: 14,
         }}
       >
-        <span style={{ color: "#44406B" }}>{"// "}</span>PROCHAINES RÉVISIONS
+        <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>PROCHAINES RÉVISIONS
       </div>
       <div className="card card--ghost" style={{ overflow: "hidden" }}>
         {schedules.map((s, i) => {
@@ -356,14 +361,20 @@ function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date 
                 background: "rgba(5,4,26,0.4)",
               }}
             >
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "#B8B5D1" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  color: "var(--color-text-secondary)",
+                }}
+              >
                 {s.lesson.title}
               </span>
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#44406B",
+                  color: "var(--color-text-faint)",
                   whiteSpace: "nowrap",
                   letterSpacing: "0.08em",
                 }}

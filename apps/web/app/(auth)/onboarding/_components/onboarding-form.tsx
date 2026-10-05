@@ -36,7 +36,7 @@ function Field({
           alignItems: "baseline",
           justifyContent: "space-between",
           fontWeight: 600,
-          color: "#0AFFD4",
+          color: "var(--color-brand-turquoise)",
           marginBottom: 10,
         }}
       >
@@ -47,7 +47,7 @@ function Field({
           <span
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               fontWeight: 500,
             }}
           >
@@ -61,21 +61,21 @@ function Field({
           position: "relative",
           display: "flex",
           alignItems: "stretch",
-          background: "#05041A",
-          border: `1px solid ${error ? "rgba(255,71,87,0.6)" : "#2A2560"}`,
+          background: "var(--color-bg-sunken)",
+          border: `1px solid ${error ? "rgba(255,71,87,0.6)" : "var(--color-border-default)"}`,
           transition: "border-color 180ms ease, box-shadow 180ms ease",
         }}
         onFocusCapture={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "#0AFFD4";
+          el.style.borderColor = "var(--color-brand-turquoise)";
           el.style.boxShadow = "0 0 0 1px rgba(10,255,212,0.3), 0 0 14px rgba(10,255,212,0.12)";
           el.style.background = "#06052A";
         }}
         onBlurCapture={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = error ? "rgba(255,71,87,0.6)" : "#2A2560";
+          el.style.borderColor = error ? "rgba(255,71,87,0.6)" : "var(--color-border-default)";
           el.style.boxShadow = "none";
-          el.style.background = "#05041A";
+          el.style.background = "var(--color-bg-sunken)";
         }}
       >
         {prefix && (
@@ -86,8 +86,8 @@ function Field({
               padding: "0 14px",
               fontFamily: "var(--font-mono)",
               fontSize: 15,
-              color: "#7F7BA9",
-              borderRight: "1px solid #1F1B47",
+              color: "var(--color-text-muted)",
+              borderRight: "1px solid var(--color-border-subtle)",
               background: "rgba(5,4,26,0.6)",
               flexShrink: 0,
             }}
@@ -104,7 +104,7 @@ function Field({
             marginTop: 6,
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#FF4757",
+            color: "var(--color-category-cybersec)",
             letterSpacing: "0.04em",
           }}
         >
@@ -122,7 +122,7 @@ const INPUT_STYLE: React.CSSProperties = {
   padding: "0 14px",
   background: "transparent",
   border: 0,
-  color: "#F5F5FA",
+  color: "var(--color-text-primary)",
   fontFamily: "var(--font-mono)",
   fontSize: 14,
   letterSpacing: "0.01em",
@@ -169,7 +169,7 @@ export function OnboardingForm({
           justifyContent: "space-between",
           paddingBottom: 18,
           marginBottom: 26,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           position: "relative",
           zIndex: 1,
         }}
@@ -178,16 +178,17 @@ export function OnboardingForm({
           className="mono-label mono-label--md"
           style={{
             fontWeight: 600,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: 0,
           }}
         >
-          <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> CRÉER TON IDENTITÉ
+          <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>›</b> CRÉER TON
+          IDENTITÉ
         </h2>
         <span
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           INIT
@@ -205,7 +206,7 @@ export function OnboardingForm({
                 width: 64,
                 height: 64,
                 objectFit: "cover",
-                border: "1px solid #2A2560",
+                border: "1px solid var(--color-border-default)",
                 clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
               }}
             />
@@ -220,7 +221,7 @@ export function OnboardingForm({
               padding: "10px 14px",
               background: "rgba(255,71,87,0.08)",
               border: "1px solid rgba(255,71,87,0.4)",
-              color: "#FF4757",
+              color: "var(--color-category-cybersec)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               letterSpacing: "0.04em",
@@ -256,9 +257,9 @@ export function OnboardingForm({
                 display: "inline-flex",
                 alignItems: "center",
                 padding: "0 14px",
-                borderLeft: "1px solid #1F1B47",
+                borderLeft: "1px solid var(--color-border-subtle)",
                 fontWeight: 600,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -290,7 +291,7 @@ export function OnboardingForm({
                 alignItems: "baseline",
                 justifyContent: "space-between",
                 fontWeight: 600,
-                color: "#0AFFD4",
+                color: "var(--color-brand-turquoise)",
                 marginBottom: 10,
               }}
             >
@@ -300,7 +301,7 @@ export function OnboardingForm({
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontWeight: 500,
                 }}
               >
@@ -317,16 +318,16 @@ export function OnboardingForm({
               }}
               onFocusCapture={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = "#0AFFD4";
+                el.style.borderColor = "var(--color-brand-turquoise)";
                 el.style.boxShadow =
                   "0 0 0 1px rgba(10,255,212,0.3), 0 0 14px rgba(10,255,212,0.12)";
                 el.style.background = "#06052A";
               }}
               onBlurCapture={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = "#2A2560";
+                el.style.borderColor = "var(--color-border-default)";
                 el.style.boxShadow = "none";
-                el.style.background = "#05041A";
+                el.style.background = "var(--color-bg-sunken)";
               }}
             >
               <textarea
@@ -342,7 +343,7 @@ export function OnboardingForm({
                   padding: "12px 14px",
                   background: "transparent",
                   border: 0,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 13.5,
                   lineHeight: 1.55,
@@ -356,14 +357,19 @@ export function OnboardingForm({
                   display: "flex",
                   justifyContent: "flex-end",
                   padding: "6px 14px",
-                  borderTop: "1px solid #1F1B47",
+                  borderTop: "1px solid var(--color-border-subtle)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   letterSpacing: "0.08em",
                 }}
               >
-                <span style={{ color: bioLen > BIO_MAX * 0.85 ? "#FFB020" : "#7F7BA9" }}>
+                <span
+                  style={{
+                    color:
+                      bioLen > BIO_MAX * 0.85 ? "var(--color-warning)" : "var(--color-text-muted)",
+                  }}
+                >
                   {bioLen} / {BIO_MAX}
                 </span>
               </div>
@@ -387,7 +393,7 @@ export function OnboardingForm({
                   "0 0 32px rgba(0,36,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#0024FF";
+                e.currentTarget.style.background = "var(--color-brand-blue)";
                 e.currentTarget.style.boxShadow =
                   "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)";
               }}

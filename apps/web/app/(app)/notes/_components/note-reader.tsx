@@ -118,7 +118,9 @@ export function NoteReader({
         style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
       />
       {cat.label}
-      {note.pathTitle ? <span style={{ color: "#7F7BA9" }}>· {note.pathTitle}</span> : null}
+      {note.pathTitle ? (
+        <span style={{ color: "var(--color-text-muted)" }}>· {note.pathTitle}</span>
+      ) : null}
     </span>
   );
 
@@ -167,7 +169,7 @@ export function NoteReader({
               alignItems: "center",
               gap: 8,
               padding: "12px 22px",
-              borderBottom: "1px solid #1F1B47",
+              borderBottom: "1px solid var(--color-border-subtle)",
             }}
           >
             {mine && (
@@ -239,7 +241,11 @@ export function NoteReader({
             {dismissFailed ? (
               <span
                 role="alert"
-                style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#FF4757" }}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  color: "var(--color-category-cybersec)",
+                }}
               >
                 Impossible de la masquer, réessaie.
               </span>
@@ -253,7 +259,7 @@ export function NoteReader({
                   marginLeft: "auto",
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 Dossier
@@ -301,7 +307,7 @@ export function NoteReader({
                   minHeight: 320,
                   resize: "vertical",
                   background: "rgba(5,4,26,0.5)",
-                  border: "1px solid #2A2560",
+                  border: "1px solid var(--color-border-default)",
                   color: "#E6E4F0",
                   fontFamily: "var(--font-mono)",
                   fontSize: 13.5,
@@ -312,7 +318,13 @@ export function NoteReader({
                 }}
               />
             ) : note.content.trim() === "" ? (
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#7F7BA9" }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  color: "var(--color-text-muted)",
+                }}
+              >
                 Note vide.
               </p>
             ) : (
@@ -342,9 +354,9 @@ function toolBtn(active: boolean): React.CSSProperties {
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: active ? "#05041A" : "#B8B5D1",
+    color: active ? "var(--color-bg-sunken)" : "var(--color-text-secondary)",
     background: active ? "var(--cosmetic-accent)" : "transparent",
-    border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+    border: `1px solid ${active ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
     padding: "8px 12px",
     cursor: "pointer",
   };
@@ -357,7 +369,7 @@ function primaryBtn(pending: boolean): React.CSSProperties {
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: "#05041A",
+    color: "var(--color-bg-sunken)",
     background: "var(--cosmetic-accent)",
     border: "1px solid var(--cosmetic-accent)",
     padding: "8px 12px",
@@ -371,7 +383,7 @@ const READER_CSS = `
 .note-md { font-family: var(--font-body); font-size: 14.5px; line-height: 1.7; color: #D6D3E8; }
 .note-md > :first-child { margin-top: 0; }
 .note-md h1, .note-md h2, .note-md h3, .note-md h4, .note-md h5, .note-md h6 {
-  font-family: var(--font-sans); color: #F5F5FA; font-weight: 700; line-height: 1.3;
+  font-family: var(--font-sans); color: var(--color-text-primary); font-weight: 700; line-height: 1.3;
   margin: 22px 0 10px; letter-spacing: -0.01em;
 }
 .note-md h1 { font-size: 22px; }
@@ -387,10 +399,10 @@ const READER_CSS = `
 .note-md a { color: var(--cosmetic-accent); text-decoration: underline; text-underline-offset: 2px; }
 .note-md code {
   font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
-  border: 1px solid #2A2560; border-radius: 3px; padding: 1px 5px; color: #B8FBEB;
+  border: 1px solid var(--color-border-default); border-radius: 3px; padding: 1px 5px; color: #B8FBEB;
 }
 .note-md pre {
-  background: var(--cosmetic-terminal-bg); border: 1px solid #1F1B47; border-radius: 4px;
+  background: var(--cosmetic-terminal-bg); border: 1px solid var(--color-border-subtle); border-radius: 4px;
   padding: 14px 16px; overflow-x: auto; margin: 0 0 14px;
 }
 .note-md pre code {
@@ -399,7 +411,7 @@ const READER_CSS = `
 }
 .note-md blockquote {
   margin: 0 0 12px; padding: 4px 14px; border-left: 3px solid var(--cosmetic-accent);
-  color: #B8B5D1; background: color-mix(in srgb, var(--cosmetic-accent) 4%, transparent);
+  color: var(--color-text-secondary); background: color-mix(in srgb, var(--cosmetic-accent) 4%, transparent);
 }
-.note-md hr { border: none; border-top: 1px solid #2A2560; margin: 18px 0; }
+.note-md hr { border: none; border-top: 1px solid var(--color-border-default); margin: 18px 0; }
 `;

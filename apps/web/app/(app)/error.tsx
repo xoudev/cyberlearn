@@ -28,7 +28,14 @@ export default function AppError({
           fontFamily: "var(--font-mono)",
         }}
       >
-        <div style={{ fontSize: 10, letterSpacing: "0.18em", color: "#7F7BA9", marginBottom: 18 }}>
+        <div
+          style={{
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            color: "var(--color-text-muted)",
+            marginBottom: 18,
+          }}
+        >
           {"// SECTION · ERREUR"}
         </div>
         <h1
@@ -37,18 +44,30 @@ export default function AppError({
             fontWeight: 700,
             fontSize: 22,
             letterSpacing: "-0.02em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 12px",
           }}
         >
           Cette section n&apos;a pas pu se charger
         </h1>
-        <p style={{ fontSize: 13, color: "#B8B5D1", lineHeight: 1.6, margin: "0 0 24px" }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.6,
+            margin: "0 0 24px",
+          }}
+        >
           Une erreur est survenue. L&apos;incident a été signalé ; tu peux réessayer.
         </p>
         {error.digest ? (
           <p
-            style={{ fontSize: 11, color: "#7F7BA9", letterSpacing: "0.06em", margin: "0 0 20px" }}
+            style={{
+              fontSize: 11,
+              color: "var(--color-text-muted)",
+              letterSpacing: "0.06em",
+              margin: "0 0 20px",
+            }}
           >
             ID : {error.digest}
           </p>
@@ -75,7 +94,7 @@ export default function AppError({
             style={{
               padding: "8px 20px",
               fontWeight: 600,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",
@@ -89,7 +108,7 @@ export default function AppError({
             style={{
               padding: "8px 20px",
               fontWeight: 600,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",

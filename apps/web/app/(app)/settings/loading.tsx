@@ -6,8 +6,8 @@ import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 // this only fills the content column. Card surface matches settings tokens:
 // bg #0A0826 (elev), 1px #2A2560 (border), square corners (radius 0), pad 28/30.
 const CARD_STYLE: React.CSSProperties = {
-  background: "#0A0826",
-  border: "1px solid #2A2560",
+  background: "var(--color-bg-elevated)",
+  border: "1px solid var(--color-border-default)",
   padding: "28px 30px",
 };
 

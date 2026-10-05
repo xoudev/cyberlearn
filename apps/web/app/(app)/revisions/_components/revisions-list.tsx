@@ -31,15 +31,15 @@ type Outcome = ReviewOutcome;
 const OUTCOME_DISPLAY: Record<Outcome, { icon: string; color: string }> = {
   mastered: { icon: "★", color: "var(--cosmetic-accent)" },
   easy: { icon: "✓", color: "var(--cosmetic-accent)" },
-  hard: { icon: "~", color: "#FFB020" },
-  forgot: { icon: "↺", color: "#FF4757" },
+  hard: { icon: "~", color: "var(--color-warning)" },
+  forgot: { icon: "↺", color: "var(--color-category-cybersec)" },
 };
 
 const outcomeText = reviewOutcomeText;
 
 const GRADE_BUTTONS: { quality: 1 | 3 | 5; label: string; color: string }[] = [
-  { quality: 1, label: "Oublié", color: "#FF4757" },
-  { quality: 3, label: "Difficile", color: "#FFB020" },
+  { quality: 1, label: "Oublié", color: "var(--color-category-cybersec)" },
+  { quality: 3, label: "Difficile", color: "var(--color-warning)" },
   { quality: 5, label: "Facile ✓", color: "var(--cosmetic-accent)" },
 ];
 
@@ -78,17 +78,22 @@ function GradeRowBody({
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9" }}>
+        <span
+          style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}
+        >
           Comment tu as retenu cette leçon ?
           {row.reviewXp > 0 && (
-            <span style={{ color: "#44406B" }}> · réussite = +{String(row.reviewXp)} XP</span>
+            <span style={{ color: "var(--color-text-faint)" }}>
+              {" "}
+              · réussite = +{String(row.reviewXp)} XP
+            </span>
           )}
         </span>
         <Link
           className="mono-label card card--ghost"
           href={`/lessons/${row.slug}`}
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             textDecoration: "none",
             padding: "6px 12px",
             whiteSpace: "nowrap",
@@ -163,7 +168,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                     fontFamily: "var(--font-sans)",
                     fontWeight: 600,
                     fontSize: 14,
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     marginBottom: 2,
                     textDecoration: "line-through",
                   }}
@@ -203,7 +208,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                   fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: "0.04em",
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   width: 36,
                   height: 28,
                   display: "grid",
@@ -231,7 +236,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                   <span
                     className="mono-label"
                     style={{
-                      color: "#44406B",
+                      color: "var(--color-text-faint)",
                     }}
                   >
                     · auto-évaluation
@@ -242,7 +247,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                     fontFamily: "var(--font-sans)",
                     fontWeight: 600,
                     fontSize: 15,
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                     margin: 0,
                     letterSpacing: "-0.005em",
                   }}
@@ -255,7 +260,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
               <div
                 className="mono-label"
                 style={{
-                  color: row.dueToday ? "#FF4D6D" : "#7F7BA9",
+                  color: row.dueToday ? "var(--color-danger)" : "var(--color-text-muted)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
@@ -267,8 +272,8 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    background: row.dueToday ? "#FF4D6D" : "#44406B",
-                    boxShadow: row.dueToday ? "0 0 6px #FF4D6D" : "none",
+                    background: row.dueToday ? "var(--color-danger)" : "var(--color-text-faint)",
+                    boxShadow: row.dueToday ? "0 0 6px var(--color-danger)" : "none",
                     display: "inline-block",
                   }}
                 />
@@ -279,7 +284,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
               <div
                 className="mono-label"
                 style={{
-                  color: "#44406B",
+                  color: "var(--color-text-faint)",
                   whiteSpace: "nowrap",
                 }}
               >

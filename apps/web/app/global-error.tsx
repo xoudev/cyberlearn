@@ -21,7 +21,7 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100vh",
-          background: "#030219",
+          background: "var(--color-bg-base)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -33,31 +33,36 @@ export default function GlobalError({
             position: "relative",
             maxWidth: 480,
             width: "calc(100vw - 48px)",
-            background: "#0A0826",
+            background: "var(--color-bg-elevated)",
             border: "1px solid #2A1B1B",
             padding: "32px 28px",
           }}
         >
           {/* Bracket corners */}
           {[
-            { top: -1, left: -1, borderTop: "2px solid #FF4757", borderLeft: "2px solid #FF4757" },
+            {
+              top: -1,
+              left: -1,
+              borderTop: "2px solid var(--color-category-cybersec)",
+              borderLeft: "2px solid var(--color-category-cybersec)",
+            },
             {
               top: -1,
               right: -1,
-              borderTop: "2px solid #FF4757",
-              borderRight: "2px solid #FF4757",
+              borderTop: "2px solid var(--color-category-cybersec)",
+              borderRight: "2px solid var(--color-category-cybersec)",
             },
             {
               bottom: -1,
               left: -1,
-              borderBottom: "2px solid #FF4757",
-              borderLeft: "2px solid #FF4757",
+              borderBottom: "2px solid var(--color-category-cybersec)",
+              borderLeft: "2px solid var(--color-category-cybersec)",
             },
             {
               bottom: -1,
               right: -1,
-              borderBottom: "2px solid #FF4757",
-              borderRight: "2px solid #FF4757",
+              borderBottom: "2px solid var(--color-category-cybersec)",
+              borderRight: "2px solid var(--color-category-cybersec)",
             },
           ].map((style, i) => (
             <span
@@ -72,7 +77,7 @@ export default function GlobalError({
             style={{
               fontSize: 10,
               letterSpacing: "0.18em",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 20,
             }}
           >
@@ -86,14 +91,21 @@ export default function GlobalError({
               fontWeight: 700,
               fontSize: 22,
               letterSpacing: "-0.02em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 12px",
             }}
           >
             Erreur inattendue
           </h1>
 
-          <p style={{ fontSize: 14, color: "#B8B5D1", lineHeight: "1.6", margin: "0 0 24px" }}>
+          <p
+            style={{
+              fontSize: 14,
+              color: "var(--color-text-secondary)",
+              lineHeight: "1.6",
+              margin: "0 0 24px",
+            }}
+          >
             Une erreur critique s&apos;est produite. L&apos;incident a été signalé automatiquement.
           </p>
 
@@ -101,7 +113,7 @@ export default function GlobalError({
             <p
               style={{
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 fontFamily: "monospace",
                 letterSpacing: "0.06em",
                 margin: "0 0 20px",
@@ -123,8 +135,8 @@ export default function GlobalError({
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 background: "transparent",
-                border: "1px solid #0AFFD4",
-                color: "#0AFFD4",
+                border: "1px solid var(--color-brand-turquoise)",
+                color: "var(--color-brand-turquoise)",
                 cursor: "pointer",
               }}
             >
@@ -140,7 +152,7 @@ export default function GlobalError({
                 fontSize: 12,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -158,7 +170,7 @@ export default function GlobalError({
                 fontSize: 12,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",

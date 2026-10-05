@@ -1,18 +1,18 @@
 /* <NetworkLab>: the React Flow canvas in the lesson's colours. */
 
 .netlab-canvas .react-flow {
-  background: #05041a;
+  background: var(--color-bg-sunken);
   font-family: var(--font-mono, monospace);
 }
 
 .netlab-canvas .react-flow__controls {
   box-shadow: none;
-  border: 1px solid #2a2560;
+  border: 1px solid var(--color-border-default);
 }
 
 .netlab-canvas .react-flow__controls button {
-  background: #0a0826;
-  border-bottom: 1px solid #2a2560;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-default);
   color: #d8d6ea;
   fill: #d8d6ea;
 }
@@ -26,7 +26,7 @@
 }
 
 .netlab-canvas .react-flow__attribution a {
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 .netlab-canvas .react-flow__edge-path {
@@ -35,25 +35,25 @@
 }
 
 .netlab-canvas .react-flow__edge.selected .react-flow__edge-path {
-  stroke: #ffb020;
+  stroke: var(--color-warning);
 }
 
 .netlab-canvas .react-flow__edge.netlab-lit .react-flow__edge-path {
-  stroke: var(--cosmetic-accent, #0affd4);
+  stroke: var(--cosmetic-accent, var(--color-brand-turquoise));
   stroke-width: 3;
 }
 
 .netlab-canvas .react-flow__edge-text {
-  fill: #7f7ba9;
+  fill: var(--color-text-muted);
   font-size: 10px;
 }
 
 .netlab-canvas .react-flow__edge-textbg {
-  fill: #05041a;
+  fill: var(--color-bg-sunken);
 }
 
 .netlab-canvas .react-flow__connectionline path {
-  stroke: var(--cosmetic-accent, #0affd4);
+  stroke: var(--cosmetic-accent, var(--color-brand-turquoise));
   stroke-width: 2;
   stroke-dasharray: 6 4;
 }
@@ -61,16 +61,16 @@
 .netlab-node {
   width: 104px;
   padding: 8px 6px 14px;
-  border: 1px solid #2a2560;
-  background: #0a0826;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
   color: #d8d6ea;
   text-align: center;
   cursor: grab;
 }
 
 .netlab-node.netlab-selected {
-  border-color: #ffb020;
-  box-shadow: 0 0 0 1px #ffb020;
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 1px var(--color-warning);
 }
 
 .netlab-node svg {
@@ -81,12 +81,12 @@
 .netlab-name {
   font-weight: 700;
   font-size: 12px;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
 }
 
 .netlab-summary {
   font-size: 10px;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
   min-height: 12px;
   overflow-wrap: anywhere;
 }
@@ -95,8 +95,8 @@
   width: 14px;
   height: 14px;
   bottom: -7px;
-  border: 2px solid #05041a;
-  background: var(--cosmetic-accent, #0affd4);
+  border: 2px solid var(--color-bg-sunken);
+  background: var(--cosmetic-accent, var(--color-brand-turquoise));
 }
 
 /* The drop zone while a cable is pulled: the whole device, invisibly. */

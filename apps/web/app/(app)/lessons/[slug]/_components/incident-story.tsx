@@ -11,6 +11,7 @@ import {
   VERDICT_LABELS,
 } from "@cyberlearn/lib/story/incident";
 import { parseIncidentStory, type StoryEnding, type StoryVerdict } from "@cyberlearn/types";
+import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
 
 /**
  * <IncidentStory>: an incident told scene by scene, decided by the learner.
@@ -21,19 +22,14 @@ import { parseIncidentStory, type StoryEnding, type StoryVerdict } from "@cyberl
  * clicks; nothing is sent anywhere.
  */
 
-const RED = "#FF4757";
-const AMBER = "#FFB020";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
-
 const VERDICT_COLOR: Record<StoryVerdict, string> = { good: ACCENT, risky: AMBER, bad: RED };
 const ENDING_COLOR: Record<StoryEnding, string> = { success: ACCENT, partial: AMBER, failure: RED };
 
 const button: React.CSSProperties = {
   padding: "10px 14px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#F5F5FA",
+  color: "var(--color-text-primary)",
   textAlign: "left",
   fontSize: 14,
   lineHeight: 1.5,
@@ -42,9 +38,9 @@ const button: React.CSSProperties = {
 
 const small: React.CSSProperties = {
   padding: "6px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -57,7 +53,12 @@ const tag: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const prose: React.CSSProperties = { margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 };
+const prose: React.CSSProperties = {
+  margin: 0,
+  color: "var(--color-text-secondary)",
+  fontSize: 14,
+  lineHeight: 1.6,
+};
 
 export function IncidentStory(props: Record<string, unknown>): React.ReactElement {
   const parsed = parseIncidentStory(props);
@@ -73,7 +74,7 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -105,15 +106,15 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
       aria-label={`Incident à choix${story.title ? ` : ${story.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
+        border: "1px solid var(--color-border-subtle)",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
+        background: "var(--color-bg-sunken)",
       }}
     >
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -122,9 +123,18 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
       >
         <span style={{ ...tag, color: ACCENT }}>Incident à choix</span>
         {story.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{story.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {story.title}
+          </span>
         ) : null}
-        <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: MONO,
+            fontSize: 11,
+            color: "var(--color-text-muted)",
+          }}
+        >
           {run.ending === null ? `Décision ${String(run.steps.length + 1)}` : "Fin"}
         </span>
       </header>
@@ -149,11 +159,15 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
                 }}
               >
                 {step.scene.title ? (
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+                  <span
+                    style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}
+                  >
                     {step.scene.title}
                   </span>
                 ) : null}
-                <span style={{ color: "#F5F5FA", fontSize: 14 }}>{step.choice.text}</span>
+                <span style={{ color: "var(--color-text-primary)", fontSize: 14 }}>
+                  {step.choice.text}
+                </span>
                 <span style={{ ...tag, color: VERDICT_COLOR[step.choice.verdict] }}>
                   {VERDICT_LABELS[step.choice.verdict]}
                 </span>
@@ -166,7 +180,7 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
         <article
           aria-label={run.scene.title ?? (run.ending === null ? "La situation" : "La fin")}
           style={{
-            border: `1px solid ${run.ending === null ? "#2A2560" : ENDING_COLOR[run.ending]}`,
+            border: `1px solid ${run.ending === null ? "var(--color-border-default)" : ENDING_COLOR[run.ending]}`,
             padding: "12px 14px",
             display: "grid",
             gap: 10,
@@ -178,12 +192,19 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
             </span>
           ) : null}
           {run.scene.title ? (
-            <h4 style={{ margin: 0, fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+            <h4
+              style={{
+                margin: 0,
+                fontFamily: MONO,
+                fontSize: 12,
+                color: "var(--color-text-muted)",
+              }}
+            >
               {run.scene.title}
             </h4>
           ) : null}
           {paragraphsOf(run.scene.text).map((paragraph, k) => (
-            <p key={k} style={{ ...prose, color: "#F5F5FA" }}>
+            <p key={k} style={{ ...prose, color: "var(--color-text-primary)" }}>
               {paragraph}
             </p>
           ))}
@@ -208,7 +229,7 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
         <div aria-live="polite" style={{ display: "grid", gap: 8 }}>
           {run.ending !== null ? (
             <>
-              <p style={{ ...prose, color: "#F5F5FA" }}>{debriefLine(run)}</p>
+              <p style={{ ...prose, color: "var(--color-text-primary)" }}>{debriefLine(run)}</p>
               <p style={prose}>
                 Fins découvertes : {String(found.length)} sur {String(endings.length)}.
                 {found.length < endings.length
@@ -221,9 +242,15 @@ export function IncidentStory(props: Record<string, unknown>): React.ReactElemen
                   style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 4 }}
                 >
                   {path.map((step, k) => (
-                    <li key={k} style={{ color: "#B8B5D1", fontSize: 14 }}>
+                    <li key={k} style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
                       {step.scene.title ? (
-                        <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+                        <span
+                          style={{
+                            fontFamily: MONO,
+                            fontSize: 11,
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
                           {step.scene.title} :{" "}
                         </span>
                       ) : null}

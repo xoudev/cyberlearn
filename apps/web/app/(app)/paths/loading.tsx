@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import "./_components/paths-catalog-v2.css";
 
 /** Page tokens (mirrors .pc2-root): square corners + #2a2560 hairline. */
-const PC2_BORDER = "#2a2560";
+const PC2_BORDER = "var(--color-border-default)";
 const CARD_STYLE: React.CSSProperties = {
   borderColor: PC2_BORDER,
   background: "rgba(10, 8, 38, 0.6)",
@@ -162,7 +162,7 @@ export default function PathsLoading(): React.ReactElement {
           <div
             style={{
               borderLeft: `1px solid ${PC2_BORDER}`,
-              background: "#05041a",
+              background: "var(--color-bg-sunken)",
               display: "flex",
               flexDirection: "column",
             }}

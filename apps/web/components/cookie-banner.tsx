@@ -63,8 +63,8 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           left: 0,
           right: 0,
           zIndex: 9999,
-          background: "#0A0826",
-          borderTop: "1px solid #2A2560",
+          background: "var(--color-bg-elevated)",
+          borderTop: "1px solid var(--color-border-default)",
           padding: "14px 24px",
           display: "flex",
           alignItems: "center",
@@ -80,7 +80,7 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           style={{
             margin: 0,
             fontSize: "12px",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontFamily: "var(--font-mono)",
             maxWidth: "720px",
             lineHeight: "1.5",
@@ -89,7 +89,10 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
           (authentification, préférences de session). Ces cookies sont exemptés de consentement au
           titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
-          <Link href="/privacy#cookies" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <Link
+            href="/privacy#cookies"
+            style={{ color: "var(--color-info)", textDecoration: "none" }}
+          >
             En savoir plus
           </Link>
         </p>
@@ -105,7 +108,7 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
               e.currentTarget.style.background = "#1A3AFF";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#0024FF";
+              e.currentTarget.style.background = "var(--color-brand-blue)";
             }}
           >
             J&apos;AI COMPRIS

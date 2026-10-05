@@ -27,18 +27,18 @@ const COUNT_FIELDS: readonly LogField[] = ["ip", "user", "action", "source", "ho
 
 const field: React.CSSProperties = {
   padding: "7px 10px",
-  border: "1px solid #2A2560",
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  background: "var(--color-bg-elevated)",
+  color: "var(--color-text-primary)",
   fontFamily: MONO,
   fontSize: 13,
 };
 
 const small: React.CSSProperties = {
   padding: "4px 10px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -48,7 +48,7 @@ const cellButton: React.CSSProperties = {
   padding: 0,
   border: "none",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -74,7 +74,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -114,7 +114,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -125,15 +125,24 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           CHASSE DANS LES LOGS
         </span>
         {hunt.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{hunt.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {hunt.title}
+          </span>
         ) : null}
-        <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: MONO,
+            fontSize: 12,
+            color: "var(--color-text-muted)",
+          }}
+        >
           {String(shown.length)} événements sur {String(log.length)}
         </span>
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{hunt.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{hunt.task}</p>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input
@@ -153,7 +162,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
               alignItems: "center",
               fontFamily: MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             COMPTER PAR
@@ -190,7 +199,11 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                   setFilters(filters.filter((x) => x !== f));
                 }}
                 aria-label={`Retirer le filtre ${FIELD_NAMES[f.field]} = ${f.value}`}
-                style={{ ...small, border: `1px solid ${ACCENT}`, color: "#F5F5FA" }}
+                style={{
+                  ...small,
+                  border: `1px solid ${ACCENT}`,
+                  color: "var(--color-text-primary)",
+                }}
               >
                 {FIELD_NAMES[f.field]} = {f.value} ×
               </button>
@@ -215,7 +228,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
               borderCollapse: "collapse",
               fontFamily: MONO,
               fontSize: 12,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               alignSelf: "start",
             }}
           >
@@ -241,7 +254,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
               ))}
               {counts.length === 0 ? (
                 <tr>
-                  <td style={{ color: "#7F7BA9" }}>aucune valeur</td>
+                  <td style={{ color: "var(--color-text-muted)" }}>aucune valeur</td>
                 </tr>
               ) : null}
             </tbody>
@@ -262,9 +275,9 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                     style={{
                       textAlign: "left",
                       padding: "6px 10px",
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       fontWeight: 400,
-                      borderBottom: "1px solid #1F1B47",
+                      borderBottom: "1px solid var(--color-border-subtle)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -280,7 +293,11 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                   style={{ borderBottom: "1px solid #110F33" }}
                 >
                   <td
-                    style={{ padding: "3px 10px", color: "#B8B5D1", whiteSpace: "nowrap" }}
+                    style={{
+                      padding: "3px 10px",
+                      color: "var(--color-text-secondary)",
+                      whiteSpace: "nowrap",
+                    }}
                     title={event.time}
                   >
                     {clockOf(event.time)}
@@ -290,7 +307,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                     return (
                       <td key={f} style={{ padding: "3px 10px", whiteSpace: "nowrap" }}>
                         {value === undefined ? (
-                          <span style={{ color: "#3F3D5C" }}>·</span>
+                          <span style={{ color: "var(--color-text-disabled)" }}>·</span>
                         ) : (
                           <button
                             type="button"
@@ -317,7 +334,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                 padding: "6px 10px",
                 fontFamily: MONO,
                 fontSize: 12,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               … et {String(shown.length - ROWS_SHOWN)} autres lignes : affine le filtre, ou compte.
@@ -330,7 +347,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                 padding: "6px 10px",
                 fontFamily: MONO,
                 fontSize: 12,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               Aucun événement ne correspond.
@@ -338,7 +355,14 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           ) : null}
         </div>
 
-        <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 10 }}>
+        <div
+          style={{
+            borderTop: "1px solid var(--color-border-subtle)",
+            paddingTop: 10,
+            display: "grid",
+            gap: 10,
+          }}
+        >
           {hunt.questions.map((question) => {
             const verdict = verdicts[question.label];
             return (
@@ -350,7 +374,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                 }}
                 style={{ display: "grid", gap: 6 }}
               >
-                <label style={{ color: "#F5F5FA", fontSize: 14 }}>
+                <label style={{ color: "var(--color-text-primary)", fontSize: 14 }}>
                   {verdict === "right" ? (
                     <span style={{ color: ACCENT, fontFamily: MONO }}>✓ </span>
                   ) : null}
@@ -384,7 +408,10 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
                   <p style={{ margin: 0, color: RED, fontSize: 14 }}>
                     Non, ce n&apos;est pas ça.
                     {question.hint && (misses[question.label] ?? 0) >= 1 ? (
-                      <span style={{ color: "#B8B5D1" }}> Indice : {question.hint}</span>
+                      <span style={{ color: "var(--color-text-secondary)" }}>
+                        {" "}
+                        Indice : {question.hint}
+                      </span>
                     ) : null}
                   </p>
                 ) : null}

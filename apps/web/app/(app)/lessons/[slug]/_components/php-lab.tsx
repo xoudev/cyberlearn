@@ -160,7 +160,7 @@ export function PhpLab(
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -171,7 +171,9 @@ export function PhpLab(
           PHP · VRAI SERVEUR
         </span>
         {lab.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{lab.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {lab.title}
+          </span>
         ) : null}
         <button
           type="button"
@@ -188,7 +190,7 @@ export function PhpLab(
       </header>
 
       <div style={{ padding: "12px 16px", display: "grid", gap: 14 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{lab.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.task}</p>
 
         <div style={{ display: "grid", gap: 6 }}>
           {pages.length > 1 ? (
@@ -207,9 +209,9 @@ export function PhpLab(
                   }}
                   className="btn btn--ghost btn--sm"
                   style={{
-                    color: page === shown ? "#030219" : "#B8B5D1",
+                    color: page === shown ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                     background: page === shown ? ACCENT : "transparent",
-                    borderColor: page === shown ? ACCENT : "#2A2560",
+                    borderColor: page === shown ? ACCENT : "var(--color-border-default)",
                   }}
                 >
                   {page}
@@ -244,7 +246,7 @@ export function PhpLab(
         <div style={{ display: "grid", gap: 8 }}>
           {lab.requests !== undefined && lab.requests.length > 0 ? (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
                 REQUÊTES TOUTES FAITES
               </span>
               {lab.requests.map((shortcut) => (
@@ -349,11 +351,13 @@ export function PhpLab(
                   HTTP {String(response.status)}
                 </strong>
                 {headerValue(response, "location") !== null ? (
-                  <span style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}>
+                  <span
+                    style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-secondary)" }}
+                  >
                     → {headerValue(response, "location")}
                   </span>
                 ) : null}
-                <details style={{ fontSize: 12, color: "#B8B5D1" }}>
+                <details style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
                   <summary style={{ cursor: "pointer" }}>
                     En-têtes ({String(response.headers.length)})
                   </summary>
@@ -372,9 +376,10 @@ export function PhpLab(
                       }}
                       className="btn btn--ghost btn--sm"
                       style={{
-                        color: view === which ? "#030219" : "#B8B5D1",
+                        color:
+                          view === which ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                         background: view === which ? ACCENT : "transparent",
-                        borderColor: view === which ? ACCENT : "#2A2560",
+                        borderColor: view === which ? ACCENT : "var(--color-border-default)",
                       }}
                     >
                       {which === "preview" ? "Aperçu" : "Source"}
@@ -406,7 +411,7 @@ export function PhpLab(
                   style={{
                     width: "100%",
                     height: 220,
-                    border: "1px solid #1F1B47",
+                    border: "1px solid var(--color-border-subtle)",
                     background: "#FFFFFF",
                   }}
                 />
@@ -430,7 +435,14 @@ export function PhpLab(
         </div>
 
         {checks.length > 0 ? (
-          <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 8 }}>
+          <div
+            style={{
+              borderTop: "1px solid var(--color-border-subtle)",
+              paddingTop: 10,
+              display: "grid",
+              gap: 8,
+            }}
+          >
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
               {checks.map((check) => {
                 const verdict = verdictOf(check.label, check.kind);
@@ -442,7 +454,13 @@ export function PhpLab(
                       {verdict === null ? "○" : verdict.ok ? "✓" : "✗"} {check.label}
                     </span>
                     {verdict !== null && !verdict.ok ? (
-                      <span style={{ display: "block", color: "#B8B5D1", paddingLeft: 16 }}>
+                      <span
+                        style={{
+                          display: "block",
+                          color: "var(--color-text-secondary)",
+                          paddingLeft: 16,
+                        }}
+                      >
                         {verdict.reason}
                       </span>
                     ) : null}
@@ -472,7 +490,7 @@ export function PhpLab(
         ) : null}
 
         {lab.hints && lab.hints.length > 0 ? (
-          <details style={{ borderTop: "1px solid #1F1B47", paddingTop: 10 }}>
+          <details style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 10 }}>
             <summary
               style={{
                 cursor: "pointer",
@@ -489,7 +507,12 @@ export function PhpLab(
               {lab.hints.map((hint) => (
                 <li
                   key={hint}
-                  style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1", lineHeight: 1.55 }}
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 12,
+                    color: "var(--color-text-secondary)",
+                    lineHeight: 1.55,
+                  }}
                 >
                   {hint}
                 </li>
@@ -505,8 +528,8 @@ export function PhpLab(
 const field: React.CSSProperties = {
   width: "100%",
   padding: "7px 10px",
-  background: "#0A0826",
-  border: "1px solid #2A2560",
+  background: "var(--color-bg-elevated)",
+  border: "1px solid var(--color-border-default)",
   color: "#D8D6EA",
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 13,
@@ -515,8 +538,8 @@ const field: React.CSSProperties = {
 const codeBox: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
-  background: "#030219",
-  border: "1px solid #2A2560",
+  background: "var(--color-bg-base)",
+  border: "1px solid var(--color-border-default)",
   color: "#D8D6EA",
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 12.5,

@@ -28,8 +28,8 @@ export function SqlResultTable({ result }: { result: SqlResult }): React.ReactEl
                 style={{
                   textAlign: "left",
                   padding: "6px 10px",
-                  borderBottom: "1px solid #2A2560",
-                  color: "#7F7BA9",
+                  borderBottom: "1px solid var(--color-border-default)",
+                  color: "var(--color-text-muted)",
                   fontWeight: 500,
                   whiteSpace: "nowrap",
                 }}
@@ -59,7 +59,7 @@ export function SqlResultTable({ result }: { result: SqlResult }): React.ReactEl
           ))}
         </tbody>
       </table>
-      <p style={{ margin: 0, padding: "4px 10px", fontSize: 12, color: "#7F7BA9" }}>
+      <p style={{ margin: 0, padding: "4px 10px", fontSize: 12, color: "var(--color-text-muted)" }}>
         {result.values.length} ligne{result.values.length > 1 ? "s" : ""}
         {result.values.length > MAX_ROWS ? `, ${String(MAX_ROWS)} affichées` : ""}
       </p>

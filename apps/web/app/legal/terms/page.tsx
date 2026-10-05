@@ -15,7 +15,7 @@ export default function TermsPage(): React.JSX.Element {
         style={{
           fontSize: "30px",
           fontWeight: 700,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "8px",
         }}
       >
@@ -24,7 +24,7 @@ export default function TermsPage(): React.JSX.Element {
       <p
         style={{
           fontSize: "13px",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontFamily: "var(--font-mono)",
           marginBottom: "48px",
         }}
@@ -36,8 +36,8 @@ export default function TermsPage(): React.JSX.Element {
         <p>
           Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et
           l’utilisation de la plateforme {COMPANY}, accessible à l’adresse{" "}
-          <strong style={{ color: "#B8B5D1" }}>cyberlearn.fr</strong>, éditée par {COMPANY}{" "}
-          (ci-après « nous », « notre » ou « la Plateforme »).
+          <strong style={{ color: "var(--color-text-secondary)" }}>cyberlearn.fr</strong>, éditée
+          par {COMPANY} (ci-après « nous », « notre » ou « la Plateforme »).
         </p>
         <p style={{ marginTop: "12px" }}>
           En accédant à la Plateforme ou en créant un compte, vous acceptez sans réserve les
@@ -126,25 +126,28 @@ export default function TermsPage(): React.JSX.Element {
           Libertés.
         </p>
         <p style={{ marginTop: "12px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Données collectées :</strong> adresse e-mail, nom
-          d’utilisateur (optionnel), avatar (optionnel), données de progression pédagogique (leçons
-          complétées, scores, XP, badges).
+          <strong style={{ color: "var(--color-text-secondary)" }}>Données collectées :</strong>{" "}
+          adresse e-mail, nom d’utilisateur (optionnel), avatar (optionnel), données de progression
+          pédagogique (leçons complétées, scores, XP, badges).
         </p>
         <p style={{ marginTop: "12px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Finalités :</strong> gestion de votre compte, suivi
-          de votre progression, émission de certificats, envoi de notifications (si activé),
-          amélioration du service.
+          <strong style={{ color: "var(--color-text-secondary)" }}>Finalités :</strong> gestion de
+          votre compte, suivi de votre progression, émission de certificats, envoi de notifications
+          (si activé), amélioration du service.
         </p>
         <p style={{ marginTop: "12px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Durée de conservation :</strong> données de compte
-          conservées jusqu’à suppression du compte ou 24 mois d’inactivité. Journaux d’audit
-          conservés 12 mois.
+          <strong style={{ color: "var(--color-text-secondary)" }}>Durée de conservation :</strong>{" "}
+          données de compte conservées jusqu’à suppression du compte ou 24 mois d’inactivité.
+          Journaux d’audit conservés 12 mois.
         </p>
         <p style={{ marginTop: "12px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Vos droits :</strong> vous disposez d’un droit
-          d’accès, de rectification, de suppression, de portabilité et d’opposition. Pour exercer
-          ces droits, contactez-nous à{" "}
-          <a href={`mailto:${EMAIL}`} style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <strong style={{ color: "var(--color-text-secondary)" }}>Vos droits :</strong> vous
+          disposez d’un droit d’accès, de rectification, de suppression, de portabilité et
+          d’opposition. Pour exercer ces droits, contactez-nous à{" "}
+          <a
+            href={`mailto:${EMAIL}`}
+            style={{ color: "var(--color-info)", textDecoration: "none" }}
+          >
             {EMAIL}
           </a>
           .
@@ -159,7 +162,13 @@ export default function TermsPage(): React.JSX.Element {
         </p>
         <p style={{ marginTop: "12px" }}>
           Un cookie de notice (
-          <code style={{ color: "#0AFFD4", fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+          <code
+            style={{
+              color: "var(--color-brand-turquoise)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+            }}
+          >
             cl_consent
           </code>
           ) est stocké localement pour mémoriser que vous avez pris connaissance des informations
@@ -199,7 +208,10 @@ export default function TermsPage(): React.JSX.Element {
         </p>
         <p style={{ marginTop: "12px" }}>
           Pour toute question relative aux présentes CGU, contactez-nous :{" "}
-          <a href={`mailto:${EMAIL}`} style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <a
+            href={`mailto:${EMAIL}`}
+            style={{ color: "var(--color-info)", textDecoration: "none" }}
+          >
             {EMAIL}
           </a>
         </p>
@@ -221,15 +233,15 @@ function Section({
         style={{
           fontSize: "20px",
           fontWeight: 600,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "16px",
           paddingBottom: "8px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {title}
       </h2>
-      <div style={{ fontSize: "14px", color: "#B8B5D1" }}>{children}</div>
+      <div style={{ fontSize: "14px", color: "var(--color-text-secondary)" }}>{children}</div>
     </section>
   );
 }

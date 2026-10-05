@@ -57,7 +57,7 @@ export function CodeBlock({
             style={{
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 11,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               letterSpacing: "0.03em",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -74,7 +74,7 @@ export function CodeBlock({
                 fontWeight: 700,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 padding: "2px 7px",
                 border: "1px solid rgba(255,71,87,0.3)",
                 background: "rgba(255,71,87,0.07)",
@@ -91,7 +91,7 @@ export function CodeBlock({
                 fontSize: 9,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 flexShrink: 0,
               }}
             >
@@ -111,7 +111,7 @@ export function CodeBlock({
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: copied ? "var(--cosmetic-accent)" : "#44406B",
+            color: copied ? "var(--cosmetic-accent)" : "var(--color-text-faint)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9,
             fontWeight: 700,
@@ -136,7 +136,7 @@ export function CodeBlock({
           margin: 0,
           // terminal-theme cosmetic drives the code surface background
           background: "var(--cosmetic-terminal-bg)",
-          border: "1px solid #2A2560",
+          border: "1px solid var(--color-border-default)",
           borderLeft: "3px solid var(--cosmetic-accent)",
           padding: "16px 20px",
         }}

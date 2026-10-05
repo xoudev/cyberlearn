@@ -23,7 +23,7 @@ const StepAnimationPlayer = dynamic(
       <div
         style={{
           aspectRatio: "16 / 9",
-          background: "#05041A",
+          background: "var(--color-bg-sunken)",
           display: "grid",
           placeItems: "center",
         }}
@@ -90,7 +90,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -100,12 +100,12 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
         <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
           ANIMATION · PAS À PAS
         </span>
-        <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>
+        <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
           {parsed.value.title ?? scene.title}
         </span>
       </header>
 
-      <div style={{ borderBottom: "1px solid #1F1B47" }}>
+      <div style={{ borderBottom: "1px solid var(--color-border-subtle)" }}>
         <StepAnimationPlayer
           sceneId={parsed.value.scene}
           scene={scene}
@@ -137,9 +137,14 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
                 aria-current={i === step ? "step" : undefined}
                 className="btn btn--ghost btn--sm"
                 style={{
-                  color: i === step ? "#030219" : i < step ? ACCENT : "#B8B5D1",
+                  color:
+                    i === step
+                      ? "var(--color-bg-base)"
+                      : i < step
+                        ? ACCENT
+                        : "var(--color-text-secondary)",
                   background: i === step ? ACCENT : "transparent",
-                  borderColor: i <= step ? ACCENT : "#2A2560",
+                  borderColor: i <= step ? ACCENT : "var(--color-border-default)",
                 }}
               >
                 {String(i + 1)}
@@ -149,7 +154,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
         </ol>
 
         <div aria-live="polite" style={{ display: "grid", gap: 4 }}>
-          <strong style={{ color: "#F5F5FA", fontSize: 15 }}>
+          <strong style={{ color: "var(--color-text-primary)", fontSize: 15 }}>
             {String(step + 1)}. {current?.title}
           </strong>
           <p style={{ margin: 0, color: "#D8D6EA", fontSize: 14, lineHeight: 1.55 }}>
@@ -201,7 +206,14 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
         </div>
 
         {parsed.value.caption ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 13, fontStyle: "italic" }}>
+          <p
+            style={{
+              margin: 0,
+              color: "var(--color-text-secondary)",
+              fontSize: 13,
+              fontStyle: "italic",
+            }}
+          >
             {parsed.value.caption}
           </p>
         ) : null}

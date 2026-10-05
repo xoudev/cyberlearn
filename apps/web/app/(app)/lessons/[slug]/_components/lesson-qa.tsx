@@ -42,7 +42,7 @@ export function LessonQA({
         <div
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -64,7 +64,7 @@ export function LessonQA({
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 18,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: 0,
             letterSpacing: "-0.01em",
           }}
@@ -99,7 +99,7 @@ export function LessonQA({
           style={{
             padding: "48px 24px",
             textAlign: "center",
-            border: "1px dashed #1F1B47",
+            border: "1px dashed var(--color-border-subtle)",
             background: "rgba(5,4,26,0.4)",
           }}
         >
@@ -111,16 +111,23 @@ export function LessonQA({
             aria-hidden="true"
             style={{ marginBottom: 14, opacity: 0.4 }}
           >
-            <circle cx="20" cy="20" r="18" stroke="#2A2560" strokeWidth="1.5" />
+            <circle cx="20" cy="20" r="18" stroke="var(--color-border-default)" strokeWidth="1.5" />
             <path
               d="M15 16c0-2.8 2.2-5 5-5s5 2.2 5 5c0 2.5-2 4-4 4.5V22"
-              stroke="#2A2560"
+              stroke="var(--color-border-default)"
               strokeWidth="1.5"
               strokeLinecap="round"
             />
-            <circle cx="20" cy="27" r="1" fill="#2A2560" />
+            <circle cx="20" cy="27" r="1" fill="var(--color-border-default)" />
           </svg>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-text-muted)",
+              margin: 0,
+            }}
+          >
             Sois le premier à poser une question sur cette leçon.
           </p>
         </div>
@@ -149,7 +156,7 @@ function QuestionCard({
         background: question.isResolved
           ? "linear-gradient(135deg, color-mix(in srgb, var(--cosmetic-accent) 4%, transparent), transparent 50%), rgba(5,4,26,0.5)"
           : "rgba(5,4,26,0.5)",
-        border: `1px solid ${question.isResolved ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "#1F1B47"}`,
+        border: `1px solid ${question.isResolved ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "var(--color-border-subtle)"}`,
         overflow: "hidden",
       }}
     >
@@ -157,7 +164,8 @@ function QuestionCard({
       <div
         style={{
           padding: "18px 22px",
-          borderBottom: question.answers.length > 0 ? "1px solid #1F1B47" : "none",
+          borderBottom:
+            question.answers.length > 0 ? "1px solid var(--color-border-subtle)" : "none",
         }}
       >
         <div
@@ -174,7 +182,7 @@ function QuestionCard({
               fontFamily: "var(--font-sans)",
               fontWeight: 600,
               fontSize: 15,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: 0,
               letterSpacing: "-0.01em",
               flex: 1,
@@ -202,7 +210,7 @@ function QuestionCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             margin: "0 0 14px",
             lineHeight: 1.65,
             whiteSpace: "pre-wrap",
@@ -218,13 +226,13 @@ function QuestionCard({
             gap: 12,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           <UserPill user={question.user} />
-          <span style={{ color: "#44406B" }}>·</span>
+          <span style={{ color: "var(--color-text-faint)" }}>·</span>
           <span>{dateStr}</span>
-          <span style={{ color: "#44406B" }}>·</span>
+          <span style={{ color: "var(--color-text-faint)" }}>·</span>
           <span>
             {question._count.answers} réponse{question._count.answers > 1 ? "s" : ""}
           </span>
@@ -304,7 +312,7 @@ function AnswerRow({
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           margin: "0 0 12px",
           lineHeight: 1.65,
           whiteSpace: "pre-wrap",
@@ -315,8 +323,14 @@ function AnswerRow({
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <UserPill user={answer.user} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#44406B" }}>·</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#7F7BA9" }}>
+        <span
+          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-faint)" }}
+        >
+          ·
+        </span>
+        <span
+          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-muted)" }}
+        >
           {dateStr}
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
@@ -348,7 +362,7 @@ function UserPill({
         gap: 5,
         fontFamily: "var(--font-mono)",
         fontSize: 10,
-        color: "#B8B5D1",
+        color: "var(--color-text-secondary)",
       }}
     >
       <span
@@ -356,21 +370,28 @@ function UserPill({
           width: 16,
           height: 16,
           background: user
-            ? "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))"
-            : "linear-gradient(135deg, #3F3D5C, #2A2560)",
+            ? "linear-gradient(135deg, var(--color-brand-blue), var(--cosmetic-accent))"
+            : "linear-gradient(135deg, var(--color-text-disabled), var(--color-border-default))",
           clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: 8,
-          color: "#030219",
+          color: "var(--color-bg-base)",
           fontWeight: 700,
           flexShrink: 0,
         }}
       >
         {name.charAt(0).toUpperCase()}
       </span>
-      <span style={{ color: user ? "#F5F5FA" : "#7F7BA9", fontWeight: 600 }}>{name}</span>
+      <span
+        style={{
+          color: user ? "var(--color-text-primary)" : "var(--color-text-muted)",
+          fontWeight: 600,
+        }}
+      >
+        {name}
+      </span>
       {user && (
         <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>
           {levelLabel(user.level)}

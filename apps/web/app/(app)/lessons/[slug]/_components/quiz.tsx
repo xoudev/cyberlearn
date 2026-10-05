@@ -163,7 +163,7 @@ export function Quiz({
         >
           › Vérification
           {questionNumber !== undefined && questionCount !== undefined && (
-            <span style={{ color: "#44406B" }}>
+            <span style={{ color: "var(--color-text-faint)" }}>
               {" · Question "}
               {questionNumber}/{questionCount}
             </span>
@@ -195,7 +195,7 @@ export function Quiz({
           fontWeight: 700,
           lineHeight: 1.25,
           letterSpacing: "-0.015em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 24px",
         }}
       >
@@ -214,32 +214,32 @@ export function Quiz({
           const isThisCorrect = answered && i === correct;
           const isThisWrong = answered && isChosen && i !== correct;
 
-          let borderLeftColor = "#1F1B47";
+          let borderLeftColor = "var(--color-border-subtle)";
           let bg = "rgba(5,4,26,0.5)";
-          let textColor = "#B8B5D1";
-          let letterColor = "#3F3D5C";
+          let textColor = "var(--color-text-secondary)";
+          let letterColor = "var(--color-text-disabled)";
           let stateLabel = "";
 
           if (isThisCorrect) {
             borderLeftColor = "var(--cosmetic-accent)";
             bg =
               "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 60%)";
-            textColor = "#F5F5FA";
+            textColor = "var(--color-text-primary)";
             letterColor = "var(--cosmetic-accent)";
             stateLabel = isChosen ? "Ton choix · bonne réponse" : "Bonne réponse";
           } else if (isThisWrong) {
             borderLeftColor = RED;
             bg = "linear-gradient(90deg, rgba(255,71,87,0.08), transparent 60%)";
-            textColor = "#F5F5FA";
+            textColor = "var(--color-text-primary)";
             letterColor = RED;
             stateLabel = "Ton choix";
           } else if (isChosen && !answered) {
-            borderLeftColor = "#0024FF";
+            borderLeftColor = "var(--color-brand-blue)";
             bg = "linear-gradient(90deg, rgba(0,36,255,0.1), transparent 60%)";
-            textColor = "#F5F5FA";
-            letterColor = "#6E8BFF";
+            textColor = "var(--color-text-primary)";
+            letterColor = "var(--color-rarity-rare)";
           } else if (answered) {
-            textColor = "#7F7BA9";
+            textColor = "var(--color-text-muted)";
           }
 
           const locked = answered || pending;
@@ -248,7 +248,7 @@ export function Quiz({
               key={i}
               className="cl-quiz-option"
               style={{
-                border: "1px solid #1F1B47",
+                border: "1px solid var(--color-border-subtle)",
                 borderLeft: `3px solid ${borderLeftColor}`,
                 background: bg,
                 cursor: locked ? "default" : "pointer",
@@ -261,18 +261,18 @@ export function Quiz({
               }}
               onMouseEnter={(e) => {
                 if (!locked && !isChosen) {
-                  e.currentTarget.style.borderColor = "#2A2560";
+                  e.currentTarget.style.borderColor = "var(--color-border-default)";
                   e.currentTarget.style.background =
                     "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)";
-                  e.currentTarget.style.color = "#F5F5FA";
+                  e.currentTarget.style.color = "var(--color-text-primary)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!locked && !isChosen) {
-                  e.currentTarget.style.borderColor = "#1F1B47";
-                  e.currentTarget.style.borderLeftColor = "#1F1B47";
+                  e.currentTarget.style.borderColor = "var(--color-border-subtle)";
+                  e.currentTarget.style.borderLeftColor = "var(--color-border-subtle)";
                   e.currentTarget.style.background = "rgba(5,4,26,0.5)";
-                  e.currentTarget.style.color = "#B8B5D1";
+                  e.currentTarget.style.color = "var(--color-text-secondary)";
                 }
               }}
             >
@@ -306,7 +306,7 @@ export function Quiz({
                 style={{
                   width: 14,
                   height: 14,
-                  border: `1.5px solid ${isChosen || isThisCorrect ? borderLeftColor : "#2A2560"}`,
+                  border: `1.5px solid ${isChosen || isThisCorrect ? borderLeftColor : "var(--color-border-default)"}`,
                   borderRadius: "50%",
                   display: "grid",
                   placeItems: "center",
@@ -318,7 +318,7 @@ export function Quiz({
                   <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
                     <path
                       d="M2.5 6.5 L5 9 L9.5 3.5"
-                      stroke="#030219"
+                      stroke="var(--color-bg-base)"
                       strokeWidth={2}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -331,7 +331,7 @@ export function Quiz({
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      background: "#0024FF",
+                      background: "var(--color-brand-blue)",
                       boxShadow: "0 0 8px rgba(0,36,255,0.7)",
                     }}
                   />
@@ -390,7 +390,7 @@ export function Quiz({
                 fontFamily: "var(--font-body, sans-serif)",
                 fontSize: 14,
                 lineHeight: 1.6,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
               }}
             >
               {verdictText}
@@ -415,9 +415,12 @@ export function Quiz({
               fontSize: 12,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              background: picked === null ? "rgba(30,27,71,0.5)" : "#0024FF",
-              color: picked === null ? "#3F3D5C" : "#ffffff",
-              border: picked === null ? "1px solid #2A2560" : "1px solid #0024FF",
+              background: picked === null ? "rgba(30,27,71,0.5)" : "var(--color-brand-blue)",
+              color: picked === null ? "var(--color-text-disabled)" : "#ffffff",
+              border:
+                picked === null
+                  ? "1px solid var(--color-border-default)"
+                  : "1px solid var(--color-brand-blue)",
               cursor: picked === null ? "not-allowed" : pending ? "wait" : "pointer",
               transition: "all 180ms ease",
               boxShadow:
@@ -435,7 +438,7 @@ export function Quiz({
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 11,
               letterSpacing: "0.04em",
-              color: error !== null ? RED : "#44406B",
+              color: error !== null ? RED : "var(--color-text-faint)",
             }}
           >
             {error ?? "Une seule réponse par question : elle compte dans ta note de la leçon."}

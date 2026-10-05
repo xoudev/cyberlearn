@@ -20,9 +20,9 @@ import { flatten } from "@/lib/search/results";
  */
 
 const CAT_COLORS: Record<string, string> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#6E8BFF",
-  NETWORK: "#0AFFD4",
+  CYBERSEC: "var(--color-category-cybersec)",
+  DEV: "var(--color-rarity-rare)",
+  NETWORK: "var(--color-brand-turquoise)",
 };
 
 const KIND_MARK: Record<SearchKind, string> = {
@@ -212,7 +212,7 @@ export function GlobalSearch(): React.ReactElement {
           background: "rgba(5,4,26,0.8)",
           border: `1px solid ${BORDER}`,
           borderRadius: 2,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           outline: "none",

@@ -18,9 +18,9 @@ interface PlacementTestFormProps {
 }
 
 const CAT_COLORS: Record<string, string> = {
-  DEV: "#6E8BFF",
-  CYBERSEC: "#FF4757",
-  NETWORK: "#0AFFD4",
+  DEV: "var(--color-rarity-rare)",
+  CYBERSEC: "var(--color-category-cybersec)",
+  NETWORK: "var(--color-brand-turquoise)",
 };
 
 const initialState: PlacementActionState = { success: false };
@@ -75,7 +75,7 @@ export function PlacementTestForm({
               fontSize: 30,
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 14px",
             }}
           >
@@ -83,7 +83,8 @@ export function PlacementTestForm({
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                background:
+                  "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -96,7 +97,7 @@ export function PlacementTestForm({
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 14.5,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.6,
               margin: "0 0 22px",
               maxWidth: 480,
@@ -124,13 +125,16 @@ export function PlacementTestForm({
             ].map(({ label, value, unit, accent }, i) => (
               <div
                 key={label}
-                style={{ padding: "16px 14px", borderRight: i < 3 ? "1px solid #2A2560" : "none" }}
+                style={{
+                  padding: "16px 14px",
+                  borderRight: i < 3 ? "1px solid var(--color-border-default)" : "none",
+                }}
               >
                 <span
                   className="mono-label mono-label--xs"
                   style={{
                     display: "block",
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     marginBottom: 8,
                   }}
                 >
@@ -142,7 +146,7 @@ export function PlacementTestForm({
                     fontWeight: 700,
                     fontSize: 22,
                     letterSpacing: "-0.02em",
-                    color: accent ? "#0AFFD4" : "#F5F5FA",
+                    color: accent ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
                     lineHeight: 1,
                     display: "flex",
                     alignItems: "baseline",
@@ -155,7 +159,7 @@ export function PlacementTestForm({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 11,
-                        color: "#7F7BA9",
+                        color: "var(--color-text-muted)",
                         fontWeight: 500,
                         letterSpacing: "0.04em",
                       }}
@@ -173,18 +177,18 @@ export function PlacementTestForm({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.04em",
               lineHeight: 1.6,
               padding: "12px 14px",
               background: "rgba(10,255,212,0.04)",
-              borderLeft: "2px solid #0AFFD4",
+              borderLeft: "2px solid var(--color-brand-turquoise)",
               marginBottom: 0,
             }}
           >
-            <b style={{ color: "#0AFFD4", fontWeight: 600 }}>Note :</b> les niveaux débutant des
-            domaines maîtrisés seront débloqués automatiquement. Tu peux passer ce test à tout
-            moment.
+            <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>Note :</b> les
+            niveaux débutant des domaines maîtrisés seront débloqués automatiquement. Tu peux passer
+            ce test à tout moment.
           </div>
         </div>
       </div>
@@ -199,7 +203,7 @@ export function PlacementTestForm({
               padding: "10px 14px",
               background: "rgba(255,71,87,0.08)",
               border: "1px solid rgba(255,71,87,0.4)",
-              color: "#FF4757",
+              color: "var(--color-category-cybersec)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               letterSpacing: "0.04em",
@@ -210,7 +214,7 @@ export function PlacementTestForm({
         )}
 
         {Object.entries(grouped).map(([category, catQs]) => {
-          const catColor = CAT_COLORS[category] ?? "#6E8BFF";
+          const catColor = CAT_COLORS[category] ?? "var(--color-rarity-rare)";
           const catLabel = isPlacementCategory(category)
             ? PLACEMENT_CATEGORY_LABEL[category]
             : category;
@@ -225,7 +229,7 @@ export function PlacementTestForm({
                   gap: 12,
                   marginBottom: 16,
                   paddingBottom: 12,
-                  borderBottom: `1px solid #2A2560`,
+                  borderBottom: `1px solid var(--color-border-default)`,
                 }}
               >
                 <span
@@ -251,7 +255,7 @@ export function PlacementTestForm({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "#44406B",
+                    color: "var(--color-text-faint)",
                     letterSpacing: "0.08em",
                   }}
                 >
@@ -272,7 +276,7 @@ export function PlacementTestForm({
                         margin: 0,
                         padding: "22px 24px",
                         background: "rgba(10,8,38,0.6)",
-                        border: "1px solid #2A2560",
+                        border: "1px solid var(--color-border-default)",
                         position: "relative",
                       }}
                     >
@@ -286,7 +290,7 @@ export function PlacementTestForm({
                               fontWeight: 800,
                               fontSize: 28,
                               letterSpacing: "-0.03em",
-                              color: "#44406B",
+                              color: "var(--color-text-faint)",
                               lineHeight: 1,
                               flexShrink: 0,
                             }}
@@ -313,7 +317,7 @@ export function PlacementTestForm({
                                 margin: 0,
                                 fontFamily: "var(--font-body)",
                                 fontSize: 14,
-                                color: "#F5F5FA",
+                                color: "var(--color-text-primary)",
                                 lineHeight: 1.5,
                               }}
                             >
@@ -340,18 +344,18 @@ export function PlacementTestForm({
                                 background: isSelected
                                   ? "rgba(10,255,212,0.06)"
                                   : "rgba(5,4,26,0.6)",
-                                border: `1px solid ${isSelected ? "rgba(10,255,212,0.4)" : "#2A2560"}`,
+                                border: `1px solid ${isSelected ? "rgba(10,255,212,0.4)" : "var(--color-border-default)"}`,
                                 boxShadow: isSelected ? "0 0 0 1px rgba(10,255,212,0.2)" : "none",
                                 transition: "background 120ms ease, border-color 120ms ease",
                               }}
                               onMouseEnter={(e) => {
                                 if (isSelected) return;
-                                e.currentTarget.style.borderColor = "#7F7BA9";
+                                e.currentTarget.style.borderColor = "var(--color-text-muted)";
                                 e.currentTarget.style.background = "rgba(10,8,38,0.9)";
                               }}
                               onMouseLeave={(e) => {
                                 if (isSelected) return;
-                                e.currentTarget.style.borderColor = "#2A2560";
+                                e.currentTarget.style.borderColor = "var(--color-border-default)";
                                 e.currentTarget.style.background = "rgba(5,4,26,0.6)";
                               }}
                             >
@@ -371,7 +375,7 @@ export function PlacementTestForm({
                                 style={{
                                   width: 14,
                                   height: 14,
-                                  border: `1.5px solid ${isSelected ? "#0AFFD4" : "#7F7BA9"}`,
+                                  border: `1.5px solid ${isSelected ? "var(--color-brand-turquoise)" : "var(--color-text-muted)"}`,
                                   borderRadius: "50%",
                                   display: "grid",
                                   placeItems: "center",
@@ -388,8 +392,8 @@ export function PlacementTestForm({
                                       width: 6,
                                       height: 6,
                                       borderRadius: "50%",
-                                      background: "#0AFFD4",
-                                      boxShadow: "0 0 6px #0AFFD4",
+                                      background: "var(--color-brand-turquoise)",
+                                      boxShadow: "0 0 6px var(--color-brand-turquoise)",
                                     }}
                                   />
                                 )}
@@ -398,7 +402,9 @@ export function PlacementTestForm({
                                 style={{
                                   fontFamily: "var(--font-body)",
                                   fontSize: 13.5,
-                                  color: isSelected ? "#F5F5FA" : "#B8B5D1",
+                                  color: isSelected
+                                    ? "var(--color-text-primary)"
+                                    : "var(--color-text-secondary)",
                                   lineHeight: 1.45,
                                 }}
                               >
@@ -423,14 +429,17 @@ export function PlacementTestForm({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.08em",
               textAlign: "center",
             }}
           >
             <b
               style={{
-                color: totalAnswered === questions.length ? "#0AFFD4" : "#B8B5D1",
+                color:
+                  totalAnswered === questions.length
+                    ? "var(--color-brand-turquoise)"
+                    : "var(--color-text-secondary)",
                 fontWeight: 600,
               }}
             >
@@ -454,7 +463,7 @@ export function PlacementTestForm({
                 "0 0 32px rgba(0,36,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#0024FF";
+              e.currentTarget.style.background = "var(--color-brand-blue)";
               e.currentTarget.style.boxShadow =
                 "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)";
             }}
@@ -482,7 +491,7 @@ export function PlacementTestForm({
             className="mono-label"
             href="/dashboard"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               textDecoration: "none",
               textAlign: "center",
               borderBottom: "1px solid transparent",
@@ -491,10 +500,10 @@ export function PlacementTestForm({
               display: "block",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#B8B5D1";
+              e.currentTarget.style.color = "var(--color-text-secondary)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#7F7BA9";
+              e.currentTarget.style.color = "var(--color-text-muted)";
             }}
           >
             Passer · aller au tableau de bord

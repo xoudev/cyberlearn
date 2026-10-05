@@ -15,11 +15,11 @@ export function omit<T>(record: Readonly<Record<string, T>>, key: string): Recor
   return Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
 }
 
-export const BORDER = "#2A2560";
+export const BORDER = "var(--color-border-default)";
 export const MONO = "var(--font-mono)";
-export const DANGER = "#FF4D6D";
-export const MUTED = "#7F7BA9";
-export const TEXT = "#F5F5FA";
+export const DANGER = "var(--color-danger)";
+export const MUTED = "var(--color-text-muted)";
+export const TEXT = "var(--color-text-primary)";
 const INPUT_BG = "#07051E";
 
 const inputStyle = (invalid: boolean, mono: boolean): React.CSSProperties => ({
@@ -261,9 +261,9 @@ export function SmallButton({
       style={{
         height: 22,
         padding: "0 7px",
-        border: `1px solid ${disabled ? "#1F1B47" : BORDER}`,
+        border: `1px solid ${disabled ? "var(--color-border-subtle)" : BORDER}`,
         background: "transparent",
-        color: disabled ? "#3F3D5C" : color,
+        color: disabled ? "var(--color-text-disabled)" : color,
         fontFamily: MONO,
         fontSize: 10,
         fontWeight: 700,
@@ -514,7 +514,7 @@ export function RowsInput({
             flexWrap: "wrap",
             gap: 6,
             padding: "8px 8px 8px 10px",
-            border: `1px solid #1F1B47`,
+            border: `1px solid var(--color-border-subtle)`,
             borderLeft: `2px solid ${BORDER}`,
           }}
         >

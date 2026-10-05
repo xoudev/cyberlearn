@@ -20,7 +20,7 @@ const DIVISION_VAR: Record<LeagueDivisionCode, string> = {
 const PROMOTE = "var(--color-promote)";
 const RELEGATE = "var(--color-relegate)";
 const CYAN = "var(--cosmetic-accent)";
-const CYAN_GRAD = "linear-gradient(135deg, var(--cosmetic-accent), #0024FF)";
+const CYAN_GRAD = "linear-gradient(135deg, var(--cosmetic-accent), var(--color-brand-blue))";
 const NEUTRAL_GRAD = "linear-gradient(135deg, #3a3668, #211d4d)";
 const ROW_COLS = "80px minmax(0,1fr) 160px 130px 120px";
 
@@ -100,7 +100,13 @@ function ZoneChip({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
   if (entry.relegation) {
     return <Chip color={RELEGATE} label="RELÉGABLE" />;
   }
-  return <span style={{ ...MONO, fontSize: 12, color: "#44406B", letterSpacing: "0.1em" }}>·</span>;
+  return (
+    <span
+      style={{ ...MONO, fontSize: 12, color: "var(--color-text-faint)", letterSpacing: "0.1em" }}
+    >
+      ·
+    </span>
+  );
 }
 
 function Chip({ color, label }: { color: string; label: string }): React.JSX.Element {
@@ -157,10 +163,19 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           fontWeight: 800,
           fontSize: 22,
           letterSpacing: "-0.02em",
-          color: accent ?? "#7F7BA9",
+          color: accent ?? "var(--color-text-muted)",
         }}
       >
-        <span style={{ color: "#44406B", fontSize: 14, fontWeight: 600, marginRight: 2 }}>#</span>
+        <span
+          style={{
+            color: "var(--color-text-faint)",
+            fontSize: 14,
+            fontWeight: 600,
+            marginRight: 2,
+          }}
+        >
+          #
+        </span>
         {entry.rank}
       </div>
 
@@ -173,7 +188,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
               ...DISPLAY,
               fontWeight: 600,
               fontSize: 14,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.005em",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -187,7 +202,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
             style={{
               ...MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.04em",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -206,7 +221,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           fontWeight: 700,
           fontSize: 18,
           letterSpacing: "-0.01em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           textAlign: "right",
         }}
       >
@@ -215,7 +230,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           style={{
             ...MONO,
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             fontWeight: 500,
@@ -233,7 +248,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           fontWeight: 800,
           fontSize: 18,
           letterSpacing: "-0.02em",
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
         }}
       >
         {entry.level}
@@ -325,7 +340,11 @@ function LeagueBoard({
   const { days, hours, minutes, done } = useCountdown(season.endsAt);
   const me = podLadder.find((e) => e.isCurrentUser) ?? null;
   const myRank = me?.rank ?? null;
-  const zoneColor = me?.promotion ? PROMOTE : me?.relegation ? RELEGATE : "#B8B5D1";
+  const zoneColor = me?.promotion
+    ? PROMOTE
+    : me?.relegation
+      ? RELEGATE
+      : "var(--color-text-secondary)";
   const zoneLabel = me?.promotion
     ? "Zone de promotion"
     : me?.relegation
@@ -343,24 +362,27 @@ function LeagueBoard({
           gap: 16,
           ...MONO,
           fontSize: 11,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginBottom: 28,
           paddingBottom: 18,
-          borderBottom: "1px dashed #2A2560",
+          borderBottom: "1px dashed var(--color-border-default)",
         }}
       >
         <DivisionBadge division={membership.division} />
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>
-          Saison <b style={{ color: "#B8B5D1" }}>{String(season.index).padStart(2, "0")}</b>
+          Saison{" "}
+          <b style={{ color: "var(--color-text-secondary)" }}>
+            {String(season.index).padStart(2, "0")}
+          </b>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>
-          Poule de <b style={{ color: "#B8B5D1" }}>{podMemberCount}</b>
+          Poule de <b style={{ color: "var(--color-text-secondary)" }}>{podMemberCount}</b>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span suppressHydrationWarning style={{ color: CYAN }}>
           {done
             ? "Clôture en cours"
@@ -380,7 +402,7 @@ function LeagueBoard({
           marginBottom: 48,
           background:
             "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 7%, transparent) 0%, transparent 50%), rgba(5,4,26,0.6)",
-          border: "1px solid #2A2560",
+          border: "1px solid var(--color-border-default)",
           borderLeft: `3px solid ${CYAN}`,
           overflow: "hidden",
         }}
@@ -417,10 +439,11 @@ function LeagueBoard({
             gap: 4,
           }}
         >
-          <span style={{ color: "#7F7BA9", fontSize: 28, fontWeight: 600 }}>#</span>
+          <span style={{ color: "var(--color-text-muted)", fontSize: 28, fontWeight: 600 }}>#</span>
           <span
             style={{
-              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
+              background:
+                "linear-gradient(180deg, var(--color-text-primary), var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
@@ -428,7 +451,9 @@ function LeagueBoard({
           >
             {myRank ?? "-"}
           </span>
-          <span style={{ ...MONO, fontSize: 16, color: "#7F7BA9", fontWeight: 500 }}>
+          <span
+            style={{ ...MONO, fontSize: 16, color: "var(--color-text-muted)", fontWeight: 500 }}
+          >
             / {podMemberCount}
           </span>
         </div>
@@ -441,7 +466,7 @@ function LeagueBoard({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             XP SAISON
@@ -452,7 +477,8 @@ function LeagueBoard({
               fontWeight: 800,
               fontSize: 28,
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
+              background:
+                "linear-gradient(180deg, var(--color-text-primary), var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
@@ -470,7 +496,7 @@ function LeagueBoard({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             STATUT
@@ -505,23 +531,23 @@ function LeagueBoard({
             fontSize: 12,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             margin: 0,
           }}
         >
-          <span style={{ color: "#7F7BA9" }}>{"// "}</span>POULE · CLASSEMENT VIF
+          <span style={{ color: "var(--color-text-muted)" }}>{"// "}</span>POULE · CLASSEMENT VIF
         </h3>
         <span
           style={{
             ...MONO,
             fontSize: 11,
             letterSpacing: "0.1em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             textTransform: "uppercase",
           }}
         >
           <b style={{ color: PROMOTE }}>↑ promotion</b>
-          <span style={{ color: "#44406B", margin: "0 8px" }}>/</span>
+          <span style={{ color: "var(--color-text-faint)", margin: "0 8px" }}>/</span>
           <b style={{ color: RELEGATE }}>↓ relégation</b>
         </span>
       </div>
@@ -541,13 +567,13 @@ function LeagueBoard({
             alignItems: "center",
             gap: 16,
             padding: "12px 24px",
-            borderBottom: "1px solid #2A2560",
+            borderBottom: "1px solid var(--color-border-default)",
             background: "rgba(0,0,0,0.25)",
             ...MONO,
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontWeight: 600,
           }}
         >

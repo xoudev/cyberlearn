@@ -57,8 +57,8 @@ export default async function AppLayout({
             <div
               style={{
                 width: 240,
-                background: "#030219",
-                borderRight: "1px solid #1F1B47",
+                background: "var(--color-bg-base)",
+                borderRight: "1px solid var(--color-border-subtle)",
                 flexShrink: 0,
               }}
             />
@@ -74,7 +74,7 @@ export default async function AppLayout({
                 style={{
                   height: NAVBAR_HEIGHT,
                   background: "rgba(3,2,25,0.85)",
-                  borderBottom: "1px solid #2A2560",
+                  borderBottom: "1px solid var(--color-border-default)",
                   flexShrink: 0,
                 }}
               />

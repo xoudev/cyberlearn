@@ -161,7 +161,7 @@
   width: 100%;
   height: 100%;
   padding: 0 12px 0 36px;
-  background: #05041a;
+  background: var(--color-bg-sunken);
   border: 1px solid var(--border);
   color: var(--fg-primary);
   font-family: var(--font-mono);
@@ -286,13 +286,13 @@
     0 30px 80px -40px rgba(0, 0, 0, 0.9),
     0 0 60px -20px color-mix(in oklab, var(--k-color) 30%, transparent);
   --bk-color: var(--k-color);
-  --k-color: #ff4757;
+  --k-color: var(--color-category-cybersec);
 }
 .pc2-root .hero-path--net {
   --k-color: var(--cosmetic-accent);
 }
 .pc2-root .hero-path--dev {
-  --k-color: #6e8bff;
+  --k-color: var(--color-rarity-rare);
 }
 .pc2-root .hero-path__main {
   padding: 34px 38px 30px;
@@ -468,7 +468,7 @@
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #f5f5fa, var(--cosmetic-accent));
+  background: linear-gradient(135deg, var(--color-text-primary), var(--cosmetic-accent));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -484,7 +484,7 @@
   border-left: 1px solid var(--border);
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--k-color) 5%, transparent), transparent 45%),
-    #05041a;
+    var(--color-bg-sunken);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -638,7 +638,7 @@
   border-right: 1px solid var(--border);
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--k-color) 6%, transparent), transparent),
-    #05041a;
+    var(--color-bg-sunken);
   overflow: hidden;
 }
 .pc2-root .active-card__glyph::before {
@@ -767,7 +767,7 @@
   box-shadow:
     0 0 0 1px rgba(255, 181, 71, 0.12),
     0 0 50px -22px rgba(255, 181, 71, 0.5);
-  --bk-color: #ffb547;
+  --bk-color: var(--color-rarity-legendary);
   text-decoration: none;
   color: inherit;
   transition:
@@ -790,7 +790,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    #ffb547 30%,
+    var(--color-rarity-legendary) 30%,
     var(--cosmetic-accent) 80%,
     transparent
   );
@@ -818,7 +818,7 @@
   content: "";
   position: absolute;
   inset: 2px;
-  background: #0a0826;
+  background: var(--color-bg-elevated);
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
 }
 .pc2-root .trophy-card__seal svg {
@@ -860,7 +860,7 @@
   margin-bottom: 8px;
 }
 .pc2-root .trophy-card__refcode b {
-  color: #6e8bff;
+  color: var(--color-rarity-rare);
   font-weight: 700;
 }
 .pc2-root .trophy-card__title {
@@ -892,7 +892,7 @@
   display: grid;
   place-items: center;
   background: var(--brand-turquoise);
-  color: #030219;
+  color: var(--color-bg-base);
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
   box-shadow: 0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
@@ -946,7 +946,7 @@
   background: rgba(10, 8, 38, 0.5);
   border: 1px solid var(--border);
   --bk-color: var(--k-color);
-  --k-color: #ff4757;
+  --k-color: var(--color-category-cybersec);
   text-decoration: none;
   color: inherit;
   transition:
@@ -958,7 +958,7 @@
   --k-color: var(--cosmetic-accent);
 }
 .pc2-root .game-card--dev {
-  --k-color: #6e8bff;
+  --k-color: var(--color-rarity-rare);
 }
 .pc2-root .game-card .bk {
   opacity: 0;
@@ -968,7 +968,7 @@
   position: relative;
   height: 138px;
   overflow: hidden;
-  background: #05041a;
+  background: var(--color-bg-sunken);
   border-bottom: 1px solid var(--border);
   display: grid;
   place-items: center;
@@ -1156,7 +1156,7 @@
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--brand-turquoise);
-  background: #05041a;
+  background: var(--color-bg-sunken);
   border: 1px solid var(--border);
   padding: 9px 16px;
 }

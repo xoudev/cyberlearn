@@ -21,8 +21,14 @@ const SEASON_END = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "lo
 // ── Style constants ────────────────────────────────────────────────────────────
 
 const RK_COLORS: Record<number, { color: string; grad: string }> = {
-  1: { color: "#FFB547", grad: "linear-gradient(135deg, #FFE08A 0%, #FFB547 50%, #FF8E1F 100%)" },
-  2: { color: "#C8CFE2", grad: "linear-gradient(135deg, #F0F2F8 0%, #B8B5D1 50%, #7F7BA9 100%)" },
+  1: {
+    color: "var(--color-rarity-legendary)",
+    grad: "linear-gradient(135deg, #FFE08A 0%, var(--color-rarity-legendary) 50%, #FF8E1F 100%)",
+  },
+  2: {
+    color: "#C8CFE2",
+    grad: "linear-gradient(135deg, #F0F2F8 0%, var(--color-text-secondary) 50%, var(--color-text-muted) 100%)",
+  },
   3: { color: "#E08A4A", grad: "linear-gradient(135deg, #F2B07A 0%, #E08A4A 50%, #8C4A1F 100%)" },
 };
 
@@ -50,7 +56,7 @@ function PodiumCard({
   const rk = isMe
     ? {
         color: "var(--cosmetic-accent)",
-        grad: "linear-gradient(135deg, #5FFFE6 0%, var(--cosmetic-accent) 50%, #0024FF 100%)",
+        grad: "linear-gradient(135deg, #5FFFE6 0%, var(--cosmetic-accent) 50%, var(--color-brand-blue) 100%)",
       }
     : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       (RK_COLORS[rank] ?? RK_COLORS[3]!);
@@ -65,7 +71,7 @@ function PodiumCard({
         background: isGold
           ? "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,181,71,0.10), transparent 60%), rgba(5,4,26,0.7)"
           : "rgba(5,4,26,0.6)",
-        border: `1px solid #2A2560`,
+        border: `1px solid var(--color-border-default)`,
         padding: "28px 22px 26px",
         display: "flex",
         flexDirection: "column",
@@ -138,7 +144,7 @@ function PodiumCard({
           fontSize: 11,
           letterSpacing: "0.22em",
           textTransform: "uppercase",
-          background: "#030219",
+          background: "var(--color-bg-base)",
           border: `1px solid ${rk.color}`,
           color: rk.color,
           padding: "6px 14px",
@@ -150,7 +156,14 @@ function PodiumCard({
         }}
       >
         {rank === 1 && !isMe && (
-          <span style={{ color: "#FFB547", textShadow: "0 0 10px #FFB547" }}>★</span>
+          <span
+            style={{
+              color: "var(--color-rarity-legendary)",
+              textShadow: "0 0 10px var(--color-rarity-legendary)",
+            }}
+          >
+            ★
+          </span>
         )}
         RANG · <b style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.01em" }}>#{rank}</b>
       </span>
@@ -167,7 +180,7 @@ function PodiumCard({
           fontWeight: 700,
           fontSize: isGold ? 26 : 22,
           letterSpacing: "-0.01em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 4px",
           display: "inline-flex",
           alignItems: "baseline",
@@ -191,7 +204,7 @@ function PodiumCard({
           ...MONO,
           fontSize: 11,
           letterSpacing: "0.1em",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           textTransform: "uppercase",
           margin: "0 0 16px",
         }}
@@ -230,7 +243,7 @@ function PodiumCard({
             fontWeight: 600,
             fontSize: 12,
             letterSpacing: "0.18em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             textTransform: "uppercase",
           }}
         >
@@ -250,8 +263,8 @@ function PodiumCard({
           fontSize: 10.5,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#B8B5D1",
-          border: "1px solid #2A2560",
+          color: "var(--color-text-secondary)",
+          border: "1px solid var(--color-border-default)",
           background: "rgba(5,4,26,0.6)",
         }}
       >
@@ -259,7 +272,11 @@ function PodiumCard({
         <b style={{ color: rk.color, fontWeight: 800, fontSize: 13, letterSpacing: "-0.01em" }}>
           {entry.level}
         </b>
-        <span style={{ color: "#F5F5FA", fontWeight: 500, letterSpacing: "0.12em" }}>{tier}</span>
+        <span
+          style={{ color: "var(--color-text-primary)", fontWeight: 500, letterSpacing: "0.12em" }}
+        >
+          {tier}
+        </span>
       </div>
 
       {/* Streak */}
@@ -270,7 +287,7 @@ function PodiumCard({
           fontSize: 10.5,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#FFB547",
+          color: "var(--color-rarity-legendary)",
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
@@ -364,7 +381,7 @@ function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
           mono={initialsOf(entry.displayName ?? entry.username ?? "Anonyme")}
           grad={
             RK_COLORS[entry.rank]?.grad ??
-            "linear-gradient(135deg, #6e8bff, var(--cosmetic-accent))"
+            "linear-gradient(135deg, var(--color-rarity-rare), var(--cosmetic-accent))"
           }
           size={44}
         />
@@ -430,8 +447,8 @@ function FriendsSection({ board }: { board: FriendsBoard }): React.JSX.Element {
           ...MONO,
           fontSize: 11.5,
           lineHeight: 1.6,
-          color: "#7F7BA9",
-          border: "1px solid #2A2560",
+          color: "var(--color-text-muted)",
+          border: "1px solid var(--color-border-default)",
           background: "rgba(5,4,26,0.5)",
           padding: "14px 16px",
           margin: "24px 0 0",
@@ -561,11 +578,11 @@ export function LeaderboardClient({
                 fontSize: 12,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 14,
               }}
             >
-              <span style={{ color: "#44406B" }}>{"// "}</span>
+              <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
               {/* No "LIVE": the board is read when the page loads, not streamed. */}
               {season ? `Saison · ${String(season.index).padStart(2, "0")}` : "Hors saison"}
             </span>
@@ -576,14 +593,15 @@ export function LeaderboardClient({
                 fontSize: "clamp(40px, 5.5vw, 72px)",
                 lineHeight: 1,
                 letterSpacing: "-0.035em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: 0,
               }}
             >
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -612,26 +630,28 @@ export function LeaderboardClient({
             gap: 16,
             ...MONO,
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             margin: "18px 0 48px",
             paddingBottom: 18,
-            borderBottom: "1px dashed #2A2560",
+            borderBottom: "1px dashed var(--color-border-default)",
           }}
         >
           {/* Only what is true of this board. "Session sécurisée", "FR · Europe"
               and "maj temps réel" were decoration dressed as information. */}
           <span>
-            <b style={{ color: "#B8B5D1" }}>{formatNumberFr(entries.length)}</b>{" "}
+            <b style={{ color: "var(--color-text-secondary)" }}>{formatNumberFr(entries.length)}</b>{" "}
             {entries.length === 1 ? "joueur classé" : "joueurs classés"}
           </span>
           {season ? (
             <>
-              <span style={{ color: "#44406B" }}>/</span>
+              <span style={{ color: "var(--color-text-faint)" }}>/</span>
               <span>
                 Fin de saison ·{" "}
-                <b style={{ color: "#B8B5D1" }}>{SEASON_END.format(new Date(season.endsAt))}</b>
+                <b style={{ color: "var(--color-text-secondary)" }}>
+                  {SEASON_END.format(new Date(season.endsAt))}
+                </b>
               </span>
             </>
           ) : null}

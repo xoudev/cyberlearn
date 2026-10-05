@@ -19,10 +19,10 @@ export const metadata: Metadata = { title: "Leçons" };
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { value: "ALL" as const, label: "TOUS", dot: "#B8B5D1" },
-  { value: "DEV" as const, label: "DEV", dot: "#6E8BFF" },
-  { value: "CYBERSEC" as const, label: "CYBERSEC", dot: "#FF4757" },
-  { value: "NETWORK" as const, label: "RÉSEAU", dot: "#0AFFD4" },
+  { value: "ALL" as const, label: "TOUS", dot: "var(--color-text-secondary)" },
+  { value: "DEV" as const, label: "DEV", dot: "var(--color-rarity-rare)" },
+  { value: "CYBERSEC" as const, label: "CYBERSEC", dot: "var(--color-category-cybersec)" },
+  { value: "NETWORK" as const, label: "RÉSEAU", dot: "var(--color-brand-turquoise)" },
 ];
 
 const DIFFICULTIES: { value: Difficulty | "ALL"; label: string }[] = [
@@ -152,7 +152,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               fontSize: "clamp(42px, 5vw, 68px)",
               lineHeight: 0.95,
               letterSpacing: "-0.04em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 14px",
             }}
           >
@@ -160,7 +160,8 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                background:
+                  "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent",
@@ -175,7 +176,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 16,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               margin: 0,
               maxWidth: 520,
               lineHeight: 1.55,
@@ -195,18 +196,18 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             style={{
               display: "flex",
               gap: 18,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             <span>
               <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{total}</b> total
             </span>
-            <span style={{ color: "#2A2560" }}>/</span>
+            <span style={{ color: "var(--color-border-default)" }}>/</span>
             <span>
               <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{inProgressCount}</b>{" "}
               en cours
             </span>
-            <span style={{ color: "#2A2560" }}>/</span>
+            <span style={{ color: "var(--color-border-default)" }}>/</span>
             <span>
               <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{completedCount}</b>{" "}
               terminées
@@ -217,11 +218,11 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             style={{
               display: "flex",
               gap: 18,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             <span>TRIER · ACCESSIBLES D’ABORD</span>
-            <span style={{ color: "#2A2560" }}>/</span>
+            <span style={{ color: "var(--color-border-default)" }}>/</span>
             <span>VUE · GRILLE</span>
           </div>
         </div>
@@ -234,7 +235,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
           <span
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginRight: 6,
             }}
           >
@@ -347,27 +348,30 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             flexWrap: "wrap",
             gap: 12,
             padding: "14px 20px",
-            border: "1px solid #2A2560",
+            border: "1px solid var(--color-border-default)",
             background: "rgba(5,4,26,0.5)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
           }}
         >
           <span>
             Affichage{" "}
-            <b style={{ color: "#F5F5FA" }}>
+            <b style={{ color: "var(--color-text-primary)" }}>
               {startIdx}–{endIdx}
             </b>{" "}
-            sur <b style={{ color: "#F5F5FA" }}>{total}</b>
+            sur <b style={{ color: "var(--color-text-primary)" }}>{total}</b>
           </span>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {page > 1 && <PageBtn href={buildUrl(p, { page: String(page - 1) })}>← PRÉC</PageBtn>}
             {buildPageRange(page, totalPages).map((n, i) =>
               n === "…" ? (
-                <span key={`ellipsis-${String(i)}`} style={{ padding: "0 6px", color: "#2A2560" }}>
+                <span
+                  key={`ellipsis-${String(i)}`}
+                  style={{ padding: "0 6px", color: "var(--color-border-default)" }}
+                >
                   …
                 </span>
               ) : (
@@ -426,8 +430,10 @@ function CategoryPill({
         background: active
           ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
           : "transparent",
-        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
-        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
+        border: active
+          ? "1px solid var(--cosmetic-accent)"
+          : "1px solid var(--color-border-default)",
+        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
         fontWeight: 600,
         textDecoration: "none",
         boxShadow: active
@@ -446,9 +452,9 @@ function CategoryPill({
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: active ? "var(--cosmetic-accent)" : "#3F3D5C",
+          color: active ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
           padding: "1px 6px",
-          border: `1px solid ${active ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)" : "#2A2560"}`,
+          border: `1px solid ${active ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)" : "var(--color-border-default)"}`,
           letterSpacing: "0.04em",
         }}
       >
@@ -478,9 +484,11 @@ function SelectPill({
         padding: "0 14px",
         background: active
           ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
-          : "#05041A",
-        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
-        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
+          : "var(--color-bg-sunken)",
+        border: active
+          ? "1px solid var(--cosmetic-accent)"
+          : "1px solid var(--color-border-default)",
+        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
         fontWeight: 600,
         textDecoration: "none",
         whiteSpace: "nowrap",
@@ -549,11 +557,13 @@ function PageBtn({
       href={href}
       style={{
         padding: "6px 12px",
-        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
+        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
         background: active
           ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
           : "transparent",
-        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
+        border: active
+          ? "1px solid var(--cosmetic-accent)"
+          : "1px solid var(--color-border-default)",
         textDecoration: "none",
         transition: "all 180ms ease",
         whiteSpace: "nowrap",
@@ -571,11 +581,35 @@ function LessonsEmpty(): React.ReactElement {
       message="Modifie tes filtres ou ta recherche pour explorer d'autres leçons."
       glyph={
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
-          <rect x="8" y="20" width="56" height="40" stroke="#2A2560" strokeWidth="2" />
-          <line x1="8" y1="20" x2="8" y2="60" stroke="#0024FF" strokeWidth="3" />
-          <path d="M22 36h28M22 44h18" stroke="#2A2560" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="58" cy="58" r="11" fill="#07051E" stroke="#2A2560" strokeWidth="2" />
-          <path d="M54 58h8M58 54v8" stroke="#3F3D5C" strokeWidth="2" strokeLinecap="round" />
+          <rect
+            x="8"
+            y="20"
+            width="56"
+            height="40"
+            stroke="var(--color-border-default)"
+            strokeWidth="2"
+          />
+          <line x1="8" y1="20" x2="8" y2="60" stroke="var(--color-brand-blue)" strokeWidth="3" />
+          <path
+            d="M22 36h28M22 44h18"
+            stroke="var(--color-border-default)"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <circle
+            cx="58"
+            cy="58"
+            r="11"
+            fill="#07051E"
+            stroke="var(--color-border-default)"
+            strokeWidth="2"
+          />
+          <path
+            d="M54 58h8M58 54v8"
+            stroke="var(--color-text-disabled)"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       }
     >

@@ -146,8 +146,8 @@ export function BadgeMedallion({
         >
           <polygon
             points={HEX_POINTS}
-            fill="#0a0826"
-            stroke={locked ? "#2a2560" : rarityColor}
+            fill="var(--color-bg-elevated)"
+            stroke={locked ? "var(--color-border-default)" : rarityColor}
             strokeWidth={s.ring}
             strokeOpacity={locked ? 0.8 : 1}
             strokeLinejoin="round"
@@ -168,7 +168,7 @@ export function BadgeMedallion({
             iconUrl={iconUrl}
             name={name}
             size={s.icon}
-            color={locked ? "#44406b" : rarityColor}
+            color={locked ? "var(--color-text-faint)" : rarityColor}
             dimmed={locked}
           />
         </div>

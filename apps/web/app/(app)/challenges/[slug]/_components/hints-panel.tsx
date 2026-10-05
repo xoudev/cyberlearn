@@ -54,7 +54,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           alignItems: "center",
           gap: 12,
           paddingBottom: 14,
-          borderBottom: "1px dashed #1F1B47",
+          borderBottom: "1px dashed var(--color-border-subtle)",
           marginBottom: 20,
         }}
       >
@@ -63,7 +63,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
         <span
           style={{
             marginLeft: "auto",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontWeight: 500,
             fontSize: 10,
             letterSpacing: "0.12em",
@@ -90,7 +90,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   display: "block",
                   borderLeft: "3px solid var(--cosmetic-accent)",
                   background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
-                  border: "1px solid #1F1B47",
+                  border: "1px solid var(--color-border-subtle)",
                   borderLeftColor: "var(--cosmetic-accent)",
                   borderLeftWidth: 3,
                   padding: "16px 18px",
@@ -108,7 +108,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
                     › Indice {num} · révélé
                   </span>
-                  <span style={{ color: "#7F7BA9" }}>
+                  <span style={{ color: "var(--color-text-muted)" }}>
                     {hint.xpCost === 0 ? "Gratuit" : `−${String(hint.xpCost)} XP`}
                   </span>
                 </div>
@@ -116,7 +116,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 13,
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                     lineHeight: 1.55,
                     whiteSpace: "pre-wrap",
                   }}
@@ -151,12 +151,12 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   fontWeight: 700,
                   fontSize: 12,
                   letterSpacing: "0.1em",
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   display: "grid",
                   placeItems: "center",
                   width: 36,
                   height: 36,
-                  border: "1px dashed #2A2560",
+                  border: "1px dashed var(--color-border-default)",
                 }}
               >
                 {num}
@@ -168,7 +168,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   className="mono-label"
                   style={{
                     fontWeight: 600,
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                   }}
                 >
                   {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
@@ -180,8 +180,8 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                       hint.xpCost === 0
                         ? "var(--cosmetic-accent)"
                         : canAfford
-                          ? "#FFB020"
-                          : "#FF4D6D",
+                          ? "var(--color-warning)"
+                          : "var(--color-danger)",
                   }}
                 >
                   {hint.xpCost === 0
@@ -191,7 +191,13 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                       : `XP insuffisants (${String(hint.xpCost)} requis)`}
                 </span>
                 {errorMsg !== undefined && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#FF4D6D" }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      color: "var(--color-danger)",
+                    }}
+                  >
                     {errorMsg}
                   </span>
                 )}
@@ -200,7 +206,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
               {/* Chevron */}
               <span
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 16,
                   transition: "transform 200ms ease, color 200ms ease",

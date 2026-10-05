@@ -594,8 +594,8 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         const hex = (v: string): string => Number(v).toString(16).padStart(2, "0");
         return `#${hex(r)}${hex(g)}${hex(bl)}`;
       };
-      const termBg = resolveColor("--cosmetic-terminal-bg", "#030219");
-      const termFg = resolveColor("--cosmetic-terminal-fg", "#B8B5D1");
+      const termBg = resolveColor("--cosmetic-terminal-bg", "var(--color-bg-base)");
+      const termFg = resolveColor("--cosmetic-terminal-fg", "var(--color-text-secondary)");
 
       term = new Terminal({
         theme: {
@@ -605,19 +605,19 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           cursorAccent: termBg,
           black: termBg,
           green: "var(--cosmetic-accent)",
-          cyan: "#4D8BFF",
-          red: "#FF4757",
-          yellow: "#FFB020",
-          white: "#F5F5FA",
-          brightBlack: "#3F3D5C",
+          cyan: "var(--color-info)",
+          red: "var(--color-category-cybersec)",
+          yellow: "var(--color-warning)",
+          white: "var(--color-text-primary)",
+          brightBlack: "var(--color-text-disabled)",
           brightGreen: "var(--cosmetic-accent)",
-          brightCyan: "#4D8BFF",
-          brightWhite: "#F5F5FA",
-          brightRed: "#FF4757",
-          brightYellow: "#FFB547",
-          blue: "#0024FF",
+          brightCyan: "var(--color-info)",
+          brightWhite: "var(--color-text-primary)",
+          brightRed: "var(--color-category-cybersec)",
+          brightYellow: "var(--color-rarity-legendary)",
+          blue: "var(--color-brand-blue)",
           magenta: "#B14DFF",
-          brightBlue: "#6E8BFF",
+          brightBlue: "var(--color-rarity-rare)",
           brightMagenta: "#D580FF",
         },
         fontFamily: "JetBrains Mono, Menlo, monospace",
@@ -782,14 +782,14 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const accentColor = isPs ? "#4D8BFF" : "var(--cosmetic-accent)";
+  const accentColor = isPs ? "var(--color-info)" : "var(--cosmetic-accent)";
   const badgeLabel = isPs ? "PowerShell · Win32" : "bash · GNU/Linux";
 
   return (
     <div
       style={{
         margin: "32px 0",
-        border: `1px solid ${isPs ? "#1B2A4A" : "#1F1B47"}`,
+        border: `1px solid ${isPs ? "#1B2A4A" : "var(--color-border-subtle)"}`,
         // surface follows the equipped terminal-theme cosmetic (matches the xterm canvas)
         background: "var(--cosmetic-terminal-bg)",
         position: "relative",
@@ -802,13 +802,19 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           alignItems: "center",
           gap: 14,
           padding: "11px 16px",
-          borderBottom: `1px solid ${isPs ? "#1B2A4A" : "#1F1B47"}`,
+          borderBottom: `1px solid ${isPs ? "#1B2A4A" : "var(--color-border-subtle)"}`,
           background: isPs ? "rgba(1,36,86,0.4)" : "rgba(5,4,26,0.7)",
         }}
       >
         {/* Traffic-light dots */}
         <div style={{ display: "inline-flex", gap: 7, flexShrink: 0 }}>
-          {(["#FF4757", "#FFB020", "var(--cosmetic-accent)"] as const).map((c, i) => (
+          {(
+            [
+              "var(--color-category-cybersec)",
+              "var(--color-warning)",
+              "var(--cosmetic-accent)",
+            ] as const
+          ).map((c, i) => (
             <span key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />
           ))}
         </div>
@@ -835,7 +841,10 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: completedCount === totalExpected ? "var(--cosmetic-accent)" : "#44406B",
+              color:
+                completedCount === totalExpected
+                  ? "var(--cosmetic-accent)"
+                  : "var(--color-text-faint)",
               flexShrink: 0,
             }}
           >
@@ -849,7 +858,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
               fontSize: 10,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#44406B",
+              color: "var(--color-text-faint)",
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
@@ -876,7 +885,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       {hints.length > 0 && (
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             padding: "14px 18px",
             background: "rgba(5,4,26,0.5)",
           }}
@@ -912,7 +921,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
                   gap: 10,
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 12,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   lineHeight: 1.55,
                 }}
               >

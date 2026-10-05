@@ -24,18 +24,18 @@ type Outcome = "retry" | "right" | "revealed";
 
 const field: React.CSSProperties = {
   padding: "8px 10px",
-  border: "1px solid #2A2560",
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  background: "var(--color-bg-elevated)",
+  color: "var(--color-text-primary)",
   fontFamily: MONO,
   fontSize: 14,
 };
 
 const button: React.CSSProperties = {
   padding: "8px 14px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#F5F5FA",
+  color: "var(--color-text-primary)",
   fontSize: 14,
   cursor: "pointer",
 };
@@ -49,7 +49,7 @@ const primary: React.CSSProperties = {
 const small: React.CSSProperties = {
   ...button,
   padding: "6px 12px",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
 };
@@ -82,7 +82,7 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -136,7 +136,7 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -147,10 +147,19 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
           CALCUL DE SOUS-RÉSEAUX
         </span>
         {drill.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{drill.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {drill.title}
+          </span>
         ) : null}
         {series !== null && !finished ? (
-          <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontFamily: MONO,
+              fontSize: 12,
+              color: "var(--color-text-muted)",
+            }}
+          >
             Question {String(index + 1)} sur {String(series.length)}
           </span>
         ) : null}
@@ -158,20 +167,24 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
         {drill.task ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{drill.task}</p>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+            {drill.task}
+          </p>
         ) : null}
 
         {series === null ? (
-          <p style={{ margin: 0, color: "#7F7BA9", fontSize: 14 }}>Préparation des questions…</p>
+          <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 14 }}>
+            Préparation des questions…
+          </p>
         ) : null}
 
         {finished ? (
           <div aria-live="polite" style={{ display: "grid", gap: 10 }}>
-            <p style={{ margin: 0, color: "#F5F5FA", fontSize: 15 }}>
+            <p style={{ margin: 0, color: "var(--color-text-primary)", fontSize: 15 }}>
               <strong style={{ color: ACCENT }}>Série terminée :</strong> {String(found)}{" "}
               {found > 1 ? "trouvées" : "trouvée"} sur {String(series.length)}.
             </p>
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
               {found === series.length
                 ? "Tout juste. Une autre série, avec d'autres adresses, pour que ça devienne un réflexe ?"
                 : "Refais une série : les mêmes sortes de questions, d'autres adresses."}
@@ -184,7 +197,14 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
 
         {question !== undefined ? (
           <>
-            <p style={{ margin: 0, color: "#F5F5FA", fontSize: 15, lineHeight: 1.5 }}>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--color-text-primary)",
+                fontSize: 15,
+                lineHeight: 1.5,
+              }}
+            >
               {question.prompt}
             </p>
 
@@ -205,8 +225,8 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
                       style={{
                         ...button,
                         minWidth: 90,
-                        border: `1px solid ${right ? ACCENT : picked ? RED : "#2A2560"}`,
-                        color: right ? ACCENT : picked ? RED : "#F5F5FA",
+                        border: `1px solid ${right ? ACCENT : picked ? RED : "var(--color-border-default)"}`,
+                        color: right ? ACCENT : picked ? RED : "var(--color-text-primary)",
                         cursor: answered ? "default" : "pointer",
                       }}
                     >
@@ -255,7 +275,14 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
               ) : null}
               {answered ? (
                 <>
-                  <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "var(--color-text-secondary)",
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                    }}
+                  >
                     {outcome === "right" ? (
                       <strong style={{ color: ACCENT }}>Juste.</strong>
                     ) : (

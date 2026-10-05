@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const ROW_COLS = "80px minmax(0,1fr) 160px 130px 120px";
 
 // Bracket-corner border used by the real podium / banner surfaces.
-const SURFACE_BORDER = "1px solid #2A2560";
+const SURFACE_BORDER = "1px solid var(--color-border-default)";
 const SURFACE_BG = "rgba(5,4,26,0.6)";
 
 function PodiumSkeleton({ tall }: { tall: boolean }): React.ReactElement {
@@ -133,7 +133,7 @@ export default function LeaderboardLoading(): React.ReactElement {
           gap: 16,
           margin: "18px 0 48px",
           paddingBottom: 18,
-          borderBottom: "1px dashed #2A2560",
+          borderBottom: "1px dashed var(--color-border-default)",
         }}
       >
         {[140, 90, 70, 110].map((w, i) => (
@@ -176,7 +176,9 @@ export default function LeaderboardLoading(): React.ReactElement {
           <Skeleton w={200} h={24} />
           <Skeleton w={160} h={11} />
         </div>
-        <span style={{ width: 1, alignSelf: "stretch", background: "#2A2560" }} />
+        <span
+          style={{ width: 1, alignSelf: "stretch", background: "var(--color-border-default)" }}
+        />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
           <Skeleton w={70} h={10} />
           <Skeleton w={100} h={28} />

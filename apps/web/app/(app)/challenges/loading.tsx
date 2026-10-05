@@ -4,7 +4,7 @@ import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
 // Card surface override: real .cc card is #08061f, #1f1b47 hairline, square corners.
 const CARD_STYLE: React.CSSProperties = {
   background: "#08061f",
-  borderColor: "#1f1b47",
+  borderColor: "var(--color-border-subtle)",
   padding: 0,
   overflow: "hidden",
   display: "flex",
@@ -22,8 +22,8 @@ function ChallengeCardSkeleton(): React.ReactElement {
         style={{
           position: "relative",
           height: 130,
-          background: "#0a0826",
-          borderBottom: "1px solid #1f1b47",
+          background: "var(--color-bg-elevated)",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "grid",
           placeItems: "center",
         }}
@@ -135,8 +135,8 @@ export default function ChallengesLoading(): React.ReactElement {
         <div
           style={{
             position: "relative",
-            background: "#05041a",
-            borderRight: "1px solid #1f1b47",
+            background: "var(--color-bg-sunken)",
+            borderRight: "1px solid var(--color-border-subtle)",
             display: "grid",
             placeItems: "center",
           }}

@@ -99,7 +99,7 @@ export function SqlInjectionLab(
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -117,12 +117,14 @@ export function SqlInjectionLab(
           INJECTION SQL · BASE RÉELLE
         </span>
         {lab.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{lab.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {lab.title}
+          </span>
         ) : null}
       </header>
 
       <div style={{ padding: "12px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{lab.goal}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.goal}</p>
 
         <div
           role="radiogroup"
@@ -146,9 +148,9 @@ export function SqlInjectionLab(
               }}
               style={{
                 padding: "6px 12px",
-                border: `1px solid ${mode === value ? (value === "vulnerable" ? RED : ACCENT) : "#2A2560"}`,
+                border: `1px solid ${mode === value ? (value === "vulnerable" ? RED : ACCENT) : "var(--color-border-default)"}`,
                 background: "transparent",
-                color: mode === value ? "#F5F5FA" : "#7F7BA9",
+                color: mode === value ? "var(--color-text-primary)" : "var(--color-text-muted)",
                 fontSize: 13,
                 cursor: "pointer",
               }}
@@ -162,9 +164,9 @@ export function SqlInjectionLab(
           style={{
             margin: 0,
             padding: "10px 12px",
-            background: "#0A0826",
-            border: "1px solid #1F1B47",
-            color: "#B8B5D1",
+            background: "var(--color-bg-elevated)",
+            border: "1px solid var(--color-border-subtle)",
+            color: "var(--color-text-secondary)",
             fontSize: 12.5,
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
@@ -179,7 +181,12 @@ export function SqlInjectionLab(
           {lab.fields.map((field) => (
             <label
               key={field.name}
-              style={{ display: "grid", gap: 4, color: "#B8B5D1", fontSize: 13 }}
+              style={{
+                display: "grid",
+                gap: 4,
+                color: "var(--color-text-secondary)",
+                fontSize: 13,
+              }}
             >
               {field.label}
               <input
@@ -192,9 +199,9 @@ export function SqlInjectionLab(
                 }}
                 style={{
                   padding: "8px 10px",
-                  background: "#0A0826",
-                  border: "1px solid #2A2560",
-                  color: "#F5F5FA",
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-default)",
+                  color: "var(--color-text-primary)",
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 13,
                 }}
@@ -216,15 +223,15 @@ export function SqlInjectionLab(
         <div aria-live="polite" style={{ display: "grid", gap: 8 }}>
           {attempt !== null ? (
             <>
-              <p style={{ margin: 0, color: "#7F7BA9", fontSize: 12 }}>
+              <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 12 }}>
                 Requête reçue par la base :
               </p>
               <pre
                 style={{
                   margin: 0,
                   padding: "8px 12px",
-                  background: "#0A0826",
-                  border: "1px solid #1F1B47",
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-subtle)",
                   color: "#D8D6EA",
                   fontSize: 12.5,
                   whiteSpace: "pre-wrap",
@@ -253,7 +260,7 @@ export function SqlInjectionLab(
             </p>
           ) : null}
           {attempt?.outcome.ok === true && rows.length === 0 ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
               Identifiants refusés : la requête ne renvoie aucun compte.
               {attempt.mode === "fixed"
                 ? " Les valeurs sont passées à part : une apostrophe n'y est qu'un caractère de plus."
@@ -262,7 +269,13 @@ export function SqlInjectionLab(
           ) : null}
           {result !== null && rows.length > 0 ? (
             <>
-              <p style={{ margin: 0, color: goalReached ? ACCENT : "#B8B5D1", fontSize: 14 }}>
+              <p
+                style={{
+                  margin: 0,
+                  color: goalReached ? ACCENT : "var(--color-text-secondary)",
+                  fontSize: 14,
+                }}
+              >
                 {goalReached
                   ? `✓ Connecté en tant que ${signedInAs(rows[0])}${attempt?.mode === "vulnerable" ? " : l'injection a marché." : "."}`
                   : `Connecté en tant que ${signedInAs(rows[0])}, mais ce n'est pas encore le compte visé.`}
@@ -271,7 +284,9 @@ export function SqlInjectionLab(
             </>
           ) : null}
           {lab.hint && tries >= 3 && !goalReached ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>Indice : {lab.hint}</p>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+              Indice : {lab.hint}
+            </p>
           ) : null}
         </div>
       </div>

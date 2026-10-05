@@ -28,7 +28,7 @@ export function PublicNavbar(): React.JSX.Element {
           alignItems: "center",
           gap: 10,
           textDecoration: "none",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
         }}
       >
         <Image
@@ -47,7 +47,7 @@ export function PublicNavbar(): React.JSX.Element {
             letterSpacing: "-0.01em",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
       </Link>
       <div className="landing-nav-actions">
@@ -73,7 +73,7 @@ export function PublicNavbar(): React.JSX.Element {
             alignItems: "center",
             padding: "11px 20px",
             fontWeight: 700,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             textDecoration: "none",
             transition: "border-color 180ms ease, color 180ms ease",
           }}

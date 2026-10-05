@@ -250,7 +250,7 @@ export function ContextMenu({
         overflowY: "auto",
         padding: 4,
         background: "#0B0A2A",
-        border: "1px solid #2A2560",
+        border: "1px solid var(--color-border-default)",
         boxShadow: "0 18px 40px rgba(0,0,0,0.55)",
         fontFamily: "var(--font-mono)",
         fontSize: 12,
@@ -264,7 +264,7 @@ export function ContextMenu({
               <div
                 key={entry.id}
                 role="separator"
-                style={{ height: 1, background: "#1F1B47", margin: "4px 2px" }}
+                style={{ height: 1, background: "var(--color-border-subtle)", margin: "4px 2px" }}
               />
             );
           case "label":
@@ -278,7 +278,7 @@ export function ContextMenu({
                   fontWeight: 700,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -324,7 +324,7 @@ export function ContextMenu({
                       background: option.active
                         ? "color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
                         : "transparent",
-                      border: `1px solid ${option.active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+                      border: `1px solid ${option.active ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
                       cursor: "pointer",
                     }}
                   >

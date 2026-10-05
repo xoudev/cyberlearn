@@ -15,7 +15,7 @@ export default function LegalPage(): React.JSX.Element {
         style={{
           fontSize: "30px",
           fontWeight: 700,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "8px",
         }}
       >
@@ -24,7 +24,7 @@ export default function LegalPage(): React.JSX.Element {
       <p
         style={{
           fontSize: "13px",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontFamily: "var(--font-mono)",
           marginBottom: "48px",
         }}
@@ -36,7 +36,8 @@ export default function LegalPage(): React.JSX.Element {
         <p>
           Conformément à l’article 6 III 2° de la loi n° 2004-575 du 21 juin 2004 pour la confiance
           dans l’économie numérique (LCEN), le site Cyber Learn est édité à titre{" "}
-          <strong style={{ color: "#B8B5D1" }}>non professionnel</strong> par une personne physique.
+          <strong style={{ color: "var(--color-text-secondary)" }}>non professionnel</strong> par
+          une personne physique.
         </p>
         <p style={{ marginTop: "12px" }}>
           L’identité complète de l’éditeur est communiquée à l’hébergeur du site (voir section 2) et
@@ -48,7 +49,7 @@ export default function LegalPage(): React.JSX.Element {
         <p style={{ marginTop: "12px" }}>
           <a
             href={`mailto:${CONTACT_EMAIL}`}
-            style={{ color: "#4D8BFF", textDecoration: "none", fontWeight: 600 }}
+            style={{ color: "var(--color-info)", textDecoration: "none", fontWeight: 600 }}
           >
             {CONTACT_EMAIL}
           </a>
@@ -61,15 +62,15 @@ export default function LegalPage(): React.JSX.Element {
           style={{
             marginTop: "16px",
             padding: "16px 20px",
-            background: "#0A0826",
-            border: "1px solid #1F1B47",
-            borderLeft: "3px solid #1F1B47",
+            background: "var(--color-bg-elevated)",
+            border: "1px solid var(--color-border-subtle)",
+            borderLeft: "3px solid var(--color-border-subtle)",
             fontSize: "14px",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             lineHeight: "1.8",
           }}
         >
-          <strong style={{ color: "#F5F5FA" }}>Vercel Inc.</strong>
+          <strong style={{ color: "var(--color-text-primary)" }}>Vercel Inc.</strong>
           <br />
           440 N Barranca Ave #4133
           <br />
@@ -79,7 +80,7 @@ export default function LegalPage(): React.JSX.Element {
           <br />
           <a
             href="https://vercel.com"
-            style={{ color: "#4D8BFF", textDecoration: "none" }}
+            style={{ color: "var(--color-info)", textDecoration: "none" }}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -122,7 +123,7 @@ export default function LegalPage(): React.JSX.Element {
         </p>
         <p style={{ marginTop: "16px" }}>
           Pour en savoir plus sur la gestion de vos données personnelles, consultez notre{" "}
-          <Link href="/privacy" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <Link href="/privacy" style={{ color: "var(--color-info)", textDecoration: "none" }}>
             Politique de confidentialité
           </Link>
           .
@@ -145,15 +146,15 @@ function Section({
         style={{
           fontSize: "20px",
           fontWeight: 600,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "16px",
           paddingBottom: "8px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {title}
       </h2>
-      <div style={{ fontSize: "14px", color: "#B8B5D1" }}>{children}</div>
+      <div style={{ fontSize: "14px", color: "var(--color-text-secondary)" }}>{children}</div>
     </section>
   );
 }

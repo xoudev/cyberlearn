@@ -82,7 +82,7 @@ const TRACK_PILLS: PillItem<TrackFilter>[] = [
   { key: "CAREER", label: "Métier", color: TRACK_COLOR },
 ];
 const PILLS: PillItem<Filter>[] = [
-  { key: "all", label: "Tous", color: "#b8b5d1" },
+  { key: "all", label: "Tous", color: "var(--color-text-secondary)" },
   ...CATEGORY_ORDER.map((c) => ({
     key: c,
     label: CATEGORY_META[c].short,

@@ -74,7 +74,7 @@ export async function LessonAuthor({
             fontWeight: 700,
             fontSize: 13,
             lineHeight: 1.3,
-            color: byline.kind === "gone" ? "#7F7BA9" : "#F5F5FA",
+            color: byline.kind === "gone" ? "var(--color-text-muted)" : "var(--color-text-primary)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -89,7 +89,7 @@ export async function LessonAuthor({
             fontSize: 10,
             lineHeight: 1.45,
             letterSpacing: "0.06em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             // Wraps rather than truncating: the rail is narrow, and "Équipe
             // CyberLearn · 3 février 2026" would lose the date to an ellipsis.
           }}
@@ -109,13 +109,13 @@ export async function LessonAuthor({
         className="mono-label"
         style={{
           fontWeight: 700,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           display: "flex",
           alignItems: "center",
           gap: 10,
           marginBottom: 14,
           paddingBottom: 10,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         Écrit par

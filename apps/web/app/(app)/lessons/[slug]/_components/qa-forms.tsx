@@ -108,7 +108,14 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
       />
 
       {error && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#FF4757", margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--color-category-cybersec)",
+            margin: 0,
+          }}
+        >
           {error}
         </p>
       )}
@@ -140,7 +147,7 @@ function HeldNotice(): React.JSX.Element {
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         lineHeight: 1.5,
-        color: "#FFB547",
+        color: "var(--color-rarity-legendary)",
         border: "1px solid rgba(255,181,71,0.35)",
         background: "rgba(255,181,71,0.07)",
         padding: "10px 12px",
@@ -211,7 +218,14 @@ export function PostAnswerForm({ questionId }: { questionId: string }): React.JS
         style={{ ...INPUT_STYLE, resize: "vertical" }}
       />
       {error && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#FF4757", margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--color-category-cybersec)",
+            margin: 0,
+          }}
+        >
           {error}
         </p>
       )}
@@ -265,8 +279,8 @@ export function AcceptAnswerButton({
         background: isAccepted
           ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
           : "transparent",
-        border: `1px solid ${isAccepted ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
-        color: isAccepted ? "var(--cosmetic-accent)" : "#7F7BA9",
+        border: `1px solid ${isAccepted ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "var(--color-border-default)"}`,
+        color: isAccepted ? "var(--cosmetic-accent)" : "var(--color-text-muted)",
         cursor: isAccepted ? "default" : "pointer",
       }}
     >
@@ -326,8 +340,8 @@ export function UpvoteButton({
         fontFamily: "var(--font-mono)",
         fontSize: 10,
         background: "transparent",
-        border: `1px solid ${voted ? "rgba(0,36,255,0.4)" : "#1F1B47"}`,
-        color: voted ? "#4D8BFF" : "#7F7BA9",
+        border: `1px solid ${voted ? "rgba(0,36,255,0.4)" : "var(--color-border-subtle)"}`,
+        color: voted ? "var(--color-info)" : "var(--color-text-muted)",
         cursor: voted ? "default" : "pointer",
       }}
     >
@@ -353,9 +367,9 @@ export function UpvoteButton({
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
   padding: "10px 14px",
-  background: "#05041A",
-  border: "1px solid #2A2560",
-  color: "#F5F5FA",
+  background: "var(--color-bg-sunken)",
+  border: "1px solid var(--color-border-default)",
+  color: "var(--color-text-primary)",
   fontFamily: "var(--font-mono)",
   fontSize: 12,
   lineHeight: 1.6,
@@ -370,8 +384,8 @@ const BTN_PRIMARY: React.CSSProperties = {
   fontSize: 11,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  background: "#0024FF",
-  border: "1px solid #0024FF",
+  background: "var(--color-brand-blue)",
+  border: "1px solid var(--color-brand-blue)",
   color: "#fff",
   cursor: "pointer",
 };
@@ -384,7 +398,7 @@ const BTN_GHOST: React.CSSProperties = {
   letterSpacing: "0.1em",
   textTransform: "uppercase",
   background: "transparent",
-  border: "1px solid #2A2560",
-  color: "#7F7BA9",
+  border: "1px solid var(--color-border-default)",
+  color: "var(--color-text-muted)",
   cursor: "pointer",
 };

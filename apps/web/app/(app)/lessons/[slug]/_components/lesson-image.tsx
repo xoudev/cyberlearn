@@ -25,8 +25,8 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
           padding: "12px 16px",
           background: "rgba(255,71,87,0.07)",
           border: "1px solid rgba(255,71,87,0.3)",
-          borderLeft: "3px solid #FF4757",
-          color: "#FF4757",
+          borderLeft: "3px solid var(--color-category-cybersec)",
+          color: "var(--color-category-cybersec)",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: "12px",
           margin: "1.5rem 0",
@@ -84,7 +84,7 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
         <figcaption
           style={{
             fontSize: "12px",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontFamily: "var(--font-mono, monospace)",
             letterSpacing: "0.02em",
             padding: "0 4px",

@@ -602,7 +602,7 @@ export function NotesLibrary({
             label: "Aucune couleur",
             active: folder.color === null,
             render: (
-              <span aria-hidden="true" style={{ color: "#7F7BA9" }}>
+              <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
                 ×
               </span>
             ),
@@ -721,7 +721,10 @@ export function NotesLibrary({
           marginBottom: 14,
         }}
       >
-        <span aria-hidden="true" style={{ width: 24, height: 1, background: "#2A2560" }} />
+        <span
+          aria-hidden="true"
+          style={{ width: 24, height: 1, background: "var(--color-border-default)" }}
+        />
         Cyber Learn · Apprentissage
       </div>
       <h1
@@ -730,7 +733,7 @@ export function NotesLibrary({
           fontWeight: 800,
           fontSize: "clamp(34px,5vw,52px)",
           letterSpacing: "-0.03em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 10px",
         }}
       >
@@ -740,7 +743,7 @@ export function NotesLibrary({
         style={{
           fontFamily: "var(--font-body)",
           fontSize: 15,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           maxWidth: 620,
           margin: "0 0 30px",
         }}
@@ -765,7 +768,7 @@ export function NotesLibrary({
             height="14"
             viewBox="0 0 16 16"
             fill="none"
-            stroke="#7F7BA9"
+            stroke="var(--color-text-muted)"
             strokeWidth={1.5}
             style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}
             aria-hidden="true"
@@ -786,8 +789,8 @@ export function NotesLibrary({
               height: 44,
               padding: "0 14px 0 38px",
               background: "rgba(5,4,26,0.6)",
-              border: "1px solid #2A2560",
-              color: "#F5F5FA",
+              border: "1px solid var(--color-border-default)",
+              color: "var(--color-text-primary)",
               fontFamily: "var(--font-mono)",
               fontSize: 13,
               outline: "none",
@@ -811,9 +814,9 @@ export function NotesLibrary({
                   alignItems: "center",
                   gap: 7,
                   fontWeight: 700,
-                  color: active ? "#05041A" : "#B8B5D1",
+                  color: active ? "var(--color-bg-sunken)" : "var(--color-text-secondary)",
                   background: active ? color : "transparent",
-                  border: `1px solid ${active ? color : "#2A2560"}`,
+                  border: `1px solid ${active ? color : "var(--color-border-default)"}`,
                   padding: "8px 12px",
                   cursor: "pointer",
                 }}
@@ -825,7 +828,7 @@ export function NotesLibrary({
                       width: 7,
                       height: 7,
                       borderRadius: "50%",
-                      background: active ? "#05041A" : color,
+                      background: active ? "var(--color-bg-sunken)" : color,
                     }}
                   />
                 )}
@@ -845,14 +848,16 @@ export function NotesLibrary({
           gap: 8,
           paddingBottom: 16,
           marginBottom: 22,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         <FolderPill
           label="Mes dossiers"
           count={folders.length}
           icon={
-            <AllNotesGlyph color={selectedFolder === ALL ? "#05041A" : "var(--cosmetic-accent)"} />
+            <AllNotesGlyph
+              color={selectedFolder === ALL ? "var(--color-bg-sunken)" : "var(--cosmetic-accent)"}
+            />
           }
           active={selectedFolder === ALL}
           onClick={() => {
@@ -865,7 +870,7 @@ export function NotesLibrary({
           icon={
             <FolderGlyph
               name="folder"
-              color={selectedFolder === NONE ? "#05041A" : FOLDER_DEFAULT_COLOR}
+              color={selectedFolder === NONE ? "var(--color-bg-sunken)" : FOLDER_DEFAULT_COLOR}
             />
           }
           active={selectedFolder === NONE}
@@ -890,9 +895,9 @@ export function NotesLibrary({
           }}
           style={{
             fontWeight: 700,
-            color: manageOpen ? "#05041A" : "#8B88A8",
+            color: manageOpen ? "var(--color-bg-sunken)" : "#8B88A8",
             background: manageOpen ? "var(--cosmetic-accent)" : "transparent",
-            border: "1px dashed #2A2560",
+            border: "1px dashed var(--color-border-default)",
             padding: "8px 12px",
             cursor: "pointer",
           }}
@@ -943,8 +948,8 @@ export function NotesLibrary({
                 height: 38,
                 padding: "0 12px",
                 background: "rgba(3,2,25,0.6)",
-                border: "1px solid #2A2560",
-                color: "#F5F5FA",
+                border: "1px solid var(--color-border-default)",
+                color: "var(--color-text-primary)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 13,
                 outline: "none",
@@ -969,7 +974,13 @@ export function NotesLibrary({
           </div>
 
           {folders.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                color: "var(--color-text-muted)",
+              }}
+            >
               {"Aucun dossier pour l'instant. Crée-en un ci-dessus."}
             </div>
           ) : (
@@ -982,7 +993,7 @@ export function NotesLibrary({
                   alignItems: "center",
                   gap: 10,
                   paddingTop: 12,
-                  borderTop: "1px solid #1F1B47",
+                  borderTop: "1px solid var(--color-border-subtle)",
                 }}
               >
                 <PaletteDots
@@ -1018,8 +1029,8 @@ export function NotesLibrary({
                     height: 34,
                     padding: "0 10px",
                     background: "rgba(3,2,25,0.6)",
-                    border: "1px solid #2A2560",
-                    color: "#F5F5FA",
+                    border: "1px solid var(--color-border-default)",
+                    color: "var(--color-text-primary)",
                     fontFamily: "var(--font-mono)",
                     fontSize: 13,
                     outline: "none",
@@ -1029,7 +1040,7 @@ export function NotesLibrary({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     minWidth: 54,
                   }}
                 >
@@ -1094,7 +1105,7 @@ export function NotesLibrary({
                     padding: 18,
                     textAlign: "left",
                     background: "rgba(5,4,26,0.5)",
-                    border: "1px solid #1F1B47",
+                    border: "1px solid var(--color-border-subtle)",
                     borderLeft: `3px solid ${cat.color}`,
                     cursor: "pointer",
                     minHeight: 150,
@@ -1123,7 +1134,7 @@ export function NotesLibrary({
                       fontFamily: "var(--font-sans)",
                       fontWeight: 700,
                       fontSize: 15,
-                      color: "#F5F5FA",
+                      color: "var(--color-text-primary)",
                       lineHeight: 1.25,
                     }}
                   >
@@ -1147,8 +1158,8 @@ export function NotesLibrary({
                       gap: 10,
                       fontFamily: "var(--font-mono)",
                       fontSize: 10.5,
-                      color: "#7F7BA9",
-                      borderTop: "1px solid #1F1B47",
+                      color: "var(--color-text-muted)",
+                      borderTop: "1px solid var(--color-border-subtle)",
                       paddingTop: 10,
                     }}
                   >
@@ -1240,12 +1251,12 @@ export function NotesLibrary({
       {groups.length === 0 && visibleFolders.length > 0 ? null : groups.length === 0 ? (
         <div
           style={{
-            border: "1px dashed #2A2560",
+            border: "1px dashed var(--color-border-default)",
             padding: "48px 24px",
             textAlign: "center",
             fontFamily: "var(--font-mono)",
             fontSize: 13,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           {notes.length === 0
@@ -1291,7 +1302,7 @@ export function NotesLibrary({
                           padding: 18,
                           textAlign: "left",
                           background: "rgba(5,4,26,0.5)",
-                          border: "1px solid #1F1B47",
+                          border: "1px solid var(--color-border-subtle)",
                           borderLeft: `3px solid ${cat.color}`,
                           cursor: draggingId === n.id ? "grabbing" : "grab",
                           opacity: draggingId === n.id ? 0.45 : 1,
@@ -1321,7 +1332,9 @@ export function NotesLibrary({
                           />
                           {cat.label}
                           {n.pathTitle ? (
-                            <span style={{ color: "#7F7BA9", letterSpacing: "0.06em" }}>
+                            <span
+                              style={{ color: "var(--color-text-muted)", letterSpacing: "0.06em" }}
+                            >
                               · {n.pathTitle}
                             </span>
                           ) : null}
@@ -1331,7 +1344,7 @@ export function NotesLibrary({
                             fontFamily: "var(--font-sans)",
                             fontWeight: 700,
                             fontSize: 15,
-                            color: "#F5F5FA",
+                            color: "var(--color-text-primary)",
                             lineHeight: 1.25,
                           }}
                         >
@@ -1354,8 +1367,8 @@ export function NotesLibrary({
                             justifyContent: "space-between",
                             fontFamily: "var(--font-mono)",
                             fontSize: 10.5,
-                            color: "#7F7BA9",
-                            borderTop: "1px solid #1F1B47",
+                            color: "var(--color-text-muted)",
+                            borderTop: "1px solid var(--color-border-subtle)",
                             paddingTop: 10,
                           }}
                         >
@@ -1477,7 +1490,7 @@ function FolderPill({
   dragOver?: boolean;
   dropHandlers?: DropHandlers;
 }): React.JSX.Element {
-  const borderColor = active || dragOver ? "var(--cosmetic-accent)" : "#2A2560";
+  const borderColor = active || dragOver ? "var(--cosmetic-accent)" : "var(--color-border-default)";
   const borderStyle = droppable && dragActive && !active ? "dashed" : "solid";
   const background = active
     ? "var(--cosmetic-accent)"
@@ -1497,7 +1510,7 @@ function FolderPill({
         fontSize: 11,
         fontWeight: 700,
         letterSpacing: "0.06em",
-        color: active ? "#05041A" : "#B8B5D1",
+        color: active ? "var(--color-bg-sunken)" : "var(--color-text-secondary)",
         background,
         border: `1px ${borderStyle} ${borderColor}`,
         padding: "8px 12px",
@@ -1545,7 +1558,7 @@ function IconDots({
               background: active
                 ? "color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
                 : "transparent",
-              border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+              border: `1px solid ${active ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
               cursor: "pointer",
               padding: 0,
             }}
@@ -1580,7 +1593,7 @@ function PaletteDots({
             height: 18,
             borderRadius: "50%",
             background: c,
-            border: value === c ? "2px solid #F5F5FA" : "2px solid transparent",
+            border: value === c ? "2px solid var(--color-text-primary)" : "2px solid transparent",
             cursor: "pointer",
             padding: 0,
           }}
@@ -1598,10 +1611,13 @@ function PaletteDots({
           height: 18,
           borderRadius: "50%",
           background: "transparent",
-          border: value === null ? "2px solid #F5F5FA" : "2px solid #2A2560",
+          border:
+            value === null
+              ? "2px solid var(--color-text-primary)"
+              : "2px solid var(--color-border-default)",
           cursor: "pointer",
           padding: 0,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontSize: 11,
           lineHeight: 1,
         }}

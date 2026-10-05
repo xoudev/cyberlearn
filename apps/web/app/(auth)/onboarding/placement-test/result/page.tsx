@@ -10,9 +10,9 @@ interface ResultPageProps {
 }
 
 const CAT_COLORS: Record<string, string> = {
-  DEV: "#6E8BFF",
-  CYBERSEC: "#FF4757",
-  NETWORK: "#0AFFD4",
+  DEV: "var(--color-rarity-rare)",
+  CYBERSEC: "var(--color-category-cybersec)",
+  NETWORK: "var(--color-brand-turquoise)",
 };
 
 function ScoreBar({
@@ -26,7 +26,7 @@ function ScoreBar({
 }): React.ReactElement {
   const level = placementLevelFor(score);
   return (
-    <div style={{ padding: "20px 24px", borderBottom: "1px solid #2A2560" }}>
+    <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--color-border-default)" }}>
       <div
         style={{
           display: "flex",
@@ -51,7 +51,7 @@ function ScoreBar({
             className="mono-label"
             style={{
               fontWeight: 600,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             {label}
@@ -77,7 +77,7 @@ function ScoreBar({
             fontWeight: 800,
             fontSize: 28,
             letterSpacing: "-0.03em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             lineHeight: 1,
           }}
         >
@@ -87,7 +87,7 @@ function ScoreBar({
               fontFamily: "var(--font-mono)",
               fontSize: 13,
               fontWeight: 500,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: 0,
             }}
           >
@@ -116,16 +116,20 @@ export default async function PlacementResultPage({
   const recPath = typeof params.path === "string" ? params.path : null;
 
   const scores = [
-    { label: PLACEMENT_CATEGORY_LABEL.DEV, score: devScore, color: CAT_COLORS.DEV ?? "#6E8BFF" },
+    {
+      label: PLACEMENT_CATEGORY_LABEL.DEV,
+      score: devScore,
+      color: CAT_COLORS.DEV ?? "var(--color-rarity-rare)",
+    },
     {
       label: PLACEMENT_CATEGORY_LABEL.CYBERSEC,
       score: cyberSec,
-      color: CAT_COLORS.CYBERSEC ?? "#FF4757",
+      color: CAT_COLORS.CYBERSEC ?? "var(--color-category-cybersec)",
     },
     {
       label: PLACEMENT_CATEGORY_LABEL.NETWORK,
       score: network,
-      color: CAT_COLORS.NETWORK ?? "#0AFFD4",
+      color: CAT_COLORS.NETWORK ?? "var(--color-brand-turquoise)",
     },
   ];
 
@@ -133,7 +137,12 @@ export default async function PlacementResultPage({
 
   return (
     <div
-      style={{ background: "#030219", minHeight: "100vh", position: "relative", color: "#F5F5FA" }}
+      style={{
+        background: "var(--color-bg-base)",
+        minHeight: "100vh",
+        position: "relative",
+        color: "var(--color-text-primary)",
+      }}
     >
       {/* ── Ambient glows ─────────────────────────────────────────────── */}
       <div
@@ -184,8 +193,8 @@ export default async function PlacementResultPage({
           background: "rgba(3,2,25,0.65)",
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid #2A2560",
-          color: "#7F7BA9",
+          borderBottom: "1px solid var(--color-border-default)",
+          color: "var(--color-text-muted)",
         }}
       >
         <span
@@ -213,20 +222,20 @@ export default async function PlacementResultPage({
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.01em",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>RÉSULTATS · TEST DE PLACEMENT</span>
         <span
           style={{
             marginLeft: "auto",
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#0AFFD4",
+            color: "var(--color-brand-turquoise)",
             letterSpacing: "0.14em",
           }}
         >
@@ -253,7 +262,7 @@ export default async function PlacementResultPage({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
@@ -264,8 +273,8 @@ export default async function PlacementResultPage({
                 style={{
                   width: 32,
                   height: 1,
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
+                  background: "var(--color-brand-turquoise)",
+                  boxShadow: "0 0 6px var(--color-brand-turquoise)",
                   display: "inline-block",
                 }}
               />
@@ -278,7 +287,7 @@ export default async function PlacementResultPage({
                 fontSize: "clamp(40px, 5vw, 64px)",
                 lineHeight: 0.95,
                 letterSpacing: "-0.04em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: 0,
               }}
             >
@@ -286,7 +295,8 @@ export default async function PlacementResultPage({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -326,25 +336,25 @@ export default async function PlacementResultPage({
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "16px 24px",
-                borderBottom: "1px solid #1F1B47",
+                borderBottom: "1px solid var(--color-border-subtle)",
               }}
             >
               <span
                 className="mono-label"
                 style={{
                   fontWeight: 600,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
                 }}
               >
-                <span style={{ color: "#0AFFD4" }}>›</span> SCORES PAR DOMAINE
+                <span style={{ color: "var(--color-brand-turquoise)" }}>›</span> SCORES PAR DOMAINE
               </span>
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 POINT FORT ·{" "}
@@ -365,13 +375,13 @@ export default async function PlacementResultPage({
                 background: "rgba(5,4,26,0.5)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 10.5,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 letterSpacing: "0.04em",
-                borderTop: "1px solid #1F1B47",
+                borderTop: "1px solid var(--color-border-subtle)",
               }}
             >
               Les niveaux débutant de tes domaines forts ont été{" "}
-              <b style={{ color: "#0AFFD4" }}>débloqués automatiquement</b>.
+              <b style={{ color: "var(--color-brand-turquoise)" }}>débloqués automatiquement</b>.
             </div>
           </div>
 
@@ -394,15 +404,16 @@ export default async function PlacementResultPage({
                   left: 0,
                   right: 0,
                   height: 2,
-                  background: "linear-gradient(90deg, transparent, #0AFFD4, transparent)",
-                  boxShadow: "0 0 12px #0AFFD4",
+                  background:
+                    "linear-gradient(90deg, transparent, var(--color-brand-turquoise), transparent)",
+                  boxShadow: "0 0 12px var(--color-brand-turquoise)",
                 }}
                 aria-hidden="true"
               />
               <div
                 className="mono-label"
                 style={{
-                  color: "#0AFFD4",
+                  color: "var(--color-brand-turquoise)",
                   marginBottom: 14,
                   display: "inline-flex",
                   alignItems: "center",
@@ -415,7 +426,7 @@ export default async function PlacementResultPage({
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   lineHeight: 1.6,
                   margin: "0 0 20px",
                   maxWidth: 480,
@@ -449,7 +460,7 @@ export default async function PlacementResultPage({
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   lineHeight: 1.6,
                   margin: 0,
                 }}

@@ -201,7 +201,7 @@ export function NotificationPanel({
             right: 0,
             width: 360,
             maxHeight: 480,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px #2A2560",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--color-border-default)",
             overflowY: "auto",
             zIndex: 1000,
           }}
@@ -213,10 +213,10 @@ export function NotificationPanel({
               alignItems: "center",
               justifyContent: "space-between",
               padding: "14px 18px",
-              borderBottom: "1px solid #1F1B47",
+              borderBottom: "1px solid var(--color-border-subtle)",
               position: "sticky",
               top: 0,
-              background: "#0A0826",
+              background: "var(--color-bg-elevated)",
               zIndex: 1,
             }}
           >
@@ -224,7 +224,7 @@ export function NotificationPanel({
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
@@ -262,7 +262,7 @@ export function NotificationPanel({
                 disabled={isPending}
                 className="link-action mono-label mono-label--xs"
                 style={{
-                  color: "#4D8BFF",
+                  color: "var(--color-info)",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
@@ -281,7 +281,7 @@ export function NotificationPanel({
                 textAlign: "center",
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               Chargement…
@@ -293,7 +293,7 @@ export function NotificationPanel({
                 height="32"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#2A2560"
+                stroke="var(--color-border-default)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -306,7 +306,7 @@ export function NotificationPanel({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   margin: 0,
                 }}
               >
@@ -377,7 +377,7 @@ function NotificationRow({
             background: isUnread
               ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
               : "rgba(42,37,96,0.3)",
-            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 26%, transparent)" : "#1F1B47"}`,
+            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 26%, transparent)" : "var(--color-border-subtle)"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -394,7 +394,7 @@ function NotificationRow({
             background: isUnread
               ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
               : "rgba(42,37,96,0.3)",
-            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "#1F1B47"}`,
+            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "var(--color-border-subtle)"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -413,7 +413,7 @@ function NotificationRow({
             fontFamily: "var(--font-sans)",
             fontSize: 13,
             fontWeight: isUnread ? 600 : 400,
-            color: isUnread ? "#F5F5FA" : "#B8B5D1",
+            color: isUnread ? "var(--color-text-primary)" : "var(--color-text-secondary)",
             marginBottom: 3,
             lineHeight: 1.4,
           }}
@@ -424,7 +424,7 @@ function NotificationRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             lineHeight: 1.5,
             marginBottom: 4,
             display: "-webkit-box",
@@ -439,7 +439,7 @@ function NotificationRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#44406B",
+            color: "var(--color-text-faint)",
             letterSpacing: "0.06em",
           }}
         >

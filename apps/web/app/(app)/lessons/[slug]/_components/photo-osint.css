@@ -15,9 +15,9 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
   font-size: 11px;
-  text-shadow: 0 0 3px #030219;
+  text-shadow: 0 0 3px var(--color-bg-base);
 }
 
 .osint-map .leaflet-tooltip.osint-town::before {
@@ -34,11 +34,11 @@
 
 .osint-map .leaflet-control-attribution {
   background: rgba(3, 2, 25, 0.75);
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 .osint-map .leaflet-control-zoom a {
-  background: #0a0826;
+  background: var(--color-bg-elevated);
   color: #d8d6ea;
-  border-color: #2a2560;
+  border-color: var(--color-border-default);
 }

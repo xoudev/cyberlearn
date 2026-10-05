@@ -63,7 +63,7 @@ export function QuizGroup({ children }: QuizGroupProps): React.ReactElement {
             fontSize: 10,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#44406B",
+            color: "var(--color-text-faint)",
             marginRight: 4,
           }}
         >
@@ -85,17 +85,17 @@ export function QuizGroup({ children }: QuizGroupProps): React.ReactElement {
                   answer !== undefined
                     ? answer.correct
                       ? "var(--cosmetic-accent)"
-                      : "#FF4757"
+                      : "var(--color-category-cybersec)"
                     : isActive
-                      ? "#0024FF"
-                      : "#2A2560",
+                      ? "var(--color-brand-blue)"
+                      : "var(--color-border-default)",
                 boxShadow: isActive ? "0 0 8px rgba(0,36,255,0.6)" : "none",
                 transition: "all 300ms ease",
               }}
             />
           );
         })}
-        <span style={{ fontSize: 10, color: "#44406B", marginLeft: 4 }}>
+        <span style={{ fontSize: 10, color: "var(--color-text-faint)", marginLeft: 4 }}>
           {answeredCount}/{total}
         </span>
       </div>

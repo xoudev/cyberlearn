@@ -65,7 +65,7 @@ function DeviceIcon({ kind }: { readonly kind: DeviceKind }): React.ReactElement
     return (
       <svg width="34" height="28" viewBox="0 0 34 28" aria-hidden="true">
         <rect x="2" y="2" width="30" height="19" fill="#16123F" stroke={ACCENT} strokeWidth="2" />
-        <rect x="11" y="23" width="12" height="3" fill="#B8B5D1" />
+        <rect x="11" y="23" width="12" height="3" fill="var(--color-text-secondary)" />
       </svg>
     );
   }
@@ -81,11 +81,11 @@ function DeviceIcon({ kind }: { readonly kind: DeviceKind }): React.ReactElement
   }
   return (
     <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true">
-      <circle cx="17" cy="15" r="13" fill="#16123F" stroke="#FFB020" strokeWidth="2" />
+      <circle cx="17" cy="15" r="13" fill="#16123F" stroke="var(--color-warning)" strokeWidth="2" />
       <path
         d="M9 12 L19 12 L16 9 M25 18 L15 18 L18 21"
         fill="none"
-        stroke="#FFB020"
+        stroke="var(--color-warning)"
         strokeWidth="2"
       />
     </svg>
@@ -315,7 +315,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -326,7 +326,9 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
           RÉSEAU · ATELIER
         </span>
         {lab.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{lab.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {lab.title}
+          </span>
         ) : null}
         <button
           type="button"
@@ -339,7 +341,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
       </header>
 
       <div style={{ padding: "12px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{lab.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.task}</p>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {locked ? null : (
@@ -400,7 +402,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
                 minZoom={0.4}
                 maxZoom={2}
               >
-                <Background color="#1F1B47" gap={20} />
+                <Background color="var(--color-border-subtle)" gap={20} />
                 <Controls showInteractive={false} />
               </ReactFlow>
             ) : null}
@@ -424,7 +426,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
               gap: 6,
               alignItems: "center",
               fontSize: 13,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
             }}
           >
             Depuis
@@ -449,7 +451,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
               gap: 6,
               alignItems: "center",
               fontSize: 13,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               flex: "1 1 200px",
             }}
           >
@@ -480,8 +482,8 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
               style={{
                 margin: 0,
                 padding: "10px 12px",
-                background: "#030219",
-                border: "1px solid #1F1B47",
+                background: "var(--color-bg-base)",
+                border: "1px solid var(--color-border-subtle)",
                 color: result.ok ? "#D8D6EA" : RED,
                 fontFamily: MONO,
                 fontSize: 12.5,
@@ -491,14 +493,23 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
             >
               {result.output}
             </pre>
-            <p style={{ margin: 0, color: result.ok ? ACCENT : "#B8B5D1", fontSize: 14 }}>
+            <p
+              style={{
+                margin: 0,
+                color: result.ok ? ACCENT : "var(--color-text-secondary)",
+                fontSize: 14,
+              }}
+            >
               {result.ok ? "✓ " : ""}
               {result.explanation}
             </p>
             {result.steps.length > 0 ? (
               <ol style={{ margin: 0, paddingLeft: 22, display: "grid", gap: 3 }}>
                 {result.steps.map((step, i) => (
-                  <li key={`${String(i)}-${step.text}`} style={{ fontSize: 13, color: "#B8B5D1" }}>
+                  <li
+                    key={`${String(i)}-${step.text}`}
+                    style={{ fontSize: 13, color: "var(--color-text-secondary)" }}
+                  >
                     {step.text}
                   </li>
                 ))}
@@ -508,7 +519,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
         ) : null}
 
         {checks.length > 0 ? (
-          <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10 }}>
+          <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 10 }}>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
               {checks.map((check, i) => (
                 <li
@@ -530,7 +541,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
         ) : null}
 
         {lab.hints && lab.hints.length > 0 ? (
-          <details style={{ borderTop: "1px solid #1F1B47", paddingTop: 10 }}>
+          <details style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 10 }}>
             <summary
               style={{
                 cursor: "pointer",
@@ -547,7 +558,12 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
               {lab.hints.map((hint) => (
                 <li
                   key={hint}
-                  style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1", lineHeight: 1.55 }}
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 12,
+                    color: "var(--color-text-secondary)",
+                    lineHeight: 1.55,
+                  }}
                 >
                   {hint}
                 </li>
@@ -562,8 +578,8 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
 
 const fieldStyle: React.CSSProperties = {
   padding: "6px 8px",
-  background: "#0A0826",
-  border: "1px solid #2A2560",
+  background: "var(--color-bg-elevated)",
+  border: "1px solid var(--color-border-default)",
   color: "#D8D6EA",
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 13,

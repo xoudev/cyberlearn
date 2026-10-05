@@ -101,7 +101,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
             position: "absolute",
             width: 14,
             height: 14,
-            border: "1.5px solid #0AFFD4",
+            border: "1.5px solid var(--color-brand-turquoise)",
             top: pos.startsWith("t") ? 8 : undefined,
             bottom: pos.startsWith("b") ? 8 : undefined,
             left: pos.endsWith("l") ? 8 : undefined,
@@ -122,7 +122,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           justifyContent: "space-between",
           paddingBottom: 18,
           marginBottom: 26,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           position: "relative",
           zIndex: 1,
         }}
@@ -131,16 +131,17 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           className="mono-label mono-label--md"
           style={{
             fontWeight: 600,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: 0,
           }}
         >
-          <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> CHOISIR TON AVATAR
+          <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>›</b> CHOISIR TON
+          AVATAR
         </h2>
         <span
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           02/03
@@ -152,7 +153,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 14,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             lineHeight: 1.55,
             margin: "0 0 22px",
           }}
@@ -168,7 +169,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               padding: "10px 14px",
               background: "rgba(255,71,87,0.08)",
               border: "1px solid rgba(255,71,87,0.4)",
-              color: "#FF4757",
+              color: "var(--color-category-cybersec)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
             }}
@@ -201,8 +202,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                   style={{
                     position: "relative",
                     aspectRatio: "1 / 1",
-                    background: isSelected ? "rgba(10,255,212,0.06)" : "#05041A",
-                    border: `1px solid ${isSelected ? "#0AFFD4" : "#2A2560"}`,
+                    background: isSelected ? "rgba(10,255,212,0.06)" : "var(--color-bg-sunken)",
+                    border: `1px solid ${isSelected ? "var(--color-brand-turquoise)" : "var(--color-border-default)"}`,
                     boxShadow: isSelected
                       ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 24px rgba(10,255,212,0.2)"
                       : "none",
@@ -218,13 +219,13 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                   }}
                   onMouseEnter={(e) => {
                     if (isSelected) return;
-                    e.currentTarget.style.borderColor = "#7F7BA9";
+                    e.currentTarget.style.borderColor = "var(--color-text-muted)";
                     e.currentTarget.style.background = "#07062A";
                   }}
                   onMouseLeave={(e) => {
                     if (isSelected) return;
-                    e.currentTarget.style.borderColor = "#2A2560";
-                    e.currentTarget.style.background = "#05041A";
+                    e.currentTarget.style.borderColor = "var(--color-border-default)";
+                    e.currentTarget.style.background = "var(--color-bg-sunken)";
                   }}
                 >
                   {/* Corner brackets on selected */}
@@ -237,7 +238,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                           position: "absolute",
                           width: 10,
                           height: 10,
-                          border: "1.5px solid #0AFFD4",
+                          border: "1.5px solid var(--color-brand-turquoise)",
                           pointerEvents: "none",
                           top: pos.startsWith("t") ? 4 : undefined,
                           bottom: pos.startsWith("b") ? 4 : undefined,
@@ -262,7 +263,9 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                   <span
                     className="mono-label mono-label--xs"
                     style={{
-                      color: isSelected ? "#0AFFD4" : "#7F7BA9",
+                      color: isSelected
+                        ? "var(--color-brand-turquoise)"
+                        : "var(--color-text-muted)",
                     }}
                   >
                     {label}
@@ -288,7 +291,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 padding: "10px 14px",
                 background: "rgba(255,71,87,0.08)",
                 border: "1px solid rgba(255,71,87,0.4)",
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
               }}
@@ -310,8 +313,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               width: "100%",
               height: 52,
               background: "transparent",
-              border: "1px dashed #7F7BA9",
-              color: uploading ? "#7F7BA9" : "#B8B5D1",
+              border: "1px dashed var(--color-text-muted)",
+              color: uploading ? "var(--color-text-muted)" : "var(--color-text-secondary)",
               fontWeight: 600,
               cursor: uploading || isPending ? "not-allowed" : "pointer",
               marginBottom: 22,
@@ -347,17 +350,17 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 display: "inline-flex",
                 alignItems: "center",
                 fontWeight: 600,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
                 transition: "border-color 180ms ease, color 180ms ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#7F7BA9";
-                e.currentTarget.style.color = "#F5F5FA";
+                e.currentTarget.style.borderColor = "var(--color-text-muted)";
+                e.currentTarget.style.color = "var(--color-text-primary)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#2A2560";
-                e.currentTarget.style.color = "#B8B5D1";
+                e.currentTarget.style.borderColor = "var(--color-border-default)";
+                e.currentTarget.style.color = "var(--color-text-secondary)";
               }}
             >
               ← Retour
@@ -378,7 +381,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                   "0 0 32px rgba(0,36,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#0024FF";
+                e.currentTarget.style.background = "var(--color-brand-blue)";
                 e.currentTarget.style.boxShadow =
                   "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)";
               }}

@@ -495,7 +495,7 @@ function IntroScreen(props: {
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
-                    color: "#FFB547",
+                    color: "var(--color-rarity-legendary)",
                     marginTop: 16,
                   }}
                 >
@@ -507,7 +507,7 @@ function IntroScreen(props: {
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
-                    color: "#FF4D6D",
+                    color: "var(--color-danger)",
                     marginTop: 12,
                   }}
                 >

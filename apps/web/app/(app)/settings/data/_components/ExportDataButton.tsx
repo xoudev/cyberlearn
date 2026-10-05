@@ -55,13 +55,15 @@ export function ExportDataButton(): React.JSX.Element {
         padding: "8px 20px",
         fontWeight: 600,
         background: "transparent",
-        border: "1px solid #0024FF",
-        color: loading ? "#44406B" : "#F5F5FA",
+        border: "1px solid var(--color-brand-blue)",
+        color: loading ? "var(--color-text-faint)" : "var(--color-text-primary)",
         cursor: loading ? "not-allowed" : "pointer",
         transition: "color 150ms ease",
       }}
     >
-      <span style={{ color: loading ? "#44406B" : "var(--cosmetic-accent)" }}>&#9656;</span>
+      <span style={{ color: loading ? "var(--color-text-faint)" : "var(--cosmetic-accent)" }}>
+        &#9656;
+      </span>
       {loading ? "Chargement…" : "Télécharger l'export"}
     </button>
   );

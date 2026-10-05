@@ -37,7 +37,7 @@ const buttonStyle: React.CSSProperties = {
   minHeight: 44,
   border: `1px solid ${S.turq}`,
   background: S.turq,
-  color: "#030219",
+  color: "var(--color-bg-base)",
   padding: "0 18px",
   cursor: "pointer",
   fontFamily: MONO,

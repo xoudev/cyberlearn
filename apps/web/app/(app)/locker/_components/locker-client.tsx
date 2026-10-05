@@ -195,7 +195,7 @@ function Card({
   return (
     <div
       style={{
-        border: `1px solid ${item.equipped ? "var(--cosmetic-accent)" : "#1F1B47"}`,
+        border: `1px solid ${item.equipped ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
         background: "rgba(5,4,26,0.5)",
         padding: 14,
         display: "flex",
@@ -215,7 +215,7 @@ function Card({
               placeItems: "center",
               background: "rgba(3,2,25,0.6)",
               borderRadius: 6,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               fontSize: 18,
             }}
             aria-hidden="true"
@@ -233,7 +233,7 @@ function Card({
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
           }}
         >
           {item.label}
@@ -270,9 +270,9 @@ function Card({
           }}
           style={{
             fontWeight: 700,
-            color: "#F5F5FA",
-            background: "#0A0826",
-            border: "1px solid #2A2560",
+            color: "var(--color-text-primary)",
+            background: "var(--color-bg-elevated)",
+            border: "1px solid var(--color-border-default)",
             padding: "8px 0",
             cursor: busy ? "not-allowed" : "pointer",
             opacity: busy ? 0.6 : 1,
@@ -295,7 +295,7 @@ function Card({
               fontFamily: "var(--font-mono)",
               fontSize: 11.5,
               letterSpacing: "0.02em",
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.45,
             }}
           >
@@ -308,7 +308,7 @@ function Card({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -414,7 +414,7 @@ export function LockerClient({
           fontWeight: 800,
           fontSize: "clamp(34px,5vw,52px)",
           letterSpacing: "-0.03em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 10px",
         }}
       >
@@ -424,7 +424,7 @@ export function LockerClient({
         style={{
           fontFamily: "var(--font-body)",
           fontSize: 14,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           maxWidth: 560,
           margin: "0 0 28px",
         }}
@@ -475,7 +475,7 @@ export function LockerClient({
           <div
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 16,
               display: "flex",
               justifyContent: "space-between",
@@ -518,7 +518,7 @@ export function LockerClient({
                   fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   fontSize: 18,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 {profile.username ? `@${profile.username}` : profile.displayName}
@@ -547,7 +547,7 @@ export function LockerClient({
           <div
             style={{
               borderRadius: 6,
-              border: "1px solid #1F1B47",
+              border: "1px solid var(--color-border-subtle)",
               background: "var(--cosmetic-terminal-bg)",
               color: "var(--cosmetic-terminal-fg)",
               fontFamily: "var(--font-mono)",
@@ -580,15 +580,21 @@ export function LockerClient({
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   padding: "7px 0",
-                  borderTop: "1px solid #1F1B47",
+                  borderTop: "1px solid var(--color-border-subtle)",
                 }}
               >
                 <span
-                  style={{ color: "#7F7BA9", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                  style={{
+                    color: "var(--color-text-muted)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
                 >
                   {SLOT_LABEL[slot.type]}
                 </span>
-                <span style={{ color: "#B8B5D1" }}>{equippedLabel(slot.type)}</span>
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  {equippedLabel(slot.type)}
+                </span>
               </div>
             ))}
           </div>

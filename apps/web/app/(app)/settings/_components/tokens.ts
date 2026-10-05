@@ -4,22 +4,22 @@
 // (.card, .btn) collide with existing global styles in globals.css.
 
 export const S = {
-  base: "#030219",
-  elev: "#0A0826",
+  base: "var(--color-bg-base)",
+  elev: "var(--color-bg-elevated)",
   overlay: "#110F33",
-  fg: "#F5F5FA",
-  fg2: "#B8B5D1",
-  muted: "#7F7BA9",
-  blue: "#0024FF",
+  fg: "var(--color-text-primary)",
+  fg2: "var(--color-text-secondary)",
+  muted: "var(--color-text-muted)",
+  blue: "var(--color-brand-blue)",
   blueHover: "#1F3BFF",
   turq: "var(--cosmetic-accent)",
-  warning: "#FFB020",
-  danger: "#FF4D6D",
-  info: "#4D8BFF",
-  border: "#2A2560",
+  warning: "var(--color-warning)",
+  danger: "var(--color-danger)",
+  info: "var(--color-info)",
+  border: "var(--color-border-default)",
   borderSoft: "#1A1640",
   borderStrong: "#3D3785",
-  disabled: "#44406B",
+  disabled: "var(--color-text-faint)",
 } as const;
 
 export const MONO = "var(--font-mono)";

@@ -25,18 +25,18 @@ import { type FirewallProbe, parseFirewallLab } from "@cyberlearn/types";
 
 const field: React.CSSProperties = {
   padding: "8px 10px",
-  border: "1px solid #2A2560",
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  background: "var(--color-bg-elevated)",
+  color: "var(--color-text-primary)",
   fontFamily: MONO,
   fontSize: 13,
 };
 
 const small: React.CSSProperties = {
   padding: "6px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -70,7 +70,7 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -139,7 +139,7 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -150,14 +150,16 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
           PARE-FEU
         </span>
         {lab.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{lab.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {lab.title}
+          </span>
         ) : null}
         <span
           style={{
             marginLeft: "auto",
             fontFamily: MONO,
             fontSize: 12,
-            color: done ? ACCENT : "#7F7BA9",
+            color: done ? ACCENT : "var(--color-text-muted)",
           }}
         >
           {String(right)} / {String(results.length)} paquets font ce qu&apos;il faut
@@ -165,11 +167,11 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{lab.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.task}</p>
 
         <div style={{ display: "grid", gap: 6 }}>
           <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
               RÈGLES DE LA CHAÎNE D&apos;ENTRÉE
             </span>
             <button
@@ -198,7 +200,7 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
               Ligne {String(rules.line)} : {rules.problem}
             </p>
           )}
-          <details style={{ fontSize: 13, color: "#B8B5D1" }}>
+          <details style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
             <summary style={{ cursor: "pointer" }}>Comment écrire une règle</summary>
             <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>
               {RULE_SYNTAX.map((line) => (
@@ -221,9 +223,9 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
                 display: "grid",
                 gap: 2,
                 padding: "8px 10px",
-                border: `1px solid ${ok ? ACCENT : "#2A2560"}`,
+                border: `1px solid ${ok ? ACCENT : "var(--color-border-default)"}`,
                 background: ok
-                  ? "color-mix(in srgb, var(--cosmetic-accent, #0AFFD4) 8%, transparent)"
+                  ? "color-mix(in srgb, var(--cosmetic-accent, var(--color-brand-turquoise)) 8%, transparent)"
                   : "transparent",
               }}
             >
@@ -234,20 +236,22 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
                 >
                   {ok ? "✓" : "✗"}
                 </span>
-                <span style={{ color: "#F5F5FA", fontSize: 14, fontWeight: 600 }}>
+                <span style={{ color: "var(--color-text-primary)", fontSize: 14, fontWeight: 600 }}>
                   {probe.label}
                 </span>
-                <span style={{ fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+                <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-muted)" }}>
                   {probe.expect === "accept" ? "doit passer" : "doit être bloqué"}
                 </span>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-secondary)" }}>
                 {describePacket(packet)}
               </div>
               {decision === null ? (
-                <div style={{ fontSize: 13, color: "#7F7BA9" }}>En attente de règles lisibles.</div>
+                <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+                  En attente de règles lisibles.
+                </div>
               ) : (
-                <div style={{ fontSize: 13, color: "#B8B5D1" }}>
+                <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
                   <strong style={{ color: verdictColor(decision.verdict) }}>
                     {describeVerdict(decision.verdict)}
                   </strong>{" "}
@@ -258,8 +262,15 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
           ))}
         </ul>
 
-        <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 8 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+        <div
+          style={{
+            borderTop: "1px solid var(--color-border-subtle)",
+            paddingTop: 10,
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
             ESSAYER UN PAQUET
           </span>
           <form
@@ -337,11 +348,17 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
                       fontSize: 13,
                     }}
                   >
-                    <span style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}>
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 12,
+                        color: "var(--color-text-secondary)",
+                      }}
+                    >
                       {describePacket(packet)}
                     </span>
                     {decision === null ? null : (
-                      <span style={{ color: "#B8B5D1" }}>
+                      <span style={{ color: "var(--color-text-secondary)" }}>
                         <strong style={{ color: verdictColor(decision.verdict) }}>
                           {describeVerdict(decision.verdict)}
                         </strong>{" "}
@@ -374,9 +391,14 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
         </div>
 
         {lab.hints && lab.hints.length > 0 ? (
-          <details style={{ borderTop: "1px solid #1F1B47", paddingTop: 10 }}>
+          <details style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 10 }}>
             <summary
-              style={{ cursor: "pointer", fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}
+              style={{
+                cursor: "pointer",
+                fontFamily: MONO,
+                fontSize: 12,
+                color: "var(--color-text-secondary)",
+              }}
             >
               Indices ({String(lab.hints.length)})
             </summary>
@@ -384,7 +406,7 @@ export function FirewallLab(props: Record<string, unknown>): React.ReactElement 
               style={{
                 margin: "8px 0 0",
                 paddingLeft: 20,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 fontSize: 14,
                 display: "grid",
                 gap: 4,

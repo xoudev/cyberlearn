@@ -48,7 +48,7 @@ export function LessonsSearchBar({ initialQuery }: LessonsSearchBarProps): React
           left: 12,
           top: "50%",
           transform: "translateY(-50%)",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           pointerEvents: "none",
         }}
       >
@@ -64,9 +64,9 @@ export function LessonsSearchBar({ initialQuery }: LessonsSearchBarProps): React
           width: "100%",
           height: "100%",
           padding: "0 12px 0 36px",
-          background: "#05041A",
-          border: "1px solid #2A2560",
-          color: "#F5F5FA",
+          background: "var(--color-bg-sunken)",
+          border: "1px solid var(--color-border-default)",
+          color: "var(--color-text-primary)",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           outline: "none",

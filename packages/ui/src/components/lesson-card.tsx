@@ -43,9 +43,9 @@ function barsOf(level: number): number {
 }
 
 const STATUS_META = {
-  NOT_STARTED: { label: "COMMENCER", color: "#7F7BA9" },
-  IN_PROGRESS: { label: "EN COURS", color: "#0AFFD4" },
-  COMPLETED: { label: "TERMINÉ", color: "#0AFFD4" },
+  NOT_STARTED: { label: "COMMENCER", color: "var(--color-text-muted)" },
+  IN_PROGRESS: { label: "EN COURS", color: "var(--color-brand-turquoise)" },
+  COMPLETED: { label: "TERMINÉ", color: "var(--color-brand-turquoise)" },
 } satisfies Record<LessonStatus, { label: string; color: string }>;
 
 // ── Category SVG icons - 64×64 from CatalogGrid.jsx reference ─────────────────
@@ -434,15 +434,15 @@ function CatalogCard({
     ? "rgba(10,255,212,0.35)"
     : isCompleted
       ? "rgba(10,255,212,0.5)"
-      : "#2A2560";
+      : "var(--color-border-default)";
 
   const cardBoxShadow = isInProgress
-    ? "inset 3px 0 0 #0AFFD4, 0 0 24px rgba(10,255,212,0.08)"
+    ? "inset 3px 0 0 var(--color-brand-turquoise), 0 0 24px rgba(10,255,212,0.08)"
     : "none";
 
   const cardBg = isCompleted
-    ? "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), #0A0826"
-    : "#0A0826";
+    ? "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), var(--color-bg-elevated)"
+    : "var(--color-bg-elevated)";
 
   return (
     <article
@@ -464,7 +464,7 @@ function CatalogCard({
           ? "rgba(10,255,212,0.6)"
           : isCompleted
             ? "rgba(10,255,212,0.7)"
-            : "#3F3D5C";
+            : "var(--color-text-disabled)";
         const bar = e.currentTarget.querySelector("[data-accent-bar]");
         if (bar instanceof HTMLElement && !isInProgress) bar.style.opacity = "0.6";
       }}
@@ -485,12 +485,12 @@ function CatalogCard({
           top: 0,
           bottom: 0,
           width: isInProgress ? 3 : 2,
-          background: isInProgress ? "#0AFFD4" : catMeta.accent,
+          background: isInProgress ? "var(--color-brand-turquoise)" : catMeta.accent,
           opacity: isInProgress ? 1 : 0,
           transition: "opacity 180ms ease",
           pointerEvents: "none",
           zIndex: 4,
-          boxShadow: isInProgress ? "0 0 12px #0AFFD4" : "none",
+          boxShadow: isInProgress ? "0 0 12px var(--color-brand-turquoise)" : "none",
         }}
       />
 
@@ -506,8 +506,8 @@ function CatalogCard({
             height: 26,
             display: "grid",
             placeItems: "center",
-            background: "#0AFFD4",
-            color: "#030219",
+            background: "var(--color-brand-turquoise)",
+            color: "var(--color-bg-base)",
             boxShadow: "0 0 16px rgba(10,255,212,0.55)",
             zIndex: 3,
             clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
@@ -570,8 +570,8 @@ function CatalogCard({
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: diffMeta.color,
-            background: "#05041A",
-            border: "1px solid #2A2560",
+            background: "var(--color-bg-sunken)",
+            border: "1px solid var(--color-border-default)",
             clipPath: "polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%)",
             ...(isCompleted ? { marginRight: 32 } : {}),
           }}
@@ -587,7 +587,7 @@ function CatalogCard({
           position: "relative",
           aspectRatio: "16 / 9",
           margin: "0 16px",
-          background: "#05041A",
+          background: "var(--color-bg-sunken)",
           border: "1px solid rgba(42,37,96,0.5)",
           overflow: "hidden",
           display: "grid",
@@ -695,7 +695,12 @@ function CatalogCard({
                   ))}
                 </g>
                 {/* Vias */}
-                <g fill="#05041A" stroke={catMeta.accent} strokeWidth={0.8} opacity={0.36}>
+                <g
+                  fill="var(--color-bg-sunken)"
+                  stroke={catMeta.accent}
+                  strokeWidth={0.8}
+                  opacity={0.36}
+                >
                   {decor.vias.map((v, i) => (
                     <circle key={`v-${String(i)}`} cx={v.x} cy={v.y} r={v.r} />
                   ))}
@@ -720,7 +725,7 @@ function CatalogCard({
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9.5,
             letterSpacing: "0.14em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             background: "rgba(3,2,25,0.7)",
             padding: "2px 6px",
             border: "1px solid rgba(42,37,96,0.5)",
@@ -740,7 +745,7 @@ function CatalogCard({
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 9.5,
               letterSpacing: "0.1em",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               zIndex: 2,
             }}
           >
@@ -781,7 +786,7 @@ function CatalogCard({
             fontSize: 17,
             lineHeight: 1.2,
             letterSpacing: "-0.01em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: 0,
           }}
         >
@@ -793,7 +798,7 @@ function CatalogCard({
               fontFamily: "var(--font-body, sans-serif)",
               fontSize: 13,
               lineHeight: 1.5,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               margin: 0,
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -820,12 +825,12 @@ function CatalogCard({
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 6,
               }}
             >
               <span>
-                <b style={{ color: "#0AFFD4", fontWeight: 700 }}>
+                <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
                   {currentSection}/{totalSections}
                 </b>
                 {" SECTIONS"}
@@ -836,9 +841,9 @@ function CatalogCard({
               style={{
                 position: "relative",
                 height: 3,
-                background: "#05041A",
-                borderTop: "1px solid #2A2560",
-                borderBottom: "1px solid #2A2560",
+                background: "var(--color-bg-sunken)",
+                borderTop: "1px solid var(--color-border-default)",
+                borderBottom: "1px solid var(--color-border-default)",
               }}
             >
               <div
@@ -848,7 +853,8 @@ function CatalogCard({
                   top: 0,
                   bottom: 0,
                   width: `${String(pct)}%`,
-                  background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   boxShadow: "0 0 8px rgba(10,255,212,0.6)",
                 }}
               />
@@ -869,13 +875,13 @@ function CatalogCard({
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 11,
           letterSpacing: "0.06em",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
         }}
       >
         {/* XP with diamond accent */}
         <span
           style={{
-            color: "#0AFFD4",
+            color: "var(--color-brand-turquoise)",
             fontWeight: 700,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -890,8 +896,8 @@ function CatalogCard({
               width: 6,
               height: 6,
               transform: "rotate(45deg)",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--color-brand-turquoise)",
+              boxShadow: "0 0 6px var(--color-brand-turquoise)",
               flexShrink: 0,
             }}
             aria-hidden="true"
@@ -956,8 +962,8 @@ function CatalogCard({
 
 /** Full marks in the accent, a pass in soft white, below half in amber. */
 function quizScoreColor(score: { correct: number; total: number }): string {
-  if (score.correct === score.total) return "#0AFFD4";
-  return score.correct * 2 >= score.total ? "#B8B5D1" : "#FFB020";
+  if (score.correct === score.total) return "var(--color-brand-turquoise)";
+  return score.correct * 2 >= score.total ? "var(--color-text-secondary)" : "var(--color-warning)";
 }
 
 // ── Compact card - minimal list view (used on dashboard, etc.) ────────────────
@@ -1005,7 +1011,11 @@ function CompactCard({
           width: 8,
           height: 8,
           borderRadius: "50%",
-          background: isCompleted ? "#0AFFD4" : isInProgress ? "#0024FF" : "#2A2560",
+          background: isCompleted
+            ? "var(--color-brand-turquoise)"
+            : isInProgress
+              ? "var(--color-brand-blue)"
+              : "var(--color-border-default)",
           boxShadow: isCompleted
             ? "0 0 6px rgba(10,255,212,0.5)"
             : isInProgress
@@ -1020,7 +1030,7 @@ function CompactCard({
           fontWeight: 600,
           fontSize: 14,
           lineHeight: 1.35,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: 0,
           paddingRight: 20,
           display: "-webkit-box",
@@ -1038,7 +1048,7 @@ function CompactCard({
             fontFamily: "var(--font-body, sans-serif)",
             fontSize: 12,
             lineHeight: 1.5,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             margin: 0,
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -1061,7 +1071,7 @@ function CompactCard({
             textTransform: "uppercase",
             color: diffMeta.color,
             background: "rgba(5,4,26,0.9)",
-            border: "1px solid #2A2560",
+            border: "1px solid var(--color-border-default)",
           }}
         >
           {diffMeta.label}
@@ -1090,11 +1100,11 @@ function CompactCard({
           display: "flex",
           alignItems: "center",
           gap: 16,
-          borderTop: "1px solid #2A2560",
+          borderTop: "1px solid var(--color-border-default)",
           paddingTop: 10,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 11,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
         }}
       >
         {durationMinutes !== undefined && (
@@ -1112,7 +1122,7 @@ function CompactCard({
               <circle cx="8" cy="8" r="6" />
               <path d="M8 4 V8 L11 10" />
             </svg>
-            <span style={{ color: "#B8B5D1" }}>{durationMinutes} min</span>
+            <span style={{ color: "var(--color-text-secondary)" }}>{durationMinutes} min</span>
           </span>
         )}
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1121,12 +1131,14 @@ function CompactCard({
             width={11}
             height={11}
             fill="none"
-            stroke="#0AFFD4"
+            stroke="var(--color-brand-turquoise)"
             strokeWidth={1.6}
           >
             <polygon points="8,2 10,6 14.5,6.5 11,10 12,14.5 8,12 4,14.5 5,10 1.5,6.5 6,6" />
           </svg>
-          <span style={{ color: "#0AFFD4", fontWeight: 700 }}>{xpReward} XP</span>
+          <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
+            {xpReward} XP
+          </span>
         </span>
       </div>
     </div>

@@ -22,7 +22,12 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
 
   return (
     <div
-      style={{ background: "#030219", minHeight: "100vh", position: "relative", color: "#F5F5FA" }}
+      style={{
+        background: "var(--color-bg-base)",
+        minHeight: "100vh",
+        position: "relative",
+        color: "var(--color-text-primary)",
+      }}
     >
       {/* ── Ambient glows ───────────────────────────────────────────────── */}
       <div
@@ -74,8 +79,8 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
           background: "rgba(3,2,25,0.65)",
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid #2A2560",
-          color: "#7F7BA9",
+          borderBottom: "1px solid var(--color-border-default)",
+          color: "var(--color-text-muted)",
         }}
       >
         <span
@@ -103,13 +108,13 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.01em",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>ONBOARDING · AVATAR</span>
         <span
           style={{
@@ -117,7 +122,7 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            color: "#0AFFD4",
+            color: "var(--color-brand-turquoise)",
           }}
         >
           <span
@@ -125,8 +130,8 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--color-brand-turquoise)",
+              boxShadow: "0 0 6px var(--color-brand-turquoise)",
               display: "inline-block",
               animation: "sidebar-pulse 2s ease-in-out infinite",
             }}
@@ -161,22 +166,23 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
               }}
             >
-              <span style={{ color: "#F5F5FA", fontWeight: 600 }}>
-                ÉTAPE <b style={{ color: "#0AFFD4", fontWeight: 700 }}>02</b> / 03
+              <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
+                ÉTAPE <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>02</b> /
+                03
               </span>
-              <span style={{ color: "#44406B" }}>·</span>
-              <span style={{ color: "#0AFFD4", fontWeight: 600 }}>AVATAR</span>
+              <span style={{ color: "var(--color-text-faint)" }}>·</span>
+              <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>AVATAR</span>
             </div>
             <span
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
@@ -187,8 +193,8 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
+                  background: "var(--color-brand-turquoise)",
+                  boxShadow: "0 0 6px var(--color-brand-turquoise)",
                   display: "inline-block",
                   animation: "sidebar-pulse 2s ease-in-out infinite",
                 }}
@@ -203,8 +209,8 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
               position: "relative",
               height: 4,
               background: "rgba(5,4,26,0.9)",
-              borderTop: "1px solid #2A2560",
-              borderBottom: "1px solid #2A2560",
+              borderTop: "1px solid var(--color-border-default)",
+              borderBottom: "1px solid var(--color-border-default)",
             }}
           >
             <div
@@ -214,7 +220,8 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
                 top: 0,
                 bottom: 0,
                 width: "66%",
-                background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
+                background:
+                  "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                 boxShadow: "0 0 12px rgba(10,255,212,0.7)",
                 transition: "width 400ms ease-out",
               }}
@@ -241,7 +248,12 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  color: state === "done" ? "#0AFFD4" : state === "current" ? "#F5F5FA" : "#44406B",
+                  color:
+                    state === "done"
+                      ? "var(--color-brand-turquoise)"
+                      : state === "current"
+                        ? "var(--color-text-primary)"
+                        : "var(--color-text-faint)",
                 }}
               >
                 <span

@@ -18,12 +18,12 @@ export function ChallengesWip(): React.ReactElement {
       <div
         className="mono-label"
         style={{
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           marginBottom: 14,
         }}
       >
-        <span style={{ color: "#44406B" }}>{"// "}</span>
-        STATUS · <b style={{ color: "#FFB020", fontWeight: 500 }}>WORK IN PROGRESS</b>
+        <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
+        STATUS · <b style={{ color: "var(--color-warning)", fontWeight: 500 }}>WORK IN PROGRESS</b>
       </div>
 
       {/* Title */}
@@ -34,7 +34,7 @@ export function ChallengesWip(): React.ReactElement {
           fontSize: "clamp(40px, 5.5vw, 72px)",
           lineHeight: 1.1,
           letterSpacing: "-0.035em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 24px",
           maxWidth: 920,
         }}
@@ -43,7 +43,8 @@ export function ChallengesWip(): React.ReactElement {
         <em
           style={{
             fontStyle: "normal",
-            background: "linear-gradient(180deg, #FFB547, #FF4757)",
+            background:
+              "linear-gradient(180deg, var(--color-rarity-legendary), var(--color-category-cybersec))",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -59,7 +60,7 @@ export function ChallengesWip(): React.ReactElement {
           fontFamily: "var(--font-sans)",
           fontSize: 15,
           lineHeight: 1.55,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           maxWidth: 620,
           margin: "0 0 44px",
         }}
@@ -81,7 +82,7 @@ export function ChallengesWip(): React.ReactElement {
           className="mono-label mono-label--md"
           style={{
             fontWeight: 700,
-            color: "#FFB020",
+            color: "var(--color-warning)",
           }}
         >
           [ WIP ] · défis en préparation
@@ -110,7 +111,7 @@ export function ChallengesWip(): React.ReactElement {
           href="/dashboard"
           className="back-link mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             textDecoration: "none",
             padding: "16px 8px",
           }}

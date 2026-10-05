@@ -14,17 +14,17 @@ export function LessonGlossaryNote(): React.ReactElement {
           fontSize: 10,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
         }}
       >
         Glossaire
       </span>
-      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#B8B5D1" }}>
+      <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--color-text-secondary)" }}>
         Un mot souligné en{" "}
         <span
           style={{
             textDecoration: "underline dotted",
-            textDecorationColor: "var(--cosmetic-accent, #0AFFD4)",
+            textDecorationColor: "var(--cosmetic-accent, var(--color-brand-turquoise))",
             textUnderlineOffset: 3,
           }}
         >
@@ -37,7 +37,7 @@ export function LessonGlossaryNote(): React.ReactElement {
         style={{
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12,
-          color: "var(--cosmetic-accent, #0AFFD4)",
+          color: "var(--cosmetic-accent, var(--color-brand-turquoise))",
           textDecoration: "none",
         }}
       >

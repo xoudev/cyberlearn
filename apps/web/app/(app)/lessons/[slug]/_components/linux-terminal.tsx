@@ -398,25 +398,25 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       ]);
       const term = new Terminal({
         theme: {
-          background: "#030219",
-          foreground: "#B8B5D1",
-          cursor: "#0AFFD4",
-          black: "#030219",
-          blue: "#6E8BFF",
-          brightBlue: "#6E8BFF",
-          cyan: "#4D8BFF",
-          brightCyan: "#4D8BFF",
-          green: "#0AFFD4",
-          brightGreen: "#0AFFD4",
-          red: "#FF4757",
-          brightRed: "#FF4757",
-          yellow: "#FFB020",
-          brightYellow: "#FFB547",
+          background: "var(--color-bg-base)",
+          foreground: "var(--color-text-secondary)",
+          cursor: "var(--color-brand-turquoise)",
+          black: "var(--color-bg-base)",
+          blue: "var(--color-rarity-rare)",
+          brightBlue: "var(--color-rarity-rare)",
+          cyan: "var(--color-info)",
+          brightCyan: "var(--color-info)",
+          green: "var(--color-brand-turquoise)",
+          brightGreen: "var(--color-brand-turquoise)",
+          red: "var(--color-category-cybersec)",
+          brightRed: "var(--color-category-cybersec)",
+          yellow: "var(--color-warning)",
+          brightYellow: "var(--color-rarity-legendary)",
           magenta: "#B14DFF",
           brightMagenta: "#D580FF",
-          white: "#F5F5FA",
-          brightWhite: "#F5F5FA",
-          brightBlack: "#3F3D5C",
+          white: "var(--color-text-primary)",
+          brightWhite: "var(--color-text-primary)",
+          brightBlack: "var(--color-text-disabled)",
         },
         fontFamily: "JetBrains Mono, Menlo, monospace",
         fontSize: 13,
@@ -519,14 +519,14 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
 
   const clockColor =
     reading === null
-      ? "#B8B5D1"
+      ? "var(--color-text-secondary)"
       : finished && !expired
         ? "var(--cosmetic-accent)"
         : expired
-          ? "#FF4757"
+          ? "var(--color-category-cybersec)"
           : reading.remaining < 5 * 60_000
-            ? "#FFB020"
-            : "#B8B5D1";
+            ? "var(--color-warning)"
+            : "var(--color-text-secondary)";
 
   if (!parsed.success) {
     return (
@@ -542,8 +542,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       className="linux-terminal"
       style={{
         margin: "32px 0",
-        border: "1px solid #1F1B47",
-        background: "var(--cosmetic-terminal-bg, #030219)",
+        border: "1px solid var(--color-border-subtle)",
+        background: "var(--cosmetic-terminal-bg, var(--color-bg-base))",
         position: "relative",
       }}
     >
@@ -553,12 +553,18 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           alignItems: "center",
           gap: 14,
           padding: "11px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
       >
         <div style={{ display: "inline-flex", gap: 7, flexShrink: 0 }}>
-          {(["#FF4757", "#FFB020", "var(--cosmetic-accent)"] as const).map((c) => (
+          {(
+            [
+              "var(--color-category-cybersec)",
+              "var(--color-warning)",
+              "var(--cosmetic-accent)",
+            ] as const
+          ).map((c) => (
             <span key={c} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />
           ))}
         </div>
@@ -597,7 +603,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: allDone ? "var(--cosmetic-accent)" : "#44406B",
+            color: allDone ? "var(--cosmetic-accent)" : "var(--color-text-faint)",
             flexShrink: 0,
           }}
         >
@@ -613,8 +619,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               background: "transparent",
-              border: "1px solid #3F3D5C",
-              color: "#B8B5D1",
+              border: "1px solid var(--color-text-disabled)",
+              color: "var(--color-text-secondary)",
               padding: "4px 8px",
               cursor: "pointer",
               flexShrink: 0,
@@ -642,10 +648,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               gap: 14,
               padding: 24,
               textAlign: "center",
-              background: "var(--cosmetic-terminal-bg, #030219)",
+              background: "var(--cosmetic-terminal-bg, var(--color-bg-base))",
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 12,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.6,
             }}
           >
@@ -656,7 +662,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                   rien ne sort de cet onglet. Le premier démarrage télécharge environ 15 Mo.
                 </p>
                 {limitMinutes !== null ? (
-                  <p style={{ margin: 0, maxWidth: 520, color: "#FFB020" }}>
+                  <p style={{ margin: 0, maxWidth: 520, color: "var(--color-warning)" }}>
                     Épreuve chronométrée : {minutesLabel(limitMinutes)}, à partir du moment où la
                     machine est prête. Le chronomètre s&apos;arrête dès que tout est fait.
                   </p>
@@ -670,7 +676,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                 </button>
               </>
             ) : phase === "error" ? (
-              <p role="alert" style={{ margin: 0, color: "#FF4757", maxWidth: 520 }}>
+              <p
+                role="alert"
+                style={{ margin: 0, color: "var(--color-category-cybersec)", maxWidth: 520 }}
+              >
                 La machine n&apos;a pas pu démarrer. Ton navigateur est peut-être trop ancien, ou le
                 téléchargement a été interrompu : clique sur Redémarrer pour réessayer.
               </p>
@@ -684,7 +693,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       </div>
 
       {total > 0 ? (
-        <div style={{ borderTop: "1px solid #1F1B47", padding: "12px 18px" }}>
+        <div style={{ borderTop: "1px solid var(--color-border-subtle)", padding: "12px 18px" }}>
           {expected.length > 0 ? (
             // The steps, one per line and numbered: a command is read as a
             // whole, and the order is the lesson's.
@@ -758,7 +767,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                   margin: "10px 0 0",
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 12,
-                  color: finished && !expired ? "var(--cosmetic-accent)" : "#FFB020",
+                  color: finished && !expired ? "var(--cosmetic-accent)" : "var(--color-warning)",
                 }}
               >
                 {finished && !expired
@@ -780,7 +789,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       {hints.length > 0 ? (
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             padding: "14px 18px",
             background: "rgba(5,4,26,0.5)",
           }}
@@ -805,7 +814,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 12,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   lineHeight: 1.55,
                 }}
               >

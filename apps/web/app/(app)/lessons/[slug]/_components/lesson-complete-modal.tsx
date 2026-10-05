@@ -119,7 +119,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(135deg, var(--cosmetic-accent), #0024FF)",
+                  background:
+                    "linear-gradient(135deg, var(--cosmetic-accent), var(--color-brand-blue))",
                 }}
               />
               <div
@@ -129,7 +130,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                   left: 3,
                   right: 3,
                   bottom: 3,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   clipPath: HEX_CLIP,
                 }}
               />
@@ -154,7 +155,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 4,
               }}
             >
@@ -166,7 +167,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 fontWeight: 700,
                 fontSize: 17,
                 lineHeight: 1.2,
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -218,11 +219,11 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           <div
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               textAlign: "right",
             }}
           >
-            <div style={{ color: "#B8B5D1", fontWeight: 600, marginBottom: 2 }}>
+            <div style={{ color: "var(--color-text-secondary)", fontWeight: 600, marginBottom: 2 }}>
               {levelLabel(result.newLevel)}
             </div>
             <div>crédités</div>
@@ -239,13 +240,13 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               justifyContent: "space-between",
               padding: "10px 16px",
               marginBottom: 16,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             <span>Quiz de la leçon</span>
-            <span style={{ color: "#F5F5FA", fontWeight: 700, fontSize: 14 }}>
+            <span style={{ color: "var(--color-text-primary)", fontWeight: 700, fontSize: 14 }}>
               {result.quizScore.correct}/{result.quizScore.total}
-              <span style={{ color: "#7F7BA9", fontWeight: 400, fontSize: 11 }}>
+              <span style={{ color: "var(--color-text-muted)", fontWeight: 400, fontSize: 11 }}>
                 {" "}
                 bonne{result.quizScore.correct > 1 ? "s" : ""} réponse
                 {result.quizScore.correct > 1 ? "s" : ""}
@@ -263,7 +264,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             <div
               className="mono-label mono-label--xs"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 8,
               }}
             >
@@ -292,7 +293,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                       size="xs"
                       name={badge.name}
                     />
-                    <span style={{ color: "#F5F5FA", fontWeight: 600 }}>{badge.name}</span>
+                    <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
+                      {badge.name}
+                    </span>
                     <span
                       style={{
                         color,
@@ -319,7 +322,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         )}
 
         {/* Separator */}
-        <div style={{ height: 1, background: "#1F1B47", margin: "4px 0 20px" }} />
+        <div
+          style={{ height: 1, background: "var(--color-border-subtle)", margin: "4px 0 20px" }}
+        />
 
         {/* Footer */}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -332,7 +337,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             onClick={onClose}
             style={{
               padding: "9px 20px",
-              background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
+              background:
+                "linear-gradient(135deg, var(--color-brand-blue), var(--cosmetic-accent))",
               border: "none",
               color: "#ffffff",
               fontWeight: 700,

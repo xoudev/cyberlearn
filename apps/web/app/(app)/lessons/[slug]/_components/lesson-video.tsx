@@ -28,8 +28,8 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
           padding: "12px 16px",
           background: "rgba(255,71,87,0.07)",
           border: "1px solid rgba(255,71,87,0.3)",
-          borderLeft: "3px solid #FF4757",
-          color: "#FF4757",
+          borderLeft: "3px solid var(--color-category-cybersec)",
+          color: "var(--color-category-cybersec)",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: "12px",
           margin: "1.5rem 0",
@@ -63,7 +63,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
             borderLeft: "3px solid var(--cosmetic-accent)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: "11px",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             letterSpacing: "0.03em",
           }}
         >
@@ -79,7 +79,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
           height: 0,
           overflow: "hidden",
           background: "#050419",
-          border: "1px solid #1F1B47",
+          border: "1px solid var(--color-border-subtle)",
         }}
       >
         <video
@@ -103,7 +103,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
         <figcaption
           style={{
             fontSize: "12px",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontFamily: "var(--font-mono, monospace)",
             letterSpacing: "0.02em",
             padding: "0 4px",

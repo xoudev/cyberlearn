@@ -14,7 +14,7 @@ import { parseGitSandbox } from "@cyberlearn/types";
  * engine (@cyberlearn/lib/git) is the one the app runs too.
  */
 
-const LANE_COLORS = [ACCENT, "#7B61FF", "#FFB020", "#FF6BCB", "#4DA3FF"];
+const LANE_COLORS = [ACCENT, "#7B61FF", "var(--color-warning)", "#FF6BCB", "#4DA3FF"];
 
 interface Entry {
   readonly key: number;
@@ -84,7 +84,7 @@ function GitGraph({ state }: { state: GitState }): React.ReactElement {
             cx={row.x}
             cy={row.y}
             r={row.merge ? 6 : 5}
-            fill={row.head ? laneColor(row.lane) : "#05041A"}
+            fill={row.head ? laneColor(row.lane) : "var(--color-bg-sunken)"}
             stroke={laneColor(row.lane)}
             strokeWidth={2}
           />
@@ -115,8 +115,8 @@ function GitGraph({ state }: { state: GitState }): React.ReactElement {
                 fontFamily: MONO,
                 fontSize: 11,
                 padding: "1px 6px",
-                border: `1px solid ${row.head && i === 0 ? ACCENT : "#2A2560"}`,
-                color: row.head && i === 0 ? ACCENT : "#B8B5D1",
+                border: `1px solid ${row.head && i === 0 ? ACCENT : "var(--color-border-default)"}`,
+                color: row.head && i === 0 ? ACCENT : "var(--color-text-secondary)",
               }}
             >
               {row.head && i === 0 ? `HEAD → ${name}` : name}
@@ -218,7 +218,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -229,7 +229,9 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
           GIT · BAC À SABLE
         </span>
         {exercise.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{exercise.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {exercise.title}
+          </span>
         ) : null}
         <button
           type="button"
@@ -244,7 +246,14 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
         </button>
       </header>
       {exercise.task ? (
-        <p style={{ margin: 0, padding: "12px 16px 0", color: "#B8B5D1", fontSize: 14 }}>
+        <p
+          style={{
+            margin: 0,
+            padding: "12px 16px 0",
+            color: "var(--color-text-secondary)",
+            fontSize: 14,
+          }}
+        >
           {exercise.task}
         </p>
       ) : null}
@@ -280,8 +289,9 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
             ) : null}
             {entries.map((entry) => (
               <div key={entry.key} style={{ marginBottom: 6 }}>
-                <div style={{ color: "#7F7BA9", overflowWrap: "anywhere" }}>
-                  {entry.prompt} <span style={{ color: "#F5F5FA" }}>{entry.line}</span>
+                <div style={{ color: "var(--color-text-muted)", overflowWrap: "anywhere" }}>
+                  {entry.prompt}{" "}
+                  <span style={{ color: "var(--color-text-primary)" }}>{entry.line}</span>
                 </div>
                 {entry.output !== "" ? (
                   <pre
@@ -306,13 +316,18 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
               display: "flex",
               gap: 6,
               alignItems: "center",
-              borderTop: "1px solid #1F1B47",
+              borderTop: "1px solid var(--color-border-subtle)",
               padding: "8px 12px",
             }}
           >
             <label
               htmlFor={`git-${exercise.id}`}
-              style={{ fontFamily: MONO, fontSize: 12.5, color: "#7F7BA9", whiteSpace: "nowrap" }}
+              style={{
+                fontFamily: MONO,
+                fontSize: 12.5,
+                color: "var(--color-text-muted)",
+                whiteSpace: "nowrap",
+              }}
             >
               {promptOf(state)}
             </label>
@@ -333,7 +348,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
                 background: "transparent",
                 border: "none",
                 outline: "none",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 fontFamily: MONO,
                 fontSize: 12.5,
               }}
@@ -351,16 +366,28 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
                 margin: 0,
                 padding: "8px 0 0",
                 listStyle: "none",
-                borderTop: "1px solid #1F1B47",
+                borderTop: "1px solid var(--color-border-subtle)",
               }}
             >
               {files.map((f) => (
                 <li
                   key={f.path}
-                  style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1", whiteSpace: "pre" }}
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 12,
+                    color: "var(--color-text-secondary)",
+                    whiteSpace: "pre",
+                  }}
                 >
                   <span
-                    style={{ color: f.code === "??" ? "#7F7BA9" : f.code === "UU" ? RED : ACCENT }}
+                    style={{
+                      color:
+                        f.code === "??"
+                          ? "var(--color-text-muted)"
+                          : f.code === "UU"
+                            ? RED
+                            : ACCENT,
+                    }}
                   >
                     {f.code}
                   </span>{" "}
@@ -372,7 +399,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
         </div>
       </div>
       {checks.length > 0 ? (
-        <div style={{ borderTop: "1px solid #1F1B47", padding: "12px 16px" }}>
+        <div style={{ borderTop: "1px solid var(--color-border-subtle)", padding: "12px 16px" }}>
           <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
             {checks.map((check, i) => (
               <li
@@ -393,7 +420,9 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
         </div>
       ) : null}
       {exercise.hints && exercise.hints.length > 0 ? (
-        <details style={{ borderTop: "1px solid #1F1B47", padding: "12px 16px" }}>
+        <details
+          style={{ borderTop: "1px solid var(--color-border-subtle)", padding: "12px 16px" }}
+        >
           <summary
             style={{
               cursor: "pointer",
@@ -411,7 +440,12 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
             {exercise.hints.map((hint) => (
               <li
                 key={hint}
-                style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1", lineHeight: 1.55 }}
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  color: "var(--color-text-secondary)",
+                  lineHeight: 1.55,
+                }}
               >
                 {hint}
               </li>

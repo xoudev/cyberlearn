@@ -50,7 +50,7 @@ export function VideoModal({
         playsInline
         controls
         aria-label={title ?? "Vidéo de présentation"}
-        style={{ display: "block", width: "100%", background: "#030219" }}
+        style={{ display: "block", width: "100%", background: "var(--color-bg-base)" }}
       />
     </ModalShell>
   );
