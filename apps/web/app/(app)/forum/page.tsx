@@ -5,6 +5,7 @@ import { forumRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { ForumHeader, TopicRow, accentStyle, formatDate } from "./_components/forum-bits";
 import "./forum.css";
+import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: "Forum" };
 export const dynamic = "force-dynamic";
@@ -54,9 +55,7 @@ export default async function ForumPage(): Promise<React.JSX.Element> {
         <h2>Derniers messages</h2>
       </div>
       {recent.length === 0 ? (
-        <div className="fo-empty">
-          Personne n&apos;a encore écrit. Ouvre le premier sujet dans une section ci-dessus.
-        </div>
+        <EmptyState message="Personne n'a encore écrit. Ouvre le premier sujet dans une section ci-dessus." />
       ) : (
         <ul className="fo-list">
           {recent.map((t) => (

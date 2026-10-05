@@ -146,22 +146,6 @@
   margin: 0 0 18px;
 }
 
-.public-catalogue__empty {
-  padding: 64px 24px;
-  border: 1px dashed var(--border-strong);
-  text-align: center;
-}
-
-.public-catalogue__empty h2 {
-  margin: 0 0 8px;
-  color: var(--fg-primary);
-}
-
-.public-catalogue__empty p {
-  margin: 0;
-  color: var(--fg-tertiary);
-}
-
 @media (max-width: 1000px) {
   .public-catalogue__hero {
     grid-template-columns: 1fr;

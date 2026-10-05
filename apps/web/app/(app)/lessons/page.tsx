@@ -11,6 +11,8 @@ import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { availableFirst } from "@/lib/lessons/catalog-order";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
+import { Crumb } from "@/components/crumb";
+import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: "Leçons" };
 
@@ -77,38 +79,7 @@ export default async function LessonsPage({
   return (
     <div className="page-container">
       {/* ── Breadcrumb (static, renders immediately) ─────────────────────── */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#7F7BA9",
-          marginBottom: 22,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#2A2560" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>leçons</span>
-        {/* Blinking cursor */}
-        <span
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "var(--cosmetic-accent)",
-            boxShadow: "0 0 8px var(--cosmetic-accent)",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-          aria-hidden="true"
-        />
-      </div>
+      <Crumb segments={["leçons"]} />
       <Suspense fallback={<LessonsBodySkeleton />}>
         <LessonsBody p={p} />
       </Suspense>
@@ -308,7 +279,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
 
       {/* ── Grid ─────────────────────────────────────────────────────────── */}
       {lessons.length === 0 ? (
-        <EmptyState />
+        <LessonsEmpty />
       ) : (
         <div className="lessons-catalog-grid">
           {lessons.map((lesson, i) => {
@@ -614,50 +585,24 @@ function PageBtn({
   );
 }
 
-function EmptyState(): React.ReactElement {
+function LessonsEmpty(): React.ReactElement {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 20,
-        padding: "96px 0",
-      }}
+    <EmptyState
+      title="Aucune leçon trouvée"
+      message="Modifie tes filtres ou ta recherche pour explorer d'autres leçons."
+      glyph={
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+          <rect x="8" y="20" width="56" height="40" stroke="#2A2560" strokeWidth="2" />
+          <line x1="8" y1="20" x2="8" y2="60" stroke="#0024FF" strokeWidth="3" />
+          <path d="M22 36h28M22 44h18" stroke="#2A2560" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="58" cy="58" r="11" fill="#07051E" stroke="#2A2560" strokeWidth="2" />
+          <path d="M54 58h8M58 54v8" stroke="#3F3D5C" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      }
     >
-      <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
-        <rect x="8" y="20" width="56" height="40" stroke="#2A2560" strokeWidth="2" />
-        <line x1="8" y1="20" x2="8" y2="60" stroke="#0024FF" strokeWidth="3" />
-        <path d="M22 36h28M22 44h18" stroke="#2A2560" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="58" cy="58" r="11" fill="#07051E" stroke="#2A2560" strokeWidth="2" />
-        <path d="M54 58h8M58 54v8" stroke="#3F3D5C" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-      <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: "#F5F5FA", margin: 0 }}>
-          Aucune leçon trouvée
-        </p>
-        <p style={{ marginTop: 6, fontSize: 13, color: "#7F7BA9" }}>
-          Modifie tes filtres ou ta recherche pour explorer d&apos;autres leçons.
-        </p>
-      </div>
-      <Link
-        href="/lessons"
-        style={{
-          padding: "10px 20px",
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
-          color: "#030219",
-          borderRadius: 0,
-          textDecoration: "none",
-        }}
-      >
+      <Link href="/lessons" className="btn-blue" style={{ display: "inline-block" }}>
         Réinitialiser les filtres
       </Link>
-    </div>
+    </EmptyState>
   );
 }

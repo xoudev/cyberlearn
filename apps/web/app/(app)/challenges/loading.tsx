@@ -81,7 +81,7 @@ export default function ChallengesLoading(): React.ReactElement {
   return (
     <div className="chx">
       {/* ── Breadcrumb ── */}
-      <div className="chx-breadcrumb">
+      <div className="pg-crumb">
         <Skeleton w={160} h={12} />
       </div>
 

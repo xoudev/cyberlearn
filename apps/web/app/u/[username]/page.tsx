@@ -11,6 +11,7 @@ import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { getRequestUser } from "@/lib/auth";
 import { AddFriendButton } from "@/components/add-friend-button";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { StatTile } from "@/components/stat-tile";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -468,50 +469,15 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               sub: "trophées gagnés",
             },
           ].map((stat, i) => (
-            <div
+            <StatTile
               key={stat.label}
-              style={{
-                padding: "26px 28px 22px",
-                borderRight: i < 2 ? "1px solid #2A2560" : "none",
-              }}
-            >
-              <div
-                style={{
-                  ...MONO,
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "#7F7BA9",
-                  marginBottom: 14,
-                }}
-              >
-                {stat.label}
-              </div>
-              <div
-                style={{
-                  ...SANS,
-                  fontWeight: 800,
-                  fontSize: 38,
-                  lineHeight: 1,
-                  letterSpacing: "-0.03em",
-                  color: stat.color,
-                  marginBottom: 10,
-                }}
-              >
-                {stat.value}
-              </div>
-              <div
-                style={{
-                  ...MONO,
-                  fontSize: 10.5,
-                  color: "#44406B",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {stat.sub}
-              </div>
-            </div>
+              size="lg"
+              label={stat.label}
+              value={stat.value}
+              sub={stat.sub}
+              color={stat.color}
+              style={{ borderRight: i < 2 ? "1px solid #2A2560" : "none" }}
+            />
           ))}
         </div>
 

@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Select } from "@cyberlearn/ui";
 import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
+import { Crumb } from "@/components/crumb";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
 
@@ -549,14 +550,7 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
   return (
     <div className="chx">
       {/* ── Breadcrumb ──────────────────────────────────────────────── */}
-      <div className="chx-breadcrumb">
-        <span className="p">$</span>
-        <span>~/</span>
-        <b>cyberlearn</b>
-        <span className="slash">/</span>
-        <span className="current">défis</span>
-        <span className="caret" />
-      </div>
+      <Crumb segments={["défis"]} />
 
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="chx-head">

@@ -12,6 +12,8 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
+import { Crumb } from "@/components/crumb";
+import { StatTile } from "@/components/stat-tile";
 import type {
   SerializedBadge,
   SerializedLesson,
@@ -284,41 +286,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   return (
     <div className="page-container">
       {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#7F7BA9",
-          marginBottom: 28,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span>profil</span>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>
-          @{user.username ?? user.displayName}
-        </span>
-        <span
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "var(--cosmetic-accent)",
-            boxShadow: "0 0 8px var(--cosmetic-accent)",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-          aria-hidden="true"
-        />
-      </div>
+      <Crumb segments={["profil", `@${user.username ?? user.displayName}`]} />
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section
@@ -909,7 +877,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         }}
       >
         {/* 01 · Niveau */}
-        <StatCell idx="01" label="Niveau">
+        <StatTile size="lg" className="profile-stats-cell" idx="01" label="Niveau">
           <span
             style={{
               fontFamily: "var(--font-sans)",
@@ -934,10 +902,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           >
             Niv. {level}
           </sub>
-        </StatCell>
+        </StatTile>
 
         {/* 02 · Streak */}
-        <StatCell idx="02" label="Série">
+        <StatTile size="lg" className="profile-stats-cell" idx="02" label="Série">
           <div style={{ position: "relative" }}>
             <svg
               width="20"
@@ -1004,10 +972,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           >
             jours d&#39;affilée
           </sub>
-        </StatCell>
+        </StatTile>
 
         {/* 03 · Leçons */}
-        <StatCell idx="03" label="Leçons">
+        <StatTile size="lg" className="profile-stats-cell" idx="03" label="Leçons">
           <span
             style={{
               fontFamily: "var(--font-sans)",
@@ -1032,10 +1000,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           >
             terminées
           </sub>
-        </StatCell>
+        </StatTile>
 
         {/* 04 · Badges */}
-        <StatCell idx="04" label="Badges">
+        <StatTile size="lg" className="profile-stats-cell" idx="04" label="Badges">
           <span
             style={{
               fontFamily: "var(--font-sans)",
@@ -1064,10 +1032,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             obtenus · <b style={{ color: "var(--cosmetic-accent)" }}>{legendaryCount}</b> légendaire
             {legendaryCount > 1 ? "s" : ""}
           </sub>
-        </StatCell>
+        </StatTile>
 
         {/* 05 · Certificats */}
-        <StatCell idx="05" label="Certificats">
+        <StatTile size="lg" className="profile-stats-cell" idx="05" label="Certificats">
           <span
             style={{
               fontFamily: "var(--font-sans)",
@@ -1096,7 +1064,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             délivré{certsCount > 1 ? "s" : ""} ·{" "}
             <b style={{ color: "var(--cosmetic-accent)" }}>vérifié{certsCount > 1 ? "s" : ""}</b>
           </sub>
-        </StatCell>
+        </StatTile>
       </div>
 
       {/* ── Série quotidienne ───────────────────────────────────────────────── */}
@@ -1131,35 +1099,3 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 }
 
 // ── Stat cell helper ───────────────────────────────────────────────────────────
-
-function StatCell({
-  idx,
-  label,
-  children,
-}: {
-  idx: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="profile-stats-cell">
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "#7F7BA9",
-          marginBottom: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span style={{ color: "#1F1B47" }}>{idx} ·</span>
-        {label}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column" }}>{children}</div>
-    </div>
-  );
-}

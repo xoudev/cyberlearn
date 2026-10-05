@@ -13,6 +13,7 @@ import {
   waitingText,
 } from "@cyberlearn/lib";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
+import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = { title: "Révisions" };
 export const dynamic = "force-dynamic";
@@ -103,37 +104,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
 
       <div className="page-container">
         {/* Breadcrumb */}
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            letterSpacing: "0.04em",
-            color: "#7F7BA9",
-            marginBottom: 28,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-          <span>~/</span>
-          <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-          <span style={{ color: "#44406B" }}>/</span>
-          <span style={{ color: "#F5F5FA", fontWeight: 500 }}>révisions</span>
-          <span
-            className="rv-caret"
-            style={{
-              display: "inline-block",
-              width: 7,
-              height: 13,
-              background: "var(--cosmetic-accent)",
-              boxShadow: "0 0 8px var(--cosmetic-accent)",
-              marginLeft: 4,
-              verticalAlign: -2,
-              animation: "rv-blink 1s step-end infinite",
-            }}
-          />
-        </div>
+        <Crumb segments={["révisions"]} />
 
         {/* Eyebrow */}
         <div

@@ -8,6 +8,7 @@ import {
   toBadgeRarity,
 } from "@cyberlearn/ui";
 import type { BadgeGroup, SerializedBadge } from "@/lib/badges/collection";
+import { Crumb } from "@/components/crumb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 // BadgeGroup and SerializedBadge come from the service that builds the
@@ -504,37 +505,7 @@ export function BadgesCollection({
   return (
     <div className="page-container">
       {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#7F7BA9",
-          marginBottom: 26,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>badges</span>
-        <span
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "var(--cosmetic-accent)",
-            boxShadow: "0 0 8px var(--cosmetic-accent)",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-          aria-hidden="true"
-        />
-      </div>
+      <Crumb segments={["badges"]} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="catalog-header-grid">

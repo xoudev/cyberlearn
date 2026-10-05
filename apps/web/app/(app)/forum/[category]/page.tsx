@@ -6,6 +6,7 @@ import { TOPICS_PER_PAGE, forumRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { Crumbs, ForumHeader, TopicRow } from "../_components/forum-bits";
 import "../forum.css";
+import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +52,7 @@ export default async function ForumCategoryPage({
       />
 
       {data.topics.length === 0 ? (
-        <div className="fo-empty">
-          Cette section est vide. Le premier sujet est souvent le plus lu : ouvre-le.
-        </div>
+        <EmptyState message="Cette section est vide. Le premier sujet est souvent le plus lu : ouvre-le." />
       ) : (
         <ul className="fo-list">
           {data.topics.map((t) => (

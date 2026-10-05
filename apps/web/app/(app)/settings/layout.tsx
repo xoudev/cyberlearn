@@ -4,6 +4,7 @@ import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { SettingsNav } from "./_components/SettingsNav";
 import { MONO, S, SANS } from "./_components/tokens";
+import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = {
   // An object, not a string: a plain title here drops the root template for
@@ -40,37 +41,7 @@ export default async function SettingsLayout({
       <style>{RESPONSIVE_CSS}</style>
 
       {/* Breadcrumb */}
-      <div
-        style={{
-          fontFamily: MONO,
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: S.muted,
-          marginBottom: 26,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: S.turq }}>$</span>
-        <span>~/</span>
-        <b style={{ color: S.fg2, fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: S.disabled }}>/</span>
-        <span style={{ color: S.fg, fontWeight: 500 }}>paramètres</span>
-        <span
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: S.turq,
-            boxShadow: `0 0 8px ${S.turq}`,
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-        />
-      </div>
+      <Crumb segments={["paramètres"]} />
 
       {/* Header */}
       <header

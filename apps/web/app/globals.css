@@ -1310,6 +1310,140 @@ aside[data-state="collapsed"] .sidebar-account {
   }
 }
 
+/* Copies something, and says so for a moment */
+.copy-button {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent);
+  color: #7f7ba9;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
+}
+.copy-button--copied {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+}
+
+/* A number with its name, in three sizes */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.stat-tile--center {
+  align-items: center;
+  text-align: center;
+}
+.stat-tile__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  color: #7f7ba9;
+}
+.stat-tile__idx {
+  color: #1f1b47;
+}
+.stat-tile__value {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  line-height: 1;
+  color: #f5f5fa;
+}
+.stat-tile__sub {
+  font-family: var(--font-mono);
+  color: #44406b;
+  text-transform: uppercase;
+}
+.stat-tile--sm {
+  border: 1px solid #1f1b47;
+  padding: 10px 4px;
+  gap: 2px;
+}
+.stat-tile--sm .stat-tile__label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  order: 2;
+}
+.stat-tile--sm .stat-tile__value {
+  font-size: 18px;
+}
+.stat-tile--md {
+  border: 1px solid #2a2560;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 14px 16px;
+  gap: 6px;
+}
+.stat-tile--md .stat-tile__label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+}
+.stat-tile--md .stat-tile__value {
+  font-size: 28px;
+}
+.stat-tile--lg {
+  padding: 26px 28px 22px;
+  gap: 14px;
+}
+.stat-tile--lg .stat-tile__label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+.stat-tile--lg .stat-tile__value {
+  font-size: 38px;
+  letter-spacing: -0.03em;
+}
+.stat-tile--lg .stat-tile__sub {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  margin-top: -4px;
+}
+
+/* Nothing to list: one box for every page that has nothing to show */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 32px;
+  border: 1px dashed #2a2560;
+  background: rgba(5, 4, 26, 0.5);
+  text-align: center;
+}
+.empty-state__glyph {
+  color: #7f7ba9;
+  margin-bottom: 6px;
+}
+.empty-state__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: #f5f5fa;
+}
+.empty-state__message {
+  margin: 0;
+  max-width: 520px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: #7f7ba9;
+}
+.empty-state__action {
+  margin-top: 12px;
+}
+
 /* Navbar: a page reached by its icon alone, the settings behind the gear */
 .navbar-icon-link {
   display: inline-flex;
@@ -3075,40 +3209,6 @@ a:hover > .lesson-author-card {
 }
 
 /* ── Breadcrumb ── */
-.chx-breadcrumb {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: #7f7ba9;
-  margin-bottom: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.chx-breadcrumb .p {
-  color: var(--danger-red);
-}
-.chx-breadcrumb b {
-  color: #b8b5d1;
-  font-weight: 500;
-}
-.chx-breadcrumb .slash {
-  color: #3f3d5c;
-}
-.chx-breadcrumb .current {
-  color: #f5f5fa;
-  font-weight: 500;
-}
-.chx-breadcrumb .caret {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--danger-red);
-  box-shadow: 0 0 8px var(--danger-red);
-  margin-left: 4px;
-  vertical-align: -2px;
-  animation: blink-r 1s step-end infinite;
-}
 @keyframes blink-r {
   0%,
   50% {
@@ -4140,7 +4240,6 @@ a:hover > .lesson-author-card {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chx-breadcrumb .caret,
   .feat__label__pulse,
   .feat__countdown-label::before {
     animation: none;
@@ -4317,6 +4416,14 @@ a:hover > .lesson-author-card {
 .pg-crumb__leaf {
   color: #f5f5fa;
   font-weight: 500;
+}
+.pg-crumb__link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+.pg-crumb__link:hover {
+  color: #f5f5fa;
 }
 /* A caret that blinks, like the prompt the breadcrumb is imitating. Motion is
    dropped for anyone who asked for less of it. */

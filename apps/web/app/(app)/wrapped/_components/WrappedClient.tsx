@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
+import { StatTile } from "@/components/stat-tile";
+import { useCopyToClipboard } from "@/components/copy-button";
 import {
   WRAPPED_CARD_SIZE,
   fmtCompact,
@@ -33,30 +35,6 @@ function topPercent(rank: number, total: number): number {
 }
 
 // ── Final shareable card ──────────────────────────────────────────────────────
-
-function MiniStat({ value, label }: { value: string; label: string }): React.JSX.Element {
-  return (
-    <div
-      style={{ border: "1px solid #2A2560", background: "rgba(0,0,0,0.25)", padding: "14px 16px" }}
-    >
-      <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 28, color: "#F5F5FA", lineHeight: 1 }}>
-        {value}
-      </div>
-      <div
-        style={{
-          ...MONO,
-          fontSize: 9.5,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "#7F7BA9",
-          marginTop: 6,
-        }}
-      >
-        {label}
-      </div>
-    </div>
-  );
-}
 
 function FinalCard({
   payload,
@@ -124,10 +102,10 @@ function FinalCard({
       </span>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "20px 0 0" }}>
-        <MiniStat value={String(payload.lessons.total)} label="leçons" />
-        <MiniStat value={fmtCompact(payload.xp.thisYear)} label="XP gagnés" />
-        <MiniStat value={`${String(payload.streak.longest)}j`} label="plus longue série" />
-        <MiniStat value={String(payload.badges.thisYear)} label="badges" />
+        <StatTile value={String(payload.lessons.total)} label="leçons" />
+        <StatTile value={fmtCompact(payload.xp.thisYear)} label="XP gagnés" />
+        <StatTile value={`${String(payload.streak.longest)}j`} label="plus longue série" />
+        <StatTile value={String(payload.badges.thisYear)} label="badges" />
       </div>
 
       {top || season?.globalRank != null ? (
@@ -305,18 +283,13 @@ function ExportPanel({
   payload: WrappedPayload;
   handle: string;
 }): React.JSX.Element {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard(1800);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
   const copyLink = (): void => {
     if (typeof window === "undefined") return;
-    void navigator.clipboard.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-      }, 1800);
-    });
+    copy(window.location.href);
   };
 
   const toBlob = async (): Promise<Blob | null> =>

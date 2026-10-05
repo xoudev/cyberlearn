@@ -10,6 +10,7 @@ import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
 import { TopicTools } from "../../_components/topic-tools";
 import "../../forum.css";
+import { EmptyState } from "@/components/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -116,9 +117,10 @@ export default async function ForumTopicPage({
       {/* A closed thread keeps its messages and loses its box: the alternative
           is a form that accepts input and then refuses it. */}
       {view.locked ? (
-        <div className="fo-empty" style={{ marginTop: 24 }}>
-          Ce sujet est fermé. Il reste lisible, mais on n&apos;y répond plus.
-        </div>
+        <EmptyState
+          message="Ce sujet est fermé. Il reste lisible, mais on n'y répond plus."
+          style={{ marginTop: 24 }}
+        />
       ) : (
         <ReplyBox topicId={view.id} />
       )}

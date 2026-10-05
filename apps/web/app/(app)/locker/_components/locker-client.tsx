@@ -7,6 +7,7 @@ import { equipCosmeticAction } from "../_actions/cosmetic-actions";
 import { useCosmetics } from "@/components/cosmetics-provider";
 import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
+import { StatTile } from "@/components/stat-tile";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -595,38 +596,14 @@ export function LockerClient({
               { label: "Badges", value: profile.badgesCount },
               { label: "Série", value: profile.streakDays },
             ].map((s) => (
-              <div
+              <StatTile
                 key={s.label}
-                style={{
-                  flex: 1,
-                  textAlign: "center",
-                  border: "1px solid #1F1B47",
-                  padding: "10px 4px",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontWeight: 800,
-                    fontSize: 18,
-                    color: "#F5F5FA",
-                  }}
-                >
-                  {s.value}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: "#7F7BA9",
-                    marginTop: 2,
-                  }}
-                >
-                  {s.label}
-                </div>
-              </div>
+                size="sm"
+                align="center"
+                label={s.label}
+                value={s.value}
+                style={{ flex: 1 }}
+              />
             ))}
           </div>
 
