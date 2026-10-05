@@ -40,6 +40,16 @@ Un pare-feu est un filtre placé entre un réseau et le reste du monde. Il regar
 
 Concrètement, un pare-feu raisonne souvent en termes de port et de provenance. Une règle typique dit : autoriser les connexions entrantes vers le port 443 depuis n'importe où, autoriser le port 22 seulement depuis l'adresse IP du bureau, refuser tout le reste. Résultat : même si votre base de données écoute sur son port, personne depuis Internet ne peut l'atteindre, parce que le pare-feu jette ces paquets avant qu'ils n'arrivent.
 
+Écrivez ces règles vous-même. Le pare-feu ci-dessous accepte tout par défaut, et les paquets de test montrent ce qui passe. Faites en sorte que seuls passent le web pour tout le monde, et SSH depuis le bureau, dont l'adresse est 192.0.2.10.
+
+<FirewallLab
+  id="pare-feu-tout-ferme"
+  title="Tout fermé par défaut, puis ouvrir le nécessaire"
+  task="Bloquez tout par défaut, puis autorisez le port 443 depuis n'importe où et le port 22 seulement depuis l'adresse du bureau, 192.0.2.10."
+  probes={[{ "label": "Un visiteur ouvre le site en HTTPS", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Le bureau se connecte en SSH", "proto": "tcp", "from": "192.0.2.10", "port": 22, "expect": "accept" }, { "label": "Un inconnu tente SSH", "proto": "tcp", "from": "198.51.100.7", "port": 22, "expect": "block" }, { "label": "Internet frappe à la porte de la base de données", "proto": "tcp", "from": "198.51.100.7", "port": 5432, "expect": "block" }]}
+  hints={["La première ligne : policy drop. Tout ce qui suit est une ouverture.", "accept tcp port 443 ouvre le web à tout le monde ; accept tcp from 192.0.2.10 port 22 n'ouvre SSH qu'au bureau."]}
+/>
+
 C'est une protection solide, mais elle a une limite qu'on oublie souvent.
 
 <Callout type="warning">

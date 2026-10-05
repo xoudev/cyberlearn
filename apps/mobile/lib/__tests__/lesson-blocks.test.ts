@@ -673,6 +673,53 @@ describe("CryptoWorkshop", () => {
   });
 });
 
+describe("FirewallLab", () => {
+  it("is played in the app with the rules the site reads, their indent taken off", () => {
+    const lesson = [
+      "## Le pare-feu",
+      "",
+      "- Une liste :",
+      "",
+      "  <FirewallLab",
+      '    id="srv-web"',
+      '    task="Ferme l\'entrée."',
+      "    rules={`policy accept",
+      "  accept tcp port 22   # SSH",
+      "  accept tcp port 80,443`}",
+      '    probes={[{ "label": "Un visiteur ouvre le site", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Un ping", "proto": "icmp", "from": "192.0.2.10", "expect": "accept" }]}',
+      '    hints={["policy drop en premier."]}',
+      "  />",
+    ].join("\n");
+    const blocks = parseLesson(lesson).sections[0]?.blocks ?? [];
+    const lab = blocks.find((b) => b.kind === "firewall");
+    if (lab?.kind !== "firewall") throw new Error("no firewall lab");
+    expect(lab.lab.rules).toBe("policy accept\naccept tcp port 22   # SSH\naccept tcp port 80,443");
+    expect(lab.lab.probes).toHaveLength(2);
+    expect(lab.lab.probes[1]).toEqual({
+      label: "Un ping",
+      proto: "icmp",
+      from: "192.0.2.10",
+      state: "new",
+      expect: "accept",
+    });
+    expect(lab.lab.hints).toEqual(["policy drop en premier."]);
+  });
+
+  it("starts from an open firewall when the lesson gives no rules, and shows a placeholder for a bad lab", () => {
+    const bare =
+      '## A\n\n<FirewallLab id="f" task="x" probes={[{ "label": "a", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }]} />';
+    expect(parseLesson(bare).sections[0]?.blocks[0]).toMatchObject({
+      kind: "firewall",
+      lab: { rules: "policy accept" },
+    });
+    const wrong =
+      '## A\n\n<FirewallLab id="f" task="x" probes={[{ "label": "a", "proto": "tcp", "from": "203.0.113.5", "expect": "accept" }]} />';
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Pare-feu" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

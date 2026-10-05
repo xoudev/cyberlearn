@@ -81,6 +81,20 @@ table inet filtre {
 
 La boucle locale `lo` est ouverte, car la machine se parle à elle-même ; l'ICMP aussi, car IPv6 ne fonctionne pas sans lui, et le `ping` aide au diagnostic. Les accolades forment un **ensemble** : `{ 80, 443 }` vaut deux règles en une. Enfin, SSH n'est ouvert qu'au réseau d'administration, `192.0.2.0/24` : pour le reste d'Internet, le port 22 n'existe pas.
 
+Avant de toucher au vrai fichier, règle ce pare-feu. Les règles s'écrivent dans une petite langue proche de celle d'ufw, et chaque paquet de test passe par la chaîne d'entrée sous tes yeux : lis le verdict, et la règle qui l'a rendu. Tel qu'on l'a trouvé, ce pare-feu accepte tout par défaut.
+
+<FirewallLab
+  id="pare-feu-srv-web"
+  title="Le pare-feu de srv-web"
+  task="Ferme l'entrée par défaut, laisse passer les réponses, réserve SSH au réseau d'administration 192.0.2.0/24, garde le web ouvert, et ferme le port de test 8080."
+  rules={`policy accept
+accept tcp port 22
+accept tcp port 80,443
+accept tcp port 8080   # test de l'appli, à retirer`}
+  probes={[{ "label": "Un visiteur ouvre le site", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Ton poste, depuis le réseau d'administration, se connecte en SSH", "proto": "tcp", "from": "192.0.2.10", "port": 22, "expect": "accept" }, { "label": "Un inconnu tente SSH", "proto": "tcp", "from": "198.51.100.7", "port": 22, "expect": "block" }, { "label": "Un balayage tape sur PostgreSQL", "proto": "tcp", "from": "198.51.100.7", "port": 5432, "expect": "block" }, { "label": "Quelqu'un trouve le port de test", "proto": "tcp", "from": "198.51.100.7", "port": 8080, "expect": "block" }, { "label": "La réponse du dépôt de paquets revient", "proto": "tcp", "from": "151.101.0.1", "port": 41000, "state": "established", "expect": "accept" }, { "label": "Un ping depuis l'administration", "proto": "icmp", "from": "192.0.2.10", "expect": "accept" }]}
+  hints={["policy drop ferme tout ce qu'aucune règle n'accepte : mets-la en premier, puis ouvre ce qui doit l'être.", "Sans accept established, la réponse du dépôt est jetée : la politique drop s'applique aussi aux réponses.", "accept tcp from 192.0.2.0/24 port 22 n'ouvre SSH qu'au réseau d'administration ; l'inconnu tombe sur la politique.", "Le ping est de l'icmp : accept icmp, sans port."]}
+/>
+
 ## lire et modifier les règles en direct
 
 ```bash

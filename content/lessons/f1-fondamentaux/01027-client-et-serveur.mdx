@@ -114,6 +114,16 @@ Tu administres un petit serveur web. Liste les ports en écoute avec `ss -tlnp`,
 
 Lis la liste comme un auditeur. nginx écoute sur 80 et 443 sur toutes les adresses : normal, c'est le serveur web. SSH sur le port 22, sur toutes les adresses : acceptable s'il est protégé par des clés et, idéalement, limité par un pare-feu. PostgreSQL n'écoute que sur `127.0.0.1` : parfait, seule l'application locale peut le joindre. Mais `xrdp`, un serveur de bureau à distance, écoute sur `0.0.0.0:3389` : sur un serveur web, rien ne le justifie, et c'est exactement le genre de porte qu'on retrouve dans les rapports d'incident. Quant à la réponse `301` de nginx, elle renvoie les visiteurs du port 80 vers la version HTTPS du site : c'est la leçon suivante.
 
+Maintenant, protège ce serveur avec un pare-feu. Tel qu'il est, il laisse tout passer : fais en sorte que le web reste ouvert à tous, que SSH ne réponde qu'à ton poste d'administration, et que le bureau à distance ne soit plus joignable depuis Internet, le temps de le désinstaller.
+
+<FirewallLab
+  id="pare-feu-boutique"
+  title="Les portes du serveur de la boutique"
+  task="Garde les ports 80 et 443 ouverts à tous, n'ouvre SSH qu'à ton poste 192.0.2.10, et bloque tout le reste, dont le bureau à distance sur le port 3389."
+  probes={[{ "label": "Un client ouvre la boutique", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Un client arrive par l'adresse en http", "proto": "tcp", "from": "203.0.113.5", "port": 80, "expect": "accept" }, { "label": "Ton poste se connecte en SSH", "proto": "tcp", "from": "192.0.2.10", "port": 22, "expect": "accept" }, { "label": "Un inconnu essaie le bureau à distance", "proto": "tcp", "from": "198.51.100.7", "port": 3389, "expect": "block" }, { "label": "Un inconnu tente SSH", "proto": "tcp", "from": "198.51.100.7", "port": 22, "expect": "block" }]}
+  hints={["Commence par policy drop : ce qui n'est pas ouvert n'existe plus pour Internet.", "accept tcp port 80,443 ouvre les deux ports du web en une règle.", "accept tcp from 192.0.2.10 port 22 : SSH pour ton poste seulement."]}
+/>
+
 ## exercice noté : les ports exposés
 
 Écris `solution(ecoutes)` qui reçoit une liste d'adresses d'écoute sous la forme `adresse:port` et renvoie la **liste triée, sans doublon, des ports exposés**, c'est-à-dire de ceux qui n'écoutent pas seulement sur la boucle locale. Une adresse de boucle locale commence par `127.` en IPv4, ou vaut `[::1]` en IPv6. Attention : en IPv6, l'adresse elle-même contient des deux-points, il faut donc couper sur le **dernier**.
