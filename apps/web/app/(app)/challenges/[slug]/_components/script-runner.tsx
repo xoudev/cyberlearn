@@ -363,10 +363,9 @@ export function ScriptRunner({
 
   return (
     <div
+      className="card card--sunken"
       id="challenge-action"
       style={{
-        border: "1px solid #1F1B47",
-        background: "#0A0826",
         position: "relative",
         overflow: "hidden",
         marginTop: 4,

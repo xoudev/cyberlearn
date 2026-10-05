@@ -261,9 +261,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
           <>
             {/* Review list */}
             <section style={{ marginBottom: 0 }}>
-              <div
-                style={{ border: "1px solid #2A2560", background: "#0A0826", overflow: "hidden" }}
-              >
+              <div className="card" style={{ overflow: "hidden" }}>
                 <RevisionsList rows={rows} />
 
                 {/* Footer */}
@@ -353,7 +351,7 @@ function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date 
       >
         <span style={{ color: "#44406B" }}>{"// "}</span>PROCHAINES RÉVISIONS
       </div>
-      <div style={{ border: "1px solid #2A2560", overflow: "hidden" }}>
+      <div className="card card--ghost" style={{ overflow: "hidden" }}>
         {schedules.map((s, i) => {
           const daysUntil = Math.ceil((s.nextReviewAt.getTime() - now.getTime()) / 86_400_000);
           return (

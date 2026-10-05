@@ -51,9 +51,8 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
   return (
     <figure style={{ ...figureStyle, display: "flex", flexDirection: "column", gap: "8px" }}>
       <div
+        className="card card--sunken"
         style={{
-          background: "#050419",
-          border: "1px solid #1F1B47",
           overflow: "hidden",
           lineHeight: 0,
         }}

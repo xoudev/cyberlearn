@@ -92,10 +92,9 @@ export default async function AccountDeleteErrorPage({
 
         {/* Card */}
         <div
+          className="card card--sunken"
           style={{
             position: "relative",
-            background: "rgba(5,4,26,0.8)",
-            border: "1px solid #1F1B47",
             padding: "36px 32px",
           }}
         >
@@ -217,6 +216,7 @@ export default async function AccountDeleteErrorPage({
           </div>
 
           <Link
+            className="card card--ghost"
             href="/"
             style={{
               display: "inline-flex",
@@ -228,8 +228,6 @@ export default async function AccountDeleteErrorPage({
               fontSize: 12,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              background: "transparent",
-              border: "1px solid #2A2560",
               color: "#B8B5D1",
               textDecoration: "none",
             }}

@@ -527,10 +527,9 @@ function LeagueBoard({
       </div>
 
       <div
+        className="card"
         style={{
           position: "relative",
-          border: "1px solid #2A2560",
-          background: "rgba(5,4,26,0.5)",
           overflow: "hidden",
         }}
       >

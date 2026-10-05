@@ -36,10 +36,9 @@ export default async function DataPage(): Promise<React.JSX.Element> {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {/* ── Export - Art. 20 ─────────────────────────────────────────────── */}
         <div
+          className="card card--sunken"
           style={{
             position: "relative",
-            background: "rgba(5,4,26,0.6)",
-            border: "1px solid #1F1B47",
             padding: "18px 20px",
           }}
         >

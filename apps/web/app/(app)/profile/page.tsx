@@ -386,11 +386,10 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Corner-bracket card */}
           <div
+            className="card card--sunken"
             style={{
               position: "relative",
               padding: "24px 28px",
-              background: "rgba(5,4,26,0.6)",
-              border: "1px solid #1F1B47",
             }}
           >
             {/* Corner brackets */}
@@ -540,7 +539,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           {/* Edit profile button */}
           <Link
             href="/profile/edit"
-            className="btn-ghost mono-label"
+            className="btn-ghost mono-label card card--ghost"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -549,8 +548,6 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               padding: "10px 18px",
               fontWeight: 600,
               color: "#B8B5D1",
-              background: "transparent",
-              border: "1px solid #2A2560",
               textDecoration: "none",
             }}
           >
@@ -680,10 +677,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
       {/* ── Stats row (5 cells) ─────────────────────────────────────────────── */}
       <div
-        className="profile-stats-grid"
+        className="profile-stats-grid card card--sunken"
         style={{
-          border: "1px solid #1F1B47",
-          background: "rgba(5,4,26,0.5)",
           marginBottom: 64,
         }}
       >

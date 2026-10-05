@@ -139,13 +139,12 @@ export function OnboardingForm({
 
   return (
     <div
+      className="card"
       style={{
         position: "relative",
         width: "100%",
         maxWidth: 640,
         padding: "32px 36px 28px",
-        background: "rgba(10,8,38,0.85)",
-        border: "1px solid #2A2560",
       }}
     >
       <div
@@ -309,12 +308,11 @@ export function OnboardingForm({
               </span>
             </div>
             <div
+              className="card"
               style={{
                 position: "relative",
                 display: "flex",
                 flexDirection: "column",
-                background: "#05041A",
-                border: "1px solid #2A2560",
                 transition: "border-color 180ms ease, box-shadow 180ms ease",
               }}
               onFocusCapture={(e) => {

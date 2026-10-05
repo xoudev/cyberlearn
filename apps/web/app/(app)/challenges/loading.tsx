@@ -122,12 +122,11 @@ export default function ChallengesLoading(): React.ReactElement {
 
       {/* ── Featured panel (.feat 2-col, min-height 320) ── */}
       <div
+        className="card card--sunken"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0,1.05fr) minmax(0,1fr)",
           marginBottom: 32,
-          background: "rgba(10,8,38,0.7)",
-          border: "1px solid #1f1b47",
           overflow: "hidden",
           minHeight: 320,
         }}

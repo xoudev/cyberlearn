@@ -307,12 +307,11 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Atelier réseau${lab.title ? ` : ${lab.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -376,10 +375,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
             gap: 12,
           }}
         >
-          <div
-            className="netlab-canvas"
-            style={{ height: 380, border: "1px solid #1F1B47", minWidth: 0 }}
-          >
+          <div className="netlab-canvas card card--ghost" style={{ height: 380, minWidth: 0 }}>
             {mounted ? (
               <ReactFlow
                 nodes={flowNodes}

@@ -142,7 +142,7 @@ export function LandingClient({
           <div>
             {/* Eyebrow */}
             <div
-              className="mono-label"
+              className="mono-label card card--sunken"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -150,8 +150,6 @@ export function LandingClient({
                 color: "#7F7BA9",
                 marginBottom: 28,
                 padding: "6px 12px",
-                border: "1px solid #1F1B47",
-                background: "rgba(10,8,38,0.5)",
               }}
             >
               <span
@@ -274,14 +272,12 @@ export function LandingClient({
               </button>
               <Link
                 href="/catalogue"
-                className="btn-ghost mono-label mono-label--md"
+                className="btn-ghost mono-label mono-label--md card card--ghost"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "15px 28px",
                   fontWeight: 700,
-                  background: "transparent",
-                  border: "1px solid #1F1B47",
                   color: "#B8B5D1",
                   textDecoration: "none",
                 }}
@@ -411,10 +407,9 @@ export function LandingClient({
                 desc: "Code dans un éditeur intégré, exécute dans ton navigateur, valide étape par étape. Aucune installation, aucun compte à configurer.",
                 visual: (
                   <div
+                    className="card card--sunken"
                     style={{
                       padding: "20px",
-                      background: "#05041A",
-                      border: "1px solid #1F1B47",
                       fontFamily: "var(--font-mono)",
                       fontSize: 12,
                       borderLeft: "3px solid #0AFFD4",
@@ -441,9 +436,7 @@ export function LandingClient({
                 title: "Gamification complète",
                 desc: "XP, niveaux, badges hexagonaux, streaks, classement FR. La courbe d'apprentissage devient une courbe de score.",
                 visual: (
-                  <div
-                    style={{ padding: "20px", background: "#05041A", border: "1px solid #1F1B47" }}
-                  >
+                  <div className="card card--sunken" style={{ padding: "20px" }}>
                     <div
                       style={{
                         display: "flex",
@@ -532,10 +525,9 @@ export function LandingClient({
                 desc: "Chaque parcours validé délivre un certificat avec son empreinte SHA-256, vérifiable publiquement sur le site. Affichable sur LinkedIn.",
                 visual: (
                   <div
+                    className="card card--sunken"
                     style={{
                       padding: "20px",
-                      background: "#05041A",
-                      border: "1px solid #1F1B47",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
@@ -606,10 +598,8 @@ export function LandingClient({
             ].map(({ num, label, title, desc, visual }) => (
               <div
                 key={title}
-                className="card-lift"
+                className="card-lift card card--sunken"
                 style={{
-                  background: "#0A0826",
-                  border: "1px solid #1F1B47",
                   padding: "28px",
                   display: "flex",
                   flexDirection: "column",

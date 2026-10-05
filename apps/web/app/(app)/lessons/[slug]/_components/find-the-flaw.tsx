@@ -65,12 +65,11 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Trouve la faille${flaw.title ? ` : ${flaw.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${accent}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -105,13 +104,12 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
       </p>
 
       <ol
+        className="card card--sunken"
         aria-label={`Code ${flaw.language}`}
         style={{
           listStyle: "none",
           margin: "12px 16px",
           padding: "8px 0",
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
           overflowX: "auto",
         }}
       >

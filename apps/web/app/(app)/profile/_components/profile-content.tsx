@@ -64,13 +64,12 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
         return (
           <Link key={lp.lessonId} href={`/lessons/${lp.slug}`} style={{ textDecoration: "none" }}>
             <div
+              className="card card--sunken"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 16,
                 padding: "12px 16px",
-                background: "rgba(10,8,38,0.5)",
-                border: "1px solid #1F1B47",
               }}
             >
               <div
@@ -363,11 +362,10 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               </span>
             </div>
             <div
+              className="card card--sunken"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                background: "#05041A",
-                border: "1px solid #1F1B47",
                 padding: "8px 12px",
                 display: "inline-flex",
                 alignItems: "center",
@@ -433,7 +431,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               Télécharger PDF
             </Link>
             <Link
-              className="mono-label"
+              className="mono-label card card--ghost"
               href={`/verify/${latest.publicId}`}
               style={{
                 display: "inline-flex",
@@ -444,8 +442,6 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 fontWeight: 600,
                 color: "#B8B5D1",
                 textDecoration: "none",
-                border: "1px solid #2A2560",
-                background: "transparent",
               }}
             >
               Vérifier →

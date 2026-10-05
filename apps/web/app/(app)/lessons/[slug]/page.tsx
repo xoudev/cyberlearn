@@ -150,6 +150,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       />
       {/* ── Terminal breadcrumb ───────────────────────────────────────────── */}
       <div
+        className="card"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -159,8 +160,6 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           color: "#7F7BA9",
           letterSpacing: "0.04em",
           padding: "6px 14px",
-          border: "1px solid #2A2560",
-          background: "rgba(5,4,26,0.6)",
           marginBottom: 40,
         }}
       >
@@ -359,10 +358,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                   Progression · {isCompleted ? sections.length : 0}/{sections.length} sections
                 </span>
                 <div
+                  className="card"
                   style={{
                     height: 3,
-                    background: "rgba(5,4,26,0.9)",
-                    border: "1px solid #2A2560",
                     position: "relative",
                   }}
                 >

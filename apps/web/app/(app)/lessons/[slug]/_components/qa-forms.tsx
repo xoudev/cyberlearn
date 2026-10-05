@@ -77,10 +77,9 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
 
   return (
     <form
+      className="card"
       onSubmit={handleSubmit}
       style={{
-        background: "rgba(5,4,26,0.7)",
-        border: "1px solid #2A2560",
         padding: "20px 24px",
         display: "flex",
         flexDirection: "column",

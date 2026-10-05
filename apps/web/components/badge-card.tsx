@@ -205,6 +205,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
       {/* Lock icon (unearned) */}
       {!badge.earned && (
         <div
+          className="card"
           style={{
             position: "absolute",
             top: 14,
@@ -213,8 +214,6 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             height: 24,
             display: "grid",
             placeItems: "center",
-            background: "#05041A",
-            border: "1px solid #2A2560",
             color: "#7F7BA9",
             zIndex: 2,
           }}

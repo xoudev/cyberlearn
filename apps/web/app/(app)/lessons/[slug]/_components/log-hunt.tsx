@@ -106,12 +106,11 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Chasse dans les logs${hunt.title ? ` : ${hunt.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -251,7 +250,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           </table>
         ) : null}
 
-        <div style={{ overflowX: "auto", border: "1px solid #1F1B47", background: "#0A0826" }}>
+        <div className="card card--sunken" style={{ overflowX: "auto" }}>
           <table
             aria-label="Événements"
             style={{ borderCollapse: "collapse", width: "100%", fontFamily: MONO, fontSize: 12 }}

@@ -237,6 +237,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
     <div className="chx">
       {/* ── Breadcrumb ───────────────────────────────────────────────────────── */}
       <div
+        className="card card--sunken"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -246,8 +247,6 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           color: "#7F7BA9",
           letterSpacing: "0.04em",
           padding: "7px 16px",
-          border: "1px solid #1F1B47",
-          background: "rgba(5,4,26,0.6)",
           marginBottom: 36,
         }}
       >
@@ -345,10 +344,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
         {/* Right: stats card with bracket corners */}
         <div
+          className="card card--sunken"
           style={{
             position: "relative",
-            background: "rgba(5,4,26,0.85)",
-            border: "1px solid #1F1B47",
             padding: 0,
           }}
         >
@@ -594,13 +592,12 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             <div style={{ marginBottom: 32 }}>
               <SectionHead label="Connexion" />
               <div
+                className="card"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
                   padding: "12px 16px",
-                  background: "#060420",
-                  border: "1px solid #2A2560",
                   borderLeft: "3px solid var(--cosmetic-accent)",
                 }}
               >
@@ -711,6 +708,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               {"// "}Statistiques
             </div>
             <div
+              className="card card--sunken"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12.5,
@@ -718,8 +716,6 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                 lineHeight: 1.8,
                 letterSpacing: "0.02em",
                 padding: "14px 16px",
-                border: "1px solid #1F1B47",
-                background: "rgba(5,4,26,0.5)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>

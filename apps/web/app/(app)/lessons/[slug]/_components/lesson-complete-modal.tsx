@@ -232,15 +232,13 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         {/* Quiz score: the note the catalogue will show for this lesson. */}
         {result.quizScore !== null && (
           <div
-            className="mono-label"
+            className="mono-label card card--sunken"
             style={{
               display: "flex",
               alignItems: "baseline",
               justifyContent: "space-between",
               padding: "10px 16px",
               marginBottom: 16,
-              border: "1px solid #1F1B47",
-              background: "rgba(5,4,26,0.6)",
               color: "#7F7BA9",
             }}
           >

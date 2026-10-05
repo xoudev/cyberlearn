@@ -920,9 +920,8 @@ export function NotesLibrary({
       {/* Manage folders panel */}
       {manageOpen && (
         <div
+          className="card"
           style={{
-            border: "1px solid #2A2560",
-            background: "rgba(5,4,26,0.5)",
             padding: 18,
             marginBottom: 26,
             display: "flex",

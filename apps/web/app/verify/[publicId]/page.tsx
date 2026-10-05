@@ -731,13 +731,11 @@ export default async function CertVerifyPage({
 
         {/* Metadata grid */}
         <div
-          className="verify-meta-grid"
+          className="verify-meta-grid card card--sunken"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
             gap: 1,
-            background: "#1F1B47",
-            border: "1px solid #1F1B47",
           }}
         >
           {[

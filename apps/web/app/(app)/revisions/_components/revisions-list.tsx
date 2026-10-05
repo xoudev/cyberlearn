@@ -85,12 +85,11 @@ function GradeRowBody({
           )}
         </span>
         <Link
-          className="mono-label"
+          className="mono-label card card--ghost"
           href={`/lessons/${row.slug}`}
           style={{
             color: "#7F7BA9",
             textDecoration: "none",
-            border: "1px solid #2A2560",
             padding: "6px 12px",
             whiteSpace: "nowrap",
           }}
@@ -198,14 +197,13 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
             >
               {/* index */}
               <div
+                className="card"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: "0.04em",
                   color: "#7F7BA9",
-                  background: "#05041A",
-                  border: "1px solid #2A2560",
                   width: 36,
                   height: 28,
                   display: "grid",

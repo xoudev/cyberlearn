@@ -34,10 +34,9 @@ export default function CertificatesLoading(): React.ReactElement {
       >
         {Array.from({ length: CARD_COUNT }).map((_, i) => (
           <div
+            className="card card--sunken"
             key={`cert-skel-${String(i)}`}
             style={{
-              background: "rgba(10,8,38,0.5)",
-              border: "1px solid #1F1B47",
               display: "flex",
               flexDirection: "column",
             }}

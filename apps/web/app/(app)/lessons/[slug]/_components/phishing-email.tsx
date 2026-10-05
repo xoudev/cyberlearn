@@ -75,12 +75,11 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Boîte mail piégée${mail.title ? ` : ${mail.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -123,10 +122,9 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
       </p>
 
       <div
+        className="card card--sunken"
         style={{
           margin: "12px 16px",
-          border: "1px solid #1F1B47",
-          background: "#0A0826",
           color: "#D8D6EA",
           fontSize: 14,
           lineHeight: 1.6,

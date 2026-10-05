@@ -193,6 +193,7 @@ export function NotificationPanel({
       {/* Panel */}
       {open && (
         <div
+          className="card"
           ref={panelRef}
           style={{
             position: "absolute",
@@ -200,8 +201,6 @@ export function NotificationPanel({
             right: 0,
             width: 360,
             maxHeight: 480,
-            background: "#0A0826",
-            border: "1px solid #2A2560",
             boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px #2A2560",
             overflowY: "auto",
             zIndex: 1000,

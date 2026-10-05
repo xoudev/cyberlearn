@@ -50,12 +50,11 @@ export function NextBar({
   return (
     <>
       <div
+        className="card"
         style={{
           marginTop: 88,
           display: "grid",
           gridTemplateColumns: "1fr auto",
-          border: "1px solid #2A2560",
-          background: "rgba(10,8,38,0.5)",
           position: "relative",
           overflow: "hidden",
         }}

@@ -21,10 +21,9 @@ export default function AppError({
   return (
     <div className="page-container" style={{ paddingTop: 64, paddingBottom: 64 }}>
       <div
+        className="card"
         style={{
           maxWidth: 480,
-          background: "#0A0826",
-          border: "1px solid #2A2560",
           padding: "32px 28px",
           fontFamily: "var(--font-mono)",
         }}
@@ -71,13 +70,11 @@ export default function AppError({
             &#9656; Réessayer
           </button>
           <Link
-            className="mono-label mono-label--md"
+            className="mono-label mono-label--md card card--ghost"
             href="/dashboard"
             style={{
               padding: "8px 20px",
               fontWeight: 600,
-              background: "transparent",
-              border: "1px solid #2A2560",
               color: "#7F7BA9",
               textDecoration: "none",
               display: "inline-flex",
@@ -87,13 +84,11 @@ export default function AppError({
             Dashboard
           </Link>
           <Link
-            className="mono-label mono-label--md"
+            className="mono-label mono-label--md card card--ghost"
             href={`/contact${error.digest ? `?ref=${error.digest}` : ""}`}
             style={{
               padding: "8px 20px",
               fontWeight: 600,
-              background: "transparent",
-              border: "1px solid #2A2560",
               color: "#B8B5D1",
               textDecoration: "none",
               display: "inline-flex",

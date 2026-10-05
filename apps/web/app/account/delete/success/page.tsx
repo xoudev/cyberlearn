@@ -62,10 +62,9 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
 
         {/* Card */}
         <div
+          className="card card--sunken"
           style={{
             position: "relative",
-            background: "rgba(5,4,26,0.8)",
-            border: "1px solid #1F1B47",
             padding: "36px 32px",
           }}
         >

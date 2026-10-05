@@ -70,6 +70,7 @@ export default function SettingsLoading(): React.ReactElement {
         {/* SaveBar: status text + Annuler / Enregistrer buttons.
             Mirrors the real SaveBar wrap behaviour so the skeleton matches on mobile. */}
         <div
+          className="card card--ghost"
           style={{
             display: "flex",
             alignItems: "center",
@@ -78,7 +79,6 @@ export default function SettingsLoading(): React.ReactElement {
             gap: 16,
             marginTop: 8,
             padding: "14px 20px",
-            border: "1px solid #2A2560",
           }}
         >
           <Skeleton w={170} h={11} />

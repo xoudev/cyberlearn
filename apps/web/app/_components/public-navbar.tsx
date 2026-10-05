@@ -68,13 +68,11 @@ export function PublicNavbar(): React.JSX.Element {
         </Link>
         <Link
           href="/login"
-          className="landing-nav-signin mono-label mono-label--md"
+          className="landing-nav-signin mono-label mono-label--md card card--ghost"
           style={{
             alignItems: "center",
             padding: "11px 20px",
             fontWeight: 700,
-            border: "1px solid #1F1B47",
-            background: "transparent",
             color: "#B8B5D1",
             textDecoration: "none",
             transition: "border-color 180ms ease, color 180ms ease",

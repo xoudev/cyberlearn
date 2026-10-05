@@ -40,14 +40,13 @@ export function CodeBlock({
     <div style={{ margin: "1.5rem 0" }}>
       {/* Header */}
       <div
+        className="card"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
           padding: "7px 16px",
-          background: "rgba(5,4,26,0.85)",
-          border: "1px solid #2A2560",
           borderLeft: "3px solid var(--cosmetic-accent)",
           borderBottom: "none",
         }}

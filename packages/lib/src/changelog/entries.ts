@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.20",
+    date: "2026-10-05",
+    title: "La même carte partout",
+    changes: [
+      {
+        type: "improved",
+        text: "Les cadres du site (un bloc, une tuile, un panneau) avaient dix fonds et deux bordures, posés à la main à chaque fois. Ils en ont trois : la carte, la carte enfoncée, le cadre seul.",
+      },
+    ],
+  },
+  {
     version: "3.19",
     date: "2026-10-05",
     title: "Les petits libellés, à la même taille",

@@ -773,16 +773,20 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   color: #7f7ba9;
 }
 
-/* The card: a 1px border and a faint fill. Sunken, it sits lower than the
-   page (a tile in a list, a row); plain, it is the page's own panel. */
+/* The card: a 1px border and a fill. Plain, it is a panel raised from the
+   page; sunken, a well cut into it (a tile in a list, a code block's frame);
+   ghost, the border alone. Ten fills and two borders used to be written by
+   hand on nearly two hundred elements. */
 .card {
-  position: relative;
   border: 1px solid #2a2560;
-  background: rgba(10, 8, 38, 0.5);
+  background: #0a0826;
 }
 .card--sunken {
   border-color: #1f1b47;
-  background: rgba(3, 2, 25, 0.5);
+  background: #05041a;
+}
+.card--ghost {
+  background: transparent;
 }
 
 /* The mono label: small capitals in the monospace, spaced out. Three sizes;
