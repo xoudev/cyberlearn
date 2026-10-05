@@ -211,20 +211,10 @@ export function LessonRating({
 
           {!submitted && selected > 0 && (
             <button
-              className="mono-label"
+              className="btn btn--sm btn--block"
               type="button"
               disabled={isPending}
               onClick={handleSubmit}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                fontWeight: 700,
-                background: "#0024FF",
-                border: "none",
-                color: "#fff",
-                cursor: isPending ? "default" : "pointer",
-                transition: "background 180ms ease",
-              }}
             >
               {isPending ? "Envoi…" : "Envoyer →"}
             </button>
@@ -520,17 +510,10 @@ export function LessonRating({
             </button>
           ) : (
             <button
-              className="mono-label"
+              className="btn btn--ghost btn--sm"
               type="button"
               onClick={() => {
                 setSubmitted(false);
-              }}
-              style={{
-                padding: "8px 16px",
-                background: "transparent",
-                border: "1px solid #2A2560",
-                color: "#7F7BA9",
-                cursor: "pointer",
               }}
             >
               Modifier

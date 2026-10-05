@@ -900,17 +900,11 @@ export function NotesLibrary({
           ⚙ Gérer
         </button>
         <button
-          className="mono-label"
+          className="btn btn--ghost btn--sm"
           type="button"
           onClick={exportAll}
           style={{
             marginLeft: "auto",
-            fontWeight: 700,
-            color: "#B8B5D1",
-            background: "transparent",
-            border: "1px solid #2A2560",
-            padding: "8px 12px",
-            cursor: "pointer",
           }}
         >
           ↧ Exporter tout
@@ -969,19 +963,7 @@ export function NotesLibrary({
                 setNewIcon(ic);
               }}
             />
-            <button
-              className="mono-label"
-              type="button"
-              onClick={handleCreateFolder}
-              style={{
-                fontWeight: 700,
-                color: "#05041A",
-                background: "var(--cosmetic-accent)",
-                border: "1px solid var(--cosmetic-accent)",
-                padding: "9px 14px",
-                cursor: "pointer",
-              }}
-            >
+            <button className="btn btn--accent" type="button" onClick={handleCreateFolder}>
               Créer
             </button>
           </div>

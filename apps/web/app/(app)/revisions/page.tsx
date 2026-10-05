@@ -218,19 +218,9 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <Link
                 href="/lessons"
-                className="btn-blue mono-label mono-label--md"
+                className="btn btn--lg"
                 style={{
                   position: "relative",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "16px 32px",
-                  background: "#0024FF",
-                  color: "#fff",
-                  border: "1px solid #0024FF",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  boxShadow: "0 0 20px rgba(0,36,255,0.45)",
                 }}
               >
                 Faire une leçon{" "}

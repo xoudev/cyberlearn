@@ -189,18 +189,10 @@ export function DeleteAccountSection({
           <input type="hidden" name="confirmation" value={inputValue} />
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
             <button
-              className="mono-label mono-label--md"
+              className="btn btn--ghost btn--sm"
               type="button"
               onClick={() => {
                 setOpen(false);
-              }}
-              style={{
-                padding: "8px 20px",
-                fontWeight: 600,
-                background: "transparent",
-                border: "1px solid #2A2560",
-                color: "#7F7BA9",
-                cursor: "pointer",
               }}
             >
               Annuler

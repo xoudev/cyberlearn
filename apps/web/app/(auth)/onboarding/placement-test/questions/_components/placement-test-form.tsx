@@ -441,25 +441,11 @@ export function PlacementTestForm({
           </div>
 
           <button
-            className="mono-label mono-label--md"
+            className="btn btn--lg btn--block"
             type="submit"
             disabled={isPending}
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-              width: "100%",
-              height: 52,
-              padding: "0 20px",
-              fontWeight: 700,
-              cursor: isPending ? "not-allowed" : "pointer",
-              border: "1px solid #0024FF",
-              background: "#0024FF",
-              color: "#FFFFFF",
               opacity: isPending ? 0.6 : 1,
-              boxShadow: "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)",
-              transition: "background 180ms ease, box-shadow 180ms ease",
             }}
             onMouseEnter={(e) => {
               if (isPending) return;

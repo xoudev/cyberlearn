@@ -194,25 +194,8 @@ export function NextBar({
           )}
 
           <Link
+            className="btn btn--sm"
             href={next ? `/lessons/${next.slug}` : `/paths/${placement?.path.slug ?? ""}`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              padding: "0 32px",
-              fontFamily: "var(--font-mono, monospace)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-              background: "#0024FF",
-              color: "#ffffff",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.15), 0 0 40px rgba(0,36,255,0.35)",
-              minHeight: 88,
-              transition: "background 180ms ease",
-            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "#1F3BFF";
             }}

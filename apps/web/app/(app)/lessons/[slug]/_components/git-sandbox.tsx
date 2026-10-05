@@ -239,7 +239,8 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
             setState(start);
             setEntries([]);
           }}
-          style={{ ...smallButton, marginLeft: "auto" }}
+          className="btn btn--ghost btn--sm"
+          style={{ marginLeft: "auto" }}
         >
           Réinitialiser
         </button>
@@ -423,13 +424,3 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
     </section>
   );
 }
-
-const smallButton: React.CSSProperties = {
-  padding: "5px 10px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
-};

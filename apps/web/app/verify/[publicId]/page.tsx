@@ -661,21 +661,10 @@ export default async function CertVerifyPage({
         {!isRevoked && (
           <div style={{ display: "flex", gap: 12 }}>
             <a
-              className="mono-label mono-label--md"
+              className="btn btn--lg"
               href={`/api/certificates/${cert.id}/download`}
               style={{
                 flex: "0 0 auto",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "14px 24px",
-                fontWeight: 700,
-                background: "#0024FF",
-                border: "1px solid #0024FF",
-                color: "#fff",
-                textDecoration: "none",
-                boxShadow: "0 0 20px rgba(0,36,255,0.4)",
-                transition: "background 180ms ease",
               }}
             >
               Télécharger le PDF
@@ -692,23 +681,7 @@ export default async function CertVerifyPage({
                 <path d="M8 2 V11 M4 7 L8 11 L12 7 M3 14 H13" />
               </svg>
             </a>
-            <button
-              className="mono-label mono-label--md"
-              type="button"
-              onClick={undefined}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "14px 22px",
-                fontWeight: 600,
-                background: "transparent",
-                border: "1px solid #1F1B47",
-                color: "#B8B5D1",
-                cursor: "pointer",
-                transition: "border-color 180ms ease, color 180ms ease",
-              }}
-            >
+            <button className="btn btn--ghost btn--lg" type="button" onClick={undefined}>
               <svg
                 width="13"
                 height="13"

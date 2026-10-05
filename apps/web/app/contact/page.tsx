@@ -368,18 +368,11 @@ export default function ContactPage(): React.ReactElement {
         )}
 
         <button
-          className="mono-label mono-label--md"
+          className="btn btn--lg"
           type="submit"
           disabled={isPending}
           style={{
-            padding: "14px 28px",
-            background: "#0024FF",
-            border: "1px solid #0024FF",
-            color: "#fff",
-            fontWeight: 700,
-            cursor: isPending ? "not-allowed" : "pointer",
             opacity: isPending ? 0.6 : 1,
-            boxShadow: "0 0 20px rgba(0,36,255,0.35)",
             alignSelf: "flex-start",
           }}
         >

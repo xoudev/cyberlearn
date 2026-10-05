@@ -330,7 +330,12 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
         {lab.title ? (
           <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{lab.title}</span>
         ) : null}
-        <button type="button" onClick={reset} style={{ ...smallButton, marginLeft: "auto" }}>
+        <button
+          type="button"
+          onClick={reset}
+          className="btn btn--ghost btn--sm"
+          style={{ marginLeft: "auto" }}
+        >
           Réinitialiser
         </button>
       </header>
@@ -349,7 +354,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
                     add(kind);
                   }}
                   disabled={network.devices.length >= 12}
-                  style={smallButton}
+                  className="btn btn--ghost btn--sm"
                 >
                   + {KIND_LABEL[kind]}
                 </button>
@@ -465,7 +470,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
           <button
             type="submit"
             disabled={to.trim() === "" || sources.length === 0}
-            style={primaryButton}
+            className="btn btn--accent btn--sm"
           >
             Ping
           </button>
@@ -564,24 +569,4 @@ const fieldStyle: React.CSSProperties = {
   color: "#D8D6EA",
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 13,
-};
-
-const primaryButton: React.CSSProperties = {
-  padding: "7px 16px",
-  border: "none",
-  background: "var(--cosmetic-accent, #0AFFD4)",
-  color: "#030219",
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
 };

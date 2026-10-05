@@ -76,22 +76,7 @@ export function LandingClient({
         eyebrow="La démo"
         title="CyberLearn en 30 secondes"
         actions={
-          <Link
-            className="mono-label"
-            href="/register"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "13px 22px",
-              fontWeight: 700,
-              background: "#0024FF",
-              border: "1px solid #0024FF",
-              color: "#fff",
-              textDecoration: "none",
-              boxShadow: "0 0 24px rgba(0,36,255,0.4)",
-            }}
-          >
+          <Link className="btn" href="/register">
             Commencer gratuitement →
           </Link>
         }
@@ -210,23 +195,7 @@ export function LandingClient({
             </p>
 
             <div className="landing-cta-row" style={{ marginBottom: 32 }}>
-              <Link
-                className="mono-label mono-label--md"
-                href="/register"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "15px 28px",
-                  fontWeight: 700,
-                  background: "#0024FF",
-                  border: "1px solid #0024FF",
-                  color: "#fff",
-                  textDecoration: "none",
-                  boxShadow: "0 0 28px rgba(0,36,255,0.45), inset 0 0 0 1px rgba(255,255,255,0.08)",
-                  transition: "background 180ms ease, box-shadow 180ms ease",
-                }}
-              >
+              <Link className="btn btn--lg" href="/register">
                 Commencer gratuitement
                 <svg
                   width="13"
@@ -246,18 +215,7 @@ export function LandingClient({
                 onClick={() => {
                   setDemoOpen(true);
                 }}
-                className="btn-ghost mono-label mono-label--md"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "15px 28px",
-                  fontWeight: 700,
-                  background: "transparent",
-                  border: "1px solid #1F1B47",
-                  color: "#B8B5D1",
-                  cursor: "pointer",
-                }}
+                className="btn btn--ghost btn--lg"
               >
                 <svg
                   width="13"
@@ -270,18 +228,7 @@ export function LandingClient({
                 </svg>
                 Voir la démo
               </button>
-              <Link
-                href="/catalogue"
-                className="btn-ghost mono-label mono-label--md card card--ghost"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "15px 28px",
-                  fontWeight: 700,
-                  color: "#B8B5D1",
-                  textDecoration: "none",
-                }}
-              >
+              <Link href="/catalogue" className="btn btn--ghost btn--lg">
                 Voir les parcours
               </Link>
             </div>
@@ -905,23 +852,7 @@ export function LandingClient({
               </em>{" "}
               ?
             </h2>
-            <Link
-              className="mono-label mono-label--md"
-              href="/register"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "18px 36px",
-                fontWeight: 700,
-                background: "#0024FF",
-                border: "1px solid #0024FF",
-                color: "#fff",
-                textDecoration: "none",
-                boxShadow: "0 0 40px rgba(0,36,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.1)",
-                transition: "background 180ms ease, box-shadow 180ms ease",
-              }}
-            >
+            <Link className="btn btn--lg" href="/register">
               Commencer gratuitement
               <svg
                 width="13"

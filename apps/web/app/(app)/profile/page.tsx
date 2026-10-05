@@ -537,20 +537,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           </div>
 
           {/* Edit profile button */}
-          <Link
-            href="/profile/edit"
-            className="btn-ghost mono-label card card--ghost"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "10px 18px",
-              fontWeight: 600,
-              color: "#B8B5D1",
-              textDecoration: "none",
-            }}
-          >
+          <Link href="/profile/edit" className="btn btn--ghost">
             <svg
               width="12"
               height="12"

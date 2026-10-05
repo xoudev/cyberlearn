@@ -96,18 +96,10 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
 
         <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
           <button
+            className="btn btn--sm"
             onClick={handleAcknowledge}
             style={{
-              padding: "6px 16px",
-              fontSize: "12px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              background: "#0024FF",
-              border: "1px solid #0024FF",
               borderRadius: "0px",
-              color: "#F5F5FA",
-              cursor: "pointer",
-              transition: "background 200ms",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "#1A3AFF";

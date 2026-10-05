@@ -204,17 +204,11 @@ export function SqlInjectionLab(
             </label>
           ))}
           <button
+            className="btn btn--accent btn--sm"
             type="submit"
             disabled={running}
             style={{
               justifySelf: "start",
-              padding: "8px 16px",
-              border: "none",
-              background: "var(--cosmetic-accent, #0AFFD4)",
-              color: "#030219",
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: "pointer",
             }}
           >
             {running ? "Connexion…" : "Se connecter"}

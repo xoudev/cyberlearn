@@ -323,19 +323,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
 
         {/* Footer */}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            className="mono-label"
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "9px 18px",
-              background: "transparent",
-              border: "1px solid #2A2560",
-              color: "#B8B5D1",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
+          <button className="btn btn--ghost" type="button" onClick={onClose}>
             {"// fermer"}
           </button>
           <Link

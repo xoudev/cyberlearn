@@ -124,33 +124,20 @@ export function ReportNoteForm({
       ) : null}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button
-          className="mono-label mono-label--md"
+          className="btn btn--danger btn--sm"
           type="submit"
           disabled={sending}
           style={{
-            padding: "8px 14px",
-            background: "#FF4757",
-            border: "1px solid #FF4757",
-            color: "#030219",
-            fontWeight: 700,
-            cursor: sending ? "wait" : "pointer",
             opacity: sending ? 0.6 : 1,
           }}
         >
           {sending ? "Envoi…" : "Envoyer le signalement"}
         </button>
         <button
-          className="mono-label mono-label--md"
+          className="btn btn--ghost btn--sm"
           type="button"
           onClick={onCancel}
           disabled={sending}
-          style={{
-            padding: "8px 14px",
-            background: "transparent",
-            border: "1px solid #2A2560",
-            color: "#B8B5D1",
-            cursor: "pointer",
-          }}
         >
           Annuler
         </button>

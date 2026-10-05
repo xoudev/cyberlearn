@@ -1416,40 +1416,6 @@ article.lesson-content blockquote p code {
 /* ─── Reusable hover button classes (used across dashboard, lesson pages) ─── */
 
 /* Primary turquoise CTA */
-.btn-teal {
-  transition: box-shadow 180ms ease;
-}
-.btn-teal:hover {
-  box-shadow:
-    0 0 32px rgba(10, 255, 212, 0.7),
-    0 0 80px rgba(10, 255, 212, 0.3) !important;
-}
-
-/* Primary blue CTA */
-.btn-blue {
-  transition:
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-.btn-blue:hover {
-  background: #1f3bff !important;
-  box-shadow:
-    0 0 40px rgba(0, 36, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Ghost / secondary button */
-.btn-ghost {
-  transition:
-    border-color 180ms ease,
-    color 180ms ease,
-    background 180ms ease;
-}
-.btn-ghost:hover {
-  border-color: #7f7ba9 !important;
-  color: #f5f5fa !important;
-  background: rgba(42, 37, 96, 0.25) !important;
-}
 
 /* Text CTA link (e.g. section "Historique complet →") */
 .link-cta {
@@ -1481,9 +1447,6 @@ article.lesson-content blockquote p code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn-teal,
-  .btn-blue,
-  .btn-ghost,
   .link-cta,
   .link-action,
   .review-row {

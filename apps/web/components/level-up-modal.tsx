@@ -47,37 +47,10 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
         </div>
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            className="mono-label"
-            href="/profile"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              height: 38,
-              padding: "0 20px",
-              background: "#0024FF",
-              color: "#ffffff",
-              fontWeight: 700,
-              textDecoration: "none",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.15)",
-            }}
-          >
+          <Link className="btn" href="/profile">
             Voir mon profil
           </Link>
-          <button
-            className="mono-label"
-            type="button"
-            onClick={onClose}
-            style={{
-              height: 38,
-              padding: "0 20px",
-              background: "transparent",
-              border: "1px solid #2A2560",
-              color: "#B8B5D1",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
+          <button className="btn btn--ghost" type="button" onClick={onClose}>
             Continuer
           </button>
         </div>
