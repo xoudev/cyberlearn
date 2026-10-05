@@ -1485,6 +1485,38 @@ Tu n'écris pas des centaines de lignes : tu écris les événements qui compten
 
 En tout, 1500 événements au plus : au-delà, la table ne se lit plus. Écris la question de façon que la réponse soit une valeur de la table ou un décompte (« combien d'échecs ») ; pour une heure, donne la valeur complète et sa forme courte dans la liste des réponses. Mets dans le bruit un cas qui ressemble à l'attaque sans l'être (un collègue qui se trompe sept fois de mot de passe) : c'est lui qui apprend à compter avant de conclure.
 
+### 5.9r HexEditor - Éditeur hexadécimal
+
+Les octets d'un petit fichier dans une grille, avec le décalage à gauche, le texte qu'ils forment à droite, et le format que les premiers octets annoncent (la table des nombres magiques des leçons : PNG, JPEG, GIF, PDF, ZIP, gzip, MZ, ELF, BMP, SQLite, 7-Zip, classe Java, ID3, RIFF, shebang). Un clic sur un octet permet de le réécrire, pour réparer un en-tête ; le texte lisible dans les octets est listé, comme la commande `strings`, pour trouver un message caché. Des réparations (les octets attendus à un décalage) et des questions font l'exercice. Sur le site et dans l'app (`@cyberlearn/lib/files/hex`).
+
+```mdx
+<HexEditor
+  id="hex-photo-abimee"
+  title="Une image à réparer"
+  filename="photo.png"
+  task="Remets la signature PNG, octet par octet."
+  bytes="00 00 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00"
+  repairs={[{ "label": "La signature PNG est rétablie", "offset": 0, "bytes": "89 50" }]}
+  questions={[{ "label": "Quelle est la taille de l'image ?", "answer": ["1x1", "1 x 1"], "hint": "Après IHDR : la largeur, puis la hauteur, sur quatre octets chacune." }]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne : ce qu'il faut lire, réparer ou trouver |
+| `filename` | string | Le nom du fichier, montré en en-tête : `facture.pdf` (optionnel) |
+| `bytes` | string | Les octets en hexadécimal, deux chiffres par octet, les espaces libres ; 2048 octets au plus |
+| `editable` | boolean | `false` pour une lecture seule (défaut : `true`) ; obligatoire à `true` s'il y a des réparations |
+| `repairs` | objets | Ce qui doit être réparé, 8 au plus : `label`, `offset`, `bytes` attendus à partir de là. **Clés entre guillemets** |
+| `questions` | objets | De 0 à 6 : `label`, `answer` (une réponse, ou une liste de réponses acceptées, lues sans égard à la casse, aux accents ni aux espaces), `hint` (optionnel) |
+| `hints` | string[] | Des indices, repliés sous « Indices » (optionnel) |
+
+Pour produire les octets d'un vrai fichier, passe par Python (`struct`, `zlib`) ou `xxd -p`, et vérifie qu'ils tiennent : un PNG d'un pixel fait 69 octets, avec un bloc `tEXt` 128. Pour une question dont la réponse se lit dans les octets, mets dans `answer` les formes qu'un élève tapera (`1x1`, `1 x 1`). Pour un type de fichier, liste les mots de la table (`PNG`, `image PNG`) : la ligne « TYPE RÉEL » les donne une fois l'en-tête réparé.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1520,7 +1552,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

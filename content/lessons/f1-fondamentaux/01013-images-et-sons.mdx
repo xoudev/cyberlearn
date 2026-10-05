@@ -115,6 +115,18 @@ La technique la plus simple utilise le **bit de poids faible** de chaque composa
 
 Ce n'est pas qu'un jeu. Des logiciels malveillants ont déjà utilisé des images publiées sur des sites légitimes pour recevoir discrètement leurs instructions, et des données volées peuvent sortir d'une entreprise cachées dans des images anodines. Côté défense, les analystes disposent d'outils statistiques qui détectent ces modifications, et les challenges de stéganographie sont un grand classique des CTF.
 
+Avant les bits de poids faible, la cachette la plus simple : un format d'image prévoit des champs de texte libre, que les visionneuses n'affichent jamais. Voici une image PNG d'un seul pixel, 128 octets en tout. Son contenu visible est anodin ; ce qu'elle transporte ne l'est pas. Lis les octets.
+
+<HexEditor
+  id="hex-png-message"
+  title="Un message dans l'image"
+  filename="pixel.png"
+  task="Repère le texte lisible dans les octets et trouve le mot de passe que cette image transporte sans le montrer."
+  bytes="89 50 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00 90 77 53 de 00 00 00 0c 49 44 41 54 78 9c 63 90 9b f0 1f 00 02 7d 01 ae 71 f3 21 cd 00 00 00 2f 74 45 58 74 43 6f 6d 6d 65 6e 74 00 4c 65 20 6d 6f 74 20 64 65 20 70 61 73 73 65 20 64 75 20 63 6f 66 66 72 65 20 65 73 74 20 54 4f 55 52 4e 45 53 4f 4c 66 5a 0d 9d 00 00 00 00 49 45 4e 44 ae 42 60 82"
+  editable={false}
+  questions={[{ "label": "Quel mot de passe l'image transporte-t-elle ?", "answer": ["TOURNESOL"], "hint": "Le bloc tEXt porte un commentaire : lis la colonne de droite à partir de l'octet 61, ou la liste du texte lisible." }, { "label": "Comment s'appelle le bloc PNG qui porte ce texte ?", "answer": ["tEXt", "text", "le bloc tEXt", "un bloc tEXt"], "hint": "Quatre lettres juste avant le mot Comment." }]}
+/>
+
 ## à toi de jouer
 
 Ce bac à sable représente une petite « image » par une liste de valeurs de 0 à 255. La fonction `cacher` y dissimule un message dans les bits de poids faible ; la fonction `reveler` le récupère. Lance le programme et observe l'écart maximal entre les valeurs, puis cache ton propre message.

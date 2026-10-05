@@ -2,7 +2,7 @@
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
-// FirewallLab, LogHunt, StepAnimation, SimulatedTerminal,
+// FirewallLab, LogHunt, HexEditor, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -13,6 +13,7 @@ import {
   type FindTheFlaw,
   type FirewallLab,
   type GitSandbox,
+  type HexEditor,
   type LogHunt,
   type MatchPairs,
   type PacketDissector,
@@ -23,6 +24,7 @@ import {
   parseFindTheFlaw,
   parseFirewallLab,
   parseGitSandbox,
+  parseHexEditor,
   parseLogHunt,
   parseMatchPairs,
   parsePacketDissector,
@@ -113,6 +115,11 @@ export type Block =
       /** A LogHunt: the same table of events as the site's, drawn and filtered natively. */
       kind: "loghunt";
       hunt: LogHunt;
+    }
+  | {
+      /** A HexEditor: the same bytes as the site's, read and repaired natively. */
+      kind: "hex";
+      editor: HexEditor;
     }
   | {
       /**
@@ -473,7 +480,9 @@ type StringPropName =
   | "scene"
   | "file"
   | "input"
-  | "rules";
+  | "rules"
+  | "bytes"
+  | "filename";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -481,7 +490,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules|bytes|filename)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -850,6 +859,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "loghunt", hunt: parsed.value }
         : { kind: "placeholder", label: "Chasse dans les logs" },
+    );
+  });
+  // HexEditor → the same bytes, read and repaired natively; one the site would
+  // refuse is a placeholder.
+  text = replaceSelfClosing(text, "HexEditor", (tag) => {
+    const parsed = parseHexEditor({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      bytes: stringProp(tag, "bytes", 0) ?? undefined,
+      filename: stringProp(tag, "filename", 0) ?? undefined,
+      editable: /\beditable\s*=\s*\{\s*false\s*\}/.test(tag) ? false : undefined,
+      repairs: jsonProp(tag, "repairs"),
+      questions: jsonProp(tag, "questions"),
+      hints: jsonProp(tag, "hints"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "hex", editor: parsed.value }
+        : { kind: "placeholder", label: "Éditeur hexadécimal" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's

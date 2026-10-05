@@ -384,6 +384,36 @@ describe("LogHunt", () => {
   });
 });
 
+describe("HexEditor", () => {
+  const editor = (props: string): string =>
+    `## Les octets\n\n<HexEditor id="h" task="Répare." bytes="00 50 4e 47 0d 0a 1a 0a" ${props} />`;
+
+  it("accepts a file with a repair that fits in it", async () => {
+    expect(
+      await checkLessonMdx(
+        editor('repairs={[{ "label": "La signature", "offset": 0, "bytes": "89" }]}'),
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a repair past the end of the file, and names it", async () => {
+    const r = await checkLessonMdx(
+      editor('repairs={[{ "label": "Trop loin", "offset": 7, "bytes": "89 50" }]}'),
+    );
+    if (r.ok) throw new Error("accepted a repair past the end");
+    expect(r.section).toBe("Les octets");
+    expect(r.message).toBe(
+      "Éditeur hexadécimal : la réparation « Trop loin » dépasse la fin du fichier (8 octets).",
+    );
+  });
+
+  it("refuses bytes that are not hexadecimal", async () => {
+    const r = await checkLessonMdx('## Les octets\n\n<HexEditor id="h" task="x" bytes="89 5" />');
+    if (r.ok) throw new Error("accepted bad bytes");
+    expect(r.message).toContain("Éditeur hexadécimal : bytes : ");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(
