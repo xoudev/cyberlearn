@@ -158,7 +158,15 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   // Scoped to the reader: a lesson written for a class is published, so
   // looking it up by slug alone would hand it to anyone who guessed one.
-  const lesson = await lessonRepository.findBySlug(slug, authUser.id);
+  let lesson = await lessonRepository.findBySlug(slug, authUser.id);
+  // An administrator may open what nobody else can yet: a draft, to see it as
+  // the site renders it before publishing. Nothing is recorded for them on it,
+  // and the page says so; the catalogue still lists nothing unpublished.
+  let reviewing = false;
+  if (!lesson && (await unlocksEveryLesson(authUser.id))) {
+    lesson = await lessonRepository.findBySlugForReview(slug);
+    reviewing = lesson !== null;
+  }
   if (!lesson) notFound();
 
   const [
@@ -212,7 +220,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   const nextLesson = placement?.next ?? null;
 
-  if (!existing) {
+  if (!existing && !reviewing) {
     await lessonRepository.upsertProgress({
       userId: authUser.id,
       lessonId: lesson.id,
@@ -276,6 +284,13 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         <span style={{ color: "#1F1B47" }}>/</span>
         <span style={{ color: "var(--cosmetic-accent)" }}>{lesson.slug}.lesson</span>
       </div>
+
+      {reviewing && (
+        <p className="lesson-review-banner" role="status">
+          <b>Aperçu administrateur.</b> Cette leçon n&apos;est pas publiée dans le catalogue : les
+          apprenants ne la voient pas, et rien n&apos;est enregistré ici, ni progression ni XP.
+        </p>
+      )}
 
       {/* ── Hero + Mission Briefing ───────────────────────────────────────── */}
       <div className="lesson-hero-grid">
@@ -511,36 +526,43 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       {/* ── Next bar ─────────────────────────────────────────────────────────
           Rendered even with no next lesson: the bar carries the "terminer"
           button, so gating it on a successor left the last lesson of a path
-          with no way to complete it. */}
-      <NextBar
-        next={nextLesson}
-        placement={
-          placement ? { path: placement.path, rank: placement.rank, total: placement.total } : null
-        }
-        lessonId={lesson.id}
-        lessonTitle={lesson.title}
-        xpReward={lesson.xpReward}
-        isCompleted={isCompleted}
-      />
+          with no way to complete it. Not in review: a draft is not something
+          to finish, rate or ask about. */}
+      {!reviewing && (
+        <NextBar
+          next={nextLesson}
+          placement={
+            placement
+              ? { path: placement.path, rank: placement.rank, total: placement.total }
+              : null
+          }
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          xpReward={lesson.xpReward}
+          isCompleted={isCompleted}
+        />
+      )}
 
       {/* ── Rating + Q&A ─────────────────────────────────────────────────── */}
-      <div className="lesson-rating-qa-grid">
-        <LessonRating
-          lessonId={lesson.id}
-          isCompleted={isCompleted}
-          initialScore={userRating?.score ?? null}
-          initialFeedback={userRating?.feedback ?? null}
-          avgRating={ratingData?.avgRating ?? null}
-          ratingsCount={ratingData?.ratingsCount ?? 0}
-        />
+      {!reviewing && (
+        <div className="lesson-rating-qa-grid">
+          <LessonRating
+            lessonId={lesson.id}
+            isCompleted={isCompleted}
+            initialScore={userRating?.score ?? null}
+            initialFeedback={userRating?.feedback ?? null}
+            avgRating={ratingData?.avgRating ?? null}
+            ratingsCount={ratingData?.ratingsCount ?? 0}
+          />
 
-        <LessonQA
-          lessonId={lesson.id}
-          lessonSlug={lesson.slug}
-          currentUserId={authUser.id}
-          questions={questions}
-        />
-      </div>
+          <LessonQA
+            lessonId={lesson.id}
+            lessonSlug={lesson.slug}
+            currentUserId={authUser.id}
+            questions={questions}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -2687,6 +2687,22 @@ aside[data-state="collapsed"] .sidebar-account {
   }
 }
 
+/* An administrator reading a lesson nobody else can open yet: said once, at
+   the top, in the amber the site keeps for "not final". */
+.lesson-review-banner {
+  margin: 0 0 32px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 181, 71, 0.45);
+  background: rgba(255, 181, 71, 0.07);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #b8b5d1;
+}
+.lesson-review-banner b {
+  color: #ffb547;
+  font-weight: 700;
+}
+
 .lesson-hero-grid {
   display: grid;
   /* minmax(0, 1fr) not 1fr: a bare 1fr track grows to the min-content of a wide

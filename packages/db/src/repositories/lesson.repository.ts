@@ -100,6 +100,32 @@ export const lessonRepository = {
     });
   },
 
+  /**
+   * A lesson by slug whatever its status or audience: a draft, an archived
+   * one, a class's own. For an administrator reviewing the catalogue before
+   * it is published; the caller checks the role, this only reads.
+   */
+  async findBySlugForReview(slug: string) {
+    return prisma.lesson.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+        contentMdx: true,
+        coverImageUrl: true,
+        publishedAt: true,
+        status: true,
+      },
+    });
+  },
+
   /** List published lessons with the user's progress joined. Used for the catalog page. */
   async findManyWithProgress(userId: string, filters: LessonFilters = {}) {
     const { category, difficulty, progressStatus, search, page = 1, pageSize = 9 } = filters;

@@ -165,6 +165,14 @@ Langages disponibles pour la coloration : `python`, `javascript`, `typescript`, 
 
 ## 5. Composants MDX
 
+Pour voir chacun d'eux rendu par le site, tel que les apprenants le voient : la
+leçon vitrine `content/lessons/_vitrine/99001-vitrine-des-composants.mdx`,
+ouverte sur `/lessons/vitrine-des-composants`. Elle reste en brouillon, donc
+seul un administrateur peut l'ouvrir, et elle contient chaque composant de
+cette section une fois, avec de vraies valeurs ; un test
+(`packages/lib/src/mdx/showcase.test.ts`) refuse qu'un composant du
+pipeline en manque. Un composant qui change se vérifie là en premier.
+
 ### 5.1 Callout
 
 Encadré coloré pour attirer l'attention. 4 types disponibles.

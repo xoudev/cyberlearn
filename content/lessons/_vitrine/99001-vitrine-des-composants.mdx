@@ -1,0 +1,451 @@
+---
+refCode: CL-LSN-99001-V01
+slug: vitrine-des-composants
+title: "Vitrine des composants"
+description: "Chaque composant qu'une leçon peut contenir, rendu une fois, tel que les apprenants le voient : encadrés, quiz, code exécutable, terminaux, médias, exercices et labos. Une leçon de travail pour les administrateurs, jamais publiée dans le catalogue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 0
+prerequisites: []
+---
+
+Cette leçon n'apprend rien à personne : elle montre. Chaque composant que le guide de rédaction décrit y apparaît une fois, avec de vraies valeurs, rendu par le site exactement comme dans une leçon publiée. Elle sert à trois choses : vérifier qu'un composant marche encore après une modification, voir à quoi ressemble un composant avant de l'utiliser dans une leçon, et comparer l'aperçu de l'éditeur avec le rendu réel. Elle reste en brouillon, donc invisible des apprenants, et seul un administrateur peut l'ouvrir.
+
+Les exemples viennent du guide de rédaction (`docs/LESSON_AUTHORING_GUIDE.md`) ou de leçons publiées. Quand un composant change, c'est ici qu'on le voit en premier.
+
+## texte et mise en forme
+
+Le texte d'une leçon est du Markdown ordinaire. On y écrit du **gras**, de l'*italique*, du `code en ligne`, et des listes :
+
+- un élément ;
+- un autre élément, avec un [lien vers le guide](https://github.com/xoudev/cyberlearn-revamp/blob/main/docs/LESSON_AUTHORING_GUIDE.md) ;
+- un troisième, pour la forme.
+
+Une liste numérotée garde l'ordre :
+
+1. lire la consigne ;
+2. essayer ;
+3. comparer avec la correction.
+
+Un tableau compare des valeurs :
+
+| Commande | Rôle | Danger |
+| --- | --- | --- |
+| `cp` | copier | écrase sans prévenir |
+| `mv` | déplacer ou renommer | écrase sans prévenir |
+| `rm` | supprimer | pas de corbeille |
+
+Une citation se détache du texte :
+
+> Un fichier supprimé en ligne de commande est supprimé pour de bon.
+
+Et un bloc de code s'affiche avec sa coloration, son numéro de langue et un bouton pour le copier :
+
+```python
+def saluer(nom: str) -> str:
+    return f"Bonjour, {nom}."
+
+print(saluer("monde"))
+```
+
+Un trait horizontal sépare deux idées :
+
+---
+
+Voilà pour le texte. Tout le reste de cette leçon est fait de composants.
+
+## encadrés
+
+Quatre encadrés, un par ton. Ils attirent l'œil sur un point précis, donc on en met peu : un ou deux par section au plus.
+
+<Callout type="info">
+Une information complémentaire, un contexte utile. Le texte peut contenir du **gras** et du `code`.
+</Callout>
+
+<Callout type="warning">
+Un point d'attention : ce qu'il faut regarder à deux fois avant de continuer.
+</Callout>
+
+<Callout type="danger">
+Une erreur à ne pas commettre, une pratique interdite, une vulnérabilité critique.
+</Callout>
+
+<Callout type="success">
+Une bonne pratique confirmée, le résultat attendu, la méthode recommandée.
+</Callout>
+
+## questions
+
+Un quiz seul, puis une série : dans la série, la question suivante n'apparaît qu'une fois la précédente répondue. Une seule réponse par question, enregistrée par le serveur ; les options sont mélangées pour chaque apprenant, l'explication s'affiche après la réponse.
+
+<Quiz
+  id="q-vitrine-https"
+  question="Quel port utilise HTTPS par défaut ?"
+  options={["80", "443", "8080", "22"]}
+  correct={1}
+  explanation="HTTPS écoute sur 443 ; 80 est le port de HTTP, en clair."
+/>
+
+<QuizGroup>
+  <Quiz
+    id="q-vitrine-osi"
+    question="Quelle couche OSI gère le routage IP ?"
+    options={["Liaison", "Réseau", "Transport", "Application"]}
+    correct={1}
+    explanation="La couche 3, réseau, adresse et route les paquets."
+  />
+  <Quiz
+    id="q-vitrine-tls"
+    question="Que signifie l'acronyme TLS ?"
+    options={["Transport Layer Security", "Trusted Link System", "Token Login Service", "Terminal Layer Setup"]}
+    correct={0}
+    explanation="Transport Layer Security : le chiffrement sous HTTPS."
+  />
+</QuizGroup>
+
+## code exécutable
+
+Le bac à sable exécute le code dans le navigateur, sans serveur, en quatre langages. Le défi Python, lui, compare le résultat de la fonction de l'élève à des cas de test et bloque la fin de la section tant qu'ils ne passent pas tous.
+
+<CodePlayground language="python" starterCode={`print("Hello, World!")
+
+for i in range(3):
+    print(f"Itération {i}")`} />
+
+<CodePlayground language="javascript" starterCode={`function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log("Fib(10) =", fibonacci(10));`} />
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char msg[] = "Hello, World!";
+    printf("Message : %s\\n", msg);
+    printf("Longueur : %lu\\n", strlen(msg));
+    return 0;
+}`} />
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 10
+    mov rbx, 32
+    add rax, rbx        ; rax = 42
+    println rax         ; affiche 42
+    ret`} />
+
+<PythonChallenge
+  id="py-vitrine-somme"
+  title="Calculer la somme des entiers de 1 à n"
+  description="Écris une fonction solution(n) qui retourne la somme des entiers de 1 à n inclus. Par exemple, solution(5) doit retourner 15."
+  starterCode="def solution(n):
+    pass"
+  tests={[
+    { input: "solution(1)", expected: "1" },
+    { input: "solution(5)", expected: "15" },
+    { input: "solution(10)", expected: "55" },
+    { input: "solution(0)", expected: "0", label: "Cas limite - n=0" },
+  ]}
+/>
+
+## terminaux
+
+Deux terminaux. Le premier est simulé : il ne connaît que les commandes de son scénario et répond avec des sorties écrites d'avance. Le second est un vrai Linux, démarré dans le navigateur au clic, où toutes les commandes font ce qu'elles font sur une vraie machine.
+
+<SimulatedTerminal
+  shell="bash"
+  scenario="bash-admin"
+  title="Exercice - État de la machine"
+  expectedCommands={["ps aux", "df -h"]}
+  hints={["ps aux liste tous les processus.", "df -h montre l'espace disque, en unités lisibles."]}
+/>
+
+<LinuxTerminal title="Ranger un dossier" files={{ "rapport_v3.txt": "Rapport trimestriel, version finale.\n", "notes.txt": "Idées pour la prochaine réunion.\n", "brouillon.tmp": "texte temporaire\n", "vieux/ancien-rapport.txt": "Rapport de l'an dernier.\n" }} expectedCommands={["mkdir docs", "mv rapport_v3.txt docs/rapport.txt"]} checks={[{ "label": "Le dossier docs existe", "path": "docs", "expect": "dir" }, { "label": "Le rapport est dans docs, sous son nouveau nom", "path": "docs/rapport.txt", "expect": "file", "contains": "Rapport trimestriel" }, { "label": "Le brouillon est supprimé", "path": "brouillon.tmp", "expect": "absent" }]} hints={["mkdir docs crée le dossier.", "mv déplace et renomme en une seule commande.", "rm brouillon.tmp supprime sans confirmation : relis avant d'appuyer sur Entrée."]} />
+
+## médias, liens et schémas
+
+Une vidéo, une image avec sa légende, un lien externe en carte puis en ligne, et trois schémas Mermaid : un flux, une séquence, un graphe de branches.
+
+<LessonVideo
+  src="/videos/welcome.mp4"
+  title="La vidéo de bienvenue"
+  caption="La vidéo d'accueil du site, lue ici comme une vidéo de leçon."
+/>
+
+<LessonImage
+  src="/videos/welcome-poster.jpg"
+  alt="L'image d'accueil du site : le logo sur fond sombre."
+  caption="Une image avec sa légende, centrée avec une marge."
+  width={1280}
+  height={720}
+/>
+
+<ExternalLink
+  href="https://nmap.org/book/man.html"
+  description="Documentation officielle des options et techniques de scan"
+>
+  Nmap Reference Guide
+</ExternalLink>
+
+Pour en savoir plus, consulte la <ExternalLink href="https://owasp.org/www-project-top-ten/" variant="link">liste OWASP Top 10</ExternalLink>, le lien en ligne.
+
+<Diagram caption="Architecture d'une application web 3-tiers">
+flowchart LR
+  A(["Client"]) -->|"HTTPS"| B["Serveur Web"]
+  B --> C[("Base de données")]
+  B --> D["Cache Redis"]
+</Diagram>
+
+<Diagram caption="Handshake TCP - 3 phases">
+sequenceDiagram
+  participant C as Client
+  participant S as Serveur
+  C->>S: SYN (seq=100)
+  S->>C: SYN-ACK (seq=200, ack=101)
+  C->>S: ACK (ack=201)
+  Note over C,S: Connexion établie
+</Diagram>
+
+<Diagram>
+gitGraph
+  commit id: "init"
+  branch feature/auth
+  checkout feature/auth
+  commit id: "add login"
+  commit id: "add JWT"
+  checkout main
+  merge feature/auth id: "merge auth"
+  commit id: "deploy"
+</Diagram>
+
+## trouver la faille, repérer l'hameçonnage
+
+Deux exercices de lecture. Dans le premier, l'élève clique la ligne vulnérable puis nomme la faille ; dans le second, il clique chaque élément du message qui le trahit.
+
+<FindTheFlaw
+  id="flaw-vitrine-sqli"
+  title="Une requête à moitié paramétrée"
+  language="python"
+  code={`
+def connexion(cursor, login, mot_de_passe):
+    empreinte = hacher(mot_de_passe)
+    requete = "SELECT id FROM users WHERE login = '" + login + "' AND hash = ?"
+    cursor.execute(requete, (empreinte,))
+    return cursor.fetchone() is not None
+`}
+  line={3}
+  options={["Mot de passe stocké en clair", "Injection SQL", "Faille XSS", "Aucune : la requête est paramétrée"]}
+  correct={1}
+  explanation="Le login est collé dans le texte de la requête : avec alice' -- comme login, l'apostrophe referme la valeur et le reste passe en commentaire. Le ? ne protège que l'empreinte : chaque valeur venue de l'extérieur doit avoir son propre paramètre."
+  hint="Toutes les valeurs de la requête passent-elles par un paramètre ?"
+/>
+
+<PhishingEmail
+  id="phishing-vitrine-dgfip"
+  title="Un remboursement inattendu"
+  fromName="DGFiP - Finances publiques"
+  fromAddress="remboursement@impots-gouv-fr.net"
+  subject="Remboursement de 238,40 € en attente : action requise sous 48 h"
+  body={["Bonjour,", "Après le dernier calcul de votre impôt, vous êtes éligible à un remboursement de 238,40 €.", "Pour le recevoir, confirmez vos coordonnées bancaires sous 48 h. Passé ce délai, le remboursement sera annulé.", "Cordialement, le service des remboursements"]}
+  linkText="Confirmer mes coordonnées"
+  linkUrl="http://impots.gouv.fr.remboursement-dgfip.net/confirmation"
+  clues={[{ "part": "sender", "why": "L'adresse se termine par impots-gouv-fr.net, un domaine que n'importe qui peut acheter." }, { "part": "subject", "why": "Une somme précise, une action requise, un délai : l'urgence est là pour que tu agisses avant de réfléchir." }, { "part": "body-3", "why": "L'administration ne demande jamais tes coordonnées bancaires par courriel." }, { "part": "link", "why": "Le lien mène à remboursement-dgfip.net : impots.gouv.fr n'est qu'un sous-domaine placé devant pour tromper l'œil." }]}
+  conclusion="Ne clique pas et ne réponds pas. Signale-le, puis supprime-le ; pour vérifier, ouvre toi-même impots.gouv.fr."
+/>
+
+## bases de données
+
+Une vraie base SQLite dans le navigateur. Le bac à sable laisse écrire des requêtes et montre leur résultat ; le labo met un formulaire de connexion devant la base, avec le code du serveur sous les yeux, vulnérable puis corrigé.
+
+<SqlPlayground
+  id="sql-vitrine-union"
+  title="Une page produit qui en dit trop"
+  schema={`CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price INTEGER NOT NULL);
+INSERT INTO products (id, name, price) VALUES (10, 'Clavier mécanique', 89), (11, 'Souris', 25);
+CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL);
+INSERT INTO users (username, password, role) VALUES ('alice', 'secret123', 'user'), ('admin', 'Zx9!kQ2#vT', 'admin');`}
+  starterQuery="SELECT name, price FROM products WHERE id = 10"
+  task="Fais afficher par cette requête le produit 10 et, dans les mêmes deux colonnes, l'identifiant et le mot de passe de chaque compte."
+  expected={{ "rows": [["Clavier mécanique", 89], ["alice", "secret123"], ["admin", "Zx9!kQ2#vT"]] }}
+  hint="Ajoute à la fin de la requête : UNION SELECT username, password FROM users"
+/>
+
+<SqlInjectionLab
+  id="sql-vitrine-login"
+  title="Le formulaire de connexion"
+  schema={`CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL);
+INSERT INTO users (username, password, role) VALUES ('alice', 'secret123', 'user'), ('admin', 'Zx9!kQ2#vT', 'admin');`}
+  query="SELECT id, username, role FROM users WHERE username = '{login}' AND password = '{password}'"
+  fields={[{ "name": "login", "label": "Identifiant" }, { "name": "password", "label": "Mot de passe", "secret": true }]}
+  goal="Entre dans le compte dont le rôle est admin, sans connaître son mot de passe."
+  success={{ "column": "role", "equals": "admin" }}
+  hint="Dans Identifiant : admin' --  puis n'importe quoi dans le mot de passe."
+/>
+
+## git
+
+Un dépôt simulé, piloté au terminal, avec le graphe des branches redessiné à chaque commande.
+
+<GitSandbox
+  id="git-vitrine-cycle"
+  title="Le cycle d'un commit"
+  setup={["git init", "echo '<h1>Mon site</h1>' > index.html", "git add index.html", "git commit -m \"initial commit\"", "echo '<nav>Accueil | Contact</nav>' >> index.html"]}
+  task="index.html vient d'être modifié. Regarde l'état du dépôt, prépare le fichier, enregistre-le avec le message « add navigation menu », puis relis l'historique."
+  checks={[{ "label": "Le commit « add navigation menu » est dans main", "expect": "commit", "branch": "main", "message": "add navigation menu" }, { "label": "Ce commit contient le menu de index.html", "expect": "file", "branch": "main", "path": "index.html", "contains": "<nav>" }, { "label": "Plus rien à enregistrer : working tree clean", "expect": "clean" }]}
+  hints={["git status montre index.html modifié, pas encore préparé.", "git add index.html le prépare, puis git commit -m \"add navigation menu\" l'enregistre."]}
+/>
+
+## réseau
+
+Un atelier où l'on câble et adresse des machines, un exercice de calcul de sous-réseaux tiré au hasard, une trame à décortiquer octet par octet, et un pare-feu à régler.
+
+<NetworkLab
+  id="net-vitrine-un-reseau"
+  title="Un réseau, trois machines"
+  task="PC1 ne joint pas PC2 : lance un ping, puis compare leurs deux adresses. Corrige celle de PC2 pour qu'elle soit dans le réseau de PC1, 192.168.1.0/24."
+  devices={[{ "id": "sw1", "kind": "switch", "name": "SW1", "x": 260, "y": 40 }, { "id": "pc1", "kind": "pc", "name": "PC1", "x": 80, "y": 200, "addresses": { "eth0": "192.168.1.10/24" } }, { "id": "pc2", "kind": "pc", "name": "PC2", "x": 440, "y": 200, "addresses": { "eth0": "192.168.2.20/24" } }]}
+  links={[["pc1", "sw1"], ["pc2", "sw1"]]}
+  checks={[{ "label": "PC2 a une adresse dans 192.168.1.0/24", "expect": "address", "device": "PC2", "in": "192.168.1.0/24" }, { "label": "PC1 joint PC2", "expect": "ping", "from": "PC1", "to": "PC2" }]}
+  hints={["Les 24 premiers bits de l'adresse sont le réseau : 192.168.1 d'un côté, 192.168.2 de l'autre.", "Donne à PC2 une adresse 192.168.1.x/24, par exemple 192.168.1.20/24."]}
+/>
+
+<SubnetDrill
+  id="drill-vitrine"
+  title="Pose le calcul"
+  task="Réponds en notation décimale pointée pour une adresse ou un masque, en chiffres pour un nombre ou un préfixe. Tu as deux essais."
+  count={4}
+/>
+
+<PacketDissector
+  id="trame-vitrine"
+  title="Quatre enveloppes dans une trame"
+  task="Retrouve les quatre champs demandés, un par couche : à qui la trame est remise sur le réseau local, à quelle machine le paquet est destiné, à quelle application, et ce que dit la lettre."
+  frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" }, "ip": { "src": "192.168.1.42", "dst": "93.184.216.34", "id": 7238 }, "tcp": { "sport": 50324, "dport": 80, "seq": 1001, "ack": 5001, "flags": ["PSH", "ACK"], "window": 64240 }, "payload": "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n" }}
+  find={["eth.dst", "ip.dst", "tcp.dport", "payload.data"]}
+/>
+
+<FirewallLab
+  id="pare-feu-vitrine"
+  title="Tout fermé par défaut, puis ouvrir le nécessaire"
+  task="Bloque tout par défaut, puis autorise le port 443 depuis n'importe où et le port 22 seulement depuis l'adresse du bureau, 192.0.2.10."
+  probes={[{ "label": "Un visiteur ouvre le site en HTTPS", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Le bureau se connecte en SSH", "proto": "tcp", "from": "192.0.2.10", "port": 22, "expect": "accept" }, { "label": "Un inconnu tente SSH", "proto": "tcp", "from": "198.51.100.7", "port": 22, "expect": "block" }]}
+  hints={["La première ligne : policy drop. Tout ce qui suit est une ouverture.", "accept tcp port 443 ouvre le web à tout le monde ; accept tcp from 192.0.2.10 port 22 n'ouvre SSH qu'au bureau."]}
+/>
+
+## enquête
+
+Trois exercices d'investigation : une photo dont on lit les métadonnées pour la placer sur une carte, des journaux à filtrer jusqu'à l'attaquant, et un fichier à lire octet par octet.
+
+<PhotoOsint
+  id="osint-vitrine-legende"
+  title="Une légende à vérifier"
+  src="/osint/quais-inondes.jpg"
+  alt="Illustration : des quais inondés devant des façades colorées, une basilique blanche au sommet d'une colline boisée."
+  caption="Inondations à Marseille, hier matin. Partagez !"
+  task="Lis les métadonnées de la photo, place sur la carte l'endroit où elle a été prise, puis compare avec la légende."
+  answer={{ "latitude": 45.7623, "longitude": 4.827, "radiusKm": 15 }}
+  place="Lyon, sur les quais de Saône, sous la colline de Fourvière"
+  conclusion="La photo a été prise à Lyon le 21 mai 2024 : ni à Marseille, ni hier."
+  hints={["Regarde la ligne GPS Latitude : 45° 45′ N, c'est bien plus au nord que Marseille (43° 18′ N).", "La date de prise de vue est dans la ligne Date/Time Original."]}
+/>
+
+<LogHunt
+  id="logs-vitrine-force-brute"
+  title="La règle de corrélation, à la main"
+  task="Trouve l'adresse qui correspond à la règle « plus de vingt échecs puis un succès », le compte visé, et l'heure du succès."
+  events={[{ "time": "2026-01-10 03:14:02", "source": "sshd", "host": "web01", "ip": "203.0.113.9", "user": "admin", "action": "Accepted password" }, { "time": "2026-01-10 02:31:40", "source": "sshd", "host": "web01", "ip": "10.0.0.5", "user": "alice", "action": "Accepted password" }]}
+  series={[{ "count": 24, "from": "2026-01-10 03:09:00", "to": "2026-01-10 03:14:00", "source": "sshd", "hosts": ["web01"], "ips": ["203.0.113.9"], "users": ["admin"], "actions": ["Failed password"] }, { "count": 7, "from": "2026-01-10 02:30:00", "to": "2026-01-10 02:31:30", "source": "sshd", "hosts": ["web01"], "ips": ["10.0.0.5"], "users": ["alice"], "actions": ["Failed password"] }, { "count": 60, "from": "2026-01-10 02:30:00", "to": "2026-01-10 03:30:00", "source": "nginx", "hosts": ["web01"], "ips": ["198.51.100.23", "192.0.2.44"], "actions": ["GET / 200", "GET /contact 200", "POST /login 302"] }]}
+  questions={[{ "label": "Quelle adresse source correspond à la règle ?", "answer": "203.0.113.9", "hint": "Filtre sur Failed password, puis compte par adresse IP." }, { "label": "Quel compte a été visé ?", "answer": "admin" }, { "label": "À quelle heure la connexion a réussi depuis cette adresse ?", "answer": ["2026-01-10 03:14:02", "03:14:02", "03:14"] }]}
+/>
+
+<HexEditor
+  id="hex-vitrine-photo"
+  title="Une image à réparer"
+  filename="photo.png"
+  task="Remets la signature PNG, octet par octet, puis lis la taille de l'image."
+  bytes="00 00 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00"
+  repairs={[{ "label": "La signature PNG est rétablie", "offset": 0, "bytes": "89 50" }]}
+  questions={[{ "label": "Quelle est la taille de l'image ?", "answer": ["1x1", "1 x 1"], "hint": "Après IHDR : la largeur, puis la hauteur, sur quatre octets chacune." }]}
+/>
+
+## crypto et animation
+
+Un établi de chiffrement avec un message à déchiffrer, et une animation que l'on fait avancer étape par étape.
+
+<CryptoWorkshop
+  id="atelier-vitrine-xor"
+  title="Le XOR à la main"
+  tools={["xor", "hex"]}
+  input="BONJOUR"
+  challenge={{ "ciphertext": "79 73 67 6f 7e 78 63 7b 7f 6f", "answer": "SYMETRIQUE", "hint": "La clé est 42 : déchiffrer, c'est appliquer la même clé une seconde fois." }}
+/>
+
+<StepAnimation id="anim-vitrine-tcp" scene="tcp-handshake" caption="Trois segments avant le moindre octet de données." />
+
+## ordre et associations
+
+Deux exercices courts : remettre des éléments dans l'ordre, et apparier deux colonnes.
+
+<PutInOrder
+  id="ordre-vitrine-osi"
+  title="Les sept couches, du câble au programme"
+  task="Place les couches de la plus basse (1) à la plus haute (7)."
+  items={["Physique", "Liaison de données", "Réseau", "Transport", "Session", "Présentation", "Application"]}
+  explanation="De bas en haut : le signal, les trames, les adresses IP, les ports, puis le dialogue, le format et le programme."
+  hint="La couche 1 est la plus matérielle."
+/>
+
+<MatchPairs
+  id="paires-vitrine-ports"
+  title="Chaque port à son service"
+  task="Associe chaque numéro de port au service qui écoute dessus par convention."
+  pairs={[{ "left": "22", "right": "SSH" }, { "left": "53", "right": "DNS" }, { "left": "80", "right": "HTTP" }, { "left": "443", "right": "HTTPS" }]}
+  explanation="Des conventions écrites dans /etc/services."
+/>
+
+## un site en vrai PHP
+
+Un vrai PHP tourne dans le navigateur. L'élève attaque la page, puis corrige son code ; le bouton de vérification rejoue les attaques sur sa version.
+
+<PhpLab
+  id="php-vitrine-xss"
+  title="Le moteur de recherche du blog"
+  task="Le blog rappelle au visiteur ce qu'il a cherché. Envoie une recherche piégée et regarde ce que le navigateur ferait de la page, puis corrige le code PHP pour qu'aucune recherche ne puisse plus y glisser du code."
+  file="search.php"
+  code={`<?php
+$q = $_GET['q'] ?? '';
+$articles = ['Introduction à PHP', 'Les tableaux en PHP', 'Sécuriser un formulaire'];
+$trouves = array_filter($articles, fn ($titre) => $q === '' || stripos($titre, $q) !== false);
+?>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Blog</title>
+</head>
+<body>
+  <h1>Blog</h1>
+  <form method="get" action="/search.php">
+    <input name="q" value="<?php echo $q; ?>">
+    <button>Rechercher</button>
+  </form>
+  <p>Résultats pour : <?php echo $q; ?></p>
+  <ul>
+    <?php foreach ($trouves as $titre) { echo "<li>$titre</li>"; } ?>
+  </ul>
+</body>
+</html>
+`}
+  requests={[{ "label": "Recherche normale", "url": "/search.php?q=php" }, { "label": "Page sans recherche", "url": "/search.php" }]}
+  checks={[{ "kind": "seen", "label": "Une recherche a fait apparaître du code exécutable dans la page", "expect": { "executable": true } }, { "kind": "fixed", "label": "Une balise piégée dans la recherche ne s'exécute plus", "request": { "url": "/search.php?q=%3Cscript%3Ealert(1)%3C/script%3E" }, "expect": { "executable": false, "contains": "alert(1)" } }]}
+  hints={["htmlspecialchars($q, ENT_QUOTES, 'UTF-8') transforme les chevrons et les guillemets en entités : le navigateur les affiche, il ne les exécute plus."]}
+/>
+
+## récapitulatif
+
+Vingt-huit composants, tous rendus par la même page que les apprenants voient. Si l'un d'eux s'affiche mal ici, il s'affiche mal partout : c'est le moment de le corriger, avant qu'une leçon publiée ne le montre.
