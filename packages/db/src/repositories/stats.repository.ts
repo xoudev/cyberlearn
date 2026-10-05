@@ -26,6 +26,8 @@ export interface PublicCatalogPath extends FeaturedPath {
   track: "SKILL" | "CAREER";
   estimatedHours: number;
   hasCertificate: boolean;
+  /** The learners' average, null until somebody has rated the path. */
+  rating: { avg: number; count: number } | null;
 }
 
 export const statsRepository = {
@@ -103,6 +105,8 @@ export const statsRepository = {
         difficulty: true,
         estimatedHours: true,
         certificateTemplate: true,
+        avgRating: true,
+        ratingsCount: true,
         lessons: { select: { lesson: { select: { xpReward: true } } } },
       },
     });
@@ -119,6 +123,10 @@ export const statsRepository = {
       lessons: path.lessons.length,
       xp: path.lessons.reduce((sum, item) => sum + item.lesson.xpReward, 0),
       hasCertificate: path.certificateTemplate !== null,
+      rating:
+        path.avgRating !== null && path.ratingsCount > 0
+          ? { avg: path.avgRating, count: path.ratingsCount }
+          : null,
     }));
   },
 };

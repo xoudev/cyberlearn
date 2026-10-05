@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.7",
+    date: "2026-10-05",
+    title: "La note des parcours sur leurs cartes",
+    changes: [
+      {
+        type: "fixed",
+        text: "La note moyenne d'un parcours ne s'affichait que sur sa page et sur les cartes des parcours pas encore commencés. Elle figure désormais sur toutes ses cartes, en cours, certifié ou à découvrir, et sur le catalogue public.",
+      },
+    ],
+  },
+  {
     version: "3.6",
     date: "2026-10-05",
     title: "Les nouveautés et les paramètres passent dans la barre du haut",
