@@ -307,6 +307,23 @@ describe("PutInOrder and MatchPairs", () => {
   });
 });
 
+describe("CryptoWorkshop", () => {
+  it("accepts a bench with its tools and its challenge", async () => {
+    expect(
+      await checkLessonMdx(
+        '## Le XOR\n\n<CryptoWorkshop id="w" tools={["xor", "hex"]} input="BONJOUR" challenge={{ "ciphertext": "68 65", "answer": "BO" }} />',
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a tool it does not have, and says so", async () => {
+    const r = await checkLessonMdx('## Le XOR\n\n<CryptoWorkshop id="w" tools={["rot13"]} />');
+    if (r.ok) throw new Error("accepted an unknown tool");
+    expect(r.section).toBe("Le XOR");
+    expect(r.message).toContain("Atelier crypto : tools.0 : ");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

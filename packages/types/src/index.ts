@@ -23,3 +23,4 @@ export * from "./schemas/subnet-drill.schema.js";
 export * from "./schemas/packet-dissector.schema.js";
 export * from "./schemas/put-in-order.schema.js";
 export * from "./schemas/match-pairs.schema.js";
+export * from "./schemas/crypto-workshop.schema.js";

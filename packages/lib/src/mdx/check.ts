@@ -5,6 +5,7 @@ import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import {
   parseChallengeTests,
+  parseCryptoWorkshop,
   parseFindTheFlaw,
   parseGitSandbox,
   parseMatchPairs,
@@ -123,6 +124,7 @@ export const LESSON_COMPONENT_NAMES = [
   "PacketDissector",
   "PutInOrder",
   "MatchPairs",
+  "CryptoWorkshop",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -203,6 +205,10 @@ function MatchPairsStub(): null {
   return null;
 }
 STUBS.MatchPairs = MatchPairsStub;
+function CryptoWorkshopStub(): null {
+  return null;
+}
+STUBS.CryptoWorkshop = CryptoWorkshopStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -395,6 +401,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === MatchPairsStub) {
     const parsed = parseMatchPairs(props);
     if (!parsed.ok) return `Associe : ${parsed.problem}`;
+  }
+  if (node.type === CryptoWorkshopStub) {
+    const parsed = parseCryptoWorkshop(props);
+    if (!parsed.ok) return `Atelier crypto : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

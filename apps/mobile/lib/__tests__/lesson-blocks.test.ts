@@ -638,6 +638,41 @@ describe("PutInOrder and MatchPairs", () => {
   });
 });
 
+describe("CryptoWorkshop", () => {
+  it("is played in the app with the props the site reads", () => {
+    const lesson = [
+      "## Le XOR",
+      "",
+      "<CryptoWorkshop",
+      '  id="atelier-xor"',
+      '  title="Le XOR à la main"',
+      '  tools={["xor", "hex"]}',
+      '  input="BONJOUR"',
+      '  challenge={{ "ciphertext": "68 65", "answer": "BO", "hint": "La clé est 42." }}',
+      "/>",
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "crypto",
+        workshop: {
+          id: "atelier-xor",
+          title: "Le XOR à la main",
+          tools: ["xor", "hex"],
+          input: "BONJOUR",
+          challenge: { ciphertext: "68 65", answer: "BO", hint: "La clé est 42." },
+        },
+      },
+    ]);
+  });
+
+  it("shows a placeholder for a tool the site does not have", () => {
+    const wrong = '## A\n\n<CryptoWorkshop id="w" tools={["rot13"]} />';
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Atelier crypto" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

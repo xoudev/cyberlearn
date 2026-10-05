@@ -50,6 +50,16 @@ Tu vois bien la symétrie : une seule clé, deux sens. Mais ne te fie pas à cet
 Ce XOR à un octet est une illustration, rien de plus. Avec une clé aussi courte et toujours la même, on casse ce chiffrement en quelques secondes par analyse de fréquence. Ne l'utilise jamais pour protéger quoi que ce soit de réel.
 </Callout>
 
+Refais-le sans Python, à la main : l'outil XOR chiffre vers de l'hexadécimal et déchiffre depuis l'hexadécimal, avec la même clé dans les deux sens. Puis déchiffre le message : il a été chiffré avec la clé du code ci-dessus.
+
+<CryptoWorkshop
+  id="atelier-xor"
+  title="Le XOR à la main"
+  tools={["xor", "hex"]}
+  input="BONJOUR"
+  challenge={{ "ciphertext": "79 73 67 6f 7e 78 63 7b 7f 6f", "answer": "SYMETRIQUE", "hint": "La clé est celle du code ci-dessus, 42 : déchiffrer, c'est appliquer la même clé une seconde fois." }}
+/>
+
 ## AES, le vrai standard
 
 Le chiffrement symétrique sérieux, aujourd'hui, s'appelle AES (Advanced Encryption Standard). Il a été choisi en 2001 par l'institut américain NIST à l'issue d'un concours public, et depuis il s'est imposé partout : navigateurs, VPN, disques chiffrés, messageries.

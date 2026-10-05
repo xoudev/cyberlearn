@@ -1,13 +1,15 @@
 // Parses a lesson's contentMdx into native-renderable blocks. Lessons are MDX
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
-// NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, StepAnimation, SimulatedTerminal,
+// NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
+// StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
 import { sceneById } from "@cyberlearn/lib/animations/scenes";
 import {
+  type CryptoWorkshop,
   type FindTheFlaw,
   type GitSandbox,
   type MatchPairs,
@@ -15,6 +17,7 @@ import {
   type PhishingEmail,
   type PutInOrder,
   type SubnetDrill,
+  parseCryptoWorkshop,
   parseFindTheFlaw,
   parseGitSandbox,
   parseMatchPairs,
@@ -91,6 +94,11 @@ export type Block =
       /** A MatchPairs: the same shuffled right column as the site's, paired natively. */
       kind: "match";
       exercise: MatchPairs;
+    }
+  | {
+      /** A CryptoWorkshop: the same tools as the site's, run natively. */
+      kind: "crypto";
+      workshop: CryptoWorkshop;
     }
   | {
       /**
@@ -449,7 +457,8 @@ type StringPropName =
   | "query"
   | "caption"
   | "scene"
-  | "file";
+  | "file"
+  | "input";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -457,7 +466,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -775,6 +784,23 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "match", exercise: parsed.value }
         : { kind: "placeholder", label: "Associe" },
+    );
+  });
+  // CryptoWorkshop → the same bench, run natively; one the site would refuse
+  // is a placeholder.
+  text = replaceSelfClosing(text, "CryptoWorkshop", (tag) => {
+    const parsed = parseCryptoWorkshop({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      tools: jsonProp(tag, "tools"),
+      input: stringProp(tag, "input", 0) ?? undefined,
+      challenge: jsonProp(tag, "challenge"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "crypto", workshop: parsed.value }
+        : { kind: "placeholder", label: "Atelier crypto" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's
