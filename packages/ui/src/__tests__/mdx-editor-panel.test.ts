@@ -58,8 +58,11 @@ describe("the shared lesson editor", () => {
     const source = readFileSync(PANEL, "utf8");
     expect(source).toContain("export function MdxEditorPanel");
     // The guide is the part that rots when there are two copies: each entry is
-    // a component the lesson pipeline understands.
+    // a component the lesson pipeline understands, read from the registry.
     expect(source).toContain("GUIDE_SECTIONS");
+    expect(source).toContain('from "./mdx-guide-sections"');
+    const sections = readFileSync(join(dirname(PANEL), "mdx-guide-sections.ts"), "utf8");
+    expect(sections).toContain('from "@cyberlearn/lib/mdx-components"');
   });
 
   it("is reached through the package everywhere it is used", () => {

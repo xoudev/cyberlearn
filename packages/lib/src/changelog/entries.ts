@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.1",
+    date: "2026-10-05",
+    title: "Le guide de l'éditeur de leçons connaît tous les composants",
+    changes: [
+      {
+        type: "improved",
+        text: "Dans l'éditeur de leçons, de la console comme de la classe d'un professeur, le panneau Guide liste désormais les vingt-huit composants d'une leçon, par famille, chacun avec ce qu'il fait, un ou plusieurs exemples prêts à insérer et un lien vers sa section du guide de rédaction. Une recherche filtre par nom, scénario ou langage. L'aperçu nomme chaque composant au lieu d'afficher une balise.",
+      },
+    ],
+  },
+  {
     version: "3.0",
     date: "2026-10-05",
     title: "Un tableau de bord qui répond à une question",

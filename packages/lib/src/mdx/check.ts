@@ -134,6 +134,8 @@ export const LESSON_COMPONENT_NAMES = [
   "HexEditor",
 ] as const;
 
+export type LessonComponentName = (typeof LESSON_COMPONENT_NAMES)[number];
+
 // ── The check ────────────────────────────────────────────────────────────────
 
 export type LessonMdxCheck =
@@ -269,7 +271,7 @@ export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
  */
 export async function componentPropsOf(
   mdx: string,
-  name: (typeof LESSON_COMPONENT_NAMES)[number],
+  name: LessonComponentName,
 ): Promise<Record<string, unknown>[]> {
   const found: Record<string, unknown>[] = [];
   const capture = (): null => null;
