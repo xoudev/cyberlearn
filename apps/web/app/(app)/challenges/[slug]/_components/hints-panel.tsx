@@ -129,6 +129,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
 
           return (
             <div
+              className="card card--sunken"
               key={hint.id}
               style={{
                 display: "grid",
@@ -136,8 +137,6 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                 alignItems: "center",
                 gap: 14,
                 padding: "14px 16px",
-                border: "1px solid #1F1B47",
-                background: "rgba(5,4,26,0.6)",
                 cursor: canAfford && !isPending ? "pointer" : "default",
                 transition: "border-color 200ms ease, background 200ms ease",
               }}

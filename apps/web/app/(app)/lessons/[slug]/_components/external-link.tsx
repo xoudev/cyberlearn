@@ -100,6 +100,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
 
   return (
     <a
+      className="card card--sunken"
       href={href}
       target="_blank"
       rel="noopener noreferrer"
@@ -109,8 +110,6 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         gap: "14px",
         margin: "1.5rem 0",
         padding: "14px 18px",
-        background: "#0A0826",
-        border: "1px solid #1F1B47",
         textDecoration: "none",
         transition: "border-color 200ms ease, box-shadow 200ms ease",
         cursor: "pointer",

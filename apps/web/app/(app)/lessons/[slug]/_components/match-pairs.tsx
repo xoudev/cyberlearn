@@ -112,12 +112,11 @@ export function MatchPairs(props: Record<string, unknown>): React.ReactElement {
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Associe${exercise.title ? ` : ${exercise.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header

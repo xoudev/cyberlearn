@@ -210,12 +210,11 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Bac à sable Git${exercise.title ? ` : ${exercise.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -259,9 +258,8 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
         }}
       >
         <div
+          className="card card--sunken"
           style={{
-            border: "1px solid #1F1B47",
-            background: "#030219",
             display: "flex",
             flexDirection: "column",
           }}

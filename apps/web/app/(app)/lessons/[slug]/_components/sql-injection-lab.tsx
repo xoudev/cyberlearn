@@ -91,12 +91,11 @@ export function SqlInjectionLab(
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Laboratoire d'injection SQL${lab.title ? ` : ${lab.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${RED}`,
-        background: "#05041A",
       }}
     >
       <header

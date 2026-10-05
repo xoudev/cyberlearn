@@ -129,12 +129,11 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Calcul de sous-réseaux${drill.title ? ` : ${drill.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header

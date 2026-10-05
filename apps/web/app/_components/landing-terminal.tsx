@@ -98,9 +98,8 @@ export function LandingTerminal(): React.ReactElement {
 
   return (
     <div
+      className="card card--sunken"
       style={{
-        background: "#05041A",
-        border: "1px solid #1F1B47",
         overflow: "hidden",
         boxShadow:
           "0 0 0 1px #2A2560, 0 32px 64px rgba(0,36,255,0.15), 0 0 80px rgba(10,255,212,0.06)",

@@ -6,13 +6,12 @@ export default function LessonDetailLoading(): React.ReactElement {
     <div className="lesson-page">
       {/* Breadcrumb pill */}
       <div
+        className="card"
         style={{
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
           padding: "6px 14px",
-          border: "1px solid #2A2560",
-          background: "rgba(5,4,26,0.6)",
           marginBottom: 40,
         }}
       >
@@ -111,9 +110,8 @@ export default function LessonDetailLoading(): React.ReactElement {
           </div>
           {/* Code block */}
           <div
+            className="card card--sunken"
             style={{
-              background: "#0A0826",
-              border: "1px solid #1F1B47",
               borderLeft: "3px solid var(--cosmetic-accent)",
               borderRadius: 8,
             }}

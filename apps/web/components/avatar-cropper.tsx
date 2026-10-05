@@ -184,6 +184,7 @@ export function AvatarCropper({
       <div style={{ padding: "20px 24px 4px" }}>
         {/* Crop viewport */}
         <div
+          className="card card--sunken"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -195,10 +196,8 @@ export function AvatarCropper({
             maxWidth: "100%",
             margin: "0 auto",
             overflow: "hidden",
-            background: "#05041A",
             cursor: drag.current ? "grabbing" : "grab",
             touchAction: "none",
-            border: "1px solid #1F1B47",
           }}
         >
           {imgUrl && (

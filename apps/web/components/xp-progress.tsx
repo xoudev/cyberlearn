@@ -48,12 +48,11 @@ export function XpProgress({
             which now sits below the bar so it never overlaps the centered
             "Niv. N+1" label in the row above) */}
       <div
+        className="card card--sunken"
         style={{
           position: "relative",
           height: 10,
           marginBottom: 22,
-          background: "#05041A",
-          border: "1px solid #1F1B47",
           overflow: "visible",
         }}
       >

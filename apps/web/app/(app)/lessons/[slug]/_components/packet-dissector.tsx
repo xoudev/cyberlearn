@@ -102,12 +102,11 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
 
   return (
     <section
+      className="card card--sunken"
       aria-label={`Décortiquer un paquet${dissector.title ? ` : ${dissector.title}` : ""}`}
       style={{
         margin: "28px 0",
-        border: "1px solid #1F1B47",
         borderTop: `2px solid ${ACCENT}`,
-        background: "#05041A",
       }}
     >
       <header
@@ -169,9 +168,10 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
         </div>
 
         <div
+          className="card card--sunken"
           role="grid"
           aria-label="Octets de la trame"
-          style={{ overflowX: "auto", background: "#0A0826", border: "1px solid #1F1B47" }}
+          style={{ overflowX: "auto" }}
         >
           <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
             {rows.map((row) => (

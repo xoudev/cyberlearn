@@ -11,7 +11,7 @@ const MAX_ROWS = 50;
 export function SqlResultTable({ result }: { result: SqlResult }): React.ReactElement {
   const shown = result.values.slice(0, MAX_ROWS);
   return (
-    <div style={{ overflowX: "auto", border: "1px solid #1F1B47" }}>
+    <div className="card card--ghost" style={{ overflowX: "auto" }}>
       <table
         style={{
           borderCollapse: "collapse",

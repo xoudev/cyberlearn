@@ -121,12 +121,10 @@ export function Quiz({
 
   return (
     <section
-      className="cl-quiz"
+      className="cl-quiz card card--sunken"
       aria-label={questionNumber !== undefined ? `Question ${String(questionNumber)}` : "Question"}
       style={{
         margin: questionNumber !== undefined ? "0" : "56px 0 0",
-        border: "1px solid #1F1B47",
-        background: "rgba(10,8,38,0.5)",
         position: "relative",
       }}
     >

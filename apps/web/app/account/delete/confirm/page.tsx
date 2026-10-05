@@ -35,11 +35,10 @@ export default async function AccountDeleteConfirmPage({
       }}
     >
       <div
+        className="card"
         style={{
           maxWidth: 520,
           width: "100%",
-          background: "#0A0826",
-          border: "1px solid #2A2560",
           borderTop: "2px solid #FF4757",
           padding: "32px 30px",
         }}
@@ -104,13 +103,13 @@ export default async function AccountDeleteConfirmPage({
             Supprimer définitivement
           </button>
           <Link
+            className="card card--ghost"
             href="/dashboard"
             style={{
               display: "inline-flex",
               alignItems: "center",
               minHeight: 44,
               padding: "0 22px",
-              border: "1px solid #2A2560",
               color: "#B8B5D1",
               fontFamily: "monospace",
               fontWeight: 700,

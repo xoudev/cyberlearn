@@ -46,12 +46,11 @@ export function PlacementTestForm({
     <div style={{ width: "100%", maxWidth: 640 }}>
       {/* ── Intro card ──────────────────────────────────────────────────── */}
       <div
+        className="card"
         style={{
           position: "relative",
           marginBottom: 32,
           padding: "32px 36px 28px",
-          background: "rgba(10,8,38,0.85)",
-          border: "1px solid #2A2560",
         }}
       >
         <div
@@ -109,13 +108,12 @@ export function PlacementTestForm({
 
           {/* Stats grid */}
           <div
+            className="card"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(4, 1fr)",
               gap: 0,
-              border: "1px solid #2A2560",
               marginBottom: 22,
-              background: "rgba(5,4,26,0.5)",
             }}
           >
             {[

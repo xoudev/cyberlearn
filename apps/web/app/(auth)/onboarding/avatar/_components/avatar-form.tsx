@@ -59,13 +59,12 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
 
   return (
     <div
+      className="card"
       style={{
         position: "relative",
         width: "100%",
         maxWidth: 640,
         padding: "32px 36px 28px",
-        background: "rgba(10,8,38,0.85)",
-        border: "1px solid #2A2560",
       }}
     >
       {cropFile && (
@@ -339,7 +338,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           {/* Actions */}
           <div style={{ display: "flex", gap: 12 }}>
             <Link
-              className="mono-label mono-label--md"
+              className="mono-label mono-label--md card card--ghost"
               href="/onboarding"
               style={{
                 flex: "0 0 auto",
@@ -348,8 +347,6 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 display: "inline-flex",
                 alignItems: "center",
                 fontWeight: 600,
-                background: "transparent",
-                border: "1px solid #2A2560",
                 color: "#B8B5D1",
                 textDecoration: "none",
                 transition: "border-color 180ms ease, color 180ms ease",

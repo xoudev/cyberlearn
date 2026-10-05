@@ -984,6 +984,7 @@ function CompactCard({
 
   return (
     <div
+      className="card"
       style={{
         position: "relative",
         display: "flex",
@@ -991,8 +992,6 @@ function CompactCard({
         gap: 12,
         padding: 16,
         minHeight: 140,
-        background: "#0A0826",
-        border: "1px solid #2A2560",
         borderLeft: `3px solid ${catMeta.accent}`,
       }}
     >

@@ -73,7 +73,7 @@ export default function PathDetailLoading(): React.ReactElement {
       {/* path-wide progress bar */}
       <div className="pd2-prog">
         <Skeleton w={110} h={14} />
-        <div className="pd2-prog__bar" style={{ border: "1px solid #2a2560" }} />
+        <div className="pd2-prog__bar card card--ghost" />
         <Skeleton w={120} h={12} />
       </div>
 

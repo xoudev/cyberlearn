@@ -270,10 +270,9 @@ export function CodePlayground({
 
   return (
     <div
+      className="card card--sunken"
       style={{
         margin: "32px 0",
-        border: "1px solid #1F1B47",
-        background: "#0A0826",
         position: "relative",
       }}
     >

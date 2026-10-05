@@ -35,7 +35,7 @@ export default function RevisionsLoading(): React.ReactElement {
 
       {/* Review list */}
       <section style={{ marginBottom: 0 }}>
-        <div style={{ border: "1px solid #2A2560", background: "#0A0826", overflow: "hidden" }}>
+        <div className="card" style={{ overflow: "hidden" }}>
           {Array.from({ length: ROWS }).map((_, i) => (
             <div
               key={i}

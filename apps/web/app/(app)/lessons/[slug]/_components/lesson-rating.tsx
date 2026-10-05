@@ -275,10 +275,9 @@ export function LessonRating({
   // ── Full variant (default) ────────────────────────────────────────────────────
   return (
     <div
+      className="card card--sunken"
       style={{
         padding: "28px 32px",
-        background: "rgba(5,4,26,0.6)",
-        border: "1px solid #1F1B47",
         position: "relative",
       }}
     >

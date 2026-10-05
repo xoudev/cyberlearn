@@ -299,10 +299,9 @@ export default async function PlacementResultPage({
 
           {/* Scores panel */}
           <div
+            className="card"
             style={{
               position: "relative",
-              background: "rgba(10,8,38,0.85)",
-              border: "1px solid #2A2560",
               marginBottom: 24,
               overflow: "hidden",
             }}
@@ -455,10 +454,9 @@ export default async function PlacementResultPage({
             </div>
           ) : (
             <div
+              className="card"
               style={{
                 padding: "24px 28px",
-                background: "rgba(10,8,38,0.6)",
-                border: "1px solid #2A2560",
                 marginBottom: 24,
               }}
             >
@@ -510,13 +508,11 @@ export default async function PlacementResultPage({
             </Link>
             <Link
               href="/lessons"
-              className="btn-ghost mono-label mono-label--md"
+              className="btn-ghost mono-label mono-label--md card card--ghost"
               style={{
                 padding: "14px 20px",
                 fontWeight: 700,
-                background: "transparent",
                 color: "#B8B5D1",
-                border: "1px solid #2A2560",
                 textDecoration: "none",
               }}
             >

@@ -54,13 +54,12 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
     >
       {title && (
         <div
+          className="card"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
             padding: "6px 14px",
-            background: "rgba(5,4,26,0.85)",
-            border: "1px solid #2A2560",
             borderLeft: "3px solid var(--cosmetic-accent)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: "11px",

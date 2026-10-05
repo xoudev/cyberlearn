@@ -122,12 +122,11 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
   const wrap: Record<string, string> = { [SLOT_ATTR[type]]: code };
   return (
     <div
+      className="card card--sunken"
       {...wrap}
       style={{
         height: 56,
         borderRadius: 6,
-        border: "1px solid #1F1B47",
-        background: "#05041A",
         display: "grid",
         placeItems: "center",
         overflow: "hidden",
@@ -468,10 +467,8 @@ export function LockerClient({
         {/* Right: live preview */}
         <div
           {...previewAttrs}
-          className="casier-preview"
+          className="casier-preview card"
           style={{
-            border: "1px solid #2A2560",
-            background: "rgba(10,8,38,0.5)",
             padding: 24,
           }}
         >

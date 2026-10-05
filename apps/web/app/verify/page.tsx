@@ -79,12 +79,11 @@ export default function VerifyPage(): React.JSX.Element {
 
       {/* Framed card */}
       <div
+        className="card card--sunken"
         style={{
           position: "relative",
           width: "100%",
           maxWidth: 520,
-          background: "rgba(10,8,38,0.55)",
-          border: "1px solid #1F1B47",
           padding: "clamp(28px, 5vw, 44px)",
         }}
       >

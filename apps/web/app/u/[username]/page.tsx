@@ -377,10 +377,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
 
         {/* ── Stats strip ──────────────────────────────────────────────── */}
         <div
-          className="pub-stats"
+          className="pub-stats card"
           style={{
-            border: "1px solid #2A2560",
-            background: "rgba(5,4,26,0.5)",
             marginBottom: 56,
           }}
         >
@@ -470,7 +468,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
         {user.lessonProgress.length > 0 && (
           <section>
             <SectionLabel eyebrow="02 · activité" title="Leçons terminées récemment." />
-            <div style={{ border: "1px solid #2A2560", background: "rgba(10,8,38,0.4)" }}>
+            <div className="card">
               {user.lessonProgress.map((lp, i) => {
                 const cat = categoryMeta(lp.lesson.category);
                 const dateStr = lp.completedAt

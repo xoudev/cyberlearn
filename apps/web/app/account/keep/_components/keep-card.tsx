@@ -27,11 +27,10 @@ export function KeepCard({
       }}
     >
       <div
+        className="card card--sunken"
         style={{
           maxWidth: 520,
           width: "100%",
-          background: "rgba(5,4,26,0.8)",
-          border: "1px solid #1F1B47",
           borderTop: "2px solid #0AFFD4",
           padding: "32px 28px",
         }}
