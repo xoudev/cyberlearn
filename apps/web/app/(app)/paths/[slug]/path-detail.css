@@ -7,27 +7,8 @@
    ========================================================================== */
 
 .pd2 {
-  /* design tokens (values from the mockup's colors_and_type.css) */
-  --brand-blue: #0024ff;
-  --brand-blue-hover: #1f3bff;
-  --brand-turquoise: var(--cosmetic-accent);
-  --border: #2a2560;
-  --border-subtle: #1a1640;
-  --border-strong: #3d3785;
-  --fg-primary: #f5f5fa;
-  --fg-secondary: #b8b5d1;
-  --fg-tertiary: #7f7ba9;
-  --fg-disabled: #44406b;
-  --amber: #ffb547;
-  --red: #ff4d6d;
-  --font-display: var(--font-sans, "Geist", system-ui, sans-serif);
-  --font-body: var(--font-sans, "Inter", system-ui, sans-serif);
-  /* No --font-mono here: the layout sets it (next/font), and redeclaring it as
-     var(--font-mono, ...) is a cycle, which CSS resolves to nothing. Every
-     mono label under this root fell back to the sans font. */
-  --dur-base: 180ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
+  /* The variables (--fg-*, --border*, --brand-*, --amber, --font-*, --dur-*)
+     are the page vocabulary of globals.css, defined once for every page. */
   max-width: 1760px;
   width: 100%;
   margin: 0 auto;

@@ -3,6 +3,7 @@
 import React, { useState, useActionState } from "react";
 import { completeOnboarding } from "../_actions/complete-onboarding";
 import type { OnboardingActionState } from "../_actions/complete-onboarding";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 interface OnboardingFormProps {
   initialDisplayName: string;
@@ -10,23 +11,6 @@ interface OnboardingFormProps {
 }
 
 const initialState: OnboardingActionState = { success: false };
-
-function CornerBrackets(): React.ReactElement {
-  const s: React.CSSProperties = {
-    position: "absolute",
-    width: 14,
-    height: 14,
-    border: "1.5px solid #0AFFD4",
-  };
-  return (
-    <span style={{ position: "absolute", inset: 8, pointerEvents: "none" }} aria-hidden="true">
-      <span style={{ ...s, top: 0, left: 0, borderRight: "none", borderBottom: "none" }} />
-      <span style={{ ...s, top: 0, right: 0, borderLeft: "none", borderBottom: "none" }} />
-      <span style={{ ...s, bottom: 0, left: 0, borderRight: "none", borderTop: "none" }} />
-      <span style={{ ...s, bottom: 0, right: 0, borderLeft: "none", borderTop: "none" }} />
-    </span>
-  );
-}
 
 function Field({
   id,
@@ -182,7 +166,7 @@ export function OnboardingForm({
           opacity: 0.55,
         }}
       />
-      <CornerBrackets />
+      <CornerBrackets inset={8} thickness={1.5} />
 
       {/* Panel header */}
       <div

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { BracketCorners } from "../_components/BracketCorners";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { SectionHead } from "../_components/SettingsPrimitives";
 import { DeleteAccountSection } from "./_components/DeleteAccountSection";
 import { ExportDataButton } from "./_components/ExportDataButton";
@@ -43,7 +43,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
             padding: "18px 20px",
           }}
         >
-          <BracketCorners color="var(--cosmetic-accent)" />
+          <CornerBrackets size={20} color="var(--cosmetic-accent)" />
 
           {/* Eyebrow */}
           <div

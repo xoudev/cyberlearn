@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import { ClaimCertificateButton } from "./claim-certificate";
+import { Brackets } from "@/app/_components/corner-brackets";
 
 interface BossNodeProps {
   pathSlug: string;
@@ -15,17 +16,6 @@ interface BossNodeProps {
   certificateId: string | null;
   doneLessons: number;
   totalLessons: number;
-}
-
-function Brackets(): React.JSX.Element {
-  return (
-    <>
-      <span className="bk tl" />
-      <span className="bk tr" />
-      <span className="bk bl" />
-      <span className="bk br" />
-    </>
-  );
 }
 
 const MedalIcon = (

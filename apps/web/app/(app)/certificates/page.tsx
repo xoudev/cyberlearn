@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 export const metadata: Metadata = { title: "Mes certificats" };
 
@@ -25,38 +26,6 @@ const CAT_LABEL: Record<string, string> = {
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-
-function CornerBrackets({ color }: { color: string }): React.ReactElement {
-  return (
-    <>
-      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-        <span
-          key={pos}
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            width: 12,
-            height: 12,
-            [pos.startsWith("t") ? "top" : "bottom"]: -1,
-            [pos.endsWith("l") ? "left" : "right"]: -1,
-            borderColor: color,
-            borderStyle: "solid",
-            borderWidth: 0,
-            opacity: 0.7,
-            pointerEvents: "none",
-            ...(pos === "tl"
-              ? { borderTopWidth: 2, borderLeftWidth: 2 }
-              : pos === "tr"
-                ? { borderTopWidth: 2, borderRightWidth: 2 }
-                : pos === "bl"
-                  ? { borderBottomWidth: 2, borderLeftWidth: 2 }
-                  : { borderBottomWidth: 2, borderRightWidth: 2 }),
-          }}
-        />
-      ))}
-    </>
-  );
-}
 
 /** Gold hexagonal seal: same regular pointy-top geometry as the badge medallion. */
 function CertSeal(): React.ReactElement {
@@ -408,7 +377,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       : `0 0 12px color-mix(in oklab, ${GOLD} 55%, transparent)`,
                   }}
                 />
-                {!isRevoked && <CornerBrackets color={GOLD} />}
+                {!isRevoked && <CornerBrackets size={12} opacity={0.7} color={GOLD} />}
 
                 <div style={{ padding: "22px 24px 20px", flex: 1 }}>
                   {/* Header row: eyebrow + seal / revoked chip */}

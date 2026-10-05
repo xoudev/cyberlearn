@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { Brackets } from "./corner-brackets";
 
 export interface PathCatalogCardData {
   slug: string;
@@ -71,17 +72,6 @@ export function RatingStat({
       <b>{avg}</b>
       {withCount && <> · {rating.count} avis</>}
     </span>
-  );
-}
-
-function Brackets(): React.JSX.Element {
-  return (
-    <>
-      <span className="bk tl" />
-      <span className="bk tr" />
-      <span className="bk bl" />
-      <span className="bk br" />
-    </>
   );
 }
 

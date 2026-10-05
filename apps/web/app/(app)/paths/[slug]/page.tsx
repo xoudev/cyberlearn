@@ -11,6 +11,7 @@ import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
 import { PathRating } from "./_components/path-rating";
+import { Brackets } from "@/app/_components/corner-brackets";
 
 export async function generateMetadata({
   params,
@@ -44,17 +45,6 @@ const CAT_DEFAULT = { label: "?", color: "#B8B5D1", tagClass: "cyber" };
 const DIFF_DEFAULT = { label: "?", level: 1, color: "#B8B5D1", abbr: "beg" as const };
 
 // ── Shared markup ───────────────────────────────────────────────────────────────
-
-function Brackets(): React.JSX.Element {
-  return (
-    <>
-      <span className="bk tl" />
-      <span className="bk tr" />
-      <span className="bk bl" />
-      <span className="bk br" />
-    </>
-  );
-}
 
 const ARROW = (
   <svg

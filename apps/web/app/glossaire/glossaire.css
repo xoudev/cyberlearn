@@ -1,11 +1,5 @@
 .glossary-page {
-  /* The site's palette, scoped here: the path pages scope theirs the same way. */
-  --fg-primary: #f5f5fa;
-  --fg-secondary: #b8b5d1;
-  --fg-tertiary: #7f7ba9;
-  --bg-primary: #030219;
-  --border-subtle: #1a1640;
-  --brand-turquoise: #0affd4;
+  /* The variables are the page vocabulary of globals.css, defined once for every page. */
   min-height: 100vh;
   color: var(--fg-primary);
   background:

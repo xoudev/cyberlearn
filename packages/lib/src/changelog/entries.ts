@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.10",
+    date: "2026-10-05",
+    title: "Une seule palette pour tout le site",
+    changes: [
+      {
+        type: "fixed",
+        text: "La page introuvable, la page des comptes suspendus, le catalogue public et le forum lisaient des couleurs qui n'avaient jamais été définies pour eux. Tout le site parle désormais la même palette, définie une fois, les quatre pages qui en gardaient chacune une copie comprises. Les crochets d'angle des cartes et les boutons des panneaux de la barre du haut sont dessinés une seule fois.",
+      },
+    ],
+  },
+  {
     version: "3.9",
     date: "2026-10-05",
     title: "Les révisions reprennent une taille humaine",

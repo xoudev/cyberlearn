@@ -10,6 +10,7 @@ import type { Category } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { getRequestUser } from "@/lib/auth";
 import { AddFriendButton } from "@/components/add-friend-button";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -51,38 +52,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
-
-function CornerBrackets({ color }: { color: string }): React.ReactElement {
-  return (
-    <>
-      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-        <span
-          key={pos}
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            width: 14,
-            height: 14,
-            [pos.startsWith("t") ? "top" : "bottom"]: -1,
-            [pos.endsWith("l") ? "left" : "right"]: -1,
-            borderColor: color,
-            borderStyle: "solid",
-            borderWidth: 0,
-            opacity: 0.8,
-            pointerEvents: "none",
-            ...(pos === "tl"
-              ? { borderTopWidth: 2, borderLeftWidth: 2 }
-              : pos === "tr"
-                ? { borderTopWidth: 2, borderRightWidth: 2 }
-                : pos === "bl"
-                  ? { borderBottomWidth: 2, borderLeftWidth: 2 }
-                  : { borderBottomWidth: 2, borderRightWidth: 2 }),
-          }}
-        />
-      ))}
-    </>
-  );
-}
 
 function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): React.ReactElement {
   return (
@@ -221,7 +190,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             overflow: "hidden",
           }}
         >
-          <CornerBrackets color="#0AFFD4" />
+          <CornerBrackets opacity={0.8} color="#0AFFD4" />
           {/* Top strip */}
           <span
             aria-hidden="true"
