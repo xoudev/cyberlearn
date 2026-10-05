@@ -16,11 +16,8 @@ export function ChallengesWip(): React.ReactElement {
 
       {/* Eyebrow */}
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
           marginBottom: 14,
         }}
@@ -81,12 +78,9 @@ export function ChallengesWip(): React.ReactElement {
         }}
       >
         <div
+          className="mono-label mono-label--md"
           style={{
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#FFB020",
           }}
         >
@@ -97,7 +91,7 @@ export function ChallengesWip(): React.ReactElement {
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <Link
           href="/lessons"
-          className="btn-blue"
+          className="btn-blue mono-label mono-label--md"
           style={{
             position: "relative",
             display: "inline-flex",
@@ -107,11 +101,7 @@ export function ChallengesWip(): React.ReactElement {
             background: "#0024FF",
             color: "#fff",
             border: "1px solid #0024FF",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             textDecoration: "none",
             boxShadow: "0 0 20px rgba(0,36,255,0.45)",
           }}
@@ -128,12 +118,8 @@ export function ChallengesWip(): React.ReactElement {
         </Link>
         <Link
           href="/dashboard"
-          className="back-link"
+          className="back-link mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             textDecoration: "none",
             padding: "16px 8px",

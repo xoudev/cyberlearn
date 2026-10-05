@@ -48,16 +48,13 @@ function SectionHeader({
   const meta = rarityChrome(rarity);
   return (
     <div
+      className="mono-label mono-label--md"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 16,
         marginBottom: 22,
-        fontFamily: "var(--font-mono)",
         fontWeight: 700,
-        fontSize: 13,
-        letterSpacing: "0.24em",
-        textTransform: "uppercase",
         color: meta.secColor,
       }}
     >
@@ -198,14 +195,11 @@ export function BadgesCollection({
         >
           {/* Rarity breakdown */}
           <div
+            className="mono-label"
             style={{
               display: "flex",
               gap: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
               flexWrap: "wrap",
             }}
           >
@@ -234,14 +228,11 @@ export function BadgesCollection({
           <ProgressBar value={pct} size="md" tip label="Badges obtenus" style={{ maxWidth: 320 }} />
 
           <div
+            className="mono-label"
             style={{
               display: "flex",
               gap: 14,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
             }}
           >
             <span>
@@ -257,11 +248,8 @@ export function BadgesCollection({
         style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}
       >
         <span
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             marginRight: 6,
           }}
@@ -354,16 +342,7 @@ export function BadgesCollection({
       {/* Empty state when search returns nothing */}
       {visibleGroups.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#7F7BA9" }}>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
-            {"// Aucun badge trouvé"}
-          </p>
+          <p className="mono-label mono-label--md">{"// Aucun badge trouvé"}</p>
         </div>
       )}
     </div>

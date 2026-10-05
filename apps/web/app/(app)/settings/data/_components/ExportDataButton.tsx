@@ -42,6 +42,7 @@ export function ExportDataButton(): React.JSX.Element {
 
   return (
     <button
+      className="mono-label mono-label--md"
       type="button"
       onClick={() => {
         void handleExport();
@@ -52,11 +53,7 @@ export function ExportDataButton(): React.JSX.Element {
         alignItems: "center",
         gap: 8,
         padding: "8px 20px",
-        fontFamily: "var(--font-mono)",
         fontWeight: 600,
-        fontSize: 13,
-        letterSpacing: "0.05em",
-        textTransform: "uppercase",
         background: "transparent",
         border: "1px solid #0024FF",
         color: loading ? "#44406B" : "#F5F5FA",

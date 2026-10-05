@@ -712,11 +712,8 @@ export function NotesLibrary({
     >
       {/* Header */}
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.28em",
-          textTransform: "uppercase",
           color: "var(--cosmetic-accent)",
           display: "flex",
           alignItems: "center",
@@ -803,6 +800,7 @@ export function NotesLibrary({
             const color = f.key === "ALL" ? "var(--cosmetic-accent)" : CAT[f.key].color;
             return (
               <button
+                className="mono-label"
                 key={f.key}
                 type="button"
                 onClick={() => {
@@ -812,11 +810,7 @@ export function NotesLibrary({
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 7,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
                   fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
                   color: active ? "#05041A" : "#B8B5D1",
                   background: active ? color : "transparent",
                   border: `1px solid ${active ? color : "#2A2560"}`,
@@ -889,16 +883,13 @@ export function NotesLibrary({
           </span>
         ) : null}
         <button
+          className="mono-label"
           type="button"
           onClick={() => {
             setManageOpen((v) => !v);
           }}
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             color: manageOpen ? "#05041A" : "#8B88A8",
             background: manageOpen ? "var(--cosmetic-accent)" : "transparent",
             border: "1px dashed #2A2560",
@@ -909,15 +900,12 @@ export function NotesLibrary({
           ⚙ Gérer
         </button>
         <button
+          className="mono-label"
           type="button"
           onClick={exportAll}
           style={{
             marginLeft: "auto",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             color: "#B8B5D1",
             background: "transparent",
             border: "1px solid #2A2560",
@@ -983,14 +971,11 @@ export function NotesLibrary({
               }}
             />
             <button
+              className="mono-label"
               type="button"
               onClick={handleCreateFolder}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
                 fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
                 color: "#05041A",
                 background: "var(--cosmetic-accent)",
                 border: "1px solid var(--cosmetic-accent)",
@@ -1070,17 +1055,14 @@ export function NotesLibrary({
                   {countFor(f.id)} note{countFor(f.id) > 1 ? "s" : ""}
                 </span>
                 <button
+                  className="mono-label"
                   type="button"
                   onClick={() => {
                     handleDeleteFolder(f);
                   }}
                   aria-label={`Supprimer ${f.name}`}
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
                     fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
                     color: "#FF6B7A",
                     background: "transparent",
                     border: "1px solid rgba(255,71,87,0.4)",
@@ -1140,15 +1122,12 @@ export function NotesLibrary({
                   }}
                 >
                   <span
+                    className="mono-label mono-label--xs"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 7,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9.5,
                       fontWeight: 700,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
                       color: cat.color,
                     }}
                   >
@@ -1341,15 +1320,12 @@ export function NotesLibrary({
                         }}
                       >
                         <span
+                          className="mono-label mono-label--xs"
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 7,
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 9.5,
                             fontWeight: 700,
-                            letterSpacing: "0.14em",
-                            textTransform: "uppercase",
                             color: cat.color,
                           }}
                         >

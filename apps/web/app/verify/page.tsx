@@ -137,11 +137,8 @@ export default function VerifyPage(): React.JSX.Element {
 
         {/* Eyebrow */}
         <div
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.22em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             marginBottom: 12,
             display: "flex",
@@ -195,6 +192,7 @@ export default function VerifyPage(): React.JSX.Element {
 
       {/* Footer badges */}
       <div
+        className="mono-label"
         style={{
           width: "100%",
           maxWidth: 520,
@@ -202,10 +200,6 @@ export default function VerifyPage(): React.JSX.Element {
           flexWrap: "wrap",
           alignItems: "center",
           gap: "8px 16px",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
           color: "#44406B",
         }}
       >

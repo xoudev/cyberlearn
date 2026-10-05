@@ -77,17 +77,14 @@ export function LandingClient({
         title="CyberLearn en 30 secondes"
         actions={
           <Link
+            className="mono-label"
             href="/register"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
               padding: "13px 22px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               background: "#0024FF",
               border: "1px solid #0024FF",
               color: "#fff",
@@ -145,14 +142,11 @@ export function LandingClient({
           <div>
             {/* Eyebrow */}
             <div
+              className="mono-label"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 28,
                 padding: "6px 12px",
@@ -219,17 +213,14 @@ export function LandingClient({
 
             <div className="landing-cta-row" style={{ marginBottom: 32 }}>
               <Link
+                className="mono-label mono-label--md"
                 href="/register"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "15px 28px",
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   background: "#0024FF",
                   border: "1px solid #0024FF",
                   color: "#fff",
@@ -257,17 +248,13 @@ export function LandingClient({
                 onClick={() => {
                   setDemoOpen(true);
                 }}
-                className="btn-ghost"
+                className="btn-ghost mono-label mono-label--md"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "15px 28px",
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                   background: "transparent",
                   border: "1px solid #1F1B47",
                   color: "#B8B5D1",
@@ -287,16 +274,12 @@ export function LandingClient({
               </button>
               <Link
                 href="/catalogue"
-                className="btn-ghost"
+                className="btn-ghost mono-label mono-label--md"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "15px 28px",
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                   background: "transparent",
                   border: "1px solid #1F1B47",
                   color: "#B8B5D1",
@@ -321,6 +304,7 @@ export function LandingClient({
           }}
         >
           <div
+            className="mono-label mono-label--md landing-stats-strip"
             style={{
               maxWidth: 1320,
               margin: "0 auto",
@@ -329,12 +313,7 @@ export function LandingClient({
               alignItems: "center",
               flexWrap: "wrap",
               gap: 0,
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
             }}
-            className="landing-stats-strip"
           >
             {[
               { num: String(stats.domains), label: "Domaines" },
@@ -368,11 +347,8 @@ export function LandingClient({
           {/* Section header */}
           <div style={{ maxWidth: 720, marginBottom: 64 }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.24em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 16,
                 display: "flex",
@@ -567,11 +543,8 @@ export function LandingClient({
                   >
                     <div>
                       <div
+                        className="mono-label mono-label--xs"
                         style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 9,
-                          letterSpacing: "0.2em",
-                          textTransform: "uppercase",
                           color: "#0AFFD4",
                           marginBottom: 10,
                         }}
@@ -692,11 +665,8 @@ export function LandingClient({
         >
           <div style={{ maxWidth: 720, marginBottom: 56 }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.24em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 16,
                 display: "flex",
@@ -801,12 +771,9 @@ export function LandingClient({
                     }}
                   >
                     <span
+                      className="mono-label mono-label--xs"
                       style={{
-                        fontFamily: "var(--font-mono)",
                         fontWeight: 700,
-                        fontSize: 9.5,
-                        letterSpacing: "0.2em",
-                        textTransform: "uppercase",
                         color: color,
                         background: `${color}14`,
                         border: `1px solid ${color}44`,
@@ -816,11 +783,8 @@ export function LandingClient({
                       {tag}
                     </span>
                     <span
+                      className="mono-label mono-label--xs"
                       style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 9,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
                         color: "#7F7BA9",
                       }}
                     >
@@ -917,11 +881,8 @@ export function LandingClient({
           />
           <div style={{ position: "relative" }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 24,
               }}
@@ -955,17 +916,14 @@ export function LandingClient({
               ?
             </h2>
             <Link
+              className="mono-label mono-label--md"
               href="/register"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 12,
                 padding: "18px 36px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 13,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 background: "#0024FF",
                 border: "1px solid #0024FF",
                 color: "#fff",
@@ -1046,12 +1004,8 @@ export function LandingClient({
                 <a
                   key={label}
                   href={href}
-                  className="footer-link"
+                  className="footer-link mono-label"
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
                     color: "#7F7BA9",
                     textDecoration: "none",
                   }}

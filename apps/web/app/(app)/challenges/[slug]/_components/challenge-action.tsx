@@ -156,12 +156,9 @@ function FlagForm({
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
           color: "#7F7BA9",
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
           marginBottom: 4,
         }}
       >
@@ -204,6 +201,7 @@ function FlagForm({
           }}
         />
         <button
+          className="mono-label"
           type="submit"
           disabled={pending}
           style={{
@@ -213,11 +211,7 @@ function FlagForm({
             padding: "11px 24px",
             background: pending ? "#1F1B47" : "#0024FF",
             color: "#fff",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             border: "none",
             cursor: pending ? "not-allowed" : "pointer",
             whiteSpace: "nowrap",
@@ -247,12 +241,9 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
           color: "#7F7BA9",
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
           marginBottom: 4,
         }}
       >
@@ -275,6 +266,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
       )}
 
       <button
+        className="mono-label mono-label--md"
         type="submit"
         disabled={pending}
         style={{
@@ -288,11 +280,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
             : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
           color: pending ? "#7F7BA9" : "var(--cosmetic-accent)",
           border: `1px solid ${pending ? "#2A2560" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 12,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           cursor: pending ? "not-allowed" : "pointer",
           alignSelf: "flex-start",
         }}

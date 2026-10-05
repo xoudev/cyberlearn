@@ -41,6 +41,7 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
       <>
         {held && <HeldNotice />}
         <button
+          className="mono-label"
           type="button"
           onClick={() => {
             setOpen(true);
@@ -50,11 +51,7 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
             alignItems: "center",
             gap: 8,
             padding: "10px 20px",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             background: "transparent",
             border: "1px solid #2A2560",
             color: "#B8B5D1",
@@ -91,11 +88,8 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
       }}
     >
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           color: "var(--cosmetic-accent)",
           marginBottom: 4,
         }}
@@ -266,6 +260,7 @@ export function AcceptAnswerButton({
 
   return (
     <button
+      className="mono-label"
       type="button"
       disabled={isPending || isAccepted}
       onClick={() => {
@@ -279,10 +274,6 @@ export function AcceptAnswerButton({
         alignItems: "center",
         gap: 4,
         padding: "4px 10px",
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
         background: isAccepted
           ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
           : "transparent",

@@ -384,14 +384,11 @@ export function ScriptRunner({
         }}
       >
         <span
+          className="mono-label"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 10,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
             color: "#B8B5D1",
             fontWeight: 600,
           }}
@@ -412,12 +409,9 @@ export function ScriptRunner({
           Python Sandbox
         </span>
         <span
+          className="mono-label mono-label--xs"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
             color: "var(--cosmetic-accent)",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             fontWeight: 700,
             padding: "4px 8px",
             border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
@@ -555,6 +549,7 @@ export function ScriptRunner({
       >
         {/* Run button */}
         <button
+          className="mono-label"
           type="button"
           disabled={!canRun}
           onClick={handleRun}
@@ -564,11 +559,7 @@ export function ScriptRunner({
             gap: 10,
             padding: "0 22px",
             minHeight: 46,
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
             background: canRun ? "#0024FF" : "#1A1840",
             color: canRun ? "#fff" : "#3F3D5C",
             border: "none",
@@ -584,16 +575,13 @@ export function ScriptRunner({
 
         {/* Status */}
         <div
+          className="mono-label"
           style={{
             flex: 1,
             display: "flex",
             alignItems: "center",
             gap: 12,
             padding: "0 16px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: dotColor,
           }}
         >
@@ -657,6 +645,7 @@ export function ScriptRunner({
       {/* Flag row - conditionally rendered */}
       {isCompleted ? (
         <div
+          className="mono-label mono-label--md"
           style={{
             borderTop: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
             background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
@@ -664,12 +653,8 @@ export function ScriptRunner({
             display: "flex",
             alignItems: "center",
             gap: 12,
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
             fontWeight: 700,
             color: "var(--cosmetic-accent)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
           }}
         >
           <span
@@ -686,30 +671,24 @@ export function ScriptRunner({
         </div>
       ) : isLocked ? (
         <div
+          className="mono-label"
           style={{
             borderTop: "1px solid #1F1B47",
             background: "rgba(5,4,26,0.5)",
             padding: "16px 20px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             color: "#7F7BA9",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
           }}
         >
           Challenge verrouillé · complète les prérequis
         </div>
       ) : attemptsExhausted ? (
         <div
+          className="mono-label"
           style={{
             borderTop: "1px solid rgba(255,77,109,0.2)",
             background: "rgba(255,77,109,0.04)",
             padding: "16px 20px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             color: "#FF4D6D",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
           }}
         >
           Plus de tentatives disponibles
@@ -727,16 +706,13 @@ export function ScriptRunner({
         >
           {/* Flag label */}
           <span
+            className="mono-label"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
               padding: "0 18px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               fontWeight: 700,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
               color: "#FF4D6D",
               borderRight: "1px solid #1F1B47",
               background: "rgba(255,77,109,0.08)",
@@ -786,16 +762,13 @@ export function ScriptRunner({
 
           {/* Validate button */}
           <button
+            className="mono-label"
             type="submit"
             disabled={flagPending}
             style={{
               padding: "0 22px",
               minHeight: 50,
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
               background: flagPending ? "#2A1520" : "#FF4D6D",
               color: "#fff",
               border: "none",

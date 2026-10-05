@@ -158,12 +158,9 @@ export function ShareDialog({
           groups.map(([groupId, group]) => (
             <div key={groupId} style={{ marginBottom: 18 }}>
               <div
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   fontWeight: 700,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   marginBottom: 8,
                 }}
@@ -244,11 +241,8 @@ export function ShareDialog({
                           </span>
                           {p.kind === "TEACHER" && (
                             <span
+                              className="mono-label mono-label--xs"
                               style={{
-                                fontFamily: "var(--font-mono)",
-                                fontSize: 9.5,
-                                letterSpacing: "0.14em",
-                                textTransform: "uppercase",
                                 color: "#6E8BFF",
                               }}
                             >
@@ -259,17 +253,14 @@ export function ShareDialog({
                       </label>
                       {p.holds && (
                         <button
+                          className="mono-label"
                           type="button"
                           disabled={busy}
                           onClick={() => {
                             takeBack(p.id);
                           }}
                           style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10,
                             fontWeight: 700,
-                            letterSpacing: "0.08em",
-                            textTransform: "uppercase",
                             color: "#FF6B7A",
                             background: "transparent",
                             border: "1px solid rgba(255,71,87,0.4)",

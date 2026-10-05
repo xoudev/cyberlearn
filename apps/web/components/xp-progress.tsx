@@ -19,15 +19,12 @@ export function XpProgress({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div
+        className="mono-label"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.06em",
           color: "#7F7BA9",
-          textTransform: "uppercase",
         }}
       >
         <span

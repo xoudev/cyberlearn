@@ -287,11 +287,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             >
               <TierBadge tier={tier.tier} />
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                 }}
               >
@@ -305,12 +302,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   than a block of content. */}
               {primaryClass && (
                 <Link
+                  className="mono-label"
                   href="/my-class"
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
                     color: "#7F7BA9",
                     textDecoration: "none",
                     display: "inline-flex",
@@ -365,14 +359,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             )}
 
             <div
+              className="mono-label"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
               }}
             >
@@ -450,11 +441,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
             {/* Eyebrow */}
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 14,
                 display: "flex",
@@ -472,16 +460,13 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               />
               Récapitulatif
               <span
+                className="mono-label"
                 style={{
                   marginLeft: "auto",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 5,
                   color: "var(--cosmetic-accent)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                 }}
               >
                 <span
@@ -520,17 +505,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
             {/* Meta row */}
             <div
+              className="mono-label"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
                 paddingTop: 14,
                 borderTop: "1px dashed #1F1B47",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
                 color: "#7F7BA9",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
               }}
             >
               <span>
@@ -558,18 +540,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           {/* Edit profile button */}
           <Link
             href="/profile/edit"
-            className="btn-ghost"
+            className="btn-ghost mono-label"
             style={{
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
               padding: "10px 18px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#B8B5D1",
               background: "transparent",
               border: "1px solid #2A2560",
@@ -640,11 +618,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           </span>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <span
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
               }}
             >
@@ -727,12 +702,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             {level}
           </span>
           <sub
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#7F7BA9",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               marginTop: 10,
             }}
           >
@@ -797,12 +769,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             </span>
           </div>
           <sub
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#7F7BA9",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               marginTop: 10,
             }}
           >
@@ -825,12 +794,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             {completedLessonsCount}
           </span>
           <sub
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#7F7BA9",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               marginTop: 10,
             }}
           >
@@ -856,12 +822,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             {badgesCount}
           </span>
           <sub
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#7F7BA9",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               marginTop: 10,
             }}
           >
@@ -888,12 +851,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             {certsCount}
           </span>
           <sub
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#7F7BA9",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
               marginTop: 10,
             }}
           >
@@ -906,11 +866,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       {/* ── Série quotidienne ───────────────────────────────────────────────── */}
       <div style={{ marginBottom: 56 }}>
         <h2
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             margin: "0 0 16px",
           }}

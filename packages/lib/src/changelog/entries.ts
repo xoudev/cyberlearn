@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.19",
+    date: "2026-10-05",
+    title: "Les petits libellés, à la même taille",
+    changes: [
+      {
+        type: "improved",
+        text: "Les petits libellés en capitales (un surtitre, une méta, une étiquette) avaient vingt-cinq tailles et espacements différents d'une page à l'autre. Ils en ont trois, les mêmes partout.",
+      },
+    ],
+  },
+  {
     version: "3.18",
     date: "2026-10-05",
     title: "Les mêmes coins, les mêmes cadres",

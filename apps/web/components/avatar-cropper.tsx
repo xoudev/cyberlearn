@@ -132,6 +132,7 @@ export function AvatarCropper({
   const actions = (
     <>
       <button
+        className="mono-label"
         type="button"
         onClick={onCancel}
         disabled={busy}
@@ -142,17 +143,14 @@ export function AvatarCropper({
           background: "transparent",
           border: "1px solid #2A2560",
           color: "#B8B5D1",
-          fontFamily: "var(--font-mono)",
           fontWeight: 600,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           cursor: busy ? "not-allowed" : "pointer",
         }}
       >
         Annuler
       </button>
       <button
+        className="mono-label"
         type="button"
         onClick={handleConfirm}
         disabled={busy || !natural}
@@ -162,11 +160,7 @@ export function AvatarCropper({
           border: "1px solid #0024FF",
           background: "#0024FF",
           color: "#fff",
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
           cursor: busy || !natural ? "not-allowed" : "pointer",
           opacity: busy || !natural ? 0.6 : 1,
         }}
@@ -243,15 +237,12 @@ export function AvatarCropper({
 
         {/* Zoom */}
         <label
+          className="mono-label"
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
             margin: "16px 0 4px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
           }}
         >

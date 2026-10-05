@@ -73,14 +73,11 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
 
         {/* Header */}
         <div
+          className="mono-label"
           style={{
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
             color: "var(--cosmetic-accent)",
             marginBottom: 28,
           }}
@@ -155,11 +152,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
 
           <div>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 4,
               }}
@@ -222,12 +216,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           </div>
 
           <div
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               textAlign: "right",
             }}
           >
@@ -241,6 +232,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         {/* Quiz score: the note the catalogue will show for this lesson. */}
         {result.quizScore !== null && (
           <div
+            className="mono-label"
             style={{
               display: "flex",
               alignItems: "baseline",
@@ -249,10 +241,6 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               marginBottom: 16,
               border: "1px solid #1F1B47",
               background: "rgba(5,4,26,0.6)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
             }}
           >
@@ -275,11 +263,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         {hasBadges && (
           <div style={{ marginBottom: 16 }}>
             <div
+              className="mono-label mono-label--xs"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 8,
               }}
@@ -341,6 +326,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         {/* Footer */}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button
+            className="mono-label"
             type="button"
             onClick={onClose}
             style={{
@@ -348,17 +334,14 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               background: "transparent",
               border: "1px solid #2A2560",
               color: "#B8B5D1",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               fontWeight: 600,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               cursor: "pointer",
             }}
           >
             {"// fermer"}
           </button>
           <Link
+            className="mono-label"
             href={primaryUrl}
             onClick={onClose}
             style={{
@@ -366,11 +349,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
               border: "none",
               color: "#ffffff",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",

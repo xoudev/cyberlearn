@@ -68,15 +68,11 @@ export function PublicNavbar(): React.JSX.Element {
         </Link>
         <Link
           href="/login"
-          className="landing-nav-signin"
+          className="landing-nav-signin mono-label mono-label--md"
           style={{
             alignItems: "center",
             padding: "11px 20px",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             border: "1px solid #1F1B47",
             background: "transparent",
             color: "#B8B5D1",
@@ -87,17 +83,14 @@ export function PublicNavbar(): React.JSX.Element {
           Connexion
         </Link>
         <Link
+          className="mono-label mono-label--md"
           href="/register"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
             padding: "11px 20px",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             background: "#0024FF",
             border: "1px solid #0024FF",
             color: "#fff",

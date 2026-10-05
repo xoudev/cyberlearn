@@ -129,12 +129,9 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
         }}
       >
         <h2
+          className="mono-label mono-label--md"
           style={{
-            fontFamily: "var(--font-mono)",
             fontWeight: 600,
-            fontSize: 13,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "#F5F5FA",
             margin: 0,
           }}
@@ -142,11 +139,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> CHOISIR TON AVATAR
         </h2>
         <span
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
           }}
         >
@@ -267,11 +261,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                     unoptimized
                   />
                   <span
+                    className="mono-label mono-label--xs"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
                       color: isSelected ? "#0AFFD4" : "#7F7BA9",
                     }}
                   >
@@ -307,6 +298,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
             </div>
           )}
           <button
+            className="mono-label mono-label--md"
             type="button"
             disabled={uploading || isPending}
             onClick={() => fileInputRef.current?.click()}
@@ -321,11 +313,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               background: "transparent",
               border: "1px dashed #7F7BA9",
               color: uploading ? "#7F7BA9" : "#B8B5D1",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 11.5,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               cursor: uploading || isPending ? "not-allowed" : "pointer",
               marginBottom: 22,
               transition: "border-color 120ms ease, color 120ms ease",
@@ -351,6 +339,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
           {/* Actions */}
           <div style={{ display: "flex", gap: 12 }}>
             <Link
+              className="mono-label mono-label--md"
               href="/onboarding"
               style={{
                 flex: "0 0 auto",
@@ -358,11 +347,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 padding: "0 20px",
                 display: "inline-flex",
                 alignItems: "center",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
                 color: "#B8B5D1",
@@ -382,6 +367,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
             </Link>
 
             <button
+              className="mono-label mono-label--md"
               type="submit"
               disabled={isPending}
               style={{
@@ -392,11 +378,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 gap: 12,
                 height: 52,
                 padding: "0 20px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 cursor: isPending ? "not-allowed" : "pointer",
                 border: "1px solid #0024FF",
                 background: "#0024FF",
