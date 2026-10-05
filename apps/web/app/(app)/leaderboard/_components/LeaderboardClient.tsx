@@ -8,18 +8,13 @@ import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { Crumb } from "@/components/crumb";
+import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** "28 septembre": when the current season closes, in the header strip. */
 const SEASON_END = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
-
-function getTier(level: number): string {
-  if (level >= 28) return "Maître";
-  if (level >= 20) return "Expert";
-  if (level >= 10) return "Adepte";
-  return "Novice";
-}
 
 // ── Style constants ────────────────────────────────────────────────────────────
 
@@ -58,7 +53,7 @@ function PodiumCard({
     : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       (RK_COLORS[rank] ?? RK_COLORS[3]!);
   const mono = getMonogram(entry.displayName, entry.username);
-  const tier = getTier(entry.level);
+  const tier = rankName(entry.level);
   const isGold = rank === 1 && !isMe;
 
   return (
@@ -368,7 +363,7 @@ function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
         <div className={styles.identity}>
           <strong title={handle}>@{handle}</strong>
           <span>
-            Niveau {entry.level} · {getTier(entry.level)}
+            Niveau {entry.level} · {rankName(entry.level)}
           </span>
         </div>
       </div>
@@ -536,37 +531,7 @@ export function LeaderboardClient({
 
       <div className="page-container">
         {/* Breadcrumb */}
-        <div
-          style={{
-            ...MONO,
-            fontSize: 12,
-            letterSpacing: "0.04em",
-            color: "#7F7BA9",
-            marginBottom: 28,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-          <span>~/</span>
-          <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-          <span style={{ color: "#44406B" }}>/</span>
-          <span style={{ color: "#F5F5FA", fontWeight: 500 }}>classement</span>
-          <span
-            className="cl-caret"
-            style={{
-              display: "inline-block",
-              width: 7,
-              height: 13,
-              background: "var(--cosmetic-accent)",
-              boxShadow: "0 0 8px var(--cosmetic-accent)",
-              marginLeft: 4,
-              verticalAlign: -2,
-              animation: "cl-blink 1s step-end infinite",
-            }}
-          />
-        </div>
+        <Crumb segments={["classement"]} />
 
         {/* Head */}
         <div

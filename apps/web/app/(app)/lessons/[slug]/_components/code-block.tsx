@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Copy, Check } from "lucide-react";
+import { useCopyToClipboard } from "@/components/copy-button";
 
 interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
   children?: React.ReactNode;
@@ -18,7 +19,7 @@ export function CodeBlock({
   ...rest
 }: CodeBlockProps): React.ReactElement {
   const ref = useRef<HTMLPreElement>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   let language = "code";
   if (children !== null && typeof children === "object" && "props" in (children as object)) {
@@ -29,17 +30,8 @@ export function CodeBlock({
     if (match?.[1]) language = match[1];
   }
 
-  async function handleCopy() {
-    const text = ref.current?.textContent ?? "";
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch {
-      // clipboard API not available
-    }
+  function handleCopy(): void {
+    copy(ref.current?.textContent ?? "");
   }
 
   const displayName = filename ?? language;
@@ -112,9 +104,7 @@ export function CodeBlock({
         {/* Right: copy button */}
         <button
           type="button"
-          onClick={() => {
-            void handleCopy();
-          }}
+          onClick={handleCopy}
           style={{
             display: "flex",
             alignItems: "center",

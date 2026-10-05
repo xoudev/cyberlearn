@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.12",
+    date: "2026-10-05",
+    title: "Les mêmes briques d'une page à l'autre",
+    changes: [
+      {
+        type: "improved",
+        text: "Le fil d'Ariane, l'encart « rien à afficher », les tuiles de chiffres et le bouton « copier » sont désormais les mêmes sur toutes les pages, au pixel près : ils étaient dessinés jusqu'à dix-sept fois chacun, chaque fois un peu autrement. Le classement nomme les rangs comme le tableau de bord.",
+      },
+    ],
+  },
+  {
     version: "3.11",
     date: "2026-10-05",
     title: "Les paramètres s'ouvrent en volet",

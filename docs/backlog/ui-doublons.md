@@ -19,10 +19,10 @@
 | # | Doublon | PR |
 | --- | --- | --- |
 | ~~1~~ | ~~La série : `streak-panel` (profil) et `streak-week-card` (tableau de bord)~~ | #408 |
-| ~~2~~ | ~~Le vocabulaire de page recopié dans `exam.css`, `path-detail.css`, `paths-catalog-v2.css`, `glossaire.css`, et lu sans définition par `not-found`, `banned`, `catalogue`, `forum`, `story`~~ | cette PR |
-| ~~3~~ | ~~Les crochets d'angle, neuf copies (`Brackets`, `CornerBrackets`, `BracketCorners`)~~ | cette PR |
-| ~~4~~ | ~~Le bouton et la fermeture des panneaux de la barre du haut (amis, cloche)~~ | cette PR |
-| ~~5~~ | ~~Trois cents lignes de classes mortes dans `globals.css`~~ | cette PR |
+| ~~2~~ | ~~Le vocabulaire de page recopié dans `exam.css`, `path-detail.css`, `paths-catalog-v2.css`, `glossaire.css`, et lu sans définition par `not-found`, `banned`, `catalogue`, `forum`, `story`~~ | #410 |
+| ~~3~~ | ~~Les crochets d'angle, neuf copies (`Brackets`, `CornerBrackets`, `BracketCorners`)~~ | #410 |
+| ~~4~~ | ~~Le bouton et la fermeture des panneaux de la barre du haut (amis, cloche)~~ | #410 |
+| ~~5~~ | ~~Trois cents lignes de classes mortes dans `globals.css`~~ | #410 |
 
 ## B. Composants
 
@@ -31,18 +31,18 @@
 | 6 | Huit fenêtres modales écrites à la main (fond, Échap, `role=dialog`) à côté de `modal-shell.tsx`, qui n'a qu'un seul client | `level-up-modal`, `lesson-complete-modal`, `avatar-cropper`, `share-dialog`, `note-reader`, `DeleteAccountSection`, `ban-notice`, `WrappedStory` | Toutes sur `ModalShell` ; le bloc « Niveau N atteint » une seule fois |
 | 7 | L'avatar redessiné en ligne au lieu d'`AvatarView` | `navbar` (`GlyphAvatar`), `profile/page` (`HexAvatar`), `u/[username]`, `lesson-author`, `leaderboard/shared`, `locker-client` | `AvatarView` partout, une seule fonction d'initiales |
 | 8 | Barres et pastilles de niveau : `XPBar` et `LevelBadge` de `packages/ui` inutilisés, six puces « LVL· / NIV· / Niv. » en ligne, deux barres d'XP en ligne | `profile`, `u/[username]`, `lesson-qa`, `lesson-complete-modal`, `student-class`, `teacher-classes`, `LeaderboardClient`, `friends-panel` | Les composants partagés, ou les supprimer s'ils ne conviennent pas |
-| 9 | Trois nomenclatures de rang : `computeTier`, `rankName`, `getTier` local du classement | `packages/lib`, `LeaderboardClient` | Une seule, celle du tableau de bord et de la barre latérale |
+| ~~9~~ | ~~Trois nomenclatures de rang : `computeTier`, `rankName`, `getTier` local du classement~~ | `LeaderboardClient` lit `rankName` ; `computeTier` reste le palier (Bronze à Élite), une autre chose | cette PR |
 | 10 | La rareté redéfinie localement (`RARITY_*`), les cartes de badge en deux copies | `profile/page`, `locker-client`, `badges-collection`, `profile-content` | `BADGE_RARITY_*` de `packages/ui`, une seule `BadgeCard` |
-| 11 | Six tuiles de statistique sans composant commun | `StatCell` (profil), `MiniStat` (wrapped), `.dash-fig`, `u/[username]`, `locker-client` | Une `StatTile` sur `.dash-fig` |
-| 12 | Le fil d'Ariane « ~/cyberlearn/… » écrit en ligne dans cinq pages à côté de `PageHeader` | `paths-collection`, `paths/[slug]`, `paths/guide`, `exam-flow`, `challenges-client` | `PageHeader` ou un `Crumb` |
-| 13 | Trois `EmptyState` et cinq classes d'état vide | `lessons/page`, `paths-collection`, `LeagueClient`, `cls-empty`, `fo-empty`, `gs-empty`, `dash-rev-empty`, `public-catalogue__empty` | Un composant, une classe |
+| ~~11~~ | ~~Six tuiles de statistique sans composant commun~~ | `components/stat-tile.tsx`, trois tailles ; `.dash-fig` reste le chiffre en ligne du tableau de bord | cette PR |
+| ~~12~~ | ~~Le fil d'Ariane « ~/cyberlearn/… » écrit en ligne dans dix-sept pages à côté de `PageHeader`~~ | `components/crumb.tsx` dans quatorze pages et `PageHeader` ; restent `verify/[publicId]` (barre d'en-tête), `account/delete/*` (pages publiques autonomes) | cette PR |
+| ~~13~~ | ~~Trois `EmptyState` et cinq classes d'état vide~~ | `components/empty-state.tsx` pour les trois composants, le forum et le catalogue public ; `cls-empty`, `gs-empty`, `dash-rev-empty` restent des notes d'une ligne dans leur mise en page | cette PR |
 | 14 | Les boutons : 264 `<button>` dont une centaine stylés en ligne, huit familles de classes (`.btn-*`, `.dash-btn`, `.cls-btn`, `.fp-btn`, `.cc__btn`, `.fo-btn`, `.pg-btn`, `.q-btn`), des objets `primaryButton` / `smallButton` recopiés dans quatorze labos de leçon avec cinq paddings différents | partout | Une famille de classes (primaire, fantôme, petit), les labos sur elle |
-| 15 | Copier dans le presse-papiers écrit trois fois | `challenges/copy-button`, `code-block`, `WrappedClient` | Un `CopyButton` |
+| ~~15~~ | ~~Copier dans le presse-papiers écrit trois fois~~ | `components/copy-button.tsx` : `useCopyToClipboard` et `CopyButton` | cette PR |
 | 16 | Les tables `DIFF_META` / `CATEGORY_META` / `CAT_LABELS` dans une quinzaine de fichiers | `certificates`, `next-bar`, `lessons/[slug]`, `revisions`, `reviews-due`, `dashboard/page`, `challenges/[slug]`, `global-search`, `u/[username]`, `lesson-card`, `path-catalog-card`, `paths-collection` | Une table dans `@cyberlearn/lib`, lue aussi par l'app |
 | 17 | Barres de progression en ligne dans dix-sept fichiers, trois seulement avec `role="progressbar"` | `quests-panel`, `mission-card`, `paths-collection`, `badges-collection`, `exam-flow`, `boss-node`, `student-class`, `teacher-classes`, `challenges-client`, `locker-client` | `PathProgress` de `packages/ui`, ou une `Bar` |
 | 18 | Onglets et pastilles de filtre écrits à la main, un seul avec `role=tablist` | `profile-content`, `locker-client`, `LeaderboardClient`, `teacher-classes`, `paths-collection`, `challenges-client`, `badges-collection`, `lessons/page` | Un `Tabs` et un `Pills` |
-| 19 | Deux composants nommés `MissionCard` pour deux choses | `dashboard/_components`, `paths/[slug]/page` | Renommer celui du parcours |
-| 20 | `cn` en double (`apps/web/lib/utils.ts` et `packages/ui`), `BADGE_RARITY_ORDER` et `CompactCard` sans client | `apps/web/lib`, `packages/ui` | Supprimer les copies et les exports morts |
+| ~~19~~ | ~~Deux composants nommés `MissionCard` pour deux choses~~ | celui du parcours s'appelle `PathLessonCard` | cette PR |
+| ~~20~~ | ~~`cn` en double (`apps/web/lib/utils.ts` et `packages/ui`), `BADGE_RARITY_ORDER` et `CompactCard` sans client~~ | `cn` de `@cyberlearn/ui` partout, `BADGE_RARITY_ORDER` supprimé ; `CompactCard` reste, la page `/dev/components` l'affiche | cette PR |
 
 ## C. Styles
 

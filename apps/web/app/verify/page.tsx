@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { VerifyForm } from "./_components/verify-form";
+import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = {
   title: "Vérifier un certificat",
@@ -74,37 +75,7 @@ export default function VerifyPage(): React.JSX.Element {
       }}
     >
       {/* Terminal breadcrumb */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          letterSpacing: "0.03em",
-          color: "#7F7BA9",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "#0AFFD4" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#2A2560" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>verify</span>
-        <span
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 14,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
-            marginLeft: 4,
-            animation: "blink 1s step-end infinite",
-          }}
-        />
-      </div>
+      <Crumb segments={["verify"]} />
 
       {/* Framed card */}
       <div

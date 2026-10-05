@@ -983,30 +983,6 @@
   margin: 0 auto;
   padding: 56px 40px 100px;
 }
-.exam-root .r-crumb {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--fg-tertiary);
-  margin-bottom: 36px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.exam-root .r-crumb .p {
-  color: var(--teal);
-}
-.exam-root .r-crumb b {
-  color: var(--fg-secondary);
-  font-weight: 500;
-}
-.exam-root .r-crumb .slash {
-  color: var(--fg-disabled);
-}
-.exam-root .r-crumb .current {
-  color: var(--fg-primary);
-}
 .exam-root .r-hero {
   position: relative;
   display: grid;

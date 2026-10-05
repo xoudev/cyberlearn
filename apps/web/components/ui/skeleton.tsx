@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@cyberlearn/ui";
 import "./skeleton.css";
 
 type Radius = "pill" | "circle" | number;

@@ -7,6 +7,8 @@ import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/fi
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Brackets } from "@/app/_components/corner-brackets";
+import { Crumb } from "@/components/crumb";
+import { EmptyState } from "@/components/empty-state";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -426,10 +428,12 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
-function EmptyState({ filterLabel }: { filterLabel: string }): React.JSX.Element {
+function PathsEmpty({ filterLabel }: { filterLabel: string }): React.JSX.Element {
   return (
-    <div className="pc2-empty">
-      <div className="pc2-empty__glyph">
+    <EmptyState
+      title="Aucun parcours trouvé"
+      message={`// 0 résultat pour le filtre « ${filterLabel} »`}
+      glyph={
         <svg
           width="48"
           height="48"
@@ -444,13 +448,12 @@ function EmptyState({ filterLabel }: { filterLabel: string }): React.JSX.Element
           <path d="M8 18 H40 M14 25 H22 M14 30 H30" />
           <path d="M30 28 L40 38" />
         </svg>
-      </div>
-      <h3 className="pc2-empty__title">Aucun parcours trouvé</h3>
-      <p className="pc2-empty__sub">{`// 0 résultat pour le filtre « ${filterLabel} »`}</p>
+      }
+    >
       <span className="pc2-empty__cmd">
         <span className="p">$</span> reset --filter=all
       </span>
-    </div>
+    </EmptyState>
   );
 }
 
@@ -488,14 +491,7 @@ export function PathsCollection({
     <div className="pc2-root">
       <div className="pc2">
         {/* breadcrumb */}
-        <div className="pc2-crumb">
-          <span className="p">$</span>
-          <span>~/</span>
-          <b>cyberlearn</b>
-          <span className="slash">/</span>
-          <span className="current">parcours</span>
-          <span className="caret" />
-        </div>
+        <Crumb segments={["parcours"]} />
 
         {/* header */}
         <header className="pc2-head">
@@ -598,7 +594,7 @@ export function PathsCollection({
           </label>
         </div>
 
-        {filtered.length === 0 && <EmptyState filterLabel={filterLabel} />}
+        {filtered.length === 0 && <PathsEmpty filterLabel={filterLabel} />}
 
         {hero && (
           <>

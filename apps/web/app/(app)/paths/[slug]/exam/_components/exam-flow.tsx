@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "../exam.css";
 import { Brackets } from "@/app/_components/corner-brackets";
+import { Crumb } from "@/components/crumb";
 import {
   type StartQuizResult,
   type SubmitQuizResult,
@@ -819,15 +820,7 @@ function ResultsScreen(props: {
 
       <div className={`r-app ${passed ? "is-pass" : "is-fail"}`}>
         <div className="r-wrap">
-          <div className="r-crumb">
-            <span className="p">$</span>
-            <span>~/</span>
-            <b>cyberlearn</b>
-            <span className="slash">/</span>
-            <span>{pathSlug}</span>
-            <span className="slash">/</span>
-            <span className="current">résultats</span>
-          </div>
+          <Crumb segments={[pathSlug, "résultats"]} caret={false} />
 
           <section className="r-hero">
             <div className="r-gauge">

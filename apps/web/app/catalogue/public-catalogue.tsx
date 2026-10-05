@@ -6,6 +6,7 @@ import { PathCatalogCard } from "@/app/_components/path-catalog-card";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import "@/app/(app)/paths/_components/paths-catalog-v2.css";
 import "./catalogue.css";
+import { EmptyState } from "@/components/empty-state";
 
 type Category = "ALL" | "CYBERSEC" | "DEV" | "NETWORK";
 
@@ -114,10 +115,10 @@ export function PublicCatalogue({ paths }: { paths: PublicCatalogPath[] }): Reac
             </div>
           </section>
         ) : (
-          <div className="public-catalogue__empty">
-            <h2>Aucun parcours trouvé</h2>
-            <p>Modifie les filtres ou réessaie dans quelques instants.</p>
-          </div>
+          <EmptyState
+            title="Aucun parcours trouvé"
+            message="Modifie les filtres ou réessaie dans quelques instants."
+          />
         )}
       </main>
     </div>

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import type { PodLadderEntry } from "@cyberlearn/db";
 import { DIVISION_LABEL, type LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
+import { EmptyState } from "@/components/empty-state";
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 
@@ -263,35 +264,6 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           › TOI
         </span>
       )}
-    </div>
-  );
-}
-
-function EmptyState({ title, message }: { title: string; message: string }): React.JSX.Element {
-  return (
-    <div
-      style={{
-        border: "1px dashed #2A2560",
-        background: "rgba(5,4,26,0.5)",
-        padding: "64px 32px",
-        textAlign: "center",
-      }}
-    >
-      <p
-        style={{
-          ...DISPLAY,
-          fontWeight: 700,
-          fontSize: 22,
-          letterSpacing: "-0.01em",
-          color: "#F5F5FA",
-          margin: "0 0 10px",
-        }}
-      >
-        {title}
-      </p>
-      <p style={{ ...MONO, fontSize: 13, color: "#7F7BA9", letterSpacing: "0.04em", margin: 0 }}>
-        {message}
-      </p>
     </div>
   );
 }

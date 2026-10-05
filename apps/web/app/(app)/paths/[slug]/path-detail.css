@@ -24,48 +24,6 @@
 }
 
 /* ---------- breadcrumb ---------- */
-.pd2 .pd2-crumb {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--fg-tertiary);
-  margin-bottom: 26px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.pd2 .pd2-crumb .p {
-  color: var(--brand-turquoise);
-}
-.pd2 .pd2-crumb b {
-  color: var(--fg-secondary);
-  font-weight: 500;
-}
-.pd2 .pd2-crumb a {
-  color: var(--fg-secondary);
-  text-decoration: none;
-}
-.pd2 .pd2-crumb a:hover {
-  color: var(--brand-turquoise);
-}
-.pd2 .pd2-crumb .slash {
-  color: var(--fg-disabled);
-}
-.pd2 .pd2-crumb .current {
-  color: var(--fg-primary);
-  font-weight: 500;
-}
-.pd2 .pd2-crumb .caret {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--brand-turquoise);
-  box-shadow: 0 0 8px var(--brand-turquoise);
-  margin-left: 4px;
-  vertical-align: -2px;
-  animation: pd2-blink 1s step-end infinite;
-}
 
 /* bracket corners (shared) */
 .pd2 .bk {
@@ -1271,7 +1229,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pd2 .pd2-crumb .caret,
   .pd2 .cp-row--active .cp-node,
   .pd2 .pulse-dot {
     animation: none !important;

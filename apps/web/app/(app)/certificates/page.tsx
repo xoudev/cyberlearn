@@ -4,6 +4,7 @@ import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = { title: "Mes certificats" };
 
@@ -89,37 +90,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
   return (
     <div className="page-container">
       {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          ...MONO,
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#7F7BA9",
-          marginBottom: 26,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>certificats</span>
-        <span
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "var(--cosmetic-accent)",
-            boxShadow: "0 0 8px var(--cosmetic-accent)",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-        />
-      </div>
+      <Crumb segments={["certificats"]} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="catalog-header-grid" style={{ marginBottom: 40 }}>

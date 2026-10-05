@@ -13,7 +13,7 @@ import { env } from "@/lib/env";
 import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
 import { ChallengeAction } from "./_components/challenge-action";
 import { HintsPanel } from "./_components/hints-panel";
-import { CopyButton } from "./_components/copy-button";
+import { CopyButton } from "@/components/copy-button";
 import { ScriptRunner } from "./_components/script-runner";
 import type { DisplayStatus } from "../_components/challenges-client";
 

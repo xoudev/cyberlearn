@@ -24,41 +24,6 @@
 }
 
 /* ---------- breadcrumb ---------- */
-.pc2-root .pc2-crumb {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--fg-tertiary);
-  margin-bottom: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.pc2-root .pc2-crumb .p {
-  color: var(--brand-turquoise);
-}
-.pc2-root .pc2-crumb b {
-  color: var(--fg-secondary);
-  font-weight: 500;
-}
-.pc2-root .pc2-crumb .slash {
-  color: var(--fg-disabled);
-}
-.pc2-root .pc2-crumb .current {
-  color: var(--fg-primary);
-  font-weight: 500;
-}
-.pc2-root .pc2-crumb .caret {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--brand-turquoise);
-  box-shadow: 0 0 8px var(--brand-turquoise);
-  margin-left: 4px;
-  vertical-align: -2px;
-  animation: pc2-blink 1s step-end infinite;
-}
 
 /* ==========================================================================
    HEADER
@@ -1439,32 +1404,6 @@
 /* ==========================================================================
    EMPTY STATE
    ========================================================================== */
-.pc2-root .pc2-empty {
-  position: relative;
-  margin-top: 8px;
-  padding: 64px 40px;
-  border: 1px dashed var(--border-strong);
-  background: rgba(5, 4, 26, 0.4);
-  text-align: center;
-}
-.pc2-root .pc2-empty__glyph {
-  color: var(--fg-disabled);
-  margin-bottom: 18px;
-}
-.pc2-root .pc2-empty__title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  color: var(--fg-primary);
-  margin: 0 0 8px;
-}
-.pc2-root .pc2-empty__sub {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--fg-tertiary);
-  margin: 0 0 20px;
-}
 .pc2-root .pc2-empty__cmd {
   display: inline-block;
   font-family: var(--font-mono);
@@ -1501,7 +1440,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pc2-root .pc2-crumb .caret,
   .pc2-root .state-chip__dot {
     animation: none !important;
   }

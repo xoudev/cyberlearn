@@ -14,7 +14,6 @@ export const BADGE_RARITY_LABELS: Record<BadgeRarity, string> = {
 };
 
 /** Canonical display order (rarest first). */
-export const BADGE_RARITY_ORDER: BadgeRarity[] = ["LEGENDARY", "EPIC", "RARE", "COMMON"];
 
 const rarityBadgeVariants = cva(
   "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide",

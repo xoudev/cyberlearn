@@ -66,7 +66,7 @@ export default function PathsLoading(): React.ReactElement {
     <div className="pc2-root">
       <div className="pc2">
         {/* breadcrumb */}
-        <div className="pc2-crumb">
+        <div className="pg-crumb">
           <Skeleton w={210} h={12} />
         </div>
 

@@ -6,7 +6,6 @@ export { LevelBadge } from "./components/level-badge.js";
 export {
   RarityBadge,
   BADGE_RARITY_LABELS,
-  BADGE_RARITY_ORDER,
   type BadgeRarity,
 } from "./components/rarity-badge.js";
 export {

@@ -12,6 +12,7 @@ import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
 import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
+import { Crumb } from "@/components/crumb";
 
 export async function generateMetadata({
   params,
@@ -75,7 +76,7 @@ interface CardLesson {
 /** One mission card on the serpentine path. Done = whole card links to the
  *  lesson; active = card is static with an inner "Accéder" CTA link; locked =
  *  static, non-clickable. */
-function MissionCard({
+function PathLessonCard({
   lesson,
   state,
   num,
@@ -304,16 +305,7 @@ export default async function PathDetailPage({
   return (
     <div className="pd2">
       {/* breadcrumb */}
-      <div className="pd2-crumb">
-        <span className="p">$</span>
-        <span>~/</span>
-        <b>cyberlearn</b>
-        <span className="slash">/</span>
-        <Link href="/paths">parcours</Link>
-        <span className="slash">/</span>
-        <span className="current">{slug}</span>
-        <span className="caret" />
-      </div>
+      <Crumb segments={[{ label: "parcours", href: "/paths" }, slug]} />
 
       {/* hero */}
       <section className="pd2-hero">
@@ -463,7 +455,7 @@ export default async function PathDetailPage({
                       className={`cp-row cp-row--${st} ${side}${globalIdx === 0 ? " cp-row--first" : ""}`}
                     >
                       {side === "is-left" ? (
-                        <MissionCard lesson={lesson} state={st} num={num} />
+                        <PathLessonCard lesson={lesson} state={st} num={num} />
                       ) : (
                         <div className="cp-cell cp-cell--empty" />
                       )}
@@ -473,7 +465,7 @@ export default async function PathDetailPage({
                         </span>
                       </div>
                       {side === "is-right" ? (
-                        <MissionCard lesson={lesson} state={st} num={num} />
+                        <PathLessonCard lesson={lesson} state={st} num={num} />
                       ) : (
                         <div className="cp-cell cp-cell--empty" />
                       )}

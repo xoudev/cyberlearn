@@ -1,4 +1,5 @@
 import React from "react";
+import { Crumb } from "./crumb";
 
 /**
  * The chrome every page of the app opens with: a prompt-shaped breadcrumb, an
@@ -9,8 +10,8 @@ import React from "react";
  * written later and simply did not repeat them. Extracted so the next page
  * gets the pattern by using it rather than by remembering it.
  *
- * The pages that still inline their own are left alone here; moving them is a
- * change to those pages and belongs with the next reason to touch them.
+ * The breadcrumb is `Crumb`, which the pages with a header of their own use
+ * too.
  */
 export function PageHeader({
   crumb,
@@ -26,14 +27,7 @@ export function PageHeader({
 }): React.ReactElement {
   return (
     <header>
-      <div className="pg-crumb">
-        <span className="pg-crumb__sigil">$</span>
-        <span>~/</span>
-        <b>cyberlearn</b>
-        <span className="pg-crumb__sep">/</span>
-        <span className="pg-crumb__leaf">{crumb}</span>
-        <span className="pg-crumb__caret" aria-hidden="true" />
-      </div>
+      <Crumb segments={[crumb]} />
 
       <div className="pg-eyebrow">{eyebrow}</div>
       <h1 className="pg-title">{title}</h1>

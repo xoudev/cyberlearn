@@ -22,7 +22,7 @@ export default function PathDetailLoading(): React.ReactElement {
   return (
     <div className="pd2">
       {/* breadcrumb (mono, 12px, ~13px tall) */}
-      <div className="pd2-crumb">
+      <div className="pg-crumb">
         <Skeleton w={220} h={12} />
       </div>
 

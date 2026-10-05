@@ -7,6 +7,7 @@ import { GuideQuestions } from "@/app/_components/path-guide/guide-questions";
 import { GuideSuggestions } from "@/app/_components/path-guide/guide-suggestions";
 import { AnswerRecap } from "@/app/_components/path-guide/guide-answers";
 import "../_components/paths-catalog-v2.css";
+import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = { title: "Trouver mon parcours" };
 
@@ -28,18 +29,7 @@ export default async function PathGuidePage({
   return (
     <div className="pc2-root">
       <div className="pc2">
-        <div className="pc2-crumb">
-          <span className="p">$</span>
-          <span>~/</span>
-          <b>cyberlearn</b>
-          <span className="slash">/</span>
-          <Link href="/paths" style={{ color: "inherit", textDecoration: "none" }}>
-            parcours
-          </Link>
-          <span className="slash">/</span>
-          <span className="current">guide</span>
-          <span className="caret" />
-        </div>
+        <Crumb segments={[{ label: "parcours", href: "/paths" }, "guide"]} />
 
         <div style={{ marginBottom: 28 }}>
           <h1 className="pc2-title">
