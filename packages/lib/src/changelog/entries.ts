@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.17",
+    date: "2026-10-05",
+    title: "Les mêmes onglets, les mêmes filtres",
+    changes: [
+      {
+        type: "improved",
+        text: "Les onglets (profil, casier, classement, classe) et les pastilles de filtre (parcours, défis, badges) sont les mêmes d'une page à l'autre, et se présentent au lecteur d'écran comme des onglets et des filtres. Les pastilles s'allument dans la couleur de ce qu'elles filtrent : une catégorie, une rareté.",
+      },
+    ],
+  },
+  {
     version: "3.16",
     date: "2026-10-05",
     title: "Une seule barre de progression",

@@ -1,5 +1,6 @@
 "use client";
 
+import { Tabs } from "@/components/tabs";
 import React, { useState } from "react";
 import Link from "next/link";
 import type { FriendsBoard, LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
@@ -588,62 +589,12 @@ export function LeaderboardClient({
             </h1>
           </div>
 
-          {/* Filter pills */}
-          <div
-            style={{
-              display: "inline-flex",
-              flexWrap: "wrap",
-              maxWidth: "100%",
-              border: "1px solid #2A2560",
-              background: "rgba(5,4,26,0.5)",
-              padding: 3,
-            }}
-          >
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => {
-                  setFilter(f.id);
-                }}
-                style={{
-                  background:
-                    filter === f.id
-                      ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-                      : "transparent",
-                  border: 0,
-                  cursor: "pointer",
-                  padding: "11px 20px",
-                  ...MONO,
-                  fontWeight: 600,
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: filter === f.id ? "var(--cosmetic-accent)" : "#7F7BA9",
-                  boxShadow:
-                    filter === f.id
-                      ? "inset 0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 45%, transparent)"
-                      : "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  transition: "all 150ms ease",
-                }}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: "currentColor",
-                    opacity: filter === f.id ? 1 : 0.55,
-                    boxShadow: filter === f.id ? "0 0 8px var(--cosmetic-accent)" : "none",
-                  }}
-                />
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            label="Classement"
+            items={FILTERS.map((f) => ({ key: f.id, label: f.label }))}
+            value={filter}
+            onChange={setFilter}
+          />
         </div>
 
         {/* Meta strip */}

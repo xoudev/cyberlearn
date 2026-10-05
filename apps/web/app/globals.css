@@ -580,6 +580,139 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
+/* The row of tabs (components/tabs.tsx): the current view underlined in the
+   accent. The profile, the casier, the leaderboard and a class share it. */
+.tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  row-gap: 8px;
+  border-bottom: 1px solid #1f1b47;
+  margin-bottom: 20px;
+}
+.tabs__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7f7ba9;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 150ms ease;
+}
+.tabs__tab:hover {
+  color: #b8b5d1;
+}
+.tabs__tab[data-active="true"] {
+  color: var(--cosmetic-accent);
+  border-bottom-color: var(--cosmetic-accent);
+  box-shadow: 0 2px 12px -4px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
+}
+.tabs__count {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #7f7ba9;
+  border: 1px solid #2a2560;
+}
+.tabs__tab[data-active="true"] .tabs__count {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+}
+.tabs__trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7f7ba9;
+}
+
+/* The row of filter pills (components/pills.tsx): a diamond dot in the colour
+   of the thing filtered, the pressed one lit in it. */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  --pill-color: #b8b5d1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid #2a2560;
+  color: #b8b5d1;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+.pill:hover {
+  color: #f5f5fa;
+  border-color: #44406b;
+}
+.pill[data-active="true"] {
+  color: var(--pill-color);
+  border-color: var(--pill-color);
+  background: color-mix(in oklab, var(--pill-color) 6%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--pill-color) 22%, transparent),
+    0 0 18px color-mix(in oklab, var(--pill-color) 16%, transparent);
+}
+.pill__dot {
+  width: 7px;
+  height: 7px;
+  background: var(--pill-color);
+  transform: rotate(45deg);
+}
+.pill[data-active="true"] .pill__dot {
+  box-shadow: 0 0 6px var(--pill-color);
+}
+.pill__count {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #7f7ba9;
+  border: 1px solid #2a2560;
+}
+.pill[data-active="true"] .pill__count {
+  color: var(--pill-color);
+  border-color: color-mix(in oklab, var(--pill-color) 38%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabs__tab,
+  .pill {
+    transition: none;
+  }
+}
+
 @keyframes xp-count-glow {
   0% {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
@@ -3639,61 +3772,6 @@ a:hover > .lesson-author-card {
   margin: 0 4px;
 }
 
-.x-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 14px;
-  background: transparent;
-  border: 1px solid #1f1b47;
-  color: #b8b5d1;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border-radius: 0;
-  transition: all var(--dur-base);
-}
-.x-pill:hover {
-  color: #f5f5fa;
-  border-color: #2a2560;
-  background: rgba(255, 77, 109, 0.04);
-}
-.x-pill.is-active {
-  color: var(--danger-red);
-  border-color: var(--danger-red);
-  background: rgba(255, 77, 109, 0.06);
-  box-shadow:
-    0 0 0 1px rgba(255, 77, 109, 0.25),
-    0 0 18px rgba(255, 77, 109, 0.18);
-}
-.x-pill__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.x-pill__dot--all {
-  background: #b8b5d1;
-}
-.x-pill__dot--cyber {
-  background: #ff4757;
-}
-.x-pill__dot--dev {
-  background: #6e8bff;
-}
-.x-pill__dot--net {
-  background: #0affd4;
-}
-
-.x-pill--type.is-active {
-  color: var(--danger-red);
-  border-color: var(--danger-red);
-  background: rgba(255, 77, 109, 0.06);
-}
-
 /* ── Featured challenge ── */
 .feat {
   position: relative;
@@ -4526,7 +4604,6 @@ a:hover > .lesson-author-card {
   }
   .cc,
   .cc__tick,
-  .x-pill,
   .cc__btn {
     transition: none;
   }
@@ -5351,49 +5428,6 @@ a:hover > .lesson-author-card {
 }
 .cls-chip[data-tone="warning"] b {
   color: #ffb020;
-}
-
-.cls-tabs {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  border-bottom: 1px solid rgba(42, 37, 96, 0.8);
-  margin-bottom: 16px;
-}
-.cls-tab {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 13px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #7f7ba9;
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.cls-tab:hover {
-  color: #b8b5d1;
-}
-.cls-tab[data-active="true"] {
-  color: var(--cosmetic-accent);
-  border-bottom-color: var(--cosmetic-accent);
-}
-.cls-tab__count {
-  padding: 0 5px;
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #7f7ba9;
-  border: 1px solid rgba(42, 37, 96, 0.9);
-}
-.cls-tab[data-active="true"] .cls-tab__count {
-  color: var(--cosmetic-accent);
-  border-color: color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
 }
 
 /* ─── Student class: teachers, ranked roster ──────────────────────────────── */

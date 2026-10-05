@@ -2,12 +2,18 @@
 
 // "use client" justified: filter state (useState) + countdown (useEffect/setInterval)
 
+import { type PillItem, Pills } from "@/components/pills";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Select } from "@cyberlearn/ui";
 import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
 import { Crumb } from "@/components/crumb";
-import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import {
+  CATEGORY_META,
+  CATEGORY_ORDER,
+  categoryMeta,
+  difficultyMeta,
+} from "@cyberlearn/lib/content/vocabulary";
 import { ProgressBar } from "@/components/progress-bar";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
@@ -498,6 +504,19 @@ function CCCard({ challenge }: { challenge: ChallengeItem }): React.ReactElement
 
 type CatFilter = ChallengeItem["category"] | "TOUS";
 type TypeFilter = ChallengeItem["type"] | "TOUS";
+
+const CAT_PILLS: PillItem<CatFilter>[] = [
+  { key: "TOUS", label: "Tous", color: "#b8b5d1" },
+  ...CATEGORY_ORDER.map((c) => ({
+    key: c,
+    label: CATEGORY_META[c].short,
+    color: CATEGORY_META[c].color,
+  })),
+];
+// The challenges' own red, the page's accent.
+const TYPE_PILLS: PillItem<TypeFilter>[] = (["CTF", "SCRIPT", "PUZZLE", "LAB"] as const).map(
+  (t) => ({ key: t, label: t, color: "var(--danger-red)" }),
+);
 type DiffFilter = ChallengeItem["difficulty"] | "TOUS";
 type StatFilter = DisplayStatus | "TOUS";
 
@@ -528,16 +547,10 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
     return true;
   });
 
-  function handleTypeToggle(t: ChallengeItem["type"]): void {
+  // The type pill pressed again lets go: back to all of them.
+  function handleTypeToggle(t: TypeFilter): void {
     setType((prev) => (prev === t ? "TOUS" : t));
   }
-
-  const CAT_PILLS: { label: string; value: CatFilter; dot: string }[] = [
-    { label: "TOUS", value: "TOUS", dot: "all" },
-    { label: "CYBERSEC", value: "CYBERSEC", dot: "cyber" },
-    { label: "DEV", value: "DEV", dot: "dev" },
-    { label: "RÉSEAU", value: "NETWORK", dot: "net" },
-  ];
 
   return (
     <div className="chx">
@@ -577,35 +590,12 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
       <div className="chx-filters">
         <div className="chx-filters__row">
           <span className="chx-filters__label">{"// CAT"}</span>
-          {CAT_PILLS.map(({ label, value, dot }) => (
-            <button
-              key={value}
-              type="button"
-              className={`x-pill${cat === value ? " is-active" : ""}`}
-              onClick={() => {
-                setCat(value);
-              }}
-            >
-              <span className={`x-pill__dot x-pill__dot--${dot}`} />
-              {label}
-            </button>
-          ))}
+          <Pills label="Catégorie" items={CAT_PILLS} value={cat} onChange={setCat} />
 
           <span className="chx-filters__split" />
 
           <span className="chx-filters__label">{"// TYPE"}</span>
-          {(["CTF", "SCRIPT", "PUZZLE", "LAB"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={`x-pill x-pill--type${type === t ? " is-active" : ""}`}
-              onClick={() => {
-                handleTypeToggle(t);
-              }}
-            >
-              {t}
-            </button>
-          ))}
+          <Pills label="Type" items={TYPE_PILLS} value={type} onChange={handleTypeToggle} />
         </div>
 
         <Select

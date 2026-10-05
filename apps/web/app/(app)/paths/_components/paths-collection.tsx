@@ -1,5 +1,6 @@
 "use client";
 
+import { type PillItem, Pills } from "@/components/pills";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -10,7 +11,12 @@ import {
   PathCatalogCard,
   RatingStat,
 } from "@/app/_components/path-catalog-card";
-import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import {
+  CATEGORY_META,
+  CATEGORY_ORDER,
+  categoryMeta,
+  difficultyMeta,
+} from "@cyberlearn/lib/content/vocabulary";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
@@ -67,16 +73,21 @@ const TRACK_META: Record<string, { label: string; short: string }> = {
 const TRACK_DEFAULT = { label: "Compétence", short: "Compétence" };
 
 type Filter = DomainFilter;
-const TRACK_PILLS: { id: TrackFilter; label: string }[] = [
-  { id: "all", label: "Tous" },
-  { id: "SKILL", label: "Compétence" },
-  { id: "CAREER", label: "Métier" },
+// The track row is a different axis from the domain row, so it gets its own
+// neutral accent rather than borrowing a domain colour.
+const TRACK_COLOR = "#b388ff";
+const TRACK_PILLS: PillItem<TrackFilter>[] = [
+  { key: "all", label: "Tous", color: TRACK_COLOR },
+  { key: "SKILL", label: "Compétence", color: TRACK_COLOR },
+  { key: "CAREER", label: "Métier", color: TRACK_COLOR },
 ];
-const PILLS: { id: Filter; cls: string; label: string }[] = [
-  { id: "all", cls: "all", label: "Tous" },
-  { id: "CYBERSEC", cls: "cyber", label: "Cybersec" },
-  { id: "DEV", cls: "dev", label: "Dev" },
-  { id: "NETWORK", cls: "net", label: "Réseau" },
+const PILLS: PillItem<Filter>[] = [
+  { key: "all", label: "Tous", color: "#b8b5d1" },
+  ...CATEGORY_ORDER.map((c) => ({
+    key: c,
+    label: CATEGORY_META[c].short,
+    color: CATEGORY_META[c].color,
+  })),
 ];
 
 // Not toLocaleString: its thousands separator depends on the engine and
@@ -415,7 +426,7 @@ export function PathsCollection({
   );
 
   const idleCount = paths.length - inProgCount - doneCount;
-  const filterLabel = PILLS.find((p) => p.id === filter)?.label ?? "Tous";
+  const filterLabel = PILLS.find((p) => p.key === filter)?.label ?? "Tous";
 
   const inprog = filtered.filter((p) => p.status === "inprog");
   const done = filtered.filter((p) => p.status === "done");
@@ -480,36 +491,12 @@ export function PathsCollection({
         <div className="pc2-filters">
           <span className="pc2-filters__label">› DOMAINE</span>
           <div className="pc2-filters__group">
-            {PILLS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`pc2-pill pc2-pill--${p.cls}${filter === p.id ? " is-active" : ""}`}
-                onClick={() => {
-                  setFilter(p.id);
-                }}
-              >
-                <span className="pc2-pill__dot" />
-                <span>{p.label}</span>
-              </button>
-            ))}
+            <Pills label="Domaine" items={PILLS} value={filter} onChange={setFilter} />
           </div>
           <span className="pc2-filters__sep" />
           <span className="pc2-filters__label">› TYPE</span>
           <div className="pc2-filters__group">
-            {TRACK_PILLS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={`pc2-pill pc2-pill--track${trackFilter === t.id ? " is-active" : ""}`}
-                onClick={() => {
-                  setTrackFilter(t.id);
-                }}
-              >
-                <span className="pc2-pill__dot" />
-                <span>{t.label}</span>
-              </button>
-            ))}
+            <Pills label="Type" items={TRACK_PILLS} value={trackFilter} onChange={setTrackFilter} />
           </div>
           <span className="pc2-filters__sep" />
           <label className="pc2-search">

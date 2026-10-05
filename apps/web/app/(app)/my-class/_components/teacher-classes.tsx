@@ -1,5 +1,6 @@
 "use client";
 
+import { Tabs } from "@/components/tabs";
 import { ProgressBar } from "@/components/progress-bar";
 import React, { useState } from "react";
 import Link from "next/link";
@@ -176,27 +177,16 @@ function ClassCard({
           once; three classes were a page nobody scrolled to the bottom of.
           They are the same five things, one at a time, and the roster opens
           first because "who has stalled" is the daily question. */}
-      <div className="cls-tabs" role="tablist" aria-label={`Sections de ${klass.name}`}>
-        {TABS.map((t) => {
-          const count = counts[t.key];
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.key}
-              className="cls-tab"
-              data-active={tab === t.key}
-              onClick={() => {
-                setTab(t.key);
-              }}
-            >
-              {t.label}
-              {count > 0 && <b className="cls-tab__count">{count}</b>}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        label={`Sections de ${klass.name}`}
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          ...(counts[t.key] > 0 && { count: counts[t.key] }),
+        }))}
+        value={tab}
+        onChange={setTab}
+      />
 
       <div className="cls-tabpanel" role="tabpanel">
         {tab === "students" &&

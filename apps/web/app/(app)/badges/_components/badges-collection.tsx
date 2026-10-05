@@ -1,5 +1,6 @@
 "use client";
 
+import { Pills } from "@/components/pills";
 import React, { useState, useMemo } from "react";
 import type { BadgeGroup } from "@/lib/badges/collection";
 import { Crumb } from "@/components/crumb";
@@ -268,64 +269,17 @@ export function BadgesCollection({
           › RARETÉ
         </span>
 
-        {pills.map((pill) => {
-          const isActive = activeFilter === pill.id;
-          const dotColor = RARITY_PILL_COLOR[pill.id] ?? "var(--color-rarity-common)";
-          return (
-            <button
-              key={pill.id}
-              type="button"
-              onClick={() => {
-                setActiveFilter(pill.id);
-              }}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                height: 34,
-                padding: "0 16px",
-                background: isActive
-                  ? `color-mix(in oklab, ${dotColor} 6%, transparent)`
-                  : "transparent",
-                border: `1px solid ${isActive ? dotColor : "#2A2560"}`,
-                color: isActive ? dotColor : "#B8B5D1",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                borderRadius: 0,
-                boxShadow: isActive
-                  ? `0 0 0 1px color-mix(in oklab, ${dotColor} 25%, transparent), 0 0 18px color-mix(in oklab, ${dotColor} 19%, transparent)`
-                  : "none",
-              }}
-            >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  background: dotColor,
-                  transform: "rotate(45deg)",
-                  boxShadow: isActive ? `0 0 6px ${dotColor}` : "none",
-                }}
-              />
-              <span>{pill.label}</span>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${isActive ? `color-mix(in oklab, ${dotColor} 38%, transparent)` : "#2A2560"}`,
-                  letterSpacing: "0.04em",
-                  color: isActive ? dotColor : "#7F7BA9",
-                }}
-              >
-                {pill.count}
-              </span>
-            </button>
-          );
-        })}
+        <Pills
+          label="Rareté"
+          items={pills.map((pill) => ({
+            key: pill.id,
+            label: pill.label,
+            count: pill.count,
+            color: RARITY_PILL_COLOR[pill.id] ?? "var(--color-rarity-common)",
+          }))}
+          value={activeFilter}
+          onChange={setActiveFilter}
+        />
 
         {/* Search input */}
         <label

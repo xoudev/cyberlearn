@@ -1,5 +1,6 @@
 "use client";
 
+import { Tabs } from "@/components/tabs";
 import React, { useState } from "react";
 import Link from "next/link";
 import { BadgeCard } from "@/components/badge-card";
@@ -490,98 +491,21 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
 
   return (
     <div>
-      {/* Tabs */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",
-          rowGap: 8,
-          borderBottom: "1px solid #1F1B47",
-          marginBottom: 36,
-        }}
-      >
-        {tabs.map((tab) => {
-          const isActive = active === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setActive(tab.id);
-              }}
-              style={{
-                position: "relative",
-                padding: "14px 22px",
-                background: "transparent",
-                border: 0,
-                borderRadius: 0,
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: isActive ? "var(--cosmetic-accent)" : "#3F3D5C",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {tab.label}
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.04em",
-                  padding: "1px 6px",
-                  border: `1px solid ${isActive ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
-                  color: isActive ? "var(--cosmetic-accent)" : "#3F3D5C",
-                }}
-              >
-                {tab.count}
-              </span>
-              {isActive && (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
-                    bottom: -1,
-                    height: 2,
-                    background: "var(--cosmetic-accent)",
-                    boxShadow:
-                      "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-            </button>
-          );
-        })}
-
-        {/* Suffix */}
-        <div
-          style={{
-            marginLeft: "auto",
-            padding: "0 4px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.14em",
-            color: "#7F7BA9",
-            textTransform: "uppercase",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span>TRIER · RÉCENTS</span>
-          <span style={{ color: "#1F1B47" }}>/</span>
-          <span>
-            VUE · <b style={{ color: "#F5F5FA" }}>GRILLE</b>
-          </span>
-        </div>
-      </div>
+      <Tabs
+        label="Sections du profil"
+        items={tabs.map((tab) => ({ key: tab.id, label: tab.label, count: tab.count }))}
+        value={active}
+        onChange={setActive}
+        trailing={
+          <>
+            <span>TRIER · RÉCENTS</span>
+            <span style={{ color: "#1F1B47" }}>/</span>
+            <span>
+              VUE · <b style={{ color: "#F5F5FA" }}>GRILLE</b>
+            </span>
+          </>
+        }
+      />
 
       {/* Tab panels */}
       {active === "activity" && <ActivityFeed lessons={lessons} />}

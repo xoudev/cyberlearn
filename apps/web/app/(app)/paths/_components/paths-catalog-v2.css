@@ -152,60 +152,6 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-.pc2-root .pc2-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 16px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--fg-secondary);
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border-radius: 0;
-  transition: all var(--dur-base);
-}
-.pc2-root .pc2-pill:hover {
-  color: var(--fg-primary);
-  border-color: var(--border-strong);
-}
-.pc2-root .pc2-pill__dot {
-  width: 7px;
-  height: 7px;
-  background: var(--cp-color, var(--fg-secondary));
-  transform: rotate(45deg);
-  box-shadow: 0 0 6px var(--cp-color, transparent);
-}
-.pc2-root .pc2-pill--all {
-  --cp-color: var(--fg-secondary);
-}
-.pc2-root .pc2-pill--cyber {
-  --cp-color: #ff4757;
-}
-.pc2-root .pc2-pill--dev {
-  --cp-color: #6e8bff;
-}
-.pc2-root .pc2-pill--net {
-  --cp-color: var(--cosmetic-accent);
-}
-/* The track row is a different axis from the domain row, so it gets its own
-   neutral accent rather than borrowing a domain colour. */
-.pc2-root .pc2-pill--track {
-  --cp-color: #b388ff;
-}
-.pc2-root .pc2-pill.is-active {
-  color: var(--cp-color);
-  border-color: var(--cp-color);
-  background: color-mix(in oklab, var(--cp-color) 6%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--cp-color) 20%, transparent),
-    0 0 18px color-mix(in oklab, var(--cp-color) 16%, transparent);
-}
 .pc2-root .pc2-filters__sep {
   width: 1px;
   height: 20px;
