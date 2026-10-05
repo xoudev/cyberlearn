@@ -115,6 +115,7 @@
 - Notation 1–5 étoiles avec recalcul des moyennes en temps réel
 - Complétion avec attribution d'XP, évaluation des badges, création du ReviewSchedule SM-2
 - Gestion des prérequis (chaîne de leçons)
+- Un administrateur ouvre une leçon non publiée par son adresse, avec un bandeau et sans progression ni XP ; la leçon vitrine `vitrine-des-composants` rend chaque composant une fois
 
 #### Challenges
 - **4 types** : CTF (soumission de flag), SCRIPT (sandbox Python WASM), PUZZLE (honor system), LAB

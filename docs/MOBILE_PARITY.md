@@ -126,6 +126,7 @@ Chacune de ces lignes est une décision, pas une dette.
 | **Épingler ou fermer un sujet du forum** | Geste de modération réservé aux administrateurs, fait depuis le site. L'app affiche l'état (« Épinglé », « Fermé ») et refuse une réponse dans un sujet fermé, comme le site |
 | **Remise à zéro d'une progression** | Action d'administration, sur le compte de quelqu'un d'autre. Elle vit dans la console, pas dans une app apprenant |
 | **Clic droit du bloc-notes** (menu sur une note, une note reçue, un dossier) | Un raccourci de pointeur, sans action propre : tout ce qu'il propose existe déjà sur le site (lecteur, panneau « Gérer ») et dans l'app, où chaque carte a ses boutons et où le glisser-déposer range les notes. Un téléphone n'a pas de clic droit, et un appui long y est déjà le geste qui déplace une note |
+| **Aperçu d'une leçon non publiée par un administrateur** (`/lessons/<slug>` ouvre un brouillon, avec un bandeau et sans rien enregistrer ; la leçon vitrine `vitrine-des-composants` montre chaque composant) | Un outil de rédaction : on vérifie une leçon sur le site avant de la publier depuis la console, et la console est web-only. L'app lit les leçons publiées, comme les apprenants |
 | **Garder un compte inactif** (`/account/keep`, lien du mail de préavis avant effacement) | Une page qu'on ouvre depuis un e-mail, sans être connecté, et qui n'a qu'un bouton : le lien s'ouvre dans le navigateur du téléphone comme ailleurs. Dans l'app, finir une leçon garde aussi le compte, puisque c'est de l'activité |
 
 ## Quand cette page a été écrite
