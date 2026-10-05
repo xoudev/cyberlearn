@@ -1,21 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { AvatarView } from "@/components/avatar-view";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import {
-  ACCOUNT_LINKS,
-  isActiveHref,
-  sidebarGroups,
-  type AccountIcon,
-  type SidebarIcon,
-} from "@/lib/sidebar/items";
+import { isActiveHref, sidebarGroups, type SidebarIcon } from "@/lib/sidebar/items";
 
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
@@ -45,7 +38,7 @@ const STROKE = {
   "aria-hidden": true as const,
 };
 
-function NavIcon({ name }: { name: SidebarIcon | AccountIcon }): React.ReactElement {
+function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
   switch (name) {
     case "dashboard":
       return (
@@ -136,14 +129,6 @@ function NavIcon({ name }: { name: SidebarIcon | AccountIcon }): React.ReactElem
           <circle cx="8" cy="8" r="2" />
         </svg>
       );
-    case "news":
-      return (
-        <svg {...STROKE}>
-          <path d="M2.5 6.5L9 4v8l-6.5-2.5z" />
-          <path d="M9 4l4-1.5v11L9 12" />
-          <path d="M4 9.5v3h2" />
-        </svg>
-      );
     case "support":
       // A life-buoy: help, rather than a speech bubble that would read as the forum.
       return (
@@ -153,23 +138,24 @@ function NavIcon({ name }: { name: SidebarIcon | AccountIcon }): React.ReactElem
           <path d="M3.7 3.7l2.6 2.6M9.7 9.7l2.6 2.6M12.3 3.7L9.7 6.3M6.3 9.7l-2.6 2.6" />
         </svg>
       );
-    case "settings":
-      return (
-        <svg {...STROKE}>
-          <circle cx="8" cy="8" r="2.4" />
-          <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" />
-        </svg>
-      );
   }
 }
 
-function IconSignOut(): React.ReactElement {
+function SignOutButton({ onClick }: { onClick: () => void }): React.ReactElement {
   return (
-    <svg {...STROKE}>
-      <path d="M6 3H3v10h3" />
-      <path d="M10 5l3 3-3 3" />
-      <path d="M13 8H6" />
-    </svg>
+    <button
+      type="button"
+      onClick={onClick}
+      className="sidebar-icon-btn sidebar-signout"
+      title="Déconnexion"
+      aria-label="Déconnexion"
+    >
+      <svg {...STROKE}>
+        <path d="M6 3H3v10h3" />
+        <path d="M10 5l3 3-3 3" />
+        <path d="M13 8H6" />
+      </svg>
+    </button>
   );
 }
 
@@ -181,6 +167,10 @@ function IconSignOut(): React.ReactElement {
  * Folded, it keeps the icons and loses the words; on a phone it is the drawer
  * the navbar's button opens, always unfolded. The one count it shows is the
  * revisions due, because that is the one number that asks for something.
+ *
+ * The account block is who is signed in, a link to their profile and the way
+ * out. The small links it used to carry are gone: news and settings are in
+ * the navbar, the locker is listed with the rewards, help with the community.
  */
 export function SidebarNav({
   hasClasses,
@@ -197,34 +187,14 @@ export function SidebarNav({
   // On mobile the sidebar is always shown expanded inside the drawer.
   const collapsed = !isMobile && state === "collapsed";
 
-  // "New" dot on the news link: shown until the latest release has been read.
-  // The custom event lets the dot clear the moment /changelog mounts.
-  const [hasUnseenChangelog, setHasUnseenChangelog] = useState(false);
-  useEffect(() => {
-    const check = (): void => {
-      try {
-        setHasUnseenChangelog(localStorage.getItem(CHANGELOG_SEEN_KEY) !== LATEST_VERSION);
-      } catch {
-        setHasUnseenChangelog(false);
-      }
-    };
-    check();
-    const clear = (): void => {
-      setHasUnseenChangelog(false);
-    };
-    window.addEventListener("cl-changelog-seen", clear);
-    window.addEventListener("storage", check);
-    return () => {
-      window.removeEventListener("cl-changelog-seen", clear);
-      window.removeEventListener("storage", check);
-    };
-  }, []);
-
   async function handleSignOut(): Promise<void> {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.push("/login");
   }
+  const signOut = (): void => {
+    void handleSignOut();
+  };
 
   const groups = sidebarGroups({ hasClasses, showRevisions, dueReviews });
 
@@ -297,62 +267,12 @@ export function SidebarNav({
               </span>
             </span>
           </Link>
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={() => {
-                void handleSignOut();
-              }}
-              className="sidebar-icon-btn sidebar-signout"
-              title="Déconnexion"
-              aria-label="Déconnexion"
-            >
-              <IconSignOut />
-            </button>
-          )}
+          {!collapsed && <SignOutButton onClick={signOut} />}
         </div>
-
-        {collapsed ? (
+        {/* Folded, the row has room for the avatar alone: the way out goes under it. */}
+        {collapsed && (
           <div className="sidebar-account-rail">
-            {ACCOUNT_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                title={link.label}
-                aria-label={link.label}
-                className="sidebar-icon-btn"
-              >
-                <NavIcon name={link.icon} />
-                {link.href === "/changelog" && hasUnseenChangelog && (
-                  <span
-                    className="sidebar-dot sidebar-dot--rail"
-                    aria-label="Nouveautés non lues"
-                  />
-                )}
-              </Link>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                void handleSignOut();
-              }}
-              className="sidebar-icon-btn sidebar-signout"
-              title="Déconnexion"
-              aria-label="Déconnexion"
-            >
-              <IconSignOut />
-            </button>
-          </div>
-        ) : (
-          <div className="sidebar-account-links">
-            {ACCOUNT_LINKS.map((link) => (
-              <Link key={link.href} href={link.href}>
-                {link.label}
-                {link.href === "/changelog" && hasUnseenChangelog && (
-                  <span className="sidebar-dot" aria-label="non lues" />
-                )}
-              </Link>
-            ))}
+            <SignOutButton onClick={signOut} />
           </div>
         )}
       </div>
