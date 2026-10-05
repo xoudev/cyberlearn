@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.14",
+    date: "2026-10-05",
+    title: "Une seule fenêtre pour tout le site",
+    changes: [
+      {
+        type: "improved",
+        text: "Les dix fenêtres qui s'ouvrent par-dessus une page (la fin d'une leçon, le niveau franchi, le recadrage de l'avatar, une note et son partage, la suppression du compte, l'avis de bannissement, le récap) sont la même fenêtre : même fond, même cadre, Échap et un clic à côté pour la fermer, et Tab qui reste dedans au lieu de filer dans la page derrière. Quand une fenêtre s'ouvre par-dessus une autre, Échap ne ferme que celle du dessus.",
+      },
+    ],
+  },
+  {
     version: "3.13",
     date: "2026-10-05",
     title: "Un avatar, un niveau, une rareté : les mêmes partout",

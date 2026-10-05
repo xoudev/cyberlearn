@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useActionState, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { ModalShell } from "@/components/modal-shell";
 
 interface Props {
   pendingExpiresAt: string | null;
@@ -20,33 +20,14 @@ export function DeleteAccountSection({
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [state, formAction, pending] = useActionState(requestDeletionAction, INITIAL_STATE);
-  const [mounted, setMounted] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (state.success) setOpen(false);
   }, [state.success]);
 
-  // ESC closes the modal
+  // The word typed to confirm does not survive a closed dialog.
   useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [open]);
-
-  // Focus the modal container on open for keyboard/screen-reader access
-  useEffect(() => {
-    if (open) modalRef.current?.focus();
-    else setInputValue("");
+    if (!open) setInputValue("");
   }, [open]);
 
   const minutesLeft = pendingExpiresAt
@@ -57,99 +38,16 @@ export function DeleteAccountSection({
   const isConfirmed = inputValue === "SUPPRIMER";
 
   const modal = (
-    <>
-      {/* Overlay - click to close */}
-      <div
-        aria-hidden="true"
-        onClick={() => {
-          setOpen(false);
-        }}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0, 0, 0, 0.65)",
-          zIndex: 9998,
-        }}
-      />
-
-      {/* Modal panel */}
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-dialog-title"
-        tabIndex={-1}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 9999,
-          width: "calc(100vw - 32px)",
-          maxWidth: 520,
-          maxHeight: "calc(100vh - 32px)",
-          overflowY: "auto",
-          background: "#0A0826",
-          border: "1px solid #2A2560",
-          padding: "24px",
-          outline: "none",
-        }}
-      >
-        {/* Section header */}
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            color: "#7F7BA9",
-            marginBottom: 16,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          {"// RGPD · ART. 17 · ACTION IRRÉVERSIBLE"}
-          <span
-            aria-hidden="true"
-            style={{ flex: 1, height: 1, background: "#1F1B47", display: "inline-block" }}
-          />
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-            }}
-            aria-label="Fermer"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#7F7BA9",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              lineHeight: 1,
-              padding: "2px 4px",
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Title */}
-        <h2
-          id="delete-dialog-title"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 18,
-            color: "#F5F5FA",
-            letterSpacing: "-0.02em",
-            margin: "0 0 20px",
-          }}
-        >
-          Suppression définitive du compte
-        </h2>
-
+    <ModalShell
+      open={open}
+      onClose={() => {
+        setOpen(false);
+      }}
+      eyebrow="// RGPD · ART. 17 · ACTION IRRÉVERSIBLE"
+      title="Suppression définitive du compte"
+      maxWidth={520}
+    >
+      <div style={{ padding: 24 }}>
         {/* Description */}
         <p style={{ margin: "0 0 14px", color: "#F5F5FA", fontWeight: 500, fontSize: 14 }}>
           Cette action est <span style={{ color: "#FF4757", fontWeight: 700 }}>irréversible</span>.
@@ -335,7 +233,7 @@ export function DeleteAccountSection({
           </div>
         </form>
       </div>
-    </>
+    </ModalShell>
   );
 
   return (
@@ -519,8 +417,7 @@ export function DeleteAccountSection({
         )}
       </div>
 
-      {/* ── Portal modal - rendered directly into document.body ───────────── */}
-      {mounted && open && createPortal(modal, document.body)}
+      {modal}
     </>
   );
 }

@@ -10,6 +10,9 @@ import {
 } from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { ModalShell } from "@/components/modal-shell";
+import { LevelReached } from "@/components/level-reached";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -57,92 +60,16 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
   const primaryUrl = hasBadges ? "/badges" : "/profile";
   const primaryLabel = hasBadges ? "Voir mes badges" : "Voir mon profil";
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => {
-      window.removeEventListener("keydown", handler);
-    };
-  }, [onClose]);
-
   return (
-    // Backdrop
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "rgba(3,2,25,0.88)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-      }}
+    <ModalShell
+      open
+      onClose={onClose}
+      chrome="plain"
+      maxWidth={480}
+      ariaLabel={`Leçon validée : ${lessonTitle}`}
     >
-      {/* Panel */}
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(480px, calc(100vw - 32px))",
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
-          padding: "36px 32px 28px",
-          animation: "modal-in 260ms cubic-bezier(0.16,1,0.3,1) both",
-        }}
-      >
-        {/* Corner brackets */}
-        <span
-          style={{
-            position: "absolute",
-            top: -1,
-            left: -1,
-            width: 14,
-            height: 14,
-            borderTop: "2px solid var(--cosmetic-accent)",
-            borderLeft: "2px solid var(--cosmetic-accent)",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            top: -1,
-            right: -1,
-            width: 14,
-            height: 14,
-            borderTop: "2px solid var(--cosmetic-accent)",
-            borderRight: "2px solid var(--cosmetic-accent)",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            bottom: -1,
-            left: -1,
-            width: 14,
-            height: 14,
-            borderBottom: "2px solid var(--cosmetic-accent)",
-            borderLeft: "2px solid var(--cosmetic-accent)",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            bottom: -1,
-            right: -1,
-            width: 14,
-            height: 14,
-            borderBottom: "2px solid var(--cosmetic-accent)",
-            borderRight: "2px solid var(--cosmetic-accent)",
-          }}
-        />
+      <div style={{ position: "relative", padding: "36px 32px 28px" }}>
+        <CornerBrackets inset={0} />
 
         {/* Header */}
         <div
@@ -341,42 +268,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           </div>
         )}
 
-        {/* Level-up banner */}
-        {result.leveledUp && (
-          <div
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(0,36,255,0.15), color-mix(in srgb, var(--cosmetic-accent) 12%, transparent), rgba(0,36,255,0.15))",
-              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
-              padding: "10px 16px",
-              marginBottom: 16,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--cosmetic-accent)",
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-            Niveau {result.newLevel} atteint !
-          </div>
-        )}
+        {/* Level-up */}
+        {result.leveledUp && <LevelReached level={result.newLevel} size="sm" />}
 
         {/* Badges earned */}
         {hasBadges && (
@@ -501,6 +394,6 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           </Link>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

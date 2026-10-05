@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { SLIDE_MS, buildStorySlides, type Slide } from "@cyberlearn/lib/gamification/wrapped-story";
 import { useStoryClock } from "./use-story-clock";
+import { ModalShell } from "@/components/modal-shell";
 import "./story.css";
 
 /**
@@ -164,8 +165,7 @@ export function WrappedStory({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") onClose();
-      else if (event.key === "ArrowRight") next();
+      if (event.key === "ArrowRight") next();
       else if (event.key === "ArrowLeft") previous();
       else if (event.key === " " || event.key === "Spacebar") {
         event.preventDefault();
@@ -173,13 +173,10 @@ export function WrappedStory({
       } else return;
     };
     document.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
     };
-  }, [onClose, next, previous, togglePaused]);
+  }, [next, previous, togglePaused]);
 
   const onPointerDown = useCallback(() => {
     pressedAt.current = Date.now();
@@ -209,87 +206,84 @@ export function WrappedStory({
   if (!slide) return <></>;
 
   return (
-    <div
-      className="ws-root"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Ton Wrapped ${payload.periodKey}`}
-    >
-      <div className="ws-frame">
-        <Bars count={slides.length} index={index} progress={progress} />
+    <ModalShell open onClose={onClose} chrome="none" ariaLabel={`Ton Wrapped ${payload.periodKey}`}>
+      <div className="ws-root">
+        <div className="ws-frame">
+          <Bars count={slides.length} index={index} progress={progress} />
 
-        <div className="ws-chrome">
-          <span className="ws-brand">
-            <b>cyber</b> learn
-          </span>
-          <span className="ws-chrome__actions">
-            <button
-              type="button"
-              className="ws-icon"
-              onClick={togglePaused}
-              aria-label={paused ? "Reprendre" : "Mettre en pause"}
-            >
-              {paused ? (
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 2.5v11l9-5.5z" />
-                </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" />
-                </svg>
-              )}
-            </button>
-            <button type="button" className="ws-icon" onClick={onClose} aria-label="Fermer">
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
+          <div className="ws-chrome">
+            <span className="ws-brand">
+              <b>cyber</b> learn
+            </span>
+            <span className="ws-chrome__actions">
+              <button
+                type="button"
+                className="ws-icon"
+                onClick={togglePaused}
+                aria-label={paused ? "Reprendre" : "Mettre en pause"}
               >
-                <path d="M3 3 L13 13 M13 3 L3 13" />
-              </svg>
-            </button>
-          </span>
-        </div>
+                {paused ? (
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M4 2.5v11l9-5.5z" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" />
+                  </svg>
+                )}
+              </button>
+              <button type="button" className="ws-icon" onClick={onClose} aria-label="Fermer">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                >
+                  <path d="M3 3 L13 13 M13 3 L3 13" />
+                </svg>
+              </button>
+            </span>
+          </div>
 
-        {/* The tap surface. It carries no role of its own: everything it does
+          {/* The tap surface. It carries no role of its own: everything it does
             is on the keyboard too, and announcing a button around the whole
             story would bury the story inside it. */}
-        <div
-          ref={surfaceRef}
-          className="ws-surface"
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
-          onPointerCancel={() => {
-            pressedAt.current = null;
-            setPaused(false);
-          }}
-        >
-          <div className="ws-stage" aria-live="polite">
-            <SlideView slide={slide} share={share} />
+          <div
+            ref={surfaceRef}
+            className="ws-surface"
+            onPointerDown={onPointerDown}
+            onPointerUp={onPointerUp}
+            onPointerCancel={() => {
+              pressedAt.current = null;
+              setPaused(false);
+            }}
+          >
+            <div className="ws-stage" aria-live="polite">
+              <SlideView slide={slide} share={share} />
+            </div>
+          </div>
+
+          <div className="ws-steps">
+            <button type="button" className="ws-step" onClick={previous} disabled={index === 0}>
+              ← Précédent
+            </button>
+            <span className="ws-count">
+              {index + 1} / {slides.length}
+            </span>
+            <button
+              type="button"
+              className="ws-step"
+              onClick={next}
+              disabled={index === slides.length - 1}
+            >
+              Suivant →
+            </button>
           </div>
         </div>
-
-        <div className="ws-steps">
-          <button type="button" className="ws-step" onClick={previous} disabled={index === 0}>
-            ← Précédent
-          </button>
-          <span className="ws-count">
-            {index + 1} / {slides.length}
-          </span>
-          <button
-            type="button"
-            className="ws-step"
-            onClick={next}
-            disabled={index === slides.length - 1}
-          >
-            Suivant →
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -28,7 +28,7 @@
 
 | # | Doublon | Où | Piste |
 | --- | --- | --- | --- |
-| 6 | Huit fenêtres modales écrites à la main (fond, Échap, `role=dialog`) à côté de `modal-shell.tsx`, qui n'a qu'un seul client | `level-up-modal`, `lesson-complete-modal`, `avatar-cropper`, `share-dialog`, `note-reader`, `DeleteAccountSection`, `ban-notice`, `WrappedStory` | Toutes sur `ModalShell` ; le bloc « Niveau N atteint » une seule fois |
+| ~~6~~ | ~~Huit fenêtres modales écrites à la main (fond, Échap, `role=dialog`) à côté de `modal-shell.tsx`, qui n'a qu'un seul client~~ | Les huit sur `ModalShell`, plus les deux écrans d'attente du récap ; le shell gagne trois niveaux de chrome (`panel`, `plain`, `none`), `dismissable`, `accent`, `meta`, le piège de Tab et la pile des fenêtres ouvertes ; « Niveau N atteint » est `components/level-reached.tsx`, en deux tailles | cette PR |
 | ~~7~~ | ~~L'avatar redessiné en ligne au lieu d'`AvatarView`~~ | `AvatarView` dans la barre du haut, le profil, le profil public et l'auteur d'une leçon ; le classement lit `initialsOf` ; le casier garde son initiale, il n'a pas d'avatar à montrer | cette PR |
 | ~~8~~ | ~~Barres et pastilles de niveau~~ | `levelLabel` (« Niv. 7 ») partout, app comprise ; `XpProgress` pour les deux barres ; `XPBar`, `LevelBadge`, `RarityBadge`, `PathProgress`, `NotificationBell` supprimés de `packages/ui`, arrondis et sans client | cette PR |
 | ~~9~~ | ~~Trois nomenclatures de rang : `computeTier`, `rankName`, `getTier` local du classement~~ | `LeaderboardClient` lit `rankName` ; `computeTier` reste le palier (Bronze à Élite), une autre chose | #412 |

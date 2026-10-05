@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import Link from "next/link";
+import { ModalShell } from "@/components/modal-shell";
+import { LevelReached } from "@/components/level-reached";
 
 /**
  * Crossing a level is celebrated when it happens on a lesson, and used to pass
@@ -21,91 +23,16 @@ interface Props {
 }
 
 export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.ReactElement {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => {
-      window.removeEventListener("keydown", handler);
-    };
-  }, [onClose]);
-
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "rgba(3,2,25,0.88)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-      }}
+    <ModalShell
+      open
+      onClose={onClose}
+      chrome="plain"
+      maxWidth={420}
+      ariaLabel={`Niveau ${String(newLevel)} atteint`}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Niveau ${String(newLevel)} atteint`}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(420px, calc(100vw - 32px))",
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
-          padding: "36px 32px 28px",
-          textAlign: "center",
-          animation: "modal-in 260ms cubic-bezier(0.16,1,0.3,1) both",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "#7F7BA9",
-            marginBottom: 18,
-          }}
-        >
-          {"// "}
-          Niveau supérieur
-        </div>
-
-        <div
-          style={{
-            fontFamily: "var(--font-display, sans-serif)",
-            fontWeight: 800,
-            fontSize: 72,
-            lineHeight: 1,
-            letterSpacing: "-0.04em",
-            background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            marginBottom: 6,
-          }}
-        >
-          {newLevel}
-        </div>
-
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--cosmetic-accent)",
-            marginBottom: 24,
-          }}
-        >
-          Niveau {newLevel} atteint
-        </div>
+      <div style={{ padding: "36px 32px 28px", textAlign: "center" }}>
+        <LevelReached level={newLevel} />
 
         <div
           style={{
@@ -161,6 +88,6 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

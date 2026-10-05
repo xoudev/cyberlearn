@@ -6,6 +6,7 @@ import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { downloadMarkdown, noteToMarkdown } from "@/lib/notes/export";
 import { ReportNoteForm } from "./report-note-form";
 import { ShareDialog } from "./share-dialog";
+import { ModalShell } from "@/components/modal-shell";
 import { CAT, type SerializedFolder, type SerializedNote } from "./notes-shared";
 import { Select } from "@cyberlearn/ui";
 import type { NoteReportReasonKey } from "@cyberlearn/lib/notes/report-reasons";
@@ -68,7 +69,6 @@ export function NoteReader({
   const [reporting, setReporting] = useState(!mine && initialMode === "report");
   const [draft, setDraft] = useState(note.content);
   const [pending, startTransition] = useTransition();
-  const panelRef = useRef<HTMLDivElement>(null);
   const openedId = useRef(note.id);
   const cat = CAT[note.lessonCategory];
 
@@ -82,49 +82,6 @@ export function NoteReader({
       setDraft(note.content);
     }
   }, [note.id, note.content]);
-
-  // Move focus into the dialog when it opens (accessibility).
-  useEffect(() => {
-    panelRef.current?.focus();
-  }, [note.id]);
-
-  // Escape closes (unless editing, to protect the draft); Tab is trapped within
-  // the dialog so keyboard focus cannot wander to the covered background.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      // The share dialog is a modal of its own: while it is up it owns both
-      // Escape and the focus ring, and a trap still running here would pull
-      // the caret straight back out of it.
-      if (sharing) return;
-      if (e.key === "Escape" && !editing) {
-        onClose();
-        return;
-      }
-      if (e.key === "Tab" && panelRef.current) {
-        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), textarea:not([disabled]), select, input, [tabindex]:not([tabindex="-1"])',
-        );
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (!first || !last) return;
-        const active = document.activeElement;
-        if (!panelRef.current.contains(active)) {
-          e.preventDefault();
-          first.focus();
-        } else if (e.shiftKey && active === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && active === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [editing, sharing, onClose]);
 
   const save = (): void => {
     startTransition(() => {
@@ -154,125 +111,54 @@ export function NoteReader({
     year: "numeric",
   });
 
+  const eyebrow = (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: cat.color }}>
+      <span
+        aria-hidden="true"
+        style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
+      />
+      {cat.label}
+      {note.pathTitle ? <span style={{ color: "#7F7BA9" }}>· {note.pathTitle}</span> : null}
+    </span>
+  );
+
+  const meta = (
+    <>
+      maj {dateLabel} · {note.wordCount} mot{note.wordCount > 1 ? "s" : ""}
+      {sharedBy !== undefined ? (
+        <>
+          {" · "}
+          <span style={{ color: "var(--cosmetic-accent)" }}>partagée par {sharedBy}</span>
+        </>
+      ) : null}
+    </>
+  );
+
+  // Escape and the backdrop keep their hands off a draft being edited.
   return (
     <>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Note : ${note.lessonTitle}`}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 60,
-          display: "grid",
-          placeItems: "center",
-          padding: "clamp(12px,4vw,40px)",
-          background: "rgba(2,1,14,0.72)",
-          backdropFilter: "blur(4px)",
-        }}
-        onClick={() => {
-          // Match the Escape behaviour: do not discard an in-progress edit on a
-          // stray backdrop click.
-          if (!editing) onClose();
-        }}
+      <ModalShell
+        open
+        onClose={onClose}
+        dismissable={!editing}
+        ariaLabel={`Note : ${note.lessonTitle}`}
+        eyebrow={eyebrow}
+        title={note.lessonTitle}
+        meta={meta}
+        accent={cat.color}
+        maxWidth={760}
+        className="note-reader"
+        actions={
+          <Link
+            href={`/lessons/${note.lessonSlug}`}
+            style={{ ...toolBtn(false), textDecoration: "none" }}
+          >
+            Ouvrir la leçon →
+          </Link>
+        }
       >
         <style>{READER_CSS}</style>
-        <div
-          ref={panelRef}
-          tabIndex={-1}
-          className="note-reader"
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            width: "min(760px, 100%)",
-            maxHeight: "100%",
-            background: "#08061c",
-            border: `1px solid ${cat.color}44`,
-            borderTop: `3px solid ${cat.color}`,
-            boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-          }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 14,
-              padding: "20px 22px 16px",
-              borderBottom: "1px solid #1F1B47",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: cat.color,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
-                />
-                {cat.label}
-                {note.pathTitle ? (
-                  <span style={{ color: "#7F7BA9" }}>· {note.pathTitle}</span>
-                ) : null}
-              </span>
-              <h2
-                style={{
-                  margin: "8px 0 0",
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 800,
-                  fontSize: "clamp(20px,3vw,26px)",
-                  letterSpacing: "-0.02em",
-                  color: "#F5F5FA",
-                  lineHeight: 1.2,
-                }}
-              >
-                {note.lessonTitle}
-              </h2>
-              <div
-                style={{
-                  marginTop: 6,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "#7F7BA9",
-                }}
-              >
-                maj {dateLabel} · {note.wordCount} mot{note.wordCount > 1 ? "s" : ""}
-                {sharedBy !== undefined ? (
-                  <>
-                    {" · "}
-                    <span style={{ color: "var(--cosmetic-accent)" }}>partagée par {sharedBy}</span>
-                  </>
-                ) : null}
-              </div>
-            </div>
-            <button type="button" onClick={onClose} aria-label="Fermer" style={iconBtn}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.6}
-                aria-hidden="true"
-              >
-                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
           <div
             style={{
@@ -398,7 +284,7 @@ export function NoteReader({
               }}
             />
           ) : null}
-          <div style={{ overflowY: "auto", padding: "20px 22px", flex: 1 }}>
+          <div style={{ padding: "20px 22px", flex: 1 }}>
             {editing ? (
               <textarea
                 value={draft}
@@ -433,26 +319,8 @@ export function NoteReader({
               <div className="note-md">{renderNoteMarkdown(note.content)}</div>
             )}
           </div>
-
-          {/* Footer */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 10,
-              padding: "14px 22px",
-              borderTop: "1px solid #1F1B47",
-            }}
-          >
-            <Link
-              href={`/lessons/${note.lessonSlug}`}
-              style={{ ...toolBtn(false), textDecoration: "none" }}
-            >
-              Ouvrir la leçon →
-            </Link>
-          </div>
         </div>
-      </div>
+      </ModalShell>
 
       {sharing && (
         <ShareDialog
@@ -466,19 +334,6 @@ export function NoteReader({
     </>
   );
 }
-
-const iconBtn: React.CSSProperties = {
-  display: "grid",
-  placeItems: "center",
-  width: 30,
-  height: 30,
-  flexShrink: 0,
-  background: "transparent",
-  border: "1px solid #2A2560",
-  color: "#8B88A8",
-  cursor: "pointer",
-  borderRadius: 2,
-};
 
 function toolBtn(active: boolean): React.CSSProperties {
   return {
