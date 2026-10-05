@@ -6,38 +6,8 @@
    ========================================================================== */
 
 .exam-root {
-  /* design tokens (values from the mockup's colors_and_type.css) */
-  --brand-blue: #0024ff;
-  --brand-turquoise: var(--cosmetic-accent);
-  --brand-turquoise-hover: #3dffdd;
-  --brand-gradient: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
-  --teal: var(--cosmetic-accent);
-  --red: #ff4d6d;
-  --bg-base: #030219;
-  --bg-card: #0a0826;
-  --bg-card-hover: #110e33;
-  --bg-input: #05041a;
-  --border: #2a2560;
-  --border-subtle: #1a1640;
-  --border-strong: #3d3785;
-  --fg-primary: #f5f5fa;
-  --fg-secondary: #b8b5d1;
-  --fg-tertiary: #7f7ba9;
-  --fg-disabled: #44406b;
-  --fg-inverse: #030219;
-  --warning: #ffb547;
-  --danger: #ff4d6d;
-  /* map mockup font roles onto the app's already-loaded fonts */
-  --font-display: var(--font-sans, "Geist", system-ui, sans-serif);
-  --font-body: var(--font-sans, "Inter", system-ui, sans-serif);
-  /* No --font-mono here: the layout sets it (next/font), and redeclaring it as
-     var(--font-mono, ...) is a cycle, which CSS resolves to nothing. Every
-     mono label under this root fell back to the sans font. */
-  --dur-fast: 120ms;
-  --dur-base: 180ms;
-  --dur-slow: 280ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
+  /* The variables (--fg-*, --bg-*, --border*, --brand-*, --font-*, --dur-*)
+     are the page vocabulary of globals.css, defined once for every page. */
   position: relative;
   min-height: 100vh;
   background: var(--bg-base);

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,32 +29,6 @@ export async function generateMetadata({
 }
 
 // ── Corner brackets ───────────────────────────────────────────────────────────
-
-function CornerBrackets({ color = "#0AFFD4", size = 14 }: { color?: string; size?: number }) {
-  const s = (pos: "tl" | "tr" | "bl" | "br"): React.CSSProperties => ({
-    position: "absolute",
-    width: size,
-    height: size,
-    borderColor: color,
-    borderStyle: "solid",
-    borderWidth: 0,
-    top: pos.startsWith("t") ? -1 : undefined,
-    bottom: pos.startsWith("b") ? -1 : undefined,
-    left: pos.endsWith("l") ? -1 : undefined,
-    right: pos.endsWith("r") ? -1 : undefined,
-    borderTopWidth: pos.startsWith("t") ? 2 : 0,
-    borderBottomWidth: pos.startsWith("b") ? 2 : 0,
-    borderLeftWidth: pos.endsWith("l") ? 2 : 0,
-    borderRightWidth: pos.endsWith("r") ? 2 : 0,
-  });
-  return (
-    <>
-      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-        <span key={pos} aria-hidden="true" style={s(pos)} />
-      ))}
-    </>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 

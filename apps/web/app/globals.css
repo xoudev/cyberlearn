@@ -1,5 +1,55 @@
 @import "tailwindcss";
 @import "@cyberlearn/ui/tokens.css";
+
+/* The page vocabulary: the names the page stylesheets and the CSS modules
+   use (--fg-primary, --border, --brand-turquoise, --font-body, --dur-base),
+   defined once, on the design tokens. Four pages (the exam, a path, the
+   catalogue, the glossary) each carried their own copy of it, no two alike:
+   #1a1640 or #1f1b47 for the subtle border, #44406b or #3f3d5c for disabled
+   text. Five stylesheets (not-found, banned, the public catalogue, the forum,
+   the story) read these names where nothing had defined them, and drew with
+   no colour at all.
+
+   Declared on the cosmetics wrapper as well as on :root: --cosmetic-accent is
+   set there by data-accent, and a variable alias is resolved where it is
+   declared, so an alias on :root alone would keep the default accent. */
+:root,
+[data-accent] {
+  --brand-blue: var(--color-brand-blue);
+  --brand-blue-hover: #1f3bff;
+  --brand-turquoise: var(--cosmetic-accent);
+  --brand-turquoise-hover: #3dffdd;
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--color-brand-blue) 0%,
+    var(--cosmetic-accent) 100%
+  );
+  --teal: var(--cosmetic-accent);
+  --bg-base: var(--color-bg-base);
+  --bg-primary: var(--color-bg-base);
+  --bg-card: var(--color-bg-elevated);
+  --bg-card-hover: var(--color-bg-overlay);
+  --bg-input: #05041a;
+  --border: var(--color-border-default);
+  --border-subtle: var(--color-border-subtle);
+  --border-strong: #3d3785;
+  --fg-primary: var(--color-text-primary);
+  --fg-secondary: var(--color-text-secondary);
+  --fg-tertiary: var(--color-text-muted);
+  --fg-disabled: var(--color-text-disabled);
+  --fg-inverse: var(--color-bg-base);
+  /* The rewards' amber (records, certificates, the streak), not the warning. */
+  --amber: #ffb547;
+  --warning: var(--amber);
+  --red: var(--color-danger);
+  --danger: var(--color-danger);
+  --font-display: var(--font-sans);
+  --font-body: var(--font-sans);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
 @plugin "@tailwindcss/typography";
 
 @theme inline {
@@ -748,33 +798,6 @@ article.lesson-content blockquote p code {
   color: #0affd4 !important;
 }
 
-/* ─── Path detail - lesson skill-tree node hover ────────────────────────── */
-
-.lesson-node-link {
-  box-shadow:
-    0 0 0 1px rgba(10, 255, 212, 0.18),
-    0 0 24px rgba(10, 255, 212, 0.08),
-    inset 3px 0 0 #0affd4;
-  transition:
-    transform 200ms ease,
-    box-shadow 200ms ease;
-}
-.lesson-node-link:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px rgba(10, 255, 212, 0.3),
-    0 0 32px rgba(10, 255, 212, 0.18),
-    inset 3px 0 0 #0affd4;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lesson-node-link,
-  .lesson-node-link:hover {
-    transition: none;
-    transform: none;
-  }
-}
-
 /* ─── Reusable hover button classes (used across dashboard, lesson pages) ─── */
 
 /* Primary turquoise CTA */
@@ -1197,6 +1220,25 @@ aside[data-state="collapsed"] .sidebar-account {
 .notif-bell {
   transition: color 150ms ease;
 }
+/* Navbar: the friends and the bell, lit while their panel is open */
+.panel-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: #7f7ba9;
+  transition: all 150ms ease;
+}
+.panel-button--open {
+  color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 20%, transparent);
+}
 .notif-bell:hover {
   color: #b8b5d1 !important;
 }
@@ -1210,15 +1252,6 @@ aside[data-state="collapsed"] .sidebar-account {
 }
 
 /* Link with bottom-border underline (legal, etc.) - same effect as link-cta */
-.link-underline {
-  transition:
-    color 180ms ease,
-    border-color 180ms ease;
-}
-.link-underline:hover {
-  color: #f5f5fa !important;
-  border-bottom-color: #7f7ba9 !important;
-}
 
 /* Footer/nav text links */
 .footer-link {
@@ -1234,7 +1267,6 @@ aside[data-state="collapsed"] .sidebar-account {
   .card-lift,
   .notif-bell,
   .notif-row,
-  .link-underline,
   .footer-link {
     transition: none;
   }
@@ -2355,22 +2387,6 @@ aside[data-state="collapsed"] .sidebar-account {
 /* Notes: the folder drawer grid. Cards rather than filter pills, so a folder
    reads as somewhere a note can be put and dropped into. Same 1 → 2 → 3 ramp
    as the lesson catalogue, so the two pages breathe alike. */
-.notes-folder-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-@media (min-width: 640px) {
-  .notes-folder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1100px) {
-  .notes-folder-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 /* Lessons/paths catalog header: stacked → side-by-side */
 .catalog-header-grid {
@@ -2401,42 +2417,10 @@ aside[data-state="collapsed"] .sidebar-account {
 }
 
 /* Défis / challenges grid: 1 → 2 */
-.defis-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-}
-@media (min-width: 768px) {
-  .defis-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 /* Défis stats strip: 3-col mobile → 5-col desktop */
-.defis-stats-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border: 1px solid #2a2560;
-  margin-bottom: 28px;
-}
-@media (min-width: 768px) {
-  .defis-stats-strip {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
 
 /* Generic 2-col responsive grid (paths catalog, profile, etc.) */
-.grid-2-col {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-}
-@media (min-width: 768px) {
-  .grid-2-col {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 /* Generic 3-col responsive grid (badges, etc.) */
 .grid-3-col {
@@ -2454,9 +2438,6 @@ aside[data-state="collapsed"] .sidebar-account {
   .grid-3-col {
     grid-template-columns: repeat(3, 1fr);
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
 }
 
 /* Landing page - responsive layout */
@@ -2662,36 +2643,6 @@ aside[data-state="collapsed"] .sidebar-account {
 }
 
 /* Login page - responsive split */
-.login-split-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 768px) {
-  .login-split-grid {
-    grid-template-columns: 1.15fr 1fr;
-  }
-}
-.login-left-panel {
-  display: none;
-}
-@media (min-width: 768px) {
-  .login-left-panel {
-    display: flex;
-  }
-}
-.login-right-panel {
-  padding: 48px 16px !important;
-}
-@media (min-width: 768px) {
-  .login-right-panel {
-    padding: 72px 40px !important;
-  }
-}
-@media (min-width: 1280px) {
-  .login-right-panel {
-    padding: 72px 56px !important;
-  }
-}
 
 /* Contact page - responsive padding */
 .contact-wrapper {
@@ -2953,142 +2904,6 @@ a:hover > .lesson-author-card {
   }
 }
 
-/* ─── Path detail page ───────────────────────────────────────────────────── */
-.path-page {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 20px 16px 80px;
-  position: relative;
-}
-@media (min-width: 768px) {
-  .path-page {
-    padding: 32px 32px 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .path-page {
-    padding: 40px 56px 120px;
-  }
-}
-
-.path-hero-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 32px;
-  align-items: start;
-  margin-bottom: 32px;
-  padding-bottom: 36px;
-  border-bottom: 1px solid #1f1b47;
-}
-@media (min-width: 1024px) {
-  .path-hero-grid {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: 56px;
-    align-items: end;
-  }
-}
-
-.path-body-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  align-items: start;
-}
-@media (min-width: 1024px) {
-  .path-body-grid {
-    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
-    gap: 48px;
-  }
-}
-
-.path-aside-sticky {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-@media (min-width: 1024px) {
-  .path-aside-sticky {
-    position: sticky;
-    top: 80px;
-  }
-}
-
-/* ─── Leaderboard page ───────────────────────────────────────────────────── */
-.leaderboard-page {
-  padding: 20px 16px 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-@media (min-width: 768px) {
-  .leaderboard-page {
-    padding: 40px 32px 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .leaderboard-page {
-    padding: 40px 56px 120px;
-  }
-}
-
-.leaderboard-podium {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-@media (min-width: 640px) {
-  .leaderboard-podium {
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-}
-
-.leaderboard-table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* ─── Profile edit page ──────────────────────────────────────────────────── */
-.profile-edit-page {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 20px 16px 80px;
-  position: relative;
-}
-@media (min-width: 768px) {
-  .profile-edit-page {
-    padding: 32px 32px 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .profile-edit-page {
-    padding: 40px 56px 120px;
-  }
-}
-
-.profile-edit-card {
-  padding: 24px 20px 22px;
-}
-@media (min-width: 768px) {
-  .profile-edit-card {
-    padding: 44px 48px 40px;
-  }
-}
-
-.profile-edit-id-row {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-}
-@media (min-width: 640px) {
-  .profile-edit-id-row {
-    flex-direction: row;
-    align-items: center;
-  }
-}
-
 /* ─── Défis/Challenges page ─────────────────────────────────────────────────── */
 
 :root {
@@ -3097,7 +2912,6 @@ a:hover > .lesson-author-card {
   --danger-red-bg: rgba(255, 77, 109, 0.08);
   --orange-prog: #ffb020;
   --orange-prog-bg: rgba(255, 176, 32, 0.08);
-  --dur-base: 200ms ease;
 }
 
 /* Page container */
@@ -4309,19 +4123,6 @@ a:hover > .lesson-author-card {
 /* Classmates. Two columns on a wide screen, one when the names would otherwise
    be squeezed against the level - a roster is read by name, so the name gets
    the room and the meta takes the ellipsis. */
-.class-roster {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2px 24px;
-}
-@media (min-width: 720px) {
-  .class-roster {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 .class-roster__item {
   display: flex;
   align-items: baseline;
@@ -4478,17 +4279,6 @@ a:hover > .lesson-author-card {
   font-size: 22px;
   letter-spacing: -0.01em;
   color: #f5f5fa;
-}
-.cls-card__teachers {
-  margin: 0 0 18px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.7;
-  color: #7f7ba9;
-}
-.cls-card__teachers b {
-  color: #b8b5d1;
-  font-weight: 500;
 }
 
 /* A strip of figures about the class, or about your own standing in it.
@@ -5802,7 +5592,7 @@ a.cls-res__title:hover {
    and dropping somebody are all glances. It sits next to the bell instead, and
    the button on a profile borrows the same small controls.
    ══════════════════════════════════════════════════════════════════════════ */
-.fp-badge {
+.navbar-badge {
   position: absolute;
   top: 2px;
   right: 2px;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "../exam.css";
+import { Brackets } from "@/app/_components/corner-brackets";
 import {
   type StartQuizResult,
   type SubmitQuizResult,
@@ -359,10 +360,7 @@ function IntroScreen(props: {
 
       <div className="exam-stage">
         <main className="exam-frame">
-          <span className="bk tl" />
-          <span className="bk tr" />
-          <span className="bk bl" />
-          <span className="bk br" />
+          <Brackets />
 
           <div className="exam-bar">
             <span className="exam-bar__dots">
@@ -942,10 +940,7 @@ function ResultsScreen(props: {
                     className="r-btn r-btn--cert"
                     href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
                   >
-                    <span className="bk tl" />
-                    <span className="bk tr" />
-                    <span className="bk bl" />
-                    <span className="bk br" />
+                    <Brackets />
                     <svg
                       width="17"
                       height="17"

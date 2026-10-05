@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState, useTransition } from "
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
+import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
   getNotificationsAction,
   markNotificationReadAction,
@@ -95,23 +96,7 @@ export function NotificationPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close panel when clicking outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(e.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
+  useClickOutside(open, panelRef, buttonRef, setOpen);
 
   // Load notifications when panel opens
   useEffect(() => {
@@ -182,28 +167,12 @@ export function NotificationPanel({
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Bell button */}
-      <button
-        ref={buttonRef}
-        type="button"
+      <PanelButton
+        buttonRef={buttonRef}
+        open={open}
+        count={unread}
+        label={hasUnread ? `${String(unread)} notifications non lues` : "Notifications"}
         onClick={handleBellClick}
-        aria-label={hasUnread ? `${String(unread)} notifications non lues` : "Notifications"}
-        className="notif-bell"
-        style={{
-          position: "relative",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 36,
-          height: 36,
-          background: open
-            ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
-            : "transparent",
-          border: `1px solid ${open ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "transparent"}`,
-          cursor: "pointer",
-          color: open ? "var(--cosmetic-accent)" : "#7F7BA9",
-          transition: "all 150ms ease",
-        }}
       >
         <svg
           width="16"
@@ -219,32 +188,7 @@ export function NotificationPanel({
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-
-        {hasUnread && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              top: 2,
-              right: 2,
-              minWidth: 16,
-              height: 16,
-              padding: "0 4px",
-              fontSize: 9,
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              lineHeight: "16px",
-              textAlign: "center",
-              background: "linear-gradient(135deg, #FF4757, #FF6B6B)",
-              color: "#fff",
-              borderRadius: 999,
-              boxShadow: "0 0 0 2px #030219",
-            }}
-          >
-            {unread > 99 ? "99+" : String(unread)}
-          </span>
-        )}
-      </button>
+      </PanelButton>
 
       {/* Panel */}
       {open && (

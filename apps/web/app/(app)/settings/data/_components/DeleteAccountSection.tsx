@@ -4,7 +4,7 @@ import React, { useActionState, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
-import { BracketCorners } from "../../_components/BracketCorners";
+import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 interface Props {
   pendingExpiresAt: string | null;
@@ -349,7 +349,7 @@ export function DeleteAccountSection({
           padding: "18px 20px",
         }}
       >
-        <BracketCorners color={isPending ? "#FF4757" : "#2A2560"} />
+        <CornerBrackets size={20} color={isPending ? "#FF4757" : "#2A2560"} />
 
         {/* Eyebrow */}
         <div

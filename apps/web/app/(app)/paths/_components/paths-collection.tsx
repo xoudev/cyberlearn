@@ -6,6 +6,7 @@ import { PathCatalogCard, RatingStat } from "@/app/_components/path-catalog-card
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { Brackets } from "@/app/_components/corner-brackets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -123,17 +124,6 @@ const CERT_ICON = (
     <path d="M5.5 8.5 L4.5 14 L8 12 L11.5 14 L10.5 8.5" />
   </svg>
 );
-
-function Brackets(): React.JSX.Element {
-  return (
-    <>
-      <span className="bk tl" />
-      <span className="bk tr" />
-      <span className="bk bl" />
-      <span className="bk br" />
-    </>
-  );
-}
 
 function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
   return (

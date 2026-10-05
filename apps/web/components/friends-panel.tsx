@@ -10,6 +10,7 @@ import {
   type FriendLists,
 } from "@/app/(app)/_actions/friend-actions";
 import { AvatarView } from "@/components/avatar-view";
+import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 
 /**
  * Friends, in the navbar rather than on a page of their own.
@@ -137,22 +138,7 @@ export function FriendsPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent): void {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
+  useClickOutside(open, panelRef, buttonRef, setOpen);
 
   useEffect(() => {
     if (!open || loaded) return;
@@ -207,38 +193,17 @@ export function FriendsPanel({
 
   return (
     <div style={{ position: "relative" }}>
-      <button
-        ref={buttonRef}
-        type="button"
+      <PanelButton
+        buttonRef={buttonRef}
+        open={open}
+        count={waiting}
+        label={hasWaiting ? `${String(waiting)} demandes d'ami en attente` : "Amis"}
         onClick={() => {
           setOpen((o) => !o);
         }}
-        aria-label={hasWaiting ? `${String(waiting)} demandes d'ami en attente` : "Amis"}
-        className="notif-bell"
-        style={{
-          position: "relative",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 36,
-          height: 36,
-          background: open
-            ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
-            : "transparent",
-          border: `1px solid ${open ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "transparent"}`,
-          cursor: "pointer",
-          color: open ? "var(--cosmetic-accent)" : "#7F7BA9",
-          transition: "all 150ms ease",
-        }}
       >
         <FriendsGlyph />
-
-        {hasWaiting && (
-          <span aria-hidden="true" className="fp-badge">
-            {waiting > 99 ? "99+" : String(waiting)}
-          </span>
-        )}
-      </button>
+      </PanelButton>
 
       {open && (
         <div ref={panelRef} className="fp-panel">
