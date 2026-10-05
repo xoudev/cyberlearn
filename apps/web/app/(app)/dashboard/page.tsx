@@ -15,7 +15,7 @@ import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
 import { CATALOGUE_PATH, leaderboardRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
-import { StreakWeekCard } from "@/components/streak-week-card";
+import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 
 const CAT_LABELS: Record<string, string> = {
@@ -309,7 +309,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
             </div>
             <div className="dash-week">
               <QuestsPanel userId={authUser.id} />
-              <StreakWeekCard userId={authUser.id} />
+              <StreakCard userId={authUser.id} />
             </div>
           </section>
         </div>

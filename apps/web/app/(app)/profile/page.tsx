@@ -9,7 +9,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { glyphNameOf, glyphPath } from "@/lib/avatar/glyphs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { StreakPanel } from "@/components/streak-panel";
+import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
 import type {
@@ -635,7 +635,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
                   {user.streakDays}j
                 </b>{" "}
-                streak
+                de série
               </span>
               {legendaryCount > 0 && (
                 <>
@@ -937,7 +937,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         </StatCell>
 
         {/* 02 · Streak */}
-        <StatCell idx="02" label="Streak">
+        <StatCell idx="02" label="Série">
           <div style={{ position: "relative" }}>
             <svg
               width="20"
@@ -1113,7 +1113,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         >
           Série quotidienne
         </h2>
-        <StreakPanel userId={authUser.id} />
+        <StreakCard userId={authUser.id} year />
       </div>
 
       {/* ── Ma classe ───────────────────────────────────────────────────────

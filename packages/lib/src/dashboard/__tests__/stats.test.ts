@@ -17,7 +17,7 @@ describe("dashboardStats", () => {
     expect(dashboardStats(BASE)).toEqual([
       { label: "Leçons ce mois-ci", value: 4, unit: null, detail: "31 au total", highlight: true },
       {
-        label: "Streak actuel",
+        label: "Série en cours",
         value: 6,
         unit: "j",
         detail: "Record perso · 12 j",
