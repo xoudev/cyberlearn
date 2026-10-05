@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * A student's own class, and where they stand in it.
@@ -157,7 +158,7 @@ export function StudentClass({
                 />
               </span>
               <span className="cls-person__meta">
-                LVL·{p.level} · {p.completed} leçon{p.completed > 1 ? "s" : ""}
+                {levelLabel(p.level)} · {p.completed} leçon{p.completed > 1 ? "s" : ""}
               </span>
             </li>
           ))}

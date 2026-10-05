@@ -11,6 +11,7 @@ import {
 } from "@/app/(app)/_actions/friend-actions";
 import { AvatarView } from "@/components/avatar-view";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * Friends, in the navbar rather than on a page of their own.
@@ -90,7 +91,7 @@ function Row({
         ) : (
           <span className="fp-name">{name}</span>
         )}
-        <span className="fp-meta">NIV·{person.level}</span>
+        <span className="fp-meta">{levelLabel(person.level)}</span>
       </span>
 
       <span className="fp-actions">

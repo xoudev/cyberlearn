@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import type { PodLadderEntry } from "@cyberlearn/db";
 import { DIVISION_LABEL, type LeagueDivisionCode } from "@cyberlearn/lib";
-import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
+import { DISPLAY, fmtXp, HexAvatar, MONO } from "./shared";
 import { EmptyState } from "@/components/empty-state";
+import { initialsOf } from "@/lib/avatar/glyphs";
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ function Chip({ color, label }: { color: string; label: string }): React.JSX.Ele
 
 function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
   const isMe = entry.isCurrentUser;
-  const mono = getMonogram(entry.displayName, entry.username);
+  const mono = initialsOf(entry.displayName ?? entry.username ?? "Anonyme");
   const handle = entry.username ?? entry.displayName ?? "Anonyme";
   const accent = isMe ? CYAN : entry.promotion ? PROMOTE : entry.relegation ? RELEGATE : null;
 

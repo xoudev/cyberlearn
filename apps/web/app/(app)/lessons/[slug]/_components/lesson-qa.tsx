@@ -1,5 +1,6 @@
 import React from "react";
 import { PostQuestionForm, PostAnswerForm, AcceptAnswerButton, UpvoteButton } from "./qa-forms";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 interface Answer {
   id: string;
@@ -377,7 +378,9 @@ function UserPill({
       </span>
       <span style={{ color: user ? "#F5F5FA" : "#7F7BA9", fontWeight: 600 }}>{name}</span>
       {user && (
-        <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>LVL·{user.level}</span>
+        <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>
+          {levelLabel(user.level)}
+        </span>
       )}
     </span>
   );

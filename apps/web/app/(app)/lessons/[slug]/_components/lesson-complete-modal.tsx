@@ -9,6 +9,7 @@ import {
   toBadgeRarity,
 } from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -304,7 +305,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             }}
           >
             <div style={{ color: "#B8B5D1", fontWeight: 600, marginBottom: 2 }}>
-              LVL·{result.newLevel}
+              {levelLabel(result.newLevel)}
             </div>
             <div>crédités</div>
           </div>

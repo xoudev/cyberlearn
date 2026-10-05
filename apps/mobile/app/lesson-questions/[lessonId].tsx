@@ -30,6 +30,7 @@ import {
 } from "@/lib/lesson-qa";
 import { useLessonQa } from "@/lib/queries";
 import { useSession } from "@/lib/session";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * A lesson's questions and answers: the Q&A under a lesson on the site. Ask,
@@ -99,7 +100,7 @@ function AuthorLine({
         {author?.name ?? "Utilisateur supprimé"}
       </Text>
       {author ? (
-        <Text style={{ color: theme.accent }}>{` LVL·${String(author.level)}`}</Text>
+        <Text style={{ color: theme.accent }}>{` ${levelLabel(author.level)}`}</Text>
       ) : null}
       {` · ${qaDate(date)}`}
       {extra !== undefined ? ` · ${extra}` : ""}

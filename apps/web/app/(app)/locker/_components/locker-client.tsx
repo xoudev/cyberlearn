@@ -8,6 +8,7 @@ import { useCosmetics } from "@/components/cosmetics-provider";
 import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StatTile } from "@/components/stat-tile";
+import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -53,13 +54,6 @@ const SLOT_LABEL: Record<CosmeticType, string> = {
   HEXAGON_STYLE: "Hexagone",
   PROFILE_FRAME: "Cadre",
   ACCENT_COLOR: "Accent",
-};
-
-const RARITY_COLOR: Record<string, string> = {
-  COMMON: "#B8B5D1",
-  RARE: "#6E8BFF",
-  EPIC: "#B14DFF",
-  LEGENDARY: "#FFB547",
 };
 
 function initialEquipped(items: LockerItem[]): Record<CosmeticType, string | null> {
@@ -192,7 +186,7 @@ function Card({
   onEquip: (i: LockerItem) => void;
   busy: boolean;
 }): React.ReactElement {
-  const rarityColor = RARITY_COLOR[item.rarity] ?? "#B8B5D1";
+  const rarityColor = BADGE_RARITY_VAR[toBadgeRarity(item.rarity)];
   const pct =
     item.progressTotal > 0
       ? Math.min(100, Math.round((item.progressDone / item.progressTotal) * 100))

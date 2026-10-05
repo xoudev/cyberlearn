@@ -1,11 +1,9 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { lessonByline } from "@/lib/lessons/byline";
-
-const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
+import { AvatarView } from "@/components/avatar-view";
 
 /**
  * Who wrote this lesson, in the right rail.
@@ -40,8 +38,7 @@ export async function LessonAuthor({
   // author is anonymous, and neither the platform nor an erased account has a
   // face to show.
   const named = byline.kind === "person";
-  const avatar =
-    named && rawAvatar !== null && !rawAvatar.startsWith("__glyph:") ? rawAvatar : null;
+  const avatar = named ? rawAvatar : null;
   const profileUrl = byline.profilePath;
   const roleLabel = byline.roleLabel ?? undefined;
 
@@ -63,46 +60,12 @@ export async function LessonAuthor({
         padding: "10px 12px",
       }}
     >
-      <div
-        style={{
-          width: 34,
-          height: 34,
-          clipPath: HEX_CLIP,
-          background:
-            byline.kind === "gone"
-              ? "#110F33"
-              : "color-mix(in srgb, var(--cosmetic-accent) 22%, #110F33)",
-          display: "grid",
-          placeItems: "center",
-          position: "relative",
-          overflow: "hidden",
-          flexShrink: 0,
-        }}
-      >
-        {avatar ? (
-          <Image
-            src={avatar}
-            alt=""
-            fill
-            style={{ objectFit: "cover", clipPath: HEX_CLIP }}
-            sizes="34px"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 12,
-              // On the accent-tinted hexagon, which is dark: the accent itself
-              // reads, near-black does not.
-              color: byline.kind === "gone" ? "#7F7BA9" : "var(--cosmetic-accent)",
-            }}
-          >
-            {byline.kind === "gone" ? "?" : name.charAt(0).toUpperCase()}
-          </span>
-        )}
-      </div>
+      <AvatarView
+        src={avatar}
+        name={byline.kind === "gone" ? "?" : name}
+        className={`lesson-author__avatar${byline.kind === "gone" ? " lesson-author__avatar--gone" : ""}`}
+        glyphSize={16}
+      />
 
       <div style={{ minWidth: 0 }}>
         <div

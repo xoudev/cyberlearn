@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NAVBAR_HEIGHT } from "@/lib/chrome";
@@ -7,17 +6,13 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { wrappedWindow } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
-import { glyphPath } from "@/lib/avatar/glyphs";
 import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
+import { AvatarView } from "./avatar-view";
 import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
 import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
 import { WrappedChip } from "./wrapped-chip";
-
-// ── Glyph avatar helper ────────────────────────────────────────────────────────
-// avatarUrl stored as "__glyph:{name}" - never pass to next/image. The paths
-// themselves live in lib/avatar/glyphs, which is the one copy of them.
 
 function GearGlyph(): React.ReactElement {
   return (
@@ -38,27 +33,8 @@ function GearGlyph(): React.ReactElement {
   );
 }
 
-function GlyphAvatar({ name, size }: { name: string; size: number }): React.ReactElement {
-  const d = glyphPath(name);
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--cosmetic-accent)"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {d !== null ? <path d={d} /> : <circle cx="12" cy="12" r="8" />}
-    </svg>
-  );
-}
-
 export async function Navbar(): Promise<React.ReactElement> {
-  let initials = "??";
+  let displayName = "";
   let avatarUrl: string | null = null;
   let unreadCount = 0;
   let friendRequestCount = 0;
@@ -73,15 +49,7 @@ export async function Navbar(): Promise<React.ReactElement> {
     // through unchanged, so the rendering logic below is untouched.
     avatarUrl = await resolveAvatarSrc(dbUser?.avatarUrl ?? null);
 
-    const name = dbUser?.displayName ?? "";
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    const p0 = parts[0];
-    const p1 = parts[1];
-    if (p0 && p1) {
-      initials = (p0.charAt(0) + p1.charAt(0)).toUpperCase();
-    } else if (p0) {
-      initials = p0.slice(0, 2).toUpperCase();
-    }
+    displayName = dbUser?.displayName ?? "";
 
     if (userId) {
       // Two counts, one round trip each, on the one component every signed-in
@@ -150,49 +118,20 @@ export async function Navbar(): Promise<React.ReactElement> {
         {/* The avatar, a link to the profile. The level is no longer written
             here: the sidebar's account block already says it on every page. */}
         <Link href="/profile" className="navbar-me" title="Mon profil" aria-label="Mon profil">
-          {(() => {
-            const glyphName = avatarUrl?.startsWith("__glyph:") ? avatarUrl.slice(8) : null;
-            const isRealUrl = avatarUrl && !avatarUrl.startsWith("__glyph:");
-            return (
-              <div
-                style={{
-                  width: 26,
-                  height: 29,
-                  clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
-                  flexShrink: 0,
-                  overflow: "hidden",
-                  background: glyphName
-                    ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
-                    : isRealUrl
-                      ? "transparent"
-                      : "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
-                  display: "grid",
-                  placeItems: "center",
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 11,
-                  color: "#030219",
-                  // equipped hexagon glow + frame on the user's own avatar
-                  ...cosmeticAvatarFilter(0.4),
-                }}
-                aria-hidden="true"
-              >
-                {glyphName ? (
-                  <GlyphAvatar name={glyphName} size={16} />
-                ) : isRealUrl && avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt=""
-                    width={26}
-                    height={29}
-                    style={{ objectFit: "cover", width: "100%", height: "100%" }}
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
-            );
-          })()}
+          {/* The equipped hexagon glow and frame are a filter on the frame, as
+              in the sidebar: AvatarView draws, this span frames. */}
+          <span
+            className="navbar-avatar-frame"
+            style={cosmeticAvatarFilter(0.4)}
+            aria-hidden="true"
+          >
+            <AvatarView
+              src={avatarUrl}
+              name={displayName}
+              className="navbar-avatar"
+              glyphSize={16}
+            />
+          </span>
         </Link>
       </div>
     </header>

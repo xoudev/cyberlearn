@@ -24,6 +24,10 @@ export interface AvatarViewProps {
   className?: string;
   /** Drawing size for a glyph, in px. Matches the class's box. */
   glyphSize?: number;
+  /** The glyph's stroke: the accent, unless the surface has a colour of its own. */
+  glyphColor?: string;
+  /** What the surface cannot say in a class: a gradient of its own, say. */
+  style?: React.CSSProperties;
 }
 
 export function AvatarView({
@@ -31,18 +35,20 @@ export function AvatarView({
   name,
   className,
   glyphSize = 20,
+  glyphColor = "var(--cosmetic-accent)",
+  style,
 }: AvatarViewProps): React.JSX.Element {
   const glyph = glyphNameOf(src);
   if (glyph !== null) {
     const d = glyphPath(glyph);
     return (
-      <span className={className}>
+      <span className={className} style={style}>
         <svg
           width={glyphSize}
           height={glyphSize}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="var(--cosmetic-accent)"
+          stroke={glyphColor}
           strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -58,11 +64,11 @@ export function AvatarView({
     // A plain <img>, not next/image: a signed URL carries a token and expires,
     // so the optimizer would cache a copy that outlives it and serve a 400.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img className={className} src={src} alt={`Avatar de ${name}`} />;
+    return <img className={className} style={style} src={src} alt={`Avatar de ${name}`} />;
   }
 
   return (
-    <span className={className} aria-hidden="true">
+    <span className={className} style={style} aria-hidden="true">
       {initialsOf(name)}
     </span>
   );

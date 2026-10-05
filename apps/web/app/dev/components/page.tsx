@@ -1,13 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import {
-  XPBar,
-  LevelBadge,
-  RarityBadge,
-  LessonCard,
-  PathProgress,
-  NotificationBell,
-} from "@cyberlearn/ui";
+import { LessonCard } from "@cyberlearn/ui";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -106,71 +99,6 @@ export default function DevComponentsPage(): React.JSX.Element {
           <Separator />
         </div>
 
-        <Section title="LevelBadge" description="3 tailles, pill avec préfixe NV.">
-          <DemoCard>
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <LevelBadge level={7} size="sm" />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  sm
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <LevelBadge level={12} size="md" />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  md
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <LevelBadge level={99} size="lg" />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  lg
-                </span>
-              </div>
-            </div>
-            <div
-              className="flex items-center gap-3 pl-4 border-l"
-              style={{ borderColor: "var(--color-border-subtle)" }}
-            >
-              <span
-                className="text-sm font-medium"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                Jordan
-              </span>
-              <LevelBadge level={23} size="md" />
-            </div>
-          </DemoCard>
-        </Section>
-
-        <Section title="XPBar" description="Barre de progression XP avec valeurs optionnelles">
-          <DemoCard>
-            <div className="w-full max-w-sm space-y-4">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <LevelBadge level={5} size="sm" />
-                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                    320 / 500 XP
-                  </span>
-                </div>
-                <XPBar currentXP={320} xpForNextLevel={500} level={5} />
-              </div>
-              <XPBar currentXP={320} xpForNextLevel={500} level={5} showValues />
-              <XPBar currentXP={500} xpForNextLevel={500} level={6} showValues />
-            </div>
-          </DemoCard>
-        </Section>
-
-        <Section title="RarityBadge" description="Raretés alignées sur l'enum Prisma BadgeRarity">
-          <DemoCard>
-            <RarityBadge rarity="COMMON" />
-            <RarityBadge rarity="RARE" />
-            <RarityBadge rarity="EPIC" />
-            <RarityBadge rarity="LEGENDARY" />
-            <RarityBadge rarity="LEGENDARY" showDot={false} />
-          </DemoCard>
-        </Section>
-
         <Section title="LessonCard" description="États NOT_STARTED / IN_PROGRESS / COMPLETED" grid>
           <LessonCard
             title="Introduction au phishing"
@@ -199,67 +127,6 @@ export default function DevComponentsPage(): React.JSX.Element {
             status="COMPLETED"
             category="Cryptographie"
           />
-        </Section>
-
-        <Section title="PathProgress" description="Variantes bar et compact">
-          <DemoCard>
-            <div className="w-full max-w-sm space-y-4">
-              <PathProgress
-                pathName="Sécurité des mots de passe"
-                completedLessons={3}
-                totalLessons={8}
-              />
-              <PathProgress
-                pathName="Phishing & Ingénierie sociale"
-                completedLessons={8}
-                totalLessons={8}
-              />
-              <Separator />
-              <PathProgress
-                pathName="Réseau & Systèmes"
-                completedLessons={1}
-                totalLessons={12}
-                variant="compact"
-              />
-              <PathProgress
-                pathName="Cryptographie avancée"
-                completedLessons={6}
-                totalLessons={6}
-                variant="compact"
-              />
-            </div>
-          </DemoCard>
-        </Section>
-
-        <Section title="NotificationBell" description="Avec badge de comptage (99+ cap)">
-          <DemoCard>
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <NotificationBell unreadCount={0} />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  0
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <NotificationBell unreadCount={3} />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  3
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <NotificationBell unreadCount={12} />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  12
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <NotificationBell unreadCount={100} />
-                <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-                  99+
-                </span>
-              </div>
-            </div>
-          </DemoCard>
         </Section>
 
         {/* ── shadcn/ui ─────────────────────────────────────────────── */}

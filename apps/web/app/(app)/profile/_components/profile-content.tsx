@@ -2,24 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  BadgeMedallion,
-  BADGE_RARITY_LABELS,
-  BADGE_RARITY_VAR,
-  toBadgeRarity,
-} from "@cyberlearn/ui";
+import { BadgeCard } from "@/components/badge-card";
+import type { SerializedBadge } from "@/lib/badges/collection";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface SerializedBadge {
-  id: string;
-  name: string;
-  description: string;
-  iconUrl: string;
-  rarity: string;
-  criterionType: string;
-  earnedDateStr: string;
-}
 
 export interface SerializedLesson {
   lessonId: string;
@@ -51,108 +37,6 @@ const CAT_COLOR: Record<string, string> = {
   DEV: "#6E8BFF",
   NETWORK: "#0AFFD4",
 };
-
-// ── Badge card ────────────────────────────────────────────────────────────────
-
-function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
-  const rarity = toBadgeRarity(badge.rarity);
-  const v = BADGE_RARITY_VAR[rarity];
-
-  return (
-    <article
-      style={{
-        position: "relative",
-        padding: "24px 18px 22px",
-        background: "rgba(10,8,38,0.5)",
-        border: "1px solid #1F1B47",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        textAlign: "center",
-        overflow: "hidden",
-      }}
-    >
-      {/* Rarity glow bg */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse 80% 60% at 50% 100%, color-mix(in oklab, ${v} 16%, transparent), transparent 70%)`,
-          opacity: 0.55,
-          pointerEvents: "none",
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Rarity strip */}
-      <span
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: `linear-gradient(90deg, transparent, ${v}, transparent)`,
-          boxShadow: `0 0 10px color-mix(in oklab, ${v} 60%, transparent)`,
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Hex medallion - shared component (earned-only) */}
-      <BadgeMedallion
-        rarity={rarity}
-        size="md"
-        iconUrl={badge.iconUrl}
-        name={badge.name}
-        style={{ marginBottom: 18 }}
-      />
-
-      {/* Rarity label */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: 9.5,
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          color: v,
-          marginBottom: 8,
-        }}
-      >
-        · {BADGE_RARITY_LABELS[rarity]} ·
-      </div>
-
-      {/* Name */}
-      <h3
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontWeight: 700,
-          fontSize: 16,
-          lineHeight: 1.15,
-          color: "#F5F5FA",
-          margin: "0 0 8px",
-          letterSpacing: "-0.01em",
-          overflowWrap: "anywhere",
-          maxWidth: "100%",
-        }}
-      >
-        {badge.name}
-      </h3>
-
-      {/* Earned date */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          color: "#7F7BA9",
-          letterSpacing: "0.08em",
-        }}
-      >
-        Obtenu · {badge.earnedDateStr}
-      </div>
-    </article>
-  );
-}
 
 // ── Activity feed ─────────────────────────────────────────────────────────────
 
@@ -726,7 +610,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
             }}
           >
             {badges.map((b) => (
-              <ProfileBadgeCard key={b.id} badge={b} />
+              <BadgeCard key={b.id} badge={b} />
             ))}
           </div>
         ))}

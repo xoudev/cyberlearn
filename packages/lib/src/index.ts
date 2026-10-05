@@ -34,3 +34,4 @@ export * from "./quiz/option-order.js";
 export * from "./quiz/report-reasons.js";
 export * from "./revisions/review-display.js";
 export * from "./revisions/session.js";
+export * from "./gamification/level-label.js";

@@ -81,3 +81,14 @@ describe("neither", () => {
     expect(render({ src: "", name: "Sacha" })).toContain("SA");
   });
 });
+
+describe("a glyph", () => {
+  it("is drawn in the accent, or in the colour the surface asks for", () => {
+    expect(render({ src: "__glyph:shield", name: "Amélie" })).toContain(
+      'stroke="var(--cosmetic-accent)"',
+    );
+    expect(render({ src: "__glyph:shield", name: "Amélie", glyphColor: "#FFB547" })).toContain(
+      'stroke="#FFB547"',
+    );
+  });
+});
