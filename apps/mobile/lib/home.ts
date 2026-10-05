@@ -1,4 +1,6 @@
 import { rankFeaturedPaths, type FeaturedContext } from "@cyberlearn/lib/dashboard/featured-paths";
+import { moduleRoute, type ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
+import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty } from "./db";
 import { dbTime } from "./db-time";
 
@@ -15,6 +17,8 @@ export interface HomePathLesson {
   title: string;
   estimatedMinutes: number;
   position: number;
+  /** The module the lesson is filed under in this path; null when none. */
+  moduleId: string | null;
 }
 
 export interface HomePath {
@@ -28,6 +32,8 @@ export interface HomePath {
   /** The reader's progress on it, or null when never started. */
   status: string | null;
   lessons: HomePathLesson[];
+  /** The path's own modules, in order; empty for a path without any. */
+  modules: ModuleRef[];
 }
 
 export interface LeadProgress {
@@ -41,6 +47,8 @@ export interface HomePaths {
   lead: HomePath | null;
   /** Its progress, only once the reader has started it: a poster otherwise. */
   leadProgress: LeadProgress | null;
+  /** The lead's module in progress, drawn lesson by lesson, as the site draws it. */
+  leadRoute: ModuleRoute | null;
   other: HomePath | null;
 }
 
@@ -57,13 +65,17 @@ export function homePaths(
   paths: readonly HomePath[],
   completed: ReadonlySet<string>,
   context: FeaturedContext,
+  /** The lesson left open, if any: the route centres on it when it is the lead's. */
+  resumeId: string | null = null,
 ): HomePaths {
   const [lead, other] = rankFeaturedPaths(paths, context);
-  if (!lead) return { lead: null, leadProgress: null, other: null };
+  if (!lead) return { lead: null, leadProgress: null, leadRoute: null, other: null };
   const progress = progressIn(lead, completed);
+  const ordered = [...lead.lessons].sort((a, b) => a.position - b.position);
   return {
     lead,
     leadProgress: progress.completed > 0 ? progress : null,
+    leadRoute: moduleRoute(ordered, lead.modules, completed, resumeId),
     other: other ?? null,
   };
 }

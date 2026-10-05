@@ -12,6 +12,7 @@ import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { ActionChip, GradientButton, IconButton } from "@/components/buttons";
 import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
+import { ModuleRouteRow } from "@/components/module-route";
 import { BadgeIcon } from "@/components/media";
 import { RevisionsCard } from "@/components/revisions-card";
 import { Screen } from "@/components/screen";
@@ -23,6 +24,7 @@ import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "@/lib/db";
 import { firstName, leadAction, pathsTitle, type HomePath, type LeadProgress } from "@/lib/home";
+import type { ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import {
   useDashboard,
   useQuests,
@@ -245,7 +247,7 @@ function HomeBody({
         />
         {paths.lead ? (
           <View style={{ gap: 10 }}>
-            <LeadPathCard path={paths.lead} progress={paths.leadProgress} />
+            <LeadPathCard path={paths.lead} progress={paths.leadProgress} route={paths.leadRoute} />
             {paths.other ? <OtherPathCard path={paths.other} /> : null}
           </View>
         ) : (
@@ -410,9 +412,12 @@ function HomeBody({
 function LeadPathCard({
   path,
   progress,
+  route,
 }: {
   path: HomePath;
   progress: LeadProgress | null;
+  /** The module in progress, drawn lesson by lesson, as the site's dashboard draws it. */
+  route: ModuleRoute | null;
 }): React.JSX.Element {
   const router = useRouter();
   const accent = CATEGORY_COLOR[path.category];
@@ -442,6 +447,8 @@ function LeadPathCard({
           </Text>
         </View>
       </PressableScale>
+
+      {route ? <ModuleRouteRow route={route} /> : null}
 
       {progress ? (
         <View style={{ gap: 6 }}>

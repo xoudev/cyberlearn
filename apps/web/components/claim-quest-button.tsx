@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { claimQuestAction } from "@/app/(app)/dashboard/_actions/quest-actions";
+import { QUEST_COPY } from "@cyberlearn/lib/gamification/weekly-quests";
 import { LevelUpModal } from "@/components/level-up-modal";
 
 /** Claim button for a completed weekly quest. Calls the server action and refreshes. */
@@ -39,7 +40,7 @@ export function ClaimQuestButton({
               if (res.leveledUp === true && res.newLevel !== undefined) {
                 setLevelUp({ newLevel: res.newLevel, xpGained: gained });
               } else {
-                toast.success(`+${String(gained)} XP réclamés`);
+                toast.success(QUEST_COPY.claimedToast(gained));
                 router.refresh();
               }
             } else {
@@ -47,27 +48,9 @@ export function ClaimQuestButton({
             }
           });
         }}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          height: 34,
-          padding: "0 16px",
-          border: "none",
-          background: "var(--cosmetic-accent)",
-          color: "#03251F",
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          cursor: pending ? "not-allowed" : "pointer",
-          opacity: pending ? 0.6 : 1,
-          clipPath: "polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%)",
-          boxShadow: "0 0 16px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
-        }}
+        className="dash-btn dash-btn--small"
       >
-        {pending ? "…" : `Réclamer +${String(xpReward)} XP`}
+        {pending ? "…" : QUEST_COPY.claim(xpReward)}
       </button>
       {levelUp !== null && (
         <LevelUpModal

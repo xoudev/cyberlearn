@@ -1,6 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { XpHeroCard } from "../(app)/dashboard/_components/xp-hero-card";
+import { LevelRing } from "../(app)/dashboard/_components/level-ring";
 import { PathsCollection, type SerializedPath } from "../(app)/paths/_components/paths-collection";
 import {
   TeacherClasses,
@@ -264,10 +264,9 @@ export default function ShotCapture(): React.JSX.Element {
     <div style={{ background: "#030219" }}>
       <Frame id="cap-paths">
         <div style={{ marginBottom: 28 }}>
-          <XpHeroCard
+          <LevelRing
             level={7}
-            rankName="Argent"
-            nextRank="Or"
+            rankName="Apprenti confirmé"
             xpCurrent={1840}
             xpNeeded={2000}
             xpPercent={92}
