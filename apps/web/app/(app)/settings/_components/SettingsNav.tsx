@@ -3,30 +3,39 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SETTINGS_SECTIONS, settingsHref } from "./sections";
 import { EASE, MONO, S } from "./tokens";
 
-interface NavSection {
-  href: string;
-  label: string;
-  danger?: boolean;
-}
-
-const SECTIONS: NavSection[] = [
-  { href: "/settings/profile", label: "Profil" },
-  { href: "/settings/privacy", label: "Confidentialité" },
-  { href: "/settings/preferences", label: "Préférences" },
-  { href: "/settings/notifications", label: "Notifications" },
-  { href: "/settings/moderation", label: "Modération" },
-  { href: "/settings/account", label: "Compte" },
-  { href: "/settings/data", label: "Données", danger: true },
-];
-
-export function SettingsNav(): React.JSX.Element {
+/**
+ * The sections, one under the other. On the settings page it sticks beside
+ * the content; in the drawer it replaces the history entry rather than adding
+ * one, so that closing the drawer goes back to the page it opened over.
+ */
+export function SettingsNav({
+  replace = false,
+  sticky = true,
+}: {
+  replace?: boolean;
+  sticky?: boolean;
+} = {}): React.JSX.Element {
   const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
+  const sections = SETTINGS_SECTIONS.map((section) => ({
+    ...section,
+    href: settingsHref(section.key),
+  }));
 
   return (
-    <nav style={{ position: "sticky", top: 80, display: "flex", flexDirection: "column", gap: 2 }}>
+    <nav
+      className="settings-nav"
+      style={{
+        position: sticky ? "sticky" : "static",
+        top: 80,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
       <div
         style={{
           fontFamily: MONO,
@@ -48,7 +57,7 @@ export function SettingsNav(): React.JSX.Element {
         Sections
       </div>
 
-      {SECTIONS.map((s, i) => {
+      {sections.map((s, i) => {
         const active = pathname === s.href;
         const isHover = hovered === s.href && !active;
         const accent = s.danger ? S.danger : S.turq;
@@ -63,6 +72,7 @@ export function SettingsNav(): React.JSX.Element {
           <Link
             key={s.href}
             href={s.href}
+            replace={replace}
             aria-current={active ? "page" : undefined}
             onMouseEnter={() => {
               setHovered(s.href);
