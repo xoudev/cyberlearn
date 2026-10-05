@@ -4,7 +4,9 @@ import { LESSON_COMPONENTS } from "./components.js";
 import {
   COMPONENT_FORMS,
   componentForm,
+  FORM,
   INNER,
+  problemField,
   uniqueId,
   validateComponent,
   type ComponentForm,
@@ -53,22 +55,8 @@ describe("the component forms", () => {
     }
   });
 
-  it("cover the eleven base components", () => {
-    expect([...COMPONENT_FORMS.keys()].sort()).toEqual(
-      [
-        "Callout",
-        "Quiz",
-        "QuizGroup",
-        "CodePlayground",
-        "PythonChallenge",
-        "SimulatedTerminal",
-        "LinuxTerminal",
-        "LessonVideo",
-        "LessonImage",
-        "ExternalLink",
-        "Diagram",
-      ].sort(),
-    );
+  it("cover every component the pipeline draws", () => {
+    expect([...COMPONENT_FORMS.keys()].sort()).toEqual([...LESSON_COMPONENT_NAMES].sort());
   });
 
   it.each(
@@ -186,6 +174,110 @@ describe("validateComponent", () => {
     expect(validateComponent(form("LinuxTerminal"), { files: { "": "x" } }, null)).toEqual({
       files: "Chaque ligne a une clé et un texte.",
     });
+  });
+});
+
+describe("the components' own parsers, behind the forms", () => {
+  it("refuse what the page refuses, under the field at fault", () => {
+    const flaw = form("FindTheFlaw");
+    const good = {
+      id: "f-1",
+      code: "a\nb",
+      line: 2,
+      options: ["x", "y"],
+      correct: 0,
+      explanation: "Parce que.",
+    };
+    expect(validateComponent(flaw, good, null)).toEqual({});
+    // The form's own bound first: a line below 1.
+    expect(validateComponent(flaw, { ...good, line: 0 }, null)).toEqual({ line: "Au moins 1." });
+    // Then the parser's: a line past the code.
+    expect(Object.keys(validateComponent(flaw, { ...good, line: 5 }, null))).toEqual([
+      expect.stringMatching(/line|form/),
+    ]);
+  });
+
+  it("report a problem about the block as a whole under FORM", () => {
+    const packet = form("PacketDissector");
+    const errors = validateComponent(
+      packet,
+      { id: "p-1", frame: { eth: { src: "08:00:27:4e:66:a1", dst: "00:0c:29:1a:2b:3c" } } },
+      null,
+    );
+    expect(Object.keys(errors)).toEqual([FORM]);
+    expect(errors[FORM]).toContain("arp ou ip");
+  });
+
+  it("file a nested path under its first segment, keeping the rest", () => {
+    const firewall = form("FirewallLab");
+    expect(problemField(firewall, "probes.0.port : un paquet icmp n'a pas de port.")).toEqual([
+      "probes",
+      "0.port : un paquet icmp n'a pas de port.",
+    ]);
+    expect(problemField(firewall, "id : Too small")).toEqual(["id", "Too small"]);
+    expect(problemField(firewall, "quelque chose de global")).toEqual([
+      FORM,
+      "quelque chose de global",
+    ]);
+  });
+});
+
+describe("the field kinds of the exercises", () => {
+  it("read a group field by field, naming the sub-field", () => {
+    const osint = form("PhotoOsint");
+    const base = { id: "o-1", src: "/osint/x.jpg", alt: "a", task: "t", place: "p" };
+    expect(validateComponent(osint, base, null)).toEqual({ answer: "Obligatoire." });
+    expect(
+      validateComponent(osint, { ...base, answer: { latitude: 95, longitude: 4 } }, null),
+    ).toEqual({ answer: "Latitude : Au plus 90." });
+    expect(
+      validateComponent(osint, { ...base, answer: { latitude: 45.7, longitude: 4.8 } }, null),
+    ).toEqual({});
+  });
+
+  it("hold a multiselect to its options", () => {
+    const crypto = form("CryptoWorkshop");
+    expect(validateComponent(crypto, { id: "c-1", tools: ["xor", "rot13"] }, null)).toEqual({
+      tools: "« rot13 » n'est pas un des choix.",
+    });
+    expect(validateComponent(crypto, { id: "c-1", tools: ["xor", "hex"] }, null)).toEqual({});
+  });
+
+  it("let a JSON field through to the parser", () => {
+    const sql = form("SqlPlayground");
+    const base = { id: "s-1", schema: "CREATE TABLE t (a INT);" };
+    expect(validateComponent(sql, { ...base, expected: { rows: [[1]] } }, null)).toEqual({});
+    const errors = validateComponent(sql, { ...base, expected: { rows: "x" } }, null);
+    expect(Object.keys(errors)).toEqual(["expected"]);
+  });
+
+  it("take one answer or several in a texts column, and a boolean column", () => {
+    const hex = form("HexEditor");
+    const base = { id: "h-1", task: "t", bytes: "89 50" };
+    expect(
+      validateComponent(
+        hex,
+        { ...base, questions: [{ label: "?", answer: ["1x1", "1 x 1"] }] },
+        null,
+      ),
+    ).toEqual({});
+    expect(
+      validateComponent(hex, { ...base, questions: [{ label: "?", answer: 3 }] }, null),
+    ).toEqual({ questions: "Ligne 1 : Réponse doit être du texte, ou plusieurs séparés par |." });
+    const lab = form("SqlInjectionLab");
+    expect(
+      validateComponent(
+        lab,
+        {
+          id: "l-1",
+          schema: "x",
+          query: "SELECT 1 WHERE a = '{login}'",
+          goal: "g",
+          fields: [{ name: "login", label: "Identifiant", secret: "oui" }],
+        },
+        null,
+      ),
+    ).toEqual({ fields: "Ligne 1 : Masqué vaut oui ou non." });
   });
 });
 

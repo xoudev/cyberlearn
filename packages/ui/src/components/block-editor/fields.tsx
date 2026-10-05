@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import type { RowColumn, SelectOption } from "@cyberlearn/lib/mdx-forms";
 
 /**
@@ -548,6 +548,30 @@ export function RowsInput({
                       update(i, column.key, next);
                     }}
                   />
+                ) : column.kind === "texts" ? (
+                  <TextInput
+                    value={
+                      Array.isArray(value)
+                        ? value.join(" | ")
+                        : typeof value === "string"
+                          ? value
+                          : ""
+                    }
+                    placeholder={column.placeholder ?? "une réponse | une autre"}
+                    ariaLabel={name}
+                    onChange={(next) => {
+                      const parts = next.split("|").map((part) => part.trim());
+                      update(i, column.key, parts.length > 1 ? parts : next);
+                    }}
+                  />
+                ) : column.kind === "boolean" ? (
+                  <Checkbox
+                    checked={value === true}
+                    label={value === true ? "Oui" : "Non"}
+                    onChange={(checked) => {
+                      update(i, column.key, checked ? true : undefined);
+                    }}
+                  />
                 ) : (
                   <TextInput
                     value={typeof value === "string" ? value : ""}
@@ -586,6 +610,117 @@ export function RowsInput({
           + Ajouter
         </SmallButton>
       </div>
+    </div>
+  );
+}
+
+/** Several of the options, kept in the options' order. */
+export function MultiSelectInput({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: readonly string[];
+  options: readonly SelectOption[];
+  onChange: (value: string[]) => void;
+  label: string;
+}): React.ReactElement {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px" }}
+    >
+      {options.map((option) => (
+        <label
+          key={option.value}
+          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: TEXT }}
+        >
+          <input
+            type="checkbox"
+            checked={value.includes(option.value)}
+            onChange={(e) => {
+              const next = options
+                .map((o) => o.value)
+                .filter((v) => (v === option.value ? e.target.checked : value.includes(v)));
+              onChange(next);
+            }}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A structure edited as JSON. The text is the widget's own while it is being
+ * typed, since half a structure is not JSON: the value goes out once the
+ * text parses, and the field says so meanwhile. A value changed from outside
+ * (another view, a parse) replaces the text.
+ */
+export function JsonInput({
+  id,
+  value,
+  onChange,
+  rows = 4,
+  placeholder,
+  invalid = false,
+}: {
+  id?: string | undefined;
+  value: unknown;
+  onChange: (value: unknown) => void;
+  rows?: number;
+  placeholder?: string | undefined;
+  invalid?: boolean;
+}): React.ReactElement {
+  const print = (v: unknown): string => (v === undefined ? "" : JSON.stringify(v, null, 2));
+  const [text, setText] = useState(() => print(value));
+  const [broken, setBroken] = useState(false);
+  const emitted = useRef(print(value));
+
+  useEffect(() => {
+    const printed = print(value);
+    if (printed !== emitted.current) {
+      emitted.current = printed;
+      setText(printed);
+      setBroken(false);
+    }
+  }, [value]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <TextArea
+        id={id}
+        value={text}
+        mono
+        rows={rows}
+        placeholder={placeholder}
+        invalid={invalid || broken}
+        onChange={(next) => {
+          setText(next);
+          if (next.trim() === "") {
+            setBroken(false);
+            emitted.current = "";
+            onChange(undefined);
+            return;
+          }
+          try {
+            const parsed: unknown = JSON.parse(next);
+            setBroken(false);
+            emitted.current = print(parsed);
+            onChange(parsed);
+          } catch {
+            setBroken(true);
+          }
+        }}
+      />
+      {broken && (
+        <span role="alert" style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>
+          JSON incomplet ou mal formé : la valeur précédente est gardée en attendant.
+        </span>
+      )}
     </div>
   );
 }

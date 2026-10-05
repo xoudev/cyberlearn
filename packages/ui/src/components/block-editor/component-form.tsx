@@ -9,11 +9,14 @@ import {
   type FormErrors,
 } from "@cyberlearn/lib/mdx-forms";
 import {
+  BORDER,
   Checkbox,
   ChoicesInput,
   Field,
+  JsonInput,
   ListInput,
   MapInput,
+  MultiSelectInput,
   NumberInput,
   omit,
   RowsInput,
@@ -87,6 +90,12 @@ function asString(value: unknown): string {
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => (typeof item === "string" ? item : "")) : [];
+}
+
+function asRecordValue(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
 }
 
 function asRecord(value: unknown): Record<string, string> {
@@ -176,19 +185,86 @@ function FieldView({
           />
         </Field>
       );
-    case "boolean":
+    case "boolean": {
+      // With a default of true, only `false` is worth writing; otherwise only `true`.
+      const checked = typeof value === "boolean" ? value : field.default === true;
       return (
         <Field label={label} hint={field.hint} error={error}>
           <Checkbox
             id={id}
-            checked={value === true}
-            label={value === true ? "Oui" : "Non"}
-            onChange={(checked) => {
-              setAttr(field.key, checked ? true : undefined);
+            checked={checked}
+            label={checked ? "Oui" : "Non"}
+            onChange={(next) => {
+              setAttr(field.key, next === (field.default === true) ? undefined : next);
             }}
           />
         </Field>
       );
+    }
+    case "multiselect":
+      return (
+        <Field label={label} hint={field.hint} error={error}>
+          <MultiSelectInput
+            value={asStrings(value)}
+            options={field.options}
+            label={field.label}
+            onChange={(next) => {
+              setAttr(field.key, next.length === 0 ? undefined : next);
+            }}
+          />
+        </Field>
+      );
+    case "json":
+      return (
+        <Field label={label} hint={field.hint} error={error} htmlFor={id}>
+          <JsonInput
+            id={id}
+            value={value}
+            rows={field.rows ?? 4}
+            placeholder={field.placeholder}
+            invalid={invalid}
+            onChange={(next) => {
+              setAttr(field.key, next);
+            }}
+          />
+        </Field>
+      );
+    case "group": {
+      const group = asRecordValue(value);
+      return (
+        <Field label={label} hint={field.hint} error={error}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              padding: "8px 10px",
+              border: `1px solid ${BORDER}`,
+            }}
+          >
+            {field.fields.map((sub) => (
+              <FieldView
+                key={sub.key}
+                id={`${id}-${sub.key}`}
+                field={sub}
+                attrs={group}
+                inner={null}
+                error={undefined}
+                setAttr={(key, next) => {
+                  const updated = next === undefined ? omit(group, key) : { ...group, [key]: next };
+                  setAttr(field.key, Object.keys(updated).length === 0 ? undefined : updated);
+                }}
+                setAttrs={(next) => {
+                  setAttr(field.key, Object.keys(next).length === 0 ? undefined : next);
+                }}
+                setInner={() => undefined}
+                nested={nested}
+              />
+            ))}
+          </div>
+        </Field>
+      );
+    }
     case "select":
       return (
         <Field label={label} hint={field.hint} error={error} htmlFor={id}>
