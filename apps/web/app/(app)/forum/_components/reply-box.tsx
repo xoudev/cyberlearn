@@ -63,7 +63,7 @@ export function ReplyBox({ topicId }: { topicId: string }): React.JSX.Element {
       )}
 
       <div>
-        <button type="submit" className="fo-btn fo-btn--primary" disabled={pending}>
+        <button type="submit" className="btn btn--accent btn--sm" disabled={pending}>
           {pending ? "Publication…" : "Publier"}
         </button>
       </div>

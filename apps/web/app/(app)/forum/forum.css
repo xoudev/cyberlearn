@@ -308,44 +308,6 @@
   gap: 6px;
 }
 
-.fo-btn {
-  font: 700 10.5px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #b8b5d1;
-  background: transparent;
-  border: 1px solid #2a2560;
-  padding: 7px 11px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-.fo-btn:hover:not(:disabled) {
-  border-color: var(--cosmetic-accent);
-  color: var(--cosmetic-accent);
-}
-.fo-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.fo-btn--primary {
-  color: #05041a;
-  background: var(--cosmetic-accent);
-  border-color: var(--cosmetic-accent);
-}
-.fo-btn--primary:hover:not(:disabled) {
-  color: #05041a;
-  filter: brightness(1.08);
-}
-.fo-btn--danger {
-  color: #ff6b7a;
-  border-color: rgba(255, 71, 87, 0.4);
-}
-.fo-btn--danger:hover:not(:disabled) {
-  border-color: #ff6b7a;
-  color: #ff6b7a;
-}
-
 /* ── Composer ───────────────────────────────────────────────────────────── */
 
 .fo-form {

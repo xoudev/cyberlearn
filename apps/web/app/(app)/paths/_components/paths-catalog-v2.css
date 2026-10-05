@@ -479,59 +479,6 @@
   align-items: stretch;
   margin-top: 22px;
 }
-.pc2-root .btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 0 26px;
-  height: 50px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  background: var(--brand-blue);
-  color: #fff;
-  border: 1px solid var(--brand-blue);
-  text-decoration: none;
-  cursor: pointer;
-  box-shadow:
-    0 0 26px rgba(0, 36, 255, 0.4),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  transition: all var(--dur-base);
-  position: relative;
-}
-.pc2-root .btn-primary:hover {
-  background: var(--brand-blue-hover);
-  box-shadow: 0 0 36px rgba(0, 36, 255, 0.6);
-}
-.pc2-root .btn-primary:active {
-  transform: translateY(1px);
-}
-.pc2-root .btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 22px;
-  height: 50px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: transparent;
-  color: var(--fg-secondary);
-  border: 1px solid var(--border);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--dur-base);
-}
-.pc2-root .btn-ghost:hover {
-  color: var(--fg-primary);
-  border-color: var(--border-strong);
-}
 .pc2-root .hero-path__console {
   position: relative;
   border-left: 1px solid var(--border);
@@ -978,30 +925,10 @@
   position: relative;
   z-index: 1;
 }
-.pc2-root .btn-trophy {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  height: 46px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #ffd27a;
-  background: rgba(255, 181, 71, 0.07);
-  border: 1px solid rgba(255, 181, 71, 0.5);
-  transition: all var(--dur-base);
-}
-.pc2-root .trophy-card:hover .btn-trophy {
+.pc2-root .trophy-card:hover .btn {
   background: rgba(255, 181, 71, 0.14);
   border-color: var(--amber);
   box-shadow: 0 0 22px -6px rgba(255, 181, 71, 0.6);
-}
-.pc2-root .btn-trophy svg {
-  filter: drop-shadow(0 0 4px rgba(255, 181, 71, 0.6));
 }
 
 /* ==========================================================================
@@ -1194,26 +1121,6 @@
 .pc2-root .game-card__foot {
   padding: 0 18px 18px;
 }
-.pc2-root .btn-start {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  width: 100%;
-  height: 42px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--fg-secondary);
-  background: transparent;
-  border: 1px solid var(--border);
-  transition: all var(--dur-base);
-}
-.pc2-root .btn-start svg {
-  transition: transform var(--dur-base);
-}
 .pc2-root .game-card:hover {
   transform: translateY(-4px);
   border-color: color-mix(in oklab, var(--k-color) 55%, transparent);
@@ -1231,13 +1138,13 @@
 .pc2-root .game-card:hover .game-card__cover::after {
   opacity: 1;
 }
-.pc2-root .game-card:hover .btn-start {
+.pc2-root .game-card:hover .btn {
   color: #fff;
   background: var(--brand-blue);
   border-color: var(--brand-blue);
   box-shadow: 0 0 20px rgba(0, 36, 255, 0.4);
 }
-.pc2-root .game-card:hover .btn-start svg {
+.pc2-root .game-card:hover .btn svg {
   transform: translateX(3px);
 }
 

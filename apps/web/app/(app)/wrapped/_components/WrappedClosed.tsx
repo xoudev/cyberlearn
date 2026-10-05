@@ -59,7 +59,7 @@ export function WrappedClosed({
         D&apos;ici là, tout ce que tu termines compte pour le prochain.
       </p>
 
-      <Link href="/dashboard" className="cls-btn cls-btn--link">
+      <Link href="/dashboard" className="btn btn--sm">
         Retour au tableau de bord
       </Link>
     </div>

@@ -99,7 +99,7 @@ export default async function ForumTopicPage({
       {pages > 1 && (
         <nav className="fo-pager" aria-label="Pagination">
           {current > 1 && (
-            <Link href={`${path}?page=${String(current - 1)}`} className="fo-btn">
+            <Link href={`${path}?page=${String(current - 1)}`} className="btn btn--ghost btn--sm">
               ← Précédent
             </Link>
           )}
@@ -107,7 +107,7 @@ export default async function ForumTopicPage({
             page {current} / {pages}
           </span>
           {current < pages && (
-            <Link href={`${path}?page=${String(current + 1)}`} className="fo-btn">
+            <Link href={`${path}?page=${String(current + 1)}`} className="btn btn--ghost btn--sm">
               Suivant →
             </Link>
           )}

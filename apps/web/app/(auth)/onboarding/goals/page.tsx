@@ -65,7 +65,7 @@ export default async function OnboardingGoalsPage({
         />
         <div className="ob-shell__actions" style={{ marginTop: 12 }}>
           <form action={skipOnboarding}>
-            <button type="submit" className="pg-btn pg-btn--ghost">
+            <button type="submit" className="btn btn--ghost btn--block btn--lg">
               Passer, j&apos;explore seul
             </button>
           </form>
@@ -95,9 +95,7 @@ export default async function OnboardingGoalsPage({
             <input type="hidden" name="slug" value={path.slug} />
             <button
               type="submit"
-              className={
-                i === 0 ? "pg-btn pg-btn--small btn-blue" : "pg-btn pg-btn--small pg-btn--ghost"
-              }
+              className={i === 0 ? "btn btn--block" : "btn btn--ghost btn--block"}
             >
               Commencer ce parcours <span aria-hidden="true">→</span>
             </button>
@@ -109,7 +107,7 @@ export default async function OnboardingGoalsPage({
           <form action={finishGoals}>
             <AnswerFields answers={answers} />
             <input type="hidden" name="to" value="placement" />
-            <button type="submit" className="pg-btn pg-btn--ghost">
+            <button type="submit" className="btn btn--ghost btn--block btn--lg">
               Faire le test de positionnement
             </button>
             <p className="pg-note" style={{ margin: "8px 0 0" }}>
@@ -120,7 +118,7 @@ export default async function OnboardingGoalsPage({
         <form action={finishGoals}>
           <AnswerFields answers={answers} />
           <input type="hidden" name="to" value="catalogue" />
-          <button type="submit" className="pg-btn pg-btn--ghost">
+          <button type="submit" className="btn btn--ghost btn--block btn--lg">
             Voir tout le catalogue
           </button>
         </form>

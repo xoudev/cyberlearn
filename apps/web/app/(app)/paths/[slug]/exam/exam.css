@@ -779,6 +779,9 @@
 .exam-root .q-opt.is-selected .q-opt__check {
   opacity: 1;
 }
+.exam-root .q-nav > .btn:last-child {
+  justify-self: end;
+}
 .exam-root .q-nav {
   position: sticky;
   bottom: 0;
@@ -791,59 +794,6 @@
   background: rgba(3, 2, 25, 0.88);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
-}
-.exam-root .q-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 13px 22px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: all var(--dur-base);
-}
-.exam-root .q-btn--ghost {
-  background: transparent;
-  color: var(--fg-secondary);
-  border: 1px solid var(--border);
-  justify-self: start;
-}
-.exam-root .q-btn--ghost:hover:not(:disabled) {
-  color: var(--fg-primary);
-  border-color: var(--border-strong);
-}
-.exam-root .q-btn--ghost:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-.exam-root .q-btn--next {
-  background: var(--bg-card);
-  color: var(--fg-primary);
-  border: 1px solid var(--border-strong);
-  justify-self: end;
-}
-.exam-root .q-btn--next:hover:not(:disabled) {
-  border-color: var(--teal);
-  color: var(--teal);
-}
-.exam-root .q-btn--finish {
-  background: var(--teal);
-  color: var(--fg-inverse);
-  border: 1px solid var(--teal);
-  justify-self: end;
-  box-shadow: 0 0 26px -6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
-}
-.exam-root .q-btn--finish:hover:not(:disabled) {
-  background: var(--brand-turquoise-hover);
-  box-shadow: 0 0 36px -4px color-mix(in srgb, var(--cosmetic-accent) 80%, transparent);
-}
-.exam-root .q-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 .exam-root .q-dots {
   display: flex;

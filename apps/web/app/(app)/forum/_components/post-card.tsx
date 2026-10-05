@@ -87,7 +87,7 @@ export function PostCard({
               {canEdit && (
                 <button
                   type="button"
-                  className="fo-btn"
+                  className="btn btn--ghost btn--sm"
                   disabled={pending}
                   onClick={() => {
                     setDraft(post.content);
@@ -100,7 +100,7 @@ export function PostCard({
               {canRemove && (
                 <button
                   type="button"
-                  className="fo-btn fo-btn--danger"
+                  className="btn btn--danger btn--ghost btn--sm"
                   disabled={pending}
                   onClick={remove}
                 >
@@ -124,7 +124,7 @@ export function PostCard({
             <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
               <button
                 type="button"
-                className="fo-btn fo-btn--primary"
+                className="btn btn--accent btn--sm"
                 onClick={save}
                 disabled={pending}
               >

@@ -86,7 +86,7 @@ export function GuideQuestions({
         </div>
       </fieldset>
 
-      <button type="submit" className="pg-btn btn-blue">
+      <button type="submit" className="btn btn--block btn--lg">
         {submitLabel} <span aria-hidden="true">→</span>
       </button>
     </form>

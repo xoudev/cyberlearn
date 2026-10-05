@@ -37,7 +37,7 @@ export function AddFriendButton({
     <>
       <button
         type="button"
-        className={move === "request" ? "fp-btn fp-btn--primary" : "fp-btn"}
+        className={move === "request" ? "btn btn--accent btn--sm" : "btn btn--ghost btn--sm"}
         disabled={pending}
         onClick={() => {
           setError(null);

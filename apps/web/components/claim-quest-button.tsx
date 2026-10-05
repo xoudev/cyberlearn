@@ -48,7 +48,7 @@ export function ClaimQuestButton({
             }
           });
         }}
-        className="dash-btn dash-btn--small"
+        className="btn btn--accent btn--sm"
       >
         {pending ? "…" : QUEST_COPY.claim(xpReward)}
       </button>

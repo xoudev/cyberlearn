@@ -45,7 +45,7 @@ export default async function ForumCategoryPage({
         accent={data.category.accent}
         lede={data.category.description}
         actions={
-          <Link href={`/forum/${category}/nouveau`} className="fo-btn fo-btn--primary">
+          <Link href={`/forum/${category}/nouveau`} className="btn btn--accent btn--sm">
             Nouveau sujet
           </Link>
         }
@@ -64,7 +64,10 @@ export default async function ForumCategoryPage({
       {pages > 1 && (
         <nav className="fo-pager" aria-label="Pagination">
           {current > 1 && (
-            <Link href={`/forum/${category}?page=${String(current - 1)}`} className="fo-btn">
+            <Link
+              href={`/forum/${category}?page=${String(current - 1)}`}
+              className="btn btn--ghost btn--sm"
+            >
               ← Précédent
             </Link>
           )}
@@ -72,7 +75,10 @@ export default async function ForumCategoryPage({
             page {current} / {pages}
           </span>
           {current < pages && (
-            <Link href={`/forum/${category}?page=${String(current + 1)}`} className="fo-btn">
+            <Link
+              href={`/forum/${category}?page=${String(current + 1)}`}
+              className="btn btn--ghost btn--sm"
+            >
               Suivant →
             </Link>
           )}

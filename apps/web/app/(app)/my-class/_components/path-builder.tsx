@@ -297,7 +297,7 @@ export function PathBuilder({
       </div>
 
       <div className="tle-actions">
-        <button type="submit" disabled={pending || chosen.length === 0} className="cls-btn">
+        <button type="submit" disabled={pending || chosen.length === 0} className="btn btn--sm">
           {pending ? "…" : mode === "create" ? `Publier pour ${className}` : "Enregistrer"}
         </button>
         <Link href="/my-class" className="tle-back">

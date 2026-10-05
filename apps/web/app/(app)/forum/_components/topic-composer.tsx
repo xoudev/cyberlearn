@@ -78,7 +78,7 @@ export function TopicComposer({
       )}
 
       <div style={{ display: "flex", gap: 10 }}>
-        <button type="submit" className="fo-btn fo-btn--primary" disabled={pending}>
+        <button type="submit" className="btn btn--accent btn--sm" disabled={pending}>
           {pending ? "Publication…" : "Publier le sujet"}
         </button>
       </div>

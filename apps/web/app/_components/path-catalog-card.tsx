@@ -200,7 +200,7 @@ export function PathCatalogCard({
         </div>
       </div>
       <div className="game-card__foot">
-        <span className="btn-start">
+        <span className="btn btn--ghost btn--block">
           Commencer
           <svg
             width="13"

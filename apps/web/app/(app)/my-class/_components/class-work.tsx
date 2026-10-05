@@ -222,7 +222,7 @@ export function ClassWork({
             />
           </label>
 
-          <button type="submit" disabled={pending || chosen === ""} className="cls-btn">
+          <button type="submit" disabled={pending || chosen === ""} className="btn btn--sm">
             {pending ? "…" : "Assigner à la classe"}
           </button>
 

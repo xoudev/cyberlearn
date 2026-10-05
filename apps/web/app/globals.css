@@ -807,6 +807,157 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   letter-spacing: 0.12em;
 }
 
+/* The button, one family. Ten families of classes (dash-btn, cls-btn, fp-btn,
+   cc__btn, fo-btn, pg-btn, q-btn, pc2's btn-primary, btn-ghost, btn-trophy,
+   btn-start) each drew their own; this is the one drawing. A tone (accent,
+   danger, warning, gold), ghost for the border alone, a size, block to fill. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  justify-self: start;
+  height: 44px;
+  padding: 0 22px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #fff;
+  background: #0024ff;
+  border: 1px solid #0024ff;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+.btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: #1f3bff;
+  border-color: #1f3bff;
+  box-shadow: 0 0 32px rgba(0, 36, 255, 0.5);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
+}
+.btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.btn--ghost {
+  color: #b8b5d1;
+  background: transparent;
+  border-color: #2a2560;
+}
+.btn--ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: #f5f5fa;
+  background: rgba(42, 37, 96, 0.25);
+  border-color: #7f7ba9;
+  box-shadow: none;
+}
+.btn--accent {
+  color: #030219;
+  background: var(--cosmetic-accent);
+  border-color: var(--cosmetic-accent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--cosmetic-accent) 22%, transparent);
+}
+.btn--accent:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--cosmetic-accent) 85%, #ffffff);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 85%, #ffffff);
+  box-shadow: 0 0 36px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+}
+.btn--accent.btn--ghost {
+  color: var(--cosmetic-accent);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  box-shadow: none;
+}
+.btn--accent.btn--ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  border-color: var(--cosmetic-accent);
+}
+.btn--danger {
+  color: #fff;
+  background: #ff4d6d;
+  border-color: #ff4d6d;
+}
+.btn--danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: #ff6680;
+  border-color: #ff6680;
+  box-shadow: 0 0 24px rgba(255, 77, 109, 0.5);
+}
+.btn--danger.btn--ghost {
+  color: #ff6b7a;
+  background: transparent;
+  border-color: rgba(255, 71, 87, 0.4);
+  box-shadow: none;
+}
+.btn--danger.btn--ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: #ff6b7a;
+  background: rgba(255, 71, 87, 0.06);
+  border-color: #ff6b7a;
+}
+.btn--warning {
+  color: #1a1100;
+  background: #ffb020;
+  border-color: #ffb020;
+}
+.btn--warning:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: #ffc447;
+  border-color: #ffc447;
+  box-shadow: 0 0 24px rgba(255, 176, 32, 0.5);
+}
+.btn--gold.btn--ghost {
+  color: #ffd27a;
+  background: rgba(255, 181, 71, 0.07);
+  border-color: rgba(255, 181, 71, 0.5);
+}
+.btn--gold.btn--ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: #ffd27a;
+  background: rgba(255, 181, 71, 0.14);
+  border-color: #ffb547;
+  box-shadow: 0 0 18px rgba(255, 181, 71, 0.25);
+}
+.btn--sm {
+  height: 34px;
+  padding: 0 14px;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.btn--lg {
+  height: 50px;
+  padding: 0 26px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+}
+.btn--block {
+  display: flex;
+  width: 100%;
+  justify-self: stretch;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+
 @keyframes xp-count-glow {
   0% {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
@@ -2418,45 +2569,6 @@ span.profile-avatar {
 }
 
 /* The one accent button, and its small form on the quests */
-.dash-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 22px;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 700;
-  background: var(--cosmetic-accent);
-  color: #030219;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-  box-shadow: 0 0 28px color-mix(in srgb, var(--cosmetic-accent) 22%, transparent);
-  transition:
-    filter 150ms ease,
-    box-shadow 150ms ease,
-    opacity 150ms ease;
-}
-.dash-btn:hover {
-  filter: brightness(1.12);
-  box-shadow: 0 0 36px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
-}
-.dash-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.dash-btn svg {
-  width: 14px;
-  height: 14px;
-}
-.dash-btn--small {
-  height: 32px;
-  padding: 0 12px;
-  font-size: 12.5px;
-  box-shadow: none;
-}
 
 /* The module, drawn as a route */
 .dash-route {
@@ -4456,62 +4568,6 @@ a:hover > .lesson-author-card {
 }
 
 /* CTA button - full width */
-.cc__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 20px;
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: var(--danger-red);
-  color: #fff;
-  border: 0;
-  border-top: 1px solid var(--danger-red);
-  cursor: pointer;
-  transition: all var(--dur-base);
-  text-decoration: none;
-  box-sizing: border-box;
-}
-.cc__btn:hover {
-  background: #ff6680;
-  box-shadow:
-    0 0 24px rgba(255, 77, 109, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-}
-.cc__btn:active {
-  transform: translateY(1px);
-}
-.cc__btn--ghost {
-  background: transparent;
-  color: #0affd4;
-  border-top: 1px solid rgba(10, 255, 212, 0.4);
-}
-.cc__btn--ghost:hover {
-  background: rgba(10, 255, 212, 0.06);
-  box-shadow: none;
-  color: #3dffdd;
-}
-.cc__btn--orange {
-  background: var(--orange-prog);
-  color: #1a1100;
-  border-top: 1px solid var(--orange-prog);
-}
-.cc__btn--orange:hover {
-  background: #ffc447;
-  box-shadow: 0 0 24px rgba(255, 176, 32, 0.5);
-}
-.cc__btn--disabled {
-  background: transparent;
-  color: #3f3d5c;
-  border-top: 1px solid #1f1b47;
-  cursor: not-allowed;
-  pointer-events: none;
-}
 
 /* Completed state */
 .cc--done {
@@ -4695,8 +4751,7 @@ a:hover > .lesson-author-card {
     animation: none;
   }
   .cc,
-  .cc__tick,
-  .cc__btn {
+  .cc__tick {
     transition: none;
   }
 }
@@ -5329,27 +5384,6 @@ a:hover > .lesson-author-card {
   padding: 3px 0;
 }
 
-.cls-btn {
-  justify-self: start;
-  padding: 9px 16px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #fff;
-  background: #0024ff;
-  border: 1px solid #0024ff;
-  cursor: pointer;
-}
-.cls-btn:hover:not(:disabled) {
-  filter: brightness(1.25);
-}
-.cls-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
 .cls-alert {
   margin: 0;
   padding: 8px 11px;
@@ -5473,10 +5507,6 @@ a:hover > .lesson-author-card {
 
 /* The same button, as a link: it leaves for the editor rather than submitting,
    and an anchor needs the line-height a button gets for free. */
-.cls-btn--link {
-  text-decoration: none;
-  line-height: 1;
-}
 
 /* ─── Class card: header bar, chips, tabs ─────────────────────────────────── */
 
@@ -6103,7 +6133,7 @@ a.cls-res__title:hover {
 }
 /* .cls-btn pins itself to the start of its grid track, which is right on a
    form and wrong in the middle of a centred column. */
-.wr-closed .cls-btn {
+.wr-closed .btn {
   justify-self: center;
   margin-top: 10px;
 }
@@ -6451,39 +6481,6 @@ a.fp-name:hover {
   flex-shrink: 0;
 }
 
-.fp-btn {
-  padding: 6px 10px;
-  border: 1px solid #2a2560;
-  background: transparent;
-  font: 700 9.5px var(--font-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #b8b5d1;
-  cursor: pointer;
-  transition:
-    border-color 140ms ease,
-    background-color 140ms ease,
-    color 140ms ease;
-}
-.fp-btn:hover:not(:disabled) {
-  border-color: #7f7ba9;
-  color: #f5f5fa;
-}
-.fp-btn:disabled {
-  opacity: 0.5;
-  cursor: progress;
-}
-
-.fp-btn--primary {
-  border-color: var(--cosmetic-accent);
-  background: var(--cosmetic-accent);
-  color: #030219;
-}
-.fp-btn--primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--cosmetic-accent) 80%, #ffffff);
-  border-color: color-mix(in srgb, var(--cosmetic-accent) 80%, #ffffff);
-}
-
 .fp-error {
   font: 11px var(--font-mono);
   color: #ff6b7a;
@@ -6491,11 +6488,6 @@ a.fp-name:hover {
 
 /* On a profile the controls stand alone rather than in a dense row, so they
    get the size a page button wants. */
-.pub-friend-action .fp-btn {
-  padding: 11px 18px;
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Toasts
