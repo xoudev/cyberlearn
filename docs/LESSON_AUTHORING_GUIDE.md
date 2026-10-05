@@ -173,6 +173,16 @@ cette section une fois, avec de vraies valeurs ; un test
 (`packages/lib/src/mdx/showcase.test.ts`) refuse qu'un composant du
 pipeline en manque. Un composant qui change se vérifie là en premier.
 
+Chaque composant a aussi sa fiche dans le registre
+`packages/lib/src/mdx/components.ts` : sa famille, ce qu'il fait, un ou
+plusieurs exemples qui rendent, et le titre de sa section ici. Le panneau
+Guide de l'éditeur de leçons (console et classe d'un professeur) est construit
+dessus : il liste tous les composants par famille, avec leurs exemples à
+insérer, une recherche et un lien vers leur section. Un composant ajouté au
+pipeline (`LESSON_COMPONENT_NAMES`) sans fiche fait échouer
+`packages/lib/src/mdx/components.test.ts`, qui vérifie aussi que chaque
+exemple passe le contrôle de l'éditeur et que chaque section citée existe.
+
 ### 5.1 Callout
 
 Encadré coloré pour attirer l'attention. 4 types disponibles.

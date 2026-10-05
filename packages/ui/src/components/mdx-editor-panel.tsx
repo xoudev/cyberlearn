@@ -2,7 +2,8 @@
 
 /**
  * The lesson editor: Monaco, a toolbar, a live preview and a guide to every
- * component the MDX pipeline understands.
+ * component the MDX pipeline understands, built from the registry in
+ * @cyberlearn/lib (mdx-guide-sections.ts) so that it lists all of them.
  *
  * Shared rather than copied because both people who write lessons deserve the
  * same tool - the admin writing the catalogue, and a teacher writing for their
@@ -16,9 +17,17 @@
  * against; the lesson page remains the source of truth.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount, BeforeMount } from "@monaco-editor/react";
+import { lessonComponent } from "@cyberlearn/lib/mdx-components";
+import {
+  filterGuide,
+  guideSections,
+  type GuideEntry,
+  type GuideGroup,
+  type GuideSection,
+} from "./mdx-guide-sections";
 
 type EditorInstance = Parameters<OnMount>[0];
 
@@ -100,12 +109,20 @@ function renderInline(text: string): React.ReactNode {
   });
 }
 
+/**
+ * The string props of a component's opening tag, wherever they sit: on the
+ * tag's line or one per line below it. A quoted value may hold the other
+ * kind of quote ("L'image"). Expression props ({...}) are left out; the
+ * preview does not read them.
+ */
 function parseProps(src: string): Record<string, string> {
   const out: Record<string, string> = {};
-  const re = /(\w+)=["']([^"']*?)["']/g;
+  const head = src.split(/\/>|>\s*$|>\n/m)[0] ?? src;
+  const re = /(\w+)=(?:"([^"]*)"|'([^']*)')/g;
   let m;
-  while ((m = re.exec(src)) !== null) {
-    if (m[1] && m[2] !== undefined) out[m[1]] = m[2];
+  while ((m = re.exec(head)) !== null) {
+    const value = m[2] ?? m[3];
+    if (m[1] && value !== undefined) out[m[1]] = value;
   }
   return out;
 }
@@ -113,8 +130,7 @@ function parseProps(src: string): Record<string, string> {
 function PreviewComponent({ source }: { source: string }): React.ReactElement {
   const nameMatch = /^<([A-Z]\w*)/.exec(source);
   const name = nameMatch?.[1] ?? "Unknown";
-  const propsStr = /^<[A-Z]\w*\s+([\s\S]*?)[\s/>]/.exec(source)?.[1] ?? "";
-  const props = parseProps(propsStr);
+  const props = parseProps(source);
   const inner = />([^<]*)<\/[A-Z]/.exec(source)?.[1]?.trim() ?? "";
 
   if (name === "Callout") {
@@ -276,6 +292,10 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
     );
   }
 
+  // Every other component: a card naming it, with what the author called it.
+  // The real rendering is the lesson page's; this says what will be there.
+  const spec = lessonComponent(name);
+  const heading = props.title ?? props.question ?? props.caption ?? props.id;
   return (
     <div
       style={{
@@ -285,14 +305,23 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         border: `1px solid rgba(77,139,255,0.18)`,
         borderRadius: 4,
         display: "flex",
-        alignItems: "center",
+        alignItems: "baseline",
         gap: 8,
+        flexWrap: "wrap",
       }}
     >
       <span style={{ fontFamily: MONO, fontSize: 9, color: "#4D8BFF", letterSpacing: "0.1em" }}>
-        COMPOSANT
+        {spec ? spec.label.toUpperCase() : "COMPOSANT"}
       </span>
       <code style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>&lt;{name}&gt;</code>
+      {heading !== undefined && (
+        <span style={{ fontSize: 12, color: "#B8B5D1", flexBasis: "100%" }}>{heading}</span>
+      )}
+      {!spec && (
+        <span style={{ fontSize: 11, color: DANGER, flexBasis: "100%" }}>
+          Composant inconnu de la leçon : il ne sera pas rendu.
+        </span>
+      )}
     </div>
   );
 }
@@ -613,139 +642,15 @@ function Sep() {
 
 // ── MDX Authoring Guide ─────────────────────────────────────────────────────────
 
-interface GuideEntry {
-  label: string;
-  snippet: string;
-  description?: string;
-}
+const GUIDE_SECTIONS: GuideSection[] = guideSections();
 
-interface GuideSection {
-  title: string;
-  accent: string;
-  entries: GuideEntry[];
-}
-
-const GUIDE_SECTIONS: GuideSection[] = [
-  {
-    title: "Markdown",
-    accent: "#7F7BA9",
-    entries: [
-      { label: "H1", snippet: "# Titre principal\n" },
-      { label: "H2", snippet: "## Section\n" },
-      { label: "H3", snippet: "### Sous-section\n" },
-      { label: "Gras", snippet: "**texte en gras**" },
-      { label: "Italique", snippet: "*texte en italique*" },
-      { label: "Code", snippet: "`code inline`" },
-      { label: "Liste", snippet: "- Élément 1\n- Élément 2\n- Élément 3\n" },
-      { label: "Lien", snippet: "[texte](https://example.com)" },
-      { label: "Image", snippet: "![description](https://url-image.jpg)\n" },
-      { label: "HR", snippet: "\n---\n\n" },
-      { label: "Bloc code", snippet: "```python\n# code ici\nprint('Hello')\n```\n" },
-    ],
-  },
-  {
-    title: "Callout",
-    accent: "#4D8BFF",
-    entries: [
-      {
-        label: "info",
-        snippet: '<Callout type="info">\n  Texte informatif pour l\'étudiant.\n</Callout>\n',
-      },
-      {
-        label: "warning",
-        snippet: '<Callout type="warning">\n  Point d\'attention important.\n</Callout>\n',
-      },
-      {
-        label: "danger",
-        snippet: '<Callout type="danger">\n  Erreur ou pratique à éviter absolument.\n</Callout>\n',
-      },
-      {
-        label: "success",
-        snippet: '<Callout type="success">\n  Bonne pratique ou résultat attendu.\n</Callout>\n',
-      },
-    ],
-  },
-  {
-    title: "Quiz",
-    accent: "#FFB020",
-    entries: [
-      {
-        label: "QCM",
-        snippet:
-          '<Quiz\n  id="q-1"\n  question="Quelle commande liste les fichiers ?"\n  options={["ls", "cd", "pwd", "rm"]}\n  correct={0}\n/>\n',
-      },
-    ],
-  },
-  {
-    // The section accents are a fixed set identifying component families, the
-    // way the lesson categories are: Callout blue, Quiz amber, terminal violet.
-    // They are not the reader's accent and do not follow it, or two families
-    // would collide the moment someone equipped this colour.
-    title: "CodePlayground",
-    accent: "#0AFFD4",
-    entries: [
-      {
-        label: "Python",
-        snippet: '<CodePlayground language="python">\nprint("Hello, World!")\n</CodePlayground>\n',
-        description: "Pyodide · WASM · Python 3.11",
-      },
-      {
-        label: "JavaScript",
-        snippet:
-          '<CodePlayground language="javascript">\nconsole.log("Hello, World!");\n</CodePlayground>\n',
-        description: "Web Worker · ES2022",
-      },
-      {
-        label: "C",
-        snippet:
-          '<CodePlayground language="c">\n#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n</CodePlayground>\n',
-        description: "jscpp · C11 standard",
-      },
-      {
-        label: "ASM x86-64",
-        snippet:
-          '<CodePlayground language="asm">\nglobal main\nsection .text\nmain:\n    mov rax, 42\n    println rax\n    ret\n</CodePlayground>\n',
-        description: "Simulateur NASM · mov add sub push pop cmp jmp call ret",
-      },
-    ],
-  },
-  {
-    title: "SimulatedTerminal",
-    accent: "#B14DFF",
-    entries: [
-      {
-        label: "bash",
-        snippet: '<SimulatedTerminal shell="bash" />\n',
-        description: "ls · pwd · whoami · cat · echo · mkdir · clear · help",
-      },
-      {
-        label: "bash-admin",
-        snippet: '<SimulatedTerminal shell="bash" scenario="bash-admin" />\n',
-        description: "ps aux · df -h · free -h · ss -tlnp · systemctl · journalctl · who",
-      },
-      {
-        label: "bash-scripting",
-        snippet: '<SimulatedTerminal shell="bash" scenario="bash-scripting" />\n',
-        description: "cat script.sh · bash -n · chmod +x · history · echo $SHELL",
-      },
-      {
-        label: "ps-basics",
-        snippet: '<SimulatedTerminal shell="powershell" scenario="powershell-basics" />\n',
-        description: "Get-ChildItem · Get-Date · $PSVersionTable · Get-Process",
-      },
-      {
-        label: "ps-sec",
-        snippet: '<SimulatedTerminal shell="powershell" scenario="powershell-sec" />\n',
-        description: "Get-LocalUser · Get-NetTCPConnection · Get-WinEvent · netstat -ano",
-      },
-    ],
-  },
-];
-
+/* Starter code goes in starterCode, between backticks: written between the
+ * tags, the braces of a C or JavaScript body are an MDX expression, and the
+ * check refused the lesson once the snippet was inserted. */
 const SANDBOX_DEFAULTS: Record<string, string> = {
   python: 'print("Hello, World!")',
   javascript: 'console.log("Hello, World!");',
-  c: '#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+  c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\\\n");\n    return 0;\n}',
   asm: "global main\nsection .text\nmain:\n    mov rax, 42\n    println rax\n    ret",
 };
 
@@ -841,44 +746,135 @@ function GuideRow({
   );
 }
 
+function GuideGroupBlock({
+  group,
+  accent,
+  onInsert,
+}: {
+  group: GuideGroup;
+  accent: string;
+  onInsert: (s: string) => void;
+}): React.ReactElement {
+  return (
+    <div style={{ marginTop: group.name === undefined ? 0 : 10 }}>
+      {group.name !== undefined && (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 2 }}>
+          <code style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: "#D0CDEC" }}>
+            &lt;{group.name}&gt;
+          </code>
+          <span style={{ fontSize: 10.5, color: "#7F7BA9" }}>{group.label}</span>
+          {group.docUrl !== undefined && (
+            <a
+              href={group.docUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Sa section du guide de rédaction"
+              style={{
+                marginLeft: "auto",
+                fontFamily: MONO,
+                fontSize: 9,
+                letterSpacing: "0.08em",
+                color: accent,
+                textDecoration: "none",
+                opacity: 0.8,
+              }}
+            >
+              GUIDE ↗
+            </a>
+          )}
+        </div>
+      )}
+      {group.description !== undefined && (
+        <p style={{ margin: "0 0 4px", fontSize: 10.5, lineHeight: 1.5, color: "#7F7BA9" }}>
+          {group.description}
+        </p>
+      )}
+      {group.entries.map((entry) => (
+        <GuideRow key={entry.label} entry={entry} accent={accent} onInsert={onInsert} />
+      ))}
+    </div>
+  );
+}
+
 function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactElement {
+  const [query, setQuery] = useState("");
+  const sections = useMemo(() => filterGuide(GUIDE_SECTIONS, query), [query]);
+  const componentCount = GUIDE_SECTIONS.reduce(
+    (count, section) => count + section.groups.filter((g) => g.name !== undefined).length,
+    0,
+  );
+
   return (
     <div style={{ height: "100%", overflowY: "auto", background: "#060422" }}>
       <div
         style={{
-          fontFamily: MONO,
-          fontSize: 9,
-          color: "#7F7BA9",
-          letterSpacing: "0.12em",
-          padding: "10px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          borderBottom: "1px solid rgba(31,27,71,0.6)",
           position: "sticky",
           top: 0,
           background: "#060422",
           zIndex: 1,
+          borderBottom: "1px solid rgba(31,27,71,0.6)",
         }}
       >
-        <span
+        <div
           style={{
-            width: 4,
-            height: 4,
-            borderRadius: "50%",
-            background: ACCENT,
-            display: "inline-block",
-            boxShadow: `0 0 6px ${ACCENT}`,
+            fontFamily: MONO,
+            fontSize: 9,
+            color: "#7F7BA9",
+            letterSpacing: "0.12em",
+            padding: "10px 16px 6px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
-        />
-        GUIDE MDX
-        <span style={{ marginLeft: "auto", color: "#2A2560" }}>
-          clic → insérer dans l&apos;éditeur
-        </span>
+        >
+          <span
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              background: ACCENT,
+              display: "inline-block",
+              boxShadow: `0 0 6px ${ACCENT}`,
+            }}
+          />
+          GUIDE MDX
+          <span style={{ marginLeft: "auto", color: "#2A2560" }}>
+            {componentCount} composants · clic → insérer
+          </span>
+        </div>
+        <div style={{ padding: "0 16px 8px" }}>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
+            placeholder="Chercher un composant, un scénario, un langage…"
+            aria-label="Chercher dans le guide"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              height: 26,
+              background: "#07051E",
+              border: `1px solid ${BORDER}`,
+              color: "#B8B5D1",
+              fontFamily: MONO,
+              fontSize: 10.5,
+              padding: "0 8px",
+              outline: "none",
+              borderRadius: 2,
+            }}
+          />
+        </div>
       </div>
       <div style={{ padding: "4px 16px 32px" }}>
-        {GUIDE_SECTIONS.map((section) => (
-          <div key={section.title} style={{ marginTop: 16 }}>
+        {sections.length === 0 && (
+          <p style={{ margin: "16px 0", fontSize: 11, color: "#7F7BA9", fontFamily: MONO }}>
+            Rien ne correspond à « {query.trim()} ».
+          </p>
+        )}
+        {sections.map((section) => (
+          <div key={section.id} style={{ marginTop: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
               <span
                 style={{
@@ -904,10 +900,10 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
               </span>
               <div style={{ flex: 1, height: 1, background: "rgba(31,27,71,0.5)" }} />
             </div>
-            {section.entries.map((entry) => (
-              <GuideRow
-                key={entry.label}
-                entry={entry}
+            {section.groups.map((group) => (
+              <GuideGroupBlock
+                key={group.name ?? group.label}
+                group={group}
                 accent={section.accent}
                 onInsert={onInsert}
               />
@@ -1350,7 +1346,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
             onClick={() => {
               const defaultCode = SANDBOX_DEFAULTS[sandboxLang] ?? "";
               insertAt(
-                `<CodePlayground language="${sandboxLang}">\n${defaultCode}\n</CodePlayground>\n`,
+                `<CodePlayground language="${sandboxLang}" starterCode={\`${defaultCode}\`} />\n`,
               );
             }}
           />

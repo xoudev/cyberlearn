@@ -247,7 +247,7 @@
 ### Fonctionnalités détaillées
 
 #### Gestion des leçons
-- Création et édition avec éditeur MDX + preview en temps réel
+- Création et édition avec éditeur MDX + preview en temps réel ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED
 - Suppression (uniquement si DRAFT)
 - Import en masse
