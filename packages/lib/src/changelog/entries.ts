@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.3",
+    date: "2026-10-05",
+    title: "Une leçon s'écrit par blocs",
+    changes: [
+      {
+        type: "new",
+        text: "L'éditeur de leçons, dans la console comme dans la classe d'un professeur, s'ouvre désormais en blocs : des titres, des passages de texte et des composants avec un champ pour chaque chose, le ton d'un encadré, les options d'un quiz et la bonne réponse à cocher, le code de départ d'un bac à sable, les fichiers et les vérifications d'un terminal Linux. Un « + » entre deux blocs en ajoute un depuis le guide, les flèches le déplacent, et un champ que la page refuserait est signalé avant d'enregistrer. Le code MDX reste à un clic, et c'est la même leçon.",
+      },
+    ],
+  },
+  {
     version: "3.2",
     date: "2026-10-05",
     title: "L'éditeur de leçons montre la vraie page",

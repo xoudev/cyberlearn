@@ -191,6 +191,19 @@ Un brouillon qui ne s'affiche pas est refusé avec la section et la ligne en
 cause, avant toute sauvegarde. L'aperçu vit une demi-heure après sa dernière
 mise à jour ; le bouton « Rapide » redonne l'ancienne approximation.
 
+L'éditeur s'ouvre en **blocs** : la leçon découpée en titres, en passages de
+Markdown et en composants, chacun sous forme de champs (ton et texte d'un
+encadré, question, options et bonne réponse d'un quiz, fichiers et
+vérifications d'un terminal Linux…). Le « + » entre deux blocs en ajoute un,
+depuis le guide ; les flèches le déplacent ; un champ que la page refuserait
+est signalé sous le champ, avant d'enregistrer. Le découpage et la réécriture
+vivent dans `packages/lib/src/mdx/blocks.ts`, les formulaires dans
+`packages/lib/src/mdx/forms.ts` : les onze composants de base ont un
+formulaire, les exercices et labos se remplissent encore en MDX dans leur
+bloc. Le bouton « Code » montre le MDX, qui reste la leçon elle-même : un bloc
+non modifié revient à l'octet près, un bloc modifié est réécrit comme ce
+guide l'écrit.
+
 ### 5.1 Callout
 
 Encadré coloré pour attirer l'attention. 4 types disponibles.

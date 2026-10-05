@@ -1,5 +1,6 @@
 import { createProcessor } from "@mdx-js/mdx";
 import remarkGfm from "remark-gfm";
+import { attributeValue, type MdNode } from "./attributes.js";
 
 /**
  * The quizzes of a lesson, read from its MDX without running any of it.
@@ -30,73 +31,6 @@ export interface RawQuiz {
   options: unknown;
   correct: unknown;
   explanation: unknown;
-}
-
-interface EsNode {
-  type: string;
-  [key: string]: unknown;
-}
-
-interface MdNode {
-  type: string;
-  name?: string | null;
-  attributes?: unknown[];
-  children?: unknown[];
-}
-
-const NOT_A_VALUE = Symbol("not a value");
-
-/** The value an expression spells out, or NOT_A_VALUE when it computes one. */
-function valueOf(node: EsNode): unknown {
-  switch (node.type) {
-    case "Literal":
-      return node.value;
-    case "TemplateLiteral": {
-      if ((node.expressions as unknown[]).length > 0) return NOT_A_VALUE;
-      const [quasi] = node.quasis as { value: { cooked: string | null } }[];
-      return quasi?.value.cooked ?? NOT_A_VALUE;
-    }
-    case "ArrayExpression": {
-      const items = (node.elements as (EsNode | null)[]).map((e) =>
-        e === null || e.type === "SpreadElement" ? NOT_A_VALUE : valueOf(e),
-      );
-      return items.includes(NOT_A_VALUE) ? NOT_A_VALUE : items;
-    }
-    case "ObjectExpression": {
-      const out: Record<string, unknown> = {};
-      for (const p of node.properties as EsNode[]) {
-        if (p.type !== "Property" || p.computed === true || p.kind !== "init") return NOT_A_VALUE;
-        const key = p.key as EsNode;
-        const name = key.type === "Identifier" ? key.name : key.value;
-        const value = valueOf(p.value as EsNode);
-        if (value === NOT_A_VALUE) return NOT_A_VALUE;
-        out[String(name)] = value;
-      }
-      return out;
-    }
-    case "UnaryExpression": {
-      const argument = node.argument as EsNode;
-      if (argument.type !== "Literal" || typeof argument.value !== "number") return NOT_A_VALUE;
-      if (node.operator === "-") return -argument.value;
-      if (node.operator === "+") return argument.value;
-      return NOT_A_VALUE;
-    }
-    default:
-      return NOT_A_VALUE;
-  }
-}
-
-function attributeValue(attribute: unknown): unknown {
-  // SAFETY: an mdxJsxAttribute: a name and a value that is a string, null (a
-  // bare attribute), or an expression carrying its ESTree.
-  const { value } = attribute as { value: unknown };
-  if (value === null) return true;
-  if (typeof value === "string") return value;
-  const program = (value as { data?: { estree?: { body?: EsNode[] } } }).data?.estree;
-  const statement = program?.body?.[0];
-  if (program?.body?.length !== 1 || statement?.type !== "ExpressionStatement") return undefined;
-  const result = valueOf(statement.expression as EsNode);
-  return result === NOT_A_VALUE ? undefined : result;
 }
 
 function stripFrontmatter(mdx: string): string {

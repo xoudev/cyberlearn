@@ -1,9 +1,16 @@
 "use client";
 
 /**
- * The lesson editor: Monaco, a toolbar, a live preview and a guide to every
- * component the MDX pipeline understands, built from the registry in
- * @cyberlearn/lib (mdx-guide-sections.ts) so that it lists all of them.
+ * The lesson editor: a column of blocks or Monaco over the same MDX, a
+ * toolbar, a live preview and a guide to every component the MDX pipeline
+ * understands, built from the registry in @cyberlearn/lib
+ * (mdx-guide-sections.ts) so that it lists all of them.
+ *
+ * Blocks first: the lesson as headings, text and components drawn as forms
+ * (block-editor/), which is how most of a lesson gets written. The code is
+ * one click away and stays the lesson itself: switching views changes
+ * nothing in it, and MDX that does not cut into blocks keeps the code view,
+ * with the parser's reason.
  *
  * Shared rather than copied because both people who write lessons deserve the
  * same tool - the admin writing the catalogue, and a teacher writing for their
@@ -30,6 +37,8 @@ import {
   type GuideGroup,
   type GuideSection,
 } from "./mdx-guide-sections";
+import { parseLessonBlocks } from "@cyberlearn/lib/mdx-blocks";
+import { BlockEditor } from "./block-editor/block-editor";
 import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
 import { inlineTokens, innerText, parseStringProps, stripImportDeclarations } from "./mdx-source";
 
@@ -969,6 +978,10 @@ export function MdxEditorPanel({
   const [terminalShell, setTerminalShell] = useState<"bash" | "powershell">("bash");
   const [quickPreview, setQuickPreview] = useState(value);
   const [showGuide, setShowGuide] = useState(false);
+  const [editorMode, setEditorMode] = useState<"blocks" | "code">(() =>
+    parseLessonBlocks(value).ok ? "blocks" : "code",
+  );
+  const [blocksProblem, setBlocksProblem] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"site" | "quick">("site");
   const sitePreview = preview !== undefined && previewMode === "site";
 
@@ -992,15 +1005,22 @@ export function MdxEditorPanel({
     defineTheme(monaco);
   }, []);
 
-  // Insert raw text at cursor
-  const insertAt = useCallback((text: string) => {
-    const ed = editorRef.current;
-    if (!ed) return;
-    const sel = ed.getSelection();
-    if (!sel) return;
-    ed.executeEdits("toolbar", [{ range: sel, text, forceMoveMarkers: true }]);
-    ed.focus();
-  }, []);
+  // Insert raw text at cursor; in the block view, as blocks at the end.
+  const insertAt = useCallback(
+    (text: string) => {
+      if (editorMode === "blocks") {
+        onChange(`${value.trimEnd()}\n\n${text.trim()}\n`);
+        return;
+      }
+      const ed = editorRef.current;
+      if (!ed) return;
+      const sel = ed.getSelection();
+      if (!sel) return;
+      ed.executeEdits("toolbar", [{ range: sel, text, forceMoveMarkers: true }]);
+      ed.focus();
+    },
+    [editorMode, onChange, value],
+  );
 
   // Wrap selection (or placeholder) with before/after
   const wrap = useCallback((before: string, after: string, placeholder = "texte") => {
@@ -1056,395 +1076,428 @@ export function MdxEditorPanel({
           flexShrink: 0,
         }}
       >
-        {/* Inline formatting */}
+        {/* Blocks or code: the same lesson, two views */}
         <TBtn
-          label={<b>B</b>}
-          title="Gras"
+          label="BLOCS"
+          title="Éditer par blocs : un champ pour chaque chose"
+          active={editorMode === "blocks"}
           onClick={() => {
-            wrap("**", "**");
+            const parsed = parseLessonBlocks(value);
+            if (parsed.ok) {
+              setBlocksProblem(null);
+              setEditorMode("blocks");
+            } else {
+              setBlocksProblem(parsed.error);
+            }
           }}
           mono
         />
         <TBtn
-          label={<i>I</i>}
-          title="Italique"
+          label="CODE"
+          title="Éditer le MDX"
+          active={editorMode === "code"}
           onClick={() => {
-            wrap("*", "*");
-          }}
-        />
-        <TBtn
-          label="`"
-          title="Code inline"
-          onClick={() => {
-            wrap("`", "`", "code");
-          }}
-          mono
-        />
-
-        <Sep />
-
-        {/* Headings */}
-        <TBtn
-          label="H2"
-          title="Titre H2"
-          onClick={() => {
-            toggleLinePrefix("## ");
-          }}
-          mono
-        />
-        <TBtn
-          label="H3"
-          title="Titre H3"
-          onClick={() => {
-            toggleLinePrefix("### ");
+            setBlocksProblem(null);
+            setEditorMode("code");
           }}
           mono
         />
 
         <Sep />
 
-        {/* List */}
-        <TBtn
-          label={
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <line x1="4" y1="3" x2="11" y2="3" />
-              <line x1="4" y1="6" x2="11" y2="6" />
-              <line x1="4" y1="9" x2="11" y2="9" />
-              <circle cx="1.5" cy="3" r="0.8" fill="currentColor" stroke="none" />
-              <circle cx="1.5" cy="6" r="0.8" fill="currentColor" stroke="none" />
-              <circle cx="1.5" cy="9" r="0.8" fill="currentColor" stroke="none" />
-            </svg>
-          }
-          title="Liste à puces"
-          onClick={() => {
-            toggleLinePrefix("- ");
-          }}
-        />
+        {editorMode === "code" && (
+          <>
+            {/* Inline formatting */}
+            <TBtn
+              label={<b>B</b>}
+              title="Gras"
+              onClick={() => {
+                wrap("**", "**");
+              }}
+              mono
+            />
+            <TBtn
+              label={<i>I</i>}
+              title="Italique"
+              onClick={() => {
+                wrap("*", "*");
+              }}
+            />
+            <TBtn
+              label="`"
+              title="Code inline"
+              onClick={() => {
+                wrap("`", "`", "code");
+              }}
+              mono
+            />
 
-        <Sep />
+            <Sep />
 
-        {/* Link */}
-        <TBtn
-          label={
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-            >
-              <path d="M4.5 7.5 L7.5 4.5" />
-              <path d="M3 9 L2 10" />
-              <path d="M5.5 2.5 L7 1 A2.12 2.12 0 0 1 10 4.5 L8 6.5" />
-              <path d="M6.5 9.5 L4.5 11 A2.12 2.12 0 0 1 1 7.5 L3 5.5" />
-            </svg>
-          }
-          title="Lien"
-          onClick={() => {
-            insertAt("[texte](url)");
-          }}
-        />
+            {/* Headings */}
+            <TBtn
+              label="H2"
+              title="Titre H2"
+              onClick={() => {
+                toggleLinePrefix("## ");
+              }}
+              mono
+            />
+            <TBtn
+              label="H3"
+              title="Titre H3"
+              onClick={() => {
+                toggleLinePrefix("### ");
+              }}
+              mono
+            />
 
-        {/* Image */}
-        <TBtn
-          label={
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-            >
-              <rect x="1" y="2" width="10" height="8" rx="1" />
-              <circle cx="4" cy="5" r="1" />
-              <path d="M1 9 L3.5 6.5 L5.5 8.5 L7.5 6 L11 9" />
-            </svg>
-          }
-          title="Image"
-          onClick={() => {
-            insertAt("![description](https://url-image.jpg)\n");
-          }}
-        />
+            <Sep />
 
-        <Sep />
+            {/* List */}
+            <TBtn
+              label={
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <line x1="4" y1="3" x2="11" y2="3" />
+                  <line x1="4" y1="6" x2="11" y2="6" />
+                  <line x1="4" y1="9" x2="11" y2="9" />
+                  <circle cx="1.5" cy="3" r="0.8" fill="currentColor" stroke="none" />
+                  <circle cx="1.5" cy="6" r="0.8" fill="currentColor" stroke="none" />
+                  <circle cx="1.5" cy="9" r="0.8" fill="currentColor" stroke="none" />
+                </svg>
+              }
+              title="Liste à puces"
+              onClick={() => {
+                toggleLinePrefix("- ");
+              }}
+            />
 
-        {/* Code block with lang selector */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <TBtn
-            label={
-              <svg
-                width="13"
-                height="12"
-                viewBox="0 0 13 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="3,4 1,6 3,8" />
-                <polyline points="10,4 12,6 10,8" />
-                <line x1="5" y1="9" x2="8" y2="3" />
-              </svg>
-            }
-            title="Bloc de code"
-            onClick={() => {
-              insertAt(`\`\`\`${codeLang}\n// code ici\n\`\`\`\n`);
-            }}
-          />
-          <select
-            value={codeLang}
-            onChange={(e) => {
-              setCodeLang(e.target.value);
-            }}
-            style={{
-              height: 22,
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
-              color: "#7F7BA9",
-              fontFamily: MONO,
-              fontSize: 9,
-              cursor: "pointer",
-              padding: "0 4px",
-              outline: "none",
-              borderRadius: 2,
-            }}
-          >
-            {[
-              "bash",
-              "python",
-              "javascript",
-              "typescript",
-              "sql",
-              "html",
-              "css",
-              "json",
-              "yaml",
-              "go",
-              "rust",
-            ].map((l) => (
-              <option key={l} value={l} style={{ background: "#0A0826" }}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
+            <Sep />
 
-        <Sep />
+            {/* Link */}
+            <TBtn
+              label={
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                >
+                  <path d="M4.5 7.5 L7.5 4.5" />
+                  <path d="M3 9 L2 10" />
+                  <path d="M5.5 2.5 L7 1 A2.12 2.12 0 0 1 10 4.5 L8 6.5" />
+                  <path d="M6.5 9.5 L4.5 11 A2.12 2.12 0 0 1 1 7.5 L3 5.5" />
+                </svg>
+              }
+              title="Lien"
+              onClick={() => {
+                insertAt("[texte](url)");
+              }}
+            />
 
-        {/* Callout with type selector */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <TBtn
-            label={
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.4}
-                strokeLinecap="round"
-              >
-                <circle cx="6" cy="6" r="5" />
-                <line x1="6" y1="5" x2="6" y2="8" />
-                <circle cx="6" cy="3.5" r="0.6" fill="currentColor" stroke="none" />
-              </svg>
-            }
-            title="Callout"
-            onClick={() => {
-              insertAt(`<Callout type="${calloutType}">\n  Contenu du callout.\n</Callout>\n`);
-            }}
-          />
-          <select
-            value={calloutType}
-            onChange={(e) => {
-              setCalloutType(e.target.value as "info" | "warning" | "danger" | "success");
-            }}
-            style={{
-              height: 22,
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
-              color: "#7F7BA9",
-              fontFamily: MONO,
-              fontSize: 9,
-              cursor: "pointer",
-              padding: "0 4px",
-              outline: "none",
-              borderRadius: 2,
-            }}
-          >
-            {(["info", "warning", "danger", "success"] as const).map((t) => (
-              <option key={t} value={t} style={{ background: "#0A0826" }}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
+            {/* Image */}
+            <TBtn
+              label={
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                >
+                  <rect x="1" y="2" width="10" height="8" rx="1" />
+                  <circle cx="4" cy="5" r="1" />
+                  <path d="M1 9 L3.5 6.5 L5.5 8.5 L7.5 6 L11 9" />
+                </svg>
+              }
+              title="Image"
+              onClick={() => {
+                insertAt("![description](https://url-image.jpg)\n");
+              }}
+            />
 
-        <Sep />
+            <Sep />
 
-        {/* Quiz */}
-        <TBtn
-          label={
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.4}
-              strokeLinecap="round"
-            >
-              <circle cx="6" cy="6" r="5" />
-              <path d="M4.5 4.5 C4.5 3.5 7.5 3.5 7.5 5.5 C7.5 6.5 6 6.5 6 7.5" />
-              <circle cx="6" cy="9" r="0.6" fill="currentColor" stroke="none" />
-            </svg>
-          }
-          title="Quiz"
-          onClick={() => {
-            insertAt(
-              '<Quiz\n  id="q-1"\n  question="Votre question ?"\n  options={["Option A", "Option B", "Option C"]}\n  correct={0}\n/>\n',
-            );
-          }}
-        />
-
-        {/* Sandbox */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <TBtn
-            label={
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="2,4 1,6 2,8" />
-                <polyline points="10,4 11,6 10,8" />
-                <path d="M5 3 L7 3" />
-                <rect x="3" y="2" width="6" height="8" rx="1" />
-              </svg>
-            }
-            title="Sandbox interactif"
-            onClick={() => {
-              const defaultCode = SANDBOX_DEFAULTS[sandboxLang] ?? "";
-              insertAt(
-                `<CodePlayground language="${sandboxLang}" starterCode={\`${defaultCode}\`} />\n`,
-              );
-            }}
-          />
-          <select
-            value={sandboxLang}
-            onChange={(e) => {
-              setSandboxLang(e.target.value as "python" | "javascript" | "c" | "asm");
-            }}
-            style={{
-              height: 22,
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
-              color: "#7F7BA9",
-              fontFamily: MONO,
-              fontSize: 9,
-              cursor: "pointer",
-              padding: "0 4px",
-              outline: "none",
-              borderRadius: 2,
-            }}
-          >
-            {(["python", "javascript", "c", "asm"] as const).map((l) => (
-              <option key={l} value={l} style={{ background: "#0A0826" }}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Terminal */}
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <TBtn
-            label={
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="1" y="2" width="10" height="8" rx="1" />
-                <polyline points="3,5 5,6 3,7" />
-                <line x1="6" y1="7" x2="9" y2="7" />
-              </svg>
-            }
-            title="Terminal simulé"
-            onClick={() => {
-              insertAt(`<SimulatedTerminal shell="${terminalShell}" />\n`);
-            }}
-          />
-          <select
-            value={terminalShell}
-            onChange={(e) => {
-              setTerminalShell(e.target.value as "bash" | "powershell");
-            }}
-            style={{
-              height: 22,
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
-              color: "#7F7BA9",
-              fontFamily: MONO,
-              fontSize: 9,
-              cursor: "pointer",
-              padding: "0 4px",
-              outline: "none",
-              borderRadius: 2,
-            }}
-          >
-            {(["bash", "powershell"] as const).map((s) => (
-              <option key={s} value={s} style={{ background: "#0A0826" }}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <Sep />
-
-        {/* Divider */}
-        <TBtn
-          label={
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <line
-                x1="1"
-                y1="6"
-                x2="11"
-                y2="6"
-                stroke="currentColor"
-                strokeWidth={1.4}
-                strokeDasharray="2 2"
+            {/* Code block with lang selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <TBtn
+                label={
+                  <svg
+                    width="13"
+                    height="12"
+                    viewBox="0 0 13 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3,4 1,6 3,8" />
+                    <polyline points="10,4 12,6 10,8" />
+                    <line x1="5" y1="9" x2="8" y2="3" />
+                  </svg>
+                }
+                title="Bloc de code"
+                onClick={() => {
+                  insertAt(`\`\`\`${codeLang}\n// code ici\n\`\`\`\n`);
+                }}
               />
-            </svg>
-          }
-          title="Séparateur horizontal"
-          onClick={() => {
-            insertAt("\n---\n\n");
-          }}
-        />
+              <select
+                value={codeLang}
+                onChange={(e) => {
+                  setCodeLang(e.target.value);
+                }}
+                style={{
+                  height: 22,
+                  background: "#0A0826",
+                  border: `1px solid ${BORDER}`,
+                  color: "#7F7BA9",
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  outline: "none",
+                  borderRadius: 2,
+                }}
+              >
+                {[
+                  "bash",
+                  "python",
+                  "javascript",
+                  "typescript",
+                  "sql",
+                  "html",
+                  "css",
+                  "json",
+                  "yaml",
+                  "go",
+                  "rust",
+                ].map((l) => (
+                  <option key={l} value={l} style={{ background: "#0A0826" }}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Sep />
+
+            {/* Callout with type selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <TBtn
+                label={
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.4}
+                    strokeLinecap="round"
+                  >
+                    <circle cx="6" cy="6" r="5" />
+                    <line x1="6" y1="5" x2="6" y2="8" />
+                    <circle cx="6" cy="3.5" r="0.6" fill="currentColor" stroke="none" />
+                  </svg>
+                }
+                title="Callout"
+                onClick={() => {
+                  insertAt(`<Callout type="${calloutType}">\n  Contenu du callout.\n</Callout>\n`);
+                }}
+              />
+              <select
+                value={calloutType}
+                onChange={(e) => {
+                  setCalloutType(e.target.value as "info" | "warning" | "danger" | "success");
+                }}
+                style={{
+                  height: 22,
+                  background: "#0A0826",
+                  border: `1px solid ${BORDER}`,
+                  color: "#7F7BA9",
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  outline: "none",
+                  borderRadius: 2,
+                }}
+              >
+                {(["info", "warning", "danger", "success"] as const).map((t) => (
+                  <option key={t} value={t} style={{ background: "#0A0826" }}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Sep />
+
+            {/* Quiz */}
+            <TBtn
+              label={
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.4}
+                  strokeLinecap="round"
+                >
+                  <circle cx="6" cy="6" r="5" />
+                  <path d="M4.5 4.5 C4.5 3.5 7.5 3.5 7.5 5.5 C7.5 6.5 6 6.5 6 7.5" />
+                  <circle cx="6" cy="9" r="0.6" fill="currentColor" stroke="none" />
+                </svg>
+              }
+              title="Quiz"
+              onClick={() => {
+                insertAt(
+                  '<Quiz\n  id="q-1"\n  question="Votre question ?"\n  options={["Option A", "Option B", "Option C"]}\n  correct={0}\n/>\n',
+                );
+              }}
+            />
+
+            {/* Sandbox */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <TBtn
+                label={
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="2,4 1,6 2,8" />
+                    <polyline points="10,4 11,6 10,8" />
+                    <path d="M5 3 L7 3" />
+                    <rect x="3" y="2" width="6" height="8" rx="1" />
+                  </svg>
+                }
+                title="Sandbox interactif"
+                onClick={() => {
+                  const defaultCode = SANDBOX_DEFAULTS[sandboxLang] ?? "";
+                  insertAt(
+                    `<CodePlayground language="${sandboxLang}" starterCode={\`${defaultCode}\`} />\n`,
+                  );
+                }}
+              />
+              <select
+                value={sandboxLang}
+                onChange={(e) => {
+                  setSandboxLang(e.target.value as "python" | "javascript" | "c" | "asm");
+                }}
+                style={{
+                  height: 22,
+                  background: "#0A0826",
+                  border: `1px solid ${BORDER}`,
+                  color: "#7F7BA9",
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  outline: "none",
+                  borderRadius: 2,
+                }}
+              >
+                {(["python", "javascript", "c", "asm"] as const).map((l) => (
+                  <option key={l} value={l} style={{ background: "#0A0826" }}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Terminal */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <TBtn
+                label={
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="1" y="2" width="10" height="8" rx="1" />
+                    <polyline points="3,5 5,6 3,7" />
+                    <line x1="6" y1="7" x2="9" y2="7" />
+                  </svg>
+                }
+                title="Terminal simulé"
+                onClick={() => {
+                  insertAt(`<SimulatedTerminal shell="${terminalShell}" />\n`);
+                }}
+              />
+              <select
+                value={terminalShell}
+                onChange={(e) => {
+                  setTerminalShell(e.target.value as "bash" | "powershell");
+                }}
+                style={{
+                  height: 22,
+                  background: "#0A0826",
+                  border: `1px solid ${BORDER}`,
+                  color: "#7F7BA9",
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  outline: "none",
+                  borderRadius: 2,
+                }}
+              >
+                {(["bash", "powershell"] as const).map((s) => (
+                  <option key={s} value={s} style={{ background: "#0A0826" }}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Sep />
+
+            {/* Divider */}
+            <TBtn
+              label={
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <line
+                    x1="1"
+                    y1="6"
+                    x2="11"
+                    y2="6"
+                    stroke="currentColor"
+                    strokeWidth={1.4}
+                    strokeDasharray="2 2"
+                  />
+                </svg>
+              }
+              title="Séparateur horizontal"
+              onClick={() => {
+                insertAt("\n---\n\n");
+              }}
+            />
+          </>
+        )}
 
         {/* Right side - guide + split toggle */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
@@ -1542,6 +1595,26 @@ export function MdxEditorPanel({
         </div>
       </div>
 
+      {blocksProblem !== null && (
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            padding: "8px 14px",
+            borderBottom: `1px solid ${DANGER}55`,
+            background: "rgba(255,77,109,0.07)",
+            color: "#F5F5FA",
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
+            PAS DE BLOCS ·{" "}
+          </b>
+          Le MDX ne se découpe pas en blocs : {blocksProblem}. Corrige-le ici, puis réessaie.
+        </p>
+      )}
+
       {/* ── Editor + Preview ──────────────────────────────────────────── */}
       <div
         style={{
@@ -1550,7 +1623,7 @@ export function MdxEditorPanel({
           height: 620,
         }}
       >
-        {/* Monaco editor */}
+        {/* Blocks, or the Monaco editor */}
         <div
           style={{
             borderRight: split ? `1px solid ${BORDER}` : "none",
@@ -1558,40 +1631,44 @@ export function MdxEditorPanel({
             height: 620,
           }}
         >
-          <MonacoEditor
-            height="620px"
-            language="markdown"
-            value={value}
-            onChange={(v) => {
-              onChange(v ?? "");
-            }}
-            theme="cyberlearn"
-            onMount={handleMount}
-            beforeMount={handleBefore}
-            options={{
-              fontSize: 13,
-              fontFamily: "JetBrains Mono, Fira Code, monospace",
-              fontLigatures: true,
-              lineNumbers: "on",
-              lineHeight: 21,
-              minimap: { enabled: false },
-              wordWrap: "on",
-              scrollBeyondLastLine: false,
-              padding: { top: 14, bottom: 14 },
-              renderLineHighlight: "line",
-              tabSize: 2,
-              overviewRulerLanes: 0,
-              renderWhitespace: "none",
-              smoothScrolling: true,
-              cursorBlinking: "smooth",
-              cursorSmoothCaretAnimation: "on",
-              suggestOnTriggerCharacters: false,
-              quickSuggestions: false,
-              folding: false,
-              bracketPairColorization: { enabled: true },
-              stickyScroll: { enabled: false },
-            }}
-          />
+          {editorMode === "blocks" ? (
+            <BlockEditor value={value} onChange={onChange} />
+          ) : (
+            <MonacoEditor
+              height="620px"
+              language="markdown"
+              value={value}
+              onChange={(v) => {
+                onChange(v ?? "");
+              }}
+              theme="cyberlearn"
+              onMount={handleMount}
+              beforeMount={handleBefore}
+              options={{
+                fontSize: 13,
+                fontFamily: "JetBrains Mono, Fira Code, monospace",
+                fontLigatures: true,
+                lineNumbers: "on",
+                lineHeight: 21,
+                minimap: { enabled: false },
+                wordWrap: "on",
+                scrollBeyondLastLine: false,
+                padding: { top: 14, bottom: 14 },
+                renderLineHighlight: "line",
+                tabSize: 2,
+                overviewRulerLanes: 0,
+                renderWhitespace: "none",
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
+                cursorSmoothCaretAnimation: "on",
+                suggestOnTriggerCharacters: false,
+                quickSuggestions: false,
+                folding: false,
+                bracketPairColorization: { enabled: true },
+                stickyScroll: { enabled: false },
+              }}
+            />
+          )}
         </div>
 
         {/* Guide / the site's preview / the quick preview */}
