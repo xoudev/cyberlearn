@@ -90,9 +90,7 @@ export default function LessonDetailLoading(): React.ReactElement {
               }}
             >
               <Skeleton style={{ height: 10, width: 80 }} />
-              <Skeleton
-                style={{ width: 14, height: 14, transform: "rotate(45deg)", borderRadius: 0 }}
-              />
+              <Skeleton style={{ width: 14, height: 14, transform: "rotate(45deg)" }} />
               <Skeleton style={{ height: 10, width: 36 }} />
             </div>
           ))}

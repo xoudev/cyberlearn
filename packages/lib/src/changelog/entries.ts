@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.18",
+    date: "2026-10-05",
+    title: "Les mêmes coins, les mêmes cadres",
+    changes: [
+      {
+        type: "fixed",
+        text: "Les crochets d'angle, le titre au mot dégradé, l'en-tête de section « // » et la carte sont dessinés une fois pour tout le site ; la page introuvable et la page des comptes suspendus partagent le même cadre. Et plus rien ne peut s'arrondir par mégarde : le rayon des composants est à zéro à la source.",
+      },
+    ],
+  },
+  {
     version: "3.17",
     date: "2026-10-05",
     title: "Les mêmes onglets, les mêmes filtres",

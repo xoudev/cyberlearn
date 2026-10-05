@@ -5,7 +5,6 @@ import "./_components/paths-catalog-v2.css";
 /** Page tokens (mirrors .pc2-root): square corners + #2a2560 hairline. */
 const PC2_BORDER = "#2a2560";
 const CARD_STYLE: React.CSSProperties = {
-  borderRadius: 0,
   borderColor: PC2_BORDER,
   background: "rgba(10, 8, 38, 0.6)",
 };

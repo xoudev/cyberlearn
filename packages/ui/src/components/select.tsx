@@ -352,7 +352,6 @@ export function Select({
           padding: "9px 12px",
           background: C.bg,
           border: `1px solid ${open ? (selected?.tone ?? C.accent) : selected?.tone === undefined ? C.border : `color-mix(in srgb, ${selected.tone} 40%, transparent)`}`,
-          borderRadius: 0,
           color: selected ? (selected.tone ?? C.fg) : C.muted,
           fontFamily: C.font,
           fontSize: 12.5,

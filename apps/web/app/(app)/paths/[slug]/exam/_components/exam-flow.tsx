@@ -383,7 +383,7 @@ function IntroScreen(props: {
             {/* LEFT */}
             <section className="exam-left">
               <span className="exam-eyebrow">{"// Examen final"}</span>
-              <h1 className="exam-title">{pathTitle}</h1>
+              <h1 className="exam-title gradient-title">{pathTitle}</h1>
               <div className="exam-refcode">
                 {"// "}
                 <b>{refCode}</b> · Certification vérifiable

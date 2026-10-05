@@ -38,7 +38,6 @@ export function BadgesSkeleton(): React.ReactElement {
                   w={96}
                   h={112}
                   style={{
-                    borderRadius: 0,
                     clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
                   }}
                 />

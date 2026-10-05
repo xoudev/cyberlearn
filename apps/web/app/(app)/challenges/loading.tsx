@@ -5,7 +5,6 @@ import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
 const CARD_STYLE: React.CSSProperties = {
   background: "#08061f",
   borderColor: "#1f1b47",
-  borderRadius: 0,
   padding: 0,
   overflow: "hidden",
   display: "flex",

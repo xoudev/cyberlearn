@@ -446,7 +446,7 @@ export function PathsCollection({
         {/* header */}
         <header className="pc2-head">
           <div>
-            <h1 className="pc2-title">
+            <h1 className="pc2-title gradient-title">
               <em>{paths.length}</em> parcours disponibles
             </h1>
             <p className="pc2-sub">

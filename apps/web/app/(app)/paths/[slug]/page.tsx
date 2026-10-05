@@ -326,7 +326,7 @@ export default async function PathDetailPage({
               <DiffBars level={barsOf(diff.level)} /> {diff.label}
             </span>
           </div>
-          <h1 className="pd2-title">{path.title}</h1>
+          <h1 className="pd2-title gradient-title">{path.title}</h1>
           <p className="pd2-desc">{path.description}</p>
         </div>
 

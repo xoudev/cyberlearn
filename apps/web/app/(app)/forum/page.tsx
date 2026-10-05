@@ -52,7 +52,7 @@ export default async function ForumPage(): Promise<React.JSX.Element> {
       </div>
 
       <div className="fo-section-head">
-        <h2>Derniers messages</h2>
+        <h2 className="section-head">Derniers messages</h2>
       </div>
       {recent.length === 0 ? (
         <EmptyState message="Personne n'a encore écrit. Ouvre le premier sujet dans une section ci-dessus." />

@@ -83,8 +83,8 @@ export default function CertificatesLoading(): React.ReactElement {
             </div>
             {/* Actions */}
             <div style={{ display: "flex", borderTop: "1px solid #1A1640" }}>
-              <Skeleton h={40} style={{ flex: 1, borderRadius: 0 }} />
-              <Skeleton h={40} style={{ flex: 1.3, borderRadius: 0 }} />
+              <Skeleton h={40} style={{ flex: 1 }} />
+              <Skeleton h={40} style={{ flex: 1.3 }} />
             </div>
           </div>
         ))}

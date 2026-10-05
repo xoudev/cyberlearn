@@ -45,8 +45,9 @@
   --color-rarity-epic: #9333ea;
   --color-rarity-legendary: #d97706;
 
-  /* Border radius */
-  --radius: 0.5rem;
+  /* Border radius: none. The site is square; a component that rounds a corner
+     is wrong, not a case the token should leave room for. */
+  --radius: 0;
 
   /* Sidebar dimensions */
   --sidebar-width: 240px;

@@ -32,7 +32,7 @@ export default async function PathGuidePage({
         <Crumb segments={[{ label: "parcours", href: "/paths" }, "guide"]} />
 
         <div style={{ marginBottom: 28 }}>
-          <h1 className="pc2-title">
+          <h1 className="pc2-title gradient-title">
             Trouver <em>ton parcours</em>
           </h1>
           <p className="pc2-sub">

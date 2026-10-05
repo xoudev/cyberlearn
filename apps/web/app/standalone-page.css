@@ -1,0 +1,40 @@
+/* A page shown instead of the site: the 404 and the ban. One grid, one card,
+   each page bringing its own accent for the card's top edge and the glow
+   behind it (red for the ban: the one page where the accent should not feel
+   like the rest of the product). */
+.standalone-page {
+  --page-accent: var(--brand-turquoise);
+  --page-glow: 0, 36, 255;
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  color: var(--fg-primary);
+  background:
+    radial-gradient(ellipse 700px 420px at 50% 42%, rgba(var(--page-glow), 0.16), transparent 70%),
+    var(--bg-primary);
+}
+.standalone-page--danger {
+  --page-accent: #ff4757;
+  --page-glow: 255, 71, 87;
+}
+.standalone-page__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 37, 96, 0.22) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
+}
+.standalone-page__card {
+  position: relative;
+  width: min(640px, 100%);
+  padding: clamp(28px, 5vw, 52px);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid var(--page-accent);
+  background: rgba(10, 8, 38, 0.85);
+  box-shadow: 0 28px 80px -50px rgba(var(--page-glow), 0.75);
+}
