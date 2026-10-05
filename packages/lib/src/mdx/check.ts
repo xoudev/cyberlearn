@@ -103,38 +103,10 @@ export const LESSON_REMARK_PLUGINS = [
 ];
 
 /** Every component a lesson may use, by the name it is written with. */
-export const LESSON_COMPONENT_NAMES = [
-  "Quiz",
-  "QuizGroup",
-  "CodePlayground",
-  "SimulatedTerminal",
-  "LinuxTerminal",
-  "LessonVideo",
-  "LessonImage",
-  "ExternalLink",
-  "Callout",
-  "Diagram",
-  "PythonChallenge",
-  "FindTheFlaw",
-  "PhishingEmail",
-  "SqlPlayground",
-  "SqlInjectionLab",
-  "GitSandbox",
-  "PhotoOsint",
-  "NetworkLab",
-  "StepAnimation",
-  "PhpLab",
-  "SubnetDrill",
-  "PacketDissector",
-  "PutInOrder",
-  "MatchPairs",
-  "CryptoWorkshop",
-  "FirewallLab",
-  "LogHunt",
-  "HexEditor",
-] as const;
-
-export type LessonComponentName = (typeof LESSON_COMPONENT_NAMES)[number];
+// The names live in names.ts, which the editor reads in the browser; they are
+// re-exported here because this is where everything else reads them.
+export { LESSON_COMPONENT_NAMES, type LessonComponentName } from "./names.js";
+import { LESSON_COMPONENT_NAMES, type LessonComponentName } from "./names.js";
 
 // ── The check ────────────────────────────────────────────────────────────────
 

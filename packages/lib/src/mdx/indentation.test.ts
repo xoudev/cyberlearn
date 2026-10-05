@@ -130,6 +130,18 @@ describe("protectPropIndentation", () => {
     expect(protectPropIndentation(mdx)).toBe(mdx);
   });
 
+  it("protects a template whose ${ is escaped: that is text, not an expression", () => {
+    // A shell lesson writes \${HOME} to show the characters; the page reads
+    // them back as such, and the line deserves its indentation like any other.
+    const mdx = "<CodePlayground starterCode={`a\n    echo \\${HOME}`} />";
+    expect(protectPropIndentation(mdx)).toBe(
+      "<CodePlayground starterCode={`a\n\\x20\\x20\\x20\\x20echo \\${HOME}`} />",
+    );
+    // Two backslashes are one backslash, and the ${} that follows is live again.
+    const live = "<CodePlayground starterCode={`a\n    \\\\${b}`} />";
+    expect(protectPropIndentation(live)).toBe(live);
+  });
+
   it("does not mistake a > inside the braces for the end of the tag", () => {
     const mdx = "<CodePlayground starterCode={`if a > b:\n    print(a)`} />\n\nSuite.";
     expect(protectPropIndentation(mdx)).toBe(

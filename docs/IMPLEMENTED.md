@@ -176,7 +176,7 @@
 #### Classes, établissements et enseignants
 - Structure : établissement → promotion → classe, gérée dans la console
 - Un enseignant écrit ses propres leçons et compose ses parcours, visibles de ses
-  seules classes ; il dispose de l'éditeur MDX de la console, aperçu rendu par le site compris
+  seules classes ; il dispose de l'éditeur de la console, blocs, code et aperçu rendu par le site compris
 - Travail donné à une classe avec échéance et consignes, notifié par mail
 - Corrigés et ressources distribués à la classe
 - Tableau de bord d'avancement côté enseignant, page « Ma classe » côté élève
@@ -247,7 +247,7 @@
 ### Fonctionnalités détaillées
 
 #### Gestion des leçons
-- Création et édition avec éditeur MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
+- Création et édition par blocs (titres, Markdown, composants sous forme de champs ; onze composants de base ont un formulaire, les autres se remplissent en MDX dans leur bloc) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED
 - Suppression (uniquement si DRAFT)
 - Import en masse

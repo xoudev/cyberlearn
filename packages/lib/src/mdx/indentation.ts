@@ -160,7 +160,7 @@ function protectTag(tag: string, keep: number): string {
     if (depth > 0 && c === "`") {
       const end = endOfTemplate(tag, i);
       const template = tag.slice(i, end);
-      out += template.includes("${") ? template : protectLines(template, keep, TEMPLATE);
+      out += hasExpression(template) ? template : protectLines(template, keep, TEMPLATE);
       i = end;
       continue;
     }
@@ -170,6 +170,20 @@ function protectTag(tag: string, keep: number): string {
     i++;
   }
   return out;
+}
+
+/**
+ * Whether the template holds a `${}` that is one: an odd run of backslashes
+ * before it makes it text (`\${HOME}` in a shell lesson, say), which the
+ * page reads back as the characters and which deserves its indentation too.
+ */
+function hasExpression(template: string): boolean {
+  const opening = /(\\*)\$\{/g;
+  let match: RegExpExecArray | null;
+  while ((match = opening.exec(template)) !== null) {
+    if ((match[1]?.length ?? 0) % 2 === 0) return true;
+  }
+  return false;
 }
 
 /** How a space and a tab are written so that MDX leaves them be. */

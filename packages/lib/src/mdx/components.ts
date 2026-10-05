@@ -1,4 +1,4 @@
-import type { LessonComponentName } from "./check.js";
+import type { LessonComponentName } from "./names.js";
 
 /**
  * What each lesson component is, for the people who write lessons.

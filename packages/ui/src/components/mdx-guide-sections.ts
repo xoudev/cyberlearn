@@ -2,6 +2,7 @@ import {
   guideUrl,
   LESSON_COMPONENT_FAMILIES,
   LESSON_COMPONENTS,
+  lessonComponent,
   type LessonComponentExample,
   type LessonComponentFamily,
 } from "@cyberlearn/lib/mdx-components";
@@ -53,6 +54,12 @@ const FAMILY_ACCENTS: Record<LessonComponentFamily, string> = {
   ordering: "#D0CDEC",
   web: "#8B7CFF",
 };
+
+/** The colour of a component's family, for the block editor's cards; a quiet grey for a name the registry lacks. */
+export function componentAccent(name: string): string {
+  const family = lessonComponent(name)?.family;
+  return family === undefined ? "#7F7BA9" : FAMILY_ACCENTS[family];
+}
 
 const MARKDOWN_SECTION: GuideSection = {
   id: "markdown",

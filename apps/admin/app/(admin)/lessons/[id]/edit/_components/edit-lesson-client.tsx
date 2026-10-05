@@ -489,7 +489,7 @@ export function EditLessonClient({
 
           {/* MDX Editor */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// Monaco · MDX · split preview">
+            <Label req hint="// blocs ou MDX · aperçu du site">
               Contenu MDX
             </Label>
             <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />

@@ -203,7 +203,7 @@ export function LessonEditor({
         <div className="tle-editor__head">
           <span className="cls-field__label">Contenu</span>
           <span className="cls-field__hint">
-            Monaco · aperçu rendu par le site · le même éditeur que la console
+            Blocs ou code · aperçu rendu par le site · le même éditeur que la console
           </span>
         </div>
         <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
