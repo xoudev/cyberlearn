@@ -31,6 +31,7 @@ import {
   type GuideSection,
 } from "./mdx-guide-sections";
 import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
+import { stripImportDeclarations } from "./mdx-source";
 
 export { useLessonPreview } from "./mdx-preview-frame";
 export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
@@ -333,12 +334,8 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
 }
 
 function MdxPreview({ content }: { content: string }): React.ReactElement {
-  const body = content
-    .replace(/^---[\s\S]*?---\n?/, "")
-    // Strip MDX/JS import declarations only (require 'from "…"' or bare import "…"')
-    // Bare Python/etc. imports like `import hashlib` inside code blocks are preserved.
-    .replace(/^import\s+.*\s+from\s+['"][^'"]+['"].*$/gm, "")
-    .replace(/^import\s+['"][^'"]+['"].*$/gm, "");
+  // Frontmatter and import declarations are not part of what the page draws.
+  const body = stripImportDeclarations(content.replace(/^---[\s\S]*?---\n?/, ""));
 
   const lines = body.split("\n");
   const elements: React.ReactElement[] = [];
