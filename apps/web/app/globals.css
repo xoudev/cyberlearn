@@ -964,7 +964,7 @@ article.lesson-content blockquote p code {
   color: #ffb547;
 }
 
-/* The account block: who is signed in, and the pages that are theirs. */
+/* The account block: who is signed in, a link to their profile, the way out. */
 .sidebar-account {
   flex-shrink: 0;
   padding: 14px 16px 16px;
@@ -1051,43 +1051,13 @@ article.lesson-content blockquote p code {
 .sidebar-signout:hover {
   color: #ff4757;
 }
-.sidebar-account-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 12px;
-}
-.sidebar-account-links a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  color: #7f7ba9;
-  text-decoration: none;
-  transition: color 150ms ease;
-}
-.sidebar-account-links a:hover {
-  color: #f5f5fa;
-}
+/* Folded: the way out, under the avatar the row has room for. */
 .sidebar-account-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   margin-top: 8px;
-}
-.sidebar-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--cosmetic-accent);
-  flex-shrink: 0;
-}
-.sidebar-dot--rail {
-  position: absolute;
-  top: 5px;
-  right: 5px;
 }
 aside[data-state="collapsed"] .sidebar-account {
   padding: 12px 8px;
@@ -1123,10 +1093,77 @@ aside[data-state="collapsed"] .sidebar-account {
 .navbar-me:hover {
   background-color: rgba(42, 37, 96, 0.35);
 }
-.navbar-brand {
+/* Navbar: the release notes, a button next to the friends and the bell. It
+   carries the accent and a dot until the notes have been read on this device. */
+.news-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  font: 700 10px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8b5d1;
+  background: transparent;
+  border: 1px solid #2a2560;
   text-decoration: none;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.news-chip:hover {
+  color: #f5f5fa;
+  background: rgba(42, 37, 96, 0.35);
+}
+.news-chip--fresh {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+}
+.news-chip--fresh:hover {
+  background: color-mix(in srgb, var(--cosmetic-accent) 16%, transparent);
+  border-color: var(--cosmetic-accent);
+}
+.news-chip__dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cosmetic-accent);
+  box-shadow:
+    0 0 0 2px #030219,
+    0 0 8px var(--cosmetic-accent);
+}
+/* Below the navbar's narrow breakpoint the word goes and the icon stays, as
+   the Wrapped chip drops its year. */
+@media (max-width: 560px) {
+  .news-chip__label {
+    display: none;
+  }
+}
+
+/* Navbar: a page reached by its icon alone, the settings behind the gear */
+.navbar-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #7f7ba9;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+.navbar-icon-link:hover {
+  color: #f5f5fa;
+  background-color: rgba(42, 37, 96, 0.35);
 }
 
 /* Breadcrumb links */

@@ -2,9 +2,9 @@
  * What the sidebar lists, and in what order, kept apart from how it is drawn.
  *
  * Three groups under the dashboard: what to learn, how it is going, who else is
- * here. Profile, locker, news, help and settings are not navigation in the same
- * sense - nobody opens the site to go to the settings - so they sit in the
- * account block at the bottom, not in the list.
+ * here. The account block at the bottom says who is signed in and leads to the
+ * profile, nothing more: the news and the settings are in the navbar, where the
+ * other things that are not pages of the site already are.
  */
 
 export type SidebarIcon =
@@ -16,11 +16,11 @@ export type SidebarIcon =
   | "note"
   | "badge"
   | "cert"
+  | "locker"
   | "trophy"
   | "forum"
-  | "classes";
-
-export type AccountIcon = "locker" | "news" | "support" | "settings";
+  | "classes"
+  | "support";
 
 export interface SidebarItem {
   href: string;
@@ -68,6 +68,8 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
   if (input.hasClasses) {
     community.push({ href: "/my-class", label: "Mes classes", icon: "classes", count: null });
   }
+  // Help is somebody answering: it belongs with the people, not under the account.
+  community.push({ href: "/support", label: "Aide", icon: "support", count: null });
 
   return [
     {
@@ -82,20 +84,14 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
       items: [
         { href: "/badges", label: "Badges", icon: "badge", count: null },
         { href: "/certificates", label: "Certificats", icon: "cert", count: null },
+        // The locker is what the levels unlock: a reward, listed with the others.
+        { href: "/locker", label: "Casier", icon: "locker", count: null },
         { href: "/leaderboard", label: "Classement", icon: "trophy", count: null },
       ],
     },
     { key: "community", label: "Communauté", items: community },
   ];
 }
-
-/** The account block's small links, in order. */
-export const ACCOUNT_LINKS: readonly { href: string; label: string; icon: AccountIcon }[] = [
-  { href: "/locker", label: "Casier", icon: "locker" },
-  { href: "/changelog", label: "Nouveautés", icon: "news" },
-  { href: "/support", label: "Aide", icon: "support" },
-  { href: "/settings", label: "Paramètres", icon: "settings" },
-];
 
 /**
  * Whether `href` is the page being read. The dashboard matches itself only;

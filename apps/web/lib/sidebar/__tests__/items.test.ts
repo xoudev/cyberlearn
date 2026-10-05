@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCOUNT_LINKS, isActiveHref, sidebarGroups } from "../items";
+import { isActiveHref, sidebarGroups } from "../items";
 
 const BASE = { hasClasses: false, showRevisions: true, dueReviews: 0 };
 
@@ -44,12 +44,32 @@ describe("sidebarGroups", () => {
     expect(labels({ ...BASE, hasClasses: true })).toContain("Mes classes");
   });
 
-  it("keeps the account pages out of the list", () => {
+  it("lists the locker with the other rewards", () => {
+    const progress = sidebarGroups(BASE).find((g) => g.label === "Progression");
+    expect(progress?.items.map((i) => i.href)).toEqual([
+      "/badges",
+      "/certificates",
+      "/locker",
+      "/leaderboard",
+    ]);
+  });
+
+  it("ends the community with the help page, after the classes when there are some", () => {
+    const without = sidebarGroups(BASE).find((g) => g.label === "Communauté");
+    expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/support"]);
+    const withClasses = sidebarGroups({ ...BASE, hasClasses: true }).find(
+      (g) => g.label === "Communauté",
+    );
+    expect(withClasses?.items.map((i) => i.href)).toEqual(["/forum", "/my-class", "/support"]);
+  });
+
+  it("keeps the account pages out of the list: they are reached from the navbar", () => {
     const hrefs = sidebarGroups({ ...BASE, hasClasses: true }).flatMap((g) =>
       g.items.map((i) => i.href),
     );
-    for (const link of ACCOUNT_LINKS) expect(hrefs).not.toContain(link.href);
-    expect(hrefs).not.toContain("/profile");
+    for (const href of ["/profile", "/settings", "/changelog"]) {
+      expect(hrefs).not.toContain(href);
+    }
   });
 });
 

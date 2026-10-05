@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.6",
+    date: "2026-10-05",
+    title: "Les nouveautés et les paramètres passent dans la barre du haut",
+    changes: [
+      {
+        type: "improved",
+        text: "Les petits liens sous ton nom, en bas de la barre latérale, ont disparu. Les nouveautés sont un bouton de la barre du haut, à côté des amis, marqué d'un point tant qu'elles ne sont pas lues. Les paramètres s'ouvrent depuis l'icône de rouage, à côté de la cloche. Dans la barre latérale, le casier a rejoint les badges et les certificats, l'aide a rejoint le forum, et le nom du site n'est plus écrit deux fois.",
+      },
+    ],
+  },
+  {
     version: "3.5",
     date: "2026-10-05",
     title: "L'aperçu de l'éditeur s'affiche dans la console",

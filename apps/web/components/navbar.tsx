@@ -11,12 +11,32 @@ import { glyphPath } from "@/lib/avatar/glyphs";
 import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
 import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
+import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
 import { WrappedChip } from "./wrapped-chip";
 
 // ── Glyph avatar helper ────────────────────────────────────────────────────────
 // avatarUrl stored as "__glyph:{name}" - never pass to next/image. The paths
 // themselves live in lib/avatar/glyphs, which is the one copy of them.
+
+function GearGlyph(): React.ReactElement {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="2.4" />
+      <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" />
+    </svg>
+  );
+}
 
 function GlyphAvatar({ name, size }: { name: string; size: number }): React.ReactElement {
   const d = glyphPath(name);
@@ -97,15 +117,9 @@ export async function Navbar(): Promise<React.ReactElement> {
         zIndex: 40,
       }}
     >
-      {/* ── Sidebar trigger (hamburger) ─────────────────────────────────── */}
+      {/* ── Sidebar trigger (hamburger). The wordmark is the sidebar's: written
+          here too, the name of the site stood twice on the same screen. ── */}
       <SidebarTrigger style={{ width: 26, height: 26, flexShrink: 0 }} />
-
-      {/* ── Wordmark, only while the sidebar is a drawer and its logo is out of sight ── */}
-      <Link href="/dashboard" className="navbar-brand lg:hidden" aria-label="CyberLearn · accueil">
-        <span className="sidebar-wordmark">
-          cyber<em>learn</em>
-        </span>
-      </Link>
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
       <GlobalSearch />
@@ -117,9 +131,20 @@ export async function Navbar(): Promise<React.ReactElement> {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         {/* Wrapped turns up here in December and is gone again in January. */}
         {userId && wrapped.open && <WrappedChip periodKey={wrapped.periodKey} />}
+        {/* The release notes: news, announced where the other news arrives. */}
+        <NewsButton />
         {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
+        {/* The settings, behind their icon rather than a link under the account. */}
+        <Link
+          href="/settings"
+          className="navbar-icon-link"
+          title="Paramètres"
+          aria-label="Paramètres"
+        >
+          <GearGlyph />
+        </Link>
 
         {/* The avatar, a link to the profile. The level is no longer written
             here: the sidebar's account block already says it on every page. */}
