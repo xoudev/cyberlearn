@@ -2042,6 +2042,103 @@ aside[data-state="collapsed"] .sidebar-account {
   font-weight: 600;
 }
 
+/* The profile's streak card goes on under the week: the year's two figures
+   (the dashboard's own .dash-fig) and the last twelve months as a calendar,
+   square cells in the card's amber. */
+.dash-streak-year {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #1f1b47;
+}
+.dash-streak-year .dash-figs {
+  margin-bottom: 18px;
+}
+.dash-heat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7f7ba9;
+}
+.dash-heat-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dash-heat {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 4px;
+}
+.dash-heat-months {
+  display: flex;
+}
+.dash-heat-gutter,
+.dash-heat-days {
+  width: 28px;
+  flex-shrink: 0;
+}
+.dash-heat-months > div {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  column-gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: #7f7ba9;
+}
+.dash-heat-months > div span {
+  white-space: nowrap;
+}
+.dash-heat-body {
+  display: flex;
+  margin-top: 6px;
+}
+.dash-heat-days {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  row-gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #7f7ba9;
+}
+.dash-heat-days span {
+  display: flex;
+  align-items: center;
+}
+.dash-heat-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-columns: 11px;
+  gap: 3px;
+}
+.dash-heat-cell {
+  display: block;
+  width: 11px;
+  height: 11px;
+  background: rgba(42, 37, 96, 0.5);
+}
+.dash-heat-cell[data-level="1"] {
+  background: rgba(255, 181, 71, 0.3);
+}
+.dash-heat-cell[data-level="2"] {
+  background: rgba(255, 181, 71, 0.6);
+}
+.dash-heat-cell[data-level="3"] {
+  background: #ffb547;
+  box-shadow: 0 0 6px rgba(255, 181, 71, 0.4);
+}
+.dash-heat-cell--future {
+  background: transparent;
+  border: 1px dashed #2a2560;
+}
+
 /* Where the reader stands */
 .dash-me {
   display: flex;

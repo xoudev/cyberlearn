@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.8",
+    date: "2026-10-05",
+    title: "La série se lit de la même façon partout",
+    changes: [
+      {
+        type: "improved",
+        text: "La carte de la série du profil est désormais celle du tableau de bord, prolongée de l'année : les jours actifs depuis janvier, le prochain palier et le calendrier des douze derniers mois, dans les mêmes couleurs et avec les mêmes mots. Et c'est « série » partout, plus « streak » ici et « série » là.",
+      },
+    ],
+  },
+  {
     version: "3.7",
     date: "2026-10-05",
     title: "La note des parcours sur leurs cartes",

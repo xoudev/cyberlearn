@@ -487,7 +487,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               sub: "expérience cumulée",
             },
             {
-              label: "Streak actuel",
+              label: "Série en cours",
               value: `${String(user.streakDays)}j`,
               color: user.streakDays > 0 ? "#FFB547" : "#7F7BA9",
               sub: user.streakDays > 0 ? "🔥 en cours" : "à relancer",

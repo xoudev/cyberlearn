@@ -40,7 +40,7 @@ export function dashboardStats(input: DashboardStatsInput): DashboardStat[] {
       highlight: true,
     },
     {
-      label: "Streak actuel",
+      label: "Série en cours",
       value: input.streakDays,
       unit: "j",
       detail:

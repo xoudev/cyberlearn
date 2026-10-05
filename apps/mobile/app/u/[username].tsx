@@ -140,7 +140,7 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
       {/* Stats */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <StatCell value={`+${fr(profile.xpTotal)}`} label="XP total" accent={theme.accent} />
-        <StatCell value={`${String(profile.streakDays)}j`} label="Streak actuel" />
+        <StatCell value={`${String(profile.streakDays)}j`} label="Série en cours" />
         <StatCell value={profile.badges.length} label="Badges" />
       </View>
 
