@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NAVBAR_HEIGHT } from "@/lib/chrome";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { computeLevel, wrappedWindow } from "@cyberlearn/lib";
+import { wrappedWindow } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { glyphPath } from "@/lib/avatar/glyphs";
@@ -38,7 +38,6 @@ function GlyphAvatar({ name, size }: { name: string; size: number }): React.Reac
 }
 
 export async function Navbar(): Promise<React.ReactElement> {
-  let level = 1;
   let initials = "??";
   let avatarUrl: string | null = null;
   let unreadCount = 0;
@@ -49,7 +48,6 @@ export async function Navbar(): Promise<React.ReactElement> {
     const [authUser, dbUser] = await Promise.all([getRequestUser(), getSharedUserProfile()]);
 
     userId = authUser?.id ?? "";
-    level = computeLevel(dbUser?.xpTotal ?? 0).level;
     // Resolve "__upload:" markers to short-lived signed URLs before the value
     // reaches the render branch. Built-ins, "__glyph:" markers and null pass
     // through unchanged, so the rendering logic below is untouched.
@@ -102,7 +100,12 @@ export async function Navbar(): Promise<React.ReactElement> {
       {/* ── Sidebar trigger (hamburger) ─────────────────────────────────── */}
       <SidebarTrigger style={{ width: 26, height: 26, flexShrink: 0 }} />
 
-      {/* ── Mobile logo - only shown when sidebar is hidden in drawer ────── */}
+      {/* ── Wordmark, only while the sidebar is a drawer and its logo is out of sight ── */}
+      <Link href="/dashboard" className="navbar-brand lg:hidden" aria-label="CyberLearn · accueil">
+        <span className="sidebar-wordmark">
+          cyber<em>learn</em>
+        </span>
+      </Link>
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
       <GlobalSearch />
@@ -118,22 +121,9 @@ export async function Navbar(): Promise<React.ReactElement> {
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
 
-        {/* Level pill → links to profile */}
-        <Link
-          href="/profile"
-          className="navbar-level-link"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "0 12px 0 4px",
-            height: 34,
-            border: "1px solid #2A2560",
-            borderRadius: 2,
-            background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
-          }}
-        >
-          {/* Hexagon avatar */}
+        {/* The avatar, a link to the profile. The level is no longer written
+            here: the sidebar's account block already says it on every page. */}
+        <Link href="/profile" className="navbar-me" title="Mon profil" aria-label="Mon profil">
           {(() => {
             const glyphName = avatarUrl?.startsWith("__glyph:") ? avatarUrl.slice(8) : null;
             const isRealUrl = avatarUrl && !avatarUrl.startsWith("__glyph:");
@@ -141,7 +131,7 @@ export async function Navbar(): Promise<React.ReactElement> {
               <div
                 style={{
                   width: 26,
-                  height: 26,
+                  height: 29,
                   clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
                   flexShrink: 0,
                   overflow: "hidden",
@@ -168,7 +158,7 @@ export async function Navbar(): Promise<React.ReactElement> {
                     src={avatarUrl}
                     alt=""
                     width={26}
-                    height={26}
+                    height={29}
                     style={{ objectFit: "cover", width: "100%", height: "100%" }}
                   />
                 ) : (
@@ -177,18 +167,6 @@ export async function Navbar(): Promise<React.ReactElement> {
               </div>
             );
           })()}
-
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--cosmetic-accent)",
-              letterSpacing: "0.04em",
-            }}
-          >
-            LVL·{level}
-          </span>
         </Link>
       </div>
     </header>

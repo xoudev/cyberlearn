@@ -30,6 +30,21 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.0",
+    date: "2026-10-05",
+    title: "Un tableau de bord qui répond à une question",
+    changes: [
+      {
+        type: "improved",
+        text: "Le tableau de bord du site a été redessiné autour d'une seule question : que faire maintenant ? Une carte de mission montre la leçon en cours ou la prochaine du parcours, avec le module en cours dessiné leçon par leçon. Dessous, les révisions du jour, les quêtes et la série de la semaine, puis une ligne de chiffres et les derniers badges. Le niveau est un anneau à côté du bonjour.",
+      },
+      {
+        type: "improved",
+        text: "La barre latérale est regroupée en trois parties, Apprendre, Progression et Communauté, avec un bloc compte en bas : avatar, niveau, casier, nouveautés, aide et paramètres. Seules les révisions dues y sont comptées.",
+      },
+    ],
+  },
+  {
     version: "2.9",
     date: "2026-09-27",
     title: "Le clic droit dans le bloc-notes",

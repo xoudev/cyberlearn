@@ -100,12 +100,12 @@
 - Génération de **waivers** après le test : accès direct aux leçons avancées si score suffisant
 
 #### Dashboard
-- Barre XP avec animation et niveau actuel
-- Streak de jours consécutifs
-- Leçons en cours et à reprendre
-- Révisions SM-2 dues (badge de comptage)
-- Derniers badges obtenus
-- Parcours recommandés (basés sur le score de placement)
+- En-tête : la date, le prénom, la série et les révisions dues, le niveau en anneau avec l'XP et le rang
+- La mission : la leçon en cours, sinon la prochaine du parcours en tête (classement `featured-paths`, à partir du niveau, du test de placement et des derniers domaines travaillés), avec le module en cours dessiné leçon par leçon (`module-route`)
+- Révisions SM-2 dues du jour, en lignes
+- La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
+- Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
+- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; seul le nombre de révisions dues y est compté
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)

@@ -21,10 +21,32 @@ function path(id: string, overrides: Partial<HomePath> = {}): HomePath {
     estimatedHours: 3,
     status: null,
     lessons: [
-      { id: `${id}-3`, slug: `${id}-3`, title: "Trois", estimatedMinutes: 15, position: 3 },
-      { id: `${id}-1`, slug: `${id}-1`, title: "Un", estimatedMinutes: 10, position: 1 },
-      { id: `${id}-2`, slug: `${id}-2`, title: "Deux", estimatedMinutes: 12, position: 2 },
+      {
+        id: `${id}-3`,
+        slug: `${id}-3`,
+        title: "Trois",
+        estimatedMinutes: 15,
+        position: 3,
+        moduleId: null,
+      },
+      {
+        id: `${id}-1`,
+        slug: `${id}-1`,
+        title: "Un",
+        estimatedMinutes: 10,
+        position: 1,
+        moduleId: null,
+      },
+      {
+        id: `${id}-2`,
+        slug: `${id}-2`,
+        title: "Deux",
+        estimatedMinutes: 12,
+        position: 2,
+        moduleId: null,
+      },
     ],
+    modules: [],
     ...overrides,
   };
 }
@@ -65,8 +87,28 @@ describe("homePaths", () => {
     expect(homePaths([path("a", { status: "COMPLETED" })], new Set(), NEWCOMER)).toEqual({
       lead: null,
       leadProgress: null,
+      leadRoute: null,
       other: null,
     });
+  });
+
+  it("draws the lead's module as a route, in path order, centred on the lesson open", () => {
+    // The same calculation as the site's dashboard: done, now, to come.
+    const result = homePaths([path("p", { status: "IN_PROGRESS" })], new Set(["p-1"]), NEWCOMER);
+    expect(result.leadRoute?.label).toBe("Module 01");
+    expect(result.leadRoute?.nodes.map((n) => [n.title, n.state])).toEqual([
+      ["Un", "done"],
+      ["Deux", "now"],
+      ["Trois", "todo"],
+    ]);
+    // A lesson left open further on is the one the route points at.
+    const resumed = homePaths(
+      [path("p", { status: "IN_PROGRESS" })],
+      new Set(["p-1"]),
+      NEWCOMER,
+      "p-3",
+    );
+    expect(resumed.leadRoute?.nodes.map((n) => n.state)).toEqual(["done", "todo", "now"]);
   });
 });
 

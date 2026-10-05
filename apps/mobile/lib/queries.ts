@@ -147,7 +147,7 @@ export interface DashboardData {
   level: LevelInfo;
   /** Null when the reader is not on the leaderboard. */
   rank: number | null;
-  resume: { slug: string; title: string; category: Category } | null;
+  resume: { id: string; slug: string; title: string; category: Category } | null;
   inProgressTotal: number;
   badges: BadgeItem[];
   paths: HomePaths;
@@ -162,8 +162,10 @@ interface RawHomePath {
   category: Category;
   difficulty: Difficulty;
   estimatedHours: number;
+  path_modules: { id: string; position: number; title: string }[] | null;
   path_lessons: {
     position: number;
+    moduleId: string | null;
     lessons: Embed<{ id: string; slug: string; title: string; estimatedMinutes: number }>;
   }[];
 }
@@ -203,7 +205,7 @@ export function useDashboard(userId: string | undefined) {
           .order("completedAt", { ascending: false }),
         supabase
           .from("user_lesson_progress")
-          .select("lastAccessedAt, lessons(slug,title,category)")
+          .select("lastAccessedAt, lessons(id,slug,title,category)")
           .eq("userId", uid)
           .eq("status", "IN_PROGRESS")
           .order("lastAccessedAt", { ascending: false })
@@ -239,7 +241,7 @@ export function useDashboard(userId: string | undefined) {
         supabase
           .from("paths")
           .select(
-            "id,slug,title,description,category,difficulty,estimatedHours,path_lessons(position,lessons(id,slug,title,estimatedMinutes))",
+            "id,slug,title,description,category,difficulty,estimatedHours,path_modules(id,position,title),path_lessons(position,moduleId,lessons(id,slug,title,estimatedMinutes))",
           )
           .eq("status", "PUBLISHED"),
         fetchPathStatuses(uid),
@@ -258,7 +260,7 @@ export function useDashboard(userId: string | undefined) {
       // Embeds cast via `unknown` (no generated Supabase types); `one()` handles
       // the array-or-object runtime shape.
       const resumeRows = (resumeRes.data ?? []) as unknown as {
-        lessons: Embed<{ slug: string; title: string; category: Category }>;
+        lessons: Embed<{ id: string; slug: string; title: string; category: Category }>;
       }[];
       const resume = resumeRows.length > 0 ? one(resumeRows[0].lessons) : null;
       const badgeRows = (badgesRes.data ?? []) as unknown as { badges: Embed<BadgeItem> }[];
@@ -289,8 +291,9 @@ export function useDashboard(userId: string | undefined) {
         status: statuses.get(p.id) ?? null,
         lessons: p.path_lessons.flatMap((pl) => {
           const lesson = one(pl.lessons);
-          return lesson ? [{ ...lesson, position: pl.position }] : [];
+          return lesson ? [{ ...lesson, position: pl.position, moduleId: pl.moduleId }] : [];
         }),
+        modules: p.path_modules ?? [],
       }));
       const placement = placementRes.data as {
         devScore: number;
@@ -306,21 +309,26 @@ export function useDashboard(userId: string | undefined) {
         resume,
         inProgressTotal: inProgressRes.count ?? 0,
         badges,
-        paths: homePaths(homeRows, completedIds, {
-          level: level.level,
-          placement: placement
-            ? {
-                DEV: placement.devScore,
-                CYBERSEC: placement.cybersecScore,
-                NETWORK: placement.networkScore,
-              }
-            : null,
-          // The site weighs the last twenty lessons' domains.
-          recentCategories: completedRows
-            .slice(0, 20)
-            .map((row) => one(row.lessons)?.category)
-            .filter((c): c is Category => c !== undefined),
-        }),
+        paths: homePaths(
+          homeRows,
+          completedIds,
+          {
+            level: level.level,
+            placement: placement
+              ? {
+                  DEV: placement.devScore,
+                  CYBERSEC: placement.cybersecScore,
+                  NETWORK: placement.networkScore,
+                }
+              : null,
+            // The site weighs the last twenty lessons' domains.
+            recentCategories: completedRows
+              .slice(0, 20)
+              .map((row) => one(row.lessons)?.category)
+              .filter((c): c is Category => c !== undefined),
+          },
+          resume?.id ?? null,
+        ),
         stats: {
           completedThisMonth,
           completedTotal: completedRows.length,
