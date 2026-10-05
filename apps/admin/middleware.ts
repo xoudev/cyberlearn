@@ -22,7 +22,21 @@ const vercelLive = {
  * the same editor (the teacher's) under this policy, the loader and its
  * modules being let in by 'strict-dynamic' from the nonce-trusted chunks.
  */
+/** The learner site's origin, the one thing the console frames: the lesson editor's preview. */
+function siteOrigin(): string | null {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL;
+  if (raw === undefined || raw === "") return null;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
+}
+
 function buildSecurityHeaders(nonce: string): Record<string, string> {
+  const frameSrc = ["'self'", siteOrigin(), isVercelPreview ? "https://vercel.live" : null]
+    .filter((origin): origin is string => origin !== null)
+    .join(" ");
   return {
     "Content-Security-Policy": [
       "default-src 'self'",
@@ -35,7 +49,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       isDev
         ? `connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`
         : `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`,
-      ...(isVercelPreview ? ["frame-src 'self' https://vercel.live"] : []),
+      `frame-src ${frameSrc}`,
       "worker-src 'self' blob:",
       "object-src 'none'",
       "frame-ancestors 'none'",

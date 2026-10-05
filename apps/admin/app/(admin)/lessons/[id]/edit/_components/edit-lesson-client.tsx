@@ -2,7 +2,8 @@
 
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
-import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
+import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
+import { refreshLessonPreviewAction } from "../../../_actions/preview-actions";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 import { Select } from "@cyberlearn/ui";
@@ -118,6 +119,7 @@ export function EditLessonClient({
   const boundAction = updateLessonAction.bind(null, lesson.id);
   const [state, action, isPending] = useActionState(boundAction, initialState);
   const [mdx, setMdx] = useState(lesson.contentMdx);
+  const preview = useLessonPreview(refreshLessonPreviewAction);
 
   const statusColor: Record<string, string> = {
     DRAFT: "#FFB547",
@@ -490,7 +492,7 @@ export function EditLessonClient({
             <Label req hint="// Monaco · MDX · split preview">
               Contenu MDX
             </Label>
-            <MdxEditorPanel value={mdx} onChange={setMdx} />
+            <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
             <FieldErr msg={state.fieldErrors?.contentMdx} />
           </div>
 

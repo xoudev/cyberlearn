@@ -71,6 +71,7 @@ model User {
   challengeProgress UserChallengeProgress[]
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
+  lessonPreviews    LessonPreview[]
   quizAttempts      QuizAttempt[]
   activityDays      UserActivityDay[]
   questProgress     UserQuestProgress[]
@@ -1719,6 +1720,28 @@ model AccountDeletionToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("account_deletion_tokens")
+}
+
+// A draft the lesson editor sends the site to render, so the author sees the
+// page as the learners will, inside the editor. Short-lived: the editor
+// refreshes it while the author writes, and the retention job deletes what
+// has expired. The token in the preview's address is stored hashed, like the
+// deletion tokens above; the author's identity is what lets a token be
+// refreshed and nothing else.
+model LessonPreview {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique // SHA-256 of the token in the preview's address
+  contentMdx String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("lesson_previews")
 }
 
 // ============================================================

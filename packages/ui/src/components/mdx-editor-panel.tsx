@@ -11,10 +11,12 @@
  * guide entry in one editor and not the other, and the teacher quietly ends up
  * with the lesser half of the product.
  *
- * The preview here is a deliberate approximation, not the real renderer: it
- * reads the MDX with regular expressions so it can run on every keystroke
- * without the remark/rehype chain. What it shows is close enough to compose
- * against; the lesson page remains the source of truth.
+ * Two previews. The real one is the site's: given a `preview` prop, the panel
+ * sends the draft to the site after each pause in typing and frames the page
+ * the site renders, with the lesson components themselves (mdx-preview-frame).
+ * The quick one is a deliberate approximation: it reads the MDX with regular
+ * expressions so it can run on every keystroke without the remark/rehype
+ * chain. It is what the panel has without a `preview`, and a switch away with.
  */
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
@@ -28,6 +30,10 @@ import {
   type GuideGroup,
   type GuideSection,
 } from "./mdx-guide-sections";
+import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
+
+export { useLessonPreview } from "./mdx-preview-frame";
+export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
 
 type EditorInstance = Parameters<OnMount>[0];
 
@@ -963,22 +969,30 @@ function defineTheme(monaco: Parameters<BeforeMount>[0]) {
 export interface MdxEditorPanelProps {
   value: string;
   onChange: (v: string) => void;
+  /** The site's rendering of the draft, when the app provides it (useLessonPreview). */
+  preview?: MdxEditorPreview;
 }
 
-export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.ReactElement {
+export function MdxEditorPanel({
+  value,
+  onChange,
+  preview,
+}: MdxEditorPanelProps): React.ReactElement {
   const editorRef = useRef<EditorInstance | null>(null);
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
   const [sandboxLang, setSandboxLang] = useState<"python" | "javascript" | "c" | "asm">("python");
   const [terminalShell, setTerminalShell] = useState<"bash" | "powershell">("bash");
-  const [preview, setPreview] = useState(value);
+  const [quickPreview, setQuickPreview] = useState(value);
   const [showGuide, setShowGuide] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"site" | "quick">("site");
+  const sitePreview = preview !== undefined && previewMode === "site";
 
-  // Debounced preview update
+  // Debounced quick preview update
   useEffect(() => {
     const t = setTimeout(() => {
-      setPreview(value);
+      setQuickPreview(value);
     }, 350);
     return () => {
       clearTimeout(t);
@@ -1597,10 +1611,18 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           />
         </div>
 
-        {/* Live preview / Guide */}
+        {/* Guide / the site's preview / the quick preview */}
         {split &&
           (showGuide ? (
             <MdxGuide onInsert={insertAt} />
+          ) : sitePreview ? (
+            <MdxPreviewFrame
+              value={value}
+              preview={preview}
+              onQuick={() => {
+                setPreviewMode("quick");
+              }}
+            />
           ) : (
             <div
               style={{
@@ -1632,10 +1654,20 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
                     boxShadow: `0 0 6px ${ACCENT}`,
                   }}
                 />
-                PREVIEW
-                <span style={{ marginLeft: "auto", color: "#2A2560" }}>350ms debounce</span>
+                APERÇU RAPIDE
+                <span style={{ marginLeft: "auto", color: "#2A2560" }}>approximation · 350 ms</span>
+                {preview !== undefined && (
+                  <PaneButton
+                    title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
+                    onClick={() => {
+                      setPreviewMode("site");
+                    }}
+                  >
+                    SITE
+                  </PaneButton>
+                )}
               </div>
-              <MdxPreview content={preview} />
+              <MdxPreview content={quickPreview} />
             </div>
           ))}
       </div>

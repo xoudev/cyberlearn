@@ -102,4 +102,20 @@ describe("the console's front door", () => {
     expect(scriptSrc).not.toContain("unsafe-inline");
     expect(scriptSrc).not.toContain("unsafe-eval");
   });
+
+  it("lets the console frame the learner site, for the editor's preview, and nothing else", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://cyberlearn.fr/");
+    auth.user = { id: "u1" };
+    auth.assurance = { currentLevel: "aal2", nextLevel: "aal2" };
+    const response = await middleware(request("/lessons/new"));
+    const csp = response.headers.get("content-security-policy") ?? "";
+    const frameSrc = csp
+      .split(";")
+      .find((d) => d.trim().startsWith("frame-src"))
+      ?.trim();
+    expect(frameSrc).toBe("frame-src 'self' https://cyberlearn.fr");
+    // The console itself is never framed.
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+  });
 });

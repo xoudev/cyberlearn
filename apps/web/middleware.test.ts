@@ -186,3 +186,45 @@ describe("request id", () => {
     expect(ids[0]).not.toBe(ids[1]);
   });
 });
+
+describe("the lesson editor's preview route", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+  });
+
+  function csp(response: Response): string {
+    return response.headers.get("content-security-policy") ?? "";
+  }
+
+  it("may be framed by this site and by the console, and by nothing else", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "https://admin.cyberlearn.fr/");
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
+    expect(csp(response)).toContain("frame-ancestors 'self' https://admin.cyberlearn.fr;");
+    expect(response.headers.get("x-frame-options")).toBeNull();
+  });
+
+  it("frames only this site when the console's address is not configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "");
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
+    expect(csp(response)).toContain("frame-ancestors 'self';");
+  });
+
+  it("keeps every other page out of every frame", async () => {
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "https://admin.cyberlearn.fr");
+    for (const path of ["/", "/catalogue", "/lessons/x", "/previews", "/preview"]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      expect(csp(response), path).toContain("frame-ancestors 'none'");
+      expect(response.headers.get("x-frame-options"), path).toBe("DENY");
+    }
+  });
+
+  it("is public: no login, and no onboarding detour for a session that has not finished it", async () => {
+    const visitor = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
+    expect(visitor.headers.get("location")).toBeNull();
+
+    auth.session = { user: { app_metadata: {} } };
+    const unfinished = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
+    expect(unfinished.headers.get("location")).toBeNull();
+  });
+});

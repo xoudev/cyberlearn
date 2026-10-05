@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.2",
+    date: "2026-10-05",
+    title: "L'éditeur de leçons montre la vraie page",
+    changes: [
+      {
+        type: "new",
+        text: "L'aperçu de l'éditeur de leçons est désormais rendu par le site lui-même, avec les composants des leçons : quiz, bac à sable, terminaux, labos, tout s'affiche comme les apprenants le verront. Il se met à jour après chaque pause de frappe, ou d'un clic, et garde l'endroit où on en était. Un brouillon qui ne s'affiche pas est signalé avec la section et la ligne en cause, avant d'enregistrer. L'ancien aperçu rapide reste à un clic.",
+      },
+    ],
+  },
+  {
     version: "3.1",
     date: "2026-10-05",
     title: "Le guide de l'éditeur de leçons connaît tous les composants",

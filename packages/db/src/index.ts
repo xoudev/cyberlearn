@@ -82,6 +82,11 @@ export {
   type RecordedQuizAnswer,
 } from "./repositories/lesson-quiz.repository.js";
 export {
+  lessonPreviewRepository,
+  LESSON_PREVIEW_TOKEN,
+  LESSON_PREVIEW_TTL_MS,
+} from "./repositories/lesson-preview.repository.js";
+export {
   quizReportRepository,
   QUIZ_REPORT_REASONS,
   type QuizReportReasonValue,

@@ -7,7 +7,8 @@ import {
   getNextRefCodeAction,
   type CreateLessonState,
 } from "../../_actions/lesson-actions";
-import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
+import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
+import { refreshLessonPreviewAction } from "../../_actions/preview-actions";
 import { CoverUploadField } from "../../_components/cover-upload-field";
 import { Select } from "@cyberlearn/ui";
 
@@ -131,6 +132,7 @@ export function NewLessonForm(): React.ReactElement {
   const [state, action, isPending] = useActionState(createLessonAction, initialState);
   const [mdx, setMdx] = useState(MDX_STARTER);
   const [refCode, setRefCode] = useState("");
+  const preview = useLessonPreview(refreshLessonPreviewAction);
 
   useEffect(() => {
     getNextRefCodeAction()
@@ -515,7 +517,7 @@ export function NewLessonForm(): React.ReactElement {
             <Label req hint="// Monaco · MDX · split preview">
               Contenu MDX
             </Label>
-            <MdxEditorPanel value={mdx} onChange={setMdx} />
+            <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
             <FieldErr msg={state.fieldErrors?.contentMdx} />
           </div>
 
