@@ -29,20 +29,22 @@ function setup(value = LESSON) {
 }
 
 describe("the block editor", () => {
-  it("draws a card per block, forms for the components that have one, MDX for the others", () => {
-    setup();
+  it("draws a card per block, a form for every component, MDX for a stranger", () => {
+    setup(`${LESSON}<Frobnicator id="x" />\n`);
     const cards = screen.getAllByRole("region");
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "Section",
       "Texte",
       "QCM",
       "Pare-feu",
+      "Composant",
     ]);
     expect(screen.getByLabelText("Texte du titre")).toHaveValue("un");
     expect(screen.getByLabelText("Question *")).toHaveValue("Pourquoi ?");
     expect(screen.getByLabelText("Option 2")).toHaveValue("b");
-    expect(screen.getByLabelText("MDX du composant FirewallLab")).toHaveDisplayValue(
-      /<FirewallLab/,
+    expect(screen.getByLabelText("Consigne *")).toHaveValue("Ferme tout.");
+    expect(screen.getByLabelText("MDX du composant Frobnicator")).toHaveDisplayValue(
+      /<Frobnicator/,
     );
   });
 
@@ -87,5 +89,49 @@ describe("the block editor", () => {
     view.rerender(<BlockEditor value={"## autre\n\nTexte.\n"} onChange={vi.fn()} />);
     expect(screen.getByLabelText("Texte du titre")).toHaveValue("autre");
     expect(last()).toBe("");
+  });
+});
+
+describe("the exercise forms", () => {
+  const EXERCISES = [
+    '<FindTheFlaw id="f-1" code={`a\nb`} line={2} options={["x", "y"]} correct={0} explanation="Parce que." />',
+    '<PhotoOsint id="o-1" src="/osint/x.jpg" alt="a" task="t" answer={{ "latitude": 45.7, "longitude": 4.8 }} place="Lyon" />',
+    '<NetworkLab id="n-1" task="t" devices={[{ "id": "pc1", "kind": "pc", "name": "PC1", "x": 1, "y": 1 }]} />',
+    '<HexEditor id="h-1" task="t" bytes="89 50" questions={[{ "label": "?", "answer": ["1x1", "1 x 1"] }]} />',
+    "",
+  ].join("\n\n");
+
+  it("draw a form for every exercise, groups and JSON included", () => {
+    setup(EXERCISES);
+    expect(screen.getByLabelText("Ligne fautive *")).toHaveValue(2);
+    expect(screen.getByLabelText("Latitude *")).toHaveValue(45.7);
+    expect(screen.getByLabelText("Appareils *")).toHaveDisplayValue(/"name": "PC1"/);
+    expect(screen.getByLabelText("Questions 1 : Réponse")).toHaveValue("1x1 | 1 x 1");
+    expect(screen.queryByLabelText(/MDX du composant/)).toBeNull();
+  });
+
+  it("write a group's sub-field and a JSON field back into the lesson", () => {
+    const { last } = setup(EXERCISES);
+    fireEvent.change(screen.getByLabelText("Latitude *"), { target: { value: "48.85" } });
+    expect(last()).toContain('answer={{"latitude":48.85,"longitude":4.8}}');
+    fireEvent.change(screen.getByLabelText("Appareils *"), {
+      target: { value: '[{"id":"pc2","kind":"pc","name":"PC2","x":2,"y":2}]' },
+    });
+    expect(last()).toContain('"name":"PC2"');
+  });
+
+  it("keep the last structure while the JSON being typed is not one yet", () => {
+    const { last } = setup(EXERCISES);
+    fireEvent.change(screen.getByLabelText("Appareils *"), { target: { value: "[{" } });
+    expect(screen.getByText(/JSON incomplet/)).toBeInTheDocument();
+    expect(last()).toBe("");
+  });
+
+  it("show the parser's verdict on the block when the fields are fine but the page would refuse", () => {
+    setup(
+      '<PacketDissector id="p-1" frame={{ "eth": { "src": "08:00:27:4e:66:a1", "dst": "00:0c:29:1a:2b:3c" } }} />\n',
+    );
+    const card = screen.getByRole("region", { name: "Décortiquer un paquet" });
+    expect(within(card).getByRole("alert")).toHaveTextContent("arp ou ip");
   });
 });

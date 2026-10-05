@@ -198,11 +198,15 @@ vérifications d'un terminal Linux…). Le « + » entre deux blocs en ajoute un
 depuis le guide ; les flèches le déplacent ; un champ que la page refuserait
 est signalé sous le champ, avant d'enregistrer. Le découpage et la réécriture
 vivent dans `packages/lib/src/mdx/blocks.ts`, les formulaires dans
-`packages/lib/src/mdx/forms.ts` : les onze composants de base ont un
-formulaire, les exercices et labos se remplissent encore en MDX dans leur
-bloc. Le bouton « Code » montre le MDX, qui reste la leçon elle-même : un bloc
-non modifié revient à l'octet près, un bloc modifié est réécrit comme ce
-guide l'écrit.
+`packages/lib/src/mdx/forms.ts` : chacun des vingt-huit composants a le sien,
+exercices et labos compris (lignes pour les cas de test, les sondes ou les
+vérifications ; groupes pour un lieu ou un message à déchiffrer ; JSON pour
+les quelques structures trop profondes, la trame d'un paquet, les appareils
+d'un réseau). Les exercices sont aussi passés par leur propre parseur, celui
+de la page, pour que le formulaire refuse exactement ce que la page refuse.
+Le bouton « Code » montre le MDX, qui reste la leçon elle-même : un bloc non
+modifié revient à l'octet près, un bloc modifié est réécrit comme ce guide
+l'écrit.
 
 ### 5.1 Callout
 

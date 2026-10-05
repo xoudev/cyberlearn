@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.4",
+    date: "2026-10-05",
+    title: "Les exercices et les labos se remplissent en champs",
+    changes: [
+      {
+        type: "new",
+        text: "Dans l'éditeur de leçons, les dix-sept exercices et labos ont désormais leur formulaire comme les autres composants : le code et la ligne fautive d'un « trouve la faille », les paragraphes et les indices d'un courriel piégé, les sondes d'un pare-feu, les vérifications d'un bac à sable Git, les événements et les questions d'une chasse dans les logs, le lieu d'une photo, les octets à réparer… Chaque bloc est vérifié avec les règles de la page elle-même, et dit sous le champ ce qui n'irait pas.",
+      },
+    ],
+  },
+  {
     version: "3.3",
     date: "2026-10-05",
     title: "Une leçon s'écrit par blocs",

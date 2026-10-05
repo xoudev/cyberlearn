@@ -247,7 +247,7 @@
 ### Fonctionnalités détaillées
 
 #### Gestion des leçons
-- Création et édition par blocs (titres, Markdown, composants sous forme de champs ; onze composants de base ont un formulaire, les autres se remplissent en MDX dans leur bloc) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
+- Création et édition par blocs (titres, Markdown, et les vingt-huit composants sous forme de champs, exercices et labos compris, validés par le parseur de la page) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED
 - Suppression (uniquement si DRAFT)
 - Import en masse

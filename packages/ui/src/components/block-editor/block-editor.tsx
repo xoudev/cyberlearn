@@ -13,7 +13,7 @@ import {
   LESSON_COMPONENTS,
   lessonComponent,
 } from "@cyberlearn/lib/mdx-components";
-import { componentForm } from "@cyberlearn/lib/mdx-forms";
+import { componentForm, FORM } from "@cyberlearn/lib/mdx-forms";
 import { componentAccent } from "../mdx-guide-sections";
 import { ComponentFormView } from "./component-form";
 import {
@@ -499,6 +499,23 @@ function BlockCard({
         </span>
       </header>
       <div style={{ padding: "10px 12px 12px" }}>
+        {errors?.[FORM] !== undefined && (
+          <p
+            role="alert"
+            style={{
+              margin: "0 0 10px",
+              padding: "6px 10px",
+              border: `1px solid ${DANGER}55`,
+              background: "rgba(255,77,109,0.07)",
+              fontFamily: MONO,
+              fontSize: 10.5,
+              lineHeight: 1.5,
+              color: "#F5F5FA",
+            }}
+          >
+            {errors[FORM]}
+          </p>
+        )}
         <BlockBody block={block} depth={depth} onChange={onChange} errors={errors} />
         {showSource && block.kind === "component" && (
           <pre

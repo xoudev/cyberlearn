@@ -145,9 +145,9 @@ describe("one block", () => {
     expect(componentErrors(updateComponent(quiz, { ...quiz.attrs, question: "" }, null))).toEqual({
       question: "Obligatoire.",
     });
-    const lab = blocksFromSnippet('<FirewallLab id="f" />', new Set())[0];
-    if (lab?.kind !== "component") throw new Error("not a component");
-    expect(componentErrors(lab)).toBeNull();
+    const stranger = blocksFromSnippet('<Frobnicator id="f" />', new Set())[0];
+    if (stranger?.kind !== "component") throw new Error("not a component");
+    expect(componentErrors(stranger)).toBeNull();
   });
 });
 
