@@ -1,5 +1,6 @@
 "use client";
 
+import { Tabs } from "@/components/tabs";
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -451,42 +452,20 @@ export function LockerClient({
       <div className="casier-layout">
         {/* Left: tabs + grid */}
         <div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {SLOTS.map((slot) => {
+          <Tabs
+            label="Emplacements du casier"
+            items={SLOTS.map((slot) => {
               const all = liveItems.filter((i) => i.type === slot.type);
               const unlocked = all.filter((i) => i.unlocked).length;
-              const active = activeTab === slot.type;
-              return (
-                <button
-                  key={slot.type}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(slot.type);
-                  }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: active ? "#05041A" : "#B8B5D1",
-                    background: active ? "var(--cosmetic-accent)" : "transparent",
-                    border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
-                    padding: "8px 14px",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                >
-                  {slot.label}
-                  <span style={{ opacity: 0.7 }}>
-                    {unlocked}/{all.length}
-                  </span>
-                </button>
-              );
+              return {
+                key: slot.type,
+                label: slot.label,
+                count: `${String(unlocked)}/${String(all.length)}`,
+              };
             })}
-          </div>
+            value={activeTab}
+            onChange={setActiveTab}
+          />
 
           <div
             style={{
