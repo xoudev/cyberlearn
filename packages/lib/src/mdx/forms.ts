@@ -5,6 +5,7 @@ import {
   parseFirewallLab,
   parseGitSandbox,
   parseHexEditor,
+  parseIncidentStory,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -1180,6 +1181,31 @@ const FORMS: readonly ComponentForm[] = [
       hintsField(6),
     ],
   },
+  {
+    name: "IncidentStory",
+    fields: [
+      idField(),
+      titleField,
+      {
+        kind: "text",
+        key: "role",
+        label: "Rôle",
+        hint: "Qui est l'apprenant dans l'histoire.",
+        placeholder: "Tu es la personne d'astreinte.",
+      },
+      taskField(false, "Au-dessus de l'histoire ; les scènes disent le reste."),
+      {
+        kind: "json",
+        key: "scenes",
+        label: "Scènes",
+        hint: "La première est le début. Chacune : id, title, text, puis choices (text, next, verdict good/risky/bad, consequence) ou ending (success, partial, failure).",
+        required: true,
+        rows: 18,
+        placeholder:
+          '[{ "id": "alerte", "title": "9 h 04", "text": "…", "choices": [{ "text": "…", "next": "fin", "verdict": "good", "consequence": "…" }, { "text": "…", "next": "fin", "verdict": "bad", "consequence": "…" }] }, { "id": "fin", "text": "…", "ending": "success" }]',
+      },
+    ],
+  },
 ];
 
 export const COMPONENT_FORMS: ReadonlyMap<string, ComponentForm> = new Map(
@@ -1220,6 +1246,7 @@ const PARSERS: ReadonlyMap<string, Parser> = new Map<string, Parser>([
   ["FirewallLab", (attrs) => parseFirewallLab(attrs)],
   ["LogHunt", (attrs) => parseLogHunt(attrs)],
   ["HexEditor", (attrs) => parseHexEditor(attrs)],
+  ["IncidentStory", (attrs) => parseIncidentStory(attrs)],
 ]);
 
 /**

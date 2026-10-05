@@ -594,6 +594,24 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     ],
   },
 
+  {
+    name: "IncidentStory",
+    label: "Incident à choix",
+    family: "investigation",
+    description:
+      "Un incident raconté scène par scène : à chaque étape l'apprenant décide, voit la conséquence, et arrive à l'une des fins. Un bilan compte les décisions et montre la suite conseillée.",
+    guide: "5.9s IncidentStory - Incident à choix",
+    examples: [
+      {
+        label: "Histoire",
+        snippet:
+          '<IncidentStory\n  id="incident-1"\n  title="Le poste qui chiffre"\n  role="Tu es la personne d\'astreinte."\n  scenes={[{ "id": "alerte", "title": "9 h 04, l\'appel", "text": "Un collègue t\'appelle : ses fichiers se chiffrent sous ses yeux, et il a la main sur le bouton d\'alimentation.", "choices": [{ "text": "Lui dire d\'éteindre le poste", "next": "rancon", "verdict": "bad", "consequence": "Le chiffrement s\'arrête, et la mémoire vive part avec ses indices." }, { "text": "Lui dire de débrancher le réseau, poste allumé", "next": "rancon", "verdict": "good", "consequence": "Le programme ne se propage plus, et la mémoire vive garde ses traces." }] }, { "id": "rancon", "title": "9 h 30, la rançon", "text": "Le message demande 0,4 bitcoin sous 48 heures.", "choices": [{ "text": "Payer vite", "next": "fin-payee", "verdict": "bad", "consequence": "Le virement part, sans aucune garantie." }, { "text": "Ne pas payer, et restaurer depuis la sauvegarde hors ligne", "next": "fin-restauree", "verdict": "good", "consequence": "Les données reviennent propres, avec un jour de travail perdu." }] }, { "id": "fin-payee", "title": "Trois jours plus tard", "text": "La clé n\'est jamais arrivée.", "ending": "failure" }, { "id": "fin-restauree", "title": "Incident clos", "text": "Le poste est réinstallé, les fichiers sont revenus.", "ending": "success" }]}\n/>\n',
+        description:
+          "scenes : la première est le début · choices : text, next, verdict (good, risky, bad), consequence · ending : success, partial, failure",
+      },
+    ],
+  },
+
   // ── Crypto et animation ────────────────────────────────────────────────────
   {
     name: "CryptoWorkshop",

@@ -8,6 +8,7 @@ import { GitSandboxExercise } from "@/components/git-sandbox";
 import { CryptoWorkshopExercise } from "@/components/crypto-workshop";
 import { FirewallLabExercise } from "@/components/firewall-lab";
 import { HexEditorExercise } from "@/components/hex-editor";
+import { IncidentStoryExercise } from "@/components/incident-story";
 import { LogHuntExercise } from "@/components/log-hunt";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
@@ -316,6 +317,8 @@ export function BlockView({
       return <LogHuntExercise hunt={block.hunt} />;
     case "hex":
       return <HexEditorExercise editor={block.editor} />;
+    case "story":
+      return <IncidentStoryExercise story={block.story} />;
     case "animation":
       return (
         <View

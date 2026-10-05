@@ -27,3 +27,4 @@ export * from "./schemas/crypto-workshop.schema.js";
 export * from "./schemas/firewall-lab.schema.js";
 export * from "./schemas/log-hunt.schema.js";
 export * from "./schemas/hex-editor.schema.js";
+export * from "./schemas/incident-story.schema.js";

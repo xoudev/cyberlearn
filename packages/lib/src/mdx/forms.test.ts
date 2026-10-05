@@ -290,3 +290,26 @@ describe("uniqueId", () => {
     expect(uniqueId("anim-tcp", new Set(["anim-tcp", "anim-tcp-2"]))).toBe("anim-tcp-3");
   });
 });
+
+describe("the IncidentStory form", () => {
+  it("hands the scenes to the story's parser, whose verdict is the block's", () => {
+    const story = form("IncidentStory");
+    const scenes = [
+      {
+        id: "a",
+        text: "x",
+        choices: [
+          { text: "Un", next: "fin", verdict: "good", consequence: "c" },
+          { text: "Deux", next: "fin", verdict: "bad", consequence: "c" },
+        ],
+      },
+      { id: "fin", text: "y", ending: "success" },
+    ];
+    expect(validateComponent(story, { id: "s-1", scenes }, null)).toEqual({});
+    const orphan = [...scenes, { id: "seule", text: "z", ending: "partial" }];
+    expect(validateComponent(story, { id: "s-1", scenes: orphan }, null)).toEqual({
+      [FORM]: "la scène « seule » n'est atteinte par aucun choix.",
+    });
+    expect(Object.keys(validateComponent(story, { id: "s-1" }, null))).toEqual(["scenes"]);
+  });
+});

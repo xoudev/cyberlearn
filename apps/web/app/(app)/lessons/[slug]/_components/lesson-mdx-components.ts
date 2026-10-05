@@ -27,6 +27,7 @@ import { CryptoWorkshop } from "./crypto-workshop";
 import { FirewallLab } from "./firewall-lab";
 import { LogHunt } from "./log-hunt";
 import { HexEditor } from "./hex-editor";
+import { IncidentStory } from "./incident-story";
 
 /**
  * What a lesson's MDX may name, bound to what draws it. One entry per name in
@@ -65,4 +66,5 @@ export const LESSON_MDX_COMPONENTS = {
   FirewallLab,
   LogHunt,
   HexEditor,
+  IncidentStory,
 };

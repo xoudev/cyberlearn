@@ -10,6 +10,7 @@ import {
   parseFirewallLab,
   parseGitSandbox,
   parseHexEditor,
+  parseIncidentStory,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -202,6 +203,10 @@ function HexEditorStub(): null {
   return null;
 }
 STUBS.HexEditor = HexEditorStub;
+function IncidentStoryStub(): null {
+  return null;
+}
+STUBS.IncidentStory = IncidentStoryStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -415,6 +420,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === HexEditorStub) {
     const parsed = parseHexEditor(props);
     if (!parsed.ok) return `Éditeur hexadécimal : ${parsed.problem}`;
+  }
+  if (node.type === IncidentStoryStub) {
+    const parsed = parseIncidentStory(props);
+    if (!parsed.ok) return `Incident à choix : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }
