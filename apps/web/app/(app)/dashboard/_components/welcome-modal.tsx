@@ -42,6 +42,7 @@ export function WelcomeModal(): React.ReactElement | null {
       actions={
         <>
           <Link
+            className="mono-label"
             href="/lessons"
             onClick={dismiss}
             style={{
@@ -49,11 +50,7 @@ export function WelcomeModal(): React.ReactElement | null {
               alignItems: "center",
               gap: 8,
               padding: "13px 22px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               background: "#0024FF",
               border: "1px solid #0024FF",
               color: "#fff",
@@ -64,15 +61,12 @@ export function WelcomeModal(): React.ReactElement | null {
             Lancer ma première leçon →
           </Link>
           <button
+            className="mono-label"
             type="button"
             onClick={dismiss}
             style={{
               padding: "13px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               background: "transparent",
               border: "1px solid #2A2560",
               color: "#B8B5D1",

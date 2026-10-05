@@ -133,13 +133,10 @@ export function LandingTerminal(): React.ReactElement {
           ~/<b style={{ color: "#B8B5D1" }}>ctf/web-101</b> · sandbox
         </span>
         <span
+          className="mono-label mono-label--xs"
           style={{
             marginLeft: "auto",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 9,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#030219",
             background: "#0AFFD4",
             padding: "3px 8px",

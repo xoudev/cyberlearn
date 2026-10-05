@@ -85,12 +85,9 @@ function GradeRowBody({
           )}
         </span>
         <Link
+          className="mono-label"
           href={`/lessons/${row.slug}`}
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             textDecoration: "none",
             border: "1px solid #2A2560",
@@ -222,12 +219,9 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <span
+                    className="mono-label"
                     style={{
-                      fontFamily: "var(--font-mono)",
                       fontWeight: 700,
-                      fontSize: 10,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
                       padding: "2px 8px",
                       border: `1px solid ${row.catBorder}`,
                       color: row.catColor,
@@ -237,12 +231,9 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                     {row.catLabel}
                   </span>
                   <span
+                    className="mono-label"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
                       color: "#44406B",
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
                     }}
                   >
                     · auto-évaluation
@@ -264,11 +255,8 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
 
               {/* due */}
               <div
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
                   color: row.dueToday ? "#FF4D6D" : "#7F7BA9",
                   display: "flex",
                   alignItems: "center",
@@ -291,12 +279,9 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
 
               {/* time */}
               <div
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
                   color: "#44406B",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -305,13 +290,9 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
 
               {/* toggle */}
               <div
-                className="rv-go"
+                className="rv-go mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   color: "var(--cosmetic-accent)",
                   display: "flex",
                   alignItems: "center",

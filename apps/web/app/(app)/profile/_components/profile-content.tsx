@@ -46,12 +46,9 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
     return (
       <div style={{ textAlign: "center", padding: "60px 0" }}>
         <p
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             color: "#7F7BA9",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
           }}
         >
           {"// Aucune activité pour l'instant"}
@@ -158,12 +155,9 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
         }}
       >
         <p
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             color: "#7F7BA9",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
           }}
         >
           {"// Aucun certificat délivré pour l'instant"}
@@ -217,11 +211,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
         </h3>
         {certs.length > 1 && (
           <span
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#B8B5D1",
             }}
           >
@@ -318,11 +309,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
           {/* Body */}
           <div style={{ minWidth: 0 }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
                 color: "var(--cosmetic-accent)",
                 marginBottom: 12,
                 display: "inline-flex",
@@ -355,16 +343,13 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               {latest.pathTitle}
             </h4>
             <div
+              className="mono-label"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
                 gap: 14,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
                 color: "#7F7BA9",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
                 marginBottom: 14,
               }}
             >
@@ -417,6 +402,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
             }}
           >
             <Link
+              className="mono-label"
               href={`/api/certificates/${latest.id}/download`}
               style={{
                 display: "inline-flex",
@@ -424,11 +410,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 justifyContent: "center",
                 gap: 10,
                 padding: "12px 18px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 background: "var(--cosmetic-accent)",
                 color: "#030219",
                 border: "1px solid var(--cosmetic-accent)",
@@ -451,6 +433,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               Télécharger PDF
             </Link>
             <Link
+              className="mono-label"
               href={`/verify/${latest.publicId}`}
               style={{
                 display: "inline-flex",
@@ -458,11 +441,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 justifyContent: "center",
                 gap: 8,
                 padding: "10px 14px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#B8B5D1",
                 textDecoration: "none",
                 border: "1px solid #2A2560",
@@ -514,12 +493,9 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
         (badges.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <p
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
                 color: "#7F7BA9",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
               }}
             >
               {"// Aucun badge obtenu pour l'instant"}

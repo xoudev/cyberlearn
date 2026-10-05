@@ -59,11 +59,8 @@ export function ReportNoteForm({
     >
       <fieldset style={{ border: 0, margin: 0, padding: 0, display: "grid", gap: 8 }}>
         <legend
+          className="mono-label mono-label--md"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             color: "#B8B5D1",
             marginBottom: 8,
           }}
@@ -127,6 +124,7 @@ export function ReportNoteForm({
       ) : null}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button
+          className="mono-label mono-label--md"
           type="submit"
           disabled={sending}
           style={{
@@ -134,11 +132,7 @@ export function ReportNoteForm({
             background: "#FF4757",
             border: "1px solid #FF4757",
             color: "#030219",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
             fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             cursor: sending ? "wait" : "pointer",
             opacity: sending ? 0.6 : 1,
           }}
@@ -146,6 +140,7 @@ export function ReportNoteForm({
           {sending ? "Envoi…" : "Envoyer le signalement"}
         </button>
         <button
+          className="mono-label mono-label--md"
           type="button"
           onClick={onCancel}
           disabled={sending}
@@ -154,10 +149,6 @@ export function ReportNoteForm({
             background: "transparent",
             border: "1px solid #2A2560",
             color: "#B8B5D1",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             cursor: "pointer",
           }}
         >

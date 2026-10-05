@@ -56,15 +56,12 @@ export default function AppError({
         ) : null}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
+            className="mono-label mono-label--md"
             type="button"
             onClick={reset}
             style={{
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 12,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
               background: "transparent",
               border: "1px solid var(--cosmetic-accent)",
               color: "var(--cosmetic-accent)",
@@ -74,14 +71,11 @@ export default function AppError({
             &#9656; Réessayer
           </button>
           <Link
+            className="mono-label mono-label--md"
             href="/dashboard"
             style={{
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 12,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
               background: "transparent",
               border: "1px solid #2A2560",
               color: "#7F7BA9",
@@ -93,14 +87,11 @@ export default function AppError({
             Dashboard
           </Link>
           <Link
+            className="mono-label mono-label--md"
             href={`/contact${error.digest ? `?ref=${error.digest}` : ""}`}
             style={{
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 12,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
               background: "transparent",
               border: "1px solid #2A2560",
               color: "#B8B5D1",

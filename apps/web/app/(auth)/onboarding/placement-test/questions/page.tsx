@@ -56,6 +56,7 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
       />
 
       <header
+        className="mono-label"
         style={{
           position: "fixed",
           top: 0,
@@ -71,10 +72,6 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
           borderBottom: "1px solid #2A2560",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
         }}
       >
@@ -158,11 +155,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
             }}
           >
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
@@ -176,11 +170,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
               <span style={{ color: "#0AFFD4", fontWeight: 600 }}>TEST DE PLACEMENT</span>
             </div>
             <span
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
               }}
             >
@@ -211,14 +202,11 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
           </div>
 
           <div
+            className="mono-label"
             style={{
               display: "flex",
               justifyContent: "space-between",
               marginTop: 10,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
             }}
           >
             {[

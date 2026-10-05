@@ -190,14 +190,11 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
 
       {/* RefCode label */}
       <div
+        className="mono-label mono-label--xs"
         style={{
           position: "absolute",
           top: 10,
           left: 12,
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
         }}
       >
@@ -238,12 +235,9 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
 
       {/* Rarity label */}
       <div
+        className="mono-label mono-label--xs"
         style={{
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 9.5,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
           color: badge.earned ? r.color : "#44406B",
           marginBottom: 8,
         }}
@@ -283,15 +277,12 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
       {/* Footer: earned date or progress */}
       {badge.earned ? (
         <div
+          className="mono-label"
           style={{
             marginTop: "auto",
             width: "100%",
             paddingTop: 14,
             borderTop: "1px solid #1A1640",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
@@ -322,13 +313,10 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
           }}
         >
           <div
+            className="mono-label"
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 6,
             }}
@@ -345,15 +333,12 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
         </div>
       ) : (
         <div
+          className="mono-label"
           style={{
             marginTop: "auto",
             width: "100%",
             paddingTop: 14,
             borderTop: "1px solid #1A1640",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
             color: "#44406B",
             textAlign: "center",
           }}

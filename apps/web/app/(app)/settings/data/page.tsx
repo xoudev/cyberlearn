@@ -47,11 +47,8 @@ export default async function DataPage(): Promise<React.JSX.Element> {
 
           {/* Eyebrow */}
           <div
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 14,
               display: "flex",
@@ -124,13 +121,10 @@ export default async function DataPage(): Promise<React.JSX.Element> {
 
           {/* Info row */}
           <div
+            className="mono-label"
             style={{
               paddingTop: 12,
               borderTop: "1px dashed #1F1B47",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 18,
               display: "flex",

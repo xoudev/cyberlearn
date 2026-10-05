@@ -191,14 +191,11 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
           style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
         >
           <div
+            className="mono-label"
             style={{
               display: "flex",
               gap: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
             }}
           >
             <span>
@@ -216,14 +213,11 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             </span>
           </div>
           <div
+            className="mono-label"
             style={{
               display: "flex",
               gap: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
             }}
           >
             <span>TRIER · ACCESSIBLES D’ABORD</span>
@@ -238,11 +232,8 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
         {/* Category pills with colored dots */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <span
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginRight: 6,
             }}
@@ -424,6 +415,7 @@ function CategoryPill({
 }): React.ReactElement {
   return (
     <Link
+      className="mono-label"
       href={href}
       style={{
         display: "inline-flex",
@@ -436,11 +428,7 @@ function CategoryPill({
           : "transparent",
         border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
         color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
-        fontFamily: "var(--font-mono)",
         fontWeight: 600,
-        fontSize: 11,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
         textDecoration: "none",
         boxShadow: active
           ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
@@ -481,6 +469,7 @@ function SelectPill({
 }): React.ReactElement {
   return (
     <Link
+      className="mono-label"
       href={href}
       style={{
         display: "inline-flex",
@@ -492,11 +481,7 @@ function SelectPill({
           : "#05041A",
         border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
         color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
-        fontFamily: "var(--font-mono)",
         fontWeight: 600,
-        fontSize: 11,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
         textDecoration: "none",
         whiteSpace: "nowrap",
         transition: "all 180ms ease",
@@ -560,13 +545,10 @@ function PageBtn({
 }): React.ReactElement {
   return (
     <Link
+      className="mono-label"
       href={href}
       style={{
         padding: "6px 12px",
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
         color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
         background: active
           ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"

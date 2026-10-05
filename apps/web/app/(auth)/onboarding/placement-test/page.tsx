@@ -66,6 +66,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
       {/* Topbar */}
       <header
+        className="mono-label"
         style={{
           position: "fixed",
           top: 0,
@@ -81,10 +82,6 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
           borderBottom: "1px solid #2A2560",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
         }}
       >
@@ -168,11 +165,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             }}
           >
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
@@ -186,11 +180,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               <span style={{ color: "#0AFFD4", fontWeight: 600 }}>POSITIONNEMENT</span>
             </div>
             <span
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
               }}
             >
@@ -221,14 +212,11 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
           </div>
 
           <div
+            className="mono-label"
             style={{
               display: "flex",
               justifyContent: "space-between",
               marginTop: 10,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
             }}
           >
             {[
@@ -322,12 +310,9 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             }}
           >
             <h2
+              className="mono-label mono-label--md"
               style={{
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 13,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 color: "#F5F5FA",
                 margin: 0,
               }}
@@ -338,11 +323,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               </span>
             </h2>
             <span
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
               }}
             >
@@ -415,12 +397,9 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   }}
                 >
                   <span
+                    className="mono-label mono-label--xs"
                     style={{
                       display: "block",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9.5,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
                       color: "#7F7BA9",
                       marginBottom: 8,
                     }}
@@ -480,6 +459,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <Link
+                className="mono-label mono-label--md btn-blue"
                 href="/onboarding/placement-test/questions"
                 style={{
                   display: "flex",
@@ -488,11 +468,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   gap: 12,
                   width: "100%",
                   height: 52,
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   border: "1px solid #0024FF",
                   background: "#0024FF",
                   color: "#FFFFFF",
@@ -500,13 +476,13 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   boxShadow: "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)",
                   transition: "background 180ms ease, box-shadow 180ms ease",
                 }}
-                className="btn-blue"
               >
                 Commencer le test <span style={{ fontSize: 16 }}>→</span>
               </Link>
 
               <form action={skipOnboarding}>
                 <button
+                  className="mono-label mono-label--md btn-ghost"
                   type="submit"
                   style={{
                     display: "flex",
@@ -515,37 +491,28 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                     gap: 12,
                     width: "100%",
                     height: 52,
-                    fontFamily: "var(--font-mono)",
                     fontWeight: 600,
-                    fontSize: 12,
-                    letterSpacing: "0.16em",
-                    textTransform: "uppercase",
                     cursor: "pointer",
                     background: "transparent",
                     border: "1px solid #2A2560",
                     color: "#B8B5D1",
                     transition: "border-color 180ms ease, color 180ms ease, background 180ms ease",
                   }}
-                  className="btn-ghost"
                 >
                   Passer → Accéder au dashboard
                 </button>
               </form>
 
               <Link
+                className="mono-label link-cta"
                 href="/onboarding/goals"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   textDecoration: "none",
                   textAlign: "center",
                   display: "block",
                   transition: "color 180ms ease",
                 }}
-                className="link-cta"
               >
                 ← Retour
               </Link>

@@ -122,6 +122,7 @@ export function NoteDrawer({
     <>
       {/* Floating trigger */}
       <button
+        className="mono-label"
         type="button"
         onClick={() => {
           setOpen((v) => !v);
@@ -135,11 +136,7 @@ export function NoteDrawer({
           alignItems: "center",
           gap: 10,
           padding: "12px 16px",
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
           color: open ? "#05041A" : "var(--cosmetic-accent)",
           background: open ? "var(--cosmetic-accent)" : "rgba(10,8,38,0.92)",
           border: `1px solid ${open ? "var(--cosmetic-accent)" : "#2A2560"}`,

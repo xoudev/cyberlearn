@@ -785,6 +785,24 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   background: rgba(3, 2, 25, 0.5);
 }
 
+/* The mono label: small capitals in the monospace, spaced out. Three sizes;
+   the weight and the colour stay the element's own. Two hundred style objects
+   spelled this out, each with its own pixel and its own tracking. */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mono-label--xs {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+}
+.mono-label--md {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
 @keyframes xp-count-glow {
   0% {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);

@@ -223,11 +223,8 @@ export function NotificationPanel({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   display: "flex",
                   alignItems: "center",
@@ -264,12 +261,8 @@ export function NotificationPanel({
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={isPending}
-                className="link-action"
+                className="link-action mono-label mono-label--xs"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
                   color: "#4D8BFF",
                   background: "none",
                   border: "none",

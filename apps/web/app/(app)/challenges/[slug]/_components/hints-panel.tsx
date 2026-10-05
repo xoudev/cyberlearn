@@ -46,12 +46,9 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
     <section>
       {/* Section header */}
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
           color: "var(--cosmetic-accent)",
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
           fontWeight: 600,
           display: "flex",
           alignItems: "center",
@@ -100,15 +97,12 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                 }}
               >
                 <div
+                  className="mono-label"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     marginBottom: 10,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
                   }}
                 >
                   <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
@@ -172,23 +166,17 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
               {/* Body */}
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span
+                  className="mono-label"
                   style={{
-                    fontFamily: "var(--font-mono)",
                     fontWeight: 600,
-                    fontSize: 11,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
                     color: "#F5F5FA",
                   }}
                 >
                   {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
                 </span>
                 <span
+                  className="mono-label"
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
                     color:
                       hint.xpCost === 0
                         ? "var(--cosmetic-accent)"

@@ -59,6 +59,7 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
 
       {/* ── Top status bar ───────────────────────────────────────────────── */}
       <header
+        className="mono-label"
         style={{
           position: "fixed",
           top: 0,
@@ -74,10 +75,6 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
           borderBottom: "1px solid #2A2560",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
         }}
       >
@@ -161,11 +158,8 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
             }}
           >
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
@@ -179,11 +173,8 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
               <span style={{ color: "#0AFFD4", fontWeight: 600 }}>PROFIL</span>
             </div>
             <span
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
@@ -232,14 +223,11 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
 
           {/* Step ticks */}
           <div
+            className="mono-label"
             style={{
               display: "flex",
               justifyContent: "space-between",
               marginTop: 10,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
             }}
           >
             {[

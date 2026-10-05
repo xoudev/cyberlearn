@@ -30,15 +30,12 @@ function Field({
   return (
     <div style={{ display: "block", marginBottom: 18 }}>
       <div
+        className="mono-label"
         style={{
           display: "flex",
           alignItems: "baseline",
           justifyContent: "space-between",
-          fontFamily: "var(--font-mono)",
           fontWeight: 600,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           color: "#0AFFD4",
           marginBottom: 10,
         }}
@@ -48,11 +45,8 @@ function Field({
         </label>
         {hint && (
           <span
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               fontWeight: 500,
             }}
@@ -182,12 +176,9 @@ export function OnboardingForm({
         }}
       >
         <h2
+          className="mono-label mono-label--md"
           style={{
-            fontFamily: "var(--font-mono)",
             fontWeight: 600,
-            fontSize: 13,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "#F5F5FA",
             margin: 0,
           }}
@@ -195,11 +186,8 @@ export function OnboardingForm({
           <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> CRÉER TON IDENTITÉ
         </h2>
         <span
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
           }}
         >
@@ -264,15 +252,12 @@ export function OnboardingForm({
               style={INPUT_STYLE}
             />
             <span
+              className="mono-label"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 padding: "0 14px",
                 borderLeft: "1px solid #1F1B47",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10.5,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 fontWeight: 600,
                 color: "#7F7BA9",
                 whiteSpace: "nowrap",
@@ -300,15 +285,12 @@ export function OnboardingForm({
           {/* Bio */}
           <div style={{ display: "block", marginBottom: 18 }}>
             <div
+              className="mono-label"
               style={{
                 display: "flex",
                 alignItems: "baseline",
                 justifyContent: "space-between",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#0AFFD4",
                 marginBottom: 10,
               }}
@@ -317,11 +299,8 @@ export function OnboardingForm({
                 <span style={{ marginRight: 4 }}>›</span> Bio
               </label>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   fontWeight: 500,
                 }}
@@ -396,6 +375,7 @@ export function OnboardingForm({
           {/* Actions */}
           <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
             <button
+              className="mono-label mono-label--md"
               type="submit"
               disabled={isPending}
               style={{
@@ -406,11 +386,7 @@ export function OnboardingForm({
                 gap: 12,
                 height: 52,
                 padding: "0 20px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 cursor: isPending ? "not-allowed" : "pointer",
                 border: "1px solid #0024FF",
                 background: "#0024FF",

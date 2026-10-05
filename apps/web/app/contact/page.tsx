@@ -111,11 +111,8 @@ export default function ContactPage(): React.ReactElement {
       {/* Header */}
       <div style={{ marginTop: 28, marginBottom: 36 }}>
         <div
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
@@ -159,13 +156,10 @@ export default function ContactPage(): React.ReactElement {
         {/* Email */}
         <div>
           <label
+            className="mono-label"
             htmlFor="contact-email"
             style={{
               display: "block",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 6,
             }}
@@ -201,13 +195,10 @@ export default function ContactPage(): React.ReactElement {
         {/* Theme */}
         <div>
           <label
+            className="mono-label"
             htmlFor="contact-theme"
             style={{
               display: "block",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 6,
             }}
@@ -237,12 +228,9 @@ export default function ContactPage(): React.ReactElement {
               }}
             >
               <p
+                className="mono-label"
                 style={{
                   margin: "0 0 8px",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
                   color: "var(--cosmetic-accent, #0AFFD4)",
                 }}
               >
@@ -283,13 +271,10 @@ export default function ContactPage(): React.ReactElement {
         {/* Subject */}
         <div>
           <label
+            className="mono-label"
             htmlFor="contact-subject"
             style={{
               display: "block",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 6,
             }}
@@ -328,13 +313,10 @@ export default function ContactPage(): React.ReactElement {
         {/* Message */}
         <div>
           <label
+            className="mono-label"
             htmlFor="contact-message"
             style={{
               display: "block",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 6,
             }}
@@ -386,6 +368,7 @@ export default function ContactPage(): React.ReactElement {
         )}
 
         <button
+          className="mono-label mono-label--md"
           type="submit"
           disabled={isPending}
           style={{
@@ -393,11 +376,7 @@ export default function ContactPage(): React.ReactElement {
             background: "#0024FF",
             border: "1px solid #0024FF",
             color: "#fff",
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
             cursor: isPending ? "not-allowed" : "pointer",
             opacity: isPending ? 0.6 : 1,
             boxShadow: "0 0 20px rgba(0,36,255,0.35)",

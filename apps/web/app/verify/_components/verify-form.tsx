@@ -31,13 +31,10 @@ export function VerifyForm(): React.JSX.Element {
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <label
+          className="mono-label"
           htmlFor="cert-id"
           style={{
             display: "block",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             marginBottom: 10,
           }}
@@ -120,6 +117,7 @@ export function VerifyForm(): React.JSX.Element {
       </div>
 
       <button
+        className="mono-label mono-label--md"
         type="submit"
         disabled={!ready}
         style={{
@@ -129,11 +127,7 @@ export function VerifyForm(): React.JSX.Element {
           gap: 8,
           width: "100%",
           padding: "14px 20px",
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 12,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           border: "none",
           color: ready ? "#05041A" : "#7F7BA9",
           background: ready ? "linear-gradient(90deg, #0AFFD4, #4DFFE0)" : "#15122A",
@@ -147,12 +141,9 @@ export function VerifyForm(): React.JSX.Element {
 
       <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 18 }}>
         <Link
+          className="mono-label mono-label--md"
           href="/"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             textDecoration: "none",
           }}

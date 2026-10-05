@@ -129,12 +129,9 @@ export function PlacementTestForm({
                 style={{ padding: "16px 14px", borderRight: i < 3 ? "1px solid #2A2560" : "none" }}
               >
                 <span
+                  className="mono-label mono-label--xs"
                   style={{
                     display: "block",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9.5,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
                     color: "#7F7BA9",
                     marginBottom: 8,
                   }}
@@ -244,12 +241,9 @@ export function PlacementTestForm({
                   aria-hidden="true"
                 />
                 <span
+                  className="mono-label"
                   style={{
-                    fontFamily: "var(--font-mono)",
                     fontWeight: 700,
-                    fontSize: 11,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
                     color: catColor,
                   }}
                 >
@@ -303,14 +297,11 @@ export function PlacementTestForm({
                           </span>
                           <div>
                             <span
+                              className="mono-label mono-label--xs"
                               style={{
                                 display: "inline-block",
                                 marginBottom: 6,
-                                fontFamily: "var(--font-mono)",
-                                fontSize: 9,
                                 fontWeight: 600,
-                                letterSpacing: "0.14em",
-                                textTransform: "uppercase",
                                 color: catColor,
                                 background: `color-mix(in srgb, ${catColor} 10%, transparent)`,
                                 border: `1px solid color-mix(in srgb, ${catColor} 25%, transparent)`,
@@ -452,6 +443,7 @@ export function PlacementTestForm({
           </div>
 
           <button
+            className="mono-label mono-label--md"
             type="submit"
             disabled={isPending}
             style={{
@@ -462,11 +454,7 @@ export function PlacementTestForm({
               width: "100%",
               height: 52,
               padding: "0 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               cursor: isPending ? "not-allowed" : "pointer",
               border: "1px solid #0024FF",
               background: "#0024FF",
@@ -507,12 +495,9 @@ export function PlacementTestForm({
           </button>
 
           <a
+            className="mono-label"
             href="/dashboard"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               textDecoration: "none",
               textAlign: "center",

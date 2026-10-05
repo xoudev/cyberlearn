@@ -135,15 +135,12 @@ export function DeleteAccountSection({
         )}
 
         <label
+          className="mono-label"
           htmlFor="delete-confirm-input"
           style={{
             display: "block",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.08em",
             color: "#7F7BA9",
             marginBottom: 6,
-            textTransform: "uppercase",
           }}
         >
           Pour confirmer, tapez{" "}
@@ -192,17 +189,14 @@ export function DeleteAccountSection({
           <input type="hidden" name="confirmation" value={inputValue} />
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
             <button
+              className="mono-label mono-label--md"
               type="button"
               onClick={() => {
                 setOpen(false);
               }}
               style={{
                 padding: "8px 20px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
                 color: "#7F7BA9",
@@ -212,15 +206,12 @@ export function DeleteAccountSection({
               Annuler
             </button>
             <button
+              className="mono-label mono-label--md"
               type="submit"
               disabled={!isConfirmed || pending}
               style={{
                 padding: "8px 20px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
                 background: isConfirmed && !pending ? "#FF4757" : "transparent",
                 border: `1px solid ${isConfirmed && !pending ? "#FF4757" : "#2A1B1B"}`,
                 color: isConfirmed && !pending ? "#ffffff" : "#3F3D5C",
@@ -251,11 +242,8 @@ export function DeleteAccountSection({
 
         {/* Eyebrow */}
         <div
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             marginBottom: 14,
             display: "flex",
@@ -328,13 +316,10 @@ export function DeleteAccountSection({
 
         {/* Info / status row */}
         <div
+          className="mono-label"
           style={{
             paddingTop: 12,
             borderTop: "1px dashed #1F1B47",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             marginBottom: 18,
             display: "flex",
@@ -371,16 +356,13 @@ export function DeleteAccountSection({
         {/* CTA */}
         {isPending ? (
           <div
+            className="mono-label mono-label--md"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 13,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
               border: "1px solid #2A1B1B",
               color: "#7F7BA9",
               cursor: "default",
@@ -391,6 +373,7 @@ export function DeleteAccountSection({
           </div>
         ) : (
           <button
+            className="mono-label mono-label--md"
             type="button"
             onClick={() => {
               setOpen(true);
@@ -400,11 +383,7 @@ export function DeleteAccountSection({
               alignItems: "center",
               gap: 8,
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 13,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
               background: "transparent",
               border: "1px solid #FF475788",
               color: "#F5F5FA",

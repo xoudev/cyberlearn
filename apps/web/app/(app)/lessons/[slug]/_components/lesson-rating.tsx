@@ -108,15 +108,12 @@ export function LessonRating({
           >
             {/* Lock icon + label */}
             <div
+              className="mono-label"
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#44406B",
                 marginBottom: 14,
               }}
@@ -214,17 +211,14 @@ export function LessonRating({
 
           {!submitted && selected > 0 && (
             <button
+              className="mono-label"
               type="button"
               disabled={isPending}
               onClick={handleSubmit}
               style={{
                 width: "100%",
                 padding: "8px 12px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 background: "#0024FF",
                 border: "none",
                 color: "#fff",
@@ -299,11 +293,8 @@ export function LessonRating({
       >
         <div>
           <div
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               display: "flex",
               alignItems: "center",
@@ -512,16 +503,13 @@ export function LessonRating({
 
           {!submitted ? (
             <button
+              className="mono-label"
               type="button"
               disabled={!selected || isPending}
               onClick={handleSubmit}
               style={{
                 padding: "10px 22px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 background: selected ? "#0024FF" : "transparent",
                 border: `1px solid ${selected ? "#0024FF" : "#2A2560"}`,
                 color: selected ? "#fff" : "#7F7BA9",
@@ -533,16 +521,13 @@ export function LessonRating({
             </button>
           ) : (
             <button
+              className="mono-label"
               type="button"
               onClick={() => {
                 setSubmitted(false);
               }}
               style={{
                 padding: "8px 16px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
                 color: "#7F7BA9",

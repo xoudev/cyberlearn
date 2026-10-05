@@ -33,12 +33,9 @@ export function TierBadge({ tier }: { tier: Tier }): React.ReactElement {
         }}
       />
       <span
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
           fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
           color: tier.color,
         }}
       >

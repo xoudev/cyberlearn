@@ -182,11 +182,8 @@ export default async function CertVerifyPage({
           </span>
         </Link>
         <span
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             display: "inline-flex",
             alignItems: "center",
@@ -413,11 +410,8 @@ export default async function CertVerifyPage({
                   cyber<span style={{ color: "#0AFFD4" }}>learn</span>
                 </div>
                 <div
+                  className="mono-label"
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
                     color: "#7F7BA9",
                     marginTop: 2,
                   }}
@@ -428,11 +422,8 @@ export default async function CertVerifyPage({
             </div>
             <div style={{ textAlign: "right" }}>
               <div
+                className="mono-label mono-label--xs"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9.5,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   marginBottom: 4,
                 }}
@@ -456,11 +447,8 @@ export default async function CertVerifyPage({
           {/* Document body */}
           <div style={{ marginBottom: 32 }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 10,
               }}
@@ -495,11 +483,8 @@ export default async function CertVerifyPage({
             )}
 
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 marginBottom: 8,
               }}
@@ -555,11 +540,8 @@ export default async function CertVerifyPage({
               ].map(({ lbl, val, accent }) => (
                 <div key={lbl} style={{ background: "#0A0826", padding: "14px 18px" }}>
                   <div
+                    className="mono-label mono-label--xs"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9.5,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
                       color: "#7F7BA9",
                       marginBottom: 6,
                     }}
@@ -594,11 +576,8 @@ export default async function CertVerifyPage({
           >
             <div>
               <div
+                className="mono-label mono-label--xs"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9.5,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   marginBottom: 8,
                 }}
@@ -682,6 +661,7 @@ export default async function CertVerifyPage({
         {!isRevoked && (
           <div style={{ display: "flex", gap: 12 }}>
             <a
+              className="mono-label mono-label--md"
               href={`/api/certificates/${cert.id}/download`}
               style={{
                 flex: "0 0 auto",
@@ -689,11 +669,7 @@ export default async function CertVerifyPage({
                 alignItems: "center",
                 gap: 10,
                 padding: "14px 24px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 background: "#0024FF",
                 border: "1px solid #0024FF",
                 color: "#fff",
@@ -717,6 +693,7 @@ export default async function CertVerifyPage({
               </svg>
             </a>
             <button
+              className="mono-label mono-label--md"
               type="button"
               onClick={undefined}
               style={{
@@ -724,11 +701,7 @@ export default async function CertVerifyPage({
                 alignItems: "center",
                 gap: 8,
                 padding: "14px 22px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #1F1B47",
                 color: "#B8B5D1",
@@ -780,11 +753,8 @@ export default async function CertVerifyPage({
           ].map(({ lbl, val }) => (
             <div key={lbl} style={{ background: "#0A0826", padding: "14px 16px" }}>
               <div
+                className="mono-label mono-label--xs"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9.5,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
                   color: "#7F7BA9",
                   marginBottom: 6,
                 }}

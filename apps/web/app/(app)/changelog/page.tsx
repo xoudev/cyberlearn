@@ -76,12 +76,9 @@ function EntryCard({
         </span>
         {isLatest && (
           <span
+            className="mono-label mono-label--xs"
             style={{
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 9.5,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "var(--cosmetic-accent)",
             }}
           >
@@ -120,14 +117,11 @@ function EntryCard({
           return (
             <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <span
+                className="mono-label mono-label--xs"
                 style={{
                   flexShrink: 0,
                   marginTop: 1,
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 9.5,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
                   color: meta.color,
                   background: meta.bg,
                   border: `1px solid ${meta.color}40`,
@@ -163,12 +157,9 @@ export default function ChangelogPage(): React.ReactElement {
 
       <header style={{ marginBottom: 40, maxWidth: 720 }}>
         <div
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
             color: "var(--cosmetic-accent)",
             marginBottom: 14,
           }}

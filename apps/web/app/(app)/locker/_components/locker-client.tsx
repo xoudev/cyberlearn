@@ -240,11 +240,8 @@ function Card({
           {item.label}
         </span>
         <span
+          className="mono-label mono-label--xs"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
             color: rarityColor,
           }}
         >
@@ -254,11 +251,8 @@ function Card({
 
       {item.equipped ? (
         <span
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
             color: "var(--cosmetic-accent)",
             textAlign: "center",
             padding: "8px 0",
@@ -269,17 +263,14 @@ function Card({
         </span>
       ) : item.unlocked ? (
         <button
+          className="mono-label"
           type="button"
           disabled={busy}
           onClick={() => {
             onEquip(item);
           }}
           style={{
-            fontFamily: "var(--font-mono)",
             fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
             color: "#F5F5FA",
             background: "#0A0826",
             border: "1px solid #2A2560",
@@ -293,11 +284,8 @@ function Card({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span
+            className="mono-label mono-label--xs"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "var(--cosmetic-accent)",
             }}
           >
@@ -413,11 +401,8 @@ export function LockerClient({
         }
       `}</style>
       <div
+        className="mono-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
           color: "var(--cosmetic-accent)",
           marginBottom: 10,
         }}
@@ -491,11 +476,8 @@ export function LockerClient({
           }}
         >
           <div
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
               color: "#7F7BA9",
               marginBottom: 16,
               display: "flex",

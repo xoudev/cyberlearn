@@ -48,12 +48,9 @@ function ScoreBar({
             aria-hidden="true"
           />
           <span
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
               fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               color: "#F5F5FA",
             }}
           >
@@ -172,6 +169,7 @@ export default async function PlacementResultPage({
 
       {/* ── Topbar ──────────────────────────────────────────────────────── */}
       <header
+        className="mono-label"
         style={{
           position: "fixed",
           top: 0,
@@ -187,10 +185,6 @@ export default async function PlacementResultPage({
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
           borderBottom: "1px solid #2A2560",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
           color: "#7F7BA9",
         }}
       >
@@ -257,11 +251,8 @@ export default async function PlacementResultPage({
           {/* Header */}
           <div style={{ marginBottom: 36 }}>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
                 color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
@@ -340,12 +331,9 @@ export default async function PlacementResultPage({
               }}
             >
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 600,
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   color: "#F5F5FA",
                   display: "inline-flex",
                   alignItems: "center",
@@ -355,12 +343,9 @@ export default async function PlacementResultPage({
                 <span style={{ color: "#0AFFD4" }}>›</span> SCORES PAR DOMAINE
               </span>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   color: "#7F7BA9",
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
                 }}
               >
                 POINT FORT ·{" "}
@@ -416,11 +401,8 @@ export default async function PlacementResultPage({
                 aria-hidden="true"
               />
               <div
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   color: "#0AFFD4",
                   marginBottom: 14,
                   display: "inline-flex",
@@ -445,17 +427,13 @@ export default async function PlacementResultPage({
               </p>
               <Link
                 href={`/paths/${recPath}`}
-                className="btn-teal"
+                className="btn-teal mono-label mono-label--md"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "12px 24px",
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
                   background: "#0AFFD4",
                   color: "#030219",
                   border: "1px solid #0AFFD4",
@@ -503,7 +481,7 @@ export default async function PlacementResultPage({
           <div style={{ display: "flex", gap: 12 }}>
             <Link
               href="/dashboard"
-              className="btn-blue"
+              className="btn-blue mono-label mono-label--md"
               style={{
                 flex: 1,
                 display: "inline-flex",
@@ -511,11 +489,7 @@ export default async function PlacementResultPage({
                 justifyContent: "center",
                 gap: 10,
                 padding: "14px 24px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 background: "#0024FF",
                 color: "#fff",
                 border: "1px solid #0024FF",
@@ -536,14 +510,10 @@ export default async function PlacementResultPage({
             </Link>
             <Link
               href="/lessons"
-              className="btn-ghost"
+              className="btn-ghost mono-label mono-label--md"
               style={{
                 padding: "14px 20px",
-                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
                 background: "transparent",
                 color: "#B8B5D1",
                 border: "1px solid #2A2560",

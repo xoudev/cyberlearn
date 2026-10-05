@@ -40,11 +40,8 @@ export function LessonQA({
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <div
+          className="mono-label"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
             color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
@@ -187,11 +184,8 @@ function QuestionCard({
           </h4>
           {question.isResolved && (
             <span
+              className="mono-label mono-label--xs"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9.5,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
                 color: "var(--cosmetic-accent)",
                 background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
                 border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",

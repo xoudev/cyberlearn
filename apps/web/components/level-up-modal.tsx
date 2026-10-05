@@ -48,6 +48,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           <Link
+            className="mono-label"
             href="/profile"
             style={{
               display: "inline-flex",
@@ -56,11 +57,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
               padding: "0 20px",
               background: "#0024FF",
               color: "#ffffff",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               textDecoration: "none",
               boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.15)",
             }}
@@ -68,6 +65,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
             Voir mon profil
           </Link>
           <button
+            className="mono-label"
             type="button"
             onClick={onClose}
             style={{
@@ -76,11 +74,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
               background: "transparent",
               border: "1px solid #2A2560",
               color: "#B8B5D1",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
               cursor: "pointer",
             }}
           >

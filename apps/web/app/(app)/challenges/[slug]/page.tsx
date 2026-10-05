@@ -119,12 +119,9 @@ function BracketCorner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }): React.React
 function SectionHead({ label, meta }: { label: string; meta?: string }): React.ReactElement {
   return (
     <div
+      className="mono-label"
       style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
         color: "var(--cosmetic-accent)",
-        letterSpacing: "0.2em",
-        textTransform: "uppercase",
         fontWeight: 600,
         display: "flex",
         alignItems: "center",
@@ -279,12 +276,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
         {/* Left: title + tags + description */}
         <div>
           <div
+            className="mono-label"
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
               color: "#7F7BA9",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               fontWeight: 600,
               marginBottom: 18,
             }}
@@ -365,6 +359,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
           {/* Stats card header */}
           <div
+            className="mono-label"
             style={{
               display: "flex",
               alignItems: "center",
@@ -372,11 +367,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               padding: "12px 18px",
               borderBottom: "1px solid #1F1B47",
               background: "rgba(255,77,109,0.05)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
               color: "#FF4D6D",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               fontWeight: 600,
             }}
           >
@@ -410,12 +401,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {/* XP */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   color: "#7F7BA9",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>XP Récompense
@@ -437,12 +425,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {/* Time */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   color: "#7F7BA9",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Limite de temps
@@ -463,12 +448,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {/* Attempts */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   color: "#7F7BA9",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Tentatives
@@ -489,23 +471,17 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {/* Status */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
                   color: "#7F7BA9",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Statut
               </span>
               <span
+                className="mono-label"
                 style={{
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   color: statusColor,
                   display: "inline-flex",
                   alignItems: "center",
@@ -530,16 +506,13 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
           {/* CTA button scrolls to action section */}
           <a
+            className="mono-label mono-label--md"
             href="#challenge-action"
             style={{
               display: "block",
               width: "100%",
               padding: "18px 24px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
               background: "#FF4D6D",
               color: "#fff",
               border: "none",
@@ -663,6 +636,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             <div style={{ marginBottom: 32 }}>
               <SectionHead label="Pièces jointes" />
               <a
+                className="mono-label"
                 href={challenge.attachmentUrl}
                 download
                 target="_blank"
@@ -675,11 +649,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   background: "transparent",
                   border: "1px solid rgba(77,139,255,0.3)",
                   color: "#4D8BFF",
-                  fontFamily: "var(--font-mono)",
                   fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
                   textDecoration: "none",
                 }}
               >
@@ -726,12 +696,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           {/* Stats panel */}
           <section>
             <div
+              className="mono-label"
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
                 color: "var(--cosmetic-accent)",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
@@ -804,6 +771,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
       >
         {adjacent.prev !== null ? (
           <Link
+            className="mono-label mono-label--md"
             href={`/challenges/${adjacent.prev.slug}`}
             style={{
               display: "inline-flex",
@@ -811,11 +779,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               alignItems: "flex-start",
               gap: 4,
               padding: "22px 24px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
               color: "#B8B5D1",
               textDecoration: "none",
               transition: "color 200ms ease, background 200ms ease",
@@ -835,6 +799,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
         {adjacent.next !== null ? (
           <Link
+            className="mono-label mono-label--md"
             href={`/challenges/${adjacent.next.slug}`}
             style={{
               display: "inline-flex",
@@ -842,11 +807,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               alignItems: "flex-end",
               gap: 4,
               padding: "22px 24px",
-              fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
               color: "#B8B5D1",
               textDecoration: "none",
               borderLeft: "1px solid #1F1B47",
