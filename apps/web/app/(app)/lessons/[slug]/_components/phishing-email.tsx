@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { parsePhishingEmail, phishingPartLabel } from "@cyberlearn/types";
 
@@ -14,9 +15,6 @@ import { parsePhishingEmail, phishingPartLabel } from "@cyberlearn/types";
  * address shows on hover or focus, under the message. After three harmless
  * clicks the learner may ask to see the clues.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
 
 type PartStatus = "open" | "suspect" | "harmless";
 

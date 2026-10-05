@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, RED } from "@cyberlearn/ui";
 import React, { useEffect, useRef, useState } from "react";
 import { parseSqlPlayground } from "@cyberlearn/types";
 import {
@@ -18,9 +19,6 @@ import { SqlResultTable, tablesOf } from "./sql-result-table";
  * learner's browser; nothing is sent anywhere. SQLite starts on the first run,
  * not when the page opens: 0.7 MB nobody needs before then.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
 
 export function SqlPlayground(
   props: Record<string, unknown> & { createWorker?: () => WorkerLike },

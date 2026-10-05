@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import dynamic from "next/dynamic";
 import React, { useCallback, useState } from "react";
 import { ANIMATION_SCENES, stepAt, stepBounds } from "@cyberlearn/lib/animations/scenes";
@@ -13,10 +14,6 @@ import type { PlayerCommand } from "./step-animation-player";
  * in the page; the player itself (Remotion) is loaded only on a lesson that
  * has an animation, not on every lesson.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 const StepAnimationPlayer = dynamic(
   () => import("./step-animation-player").then((m) => m.StepAnimationPlayer),

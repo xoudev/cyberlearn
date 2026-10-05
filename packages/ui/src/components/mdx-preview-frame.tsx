@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -129,11 +130,6 @@ export function usePreviewRefresh(
 }
 
 // ── Chrome ─────────────────────────────────────────────────────────────────────
-
-const BORDER = "#2A2560";
-const ACCENT = "var(--cosmetic-accent)";
-const MONO = "var(--font-mono)";
-const DANGER = "#FF4D6D";
 
 /** A small button of a pane's header: RAFRAÎCHIR, SITE, RAPIDE. */
 export function PaneButton({

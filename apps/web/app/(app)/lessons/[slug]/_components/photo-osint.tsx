@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { parsePhotoOsint } from "@cyberlearn/types";
 import { distanceKm, distanceLabel, parseCoordinates, type Point } from "@/lib/osint/geo";
@@ -13,10 +14,6 @@ import { OsintMap } from "./osint-map";
  * read again: nothing left. Client-side because the reading, the map and the
  * cleaning all happen in the learner's browser; nothing is sent anywhere.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 /**
  * The photo drawn again on a canvas and saved as a new JPEG: the pixels stay,

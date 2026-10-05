@@ -23,3 +23,4 @@ export {
 } from "./components/lesson-card.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { cn } from "./lib/utils.js";
+export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";

@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { checkHolds } from "@cyberlearn/lib/git/checks";
 import { DEFAULT_GEOMETRY, layoutGraph } from "@cyberlearn/lib/git/graph";
@@ -13,10 +14,7 @@ import { parseGitSandbox } from "@cyberlearn/types";
  * engine (@cyberlearn/lib/git) is the one the app runs too.
  */
 
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
 const LANE_COLORS = [ACCENT, "#7B61FF", "#FFB020", "#FF6BCB", "#4DA3FF"];
-const MONO = "var(--font-mono, monospace)";
 
 interface Entry {
   readonly key: number;

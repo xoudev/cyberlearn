@@ -1,3 +1,4 @@
+import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -16,7 +17,6 @@ import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono, monospace)" };
 const SANS: React.CSSProperties = { fontFamily: "var(--font-sans, sans-serif)" };
 
 /** Regular pointy-top hexagon; same canonical geometry as the badge medallion. */

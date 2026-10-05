@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import {
   defaultKey,
@@ -22,10 +23,6 @@ import { type CryptoTool, parseCryptoWorkshop } from "@cyberlearn/types";
  * the clear text. Client-side because it answers keystrokes; nothing is sent
  * anywhere.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 const field: React.CSSProperties = {
   padding: "8px 10px",

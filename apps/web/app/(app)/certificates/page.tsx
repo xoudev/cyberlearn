@@ -1,3 +1,4 @@
+import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -12,8 +13,6 @@ export const metadata: Metadata = { title: "Mes certificats" };
 const GOLD = "#FFB547";
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
-
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 /** Gold hexagonal seal: same regular pointy-top geometry as the badge medallion. */
 function CertSeal(): React.ReactElement {

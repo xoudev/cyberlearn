@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useEffect, useRef, useState } from "react";
 import {
   type DrillQuestion,
@@ -18,10 +19,6 @@ import { parseSubnetDrill, type SubnetDrill as Settings } from "@cyberlearn/type
  * none, the other answer being right. The correction always comes with the
  * reasoning. At the end of the series, how many were found, and a new series.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 type Outcome = "retry" | "right" | "revealed";
 

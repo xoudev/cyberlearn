@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, RED } from "@cyberlearn/ui";
 import React, { useEffect, useRef, useState } from "react";
 import { parameterise, parseSqlInjectionLab, pasteFields } from "@cyberlearn/types";
 import { lastResult, SqlSandbox, type SqlOutcome, type WorkerLike } from "@/lib/sql/sandbox";
@@ -13,9 +14,6 @@ import { SqlResultTable } from "./sql-result-table";
  * input is just a strange password. The query sent is always shown: seeing it
  * change is the lesson.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
 
 type Mode = "vulnerable" | "fixed";
 

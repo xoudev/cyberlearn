@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import {
   asciiOf,
@@ -20,10 +21,6 @@ import { parseHexEditor } from "@cyberlearn/types";
  * nothing is sent anywhere.
  */
 
-const RED = "#FF4757";
-const AMBER = "#FFB020";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 const BYTES_PER_ROW = 16;
 
 const field: React.CSSProperties = {

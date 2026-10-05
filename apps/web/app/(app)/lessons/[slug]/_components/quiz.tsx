@@ -1,5 +1,6 @@
 "use client";
 
+import { RED } from "@cyberlearn/ui";
 import React, { useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
@@ -46,7 +47,6 @@ interface QuizProps {
 }
 
 const LETTER = ["A", "B", "C", "D", "E", "F"];
-const RED = "#FF4757";
 
 export function Quiz({
   id,

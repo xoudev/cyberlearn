@@ -26,6 +26,7 @@
  * chain. It is what the panel has without a `preview`, and a switch away with.
  */
 
+import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount, BeforeMount } from "@monaco-editor/react";
@@ -69,17 +70,13 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
 });
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
-const BORDER = "#2A2560";
 /* The editor chrome follows the accent the reader has equipped, like the rest
  * of the app. Monaco's own theme is the exception below: its colours go through a
  * JavaScript API that paints to a canvas, where a CSS custom property means
  * nothing, so the cursor keeps a literal. Outside the app - in the admin
  * console - tokens.css defines the accent as the brand turquoise, which is what
  * this colour already was. */
-const ACCENT = "var(--cosmetic-accent)";
 const TURQ = "#0AFFD4";
-const MONO = "var(--font-mono)";
-const DANGER = "#FF4D6D";
 
 // ── Preview - inline markdown renderer ────────────────────────────────────────
 

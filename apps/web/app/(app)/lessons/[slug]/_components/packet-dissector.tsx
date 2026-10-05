@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import {
   buildFrame,
@@ -20,9 +21,6 @@ import { parsePacketDissector } from "@cyberlearn/types";
  * byte of each. A wrong byte still names its own field, so a miss teaches too.
  */
 
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 const BYTES_PER_ROW = 16;
 
 const LAYER_COLORS: Record<PacketLayer, string> = {
