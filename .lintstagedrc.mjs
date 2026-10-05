@@ -8,9 +8,9 @@ import { resolve } from "node:path";
 //    "No files were processed" error that would abort the commit.
 // Vendor runtime files are committed as-is from CDN and must not be reformatted.
 const isRuntimeFile = (f) => f.includes("/public/runtimes/");
-// docs/ holds design mockups (.jsx/.html/.css), not app code: biome ignores
-// them via files.ignore, so passing them along would abort the commit with
-// "No files were processed". Normalize separators so Windows paths match too.
+// docs/ holds documentation, not app code: biome ignores it via files.ignore,
+// so passing a file from there along would abort the commit with "No files
+// were processed". Normalize separators so Windows paths match too.
 const isDocsFile = (f) => f.replace(/\\/g, "/").includes("/docs/");
 
 export default {
