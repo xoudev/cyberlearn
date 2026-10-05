@@ -84,7 +84,7 @@ export function ClassLessons({
         </ul>
       )}
 
-      <Link href={`/my-class/lessons/new?classId=${classId}`} className="cls-btn cls-btn--link">
+      <Link href={`/my-class/lessons/new?classId=${classId}`} className="btn btn--sm">
         Écrire une leçon
       </Link>
     </div>

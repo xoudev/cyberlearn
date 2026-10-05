@@ -735,12 +735,7 @@ function TakingScreen(props: {
         </main>
 
         <nav className="q-nav">
-          <button
-            type="button"
-            className="q-btn q-btn--ghost"
-            onClick={onPrev}
-            disabled={index === 0}
-          >
+          <button type="button" className="btn btn--ghost" onClick={onPrev} disabled={index === 0}>
             {IcoArrowLeft}
             Précédent
           </button>
@@ -766,17 +761,12 @@ function TakingScreen(props: {
           </div>
 
           {last ? (
-            <button
-              type="button"
-              className="q-btn q-btn--finish"
-              onClick={onFinish}
-              disabled={busy}
-            >
+            <button type="button" className="btn btn--accent" onClick={onFinish} disabled={busy}>
               {busy ? "Envoi…" : "Terminer l'examen"}
               {!busy && IcoCheck}
             </button>
           ) : (
-            <button type="button" className="q-btn q-btn--next" onClick={onNext}>
+            <button type="button" className="btn btn--ghost" onClick={onNext}>
               Suivant
               {IcoNext}
             </button>

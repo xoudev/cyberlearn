@@ -37,7 +37,7 @@ export function TicketReply({ ticketId }: { ticketId: string }): React.ReactElem
         />
       </label>
 
-      <button type="submit" disabled={pending} className="cls-btn">
+      <button type="submit" disabled={pending} className="btn btn--sm">
         {pending ? "…" : "Envoyer"}
       </button>
 

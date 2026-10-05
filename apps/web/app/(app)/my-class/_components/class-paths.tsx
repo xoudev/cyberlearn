@@ -86,7 +86,7 @@ export function ClassPaths({
         </ul>
       )}
 
-      <Link href={`/my-class/paths/new?classId=${classId}`} className="cls-btn cls-btn--link">
+      <Link href={`/my-class/paths/new?classId=${classId}`} className="btn btn--sm">
         Créer un parcours
       </Link>
     </div>

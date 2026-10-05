@@ -28,7 +28,7 @@ export function TopicTools({
     <div className="fo-post-tools">
       <button
         type="button"
-        className="fo-btn"
+        className="btn btn--ghost btn--sm"
         disabled={pending}
         onClick={() => {
           run({ pinned: !pinned });
@@ -38,7 +38,7 @@ export function TopicTools({
       </button>
       <button
         type="button"
-        className="fo-btn"
+        className="btn btn--ghost btn--sm"
         disabled={pending}
         onClick={() => {
           run({ locked: !locked });

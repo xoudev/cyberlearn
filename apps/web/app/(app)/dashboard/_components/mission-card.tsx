@@ -43,7 +43,7 @@ export function MissionCard(props: MissionCardProps): React.JSX.Element {
         <h2 id="dash-now-title">{title}</h2>
         {description !== null && description !== "" && <p>{description}</p>}
         <div className="dash-now-foot">
-          <Link href={cta.href} className="dash-btn">
+          <Link href={cta.href} className="btn btn--accent">
             {cta.label}
             <svg
               viewBox="0 0 14 14"

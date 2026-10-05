@@ -44,7 +44,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
           lede="Tu as désactivé la répétition espacée dans tes préférences. Rien n'est perdu : ce que tu avais à réviser t'attend si tu la réactives."
         />
         <p>
-          <Link href="/settings/preferences" className="cls-btn cls-btn--link">
+          <Link href="/settings/preferences" className="btn btn--sm">
             Rouvrir les préférences
           </Link>
         </p>

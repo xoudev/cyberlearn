@@ -57,11 +57,7 @@ export default async function PathGuidePage({
                 cta={(path, i) => (
                   <Link
                     href={`/paths/${path.slug}`}
-                    className={
-                      i === 0
-                        ? "pg-btn pg-btn--small btn-blue"
-                        : "pg-btn pg-btn--small pg-btn--ghost"
-                    }
+                    className={i === 0 ? "btn btn--block" : "btn btn--ghost btn--block"}
                   >
                     Voir ce parcours <span aria-hidden="true">→</span>
                   </Link>

@@ -210,7 +210,7 @@ export function LessonEditor({
       </div>
 
       <div className="tle-actions">
-        <button type="submit" disabled={pending} className="cls-btn">
+        <button type="submit" disabled={pending} className="btn btn--sm">
           {pending ? "…" : mode === "create" ? `Publier pour ${className}` : "Enregistrer"}
         </button>
         <Link href="/my-class" className="tle-back">

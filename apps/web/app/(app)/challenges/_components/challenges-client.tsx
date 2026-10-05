@@ -363,7 +363,7 @@ function Featured({
         <Countdown endMs={endMs} />
 
         <div className="feat__cta">
-          <Link href={`/challenges/${challenge.slug}`} className="cc__btn" style={{ borderTop: 0 }}>
+          <Link href={`/challenges/${challenge.slug}`} className="btn btn--danger btn--block">
             RELEVER LE DÉFI <IconArrow size={13} />
           </Link>
         </div>
@@ -480,19 +480,22 @@ function CCCard({ challenge }: { challenge: ChallengeItem }): React.ReactElement
 
       {/* CTA button */}
       {isDone ? (
-        <Link href={`/challenges/${challenge.slug}`} className="cc__btn cc__btn--ghost">
+        <Link
+          href={`/challenges/${challenge.slug}`}
+          className="btn btn--accent btn--ghost btn--block"
+        >
           VOIR LE DÉFI <IconArrow size={12} />
         </Link>
       ) : isProg ? (
-        <Link href={`/challenges/${challenge.slug}`} className="cc__btn cc__btn--orange">
+        <Link href={`/challenges/${challenge.slug}`} className="btn btn--warning btn--block">
           CONTINUER <IconArrow size={12} />
         </Link>
       ) : isLocked ? (
-        <span className="cc__btn cc__btn--disabled">
+        <span className="btn btn--ghost btn--block" aria-disabled="true">
           <IconLock size={12} /> VERROUILLÉ
         </span>
       ) : (
-        <Link href={`/challenges/${challenge.slug}`} className="cc__btn">
+        <Link href={`/challenges/${challenge.slug}`} className="btn btn--danger btn--block">
           RELEVER LE DÉFI <IconArrow size={12} />
         </Link>
       )}

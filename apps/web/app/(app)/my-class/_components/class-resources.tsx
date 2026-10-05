@@ -177,7 +177,7 @@ export function ClassResources({
             </label>
           )}
 
-          <button type="submit" disabled={pending} className="cls-btn">
+          <button type="submit" disabled={pending} className="btn btn--sm">
             {pending ? "…" : "Partager avec la classe"}
           </button>
 

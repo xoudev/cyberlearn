@@ -232,55 +232,6 @@
 }
 
 /* Buttons: the onboarding's, square. .btn-blue (globals) adds the hover glow. */
-.pg-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 52px;
-  padding: 0 16px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  border: 1px solid #0024ff;
-  background: #0024ff;
-  color: #ffffff;
-  box-shadow:
-    0 0 24px rgba(0, 36, 255, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.pg-btn--ghost {
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  border-color: #2a2560;
-  background: transparent;
-  color: #b8b5d1;
-  box-shadow: none;
-  transition:
-    border-color 180ms ease,
-    color 180ms ease;
-}
-
-.pg-btn--ghost:hover {
-  border-color: #0affd4;
-  color: #f5f5fa;
-}
-
-.pg-btn--small {
-  min-height: 42px;
-  font-size: 11px;
-}
-
-.pg-btn:focus-visible {
-  outline: 2px solid #0affd4;
-  outline-offset: 2px;
-}
 
 /* /paths/guide: the questions and suggestions, in a panel under the catalogue's header. */
 .pg-panel {

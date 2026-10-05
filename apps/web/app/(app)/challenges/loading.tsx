@@ -70,7 +70,7 @@ function ChallengeCardSkeleton(): React.ReactElement {
         <Skeleton w={92} h={11} style={{ marginLeft: "auto" }} />
       </div>
 
-      {/* CTA button (.cc__btn full-width, padding 14 20) */}
+      {/* CTA button (.btn--block) */}
       <Skeleton w="100%" h={46} radius={0} />
     </SkeletonCard>
   );

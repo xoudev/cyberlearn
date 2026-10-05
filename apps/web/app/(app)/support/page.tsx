@@ -36,7 +36,7 @@ export default async function SupportPage(): Promise<React.ReactElement> {
       />
 
       <p style={{ marginBottom: 24 }}>
-        <Link href="/contact" className="cls-btn cls-btn--link">
+        <Link href="/contact" className="btn btn--sm">
           Nouvelle demande
         </Link>
       </p>

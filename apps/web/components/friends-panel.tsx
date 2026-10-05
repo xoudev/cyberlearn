@@ -98,7 +98,7 @@ function Row({
         {kind === "incoming" && (
           <button
             type="button"
-            className="fp-btn fp-btn--primary"
+            className="btn btn--accent btn--sm"
             disabled={pending}
             onClick={() => {
               act(() => acceptFriendRequestAction(person.id), "accepted");
@@ -109,7 +109,7 @@ function Row({
         )}
         <button
           type="button"
-          className="fp-btn"
+          className="btn btn--ghost btn--sm"
           disabled={pending}
           onClick={() => {
             // Refusing and unfriending are the same call and the opposite

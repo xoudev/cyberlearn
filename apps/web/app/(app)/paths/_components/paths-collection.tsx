@@ -206,10 +206,10 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
           <div className="hero-path__cta-row">
-            <Link href={`/paths/${path.slug}`} className="btn-primary">
+            <Link href={`/paths/${path.slug}`} className="btn btn--lg">
               Continuer le parcours {ARROW}
             </Link>
-            <Link href={`/paths/${path.slug}`} className="btn-ghost">
+            <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
               Aperçu
             </Link>
           </div>
@@ -356,7 +356,7 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
         </div>
       </div>
       <div className="trophy-card__foot">
-        <span className="btn-trophy">
+        <span className="btn btn--gold btn--ghost btn--block">
           <svg
             width="13"
             height="13"

@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.21",
+    date: "2026-10-05",
+    title: "Un seul bouton",
+    changes: [
+      {
+        type: "improved",
+        text: "Les boutons du tableau de bord, des classes, des amis, des défis, du forum, du guide, de l'examen et du catalogue des parcours étaient dix familles de boutons. Ils sont la même : même hauteur, même capitale, même réaction au survol et au clavier, dans le ton de ce qu'ils font.",
+      },
+    ],
+  },
+  {
     version: "3.20",
     date: "2026-10-05",
     title: "La même carte partout",
