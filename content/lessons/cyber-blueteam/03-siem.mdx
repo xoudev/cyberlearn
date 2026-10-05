@@ -102,6 +102,17 @@ Un SOAR (orchestration, automatisation et réponse de sécurité) va un cran plu
 
 ## à toi de jouer
 
+La règle de la section « la corrélation », à la main. Voici une heure de journaux normalisés : des connexions SSH, le trafic du site, les paquets que le pare-feu jette. Filtre, compte, et trouve ce que la règle aurait signalé : plus de vingt échecs sur un compte depuis une même adresse, suivis d'un succès depuis cette adresse. Attention au collègue qui s'est trompé de mot de passe : lui ne déclenche pas la règle.
+
+<LogHunt
+  id="siem-force-brute"
+  title="La règle de corrélation, à la main"
+  task="Trouve l'adresse qui correspond à la règle « plus de vingt échecs puis un succès », le compte visé, et l'heure du succès."
+  events={[{ "time": "2026-01-10 03:14:02", "source": "sshd", "host": "web01", "ip": "203.0.113.9", "user": "admin", "action": "Accepted password" }, { "time": "2026-01-10 02:31:40", "source": "sshd", "host": "web01", "ip": "10.0.0.5", "user": "alice", "action": "Accepted password" }]}
+  series={[{ "count": 24, "from": "2026-01-10 03:09:00", "to": "2026-01-10 03:14:00", "source": "sshd", "hosts": ["web01"], "ips": ["203.0.113.9"], "users": ["admin"], "actions": ["Failed password"] }, { "count": 7, "from": "2026-01-10 02:30:00", "to": "2026-01-10 02:31:30", "source": "sshd", "hosts": ["web01"], "ips": ["10.0.0.5"], "users": ["alice"], "actions": ["Failed password"] }, { "count": 140, "from": "2026-01-10 02:30:00", "to": "2026-01-10 03:30:00", "source": "nginx", "hosts": ["web01"], "ips": ["198.51.100.23", "198.51.100.77", "192.0.2.44", "203.0.113.120"], "actions": ["GET / 200", "GET /contact 200", "GET /produits 200", "GET /favicon.ico 304", "POST /login 302"] }, { "count": 40, "from": "2026-01-10 02:30:00", "to": "2026-01-10 03:30:00", "source": "firewall", "hosts": ["fw01"], "ips": ["198.51.100.200", "203.0.113.55", "192.0.2.9"], "actions": ["DROP tcp 5432", "DROP tcp 23", "DROP udp 161"] }]}
+  questions={[{ "label": "Quelle adresse source correspond à la règle ?", "answer": "203.0.113.9", "hint": "Filtre sur Failed password, puis compte par adresse IP : une adresse dépasse vingt, l'autre non." }, { "label": "Quel compte a été visé ?", "answer": "admin" }, { "label": "À quelle heure la connexion a réussi depuis cette adresse ?", "answer": ["2026-01-10 03:14:02", "03:14:02", "03:14"], "hint": "Filtre sur l'adresse trouvée et cherche Accepted." }, { "label": "Combien d'échecs cette adresse a-t-elle produits ?", "answer": "24", "hint": "Le décompte par adresse, avec le filtre Failed password." }]}
+/>
+
 <Quiz id="q-1" question="Qu'est-ce qui distingue un SIEM d'une simple collecte de logs centralisée ?" options={["Le SIEM stocke les logs plus longtemps", "Le SIEM normalise, corrèle les événements et lève des alertes automatiques", "Le SIEM chiffre les logs au repos", "Le SIEM remplace le pare-feu"]} correct={1} />
 
 <Quiz id="q-2" question="Cent échecs de connexion sur un compte depuis une même IP, suivis d'un succès depuis cette IP. Pourquoi un SIEM lève-t-il une alerte alors qu'aucun de ces événements n'est suspect seul ?" options={["Parce qu'il bloque toutes les connexions par défaut", "Parce qu'une règle de corrélation relie ces événements en un scénario de force brute réussie", "Parce que les échecs de connexion sont toujours des attaques", "Parce qu'un succès de connexion est interdit"]} correct={1} />

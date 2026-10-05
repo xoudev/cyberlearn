@@ -350,6 +350,40 @@ describe("FirewallLab", () => {
   });
 });
 
+describe("LogHunt", () => {
+  const hunt = (events: string): string =>
+    `## Les journaux
+
+<LogHunt id="h" task="Trouve l'attaquant." events={${events}} questions={[{ "label": "Quelle adresse ?", "answer": "203.0.113.9" }]} />`;
+
+  it("accepts a hunt with its events and questions", async () => {
+    expect(
+      await checkLessonMdx(
+        hunt(
+          '[{ "time": "2026-01-10 03:14:02", "source": "sshd", "ip": "203.0.113.9", "user": "deploy", "action": "Accepted password" }]',
+        ),
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a time written wrong, and names the event", async () => {
+    const r = await checkLessonMdx(
+      hunt('[{ "time": "10/01 03:14", "source": "sshd", "action": "Accepted password" }]'),
+    );
+    if (r.ok) throw new Error("accepted a bad time");
+    expect(r.section).toBe("Les journaux");
+    expect(r.message).toContain("Chasse dans les logs : events.0.time : ");
+  });
+
+  it("refuses a hunt without any event", async () => {
+    const r = await checkLessonMdx(hunt("[]"));
+    if (r.ok) throw new Error("accepted an empty hunt");
+    expect(r.message).toBe(
+      "Chasse dans les logs : il faut des événements : events, series, ou les deux.",
+    );
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

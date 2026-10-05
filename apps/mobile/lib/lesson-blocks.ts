@@ -2,7 +2,7 @@
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
-// FirewallLab, StepAnimation, SimulatedTerminal,
+// FirewallLab, LogHunt, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -13,6 +13,7 @@ import {
   type FindTheFlaw,
   type FirewallLab,
   type GitSandbox,
+  type LogHunt,
   type MatchPairs,
   type PacketDissector,
   type PhishingEmail,
@@ -22,6 +23,7 @@ import {
   parseFindTheFlaw,
   parseFirewallLab,
   parseGitSandbox,
+  parseLogHunt,
   parseMatchPairs,
   parsePacketDissector,
   parsePhishingEmail,
@@ -106,6 +108,11 @@ export type Block =
       /** A FirewallLab: the same rules and test packets as the site's, decided natively. */
       kind: "firewall";
       lab: FirewallLab;
+    }
+  | {
+      /** A LogHunt: the same table of events as the site's, drawn and filtered natively. */
+      kind: "loghunt";
+      hunt: LogHunt;
     }
   | {
       /**
@@ -826,6 +833,23 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "firewall", lab: parsed.value }
         : { kind: "placeholder", label: "Pare-feu" },
+    );
+  });
+  // LogHunt → the same hunt, drawn and filtered natively; one the site would
+  // refuse is a placeholder.
+  text = replaceSelfClosing(text, "LogHunt", (tag) => {
+    const parsed = parseLogHunt({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      events: jsonProp(tag, "events"),
+      series: jsonProp(tag, "series"),
+      questions: jsonProp(tag, "questions"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "loghunt", hunt: parsed.value }
+        : { kind: "placeholder", label: "Chasse dans les logs" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's

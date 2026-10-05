@@ -7,6 +7,7 @@ import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
 import { CryptoWorkshopExercise } from "@/components/crypto-workshop";
 import { FirewallLabExercise } from "@/components/firewall-lab";
+import { LogHuntExercise } from "@/components/log-hunt";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
 import { PhishingEmailExercise } from "@/components/phishing-email";
@@ -310,6 +311,8 @@ export function BlockView({
       return <CryptoWorkshopExercise workshop={block.workshop} />;
     case "firewall":
       return <FirewallLabExercise lab={block.lab} />;
+    case "loghunt":
+      return <LogHuntExercise hunt={block.hunt} />;
     case "animation":
       return (
         <View

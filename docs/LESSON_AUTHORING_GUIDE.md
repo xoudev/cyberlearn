@@ -1455,6 +1455,36 @@ accept tcp port 80,443`}
 
 Choisis des paquets qui, sur les règles de départ, ne font pas tous ce qu'ils doivent : c'est l'écart qui fait l'exercice. Un paquet `established` oblige à penser aux réponses, un `icmp` à ne pas tout fermer, un inconnu sur le port 22 à restreindre la source plutôt que le port.
 
+### 5.9q LogHunt - Chasse dans les logs
+
+Une table d'événements normalisés, comme un SIEM les montre (heure, source, hôte, adresse IP, utilisateur, action), à filtrer et à compter jusqu'à ce que l'attaque ressorte, puis des questions dont les réponses sont dans la table. Un filtre texte cherche dans tous les champs ; un clic sur une valeur filtre dessus ; « Compter par » donne, pour un champ, les valeurs les plus fréquentes, cliquables elles aussi. Les réponses sont lues sans égard à la casse ni aux espaces, et une heure avec ou sans ses secondes ou sa date. Sur le site et dans l'app (`@cyberlearn/lib/logs/hunt`).
+
+Tu n'écris pas des centaines de lignes : tu écris les événements qui comptent un par un (`events`), et tu décris le reste par des séries (`series`) que le labo tire, toujours les mêmes pour un `id` donné. Une série tire `count` événements dans une fenêtre, chacun avec une valeur de chaque liste : le bruit du site, mais aussi une rafale trop longue à écrire à la main, comme 287 échecs depuis une adresse.
+
+```mdx
+<LogHunt
+  id="projet-acces-initial"
+  title="L'accès initial, dans les journaux"
+  task="Retrouve l'adresse de la force brute, le compte compromis et l'heure de la connexion réussie."
+  events={[{ "time": "2026-01-10 03:14:02", "source": "sshd", "host": "web01", "ip": "203.0.113.9", "user": "deploy", "action": "Accepted password" }]}
+  series={[{ "count": 287, "from": "2026-01-10 03:06:00", "to": "2026-01-10 03:14:00", "source": "sshd", "hosts": ["web01"], "ips": ["203.0.113.9"], "users": ["deploy"], "actions": ["Failed password"] }, { "count": 180, "from": "2026-01-10 00:00:00", "to": "2026-01-10 04:00:00", "source": "nginx", "hosts": ["web01"], "ips": ["198.51.100.23", "192.0.2.44"], "actions": ["GET / 200", "GET /contact 200"] }]}
+  questions={[{ "label": "Quelle adresse a mené la force brute ?", "answer": "203.0.113.9", "hint": "Filtre sur Failed password et compte par adresse IP." }, { "label": "À quelle heure la connexion a réussi ?", "answer": ["2026-01-10 03:14:02", "03:14"] }]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) ; il fixe aussi le tirage des séries |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne : ce qu'il faut retrouver |
+| `events` | objets | Les événements écrits un par un, 80 au plus : `time` (`AAAA-MM-JJ HH:MM:SS`), `source`, `action`, et au choix `host`, `ip`, `user`. **Clés entre guillemets** |
+| `series` | objets | Les événements tirés, 12 séries au plus : `count` (jusqu'à 400), `from` et `to` (la fenêtre), `source`, `actions` (liste), et au choix `hosts`, `ips`, `users` (listes où chaque événement pioche) |
+| `questions` | objets | De 1 à 6 : `label`, `answer` (une réponse, ou une liste de réponses acceptées), `hint` (montré après une réponse fausse, optionnel) |
+
+En tout, 1500 événements au plus : au-delà, la table ne se lit plus. Écris la question de façon que la réponse soit une valeur de la table ou un décompte (« combien d'échecs ») ; pour une heure, donne la valeur complète et sa forme courte dans la liste des réponses. Mets dans le bruit un cas qui ressemble à l'attaque sans l'être (un collègue qui se trompe sept fois de mot de passe) : c'est lui qui apprend à compter avant de conclure.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1490,7 +1520,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

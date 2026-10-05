@@ -71,3 +71,8 @@ export function keepRight(slots: readonly Slot[]): Slot[] {
 export function remaining(order: readonly number[], slots: readonly Slot[]): number[] {
   return order.filter((index) => !slots.includes(index));
 }
+
+/** A generator seeded by a text: the same sequence everywhere for the same text. */
+export function randomFromText(seed: string): () => number {
+  return generator(hash(seed));
+}
