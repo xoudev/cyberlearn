@@ -21,6 +21,7 @@ import { Card, SectionLabel, StatCell, Text } from "@/components/ui";
 import { gradeReviewApi } from "@/lib/api";
 import { CATEGORY_COLOR, CATEGORY_LABEL } from "@/lib/db";
 import { useRevisions } from "@/lib/queries";
+import { waitingText } from "@cyberlearn/lib/revisions/session";
 import { reviewSummary, splitReviews, type ReviewItem } from "@/lib/revisions";
 import { useSession } from "@/lib/session";
 
@@ -36,6 +37,7 @@ const GRADE_COLOR: Record<ReviewOutcome, string> = {
   forgot: colors.danger,
   hard: colors.warning,
   easy: colors.success,
+  mastered: colors.success,
 };
 
 export default function Revisions(): React.JSX.Element {
@@ -73,9 +75,10 @@ export default function Revisions(): React.JSX.Element {
 }
 
 function RevisionsBody({ items, now }: { items: ReviewItem[]; now: Date }): React.JSX.Element {
-  const { due, upcoming } = splitReviews(items, now);
+  const { due, waiting, upcoming } = splitReviews(items, now);
   const summary = reviewSummary(due);
   const next = upcoming[0];
+  const waitingLine = waitingText(waiting);
 
   return (
     <View style={{ gap: 18 }}>
@@ -105,6 +108,11 @@ function RevisionsBody({ items, now }: { items: ReviewItem[]; now: Date }): Reac
               <ReviewCard item={item} now={now} />
             </Rise>
           ))}
+          {waitingLine !== null ? (
+            <Text variant="mono" style={{ fontSize: 11 }}>
+              {waitingLine}
+            </Text>
+          ) : null}
         </View>
       )}
 
@@ -154,7 +162,7 @@ function ReviewCard({ item, now }: { item: ReviewItem; now: Date }): React.JSX.E
     const reply = await gradeReviewApi(item.scheduleId, quality);
     setSending(false);
     if (reply.ok) {
-      setDone({ outcome: outcomeOf(quality), xp: reply.reviewXp });
+      setDone({ outcome: outcomeOf(quality, reply.mastered), xp: reply.reviewXp });
       // XP and level show elsewhere; the queue itself is refetched on leaving.
       void queryClient.invalidateQueries({ queryKey: ["dashboard", session?.user.id] });
       void queryClient.invalidateQueries({ queryKey: ["profile", session?.user.id] });

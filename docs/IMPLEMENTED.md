@@ -150,8 +150,9 @@
 #### Révisions (Spaced Repetition SM-2)
 - Algorithme SuperMemo-2 : `easeFactor`, `intervalDays`, `repetitions`, `nextReviewAt`
 - ReviewSchedule créé à chaque complétion de leçon
-- Page `/review` : liste les leçons dont `nextReviewAt ≤ now`
-- Cron quotidien pour les rappels par notification
+- Page `/revisions` : la session du jour, cinq leçons au plus parmi celles dont `nextReviewAt ≤ now`, les plus en retard d'abord ; le reste attend son tour (`reviewRepository`, règles dans `@cyberlearn/lib/revisions/session`)
+- Seules les leçons encore publiées reviennent ; une leçon retenue assez de fois (prochain intervalle ≥ 60 jours) sort du cycle
+- Cron quotidien pour les rappels par notification, au compte de la session
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)

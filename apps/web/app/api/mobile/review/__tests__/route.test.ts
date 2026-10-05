@@ -8,7 +8,9 @@ const gradeReview =
     (
       userId: string,
       input: unknown,
-    ) => Promise<{ ok: true; nextReviewAt: Date; reviewXp: number } | { ok: false }>
+    ) => Promise<
+      { ok: true; nextReviewAt: Date | null; reviewXp: number; mastered: boolean } | { ok: false }
+    >
   >();
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: (r: Request) => userFromBearer(r) }));
@@ -48,6 +50,7 @@ describe("POST /api/mobile/review", () => {
       ok: true,
       nextReviewAt: new Date("2026-09-30T08:00:00Z"),
       reviewXp: 5,
+      mastered: false,
     });
     const body = { scheduleId: SCHEDULE, quality: 5, userId: "someone-else" };
     const res = await POST(request(JSON.stringify(body)));
@@ -56,6 +59,7 @@ describe("POST /api/mobile/review", () => {
       ok: true,
       nextReviewAt: "2026-09-30T08:00:00.000Z",
       reviewXp: 5,
+      mastered: false,
     });
     expect(gradeReview).toHaveBeenCalledWith("user-1", body);
   });
@@ -66,5 +70,12 @@ describe("POST /api/mobile/review", () => {
     const res = await POST(request(JSON.stringify({ scheduleId: SCHEDULE, quality: 3 })));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ ok: false, error: "Cette révision n'est plus à faire." });
+  });
+  it("answers no next date once the lesson is held", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    gradeReview.mockResolvedValue({ ok: true, nextReviewAt: null, reviewXp: 5, mastered: true });
+    const res = await POST(request(JSON.stringify({ scheduleId: SCHEDULE, quality: 5 })));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, nextReviewAt: null, reviewXp: 5, mastered: true });
   });
 });

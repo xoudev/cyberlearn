@@ -72,10 +72,18 @@ describe("the surfaces that have to obey it", () => {
   });
 
   it("the reminder cron requires both switches, not just the e-mail one", () => {
-    const source = readFileSync(join(WEB, "app/api/cron/review-reminders/route.ts"), "utf8");
-    // Reading reviewReminders alone would keep mailing about a queue the reader
-    // has said they do not want to have at all.
-    expect(source).toContain("spacedRepetition: true");
-    expect(source).toContain("reviewReminders: true");
+    // The cron reads the queue through the repository, and the repository's
+    // reminder query is where both switches have to be: reading
+    // reviewReminders alone would keep mailing about a queue the reader has
+    // said they do not want to have at all.
+    const cron = readFileSync(join(WEB, "app/api/cron/review-reminders/route.ts"), "utf8");
+    expect(cron).toContain("reviewRepository.findReminders");
+    const repository = readFileSync(
+      join(WEB, "../../packages/db/src/repositories/review.repository.ts"),
+      "utf8",
+    );
+    const reminders = repository.slice(repository.indexOf("async findReminders"));
+    expect(reminders).toContain("spacedRepetition: true");
+    expect(reminders).toContain("reviewReminders: true");
   });
 });

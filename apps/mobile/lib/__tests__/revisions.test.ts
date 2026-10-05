@@ -16,8 +16,8 @@ const at = (hours: number): string => new Date(NOW.getTime() + hours * 3_600_000
 describe("toReviewItems", () => {
   it("reads the embedded lesson whether it comes as an object or an array", () => {
     const rows: RawReviewRow[] = [
-      { id: "s1", nextReviewAt: at(-1), lesson: lesson("a") },
-      { id: "s2", nextReviewAt: at(-2), lesson: [lesson("b")] },
+      { id: "s1", nextReviewAt: at(-1), lesson: lesson("a"), easeFactor: 2.5 },
+      { id: "s2", nextReviewAt: at(-2), lesson: [lesson("b")], easeFactor: 2.5 },
     ];
     expect(toReviewItems(rows).map((i) => [i.scheduleId, i.slug])).toEqual([
       ["s1", "lecon-a"],
@@ -26,17 +26,21 @@ describe("toReviewItems", () => {
   });
 
   it("drops a review whose lesson the learner can no longer read", () => {
-    expect(toReviewItems([{ id: "s1", nextReviewAt: at(-1), lesson: null }])).toEqual([]);
-    expect(toReviewItems([{ id: "s1", nextReviewAt: at(-1), lesson: [] }])).toEqual([]);
+    expect(
+      toReviewItems([{ id: "s1", nextReviewAt: at(-1), lesson: null, easeFactor: 2.5 }]),
+    ).toEqual([]);
+    expect(
+      toReviewItems([{ id: "s1", nextReviewAt: at(-1), lesson: [], easeFactor: 2.5 }]),
+    ).toEqual([]);
   });
 });
 
 describe("splitReviews", () => {
   const items = toReviewItems([
-    { id: "later", nextReviewAt: at(48), lesson: lesson("c") },
-    { id: "old", nextReviewAt: at(-72), lesson: lesson("a") },
-    { id: "now", nextReviewAt: at(0), lesson: lesson("b") },
-    { id: "soon", nextReviewAt: at(5), lesson: lesson("d") },
+    { id: "later", nextReviewAt: at(48), lesson: lesson("c"), easeFactor: 2.5 },
+    { id: "old", nextReviewAt: at(-72), lesson: lesson("a"), easeFactor: 2.5 },
+    { id: "now", nextReviewAt: at(0), lesson: lesson("b"), easeFactor: 2.5 },
+    { id: "soon", nextReviewAt: at(5), lesson: lesson("d"), easeFactor: 2.5 },
   ]);
 
   it("puts what is due now or before first, oldest first, and the rest after", () => {
@@ -48,13 +52,27 @@ describe("splitReviews", () => {
   it("keeps only the next few upcoming, as the site does", () => {
     expect(splitReviews(items, NOW, 1).upcoming.map((i) => i.scheduleId)).toEqual(["soon"]);
   });
+
+  it("asks for a session of five at most, the longest overdue first, and counts the rest", () => {
+    const many = toReviewItems(
+      Array.from({ length: 8 }, (_, i) => ({
+        id: `r${String(i)}`,
+        nextReviewAt: at(-i),
+        lesson: lesson(String(i)),
+        easeFactor: 2.5,
+      })),
+    );
+    const { due, waiting } = splitReviews(many, NOW);
+    expect(due.map((i) => i.scheduleId)).toEqual(["r7", "r6", "r5", "r4", "r3"]);
+    expect(waiting).toBe(3);
+  });
 });
 
 describe("reviewSummary", () => {
   it("adds up the count, the minutes and the XP on offer", () => {
     const due = toReviewItems([
-      { id: "s1", nextReviewAt: at(-1), lesson: lesson("a", "BEGINNER", 50) },
-      { id: "s2", nextReviewAt: at(-1), lesson: lesson("b", "ADVANCED", 125) },
+      { id: "s1", nextReviewAt: at(-1), lesson: lesson("a", "BEGINNER", 50), easeFactor: 2.5 },
+      { id: "s2", nextReviewAt: at(-1), lesson: lesson("b", "ADVANCED", 125), easeFactor: 2.5 },
     ]);
     expect(reviewSummary(due)).toEqual({ count: 2, minutes: 7, xp: 17 });
     expect(reviewSummary([])).toEqual({ count: 0, minutes: 0, xp: 0 });
@@ -68,7 +86,7 @@ describe("a review read from the database, on a phone in Paris", () => {
     try {
       // The Data API's text for 11:00 UTC: no offset.
       const items = toReviewItems([
-        { id: "s1", nextReviewAt: "2026-09-24T11:00:00", lesson: lesson("a") },
+        { id: "s1", nextReviewAt: "2026-09-24T11:00:00", lesson: lesson("a"), easeFactor: 2.5 },
       ]);
       expect(items[0]?.nextReviewAt).toBe("2026-09-24T11:00:00.000Z");
       // At 10:00 UTC it is still an hour away; read as local time it was due.

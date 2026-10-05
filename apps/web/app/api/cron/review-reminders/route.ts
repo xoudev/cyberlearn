@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma, notificationRepository } from "@cyberlearn/db";
+import { prisma, notificationRepository, reviewRepository } from "@cyberlearn/db";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
@@ -20,46 +20,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   const startOfDay = new Date(now);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
-  // Find all review schedules due by end of today, for users who want them.
-  // The preference was previously read but never applied, so opting out of
-  // review reminders in the settings had no effect. A user with no preferences
-  // row keeps the schema default (reviewReminders = true), which is what the
-  // settings page shows them.
-  const dueSchedules = await prisma.reviewSchedule.findMany({
-    where: {
-      nextReviewAt: { lte: endOfDay },
-      // Two switches, and both have to be on. spacedRepetition turns the
-      // feature off; reviewReminders turns off only this e-mail. Reading the
-      // second alone would keep mailing about a queue the reader has said they
-      // do not want to have.
-      user: {
-        OR: [
-          { preferences: { is: null } },
-          { preferences: { is: { spacedRepetition: true, reviewReminders: true } } },
-        ],
-      },
-    },
-    select: {
-      userId: true,
-      lessonId: true,
-      lesson: { select: { title: true, slug: true } },
-    },
-  });
+  // One reminder per reader due by the end of today, among those who want
+  // it (the feature and its reminder both on; no preferences row keeps both
+  // defaults). The count is the session's, five at most: the queue's would
+  // announce sixty lessons to somebody the day asks five of.
+  const reminders = await reviewRepository.findReminders(endOfDay);
 
-  if (dueSchedules.length === 0) {
+  if (reminders.length === 0) {
     return NextResponse.json({ ok: true, sent: 0 });
-  }
-
-  // Group by userId to send one notification per user with count
-  const byUser = new Map<string, { count: number; titles: string[] }>();
-  for (const s of dueSchedules) {
-    const existing = byUser.get(s.userId);
-    if (existing) {
-      existing.count++;
-      existing.titles.push(s.lesson.title);
-    } else {
-      byUser.set(s.userId, { count: 1, titles: [s.lesson.title] });
-    }
   }
 
   // A schedule stays due until the lesson is actually reviewed, so a user who
@@ -69,7 +37,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     (
       await prisma.notification.findMany({
         where: {
-          userId: { in: [...byUser.keys()] },
+          userId: { in: reminders.map((r) => r.userId) },
           type: "REVIEW_REMINDER",
           createdAt: { gte: startOfDay },
         },
@@ -81,12 +49,11 @@ export async function GET(request: Request): Promise<NextResponse> {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
-  for (const [userId, { count, titles }] of byUser) {
+  for (const { userId, count, firstTitle } of reminders) {
     if (alreadyNotified.has(userId)) {
       skipped++;
       continue;
     }
-    const firstTitle = titles[0] ?? "";
     const body =
       count === 1
         ? `Il est temps de revoir "${firstTitle}".`

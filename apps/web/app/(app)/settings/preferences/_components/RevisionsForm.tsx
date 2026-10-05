@@ -43,14 +43,16 @@ export function RevisionsForm({ initial }: { initial: boolean }): React.JSX.Elem
         name="Répétition espacée"
         desc={
           on
-            ? "Les leçons terminées reviennent à réviser, et tu es prévenu quand c'est le moment."
+            ? "Les leçons terminées reviennent à réviser, cinq par jour au plus, et tu es prévenu quand c'est le moment."
             : "Coupée. Rien ne revient à réviser et plus aucune notification de révision ne part."
         }
         info={
           <InfoTip title="Répétition espacée">
-            Couper la répétition espacée retire l&apos;onglet Révisions, la section du tableau de
-            bord et les rappels. Ce que tu avais déjà à réviser n&apos;est pas supprimé : si tu la
-            réactives, tu retrouves ta file là où elle s&apos;était arrêtée.
+            Chaque jour demande cinq révisions au plus, les leçons en retard depuis le plus
+            longtemps d&apos;abord ; une leçon retenue assez de fois sort du cycle. Couper la
+            répétition espacée retire l&apos;onglet Révisions, la section du tableau de bord et les
+            rappels. Ce que tu avais déjà à réviser n&apos;est pas supprimé : si tu la réactives, tu
+            retrouves ta file là où elle s&apos;était arrêtée.
           </InfoTip>
         }
         last

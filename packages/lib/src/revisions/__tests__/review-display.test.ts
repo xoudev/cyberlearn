@@ -56,3 +56,18 @@ describe("grades and outcomes", () => {
     expect(reviewOutcomeText("forgot", 0)).toBe("Oublié · retour en révision demain");
   });
 });
+
+describe("a lesson held", () => {
+  it("is an outcome of its own, only on a recall", () => {
+    expect(outcomeOf(5, true)).toBe("mastered");
+    expect(outcomeOf(3, true)).toBe("mastered");
+    expect(outcomeOf(1, true)).toBe("forgot");
+    expect(outcomeOf(5)).toBe("easy");
+  });
+
+  it("says the lesson leaves the cycle", () => {
+    expect(reviewOutcomeText("mastered", 5)).toBe(
+      "Acquise · +5 XP · elle sort du cycle de révision",
+    );
+  });
+});
