@@ -636,17 +636,6 @@
 }
 .exam-root .q-progress__bar {
   width: 180px;
-  height: 4px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  position: relative;
-  overflow: hidden;
-}
-.exam-root .q-progress__fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--brand-blue), var(--teal));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
-  transition: width var(--dur-slow) var(--ease-out);
 }
 .exam-root .q-timer {
   justify-self: end;
@@ -1144,26 +1133,7 @@
   margin-bottom: 26px;
 }
 .exam-root .r-compare__bar {
-  position: relative;
   flex: 1;
-  height: 8px;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-}
-.exam-root .r-compare__fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, var(--brand-blue), var(--accent));
-  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.5);
-}
-.exam-root .r-compare__mark {
-  position: absolute;
-  top: -5px;
-  bottom: -5px;
-  width: 2px;
-  background: var(--fg-secondary);
 }
 .exam-root .r-compare__txt {
   font-family: var(--font-mono);

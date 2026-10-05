@@ -1,5 +1,6 @@
 "use client";
 
+import { ProgressBar } from "@/components/progress-bar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -686,9 +687,12 @@ function TakingScreen(props: {
             <div className="q-progress__count">
               Question <b>{pad2(index + 1)}</b> <span className="tot">/ {questionCount}</span>
             </div>
-            <div className="q-progress__bar">
-              <div className="q-progress__fill" style={{ width: `${String(pct)}%` }} />
-            </div>
+            <ProgressBar
+              value={pct}
+              animated
+              className="q-progress__bar"
+              label={`Question ${String(index + 1)} sur ${String(questionCount)}`}
+            />
           </div>
 
           <div className={`q-timer${low ? " is-low" : ""}`}>
@@ -914,10 +918,13 @@ function ResultsScreen(props: {
 
               <div className="r-compare">
                 <span className="r-compare__txt">Ton score</span>
-                <div className="r-compare__bar">
-                  <div className="r-compare__fill" style={{ width: `${String(score)}%` }} />
-                  <div className="r-compare__mark" style={{ left: `${String(passThreshold)}%` }} />
-                </div>
+                <ProgressBar
+                  value={score}
+                  size="lg"
+                  marker={passThreshold}
+                  className="r-compare__bar"
+                  label={`Ton score, ${String(score)} sur 100, seuil à ${String(passThreshold)}`}
+                />
                 <span className="r-compare__txt">
                   <b>
                     {delta >= 0 ? "+" : "−"}

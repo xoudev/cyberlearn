@@ -333,40 +333,7 @@
   vertical-align: -1px;
 }
 .pd2 .pd2-prog__bar {
-  position: relative;
   flex: 1;
-  height: 10px;
-  background: #05041a;
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.pd2 .pd2-prog__bar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent 0 13px,
-    rgba(255, 255, 255, 0.04) 13px 14px
-  );
-}
-.pd2 .pd2-prog__fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
-  box-shadow:
-    0 0 16px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent),
-    inset 0 0 8px rgba(255, 255, 255, 0.25);
-  position: relative;
-}
-.pd2 .pd2-prog__fill::after {
-  content: "";
-  position: absolute;
-  right: -1px;
-  top: -3px;
-  bottom: -3px;
-  width: 3px;
-  background: var(--brand-turquoise);
-  box-shadow: 0 0 14px var(--brand-turquoise);
 }
 .pd2 .pd2-prog__count {
   font-family: var(--font-mono);
@@ -1034,18 +1001,6 @@
 }
 .pd2 .cp-boss__req .mini-bar {
   width: 90px;
-  height: 5px;
-  background: #05041a;
-  border: 1px solid var(--border);
-  position: relative;
-}
-.pd2 .cp-boss__req .mini-bar i {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
 }
 /* boss CTA (exam / claim / download) */
 .pd2 .cp-boss__cta {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import React from "react";
 import { ClaimCertificateButton } from "./claim-certificate";
 import { Brackets } from "@/app/_components/corner-brackets";
+import { ProgressBar } from "@/components/progress-bar";
 
 interface BossNodeProps {
   pathSlug: string;
@@ -152,9 +153,7 @@ export function BossNode({
         <span>
           <b>{doneLessons}</b> / {totalLessons} missions
         </span>
-        <span className="mini-bar">
-          <i style={{ width: `${String(pct)}%` }} />
-        </span>
+        <ProgressBar value={pct} className="mini-bar" label="Missions complétées" />
         <span>
           encore <b>{remaining}</b>
         </span>
