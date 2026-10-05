@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { SearchParams } from "next/dist/server/request/search-params";
 import { PLACEMENT_CATEGORY_LABEL, placementLevelFor } from "@cyberlearn/lib/onboarding/placement";
+import { ProgressBar } from "@/components/progress-bar";
 
 interface ResultPageProps {
   searchParams: Promise<SearchParams>;
@@ -97,24 +98,13 @@ function ScoreBar({
           </span>
         </span>
       </div>
-      <div
-        style={{
-          height: 6,
-          background: "rgba(5,4,26,0.9)",
-          border: "1px solid #2A2560",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${String(score)}%`,
-            background: `linear-gradient(90deg, ${color}99, ${color})`,
-            boxShadow: `0 0 12px ${color}88`,
-            transition: "width 700ms ease-out",
-          }}
-        />
-      </div>
+      <ProgressBar
+        value={score}
+        size="md"
+        color={color}
+        animated
+        label="Score au test de positionnement"
+      />
     </div>
   );
 }

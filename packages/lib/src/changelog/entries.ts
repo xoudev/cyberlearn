@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.16",
+    date: "2026-10-05",
+    title: "Une seule barre de progression",
+    changes: [
+      {
+        type: "improved",
+        text: "Les barres de progression du site (parcours, badges, quêtes, classe, examen, casier, défis) sont la même barre : même piste, même remplissage, même pointe. Et chacune dit désormais au lecteur d'écran ce qu'elle mesure, ce que trois seulement faisaient.",
+      },
+    ],
+  },
+  {
     version: "3.15",
     date: "2026-10-05",
     title: "Les mêmes mots pour les mêmes choses",

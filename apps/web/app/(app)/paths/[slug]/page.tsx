@@ -15,6 +15,7 @@ import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
+import { ProgressBar } from "@/components/progress-bar";
 
 export async function generateMetadata({
   params,
@@ -395,9 +396,13 @@ export default async function PathDetailPage({
         <div className="pd2-prog__label">
           <b>{pct}%</b> complété
         </div>
-        <div className="pd2-prog__bar">
-          {pct > 0 && <div className="pd2-prog__fill" style={{ width: `${String(pct)}%` }} />}
-        </div>
+        <ProgressBar
+          value={pct}
+          size="lg"
+          tip
+          className="pd2-prog__bar"
+          label="Progression du parcours"
+        />
         <div className="pd2-prog__count">
           <b>{doneLessons}</b> / {totalLessons} missions
         </div>

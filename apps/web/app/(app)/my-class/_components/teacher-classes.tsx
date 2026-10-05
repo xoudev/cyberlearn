@@ -1,5 +1,6 @@
 "use client";
 
+import { ProgressBar } from "@/components/progress-bar";
 import React, { useState } from "react";
 import Link from "next/link";
 import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
@@ -214,11 +215,11 @@ function ClassCard({
                         s.name
                       )}
                     </span>
-                    <span className="cls-person__bar">
-                      <span
-                        style={{ width: `${String(best === 0 ? 0 : (s.completed / best) * 100)}%` }}
-                      />
-                    </span>
+                    <ProgressBar
+                      value={best === 0 ? 0 : (s.completed / best) * 100}
+                      className="cls-person__bar"
+                      label="Leçons terminées, par rapport au premier"
+                    />
                     <span className="cls-person__meta">
                       {levelLabel(s.level)} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
                       {!s.activeThisWeek && " · inactif"}

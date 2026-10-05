@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import "./onboarding-shell.css";
+import { ProgressBar } from "@/components/progress-bar";
 
 const STEPS = ["Identité", "Avatar", "Objectif"] as const;
 
@@ -50,12 +51,7 @@ export function OnboardingShell({
               · <b>{stepName}</b>
             </span>
           </div>
-          <div className="ob-shell__track">
-            <div
-              className="ob-shell__track-fill"
-              style={{ width: `${String(Math.round((step / STEPS.length) * 100))}%` }}
-            />
-          </div>
+          <ProgressBar value={step} max={STEPS.length} label={`Étape ${current} sur ${count}`} />
           <ol className="ob-shell__ticks">
             {STEPS.map((label, i) => (
               <li

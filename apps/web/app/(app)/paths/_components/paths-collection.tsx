@@ -17,6 +17,7 @@ import { formatNumberFr } from "@cyberlearn/lib";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
+import { ProgressBar } from "@/components/progress-bar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -192,9 +193,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
             </span>
             <span className="pct">{pct}%</span>
           </div>
-          <div className="bar-thick">
-            <div className="bar-thick__fill" style={{ width: `${String(pct)}%` }} />
-          </div>
+          <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
           <div className="hero-path__cta-row">
             <Link href={`/paths/${path.slug}`} className="btn-primary">
               Continuer le parcours {ARROW}
@@ -277,9 +276,7 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
           </span>
           <span className="pct">{pct}%</span>
         </div>
-        <div className="bar-mid">
-          <div className="bar-mid__fill" style={{ width: `${String(pct)}%` }} />
-        </div>
+        <ProgressBar value={pct} size="md" tip label="Progression du parcours" />
         <span className="active-card__cta">Continuer {ARROW}</span>
       </div>
     </Link>

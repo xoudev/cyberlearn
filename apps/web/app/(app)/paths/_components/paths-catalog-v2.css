@@ -569,43 +569,6 @@
   background-clip: text;
   color: transparent;
 }
-.pc2-root .bar-thick {
-  position: relative;
-  height: 12px;
-  background: #05041a;
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.pc2-root .bar-thick::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent 0 17px,
-    rgba(255, 255, 255, 0.04) 17px 18px
-  );
-}
-.pc2-root .bar-thick__fill {
-  position: relative;
-  height: 100%;
-  background: linear-gradient(90deg, #0024ff 0%, var(--cosmetic-accent) 100%);
-  box-shadow:
-    0 0 18px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent),
-    inset 0 0 8px rgba(255, 255, 255, 0.25);
-}
-.pc2-root .bar-thick__fill::after {
-  content: "";
-  position: absolute;
-  right: -1px;
-  top: -3px;
-  bottom: -3px;
-  width: 3px;
-  background: var(--brand-turquoise);
-  box-shadow:
-    0 0 14px var(--brand-turquoise),
-    0 0 24px var(--brand-turquoise);
-}
 .pc2-root .hero-path__cta-row {
   display: flex;
   gap: 12px;
@@ -914,29 +877,6 @@
 .pc2-root .active-card__progline .pct {
   color: var(--brand-turquoise);
   font-weight: 700;
-}
-.pc2-root .bar-mid {
-  position: relative;
-  height: 7px;
-  background: #05041a;
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.pc2-root .bar-mid__fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent);
-  position: relative;
-}
-.pc2-root .bar-mid__fill::after {
-  content: "";
-  position: absolute;
-  right: -1px;
-  top: -2px;
-  bottom: -2px;
-  width: 2px;
-  background: var(--brand-turquoise);
-  box-shadow: 0 0 8px var(--brand-turquoise);
 }
 .pc2-root .active-card__cta {
   display: inline-flex;

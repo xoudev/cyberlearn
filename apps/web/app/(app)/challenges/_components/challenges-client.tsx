@@ -8,6 +8,7 @@ import { Select } from "@cyberlearn/ui";
 import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { ProgressBar } from "@/components/progress-bar";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
 
@@ -430,9 +431,7 @@ function CCCard({ challenge }: { challenge: ChallengeItem }): React.ReactElement
 
       {/* Progress bar (IN_PROGRESS only; shows attempts used) */}
       {isProg && (
-        <div className="cc__progbar">
-          <div className="cc__progbar-fill" style={{ width: `${String(attemptsUsedPct)}%` }} />
-        </div>
+        <ProgressBar value={attemptsUsedPct} size="xs" tone="warning" label="Essais utilisés" />
       )}
 
       {/* Meta row */}

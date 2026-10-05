@@ -9,6 +9,7 @@ import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StatTile } from "@/components/stat-tile";
 import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
+import { ProgressBar } from "@/components/progress-bar";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -313,25 +314,8 @@ function Card({
             {item.condition}
           </span>
           {item.progressTotal > 0 && (
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  position: "relative",
-                  flex: 1,
-                  height: 4,
-                  background: "#05041A",
-                  border: "1px solid #1F1B47",
-                }}
-              >
-                <span
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: `${String(pct)}%`,
-                    background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
-                  }}
-                />
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <ProgressBar value={pct} style={{ flex: 1 }} label={item.condition} />
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
@@ -342,7 +326,7 @@ function Card({
               >
                 {item.progressDone}/{item.progressTotal}
               </span>
-            </span>
+            </div>
           )}
         </div>
       )}

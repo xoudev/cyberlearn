@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import type { BadgeGroup } from "@/lib/badges/collection";
 import { Crumb } from "@/components/crumb";
 import { BadgeCard, rarityChrome } from "@/components/badge-card";
+import { ProgressBar } from "@/components/progress-bar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 // BadgeGroup and SerializedBadge come from the service that builds the
@@ -229,44 +230,7 @@ export function BadgesCollection({
           </div>
 
           {/* Global progress bar */}
-          <div
-            style={{
-              position: "relative",
-              height: 6,
-              background: "#05041A",
-              border: "1px solid #2A2560",
-              width: "100%",
-              maxWidth: 320,
-              overflow: "visible",
-            }}
-            role="progressbar"
-            aria-valuenow={Math.round(pct)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${pct.toFixed(1)}%`,
-                background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
-                boxShadow: "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  right: -1,
-                  top: -3,
-                  bottom: -3,
-                  width: 2,
-                  background: "var(--cosmetic-accent)",
-                  boxShadow: "0 0 10px var(--cosmetic-accent)",
-                }}
-                aria-hidden="true"
-              />
-            </div>
-          </div>
+          <ProgressBar value={pct} size="md" tip label="Badges obtenus" style={{ maxWidth: 320 }} />
 
           <div
             style={{

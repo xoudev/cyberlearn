@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { ProgressBar } from "@/components/progress-bar";
 
 /**
  * A student's own class, and where they stand in it.
@@ -152,11 +153,11 @@ export function StudentClass({
                 )}
                 {p.id === userId && <b className="cls-person__you">toi</b>}
               </span>
-              <span className="cls-person__bar">
-                <span
-                  style={{ width: `${String(best === 0 ? 0 : (p.completed / best) * 100)}%` }}
-                />
-              </span>
+              <ProgressBar
+                value={best === 0 ? 0 : (p.completed / best) * 100}
+                className="cls-person__bar"
+                label="Leçons terminées, par rapport au premier"
+              />
               <span className="cls-person__meta">
                 {levelLabel(p.level)} · {p.completed} leçon{p.completed > 1 ? "s" : ""}
               </span>

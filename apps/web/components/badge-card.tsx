@@ -10,6 +10,7 @@ import {
   toBadgeRarity,
 } from "@cyberlearn/ui";
 import type { SerializedBadge } from "@/lib/badges/collection";
+import { ProgressBar } from "@/components/progress-bar";
 
 /**
  * A badge, earned or still to earn: the medallion, its rarity, its name and
@@ -340,27 +341,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
             </span>
             <span style={{ color: r.color, fontWeight: 700 }}>{pct}%</span>
           </div>
-          <div
-            style={{
-              position: "relative",
-              height: 3,
-              background: "#05041A",
-              borderTop: "1px solid #2A2560",
-              borderBottom: "1px solid #2A2560",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${String(pct)}%`,
-                background: r.grad,
-                boxShadow: `0 0 8px ${r.color}`,
-              }}
-            />
-          </div>
+          <ProgressBar value={pct} size="xs" color={r.color} label={badge.progress.label} />
         </div>
       ) : (
         <div

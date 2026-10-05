@@ -8,6 +8,7 @@ import {
   weekCompletion,
 } from "@cyberlearn/lib/gamification/weekly-quests";
 import { ClaimQuestButton } from "./claim-quest-button";
+import { ProgressBar } from "@/components/progress-bar";
 
 function Check(): React.ReactElement {
   return (
@@ -72,7 +73,7 @@ export async function QuestsPanel({
   const { main, bonus } = splitWeekQuests(quests);
   if (main.length === 0) return null;
 
-  const { claimedCount, pct, totalXp, claimedXp } = weekCompletion(main);
+  const { claimedCount, totalXp, claimedXp } = weekCompletion(main);
 
   return (
     <div className="dash-card">
@@ -82,16 +83,12 @@ export async function QuestsPanel({
           {claimedCount} / {main.length}
         </span>
       </div>
-      <div
+      <ProgressBar
+        value={claimedCount}
+        max={main.length}
+        label={QUEST_COPY.completion}
         className="dash-qbar"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={main.length}
-        aria-valuenow={claimedCount}
-        aria-label={QUEST_COPY.completion}
-      >
-        <i style={{ width: `${String(pct)}%` }} />
-      </div>
+      />
       <ul className="dash-quest-list">
         {main.map((q) => (
           <QuestRow key={q.id} q={q} />

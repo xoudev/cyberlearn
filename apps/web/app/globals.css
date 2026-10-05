@@ -508,6 +508,78 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   margin-bottom: 0;
 }
 
+/* The progress bar (components/progress-bar.tsx): a track, a fill, at most a
+   tick and a bright tip. The catalogue's hero, the cards, the class list, the
+   exam, the badges and the quests all draw this one. */
+.pbar {
+  position: relative;
+  height: 4px;
+  background: #05041a;
+  border: 1px solid #1f1b47;
+  overflow: hidden;
+}
+.pbar--xs {
+  height: 3px;
+}
+.pbar--md {
+  height: 6px;
+}
+.pbar--lg {
+  height: 8px;
+}
+.pbar--xl {
+  height: 12px;
+  border-color: #2a2560;
+}
+.pbar--open {
+  overflow: visible;
+}
+.pbar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
+}
+.pbar--warning .pbar__fill {
+  background: linear-gradient(90deg, #ffb020, #ffcb55);
+  box-shadow: 0 0 8px rgba(255, 176, 32, 0.6);
+}
+.pbar--color .pbar__fill {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pbar-color) 60%, transparent),
+    var(--pbar-color)
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, var(--pbar-color) 55%, transparent);
+}
+.pbar--animated .pbar__fill {
+  transition: width 700ms ease-out;
+}
+.pbar__fill--tip::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--cosmetic-accent);
+  box-shadow: 0 0 10px var(--cosmetic-accent);
+}
+.pbar__mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  background: #b8b5d1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pbar--animated .pbar__fill {
+    transition: none;
+  }
+}
+
 @keyframes xp-count-glow {
   0% {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
@@ -2418,16 +2490,7 @@ span.profile-avatar {
   color: #f5f5fa;
 }
 .dash-qbar {
-  position: relative;
-  height: 4px;
-  background: #05041a;
   margin-bottom: 6px;
-}
-.dash-qbar i {
-  position: absolute;
-  inset: 0;
-  width: 0;
-  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
 }
 .dash-quest-list {
   list-style: none;
@@ -4346,21 +4409,6 @@ a:hover > .lesson-author-card {
   border-color: var(--orange-prog);
 }
 
-.cc__progbar {
-  height: 3px;
-  background: #05041a;
-  border-top: 1px solid #1f1b47;
-  position: relative;
-  overflow: hidden;
-}
-.cc__progbar-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, var(--orange-prog) 0%, #ffcb55 100%);
-  box-shadow: 0 0 8px rgba(255, 176, 32, 0.6);
-}
 .cc__prog-ind {
   display: inline-flex;
   align-items: center;
@@ -4886,16 +4934,6 @@ a:hover > .lesson-author-card {
   color: #7f7ba9;
   white-space: nowrap;
   text-align: right;
-}
-.cls-person__bar {
-  height: 4px;
-  background: rgba(42, 37, 96, 0.55);
-  overflow: hidden;
-}
-.cls-person__bar span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #0024ff, #0affd4);
 }
 
 .cls-empty {
