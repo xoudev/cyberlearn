@@ -2,6 +2,39 @@
 
 ---
 
+## 2026-10-05 - L'aperçu de l'éditeur de leçons était refusé à la console
+
+### Constat
+
+Dans la console, le volet « Aperçu du site » de l'éditeur de leçons affichait
+le refus du navigateur : « cyberlearn.fr ne permettra pas à Firefox d'afficher
+la page si celle-ci est intégrée par un autre site ». La réponse de production
+sur `/preview/<jeton>` portait `frame-ancestors 'self' http://localhost:3001`.
+La variable `NEXT_PUBLIC_ADMIN_URL` du projet Vercel du site, créée en mai avec
+la valeur de `.env.example`, n'avait jamais servi avant l'aperçu réel
+(`f269b4c`) ; le site n'en lisait rien. Le middleware la lit désormais, et
+Next.js la fige à la compilation : l'adresse d'un poste de développement est
+partie en production.
+
+### Correctif
+
+`apps/web/middleware.ts`, `consoleOrigin()` : la variable nomme la console ;
+absente, invalide ou laissée à une adresse de boucle locale alors que le site
+a un hôte public, la console est prise à `admin.` devant l'hôte du site, qui
+est là où elle est déployée. En développement, le site est lui aussi en boucle
+locale, et la valeur de `.env.example` reste la bonne. Tests dans
+`middleware.test.ts`. La variable est à corriger dans Vercel
+(`https://admin.cyberlearn.fr`) par propreté, mais la page s'affiche sans.
+
+### Leçon
+
+Une variable publique que personne ne lit est une variable que personne ne
+vérifie. Le premier usage d'une variable existante vaut une vérification de sa
+valeur dans chaque environnement déployé, et un repli sûr quand la valeur ne
+peut pas être la bonne.
+
+---
+
 ## 2026-09-26 - Le bucket des icônes de badges était inscriptible avec la clé publique
 
 ### Constat

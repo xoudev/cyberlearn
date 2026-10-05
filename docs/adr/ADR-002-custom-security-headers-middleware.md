@@ -29,5 +29,5 @@ Benefits:
 
 - Security headers live in `apps/web/middleware.ts` and `apps/admin/middleware.ts`
 - CSP must be updated manually when new external origins are added (Pyodide CDN, etc.) - this is intentional (allowlist discipline)
-- One route of the site is framable, `/preview/<token>` (the lesson editor's preview, rendered by the site for the console's editor): it gets `frame-ancestors 'self' <NEXT_PUBLIC_ADMIN_URL>` and no `X-Frame-Options`, decided per request on the pathname. Every other response keeps `frame-ancestors 'none'` and `DENY`. On the console, `frame-src` names the site and nothing else
+- One route of the site is framable, `/preview/<token>` (the lesson editor's preview, rendered by the site for the console's editor): it gets `frame-ancestors 'self' <console origin>` and no `X-Frame-Options`, decided per request on the pathname. The console origin is `NEXT_PUBLIC_ADMIN_URL`, or `admin.` in front of the site's host when the variable is unset or still holds the development default on a site with a public host (`consoleOrigin`). Every other response keeps `frame-ancestors 'none'` and `DENY`. On the console, `frame-src` names the site and nothing else
 - The `next-safe-middleware` package is not listed in any `package.json`

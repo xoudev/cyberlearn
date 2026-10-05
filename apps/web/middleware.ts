@@ -24,20 +24,51 @@ export function isPreviewRoute(pathname: string): boolean {
   return pathname.startsWith("/preview/");
 }
 
-/** The console's origin, from NEXT_PUBLIC_ADMIN_URL; null when unset or not an address. */
-function adminOrigin(): string | null {
-  const raw = process.env.NEXT_PUBLIC_ADMIN_URL;
+/** localhost, *.localhost and the loopback addresses: where a developer's apps run. */
+function isLoopback(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]"
+  );
+}
+
+function parseUrl(raw: string | undefined): URL | null {
   if (raw === undefined || raw === "") return null;
   try {
-    return new URL(raw).origin;
+    return new URL(raw);
   } catch {
     return null;
   }
 }
 
+/**
+ * The console's origin, the one other origin allowed to frame the preview.
+ *
+ * NEXT_PUBLIC_ADMIN_URL names it. Without it, the console is taken to be at
+ * `admin.` in front of the site's host, which is where it is deployed. A
+ * loopback address in the variable is the development default: it names the
+ * console of a site that runs on loopback too, and of no other, so a site on
+ * a public host ignores it and falls back the same way. The production site
+ * once answered `frame-ancestors 'self' http://localhost:3001`, the value
+ * copied off .env.example into the deployment, and the console's editor
+ * showed the browser's refusal in place of the preview.
+ */
+export function consoleOrigin(
+  adminUrl: string | undefined,
+  siteUrl: string | undefined,
+): string | null {
+  const admin = parseUrl(adminUrl);
+  const site = parseUrl(siteUrl);
+  if (site === null || isLoopback(site.hostname)) return admin?.origin ?? null;
+  if (admin !== null && !isLoopback(admin.hostname)) return admin.origin;
+  return `${site.protocol}//admin.${site.host}`;
+}
+
 function buildSecurityHeaders(nonce: string, pathname: string): Record<string, string> {
   const framable = isPreviewRoute(pathname);
-  const admin = adminOrigin();
+  const admin = consoleOrigin(process.env.NEXT_PUBLIC_ADMIN_URL, process.env.NEXT_PUBLIC_SITE_URL);
   const frameAncestors = framable
     ? `frame-ancestors 'self'${admin === null ? "" : ` ${admin}`}`
     : "frame-ancestors 'none'";

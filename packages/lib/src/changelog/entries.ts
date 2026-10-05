@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.5",
+    date: "2026-10-05",
+    title: "L'aperçu de l'éditeur s'affiche dans la console",
+    changes: [
+      {
+        type: "fixed",
+        text: "Dans la console, le volet « Aperçu du site » de l'éditeur de leçons restait sur un refus du navigateur : le site n'autorisait pas la console à l'encadrer. Il la reconnaît désormais à son adresse déployée, et l'aperçu s'affiche.",
+      },
+    ],
+  },
+  {
     version: "3.4",
     date: "2026-10-05",
     title: "Les exercices et les labos se remplissent en champs",

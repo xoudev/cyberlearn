@@ -65,7 +65,7 @@ Obligatoire = l'app ne démarre pas sans.
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | ✅ | ✅ | Supabase → Settings → API → service_role (⚠️ secret) |
 | `SUPABASE_HOOK_SECRET` | ✅ | — | ✅ | Supabase → Auth Hooks → secret du hook « Send email » (≥ 16 car.) |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | ✅ | ✅ | ex. `https://cyberlearn.fr` |
-| `NEXT_PUBLIC_ADMIN_URL` | ✅ | ✅ | ✅ | ex. `https://admin.cyberlearn.fr` ; le site s'en sert pour laisser la console encadrer l'aperçu de l'éditeur de leçons (`/preview/<jeton>`) |
+| `NEXT_PUBLIC_ADMIN_URL` | ✅ | ✅ | ✅ | ex. `https://admin.cyberlearn.fr` ; le site s'en sert pour laisser la console encadrer l'aperçu de l'éditeur de leçons (`/preview/<jeton>`). Absente, ou laissée à `http://localhost:3001`, le site prend `admin.` devant son propre hôte |
 | `NEXT_PUBLIC_CANONICAL_URL` | ✅ | — | — | Hôte canonique pour les métadonnées ; défaut `https://cyberlearn.fr` |
 | `RESEND_API_KEY` | ✅ | ✅ | ✅ | resend.com/api-keys (préfixe `re_`) |
 | `RESEND_FROM_EMAIL` | ✅ | ✅ | ✅ | ex. `noreply@cyberlearn.fr` (domaine vérifié dans Resend) |
