@@ -49,6 +49,7 @@ import { PacketDissector } from "./_components/packet-dissector";
 import { PutInOrder } from "./_components/put-in-order";
 import { MatchPairs } from "./_components/match-pairs";
 import { CryptoWorkshop } from "./_components/crypto-workshop";
+import { FirewallLab } from "./_components/firewall-lab";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -84,6 +85,7 @@ const MDX_COMPONENTS = {
   PutInOrder,
   MatchPairs,
   CryptoWorkshop,
+  FirewallLab,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

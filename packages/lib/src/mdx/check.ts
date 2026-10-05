@@ -7,6 +7,7 @@ import {
   parseChallengeTests,
   parseCryptoWorkshop,
   parseFindTheFlaw,
+  parseFirewallLab,
   parseGitSandbox,
   parseMatchPairs,
   parseNetworkLab,
@@ -21,6 +22,7 @@ import {
   parseSubnetDrill,
 } from "@cyberlearn/types";
 import { runSetup } from "../git/sandbox";
+import { parseRules } from "../network/firewall";
 import { buildFrame, missingFields } from "../network/packet";
 import { buildNetwork } from "../network/topology";
 import { protectPropIndentation } from "./indentation.js";
@@ -125,6 +127,7 @@ export const LESSON_COMPONENT_NAMES = [
   "PutInOrder",
   "MatchPairs",
   "CryptoWorkshop",
+  "FirewallLab",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -209,6 +212,10 @@ function CryptoWorkshopStub(): null {
   return null;
 }
 STUBS.CryptoWorkshop = CryptoWorkshopStub;
+function FirewallLabStub(): null {
+  return null;
+}
+STUBS.FirewallLab = FirewallLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -405,6 +412,15 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === CryptoWorkshopStub) {
     const parsed = parseCryptoWorkshop(props);
     if (!parsed.ok) return `Atelier crypto : ${parsed.problem}`;
+  }
+  if (node.type === FirewallLabStub) {
+    const parsed = parseFirewallLab(props);
+    if (!parsed.ok) return `Pare-feu : ${parsed.problem}`;
+    // The rules the exercise starts with must read: they are the learner's starting point.
+    const rules = parseRules(parsed.value.rules);
+    if (!rules.ok) {
+      return `Pare-feu : les règles de départ, ligne ${String(rules.line)} : ${rules.problem}`;
+    }
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

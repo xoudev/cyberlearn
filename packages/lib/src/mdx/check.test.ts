@@ -324,6 +324,32 @@ describe("CryptoWorkshop", () => {
   });
 });
 
+describe("FirewallLab", () => {
+  const lab = (rules: string): string =>
+    `## Le pare-feu\n\n<FirewallLab id="f" task="Ferme." rules={\`${rules}\`} probes={[{ "label": "Un visiteur ouvre le site", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }]} />`;
+
+  it("accepts a lab whose starting rules read", async () => {
+    expect(await checkLessonMdx(lab("policy accept\naccept tcp port 22"))).toEqual({ ok: true });
+  });
+
+  it("refuses starting rules it cannot read, with the line", async () => {
+    const r = await checkLessonMdx(lab("policy accept\nallow tcp port 22"));
+    if (r.ok) throw new Error("accepted an unreadable rule");
+    expect(r.section).toBe("Le pare-feu");
+    expect(r.message).toContain(
+      "Pare-feu : les règles de départ, ligne 2 : je ne connais pas « allow »",
+    );
+  });
+
+  it("refuses a packet without its port", async () => {
+    const r = await checkLessonMdx(
+      '## Le pare-feu\n\n<FirewallLab id="f" task="Ferme." probes={[{ "label": "a", "proto": "tcp", "from": "203.0.113.5", "expect": "accept" }]} />',
+    );
+    if (r.ok) throw new Error("accepted a tcp packet without a port");
+    expect(r.message).toBe("Pare-feu : un paquet tcp vise un port : donne-le.");
+  });
+});
+
 describe("what does not - the two Sentry cases", () => {
   it("refuses a Python True inside a component's props (JAVASCRIPT-NEXTJS-14)", async () => {
     const r = await checkLessonMdx(

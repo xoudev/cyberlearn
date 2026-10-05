@@ -1411,6 +1411,50 @@ Un établi avec les encodages et les chiffrements jouets que les leçons expliqu
 
 Ces chiffrements sont des jouets, et l'établi le dit sous chaque outil : l'exercice sert à comprendre pourquoi ils tombent, pas à protéger quoi que ce soit.
 
+### 5.9p FirewallLab - Pare-feu
+
+Les règles d'un pare-feu de machine à écrire, et des paquets de test qui les traversent. L'élève tape les règles de la chaîne d'entrée dans une petite langue proche de celle d'ufw ; chaque paquet de la leçon montre aussitôt son verdict et la règle qui l'a rendu (ou la politique), et dit s'il fait ce qu'il doit. L'exercice est réglé quand tous le font. L'élève peut aussi envoyer ses propres paquets. Le modèle est celui de netfilter : les règles sont lues dans l'ordre, la première qui correspond décide, la politique tranche le reste. Sur le site et dans l'app (`@cyberlearn/lib/network/firewall`).
+
+```mdx
+<FirewallLab
+  id="pare-feu-srv-web"
+  title="Le pare-feu de srv-web"
+  task="Ferme l'entrée par défaut, laisse passer les réponses, réserve SSH au réseau d'administration."
+  rules={`policy accept
+accept tcp port 22
+accept tcp port 80,443`}
+  probes={[{ "label": "Un visiteur ouvre le site", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }, { "label": "Un inconnu tente SSH", "proto": "tcp", "from": "198.51.100.7", "port": 22, "expect": "block" }, { "label": "La réponse du dépôt revient", "proto": "tcp", "from": "151.101.0.1", "port": 41000, "state": "established", "expect": "accept" }]}
+  hints={["policy drop en premier, puis les ouvertures."]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | La consigne : ce que le pare-feu doit laisser passer et bloquer |
+| `rules` | string | Les règles de départ, une par ligne, **entre accents graves** (défaut : `policy accept`, un pare-feu qui laisse tout passer). L'éditeur refuse une règle qu'il ne sait pas lire, avec sa ligne |
+| `probes` | objets | De 1 à 10 paquets de test (voir ci-dessous), aux noms différents. **Clés entre guillemets** |
+| `hints` | string[] | Des indices, repliés sous « Indices » (optionnel) |
+
+**Un paquet** (`probes`) : `label` (ce qu'il est, pour l'élève), `proto` (`tcp`, `udp` ou `icmp`), `from` (l'adresse source), `port` (le port visé ; obligatoire pour tcp et udp, interdit pour icmp), `state` (`new` par défaut, ou `established` pour la réponse à une connexion que la machine a ouverte), `expect` (`accept` : il doit passer ; `block` : il doit être jeté ou rejeté).
+
+**La langue des règles :**
+
+| Ligne | Sens |
+|---|---|
+| `policy accept` ou `policy drop` | ce qui arrive aux paquets qu'aucune règle n'a tranchés (une seule fois ; `accept` si absente) |
+| `accept`, `drop` ou `reject`, puis des critères | une règle ; `drop` jette sans répondre, `reject` prévient l'émetteur |
+| `tcp`, `udp`, `icmp` | le protocole (un seul ; tous sinon) |
+| `from 192.0.2.10`, `from 192.0.2.0/24`, `from any` | la source |
+| `port 22`, `port 80,443`, `port 1024-65535`, `to port 22` | le ou les ports visés (pas pour icmp) |
+| `established` | seulement la suite d'une connexion déjà acceptée |
+| `# ...` | un commentaire |
+
+Choisis des paquets qui, sur les règles de départ, ne font pas tous ce qu'ils doivent : c'est l'écart qui fait l'exercice. Un paquet `established` oblige à penser aux réponses, un `icmp` à ne pas tout fermer, un inconnu sur le port 22 à restreindre la source plutôt que le port.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1446,7 +1490,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
