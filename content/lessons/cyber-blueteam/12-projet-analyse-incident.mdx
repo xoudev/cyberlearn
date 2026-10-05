@@ -44,6 +44,17 @@ Jan 10 03:14:02 web01 sshd: Accepted password for deploy from 203.0.113.9
 
 À 03h14, le compte `deploy` accepte une connexion depuis la même IP que les 287 échecs. Le mot de passe était trop faible. L'attaquant est entré.
 
+Refais l'étape toi-même, sur les journaux normalisés comme un SIEM les montre : filtre, compte par adresse, et retrouve les quatre faits qui ouvrent le rapport.
+
+<LogHunt
+  id="projet-acces-initial"
+  title="L'accès initial, dans les journaux"
+  task="Retrouve l'adresse de la force brute, le nombre d'échecs qu'elle a produits, le compte compromis et l'heure de la connexion réussie."
+  events={[{ "time": "2026-01-10 03:14:02", "source": "sshd", "host": "web01", "ip": "203.0.113.9", "user": "deploy", "action": "Accepted password" }]}
+  series={[{ "count": 287, "from": "2026-01-10 03:06:00", "to": "2026-01-10 03:14:00", "source": "sshd", "hosts": ["web01"], "ips": ["203.0.113.9"], "users": ["deploy"], "actions": ["Failed password"] }, { "count": 9, "from": "2026-01-10 00:10:00", "to": "2026-01-10 03:50:00", "source": "sshd", "hosts": ["web01"], "ips": ["10.0.0.5", "10.0.0.8"], "users": ["deploy"], "actions": ["Accepted publickey", "Disconnected from user deploy"] }, { "count": 180, "from": "2026-01-10 00:00:00", "to": "2026-01-10 04:00:00", "source": "nginx", "hosts": ["web01"], "ips": ["198.51.100.23", "198.51.100.77", "192.0.2.44", "203.0.113.120", "198.51.100.5"], "actions": ["GET / 200", "GET /contact 200", "GET /produits 200", "GET /favicon.ico 304", "GET /wp-login.php 404"] }, { "count": 25, "from": "2026-01-10 00:00:00", "to": "2026-01-10 04:00:00", "source": "cron", "hosts": ["web01"], "users": ["root"], "actions": ["(root) CMD (/usr/local/bin/backup.sh)", "(root) CMD (logrotate)"] }]}
+  questions={[{ "label": "Quelle adresse a mené la force brute ?", "answer": "203.0.113.9", "hint": "Filtre sur Failed password et compte par adresse IP." }, { "label": "Combien d'échecs depuis cette adresse ?", "answer": "287" }, { "label": "Quel compte a été compromis ?", "answer": "deploy" }, { "label": "À quelle heure la connexion a réussi ?", "answer": ["2026-01-10 03:14:02", "03:14:02", "03:14"], "hint": "Garde le filtre sur l'adresse et cherche Accepted password." }]}
+/>
+
 ## étape 2 : ce que l'attaquant a fait
 
 Maintenant qu'on sait quand et comment, on regarde ce qui s'est passé une fois la session ouverte. L'historique du shell donne la suite des actions :

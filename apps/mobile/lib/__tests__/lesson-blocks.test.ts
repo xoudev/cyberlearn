@@ -720,6 +720,38 @@ describe("FirewallLab", () => {
   });
 });
 
+describe("LogHunt", () => {
+  it("is played in the app with the events, series and questions the site reads", () => {
+    const lesson = [
+      "## Les journaux",
+      "",
+      "<LogHunt",
+      '  id="web01"',
+      '  task="Trouve le coupable."',
+      '  events={[{ "time": "2026-01-10 03:14:02", "source": "sshd", "ip": "203.0.113.9", "user": "deploy", "action": "Accepted password" }]}',
+      '  series={[{ "count": 30, "from": "2026-01-10 03:09:00", "to": "2026-01-10 03:14:00", "source": "sshd", "ips": ["203.0.113.9"], "actions": ["Failed password"] }]}',
+      '  questions={[{ "label": "Quelle adresse ?", "answer": "203.0.113.9" }, { "label": "Quand ?", "answer": ["03:14:02", "03:14"] }]}',
+      "/>",
+    ].join("\n");
+    const [block] = parseLesson(lesson).sections[0]?.blocks ?? [];
+    if (block?.kind !== "loghunt") throw new Error("not a log hunt");
+    expect(block.hunt.events).toHaveLength(1);
+    expect(block.hunt.series[0]?.count).toBe(30);
+    expect(block.hunt.questions[1]?.answer).toEqual(["03:14:02", "03:14"]);
+  });
+
+  it("shows a placeholder for a hunt without events", () => {
+    const empty = [
+      "## A",
+      "",
+      '<LogHunt id="h" task="x" questions={[{ "label": "Qui ?", "answer": "x" }]} />',
+    ].join("\n");
+    expect(parseLesson(empty).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Chasse dans les logs" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

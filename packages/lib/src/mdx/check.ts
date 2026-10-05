@@ -9,6 +9,7 @@ import {
   parseFindTheFlaw,
   parseFirewallLab,
   parseGitSandbox,
+  parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
   parsePacketDissector,
@@ -128,6 +129,7 @@ export const LESSON_COMPONENT_NAMES = [
   "MatchPairs",
   "CryptoWorkshop",
   "FirewallLab",
+  "LogHunt",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -216,6 +218,10 @@ function FirewallLabStub(): null {
   return null;
 }
 STUBS.FirewallLab = FirewallLabStub;
+function LogHuntStub(): null {
+  return null;
+}
+STUBS.LogHunt = LogHuntStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -421,6 +427,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
     if (!rules.ok) {
       return `Pare-feu : les règles de départ, ligne ${String(rules.line)} : ${rules.problem}`;
     }
+  }
+  if (node.type === LogHuntStub) {
+    const parsed = parseLogHunt(props);
+    if (!parsed.ok) return `Chasse dans les logs : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }
