@@ -48,7 +48,6 @@ export function CompleteButton({
                 background: "transparent",
                 color: "#7F7BA9",
                 border: "1px solid #2A2560",
-                borderRadius: 0,
                 padding: fullWidth ? "10px 16px" : "10px 20px",
                 width: fullWidth ? "100%" : undefined,
                 transition: "color 180ms ease, background 180ms ease",
@@ -56,7 +55,6 @@ export function CompleteButton({
             : {
                 background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
                 color: "#ffffff",
-                borderRadius: 0,
                 padding: fullWidth ? "10px 16px" : "10px 20px",
                 width: fullWidth ? "100%" : undefined,
                 boxShadow: "0 4px 16px rgba(0,36,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.15)",

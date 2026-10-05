@@ -346,7 +346,13 @@ function YouBanner({
 function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
   const handle = entry.username ?? entry.displayName ?? "Anonyme";
   return (
-    <li className={[styles.player, entry.isCurrentUser ? styles.currentPlayer : ""].join(" ")}>
+    <li
+      className={[
+        "card card--sunken",
+        styles.player,
+        entry.isCurrentUser ? styles.currentPlayer : "",
+      ].join(" ")}
+    >
       <div className={styles.playerTop}>
         <span className={styles.rank} style={{ color: RK_COLORS[entry.rank]?.color }}>
           #{entry.rank}
@@ -398,7 +404,7 @@ function FriendsSection({ board }: { board: FriendsBoard }): React.JSX.Element {
   return (
     <section aria-label="Classement entre amis">
       <div className={styles.sectionHeading}>
-        <h2>Tes amis</h2>
+        <h2 className="section-head">Tes amis</h2>
         <span>
           {others.length === 0
             ? "personne pour l'instant"
@@ -670,7 +676,7 @@ export function LeaderboardClient({
 
             <section aria-label="Classement des joueurs">
               <div className={styles.sectionHeading}>
-                <h2>Les joueurs</h2>
+                <h2 className="section-head">Les joueurs</h2>
                 <span>Top {Math.min(12, entries.length)}</span>
               </div>
               {top12.length === 0 ? (
@@ -684,7 +690,7 @@ export function LeaderboardClient({
               )}
               {contextRows.length > 0 ? (
                 <>
-                  <h2 className={styles.contextHeading}>Autour de toi</h2>
+                  <h2 className="section-head">Autour de toi</h2>
                   <ol className={styles.players} start={contextRows[0]?.rank}>
                     {contextRows.map((entry) => (
                       <PlayerCard key={entry.rank} entry={entry} />

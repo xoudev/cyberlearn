@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@cyberlearn/ui";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -1224,7 +1225,7 @@ export function NotesLibrary({
                 key={folder.id}
                 type="button"
                 data-folder-id={folder.id}
-                className={styles.folderTile}
+                className={cn("card card--sunken", styles.folderTile)}
                 aria-label={"Ouvrir le dossier " + folder.name}
                 // Selection is only visual: aria-pressed made this a toggle, which
                 // screen readers announce like a checkbox, for a button whose

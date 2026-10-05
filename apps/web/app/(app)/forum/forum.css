@@ -142,17 +142,6 @@
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
-.fo-section-head h2 {
-  margin: 0;
-  font: 600 12px var(--font-mono);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #b8b5d1;
-}
-.fo-section-head h2::before {
-  content: "// ";
-  color: #7f7ba9;
-}
 
 .fo-list {
   list-style: none;

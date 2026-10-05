@@ -45,13 +45,6 @@
   margin: 0 0 16px;
   text-wrap: balance;
 }
-.pc2-root .pc2-title em {
-  font-style: normal;
-  background: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 .pc2-root .pc2-sub {
   font-family: var(--font-body);
   font-size: 16px;
@@ -173,7 +166,6 @@
   color: var(--fg-primary);
   font-family: var(--font-mono);
   font-size: 12px;
-  border-radius: 0;
 }
 .pc2-root .pc2-search input::placeholder {
   color: var(--fg-tertiary);
@@ -231,40 +223,6 @@
 }
 
 /* bracket corners */
-.pc2-root .bk {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-color: var(--bk-color, var(--brand-turquoise));
-  border-style: solid;
-  border-width: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-.pc2-root .bk.tl {
-  top: -1px;
-  left: -1px;
-  border-top-width: 2px;
-  border-left-width: 2px;
-}
-.pc2-root .bk.tr {
-  top: -1px;
-  right: -1px;
-  border-top-width: 2px;
-  border-right-width: 2px;
-}
-.pc2-root .bk.bl {
-  bottom: -1px;
-  left: -1px;
-  border-bottom-width: 2px;
-  border-left-width: 2px;
-}
-.pc2-root .bk.br {
-  bottom: -1px;
-  right: -1px;
-  border-bottom-width: 2px;
-  border-right-width: 2px;
-}
 .pc2-root .kind-ico {
   color: var(--k-color);
   filter: drop-shadow(0 0 14px var(--k-color));
@@ -538,7 +496,6 @@
   border: 1px solid var(--brand-blue);
   text-decoration: none;
   cursor: pointer;
-  border-radius: 0;
   box-shadow:
     0 0 26px rgba(0, 36, 255, 0.4),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -569,7 +526,6 @@
   border: 1px solid var(--border);
   text-decoration: none;
   cursor: pointer;
-  border-radius: 0;
   transition: all var(--dur-base);
 }
 .pc2-root .btn-ghost:hover {
@@ -1035,7 +991,6 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #ffd27a;
-  border-radius: 0;
   background: rgba(255, 181, 71, 0.07);
   border: 1px solid rgba(255, 181, 71, 0.5);
   transition: all var(--dur-base);
@@ -1252,7 +1207,6 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--fg-secondary);
-  border-radius: 0;
   background: transparent;
   border: 1px solid var(--border);
   transition: all var(--dur-base);

@@ -442,7 +442,6 @@ function CategoryPill({
         letterSpacing: "0.14em",
         textTransform: "uppercase",
         textDecoration: "none",
-        borderRadius: 0,
         boxShadow: active
           ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
           : "none",
@@ -499,7 +498,6 @@ function SelectPill({
         letterSpacing: "0.12em",
         textTransform: "uppercase",
         textDecoration: "none",
-        borderRadius: 0,
         whiteSpace: "nowrap",
         transition: "all 180ms ease",
       }}
@@ -574,7 +572,6 @@ function PageBtn({
           ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
           : "transparent",
         border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
-        borderRadius: 0,
         textDecoration: "none",
         transition: "all 180ms ease",
         whiteSpace: "nowrap",

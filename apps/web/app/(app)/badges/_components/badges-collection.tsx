@@ -326,7 +326,6 @@ export function BadgesCollection({
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               outline: "none",
-              borderRadius: 0,
             }}
           />
         </label>

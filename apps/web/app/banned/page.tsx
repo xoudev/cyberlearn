@@ -5,6 +5,7 @@ import { banTimeLeft } from "@cyberlearn/lib";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
 import { BanNotice } from "./_components/ban-notice";
 import styles from "./banned.module.css";
+import "../standalone-page.css";
 
 export const metadata: Metadata = { title: "Compte suspendu" };
 
@@ -32,9 +33,9 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
   }).format(ban.createdAt);
 
   return (
-    <main className={styles.page}>
-      <div className={styles.grid} aria-hidden="true" />
-      <section className={styles.card}>
+    <main className="standalone-page standalone-page--danger">
+      <div className="standalone-page__grid" aria-hidden="true" />
+      <section className="standalone-page__card">
         <p className={styles.code}>ACCÈS SUSPENDU · 403</p>
         <h1 className={styles.title}>Ton compte est banni.</h1>
         <p className={styles.lede}>

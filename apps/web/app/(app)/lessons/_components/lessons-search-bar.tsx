@@ -69,7 +69,6 @@ export function LessonsSearchBar({ initialQuery }: LessonsSearchBarProps): React
           color: "#F5F5FA",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          borderRadius: 0,
           outline: "none",
           boxSizing: "border-box",
         }}

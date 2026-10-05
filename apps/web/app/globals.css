@@ -120,10 +120,10 @@
   --color-rarity-legendary: var(--color-rarity-legendary);
 
   /* Border radius scale */
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-sm: var(--radius);
   --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 4px);
-  --radius-xl: calc(var(--radius) + 8px);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
 }
 
 /* ─── Base styles ─────────────────────────────────────────────────────────── */
@@ -713,6 +713,78 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
+/* The corner brackets (app/_components/corner-brackets.tsx, Brackets): four
+   spans on a card's corners, in the accent unless the card sets --bk-color.
+   Three stylesheets each had their own copy. */
+.bk {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--bk-color, var(--cosmetic-accent));
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.bk.tl {
+  top: -1px;
+  left: -1px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.bk.tr {
+  top: -1px;
+  right: -1px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.bk.bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.bk.br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* A hero title with one word in the brand gradient: <h1 class="gradient-title">Le <em>mot</em></h1> */
+.gradient-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* A section's heading, mono and prefixed "// ": the leaderboard, the forum. */
+.section-head {
+  margin: 0;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #b8b5d1;
+}
+.section-head::before {
+  content: "// ";
+  color: #7f7ba9;
+}
+
+/* The card: a 1px border and a faint fill. Sunken, it sits lower than the
+   page (a tile in a list, a row); plain, it is the page's own panel. */
+.card {
+  position: relative;
+  border: 1px solid #2a2560;
+  background: rgba(10, 8, 38, 0.5);
+}
+.card--sunken {
+  border-color: #1f1b47;
+  background: rgba(3, 2, 25, 0.5);
+}
+
 @keyframes xp-count-glow {
   0% {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
@@ -1117,7 +1189,6 @@ article.lesson-content blockquote {
   background: linear-gradient(135deg, rgba(10, 255, 212, 0.06), transparent 70%);
   border: 1px solid rgba(10, 255, 212, 0.35);
   border-left: 3px solid #0affd4;
-  border-radius: 0;
   padding: 20px 24px;
   margin: 1.75rem 0 !important;
 }
@@ -4205,7 +4276,6 @@ a:hover > .lesson-author-card {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   border: 1px solid;
-  border-radius: 0;
   background: rgba(3, 2, 25, 0.7);
   backdrop-filter: blur(6px);
 }
@@ -6431,7 +6501,6 @@ a.fp-name:hover {
   background: #0a0826;
   border: 1px solid #2a2560;
   border-left: 2px solid var(--toast-edge);
-  border-radius: 0;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
   font-family: var(--font-body), sans-serif;
   color: #f5f5fa;
@@ -6471,7 +6540,6 @@ a.fp-name:hover {
   font: 700 9.5px var(--font-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: 0;
   border: 1px solid var(--toast-edge);
   background: var(--toast-edge);
   color: #030219;
@@ -6484,7 +6552,6 @@ a.fp-name:hover {
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
-  border-radius: 0;
   border-color: #2a2560;
   background: #0a0826;
   color: #7f7ba9;

@@ -27,7 +27,7 @@ export function DashboardSkeleton(): React.ReactElement {
           </div>
         </div>
 
-        <SkeletonCard style={{ borderRadius: 0, padding: 30, minHeight: 220 }}>
+        <SkeletonCard style={{ padding: 30, minHeight: 220 }}>
           <Skeleton h={11} w="30%" style={{ marginBottom: 16 }} />
           <Skeleton h={26} w="55%" style={{ marginBottom: 12 }} />
           <Skeleton h={14} w="45%" style={{ marginBottom: 28 }} />
@@ -52,8 +52,8 @@ export function DashboardSkeleton(): React.ReactElement {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <Skeleton h={18} w="40%" />
-            <SkeletonCard style={{ borderRadius: 0, height: 220 }} />
-            <SkeletonCard style={{ borderRadius: 0, height: 160 }} />
+            <SkeletonCard style={{ height: 220 }} />
+            <SkeletonCard style={{ height: 160 }} />
           </div>
         </div>
       </div>

@@ -26,40 +26,6 @@
 /* ---------- breadcrumb ---------- */
 
 /* bracket corners (shared) */
-.pd2 .bk {
-  position: absolute;
-  width: 15px;
-  height: 15px;
-  border-color: var(--bk-color, var(--brand-turquoise));
-  border-style: solid;
-  border-width: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-.pd2 .bk.tl {
-  top: -1px;
-  left: -1px;
-  border-top-width: 2px;
-  border-left-width: 2px;
-}
-.pd2 .bk.tr {
-  top: -1px;
-  right: -1px;
-  border-top-width: 2px;
-  border-right-width: 2px;
-}
-.pd2 .bk.bl {
-  bottom: -1px;
-  left: -1px;
-  border-bottom-width: 2px;
-  border-left-width: 2px;
-}
-.pd2 .bk.br {
-  bottom: -1px;
-  right: -1px;
-  border-bottom-width: 2px;
-  border-right-width: 2px;
-}
 
 /* ==========================================================================
    HERO
@@ -178,13 +144,6 @@
   margin: 0 0 20px;
   text-wrap: balance;
 }
-.pd2 .pd2-title em {
-  font-style: normal;
-  background: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 .pd2 .pd2-desc {
   font-family: var(--font-body);
   font-size: 16px;
@@ -291,7 +250,6 @@
   background: var(--brand-blue);
   color: #fff;
   border: 1px solid var(--brand-blue);
-  border-radius: 0;
   cursor: pointer;
   text-decoration: none;
   box-shadow:

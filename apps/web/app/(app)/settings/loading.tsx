@@ -8,7 +8,6 @@ import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 const CARD_STYLE: React.CSSProperties = {
   background: "#0A0826",
   border: "1px solid #2A2560",
-  borderRadius: 0,
   padding: "28px 30px",
 };
 

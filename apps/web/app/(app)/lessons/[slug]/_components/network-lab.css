@@ -97,7 +97,6 @@
   bottom: -7px;
   border: 2px solid #05041a;
   background: var(--cosmetic-accent, #0affd4);
-  border-radius: 0;
 }
 
 /* The drop zone while a cable is pulled: the whole device, invisibly. */
@@ -108,7 +107,6 @@
   left: 0;
   transform: none;
   border: none;
-  border-radius: 0;
   opacity: 0;
 }
 

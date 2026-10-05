@@ -109,7 +109,6 @@
 .public-catalogue__filters input {
   min-height: 42px;
   border: 1px solid var(--border);
-  border-radius: 0;
   color: var(--fg-secondary);
   background: rgba(10, 8, 38, 0.7);
   font-family: var(--font-mono);

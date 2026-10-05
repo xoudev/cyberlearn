@@ -6,7 +6,6 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 const PANEL: React.CSSProperties = {
   background: "rgba(5, 4, 26, 0.6)",
   border: "1px solid #2a2560",
-  borderRadius: 0,
 };
 
 /**

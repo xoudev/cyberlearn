@@ -139,7 +139,6 @@ export function CodeBlock({
           background: "var(--cosmetic-terminal-bg)",
           border: "1px solid #2A2560",
           borderLeft: "3px solid var(--cosmetic-accent)",
-          borderRadius: 0,
           padding: "16px 20px",
         }}
       >

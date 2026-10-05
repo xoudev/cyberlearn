@@ -450,7 +450,6 @@ function CatalogCard({
         position: "relative",
         background: cardBg,
         border: `1px solid ${cardBorder}`,
-        borderRadius: 0,
         display: "flex",
         flexDirection: "column",
         height: "100%",
@@ -551,7 +550,6 @@ function CatalogCard({
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             border: `1px solid ${catMeta.tagBorder}`,
-            borderRadius: 0,
             color: catMeta.tagColor,
             background: catMeta.tagBg,
           }}
@@ -996,7 +994,6 @@ function CompactCard({
         background: "#0A0826",
         border: "1px solid #2A2560",
         borderLeft: `3px solid ${catMeta.accent}`,
-        borderRadius: 0,
       }}
     >
       {/* Status dot */}
@@ -1066,7 +1063,6 @@ function CompactCard({
             color: diffMeta.color,
             background: "rgba(5,4,26,0.9)",
             border: "1px solid #2A2560",
-            borderRadius: 0,
           }}
         >
           {diffMeta.label}
@@ -1082,7 +1078,6 @@ function CompactCard({
             color: catMeta.tagColor,
             background: catMeta.tagBg,
             border: `1px solid ${catMeta.tagBorder}`,
-            borderRadius: 0,
           }}
         >
           {catMeta.label}
