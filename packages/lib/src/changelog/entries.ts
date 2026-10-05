@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.11",
+    date: "2026-10-05",
+    title: "Les paramètres s'ouvrent en volet",
+    changes: [
+      {
+        type: "new",
+        text: "Le rouage de la barre du haut ouvre désormais les paramètres dans un volet, par-dessus la page où tu étais : les sept sections d'un côté, leurs réglages de l'autre, et Échap pour revenir. Les mêmes réglages qu'avant, sans quitter ce que tu faisais. La page complète reste là pour un lien direct ou un rechargement.",
+      },
+    ],
+  },
+  {
     version: "3.10",
     date: "2026-10-05",
     title: "Une seule palette pour tout le site",

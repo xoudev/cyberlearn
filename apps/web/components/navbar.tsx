@@ -136,9 +136,10 @@ export async function Navbar(): Promise<React.ReactElement> {
         {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
-        {/* The settings, behind their icon rather than a link under the account. */}
+        {/* The settings, behind their icon: a section's address, which opens
+            as a drawer over the page from inside the site (see @panel). */}
         <Link
-          href="/settings"
+          href="/settings/profile"
           className="navbar-icon-link"
           title="Paramètres"
           aria-label="Paramètres"

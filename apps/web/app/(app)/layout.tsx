@@ -23,8 +23,11 @@ async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmetic
 
 export default async function AppLayout({
   children,
+  panel,
 }: {
   children: React.ReactNode;
+  /** The drawer slot: the settings, when opened from the navbar's gear. */
+  panel: React.ReactNode;
 }): Promise<React.JSX.Element> {
   const cookieStore = await cookies();
 
@@ -84,6 +87,7 @@ export default async function AppLayout({
           </main>
           <Footer />
         </div>
+        {panel}
       </SidebarProvider>
     </CosmeticsProvider>
   );
