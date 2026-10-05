@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { isProtectedRoute, middleware } from "./middleware";
+import { consoleOrigin, isProtectedRoute, middleware } from "./middleware";
 
 /**
  * The session the mocked Supabase client hands the middleware. Set per test:
@@ -198,16 +198,49 @@ describe("the lesson editor's preview route", () => {
   }
 
   it("may be framed by this site and by the console, and by nothing else", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://cyberlearn.fr");
     vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "https://admin.cyberlearn.fr/");
     const response = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
     expect(csp(response)).toContain("frame-ancestors 'self' https://admin.cyberlearn.fr;");
     expect(response.headers.get("x-frame-options")).toBeNull();
   });
 
-  it("frames only this site when the console's address is not configured", async () => {
+  it("lets the deployed console in when the variable still holds the development default", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://cyberlearn.fr");
+    vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "http://localhost:3001");
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
+    expect(csp(response)).toContain("frame-ancestors 'self' https://admin.cyberlearn.fr;");
+    expect(csp(response)).not.toContain("localhost");
+  });
+
+  it("frames only this site when no console can be named", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
     vi.stubEnv("NEXT_PUBLIC_ADMIN_URL", "");
     const response = await middleware(new NextRequest("https://cyberlearn.fr/preview/abc"));
     expect(csp(response)).toContain("frame-ancestors 'self';");
+  });
+
+  describe("the console's origin", () => {
+    it.each([
+      ["https://admin.cyberlearn.fr/", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["https://console.example.org/x", "https://cyberlearn.fr", "https://console.example.org"],
+      [undefined, "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["", "https://cyberlearn.fr/", "https://admin.cyberlearn.fr"],
+      ["not a url", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["http://localhost:3001", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["http://127.0.0.1:3001", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["http://[::1]:3001", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["http://admin.localhost:3001", "https://cyberlearn.fr", "https://admin.cyberlearn.fr"],
+      ["http://localhost:3001", "http://localhost:3000", "http://localhost:3001"],
+      ["http://localhost:3001", undefined, "http://localhost:3001"],
+      ["http://localhost:3001", "not a url", "http://localhost:3001"],
+      [undefined, "http://localhost:3000", null],
+      [undefined, undefined, null],
+      ["https://admin.cyberlearn.fr", "https://cyberlearn.fr:8443", "https://admin.cyberlearn.fr"],
+      [undefined, "https://cyberlearn.fr:8443", "https://admin.cyberlearn.fr:8443"],
+    ])("console %s, site %s: %s", (adminUrl, siteUrl, expected) => {
+      expect(consoleOrigin(adminUrl, siteUrl)).toBe(expected);
+    });
   });
 
   it("keeps every other page out of every frame", async () => {
