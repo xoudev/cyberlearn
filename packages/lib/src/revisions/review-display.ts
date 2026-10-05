@@ -7,7 +7,8 @@
  */
 
 export type ReviewQuality = 1 | 3 | 5;
-export type ReviewOutcome = "forgot" | "hard" | "easy";
+/** The three grades, and "mastered": a recall after which the lesson leaves the cycle. */
+export type ReviewOutcome = "forgot" | "hard" | "easy" | "mastered";
 
 /** The three grades, in the order they are offered. */
 export const REVIEW_GRADES: readonly {
@@ -20,8 +21,11 @@ export const REVIEW_GRADES: readonly {
   { quality: 5, outcome: "easy", label: "Facile" },
 ];
 
-export function outcomeOf(quality: ReviewQuality): ReviewOutcome {
-  return quality === 1 ? "forgot" : quality === 3 ? "hard" : "easy";
+/** What a grade did; `mastered` is what the server says once the lesson is held. */
+export function outcomeOf(quality: ReviewQuality, mastered = false): ReviewOutcome {
+  if (quality === 1) return "forgot";
+  if (mastered) return "mastered";
+  return quality === 3 ? "hard" : "easy";
 }
 
 /** Minutes a review of a lesson of this difficulty takes, roughly. */
@@ -60,6 +64,7 @@ export function reviewDueLabel(nextReviewAt: Date, now: Date): ReviewDue {
 
 /** What a grade did, once the server accepted it. */
 export function reviewOutcomeText(outcome: ReviewOutcome, xp: number): string {
+  if (outcome === "mastered") return `Acquise · +${String(xp)} XP · elle sort du cycle de révision`;
   if (outcome === "easy") return `Bien mémorisé · +${String(xp)} XP`;
   if (outcome === "hard") return `Encore fragile · +${String(xp)} XP · à revoir demain`;
   return "Oublié · retour en révision demain";

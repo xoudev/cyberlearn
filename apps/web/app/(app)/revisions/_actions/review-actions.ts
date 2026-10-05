@@ -6,9 +6,12 @@ import { gradeReview } from "@/lib/revisions/grade-review";
 
 export interface SubmitReviewResult {
   success: boolean;
-  nextReviewAt?: Date;
+  /** Null once the lesson is held and leaves the cycle. */
+  nextReviewAt?: Date | null;
   /** XP credited by this review (0 when the lesson was forgotten). */
   reviewXp?: number;
+  /** The lesson left the cycle on this grade. */
+  mastered?: boolean;
 }
 
 /**
@@ -25,5 +28,10 @@ export async function submitReviewAction(
 
   revalidatePath("/revisions");
   revalidatePath("/dashboard");
-  return { success: true, nextReviewAt: result.nextReviewAt, reviewXp: result.reviewXp };
+  return {
+    success: true,
+    nextReviewAt: result.nextReviewAt,
+    reviewXp: result.reviewXp,
+    mastered: result.mastered,
+  };
 }

@@ -29,6 +29,7 @@ export interface ReviewRow {
 type Outcome = ReviewOutcome;
 
 const OUTCOME_DISPLAY: Record<Outcome, { icon: string; color: string }> = {
+  mastered: { icon: "★", color: "var(--cosmetic-accent)" },
   easy: { icon: "✓", color: "var(--cosmetic-accent)" },
   hard: { icon: "~", color: "#FFB020" },
   forgot: { icon: "↺", color: "#FF4757" },
@@ -55,7 +56,7 @@ function GradeRowBody({
     startTransition(async () => {
       const res = await submitReviewAction(row.scheduleId, quality);
       if (res.success) {
-        onDone(outcomeOf(quality), res.reviewXp ?? 0);
+        onDone(outcomeOf(quality, res.mastered === true), res.reviewXp ?? 0);
       }
     });
   }

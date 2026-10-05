@@ -12,7 +12,13 @@ import { currentLessonId, moduleRoute } from "@cyberlearn/lib/dashboard/module-r
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
 import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
-import { CATALOGUE_PATH, leaderboardRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
+import {
+  CATALOGUE_PATH,
+  leaderboardRepository,
+  pathsVisibleTo,
+  prisma,
+  reviewRepository,
+} from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { StreakCard } from "@/components/streak-card";
@@ -56,8 +62,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const [
     dbUser,
     inProgressRows,
-    dueReviews,
-    dueTotal,
+    reviewSession,
     completedTotal,
     completedThisMonth,
     badgeRows,
@@ -93,15 +98,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { lastAccessedAt: "desc" },
       take: 1,
     }),
-    prisma.reviewSchedule.findMany({
-      where: { userId: authUser.id, nextReviewAt: { lte: now } },
-      orderBy: { nextReviewAt: "asc" },
-      take: 3,
-      include: {
-        lesson: { select: { slug: true, title: true, category: true, estimatedMinutes: true } },
-      },
-    }),
-    prisma.reviewSchedule.count({ where: { userId: authUser.id, nextReviewAt: { lte: now } } }),
+    // The day's session, as the page and the sidebar count it: five at most,
+    // of the lessons still published.
+    reviewRepository.findSession(authUser.id, now),
     prisma.userLessonProgress.count({ where: { userId: authUser.id, status: "COMPLETED" } }),
     prisma.userLessonProgress.count({
       where: { userId: authUser.id, status: "COMPLETED", completedAt: { gte: monthStart } },
@@ -152,6 +151,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
     revisionsEnabled(authUser.id),
   ]);
 
+  const dueReviews = reviewSession.rows.slice(0, 3);
+  const dueTotal = reviewSession.rows.length;
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
   const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const firstName = (dbUser?.displayName ?? "Opérateur").split(" ")[0] ?? "Opérateur";

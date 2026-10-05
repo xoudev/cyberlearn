@@ -1,11 +1,17 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import { reviewRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { PageHeader } from "@/components/page-header";
-import { reviewDueLabel, reviewMinutes, reviewXpFor } from "@cyberlearn/lib";
+import {
+  REVIEW_SESSION_SIZE,
+  reviewDueLabel,
+  reviewMinutes,
+  reviewXpFor,
+  waitingText,
+} from "@cyberlearn/lib";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 
 export const metadata: Metadata = { title: "Révisions" };
@@ -50,30 +56,14 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
     );
   }
 
-  const [dueSchedules, upcomingSchedules] = await Promise.all([
-    prisma.reviewSchedule.findMany({
-      where: { userId: authUser.id, nextReviewAt: { lte: now } },
-      orderBy: { nextReviewAt: "asc" },
-      include: {
-        lesson: {
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            category: true,
-            difficulty: true,
-            xpReward: true,
-          },
-        },
-      },
-    }),
-    prisma.reviewSchedule.findMany({
-      where: { userId: authUser.id, nextReviewAt: { gt: now } },
-      orderBy: { nextReviewAt: "asc" },
-      take: 10,
-      include: { lesson: { select: { title: true, difficulty: true } } },
-    }),
+  // The day's session, not the whole queue: five at most, the longest overdue
+  // first, of the lessons still published. What waits is said in one line.
+  const [session, upcomingSchedules] = await Promise.all([
+    reviewRepository.findSession(authUser.id, now),
+    reviewRepository.findUpcoming(authUser.id, now, 10),
   ]);
+  const dueSchedules = session.rows;
+  const waiting = waitingText(session.waiting);
 
   const totalMinutes = dueSchedules.reduce((sum, s) => sum + reviewMinutes(s.lesson.difficulty), 0);
   const isEmpty = dueSchedules.length === 0;
@@ -203,7 +193,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               >
                 {count} révision{count > 1 ? "s" : ""}
               </em>{" "}
-              en attente.
+              pour aujourd&apos;hui.
             </>
           )}
         </h1>
@@ -221,7 +211,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
         >
           {isEmpty
             ? "Tes révisions sont à jour. Reviens demain pour continuer à consolider tes connaissances selon la courbe d'oubli."
-            : "Tes prochaines micro-révisions, ordonnées par échéance. Chaque session consolide ce que tu as appris cette semaine."}
+            : "Ta session du jour, les leçons en retard depuis le plus longtemps d'abord. Chaque révision consolide ce que tu as appris, et une leçon retenue assez de fois sort du cycle."}
         </p>
 
         {/* Empty state */}
@@ -340,13 +330,29 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                     letterSpacing: "0.06em",
                   }}
                 >
-                  <span>Révisions basées sur ta courbe d&apos;oubli · algorithme SM-2</span>
+                  <span>
+                    Courbe d&apos;oubli · algorithme SM-2 · {REVIEW_SESSION_SIZE} par jour au plus
+                  </span>
                   <span>
                     Total · <b style={{ color: "#B8B5D1" }}>~{String(totalMinutes)} minutes</b>
                   </span>
                 </div>
               </div>
             </section>
+
+            {waiting !== null && (
+              <p
+                style={{
+                  margin: "14px 0 0",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.06em",
+                  color: "#7F7BA9",
+                }}
+              >
+                {waiting}
+              </p>
+            )}
 
             {/* CTA: grading happens in place now, only the back link remains */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 32 }}>

@@ -1,4 +1,5 @@
 import { reviewMinutes, reviewXpFor } from "@cyberlearn/lib/revisions/review-display";
+import { reviewSession } from "@cyberlearn/lib/revisions/session";
 import type { Category, Difficulty } from "@/lib/db";
 import { dbIso } from "./db-time";
 
@@ -16,6 +17,8 @@ export interface ReviewItem {
   difficulty: Difficulty;
   xpReward: number;
   nextReviewAt: string;
+  /** SM-2's ease: orders the session with the due date, as the site does. */
+  easeFactor: number;
 }
 
 interface ReviewLesson {
@@ -30,12 +33,13 @@ interface ReviewLesson {
 export interface RawReviewRow {
   id: string;
   nextReviewAt: string;
+  easeFactor: number;
   /** Embedded to-one relation: supabase-js may hand it back as an array. */
   lesson: ReviewLesson | ReviewLesson[] | null;
 }
 
 export const REVIEW_COLUMNS =
-  "id,nextReviewAt,lesson:lessons(id,slug,title,category,difficulty,xpReward)";
+  "id,nextReviewAt,easeFactor,lesson:lessons(id,slug,title,category,difficulty,xpReward)";
 
 export function toReviewItems(rows: readonly RawReviewRow[]): ReviewItem[] {
   return rows.flatMap((r) => {
@@ -53,23 +57,29 @@ export function toReviewItems(rows: readonly RawReviewRow[]): ReviewItem[] {
         xpReward: lesson.xpReward,
         // Normalised as it is read: every comparison below and on screen uses it.
         nextReviewAt: dbIso(r.nextReviewAt),
+        easeFactor: r.easeFactor,
       },
     ];
   });
 }
 
-/** Due now (oldest first), and the next few after, as the site shows them. */
+/**
+ * The day's session out of what is due (five at most, the longest overdue
+ * first, as the site cuts it), how many wait, and the next few after.
+ */
 export function splitReviews(
   items: readonly ReviewItem[],
   now: Date,
   upcomingLimit = 10,
-): { due: ReviewItem[]; upcoming: ReviewItem[] } {
+): { due: ReviewItem[]; waiting: number; upcoming: ReviewItem[] } {
   const sorted = [...items].sort((a, b) => a.nextReviewAt.localeCompare(b.nextReviewAt));
-  const due = sorted.filter((i) => new Date(i.nextReviewAt).getTime() <= now.getTime());
+  const { session, waiting } = reviewSession(
+    sorted.filter((i) => new Date(i.nextReviewAt).getTime() <= now.getTime()),
+  );
   const upcoming = sorted
     .filter((i) => new Date(i.nextReviewAt).getTime() > now.getTime())
     .slice(0, upcomingLimit);
-  return { due, upcoming };
+  return { due: session, waiting, upcoming };
 }
 
 /** How many are due, the minutes they take, and the most they can earn. */

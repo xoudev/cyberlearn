@@ -30,7 +30,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   return NextResponse.json({
     ok: true,
-    nextReviewAt: result.nextReviewAt.toISOString(),
+    nextReviewAt: result.nextReviewAt === null ? null : result.nextReviewAt.toISOString(),
     reviewXp: result.reviewXp,
+    mastered: result.mastered,
   });
 }

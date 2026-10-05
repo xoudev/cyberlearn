@@ -481,7 +481,7 @@ export async function reportQuizApi(
 }
 
 export type GradeReviewReply =
-  | { ok: true; reviewXp: number; nextReviewAt: string }
+  | { ok: true; reviewXp: number; nextReviewAt: string | null; mastered: boolean }
   | { ok: false; error: string };
 
 /** Grades a due review through the site's service (SM-2 step, XP, no double grading). */

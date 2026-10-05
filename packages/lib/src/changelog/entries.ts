@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.9",
+    date: "2026-10-05",
+    title: "Les révisions reprennent une taille humaine",
+    changes: [
+      {
+        type: "improved",
+        text: "Chaque jour demande désormais cinq révisions au plus, les leçons en retard depuis le plus longtemps d'abord ; les autres attendent leur tour sans être comptées. Une leçon retenue assez de fois sort du cycle au lieu de revenir pour toujours. Et une leçon archivée ne revient plus à réviser.",
+      },
+    ],
+  },
+  {
     version: "3.8",
     date: "2026-10-05",
     title: "La série se lit de la même façon partout",

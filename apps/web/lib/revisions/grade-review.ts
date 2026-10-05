@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { computeSm2, reviewXpFor } from "@cyberlearn/lib";
+import { computeSm2, isMastered, reviewXpFor } from "@cyberlearn/lib";
 import { creditXp } from "@/lib/xp/credit";
 
 const reviewGradeSchema = z.object({
@@ -8,12 +8,26 @@ const reviewGradeSchema = z.object({
   quality: z.union([z.literal(1), z.literal(3), z.literal(5)]),
 });
 
-export type GradeReviewResult = { ok: true; nextReviewAt: Date; reviewXp: number } | { ok: false };
+export type GradeReviewResult =
+  | {
+      ok: true;
+      /** Null once the lesson is held: nothing is scheduled any more. */
+      nextReviewAt: Date | null;
+      reviewXp: number;
+      /** The lesson left the cycle on this grade. */
+      mastered: boolean;
+    }
+  | { ok: false };
 
 /**
  * Grades one due review: feeds the recall quality into SM-2 (next interval,
  * ease factor) and credits a tenth of the lesson XP on a successful recall.
  * quality: 1 = forgot, 3 = hard, 5 = easy.
+ *
+ * A lesson held well enough (isMastered: the next review would be two months
+ * away) leaves the cycle: its schedule is deleted rather than moved, so the
+ * queue is finite. Forgetting it later is not a thing the cycle can see; the
+ * lesson stays readable, and its quiz is still there.
  *
  * Shared by the site's action and the app's /api/mobile/review, so a review
  * graded on a phone moves the same schedule and earns the same XP.
@@ -38,18 +52,23 @@ export async function gradeReview(userId: string, input: unknown): Promise<Grade
 
   // Atomically advance ONLY a review that is genuinely due (and owned). Replaying
   // the request or a double submit cannot farm XP: once graded, nextReviewAt
-  // jumps forward, so a re-grade matches 0 rows and credits nothing.
+  // jumps forward (or the row is gone), so a re-grade matches 0 rows and
+  // credits nothing.
   const now = new Date();
-  const advanced = await prisma.reviewSchedule.updateMany({
-    where: { id: schedule.id, userId, nextReviewAt: { lte: now } },
-    data: {
-      easeFactor: result.easeFactor,
-      intervalDays: result.intervalDays,
-      repetitions: result.repetitions,
-      nextReviewAt: result.nextReviewAt,
-      lastReviewedAt: now,
-    },
-  });
+  const dueAndOwned = { id: schedule.id, userId, nextReviewAt: { lte: now } };
+  const mastered = quality >= 3 && isMastered(result);
+  const advanced = mastered
+    ? await prisma.reviewSchedule.deleteMany({ where: dueAndOwned })
+    : await prisma.reviewSchedule.updateMany({
+        where: dueAndOwned,
+        data: {
+          easeFactor: result.easeFactor,
+          intervalDays: result.intervalDays,
+          repetitions: result.repetitions,
+          nextReviewAt: result.nextReviewAt,
+          lastReviewedAt: now,
+        },
+      });
   if (advanced.count === 0) return { ok: false };
 
   // A successful recall (quality >= 3) earns a tenth of the lesson XP.
@@ -67,5 +86,5 @@ export async function gradeReview(userId: string, input: unknown): Promise<Grade
     }
   }
 
-  return { ok: true, nextReviewAt: result.nextReviewAt, reviewXp };
+  return { ok: true, nextReviewAt: mastered ? null : result.nextReviewAt, reviewXp, mastered };
 }

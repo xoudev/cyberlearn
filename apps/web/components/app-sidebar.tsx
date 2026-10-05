@@ -3,7 +3,7 @@ import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { computeLevel } from "@cyberlearn/lib";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
-import { LIVE_CLASS_FILTER, prisma } from "@cyberlearn/db";
+import { LIVE_CLASS_FILTER, prisma, reviewRepository } from "@cyberlearn/db";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
@@ -22,12 +22,11 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     if (authUser) {
       const wantsRevisions = await revisionsEnabled(authUser.id);
       showRevisions = wantsRevisions;
-      // The one count the sidebar shows: revisions due now. A count of lessons
-      // in progress said nothing anybody could act on from the sidebar.
+      // The one count the sidebar shows: what today's session asks for, five
+      // at most, as the page and the dashboard count it. Sixty due at once is
+      // a number nobody acts on; five is.
       if (wantsRevisions) {
-        dueReviews = await prisma.reviewSchedule.count({
-          where: { userId: authUser.id, nextReviewAt: { lte: new Date() } },
-        });
+        dueReviews = await reviewRepository.countSession(authUser.id, new Date());
       }
 
       // The entry follows the classes, not the role. Teaching one and being in
