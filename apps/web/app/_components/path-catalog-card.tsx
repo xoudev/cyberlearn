@@ -14,7 +14,7 @@ export interface PathCatalogCardData {
   lessonCount: number;
   hasCert: boolean;
   /** Learners' average, shown once somebody has rated the path. */
-  rating?: { avg: number; count: number } | null;
+  rating?: PathRating | null;
 }
 
 type Kind = "cyber" | "dev" | "net";
@@ -39,6 +39,40 @@ const TRACK_META: Record<string, string> = {
 
 const CATEGORY_DEFAULT = { label: "?", kind: "cyber" as Kind };
 const DIFF_DEFAULT = { label: "?", level: 1 as const };
+
+/** The learners' average, once somebody has rated the path. */
+export interface PathRating {
+  avg: number;
+  count: number;
+}
+
+/**
+ * "★ 4,6" in a card's stats line, the count in the tooltip or spelled out.
+ *
+ * One drawing for the four cards of a path (the hero, the one in progress,
+ * the certified one, the one to discover): the average showed on the path's
+ * own page and on the cards to discover, and nowhere a reader had started it.
+ */
+export function RatingStat({
+  rating,
+  withCount = false,
+}: {
+  rating: PathRating;
+  withCount?: boolean;
+}): React.JSX.Element | null {
+  if (rating.count <= 0) return null;
+  const avg = rating.avg.toFixed(1).replace(".", ",");
+  const title = `Note moyenne des apprenants : ${avg} sur 5, ${String(rating.count)} avis`;
+  return (
+    <span className="rating" title={title}>
+      <span aria-hidden="true" className="rating__star">
+        ★
+      </span>{" "}
+      <b>{avg}</b>
+      {withCount && <> · {rating.count} avis</>}
+    </span>
+  );
+}
 
 function Brackets(): React.JSX.Element {
   return (
@@ -149,14 +183,7 @@ export function PathCatalogCard({
           {path.rating && path.rating.count > 0 && (
             <>
               <span className="sep">·</span>
-              <span
-                title={`Note moyenne : ${path.rating.avg.toFixed(1).replace(".", ",")} sur 5, ${String(path.rating.count)} avis`}
-              >
-                <span aria-hidden="true" style={{ color: "#FFB020" }}>
-                  ★
-                </span>{" "}
-                <b>{path.rating.avg.toFixed(1).replace(".", ",")}</b>
-              </span>
+              <RatingStat rating={path.rating} />
             </>
           )}
           {path.hasCert && (

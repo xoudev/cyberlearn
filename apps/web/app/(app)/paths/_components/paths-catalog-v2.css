@@ -589,6 +589,11 @@
 .pc2-root .hero-path__stats .sep {
   color: var(--fg-disabled);
 }
+/* The learners' average, in every card's stats line: the star in the warning
+   amber the path's page uses, the number in the line's own colour. */
+.pc2-root .rating__star {
+  color: var(--color-warning);
+}
 .pc2-root .hero-path__foot {
   margin-top: 6px;
 }

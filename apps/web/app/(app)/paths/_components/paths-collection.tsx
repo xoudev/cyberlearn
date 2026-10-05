@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { PathCatalogCard } from "@/app/_components/path-catalog-card";
+import { PathCatalogCard, RatingStat } from "@/app/_components/path-catalog-card";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
@@ -235,6 +235,12 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </span>
           <span className="sep">·</span>
           <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
+          {path.rating && path.rating.count > 0 && (
+            <>
+              <span className="sep">·</span>
+              <RatingStat rating={path.rating} withCount />
+            </>
+          )}
           {path.hasCert && (
             <>
               <span className="sep">·</span>
@@ -318,6 +324,12 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
           </span>
           <span className="sep">·</span>
           <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
+          {path.rating && path.rating.count > 0 && (
+            <>
+              <span className="sep">·</span>
+              <RatingStat rating={path.rating} />
+            </>
+          )}
           {path.hasCert && (
             <>
               <span className="sep">·</span>
@@ -393,6 +405,12 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
           </span>
           <span className="sep">·</span>
           <span className="xp">+{fmtXp(path.xpTotal)} XP gagnés</span>
+          {path.rating && path.rating.count > 0 && (
+            <>
+              <span className="sep">·</span>
+              <RatingStat rating={path.rating} />
+            </>
+          )}
         </div>
       </div>
       <div className="trophy-card__foot">
