@@ -810,3 +810,33 @@ describe("StepAnimation", () => {
     );
   });
 });
+
+describe("IncidentStory", () => {
+  it("is played in the app with the scenes the site reads", () => {
+    const lesson = [
+      "## L'astreinte",
+      "",
+      "<IncidentStory",
+      '  id="poste"',
+      '  title="Le poste qui chiffre"',
+      '  role="Tu es la personne d\'astreinte."',
+      '  scenes={[{ "id": "a", "text": "Un collègue appelle.", "choices": [{ "text": "Éteindre", "next": "fin", "verdict": "bad", "consequence": "La mémoire vive est perdue." }, { "text": "Isoler", "next": "fin", "verdict": "good", "consequence": "Le programme ne se propage plus." }] }, { "id": "fin", "text": "Incident clos.", "ending": "success" }]}',
+      "/>",
+    ].join("\n");
+    const [block] = parseLesson(lesson).sections[0]?.blocks ?? [];
+    if (block?.kind !== "story") throw new Error("not a story");
+    expect(block.story.title).toBe("Le poste qui chiffre");
+    expect(block.story.role).toBe("Tu es la personne d'astreinte.");
+    expect(block.story.scenes).toHaveLength(2);
+    expect(block.story.scenes[0]?.choices?.[1]?.verdict).toBe("good");
+    expect(block.story.scenes[1]?.ending).toBe("success");
+  });
+
+  it("shows a placeholder for a story the site would refuse", () => {
+    const wrong =
+      '## A\n\n<IncidentStory id="s" scenes={[{ "id": "a", "text": "x", "ending": "success" }, { "id": "b", "text": "y", "ending": "failure" }]} />';
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Incident à choix" },
+    ]);
+  });
+});

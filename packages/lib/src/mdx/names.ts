@@ -34,6 +34,7 @@ export const LESSON_COMPONENT_NAMES = [
   "FirewallLab",
   "LogHunt",
   "HexEditor",
+  "IncidentStory",
 ] as const;
 
 export type LessonComponentName = (typeof LESSON_COMPONENT_NAMES)[number];

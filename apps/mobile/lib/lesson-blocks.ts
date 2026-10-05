@@ -2,7 +2,7 @@
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
-// FirewallLab, LogHunt, HexEditor, StepAnimation, SimulatedTerminal,
+// FirewallLab, LogHunt, HexEditor, IncidentStory, StepAnimation, SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -14,6 +14,7 @@ import {
   type FirewallLab,
   type GitSandbox,
   type HexEditor,
+  type IncidentStory,
   type LogHunt,
   type MatchPairs,
   type PacketDissector,
@@ -25,6 +26,7 @@ import {
   parseFirewallLab,
   parseGitSandbox,
   parseHexEditor,
+  parseIncidentStory,
   parseLogHunt,
   parseMatchPairs,
   parsePacketDissector,
@@ -120,6 +122,11 @@ export type Block =
       /** A HexEditor: the same bytes as the site's, read and repaired natively. */
       kind: "hex";
       editor: HexEditor;
+    }
+  | {
+      /** An IncidentStory: the same scenes as the site's, decided natively. */
+      kind: "story";
+      story: IncidentStory;
     }
   | {
       /**
@@ -482,7 +489,8 @@ type StringPropName =
   | "input"
   | "rules"
   | "bytes"
-  | "filename";
+  | "filename"
+  | "role";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -490,7 +498,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules|bytes|filename)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules|bytes|filename|role)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -879,6 +887,22 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "hex", editor: parsed.value }
         : { kind: "placeholder", label: "Éditeur hexadécimal" },
+    );
+  });
+  // IncidentStory → the same scenes, decided natively; one the site would
+  // refuse is a placeholder.
+  text = replaceSelfClosing(text, "IncidentStory", (tag) => {
+    const parsed = parseIncidentStory({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      role: stringProp(tag, "role", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      scenes: jsonProp(tag, "scenes"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "story", story: parsed.value }
+        : { kind: "placeholder", label: "Incident à choix" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's

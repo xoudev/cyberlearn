@@ -561,3 +561,30 @@ describe("braces hold values, never code", () => {
     expect(r.message).toContain('"False"');
   });
 });
+
+describe("IncidentStory", () => {
+  const SCENES =
+    '[{ "id": "a", "text": "Un collègue appelle.", "choices": [{ "text": "Éteindre", "next": "fin", "verdict": "bad", "consequence": "La mémoire vive est perdue." }, { "text": "Isoler", "next": "fin", "verdict": "good", "consequence": "Le programme ne se propage plus." }] }, { "id": "fin", "text": "Incident clos.", "ending": "success" }]';
+  const story = (scenes: string): string =>
+    `## L'astreinte\n\n<IncidentStory id="s" title="Le poste" scenes={${scenes}} />`;
+
+  it("accepts a story whose scenes lead to an ending", async () => {
+    expect(await checkLessonMdx(story(SCENES))).toEqual({ ok: true });
+  });
+
+  it("refuses a choice that leads nowhere, and names it", async () => {
+    const r = await checkLessonMdx(
+      story(
+        SCENES.replace(
+          '"next": "fin", "verdict": "good"',
+          '"next": "nulle-part", "verdict": "good"',
+        ),
+      ),
+    );
+    if (r.ok) throw new Error("accepted a choice to nowhere");
+    expect(r.section).toBe("L'astreinte");
+    expect(r.message).toBe(
+      "Incident à choix : le choix « Isoler » de la scène « a » mène à « nulle-part », qui n'existe pas.",
+    );
+  });
+});

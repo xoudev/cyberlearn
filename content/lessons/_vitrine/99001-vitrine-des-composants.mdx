@@ -339,7 +339,7 @@ Un atelier où l'on câble et adresse des machines, un exercice de calcul de sou
 
 ## enquête
 
-Trois exercices d'investigation : une photo dont on lit les métadonnées pour la placer sur une carte, des journaux à filtrer jusqu'à l'attaquant, et un fichier à lire octet par octet.
+Quatre exercices d'investigation : une photo dont on lit les métadonnées pour la placer sur une carte, des journaux à filtrer jusqu'à l'attaquant, un fichier à lire octet par octet, et un incident à traiter décision par décision.
 
 <PhotoOsint
   id="osint-vitrine-legende"
@@ -371,6 +371,18 @@ Trois exercices d'investigation : une photo dont on lit les métadonnées pour l
   bytes="00 00 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00"
   repairs={[{ "label": "La signature PNG est rétablie", "offset": 0, "bytes": "89 50" }]}
   questions={[{ "label": "Quelle est la taille de l'image ?", "answer": ["1x1", "1 x 1"], "hint": "Après IHDR : la largeur, puis la hauteur, sur quatre octets chacune." }]}
+/>
+
+<IncidentStory
+  id="incident-vitrine-poste"
+  title="Le poste qui chiffre"
+  role="Tu es la personne d'astreinte."
+  scenes={[
+    { "id": "alerte", "title": "9 h 04, l'appel", "text": "Un collègue t'appelle : ses fichiers se chiffrent sous ses yeux, et il a la main sur le bouton d'alimentation.", "choices": [{ "text": "Lui dire d'éteindre le poste", "next": "rancon", "verdict": "bad", "consequence": "Le chiffrement s'arrête, et la mémoire vive part avec ses indices." }, { "text": "Lui dire de débrancher le réseau, poste allumé", "next": "rancon", "verdict": "good", "consequence": "Le programme ne se propage plus, et la mémoire vive garde ses traces." }] },
+    { "id": "rancon", "title": "9 h 30, la rançon", "text": "Le message demande 0,4 bitcoin sous 48 heures.", "choices": [{ "text": "Payer vite", "next": "fin-payee", "verdict": "bad", "consequence": "Le virement part, sans aucune garantie." }, { "text": "Ne pas payer, et restaurer depuis la sauvegarde hors ligne", "next": "fin-restauree", "verdict": "good", "consequence": "Les données reviennent propres, avec un jour de travail perdu." }] },
+    { "id": "fin-payee", "title": "Trois jours plus tard", "text": "La clé n'est jamais arrivée.", "ending": "failure" },
+    { "id": "fin-restauree", "title": "Incident clos", "text": "Le poste est réinstallé, les fichiers sont revenus.", "ending": "success" }
+  ]}
 />
 
 ## crypto et animation

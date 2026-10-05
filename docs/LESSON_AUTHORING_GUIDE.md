@@ -1560,6 +1560,38 @@ Les octets d'un petit fichier dans une grille, avec le décalage à gauche, le t
 
 Pour produire les octets d'un vrai fichier, passe par Python (`struct`, `zlib`) ou `xxd -p`, et vérifie qu'ils tiennent : un PNG d'un pixel fait 69 octets, avec un bloc `tEXt` 128. Pour une question dont la réponse se lit dans les octets, mets dans `answer` les formes qu'un élève tapera (`1x1`, `1 x 1`). Pour un type de fichier, liste les mots de la table (`PNG`, `image PNG`) : la ligne « TYPE RÉEL » les donne une fois l'en-tête réparé.
 
+### 5.9s IncidentStory - Incident à choix
+
+Un incident raconté scène par scène. Chaque scène est une situation et deux à quatre choix ; chaque choix mène à une autre scène, dit comment l'histoire le juge (`good`, `risky`, `bad`) et ce qu'il entraîne, affiché aussitôt et gardé à l'écran. Une scène de fin (`ending`) clôt l'histoire : `success`, `partial` ou `failure`. Au bout, un bilan compte les décisions, dit combien de fins ont été découvertes, propose de rejouer et montre, à la demande, la suite conseillée (de bonnes décisions seulement, jusqu'à une fin réussie). Sur le site et dans l'app (`@cyberlearn/lib/story/incident`).
+
+```mdx
+<IncidentStory
+  id="incident-poste"
+  title="Le poste qui chiffre"
+  role="Tu es la personne d'astreinte."
+  scenes={[
+    { "id": "alerte", "title": "9 h 04, l'appel", "text": "Un collègue t'appelle : ses fichiers se chiffrent sous ses yeux, et il a la main sur le bouton d'alimentation.", "choices": [{ "text": "Lui dire d'éteindre le poste", "next": "rancon", "verdict": "bad", "consequence": "Le chiffrement s'arrête, et la mémoire vive part avec ses indices." }, { "text": "Lui dire de débrancher le réseau, poste allumé", "next": "rancon", "verdict": "good", "consequence": "Le programme ne se propage plus, et la mémoire vive garde ses traces." }] },
+    { "id": "rancon", "title": "9 h 30, la rançon", "text": "Le message demande 0,4 bitcoin sous 48 heures.", "choices": [{ "text": "Payer vite", "next": "fin-payee", "verdict": "bad", "consequence": "Le virement part, sans aucune garantie." }, { "text": "Ne pas payer, et restaurer depuis la sauvegarde hors ligne", "next": "fin-restauree", "verdict": "good", "consequence": "Les données reviennent propres, avec un jour de travail perdu." }] },
+    { "id": "fin-payee", "title": "Trois jours plus tard", "text": "La clé n'est jamais arrivée.", "ending": "failure" },
+    { "id": "fin-restauree", "title": "Incident clos", "text": "Le poste est réinstallé, les fichiers sont revenus.", "ending": "success" }
+  ]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `role` | string | Qui est l'élève dans l'histoire : « Tu es l'analyste d'astreinte. » (optionnel) |
+| `task` | string | La consigne, au-dessus de l'histoire (optionnel) |
+| `scenes` | objets | De 2 à 40 scènes, la première est le début. Chacune : `id`, `title` (optionnel), `text` (une ligne vide, `\n\n`, sépare deux paragraphes), puis `choices` (2 à 4) ou `ending`. **Clés entre guillemets** |
+
+Un choix : `text` (le bouton, 200 caractères au plus), `next` (l'id de la scène suivante), `verdict` (`good`, `risky` ou `bad`), `consequence` (une à trois phrases : ce qui arrive à cause de ce choix, et pourquoi). Ce que la leçon vérifie avant d'enregistrer : chaque `next` existe, aucune scène ne mène à elle-même, toute scène est atteinte depuis la première, il y a au moins une fin, et aucune boucle. La suite conseillée n'existe que si de bonnes décisions seules mènent à une fin `success` ; sinon le bouton n'apparaît pas.
+
+Pour qu'une histoire apprenne quelque chose : faire converger les branches (deux choix peuvent mener à la même scène, la conséquence fait la différence), réserver les fins `failure` aux décisions que la leçon dit fatales (payer, rebrancher sans chercher la cause), et dire dans chaque `consequence` pourquoi, pas seulement quoi. Trois histoires dans les leçons : la réponse à incident des fondamentaux cyber (10), celle du parcours blue team (07) et la violation de données du RGPD (GRC 06).
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1595,7 +1627,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
