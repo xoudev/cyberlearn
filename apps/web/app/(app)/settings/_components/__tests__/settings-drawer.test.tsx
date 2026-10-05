@@ -1,5 +1,4 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -29,11 +28,9 @@ describe("the settings sections", () => {
 
 describe("the settings drawer", () => {
   const html = renderToStaticMarkup(
-    React.createElement(SettingsDrawer, {
-      section: "preferences",
-      username: "jordan",
-      children: React.createElement("p", null, "le contenu de la section"),
-    }),
+    <SettingsDrawer section="preferences" username="jordan">
+      <p>le contenu de la section</p>
+    </SettingsDrawer>,
   );
 
   it("is a dialog named Paramètres, for the reader it belongs to", () => {
