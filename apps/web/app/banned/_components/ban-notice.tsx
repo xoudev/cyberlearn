@@ -4,6 +4,7 @@ import React, { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import styles from "../banned.module.css";
+import { ModalShell } from "@/components/modal-shell";
 import {
   acknowledgeBanAction,
   appealBanAction,
@@ -50,43 +51,46 @@ export function BanNotice({
 
   return (
     <>
-      {open && (
-        <div
-          className={styles.overlay}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ban-modal-title"
-        >
-          <div className={styles.modal}>
-            <p className={styles.code}>Accès suspendu</p>
-            <h2 id="ban-modal-title" className={styles.modalTitle}>
-              Ton compte est banni.
-            </h2>
-            <p className={styles.modalText}>{endsLabel}</p>
-            <p className={styles.reason}>{reason}</p>
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.ghost}
-                onClick={() => {
-                  close(false);
-                }}
-              >
-                Fermer
-              </button>
-              <button
-                type="button"
-                className={styles.primary}
-                onClick={() => {
-                  close(true);
-                }}
-              >
-                Faire appel
-              </button>
-            </div>
-          </div>
+      {/* Closing it, by any of its buttons, is the acknowledgement; Escape and
+          the backdrop do not count as reading it. */}
+      <ModalShell
+        open={open}
+        onClose={() => {
+          close(false);
+        }}
+        dismissable={false}
+        eyebrow={<span style={{ color: "#ff6b7a" }}>Accès suspendu</span>}
+        title="Ton compte est banni."
+        accent="#ff4757"
+        maxWidth={520}
+        actions={
+          <>
+            <button
+              type="button"
+              className={styles.ghost}
+              onClick={() => {
+                close(false);
+              }}
+            >
+              Fermer
+            </button>
+            <button
+              type="button"
+              className={styles.primary}
+              onClick={() => {
+                close(true);
+              }}
+            >
+              Faire appel
+            </button>
+          </>
+        }
+      >
+        <div className={styles.notice}>
+          <p className={styles.noticeText}>{endsLabel}</p>
+          <p className={styles.reason}>{reason}</p>
         </div>
-      )}
+      </ModalShell>
 
       {sent ? (
         <p className={styles.sent}>

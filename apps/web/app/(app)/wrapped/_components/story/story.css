@@ -10,23 +10,15 @@
  * accent and nothing below has to know which one it got.
  */
 
+/* Fills the site's dialog overlay (ModalShell, chrome "none"), opaque: the
+   page behind is no part of the story. */
 .ws-root {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #030219;
-  animation: ws-fade 200ms ease;
-}
-@keyframes ws-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 /* A story is portrait. On a phone it is the screen; on a desktop it is a
@@ -384,7 +376,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ws-root,
   .ws-slide,
   .ws-split__fill {
     animation: none;

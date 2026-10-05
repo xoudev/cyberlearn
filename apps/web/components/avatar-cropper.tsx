@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AVATAR_EXPORT_PX } from "@cyberlearn/types";
+import { ModalShell } from "@/components/modal-shell";
 
 const VIEWPORT = 280; // on-screen crop square (px)
 const OUTPUT = AVATAR_EXPORT_PX; // exported avatar size (px), the app's too
@@ -128,45 +129,65 @@ export function AvatarCropper({
     );
   }
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Recadrer l'avatar"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(2,1,12,0.78)",
-        padding: 16,
-      }}
-    >
-      <div
+  const actions = (
+    <>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={busy}
         style={{
-          width: "100%",
-          maxWidth: 360,
-          background: "rgba(10,8,38,0.96)",
+          flex: "0 0 auto",
+          height: 44,
+          padding: "0 18px",
+          background: "transparent",
           border: "1px solid #2A2560",
-          padding: 24,
+          color: "#B8B5D1",
+          fontFamily: "var(--font-mono)",
+          fontWeight: 600,
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          cursor: busy ? "not-allowed" : "pointer",
         }}
       >
-        <h2
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "#F5F5FA",
-            margin: "0 0 16px",
-          }}
-        >
-          <span style={{ color: "var(--cosmetic-accent)" }}>›</span> Recadrer
-        </h2>
+        Annuler
+      </button>
+      <button
+        type="button"
+        onClick={handleConfirm}
+        disabled={busy || !natural}
+        style={{
+          flex: 1,
+          height: 44,
+          border: "1px solid #0024FF",
+          background: "#0024FF",
+          color: "#fff",
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 11,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          cursor: busy || !natural ? "not-allowed" : "pointer",
+          opacity: busy || !natural ? 0.6 : 1,
+        }}
+      >
+        {busy ? "Envoi…" : "Valider"}
+      </button>
+    </>
+  );
 
+  // The upload in flight is not something to walk away from: Escape and the
+  // backdrop wait for it, the buttons say so.
+  return (
+    <ModalShell
+      open
+      onClose={onCancel}
+      dismissable={!busy}
+      title="Recadrer l'avatar"
+      maxWidth={360}
+      actions={actions}
+    >
+      <div style={{ padding: "20px 24px 4px" }}>
         {/* Crop viewport */}
         <div
           onPointerDown={onPointerDown}
@@ -253,58 +274,12 @@ export function AvatarCropper({
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "#44406B",
-            margin: "4px 0 18px",
+            margin: "4px 0 14px",
           }}
         >
           Glisse l&apos;image pour la repositionner.
         </p>
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 12 }}>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            style={{
-              flex: "0 0 auto",
-              height: 44,
-              padding: "0 18px",
-              background: "transparent",
-              border: "1px solid #2A2560",
-              color: "#B8B5D1",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              cursor: busy ? "not-allowed" : "pointer",
-            }}
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={busy || !natural}
-            style={{
-              flex: 1,
-              height: 44,
-              border: "1px solid #0024FF",
-              background: "#0024FF",
-              color: "#fff",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              cursor: busy || !natural ? "not-allowed" : "pointer",
-              opacity: busy || !natural ? 0.6 : 1,
-            }}
-          >
-            {busy ? "Envoi…" : "Valider"}
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }

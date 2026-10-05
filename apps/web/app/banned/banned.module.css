@@ -148,38 +148,13 @@
   background: rgba(111, 107, 153, 0.08);
 }
 
-/* ── The notice on arrival ───────────────────────────────────────────────── */
+/* ── The notice on arrival (in the site's dialog, components/modal-shell) ── */
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(3, 2, 25, 0.82);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+.notice {
+  padding: 20px;
 }
 
-.modal {
-  width: min(520px, 100%);
-  padding: clamp(24px, 4vw, 34px);
-  border: 1px solid var(--border-strong);
-  border-top: 2px solid #ff4757;
-  background: #0a0826;
-  box-shadow: 0 30px 90px -40px rgba(0, 0, 0, 0.9);
-}
-
-.modalTitle {
-  margin: 0 0 12px;
-  font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.modalText {
+.noticeText {
   margin: 0 0 18px;
   font-family: var(--font-body);
   font-size: 14px;

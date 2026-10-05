@@ -331,15 +331,181 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
-@keyframes modal-in {
+/* The dialog every pop-up is made of (components/modal-shell.tsx): the
+   overlay, the frame, its header and action row. The width and the accent
+   edge are the caller's, inline. */
+.modal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 2, 25, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: modal-shell-fade 180ms ease;
+}
+.modal-shell--bare {
+  padding: 0;
+  outline: none;
+}
+.modal-shell__frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  background: #0a0826;
+  border: 1px solid #2a2560;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
+  outline: none;
+  animation: modal-shell-rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.modal-shell__head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1f1b47;
+}
+.modal-shell__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+}
+.modal-shell__eyebrow + .modal-shell__title {
+  margin-top: 6px;
+}
+.modal-shell__title {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #f5f5fa;
+}
+.modal-shell__meta {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #7f7ba9;
+}
+.modal-shell__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid #2a2560;
+  color: #b8b5d1;
+  cursor: pointer;
+}
+.modal-shell__close:hover {
+  border-color: #7f7ba9;
+  color: #f5f5fa;
+}
+.modal-shell__body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.modal-shell__actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #1f1b47;
+}
+@keyframes modal-shell-fade {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
+}
+@keyframes modal-shell-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-shell,
+  .modal-shell__frame {
+    animation: none;
+  }
+}
+
+/* "Niveau N atteint" (components/level-reached.tsx): on its own after a quest
+   claim, as a banner inside the lesson recap. */
+.level-reached {
+  text-align: center;
+}
+.level-reached__eyebrow {
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7f7ba9;
+}
+.level-reached__figure {
+  margin-bottom: 6px;
+  font-family: var(--font-display, sans-serif);
+  font-weight: 800;
+  font-size: 72px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.level-reached__label {
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+}
+.level-reached--sm {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 36, 255, 0.15),
+    color-mix(in srgb, var(--cosmetic-accent) 12%, transparent),
+    rgba(0, 36, 255, 0.15)
+  );
+}
+.level-reached--sm .level-reached__eyebrow {
+  margin-bottom: 6px;
+}
+.level-reached--sm .level-reached__figure {
+  margin-bottom: 4px;
+  font-size: 40px;
+}
+.level-reached--sm .level-reached__label {
+  margin-bottom: 0;
 }
 
 @keyframes xp-count-glow {

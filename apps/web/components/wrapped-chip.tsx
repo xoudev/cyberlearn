@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { getWrappedAction } from "@/app/(app)/_actions/wrapped-actions";
+import { ModalShell } from "@/components/modal-shell";
 
 /**
  * Fetched on the click, like the payload it renders.
@@ -140,29 +141,31 @@ export function WrappedChip({ periodKey }: { periodKey: string }): React.JSX.Ele
           {/* Three states, one overlay: the year being counted, the two ways
               that can fail, and the story itself. */}
           {data === null && (
-            <div className="ws-root" role="dialog" aria-modal="true" aria-label="Ton Wrapped">
-              <div className="ws-frame">
-                <div className="ws-stage">
-                  <p className="ws-eyebrow">{`Cyber Learn · Récap ${periodKey}`}</p>
-                  {failed === null && <p className="ws-lead">Calcul de ton année…</p>}
-                  {failed === "closed" && (
-                    <p className="ws-lead">
-                      Ton récap n’est pas ouvert en ce moment. Il revient le 1er décembre.
-                    </p>
-                  )}
-                  {failed === "error" && (
-                    <p className="ws-lead">
-                      Ton récap n’a pas pu être chargé. Recharge la page et réessaie.
-                    </p>
-                  )}
-                  <div className="ws-steps" style={{ borderTop: "none", padding: "20px 0 0" }}>
-                    <button type="button" className="ws-step" onClick={close}>
-                      Fermer
-                    </button>
+            <ModalShell open onClose={close} chrome="none" ariaLabel="Ton Wrapped">
+              <div className="ws-root">
+                <div className="ws-frame">
+                  <div className="ws-stage">
+                    <p className="ws-eyebrow">{`Cyber Learn · Récap ${periodKey}`}</p>
+                    {failed === null && <p className="ws-lead">Calcul de ton année…</p>}
+                    {failed === "closed" && (
+                      <p className="ws-lead">
+                        Ton récap n’est pas ouvert en ce moment. Il revient le 1er décembre.
+                      </p>
+                    )}
+                    {failed === "error" && (
+                      <p className="ws-lead">
+                        Ton récap n’a pas pu être chargé. Recharge la page et réessaie.
+                      </p>
+                    )}
+                    <div className="ws-steps" style={{ borderTop: "none", padding: "20px 0 0" }}>
+                      <button type="button" className="ws-step" onClick={close}>
+                        Fermer
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </ModalShell>
           )}
           {data !== null && (
             <WrappedExperience payload={data.payload} handle={data.handle} onClose={close} />
