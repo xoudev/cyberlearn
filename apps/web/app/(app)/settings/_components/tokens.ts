@@ -1,5 +1,5 @@
-// Shared design tokens for the Settings UI, mirrored from
-// docs/design/settings/settings.css (the `.settings` palette). Kept as TS
+// Shared design tokens for the Settings UI, mirrored from the original
+// settings mockup (the `.settings` palette), since removed. Kept as TS
 // constants applied via inline styles because the design's generic class names
 // (.card, .btn) collide with existing global styles in globals.css.
 

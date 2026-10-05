@@ -1,8 +1,8 @@
 /* ==========================================================================
    Cyber Learn: Exam screens (intro / question / results)
-   Faithful port of docs/design/paths/{exam-intro,exam-question,exam-results}.css
-   Scoped under .exam-root so it never leaks into the rest of the app.
-   Reproduced (not imported) per the design brief: zero dependency on the folder.
+   Ported from the original exam mockups (intro, question, results), which no
+   longer live in the repository. Scoped under .exam-root so it never leaks
+   into the rest of the app.
    ========================================================================== */
 
 .exam-root {

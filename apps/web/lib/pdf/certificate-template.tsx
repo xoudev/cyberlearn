@@ -3,7 +3,7 @@ import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/render
 import { LOGO_DATA_URL } from "./logo-data";
 
 /**
- * Certificate PDF: reproduces the docs/design/paths/certificate.css visual
+ * Certificate PDF: reproduces the original certificate mockup's visual
  * (landscape A4, dark on-brand theme, centered composition, double frame,
  * brand accent ribbon, meta row, QR + verification strip) within the
  * constraints of @react-pdf/renderer (no CSS gradients / clip-path / shadows →
