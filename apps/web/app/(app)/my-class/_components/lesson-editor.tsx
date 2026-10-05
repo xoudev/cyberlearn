@@ -3,12 +3,13 @@
 import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
+import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import {
   createClassLessonAction,
   updateClassLessonAction,
   type ClassLessonState,
 } from "../_actions/class-lesson-actions";
+import { refreshLessonPreviewAction } from "../_actions/preview-actions";
 import { Select } from "@cyberlearn/ui";
 
 /**
@@ -97,6 +98,7 @@ export function LessonEditor({
     {},
   );
   const [mdx, setMdx] = useState(draft?.contentMdx ?? STARTER);
+  const preview = useLessonPreview(refreshLessonPreviewAction);
 
   // A created lesson is worth opening: the point of writing one is what the
   // class ends up reading, and the rendered page is the only place that shows
@@ -201,10 +203,10 @@ export function LessonEditor({
         <div className="tle-editor__head">
           <span className="cls-field__label">Contenu</span>
           <span className="cls-field__hint">
-            Monaco · aperçu en direct · le même éditeur que la console
+            Monaco · aperçu rendu par le site · le même éditeur que la console
           </span>
         </div>
-        <MdxEditorPanel value={mdx} onChange={setMdx} />
+        <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
       </div>
 
       <div className="tle-actions">

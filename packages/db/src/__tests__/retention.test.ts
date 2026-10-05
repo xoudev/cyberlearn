@@ -17,6 +17,7 @@ const { mockPrisma } = vi.hoisted(() => ({
     $transaction: vi.fn(),
     auditLog: { deleteMany: vi.fn(), create: vi.fn() },
     contactTicket: { deleteMany: vi.fn() },
+    lessonPreview: { deleteMany: vi.fn() },
   },
 }));
 
@@ -75,18 +76,30 @@ describe("purgeExpiredRecords", () => {
     vi.clearAllMocks();
     mockPrisma.auditLog.deleteMany.mockReturnValue("auditLogs");
     mockPrisma.contactTicket.deleteMany.mockReturnValue("tickets");
+    mockPrisma.lessonPreview.deleteMany.mockReturnValue("previews");
   });
 
   it("deletes in one transaction and records what it did", async () => {
-    mockPrisma.$transaction.mockResolvedValue([{ count: 4 }, { count: 2 }, { count: 1 }]);
+    mockPrisma.$transaction.mockResolvedValue([
+      { count: 4 },
+      { count: 2 },
+      { count: 1 },
+      { count: 3 },
+    ]);
 
     await expect(purgeExpiredRecords(NOW)).resolves.toEqual({
       auditLogs: 4,
       resolvedTickets: 2,
       openTickets: 1,
+      lessonPreviews: 3,
     });
 
-    expect(mockPrisma.$transaction).toHaveBeenCalledWith(["auditLogs", "tickets", "tickets"]);
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith([
+      "auditLogs",
+      "tickets",
+      "tickets",
+      "previews",
+    ]);
     expect(mockPrisma.auditLog.deleteMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: monthsBefore(NOW, RETENTION_MONTHS.auditLog) } },
     });
@@ -95,18 +108,28 @@ describe("purgeExpiredRecords", () => {
       where: filters.resolved,
     });
     expect(mockPrisma.contactTicket.deleteMany).toHaveBeenNthCalledWith(2, { where: filters.open });
+    // An editor preview lives half an hour past its last refresh; whatever is
+    // older than now is gone.
+    expect(mockPrisma.lessonPreview.deleteMany).toHaveBeenCalledWith({
+      where: { expiresAt: { lt: NOW } },
+    });
     expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
       data: {
         actorId: null,
         action: "retention.purge",
         targetType: "Retention",
-        metadata: { auditLogs: 4, resolvedTickets: 2, openTickets: 1 },
+        metadata: { auditLogs: 4, resolvedTickets: 2, openTickets: 1, lessonPreviews: 3 },
       },
     });
   });
 
   it("leaves no trace on a day with nothing to purge", async () => {
-    mockPrisma.$transaction.mockResolvedValue([{ count: 0 }, { count: 0 }, { count: 0 }]);
+    mockPrisma.$transaction.mockResolvedValue([
+      { count: 0 },
+      { count: 0 },
+      { count: 0 },
+      { count: 0 },
+    ]);
     await purgeExpiredRecords(NOW);
     expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
   });

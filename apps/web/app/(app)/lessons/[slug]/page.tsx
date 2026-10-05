@@ -21,37 +21,9 @@ import { LessonQA } from "./_components/lesson-qa";
 import { NextBar } from "./_components/next-bar";
 import { LessonAuthor } from "./_components/lesson-author";
 import { LessonGlossaryNote } from "./_components/lesson-glossary-note";
-import { CodeBlock } from "./_components/code-block";
 import { LessonStepper } from "./_components/lesson-stepper";
 import { SectionPane } from "./_components/section-pane";
-import { Quiz } from "./_components/quiz";
-import { CodePlayground } from "./_components/code-playground";
-import { SimulatedTerminal } from "./_components/simulated-terminal";
-import { LinuxTerminal } from "./_components/linux-terminal";
-import { LessonVideo } from "./_components/lesson-video";
-import { LessonImage } from "./_components/lesson-image";
-import { ExternalLink } from "./_components/external-link";
-import { Callout } from "./_components/callout";
-import { Diagram } from "./_components/diagram";
-import { QuizGroup } from "./_components/quiz-group";
-import { PythonChallenge } from "./_components/python-challenge";
-import { FindTheFlaw } from "./_components/find-the-flaw";
-import { PhishingEmail } from "./_components/phishing-email";
-import { SqlInjectionLab } from "./_components/sql-injection-lab";
-import { SqlPlayground } from "./_components/sql-playground";
-import { GitSandbox } from "./_components/git-sandbox";
-import { PhotoOsint } from "./_components/photo-osint";
-import { NetworkLab } from "./_components/network-lab";
-import { StepAnimation } from "./_components/step-animation";
-import { PhpLab } from "./_components/php-lab";
-import { SubnetDrill } from "./_components/subnet-drill";
-import { PacketDissector } from "./_components/packet-dissector";
-import { PutInOrder } from "./_components/put-in-order";
-import { MatchPairs } from "./_components/match-pairs";
-import { CryptoWorkshop } from "./_components/crypto-workshop";
-import { FirewallLab } from "./_components/firewall-lab";
-import { LogHunt } from "./_components/log-hunt";
-import { HexEditor } from "./_components/hex-editor";
+import { LESSON_MDX_COMPONENTS } from "./_components/lesson-mdx-components";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -59,38 +31,6 @@ import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-c
 // Not the lesson's own title: the slug alone would put the title of a
 // class-only lesson in the tab of anyone who guessed its address.
 export const metadata: Metadata = { title: "Leçon" };
-
-const MDX_COMPONENTS = {
-  pre: CodeBlock,
-  Quiz,
-  CodePlayground,
-  SimulatedTerminal,
-  LinuxTerminal,
-  LessonVideo,
-  LessonImage,
-  ExternalLink,
-  Callout,
-  Diagram,
-  QuizGroup,
-  PythonChallenge,
-  FindTheFlaw,
-  PhishingEmail,
-  SqlPlayground,
-  SqlInjectionLab,
-  GitSandbox,
-  PhotoOsint,
-  NetworkLab,
-  StepAnimation,
-  PhpLab,
-  SubnetDrill,
-  PacketDissector,
-  PutInOrder,
-  MatchPairs,
-  CryptoWorkshop,
-  FirewallLab,
-  LogHunt,
-  HexEditor,
-};
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -513,7 +453,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                 the whole lesson down. See lesson-section.tsx. */}
               <LessonSection
                 source={src}
-                components={MDX_COMPONENTS}
+                components={LESSON_MDX_COMPONENTS}
                 options={LESSON_MDX_OPTIONS}
                 lessonSlug={lesson.slug}
                 index={i}

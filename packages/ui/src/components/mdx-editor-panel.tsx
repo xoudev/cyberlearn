@@ -11,10 +11,12 @@
  * guide entry in one editor and not the other, and the teacher quietly ends up
  * with the lesser half of the product.
  *
- * The preview here is a deliberate approximation, not the real renderer: it
- * reads the MDX with regular expressions so it can run on every keystroke
- * without the remark/rehype chain. What it shows is close enough to compose
- * against; the lesson page remains the source of truth.
+ * Two previews. The real one is the site's: given a `preview` prop, the panel
+ * sends the draft to the site after each pause in typing and frames the page
+ * the site renders, with the lesson components themselves (mdx-preview-frame).
+ * The quick one is a deliberate approximation: it reads the MDX with regular
+ * expressions so it can run on every keystroke without the remark/rehype
+ * chain. It is what the panel has without a `preview`, and a switch away with.
  */
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
@@ -28,6 +30,11 @@ import {
   type GuideGroup,
   type GuideSection,
 } from "./mdx-guide-sections";
+import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
+import { inlineTokens, innerText, parseStringProps, stripImportDeclarations } from "./mdx-source";
+
+export { useLessonPreview } from "./mdx-preview-frame";
+export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
 
 type EditorInstance = Parameters<OnMount>[0];
 
@@ -68,70 +75,56 @@ const DANGER = "#FF4D6D";
 // ── Preview - inline markdown renderer ────────────────────────────────────────
 
 function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**"))
-      return (
-        <strong key={i} style={{ color: "#F5F5FA", fontWeight: 700 }}>
-          {part.slice(2, -2)}
-        </strong>
-      );
-    if (part.startsWith("*") && part.endsWith("*"))
-      return (
-        <em key={i} style={{ color: "#D0CDEC" }}>
-          {part.slice(1, -1)}
-        </em>
-      );
-    if (part.startsWith("`") && part.endsWith("`"))
-      return (
-        <code
-          key={i}
-          style={{
-            fontFamily: MONO,
-            background: "#1A1740",
-            color: ACCENT,
-            padding: "1px 5px",
-            borderRadius: 3,
-            fontSize: "0.88em",
-          }}
-        >
-          {part.slice(1, -1)}
-        </code>
-      );
-    const lm = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
-    if (lm)
-      return (
-        <span key={i} style={{ color: "#4D8BFF", textDecoration: "underline", cursor: "pointer" }}>
-          {lm[1]}
-        </span>
-      );
-    return <React.Fragment key={i}>{part}</React.Fragment>;
+  return inlineTokens(text).map((token, i) => {
+    switch (token.kind) {
+      case "strong":
+        return (
+          <strong key={i} style={{ color: "#F5F5FA", fontWeight: 700 }}>
+            {token.text}
+          </strong>
+        );
+      case "em":
+        return (
+          <em key={i} style={{ color: "#D0CDEC" }}>
+            {token.text}
+          </em>
+        );
+      case "code":
+        return (
+          <code
+            key={i}
+            style={{
+              fontFamily: MONO,
+              background: "#1A1740",
+              color: ACCENT,
+              padding: "1px 5px",
+              borderRadius: 3,
+              fontSize: "0.88em",
+            }}
+          >
+            {token.text}
+          </code>
+        );
+      case "link":
+        return (
+          <span
+            key={i}
+            style={{ color: "#4D8BFF", textDecoration: "underline", cursor: "pointer" }}
+          >
+            {token.text}
+          </span>
+        );
+      case "text":
+        return <React.Fragment key={i}>{token.text}</React.Fragment>;
+    }
   });
-}
-
-/**
- * The string props of a component's opening tag, wherever they sit: on the
- * tag's line or one per line below it. A quoted value may hold the other
- * kind of quote ("L'image"). Expression props ({...}) are left out; the
- * preview does not read them.
- */
-function parseProps(src: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const head = src.split(/\/>|>\s*$|>\n/m)[0] ?? src;
-  const re = /(\w+)=(?:"([^"]*)"|'([^']*)')/g;
-  let m;
-  while ((m = re.exec(head)) !== null) {
-    const value = m[2] ?? m[3];
-    if (m[1] && value !== undefined) out[m[1]] = value;
-  }
-  return out;
 }
 
 function PreviewComponent({ source }: { source: string }): React.ReactElement {
   const nameMatch = /^<([A-Z]\w*)/.exec(source);
   const name = nameMatch?.[1] ?? "Unknown";
-  const props = parseProps(source);
-  const inner = />([^<]*)<\/[A-Z]/.exec(source)?.[1]?.trim() ?? "";
+  const props = parseStringProps(source);
+  const inner = innerText(source);
 
   if (name === "Callout") {
     const type = props.type ?? "info";
@@ -327,12 +320,8 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
 }
 
 function MdxPreview({ content }: { content: string }): React.ReactElement {
-  const body = content
-    .replace(/^---[\s\S]*?---\n?/, "")
-    // Strip MDX/JS import declarations only (require 'from "…"' or bare import "…"')
-    // Bare Python/etc. imports like `import hashlib` inside code blocks are preserved.
-    .replace(/^import\s+.*\s+from\s+['"][^'"]+['"].*$/gm, "")
-    .replace(/^import\s+['"][^'"]+['"].*$/gm, "");
+  // Frontmatter and import declarations are not part of what the page draws.
+  const body = stripImportDeclarations(content.replace(/^---[\s\S]*?---\n?/, ""));
 
   const lines = body.split("\n");
   const elements: React.ReactElement[] = [];
@@ -963,22 +952,30 @@ function defineTheme(monaco: Parameters<BeforeMount>[0]) {
 export interface MdxEditorPanelProps {
   value: string;
   onChange: (v: string) => void;
+  /** The site's rendering of the draft, when the app provides it (useLessonPreview). */
+  preview?: MdxEditorPreview;
 }
 
-export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.ReactElement {
+export function MdxEditorPanel({
+  value,
+  onChange,
+  preview,
+}: MdxEditorPanelProps): React.ReactElement {
   const editorRef = useRef<EditorInstance | null>(null);
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
   const [sandboxLang, setSandboxLang] = useState<"python" | "javascript" | "c" | "asm">("python");
   const [terminalShell, setTerminalShell] = useState<"bash" | "powershell">("bash");
-  const [preview, setPreview] = useState(value);
+  const [quickPreview, setQuickPreview] = useState(value);
   const [showGuide, setShowGuide] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"site" | "quick">("site");
+  const sitePreview = preview !== undefined && previewMode === "site";
 
-  // Debounced preview update
+  // Debounced quick preview update
   useEffect(() => {
     const t = setTimeout(() => {
-      setPreview(value);
+      setQuickPreview(value);
     }, 350);
     return () => {
       clearTimeout(t);
@@ -1597,10 +1594,18 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           />
         </div>
 
-        {/* Live preview / Guide */}
+        {/* Guide / the site's preview / the quick preview */}
         {split &&
           (showGuide ? (
             <MdxGuide onInsert={insertAt} />
+          ) : sitePreview ? (
+            <MdxPreviewFrame
+              value={value}
+              preview={preview}
+              onQuick={() => {
+                setPreviewMode("quick");
+              }}
+            />
           ) : (
             <div
               style={{
@@ -1632,10 +1637,20 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
                     boxShadow: `0 0 6px ${ACCENT}`,
                   }}
                 />
-                PREVIEW
-                <span style={{ marginLeft: "auto", color: "#2A2560" }}>350ms debounce</span>
+                APERÇU RAPIDE
+                <span style={{ marginLeft: "auto", color: "#2A2560" }}>approximation · 350 ms</span>
+                {preview !== undefined && (
+                  <PaneButton
+                    title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
+                    onClick={() => {
+                      setPreviewMode("site");
+                    }}
+                  >
+                    SITE
+                  </PaneButton>
+                )}
               </div>
-              <MdxPreview content={preview} />
+              <MdxPreview content={quickPreview} />
             </div>
           ))}
       </div>

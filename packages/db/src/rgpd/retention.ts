@@ -32,6 +32,8 @@ export interface RetentionSummary {
   auditLogs: number;
   resolvedTickets: number;
   openTickets: number;
+  /** Editor previews past their half hour (lesson-preview.repository.ts). */
+  lessonPreviews: number;
 }
 
 /**
@@ -98,20 +100,22 @@ export function expiredTicketFilters(now: Date): {
  */
 export async function purgeExpiredRecords(now: Date): Promise<RetentionSummary> {
   const tickets = expiredTicketFilters(now);
-  const [auditLogs, resolvedTickets, openTickets] = await prisma.$transaction([
+  const [auditLogs, resolvedTickets, openTickets, lessonPreviews] = await prisma.$transaction([
     prisma.auditLog.deleteMany({
       where: { createdAt: { lt: monthsBefore(now, RETENTION_MONTHS.auditLog) } },
     }),
     prisma.contactTicket.deleteMany({ where: tickets.resolved }),
     prisma.contactTicket.deleteMany({ where: tickets.open }),
+    prisma.lessonPreview.deleteMany({ where: { expiresAt: { lt: now } } }),
   ]);
 
   const summary: RetentionSummary = {
     auditLogs: auditLogs.count,
     resolvedTickets: resolvedTickets.count,
     openTickets: openTickets.count,
+    lessonPreviews: lessonPreviews.count,
   };
-  if (summary.auditLogs + summary.resolvedTickets + summary.openTickets > 0) {
+  if (Object.values(summary).some((count) => count > 0)) {
     await prisma.auditLog.create({
       data: {
         actorId: null,

@@ -14,7 +14,34 @@ const isDev = process.env.NODE_ENV === "development";
 // Allow those sources on previews only - production keeps the strict policy.
 const isVercelPreview = process.env.VERCEL_ENV === "preview";
 
-function buildSecurityHeaders(nonce: string): Record<string, string> {
+/**
+ * The lesson editor's preview: the site renders a draft, and the editor (the
+ * console's, or a teacher's on this site) shows the page in an iframe. It is
+ * the one route that may be framed, and only by this origin and the console's.
+ * The token in its address is its credential; see lesson-preview.repository.ts.
+ */
+export function isPreviewRoute(pathname: string): boolean {
+  return pathname.startsWith("/preview/");
+}
+
+/** The console's origin, from NEXT_PUBLIC_ADMIN_URL; null when unset or not an address. */
+function adminOrigin(): string | null {
+  const raw = process.env.NEXT_PUBLIC_ADMIN_URL;
+  if (raw === undefined || raw === "") return null;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
+}
+
+function buildSecurityHeaders(nonce: string, pathname: string): Record<string, string> {
+  const framable = isPreviewRoute(pathname);
+  const admin = adminOrigin();
+  const frameAncestors = framable
+    ? `frame-ancestors 'self'${admin === null ? "" : ` ${admin}`}`
+    : "frame-ancestors 'none'";
+
   const vercelLive = {
     script: isVercelPreview ? " https://vercel.live" : "",
     style: isVercelPreview ? " https://vercel.live" : "",
@@ -50,7 +77,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       // blob: required for Monaco editor web workers and Pyodide blob worker
       "worker-src 'self' blob:",
       "object-src 'none'",
-      "frame-ancestors 'none'",
+      frameAncestors,
       "form-action 'self'",
       "base-uri 'self'",
       ...(isDev ? [] : ["upgrade-insecure-requests"]),
@@ -61,7 +88,9 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
     ].join("; "),
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
+    // X-Frame-Options cannot name the console, so the framable route relies on
+    // frame-ancestors alone, which every browser in use honours.
+    ...(framable ? {} : { "X-Frame-Options": "DENY" }),
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "Cross-Origin-Opener-Policy": "same-origin",
@@ -69,8 +98,8 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
   };
 }
 
-function applySecurityHeaders(response: NextResponse, nonce: string): void {
-  const headers = buildSecurityHeaders(nonce);
+function applySecurityHeaders(response: NextResponse, nonce: string, pathname: string): void {
+  const headers = buildSecurityHeaders(nonce, pathname);
   Object.entries(headers).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
@@ -113,6 +142,9 @@ function isPublicRoute(pathname: string): boolean {
     // remember how to sign in, which is the point of the link.
     pathname === "/account/keep" ||
     pathname.startsWith("/account/keep/") ||
+    // The editor's preview of a draft: its token is its credential, and the
+    // console's editor frames it without a session on this site.
+    isPreviewRoute(pathname) ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     // Crawler and PWA files. Without these the middleware answered /robots.txt
@@ -234,7 +266,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const forumRedirect = forumSubdomainTarget(request);
   if (forumRedirect) {
     const redirectResponse = NextResponse.redirect(forumRedirect, 308);
-    applySecurityHeaders(redirectResponse, nonce);
+    applySecurityHeaders(redirectResponse, nonce, pathname);
     return redirectResponse;
   }
 
@@ -246,7 +278,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     callbackUrl.pathname = "/auth/callback";
     const callbackResponse = NextResponse.redirect(callbackUrl);
     callbackResponse.headers.set("Cache-Control", "no-store");
-    applySecurityHeaders(callbackResponse, nonce);
+    applySecurityHeaders(callbackResponse, nonce, pathname);
     callbackResponse.headers.set("Referrer-Policy", "no-referrer");
     return callbackResponse;
   }
@@ -262,7 +294,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Block /dev/* in production - return 404, not 403 (don't reveal route existence)
   if (isDevRoute(pathname) && process.env.NODE_ENV === "production") {
     const notFound = new NextResponse(null, { status: 404 });
-    applySecurityHeaders(notFound, nonce);
+    applySecurityHeaders(notFound, nonce, pathname);
     return notFound;
   }
 
@@ -275,7 +307,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // If env vars aren't set yet (local dev without .env.local), skip auth checks
   if (!supabaseUrl || !supabaseAnonKey) {
     const res = NextResponse.next({ request: { headers: requestHeaders } });
-    applySecurityHeaders(res, nonce);
+    applySecurityHeaders(res, nonce, pathname);
     res.headers.set(REQUEST_ID_HEADER, requestId);
     return res;
   }
@@ -319,7 +351,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectTo", pathname);
       const redirectResponse = NextResponse.redirect(loginUrl);
-      applySecurityHeaders(redirectResponse, nonce);
+      applySecurityHeaders(redirectResponse, nonce, pathname);
       return redirectResponse;
     }
   } else {
@@ -339,7 +371,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         const mfaUrl = new URL("/mfa", request.url);
         mfaUrl.searchParams.set("next", pathname);
         const redirectResponse = NextResponse.redirect(mfaUrl);
-        applySecurityHeaders(redirectResponse, nonce);
+        applySecurityHeaders(redirectResponse, nonce, pathname);
         return redirectResponse;
       }
     }
@@ -368,7 +400,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     ) {
       const onboardingUrl = new URL("/onboarding", request.url);
       const redirectResponse = NextResponse.redirect(onboardingUrl);
-      applySecurityHeaders(redirectResponse, nonce);
+      applySecurityHeaders(redirectResponse, nonce, pathname);
       return redirectResponse;
     }
 
@@ -385,12 +417,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     ) {
       const dashboardUrl = new URL("/dashboard", request.url);
       const redirectResponse = NextResponse.redirect(dashboardUrl);
-      applySecurityHeaders(redirectResponse, nonce);
+      applySecurityHeaders(redirectResponse, nonce, pathname);
       return redirectResponse;
     }
   }
 
-  applySecurityHeaders(response, nonce);
+  applySecurityHeaders(response, nonce, pathname);
   response.headers.set(REQUEST_ID_HEADER, requestId);
   return response;
 }

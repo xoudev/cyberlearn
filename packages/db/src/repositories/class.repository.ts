@@ -603,6 +603,14 @@ export const classRepository = {
     return teaches > 0 || user?.role === "ADMIN";
   },
 
+  /**
+   * Whether this account teaches at least one class, archived or not: what
+   * makes somebody an author of lessons on the site (the editor's preview).
+   */
+  async teachesAnyClass(userId: string): Promise<boolean> {
+    return (await prisma.classTeacher.count({ where: { teacherId: userId } })) > 0;
+  },
+
   /** The work set for these classes, soonest deadline first. */
   async listAssignments(classIds: string[]) {
     if (classIds.length === 0) return [];

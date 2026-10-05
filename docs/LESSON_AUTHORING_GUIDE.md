@@ -183,6 +183,14 @@ pipeline (`LESSON_COMPONENT_NAMES`) sans fiche fait échouer
 `packages/lib/src/mdx/components.test.ts`, qui vérifie aussi que chaque
 exemple passe le contrôle de l'éditeur et que chaque section citée existe.
 
+L'aperçu de l'éditeur est celui du site : après chaque pause de frappe, le
+brouillon part dans la table `lesson_previews` sous un jeton, et le site le
+rend sur `/preview/<jeton>` (les composants des leçons, toutes les sections
+l'une sous l'autre, rien d'enregistré), dans un cadre à droite de l'éditeur.
+Un brouillon qui ne s'affiche pas est refusé avec la section et la ligne en
+cause, avant toute sauvegarde. L'aperçu vit une demi-heure après sa dernière
+mise à jour ; le bouton « Rapide » redonne l'ancienne approximation.
+
 ### 5.1 Callout
 
 Encadré coloré pour attirer l'attention. 4 types disponibles.

@@ -57,6 +57,9 @@ export const env = createEnv({
 
     // Site URLs
     NEXT_PUBLIC_SITE_URL: z.url(),
+    // The console's address: the one other origin allowed to frame the lesson
+    // editor's preview (middleware.ts). Optional: without it, only this site may.
+    NEXT_PUBLIC_ADMIN_URL: z.url().optional(),
 
     // Mobile distribution links (the page stays usable while a channel is unavailable)
     NEXT_PUBLIC_ANDROID_PLAY_URL: z.url().optional(),
@@ -93,6 +96,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL,
     NEXT_PUBLIC_ANDROID_PLAY_URL: process.env.NEXT_PUBLIC_ANDROID_PLAY_URL,
     NEXT_PUBLIC_ANDROID_APK_URL: process.env.NEXT_PUBLIC_ANDROID_APK_URL,
     NEXT_PUBLIC_IOS_APP_STORE_URL: process.env.NEXT_PUBLIC_IOS_APP_STORE_URL,
