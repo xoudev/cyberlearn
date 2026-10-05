@@ -4,12 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import type { FriendsBoard, LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
 import type { LeagueDivisionCode } from "@cyberlearn/lib";
-import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
+import { DISPLAY, fmtXp, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Crumb } from "@/components/crumb";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
+import { initialsOf } from "@/lib/avatar/glyphs";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function PodiumCard({
       }
     : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       (RK_COLORS[rank] ?? RK_COLORS[3]!);
-  const mono = getMonogram(entry.displayName, entry.username);
+  const mono = initialsOf(entry.displayName ?? entry.username ?? "Anonyme");
   const tier = rankName(entry.level);
   const isGold = rank === 1 && !isMe;
 
@@ -353,7 +354,7 @@ function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
       </div>
       <div className={styles.playerIdentity}>
         <HexAvatar
-          mono={getMonogram(entry.displayName, entry.username)}
+          mono={initialsOf(entry.displayName ?? entry.username ?? "Anonyme")}
           grad={
             RK_COLORS[entry.rank]?.grad ??
             "linear-gradient(135deg, #6e8bff, var(--cosmetic-accent))"

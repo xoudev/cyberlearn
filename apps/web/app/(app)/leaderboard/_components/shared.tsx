@@ -7,14 +7,6 @@ import { formatNumberFr } from "@cyberlearn/lib";
 export const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 export const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 
-/** Two-letter monogram from a name; "AN" (Anonyme) when nothing is available. */
-export function getMonogram(displayName: string | null, username: string | null): string {
-  const name = displayName ?? username ?? "Anonyme";
-  const parts = name.split(/[\s._-]/);
-  if (parts.length >= 2) return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
-
 export function fmtXp(xp: number): string {
   // Rendered by client components: see formatNumberFr for why not toLocaleString.
   return formatNumberFr(xp);

@@ -1,61 +1,35 @@
 import React from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { computeLevel, computeTier } from "@cyberlearn/lib";
 import { classRepository, userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
-import { glyphNameOf, glyphPath } from "@/lib/avatar/glyphs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
 import { Crumb } from "@/components/crumb";
 import { StatTile } from "@/components/stat-tile";
-import type {
-  SerializedBadge,
-  SerializedLesson,
-  SerializedCert,
-} from "./_components/profile-content";
+import { AvatarView } from "@/components/avatar-view";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { XpProgress } from "@/components/xp-progress";
+import {
+  BADGE_RARITY_GRADIENT,
+  BADGE_RARITY_LABELS,
+  BADGE_RARITY_VAR,
+  rarestOf,
+  type BadgeRarity,
+} from "@cyberlearn/ui";
+import type { SerializedLesson, SerializedCert } from "./_components/profile-content";
+import type { SerializedBadge } from "@/lib/badges/collection";
 
 export const metadata: Metadata = { title: "Profil" };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const HEX_CLIP = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
-
-const RARITY_ORDER = ["LEGENDARY", "EPIC", "RARE", "COMMON"] as const;
-type Rarity = (typeof RARITY_ORDER)[number];
-
-const RARITY_GRAD: Record<Rarity, string> = {
-  LEGENDARY: "linear-gradient(135deg, #FFB547 0%, #FF4757 50%, #0024FF 100%)",
-  EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, #0024FF 100%)",
-  RARE: "linear-gradient(135deg, #6E8BFF 0%, #4A3FCC 100%)",
-  COMMON: "linear-gradient(135deg, #B8B5D1 0%, #7F7BA9 100%)",
-};
-
-const RARITY_COLOR: Record<Rarity, string> = {
-  LEGENDARY: "#FFB547",
-  EPIC: "var(--cosmetic-accent)",
-  RARE: "#6E8BFF",
-  COMMON: "#B8B5D1",
-};
-
-const RARITY_LABEL: Record<Rarity, string> = {
-  LEGENDARY: "★ Légendaire",
-  EPIC: "★ Épique",
-  RARE: "★ Rare",
-  COMMON: "★ Commun",
-};
-
-function topRarity(rarities: string[]): Rarity {
-  for (const r of RARITY_ORDER) {
-    if (rarities.includes(r)) return r;
-  }
-  return "COMMON";
-}
 
 // ── Hex avatar ────────────────────────────────────────────────────────────────
 
@@ -66,17 +40,11 @@ function HexAvatar({
 }: {
   avatarUrl: string | null;
   displayName: string;
-  rarity: Rarity;
+  rarity: BadgeRarity;
 }) {
-  const grad = RARITY_GRAD[rarity];
-  const color = RARITY_COLOR[rarity];
-  const label = RARITY_LABEL[rarity];
-  // avatarUrl is stored as "__glyph:{name}" for a built-in glyph, which must
-  // never reach next/image. Empty string means a glyph nothing draws, which
-  // falls back to a circle. The paths live in lib/avatar/glyphs.
-  const named = glyphNameOf(avatarUrl);
-  const glyph = named === null ? null : (glyphPath(named) ?? "");
-
+  const grad = BADGE_RARITY_GRADIENT[rarity];
+  const color = BADGE_RARITY_VAR[rarity];
+  const label = `★ ${BADGE_RARITY_LABELS[rarity]}`;
   return (
     <div
       style={{
@@ -129,45 +97,14 @@ function HexAvatar({
             placeItems: "center",
           }}
         >
-          {glyph !== null ? (
-            <svg
-              width={64}
-              height={64}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={color}
-              strokeWidth={1.2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              {glyph !== "" ? <path d={glyph} /> : <circle cx="12" cy="12" r="8" />}
-            </svg>
-          ) : avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt={displayName}
-              fill
-              style={{ objectFit: "cover" }}
-              sizes="148px"
-            />
-          ) : (
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: 56,
-                letterSpacing: "-0.04em",
-                background: grad,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                lineHeight: 1,
-              }}
-            >
-              {displayName.charAt(0).toUpperCase()}
-            </span>
-          )}
+          <AvatarView
+            src={avatarUrl}
+            name={displayName}
+            className="profile-avatar"
+            glyphSize={64}
+            glyphColor={color}
+            style={{ backgroundImage: grad }}
+          />
         </div>
       </div>
       {/* Rarity label */}
@@ -225,7 +162,6 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
   const { level, current: xpCurrent, needed: xpNeeded } = computeLevel(user.xpTotal);
   const tier = computeTier(level);
-  const xpPct = xpNeeded > 0 ? Math.min((xpCurrent / xpNeeded) * 100, 100) : 100;
   const xpRemaining = xpNeeded - xpCurrent;
 
   const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
@@ -234,12 +170,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
   // Highest rarity badge for avatar ring
   const earnedRarities = user.badges.map((ub) => ub.badge.rarity as string);
-  // SAFETY: topRarity always returns one of the RARITY_ORDER values
-  const avatarRarity = topRarity(earnedRarities);
+  const avatarRarity = rarestOf(earnedRarities);
 
   // Serialize badges (drop Date objects)
   const serializedBadges: SerializedBadge[] = user.badges.map((ub) => ({
     id: ub.badge.id,
+    refCode: ub.badge.refCode,
+    earned: true,
+    progress: null,
     name: ub.badge.name,
     description: ub.badge.description,
     iconUrl: ub.badge.iconUrl,
@@ -721,114 +659,12 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 letterSpacing: "-0.01em",
               }}
             >
-              Niv. {level}
+              {levelLabel(level)}
             </b>
           </div>
         </div>
 
-        {/* Track */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              color: "#7F7BA9",
-              textTransform: "uppercase",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 18,
-                fontWeight: 700,
-                color: "#F5F5FA",
-                letterSpacing: "-0.01em",
-                textTransform: "none",
-              }}
-            >
-              <b style={{ color: "var(--cosmetic-accent)" }}>{xpCurrent.toLocaleString("fr-FR")}</b>{" "}
-              / {xpNeeded.toLocaleString("fr-FR")} XP
-            </span>
-            <span>→ Niv. {level + 1}</span>
-            <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
-              {Math.round(xpPct)}%
-            </span>
-          </div>
-
-          {/* Segmented bar (marginBottom reserves a row for the YOU marker,
-              which now sits below the bar so it never overlaps the centered
-              "Niv. N+1" label in the row above) */}
-          <div
-            style={{
-              position: "relative",
-              height: 10,
-              marginBottom: 22,
-              background: "#05041A",
-              border: "1px solid #1F1B47",
-              overflow: "visible",
-            }}
-          >
-            {/* Hash marks */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage:
-                  "repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(42,37,96,0.7) calc(10% - 1px), rgba(42,37,96,0.7) 10%)",
-                pointerEvents: "none",
-                zIndex: 1,
-              }}
-              aria-hidden="true"
-            />
-            {/* Fill */}
-            <div
-              style={{
-                position: "relative",
-                height: "100%",
-                width: `${xpPct.toFixed(1)}%`,
-                background: "linear-gradient(90deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
-                boxShadow: "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)",
-                zIndex: 2,
-              }}
-            >
-              {/* Marker line */}
-              <div
-                style={{
-                  position: "absolute",
-                  right: -1,
-                  top: -4,
-                  bottom: -4,
-                  width: 2,
-                  background: "var(--cosmetic-accent)",
-                  boxShadow: "0 0 12px var(--cosmetic-accent)",
-                }}
-                aria-hidden="true"
-              />
-            </div>
-            {/* YOU label - placed below the bar so it never collides with the
-                centered "Niv. N+1" label sitting above the track */}
-            <span
-              style={{
-                position: "absolute",
-                top: "calc(100% + 5px)",
-                left: `${xpPct.toFixed(1)}%`,
-                transform: "translateX(-50%)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9.5,
-                color: "var(--cosmetic-accent)",
-                letterSpacing: "0.1em",
-                whiteSpace: "nowrap",
-                zIndex: 3,
-              }}
-            >
-              YOU · {xpCurrent.toLocaleString("fr-FR")}
-            </span>
-          </div>
-        </div>
+        <XpProgress current={xpCurrent} needed={xpNeeded} level={level} />
 
         {/* Remaining XP */}
         <div
@@ -900,7 +736,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               marginTop: 10,
             }}
           >
-            Niv. {level}
+            {levelLabel(level)}
           </sub>
         </StatTile>
 

@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.13",
+    date: "2026-10-05",
+    title: "Un avatar, un niveau, une rareté : les mêmes partout",
+    changes: [
+      {
+        type: "improved",
+        text: "Ton avatar est dessiné par le même composant dans la barre du haut, sur ton profil, sur ton profil public et sous une leçon que tu as écrite. Un niveau s'écrit « Niv. 7 » partout, dans l'app aussi, au lieu de trois graphies. La barre d'XP du profil public est celle du profil, et les badges du profil sont les cartes de la page des badges.",
+      },
+    ],
+  },
+  {
     version: "3.12",
     date: "2026-10-05",
     title: "Les mêmes briques d'une page à l'autre",

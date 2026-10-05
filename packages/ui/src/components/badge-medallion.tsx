@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { cn } from "../lib/utils.js";
-import type { BadgeRarity } from "./rarity-badge.js";
+import type { BadgeRarity } from "./badge-tokens.js";
 import { BADGE_RARITY_VAR } from "./badge-tokens.js";
 
 export type BadgeMedallionSize = "xs" | "sm" | "md" | "lg";

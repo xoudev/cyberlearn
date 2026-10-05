@@ -8,6 +8,7 @@ import { Text } from "@/components/ui";
 import { acceptFriendApi, removeFriendApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { removeLabel, type Friend, type FriendListKind } from "@/lib/friends";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * One person in a friends list, with what the site's panel offers on the
@@ -63,7 +64,7 @@ export function FriendRow({
               {friend.name}
             </Text>
             <Text variant="mono" style={{ fontSize: 10.5, color: theme.accent }}>
-              {`NIV·${String(friend.level)}`}
+              {levelLabel(friend.level)}
               {username !== null ? (
                 <Text style={{ color: colors.textMuted }}>{`  @${username}`}</Text>
               ) : null}

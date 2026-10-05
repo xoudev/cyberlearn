@@ -1,6 +1,5 @@
 import React from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { friendshipRepository, userRepository } from "@cyberlearn/db";
@@ -12,6 +11,8 @@ import { getRequestUser } from "@/lib/auth";
 import { AddFriendButton } from "@/components/add-friend-button";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { StatTile } from "@/components/stat-tile";
+import { AvatarView } from "@/components/avatar-view";
+import { XpProgress } from "@/components/xp-progress";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -120,7 +121,6 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const avatarSrc = await resolveAvatarSrc(user.avatarUrl);
 
   const { level, current, needed } = computeLevel(user.xpTotal);
-  const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
     user.createdAt,
   );
@@ -237,30 +237,12 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   placeItems: "center",
                 }}
               >
-                {avatarSrc && !avatarSrc.startsWith("__glyph:") ? (
-                  <Image
-                    src={avatarSrc}
-                    alt={user.displayName}
-                    fill
-                    style={{ objectFit: "cover" }}
-                    sizes="96px"
-                  />
-                ) : (
-                  <span
-                    style={{
-                      ...SANS,
-                      fontWeight: 800,
-                      fontSize: 38,
-                      letterSpacing: "-0.03em",
-                      background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
-                      WebkitBackgroundClip: "text",
-                      backgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <AvatarView
+                  src={avatarSrc}
+                  name={user.displayName}
+                  className="pub-avatar"
+                  glyphSize={44}
+                />
               </div>
             </div>
 
@@ -395,47 +377,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   → LVL {level + 1}
                 </span>
               </div>
-              {/* XP bar (derived from public xpTotal) */}
-              <div
-                style={{
-                  height: 8,
-                  background: "rgba(5,4,26,0.9)",
-                  border: "1px solid #2A2560",
-                  overflow: "hidden",
-                  marginBottom: 8,
-                }}
-                role="progressbar"
-                aria-valuenow={Math.round(xpPercent)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${xpPercent.toFixed(1)}%`,
-                    background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
-                    boxShadow: "0 0 14px rgba(10,255,212,0.6)",
-                  }}
-                />
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  ...MONO,
-                  fontSize: 10,
-                  color: "#7F7BA9",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                <span>
-                  <b style={{ color: "#F5F5FA", fontWeight: 600 }}>
-                    {current.toLocaleString("fr-FR")}
-                  </b>{" "}
-                  / {needed.toLocaleString("fr-FR")} XP
-                </span>
-                <span>{Math.round(xpPercent)}%</span>
-              </div>
+              <XpProgress current={current} needed={needed} level={level} />
             </div>
           </div>
         </article>

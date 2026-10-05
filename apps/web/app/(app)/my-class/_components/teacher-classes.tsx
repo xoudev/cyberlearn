@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
 import { ClassLessons, type ClassLessonRow } from "./class-lessons";
 import { ClassPaths, type ClassPathRow } from "./class-paths";
+import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 import {
   ClassResources,
   type ResourceAssignmentOption,
@@ -219,7 +220,7 @@ function ClassCard({
                       />
                     </span>
                     <span className="cls-person__meta">
-                      LVL·{s.level} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
+                      {levelLabel(s.level)} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
                       {!s.activeThisWeek && " · inactif"}
                     </span>
                   </li>
