@@ -51,6 +51,7 @@ import { MatchPairs } from "./_components/match-pairs";
 import { CryptoWorkshop } from "./_components/crypto-workshop";
 import { FirewallLab } from "./_components/firewall-lab";
 import { LogHunt } from "./_components/log-hunt";
+import { HexEditor } from "./_components/hex-editor";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
@@ -88,6 +89,7 @@ const MDX_COMPONENTS = {
   CryptoWorkshop,
   FirewallLab,
   LogHunt,
+  HexEditor,
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────

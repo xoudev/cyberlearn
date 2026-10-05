@@ -9,6 +9,7 @@ import {
   parseFindTheFlaw,
   parseFirewallLab,
   parseGitSandbox,
+  parseHexEditor,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -130,6 +131,7 @@ export const LESSON_COMPONENT_NAMES = [
   "CryptoWorkshop",
   "FirewallLab",
   "LogHunt",
+  "HexEditor",
 ] as const;
 
 // ── The check ────────────────────────────────────────────────────────────────
@@ -222,6 +224,10 @@ function LogHuntStub(): null {
   return null;
 }
 STUBS.LogHunt = LogHuntStub;
+function HexEditorStub(): null {
+  return null;
+}
+STUBS.HexEditor = HexEditorStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -431,6 +437,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === LogHuntStub) {
     const parsed = parseLogHunt(props);
     if (!parsed.ok) return `Chasse dans les logs : ${parsed.problem}`;
+  }
+  if (node.type === HexEditorStub) {
+    const parsed = parseHexEditor(props);
+    if (!parsed.ok) return `Éditeur hexadécimal : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

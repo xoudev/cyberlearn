@@ -752,6 +752,46 @@ describe("LogHunt", () => {
   });
 });
 
+describe("HexEditor", () => {
+  it("is played in the app with the bytes, repairs and questions the site reads", () => {
+    const lesson = [
+      "## Les octets",
+      "",
+      "<HexEditor",
+      '  id="png"',
+      '  filename="photo.png"',
+      '  task="Répare la signature."',
+      '  bytes="00 50 4e 47 0d 0a 1a 0a"',
+      '  repairs={[{ "label": "La signature PNG", "offset": 0, "bytes": "89" }]}',
+      '  questions={[{ "label": "Quel type ?", "answer": ["PNG", "image PNG"] }]}',
+      "/>",
+    ].join("\n");
+    const [block] = parseLesson(lesson).sections[0]?.blocks ?? [];
+    if (block?.kind !== "hex") throw new Error("not a hex editor");
+    expect(block.editor.bytes).toBe("00 50 4e 47 0d 0a 1a 0a");
+    expect(block.editor.filename).toBe("photo.png");
+    expect(block.editor.editable).toBe(true);
+    expect(block.editor.repairs?.[0]).toEqual({
+      label: "La signature PNG",
+      offset: 0,
+      bytes: "89",
+    });
+  });
+
+  it("reads editable={false}, and shows a placeholder for a file the site would refuse", () => {
+    const readOnly =
+      '## A\n\n<HexEditor id="h" task="Lis." bytes="4d 5a 90 00" editable={false} />';
+    expect(parseLesson(readOnly).sections[0]?.blocks[0]).toMatchObject({
+      kind: "hex",
+      editor: { editable: false },
+    });
+    const wrong = '## A\n\n<HexEditor id="h" task="x" bytes="89 5" />';
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Éditeur hexadécimal" },
+    ]);
+  });
+});
+
 describe("StepAnimation", () => {
   it("lists the steps of the scene; the drawing stays on the site", () => {
     const lesson =

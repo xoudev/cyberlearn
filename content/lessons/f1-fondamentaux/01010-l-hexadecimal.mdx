@@ -129,6 +129,31 @@ Un collègue a reçu deux pièces jointes, `rapport.pdf` et `facture.pdf`, et un
 
 <SimulatedTerminal shell="bash" title="Les octets ne mentent pas" expectedCommands={["xxd note.txt", "xxd -l 16 facture.pdf"]} hints={["Tape xxd suivi du nom du fichier texte.", "xxd -l 16 limite la lecture aux seize premiers octets : essaie-le sur facture.pdf."]} commands={{ "ls": "facture.pdf  note.txt  photo.png  rapport.pdf", "xxd note.txt": "00000000: 426f 6e6a 6f75 7220 4379 6265 724c 6561  Bonjour CyberLea\n00000010: 726e 2021 0a                             rn !.", "xxd -l 16 photo.png": "00000000: 8950 4e47 0d0a 1a0a 0000 000d 4948 4452  .PNG........IHDR", "xxd -l 16 rapport.pdf": "00000000: 2550 4446 2d31 2e37 0a25 e2e3 cfd3 0a31  %PDF-1.7.%.....1", "xxd -l 16 facture.pdf": "00000000: 4d5a 9000 0300 0000 0400 0000 ffff 0000  MZ..............", "file facture.pdf": "facture.pdf: MS-DOS executable, MZ for MS-DOS", "file rapport.pdf": "rapport.pdf: PDF document, version 1.7", "file photo.png": "photo.png: PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced", "file note.txt": "note.txt: ASCII text", "file *": "facture.pdf: MS-DOS executable, MZ for MS-DOS\nnote.txt:    ASCII text\nphoto.png:   PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced\nrapport.pdf: PDF document, version 1.7" }} />
 
+Voici les octets de `facture.pdf`, dans un éditeur hexadécimal cette fois : la grille, le décalage à gauche, le texte à droite, et le type que les premiers octets annoncent. Lis-les et réponds.
+
+<HexEditor
+  id="hex-facture"
+  title="Les octets de facture.pdf"
+  filename="facture.pdf"
+  task="Lis les premiers octets et le texte qu'ils forment, puis dis ce qu'est vraiment ce fichier."
+  bytes="4d 5a 90 00 03 00 00 00 04 00 00 00 ff ff 00 00 b8 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 80 00 00 00 0e 1f ba 0e 00 b4 09 cd 21 b8 01 4c cd 21 54 68 69 73 20 70 72 6f 67 72 61 6d 20 63 61 6e 6e 6f 74 20 62 65 20 72 75 6e 20 69 6e 20 44 4f 53 20 6d 6f 64 65 2e 0d 0d 0a 24"
+  editable={false}
+  questions={[{ "label": "Quel est le type réel de facture.pdf ?", "answer": ["programme Windows", "un programme Windows", "programme", "exe", ".exe", "executable", "un executable", "exécutable"], "hint": "Les deux premiers octets forment deux lettres ; la ligne « TYPE RÉEL » les traduit, et le texte lisible plus loin confirme." }]}
+/>
+
+Puis répare une image. Cette copie de `photo.png` a été abîmée par un transfert : ses deux premiers octets ont été remplacés par des zéros, et aucun programme ne la reconnaît plus. Remets la signature PNG, octet par octet, en t'aidant du tableau des nombres magiques.
+
+<HexEditor
+  id="hex-photo-abimee"
+  title="Une image à réparer"
+  filename="photo.png"
+  task="Clique sur chacun des deux premiers octets et écris la valeur qu'il devrait avoir pour que le fichier redevienne une image PNG."
+  bytes="00 00 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00 90 77 53 de 00 00 00 0c 49 44 41 54 78 9c 63 90 9b f0 1f 00 02 7d 01 ae 71 f3 21 cd 00 00 00 00 49 45 4e 44 ae 42 60 82"
+  repairs={[{ "label": "La signature PNG est rétablie", "offset": 0, "bytes": "89 50" }]}
+  questions={[{ "label": "Quelle est la taille de l'image, en pixels ?", "answer": ["1x1", "1 x 1", "1 par 1", "1 pixel", "un pixel"], "hint": "Après IHDR viennent deux nombres de quatre octets : la largeur, puis la hauteur." }]}
+  hints={["Le tableau des nombres magiques donne les huit premiers octets d'un PNG : seuls les deux premiers manquent ici.", "Les octets 2 et 3 valent 4e 47, soit les lettres N et G : les deux qui précèdent sont 89 et 50, le P de PNG."]}
+/>
+
 `rapport.pdf` commence bien par `%PDF`. `facture.pdf` commence par `4d5a`, soit `MZ` : c'est un programme Windows. Windows choisit l'application d'après l'extension, donc un double-clic ouvrirait ici le lecteur de PDF, qui échouerait. Mais ce fichier n'a rien à faire là : quelqu'un a voulu faire passer un programme à travers un filtre de messagerie qui ne regarde que les extensions, et il suffit de le renommer pour qu'il s'exécute. La variante la plus répandue, `facture.pdf.exe`, compte sur le fait que Windows masque par défaut les extensions connues et n'affiche que `facture.pdf`. Dans un vrai incident, on ne l'ouvre pas : on le signale.
 
 ## démonstration : l'hexadécimal en Python

@@ -26,3 +26,4 @@ export * from "./schemas/match-pairs.schema.js";
 export * from "./schemas/crypto-workshop.schema.js";
 export * from "./schemas/firewall-lab.schema.js";
 export * from "./schemas/log-hunt.schema.js";
+export * from "./schemas/hex-editor.schema.js";

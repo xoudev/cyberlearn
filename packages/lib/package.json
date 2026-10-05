@@ -32,7 +32,8 @@
     "./animations/*": "./src/animations/*.ts",
     "./exercises/*": "./src/exercises/*.ts",
     "./crypto/*": "./src/crypto/*.ts",
-    "./logs/*": "./src/logs/*.ts"
+    "./logs/*": "./src/logs/*.ts",
+    "./files/*": "./src/files/*.ts"
   },
   "scripts": {
     "build": "tsc",
