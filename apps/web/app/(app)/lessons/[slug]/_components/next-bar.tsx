@@ -6,24 +6,7 @@ import { useRouter } from "next/navigation";
 import { CompleteButton } from "./complete-button";
 import { LessonCompleteModal } from "./lesson-complete-modal";
 import type { CompleteLessonResult } from "../_actions/track-progress";
-
-const DIFF_LABELS: Record<string, string> = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
-};
-const DIFF_COLORS: Record<string, string> = {
-  BEGINNER: "var(--cosmetic-accent)",
-  INTERMEDIATE: "#6E8BFF",
-  ADVANCED: "#FF4757",
-  EXPERT: "#FFB020",
-};
-const CAT_COLORS: Record<string, string> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#6E8BFF",
-  NETWORK: "#0AFFD4",
-};
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 interface NextBarProps {
   /** The next lesson of the same path. Null on the lesson that closes it. */
@@ -51,9 +34,9 @@ export function NextBar({
   xpReward,
   isCompleted,
 }: NextBarProps): React.ReactElement {
-  const catColor = next ? (CAT_COLORS[next.category] ?? "#6E8BFF") : "var(--cosmetic-accent)";
-  const diffLabel = next ? (DIFF_LABELS[next.difficulty] ?? next.difficulty) : "";
-  const diffColor = next ? (DIFF_COLORS[next.difficulty] ?? "#6E8BFF") : "#6E8BFF";
+  const catColor = next ? categoryMeta(next.category).color : "var(--cosmetic-accent)";
+  const diffLabel = next ? difficultyMeta(next.difficulty).label : "";
+  const diffColor = next ? difficultyMeta(next.difficulty).color : "#6E8BFF";
 
   // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);

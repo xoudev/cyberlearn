@@ -23,12 +23,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
-
-const CAT_LABELS: Record<string, string> = {
-  DEV: "Développement",
-  CYBERSEC: "Cybersécurité",
-  NETWORK: "Réseau",
-};
+import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -394,8 +389,7 @@ function planMission({
       const started = completedInLead.size > 0 || resume !== null;
       return {
         eyebrow: resume ? "Leçon en cours" : started ? "Prochaine mission" : "Première mission",
-        context:
-          resume && !resumeInLead ? (CAT_LABELS[resume.category] ?? resume.category) : lead.title,
+        context: resume && !resumeInLead ? categoryMeta(resume.category).label : lead.title,
         title: lesson.title,
         description: lesson.description,
         cta: {
@@ -426,7 +420,7 @@ function planMission({
   if (resume) {
     return {
       eyebrow: "Leçon en cours",
-      context: CAT_LABELS[resume.category] ?? resume.category,
+      context: categoryMeta(resume.category).label,
       title: resume.title,
       description: resume.description,
       cta: { href: `/lessons/${resume.slug}`, label: "Reprendre la leçon" },

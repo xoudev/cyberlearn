@@ -777,6 +777,9 @@ importers:
 
   packages/lib:
     dependencies:
+      '@cyberlearn/tokens':
+        specifier: workspace:*
+        version: link:../tokens
       '@cyberlearn/types':
         specifier: workspace:*
         version: link:../types

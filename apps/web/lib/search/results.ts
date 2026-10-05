@@ -1,5 +1,6 @@
-import type { Category, Difficulty, SearchRows } from "@cyberlearn/db";
+import type { Category, SearchRows } from "@cyberlearn/db";
 import { excerptAround, rankMatches } from "@cyberlearn/lib";
+import { difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 /**
  * Database rows turned into the rows a person reads: a title, a line of
@@ -39,13 +40,6 @@ export interface SearchGroup {
 /** How many of each kind the panel shows. The rest are behind "voir tout". */
 const PER_KIND = 5;
 
-const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
-};
-
 function hours(value: number): string {
   return value >= 1 ? `${String(value)} h` : "< 1 h";
 }
@@ -73,7 +67,7 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     subtitle: p.description,
     href: `/paths/${p.slug}`,
     ref: p.slug,
-    meta: `${plural(p.lessonCount, "leçon", "leçons")} · ${hours(p.estimatedHours)} · ${DIFFICULTY_LABEL[p.difficulty]}`,
+    meta: `${plural(p.lessonCount, "leçon", "leçons")} · ${hours(p.estimatedHours)} · ${difficultyMeta(p.difficulty).label}`,
     category: p.category,
   }));
 
@@ -88,7 +82,7 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     subtitle: l.description,
     href: `/lessons/${l.slug}`,
     ref: l.slug,
-    meta: `${String(l.estimatedMinutes)} min · ${DIFFICULTY_LABEL[l.difficulty]}`,
+    meta: `${String(l.estimatedMinutes)} min · ${difficultyMeta(l.difficulty).label}`,
     category: l.category,
   }));
 

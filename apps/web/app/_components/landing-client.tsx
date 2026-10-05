@@ -8,6 +8,7 @@ import { VideoModal } from "@/components/video-modal";
 import { LandingTerminal } from "./landing-terminal";
 import { PublicNavbar } from "./public-navbar";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -52,20 +53,8 @@ function PathIcon({ kind }: { kind: "cyber" | "dev" | "net" }) {
 // "use client" justification: the landing is animation/interaction heavy
 // (terminal animation, hover states, decorative canvases). Data fetching
 // lives in the RSC page (app/page.tsx), which passes the stats down.
-/** Category and difficulty come from the database as enums; the landing's
- *  colour system and French labels are presentation, so they map here. */
-const CATEGORY_STYLE = {
-  CYBERSEC: { kind: "cyber", tag: "CYBERSEC", color: "#FF4757" },
-  DEV: { kind: "dev", tag: "DEV", color: "#6E8BFF" },
-  NETWORK: { kind: "net", tag: "RÉSEAU", color: "#0AFFD4" },
-} as const;
-
-const DIFFICULTY_LABEL = {
-  BEGINNER: "DÉBUTANT",
-  INTERMEDIATE: "INTERMÉDIAIRE",
-  ADVANCED: "AVANCÉ",
-  EXPERT: "EXPERT",
-} as const;
+/** The stylesheet's name for each category, on the featured cards' classes. */
+const CATEGORY_KIND = { CYBERSEC: "cyber", DEV: "dev", NETWORK: "net" } as const;
 
 export function LandingClient({
   stats,
@@ -764,8 +753,10 @@ export function LandingClient({
             {featuredPaths
               .map((p) => ({
                 path: p,
-                ...CATEGORY_STYLE[p.category],
-                lvl: DIFFICULTY_LABEL[p.difficulty],
+                kind: CATEGORY_KIND[p.category],
+                tag: categoryMeta(p.category).short.toUpperCase(),
+                color: categoryMeta(p.category).color,
+                lvl: difficultyMeta(p.difficulty).label.toUpperCase(),
               }))
               .map(({ path, kind, tag, color, lvl }) => (
                 <Link

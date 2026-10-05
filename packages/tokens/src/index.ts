@@ -66,6 +66,14 @@ export const category = {
   NETWORK: "#0affd4",
 } as const;
 
+// One colour per difficulty, from the brand turquoise up to amber.
+export const difficulty = {
+  BEGINNER: "#0affd4",
+  INTERMEDIATE: "#6e8bff",
+  ADVANCED: "#ff4757",
+  EXPERT: "#ffb020",
+} as const;
+
 // Selectable cosmetic accents (data-accent overrides in tokens.css).
 export const accents = {
   turquoise: defaultAccent,
@@ -100,3 +108,4 @@ export const space = {
 export type Rarity = keyof typeof rarity;
 export type Division = keyof typeof division;
 export type CategoryKey = keyof typeof category;
+export type DifficultyKey = keyof typeof difficulty;

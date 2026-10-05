@@ -1,4 +1,5 @@
 import { colors } from "@cyberlearn/tokens";
+import { CATEGORY_META, DIFFICULTY_META } from "@cyberlearn/lib/content/vocabulary";
 
 /**
  * The site's challenges in the app: the same list, the same states, read from
@@ -63,17 +64,18 @@ export const STATUS_META: Record<ChallengeStatus, { label: string; color: string
   LOCKED: { label: "Verrouillé", color: colors.textMuted },
 };
 
+// The words are the site's (packages/lib, content/vocabulary).
 export const DIFFICULTY_LABEL: Record<ChallengeItem["difficulty"], string> = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
+  BEGINNER: DIFFICULTY_META.BEGINNER.label,
+  INTERMEDIATE: DIFFICULTY_META.INTERMEDIATE.label,
+  ADVANCED: DIFFICULTY_META.ADVANCED.label,
+  EXPERT: DIFFICULTY_META.EXPERT.label,
 };
 
 export const CATEGORY_LABEL: Record<ChallengeItem["category"], string> = {
-  CYBERSEC: "Cybersécurité",
-  DEV: "Développement",
-  NETWORK: "Réseau",
+  CYBERSEC: CATEGORY_META.CYBERSEC.label,
+  DEV: CATEGORY_META.DEV.label,
+  NETWORK: CATEGORY_META.NETWORK.label,
 };
 
 /** Whether the app takes an answer for this challenge as a flag. */

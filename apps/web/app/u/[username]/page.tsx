@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { friendshipRepository, userRepository } from "@cyberlearn/db";
 import { computeLevel, friendshipView } from "@cyberlearn/lib";
 import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
-import type { Category } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { getRequestUser } from "@/lib/auth";
 import { AddFriendButton } from "@/components/add-friend-button";
@@ -13,18 +12,12 @@ import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { StatTile } from "@/components/stat-tile";
 import { AvatarView } from "@/components/avatar-view";
 import { XpProgress } from "@/components/xp-progress";
+import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono, monospace)" };
 const SANS: React.CSSProperties = { fontFamily: "var(--font-sans, sans-serif)" };
-
-const CAT_META: Partial<Record<Category, { color: string; label: string }>> = {
-  CYBERSEC: { color: "#FF4757", label: "Cybersec" },
-  DEV: { color: "#6E8BFF", label: "Développement" },
-  NETWORK: { color: "#0AFFD4", label: "Réseaux" },
-};
-const CAT_DEFAULT = { color: "#7F7BA9", label: "-" };
 
 /** Regular pointy-top hexagon; same canonical geometry as the badge medallion. */
 const HEX_CLIP = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
@@ -479,7 +472,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             <SectionLabel eyebrow="02 · activité" title="Leçons terminées récemment." />
             <div style={{ border: "1px solid #2A2560", background: "rgba(10,8,38,0.4)" }}>
               {user.lessonProgress.map((lp, i) => {
-                const cat = CAT_META[lp.lesson.category] ?? CAT_DEFAULT;
+                const cat = categoryMeta(lp.lesson.category);
                 const dateStr = lp.completedAt
                   ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
                       lp.completedAt,
@@ -527,7 +520,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                           marginBottom: 3,
                         }}
                       >
-                        {cat.label}
+                        {cat.short}
                       </div>
                       <p
                         style={{

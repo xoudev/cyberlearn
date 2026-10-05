@@ -14,6 +14,7 @@ import {
 } from "@cyberlearn/lib";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 import { Crumb } from "@/components/crumb";
+import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 export const metadata: Metadata = { title: "Révisions" };
 export const dynamic = "force-dynamic";
@@ -23,12 +24,6 @@ export const dynamic = "force-dynamic";
 function timeEst(difficulty: string): string {
   return `${String(reviewMinutes(difficulty))} min`;
 }
-
-const CAT_LABELS: Record<string, { label: string; color: string; border: string }> = {
-  CYBERSEC: { label: "Cybersec", color: "#FF6B9D", border: "rgba(255,107,157,0.35)" },
-  DEV: { label: "Développement", color: "#0AFFD4", border: "rgba(10,255,212,0.35)" },
-  NETWORK: { label: "Réseaux", color: "#6E8BFF", border: "rgba(110,139,255,0.35)" },
-};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -72,18 +67,14 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
 
   const rows: ReviewRow[] = dueSchedules.map((s) => {
     const due = reviewDueLabel(s.nextReviewAt, now);
-    const cat = CAT_LABELS[s.lesson.category] ?? {
-      label: s.lesson.category,
-      color: "#7F7BA9",
-      border: "rgba(107,104,144,0.35)",
-    };
+    const cat = categoryMeta(s.lesson.category);
     return {
       scheduleId: s.id,
       title: s.lesson.title,
       slug: s.lesson.slug,
-      catLabel: cat.label,
+      catLabel: cat.short,
       catColor: cat.color,
-      catBorder: cat.border,
+      catBorder: `color-mix(in srgb, ${cat.color} 35%, transparent)`,
       dueText: due.text,
       dueToday: due.kind === "today",
       est: timeEst(s.lesson.difficulty),

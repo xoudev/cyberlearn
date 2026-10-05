@@ -2,56 +2,45 @@
 
 import type { ReactNode, CSSProperties } from "react";
 import React from "react";
+import {
+  CATEGORY_META,
+  DIFFICULTY_META,
+  isContentCategory,
+  type ContentCategory,
+  type ContentDifficulty,
+  type DifficultyMeta,
+} from "@cyberlearn/lib/content/vocabulary";
 
-export type LessonDifficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+export type LessonDifficulty = ContentDifficulty;
 export type LessonStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
-export type LessonCategory = "CYBERSEC" | "DEV" | "NETWORK";
+export type LessonCategory = ContentCategory;
 
 // ── Design tokens - per CatalogGrid.jsx / catalog.css reference ───────────────
 
-const CAT_META = {
-  DEV: {
-    label: "DEV",
-    accent: "#6E8BFF",
-    glow: "rgba(0,36,255,0.28)",
-    tagColor: "#6E8BFF",
-    tagBg: "rgba(0,36,255,0.1)",
-    tagBorder: "rgba(110,139,255,0.45)",
-  },
-  CYBERSEC: {
-    label: "CYBERSEC",
-    accent: "#FF4757",
-    glow: "rgba(255,71,87,0.22)",
-    tagColor: "#FF4757",
-    tagBg: "rgba(255,71,87,0.08)",
-    tagBorder: "rgba(255,71,87,0.4)",
-  },
-  NETWORK: {
-    label: "RÉSEAU",
-    accent: "#0AFFD4",
-    glow: "rgba(10,255,212,0.22)",
-    tagColor: "#0AFFD4",
-    tagBg: "rgba(10,255,212,0.07)",
-    tagBorder: "rgba(10,255,212,0.4)",
-  },
-} satisfies Record<
-  LessonCategory,
-  {
-    label: string;
-    accent: string;
-    glow: string;
-    tagColor: string;
-    tagBg: string;
-    tagBorder: string;
-  }
->;
+/** The card's colours for a category, all from its one: the accent, a glow, a tag. */
+function catStyle(key: LessonCategory): {
+  label: string;
+  accent: string;
+  glow: string;
+  tagColor: string;
+  tagBg: string;
+  tagBorder: string;
+} {
+  const { short, color } = CATEGORY_META[key];
+  return {
+    label: short.toUpperCase(),
+    accent: color,
+    glow: `color-mix(in srgb, ${color} 25%, transparent)`,
+    tagColor: color,
+    tagBg: `color-mix(in srgb, ${color} 9%, transparent)`,
+    tagBorder: `color-mix(in srgb, ${color} 42%, transparent)`,
+  };
+}
 
-const DIFF_META = {
-  BEGINNER: { label: "DÉBUTANT", bars: 1, color: "#0AFFD4" },
-  INTERMEDIATE: { label: "INTERMÉDIAIRE", bars: 2, color: "#6E8BFF" },
-  ADVANCED: { label: "AVANCÉ", bars: 3, color: "#FF4757" },
-  EXPERT: { label: "EXPERT", bars: 3, color: "#FFB020" },
-} satisfies Record<LessonDifficulty, { label: string; bars: number; color: string }>;
+/** Three bars: the fourth level lights them all, like the third. */
+function barsOf(level: number): number {
+  return Math.min(3, level);
+}
 
 const STATUS_META = {
   NOT_STARTED: { label: "COMMENCER", color: "#7F7BA9" },
@@ -358,11 +347,10 @@ export function LessonCard({
   variant = "compact",
   wrapper,
 }: LessonCardProps): React.ReactElement {
-  const catKey = category as LessonCategory;
-  const catMeta = catKey in CAT_META ? CAT_META[catKey] : CAT_META.DEV;
-  // SAFETY: catKey guaranteed to be LessonCategory via catKey in CAT_META check
-  const CatIcon = catKey in CAT_ICONS ? CAT_ICONS[catKey] : IconDev;
-  const diffMeta = DIFF_META[difficulty];
+  const catKey: LessonCategory = isContentCategory(category) ? category : "DEV";
+  const catMeta = catStyle(catKey);
+  const CatIcon = CAT_ICONS[catKey];
+  const diffMeta = DIFFICULTY_META[difficulty];
 
   const card =
     variant === "catalog" ? (
@@ -417,10 +405,10 @@ function CatalogCard({
 }: {
   title: string;
   description?: string | undefined;
-  catMeta: (typeof CAT_META)[LessonCategory];
+  catMeta: ReturnType<typeof catStyle>;
   catLabel: string;
   CatIcon: () => React.ReactElement;
-  diffMeta: (typeof DIFF_META)[LessonDifficulty];
+  diffMeta: DifficultyMeta;
   status: LessonStatus;
   durationMinutes?: number | undefined;
   xpReward: number;
@@ -590,8 +578,8 @@ function CatalogCard({
             ...(isCompleted ? { marginRight: 32 } : {}),
           }}
         >
-          <DiffBars filled={diffMeta.bars} color={diffMeta.color} />
-          <span>{diffMeta.label}</span>
+          <DiffBars filled={barsOf(diffMeta.level)} color={diffMeta.color} />
+          <span>{diffMeta.label.toUpperCase()}</span>
         </span>
       </div>
 
@@ -987,8 +975,8 @@ function CompactCard({
 }: {
   title: string;
   description?: string | undefined;
-  catMeta: (typeof CAT_META)[LessonCategory];
-  diffMeta: (typeof DIFF_META)[LessonDifficulty];
+  catMeta: ReturnType<typeof catStyle>;
+  diffMeta: DifficultyMeta;
   status: LessonStatus;
   durationMinutes?: number | undefined;
   xpReward: number;

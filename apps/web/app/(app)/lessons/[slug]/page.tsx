@@ -27,6 +27,7 @@ import { LESSON_MDX_COMPONENTS } from "./_components/lesson-mdx-components";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // Not the lesson's own title: the slug alone would put the title of a
 // class-only lesson in the tab of anyone who guessed its address.
@@ -34,56 +35,14 @@ export const metadata: Metadata = { title: "Leçon" };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────
 
-const DIFF_META = {
-  BEGINNER: {
-    label: "Débutant",
-    color: "var(--cosmetic-accent)",
-    bg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-    border: "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
-  },
-  INTERMEDIATE: {
-    label: "Intermédiaire",
-    color: "#6E8BFF",
-    bg: "rgba(0,36,255,0.12)",
-    border: "rgba(0,36,255,0.5)",
-  },
-  ADVANCED: {
-    label: "Avancé",
-    color: "#FF4757",
-    bg: "rgba(255,71,87,0.1)",
-    border: "rgba(255,71,87,0.4)",
-  },
-  EXPERT: {
-    label: "Expert",
-    color: "#FFB020",
-    bg: "rgba(255,176,32,0.1)",
-    border: "rgba(255,176,32,0.4)",
-  },
-} as const;
-
-const CAT_META = {
-  CYBERSEC: {
-    label: "Cybersec",
-    slug: "cybersec",
-    color: "#FF4757",
-    bg: "rgba(255,71,87,0.1)",
-    border: "rgba(255,71,87,0.4)",
-  },
-  DEV: {
-    label: "Dev",
-    slug: "dev",
-    color: "#6E8BFF",
-    bg: "rgba(0,36,255,0.12)",
-    border: "rgba(0,36,255,0.5)",
-  },
-  NETWORK: {
-    label: "Réseaux",
-    slug: "network",
-    color: "#0AFFD4",
-    bg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-    border: "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
-  },
-} as const;
+/** A tag's three colours from its one: the text, a faint fill, a firmer edge. */
+function tagged<T extends { color: string }>(meta: T): T & { bg: string; border: string } {
+  return {
+    ...meta,
+    bg: `color-mix(in srgb, ${meta.color} 10%, transparent)`,
+    border: `color-mix(in srgb, ${meta.color} 40%, transparent)`,
+  };
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -174,8 +133,8 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   const catKey = lesson.category;
   const diffKey = lesson.difficulty;
-  const cat = CAT_META[catKey];
-  const diff = DIFF_META[diffKey];
+  const cat = tagged(categoryMeta(catKey));
+  const diff = tagged(difficultyMeta(diffKey));
 
   const toc = extractToc(lesson.contentMdx);
   const sections = toc.filter((t) => t.level === 2);
@@ -238,7 +197,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         <div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 28 }}>
             <AngularTag color={cat.color} bg={cat.bg} border={cat.border}>
-              {cat.label}
+              {cat.short}
             </AngularTag>
             <AngularTag color={diff.color} bg={diff.bg} border={diff.border}>
               {diff.label}

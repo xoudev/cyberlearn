@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Select } from "@cyberlearn/ui";
 import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
 import { Crumb } from "@/components/crumb";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
 
@@ -173,21 +174,14 @@ function IconArrow({ size = 11 }: { size?: number }): React.ReactElement {
 
 type DiffKind = "easy" | "med" | "hard";
 
-interface DiffMeta {
-  level: number;
-  kind: DiffKind;
-  label: string;
+/** The stylesheet's three moods for four levels: the last two are both hard. */
+function diffKind(level: number): DiffKind {
+  return level <= 1 ? "easy" : level === 2 ? "med" : "hard";
 }
 
-const DIFF_META: Record<ChallengeItem["difficulty"], DiffMeta> = {
-  BEGINNER: { level: 1, kind: "easy", label: "FACILE" },
-  INTERMEDIATE: { level: 2, kind: "med", label: "INTERMÉDIAIRE" },
-  ADVANCED: { level: 3, kind: "hard", label: "AVANCÉ" },
-  EXPERT: { level: 4, kind: "hard", label: "EXPERT" },
-};
-
 function DiffBars({ difficulty }: { difficulty: ChallengeItem["difficulty"] }): React.ReactElement {
-  const { level, kind, label } = DIFF_META[difficulty];
+  const { level, label } = difficultyMeta(difficulty);
+  const kind = diffKind(level);
   return (
     <span className={`cc__diff cc__diff--${kind}`}>
       <span className="cc__diff-bars">
@@ -195,7 +189,7 @@ function DiffBars({ difficulty }: { difficulty: ChallengeItem["difficulty"] }): 
           <span key={i} className={i < level ? "on" : ""} />
         ))}
       </span>
-      {label}
+      {label.toUpperCase()}
     </span>
   );
 }
@@ -209,8 +203,7 @@ function catCssKey(cat: ChallengeItem["category"]): "cyber" | "dev" | "net" {
 }
 
 function catLabel(cat: ChallengeItem["category"]): string {
-  if (cat === "NETWORK") return "RÉSEAU";
-  return cat;
+  return categoryMeta(cat).short.toUpperCase();
 }
 
 function typeModifier(type: ChallengeItem["type"]): string {
