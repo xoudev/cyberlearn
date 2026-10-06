@@ -74,6 +74,15 @@ function quizScoreOf(
 }
 
 export const lessonRepository = {
+  /** The title and the text of lessons, for a module's revision sheet. */
+  async findRecapSources(ids: readonly string[]) {
+    if (ids.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true, title: true, contentMdx: true },
+    });
+  },
+
   /**
    * A published lesson this reader may open, by slug.
    *

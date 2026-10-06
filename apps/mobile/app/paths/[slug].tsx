@@ -38,6 +38,12 @@ export default function PathDetail(): React.JSX.Element {
           data={data}
           userId={session?.user.id}
           onOpenLesson={(s) => router.push({ pathname: "/lessons/[slug]", params: { slug: s } })}
+          onOpenSheet={(module) =>
+            router.push({
+              pathname: "/paths/sheet",
+              params: { slug: slug ?? "", module: String(module), title: data.title },
+            })
+          }
           onRated={() => void refetch()}
         />
       )}
@@ -49,11 +55,13 @@ function PathBody({
   data,
   userId,
   onOpenLesson,
+  onOpenSheet,
   onRated,
 }: {
   data: NonNullable<ReturnType<typeof usePathDetail>["data"]>;
   userId: string | undefined;
   onOpenLesson: (slug: string) => void;
+  onOpenSheet: (module: number) => void;
   onRated: () => void;
 }): React.JSX.Element {
   const average = averageLine(data.avgRating, data.ratingsCount);
@@ -169,6 +177,18 @@ function PathBody({
                         {moduleStart.description}
                       </Text>
                     ) : null}
+                    <Pressable
+                      onPress={() => {
+                        onOpenSheet(moduleStart.number);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
+                      style={{ alignSelf: "flex-start", marginTop: 4 }}
+                    >
+                      <Text variant="micro" style={{ color: colors.accent }}>
+                        FICHE DE RÉVISION ›
+                      </Text>
+                    </Pressable>
                   </View>
                 ) : null}
                 <PressableScale disabled={state === "locked"} onPress={() => onOpenLesson(m.slug)}>

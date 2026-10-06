@@ -72,6 +72,7 @@
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
+| `/api/paths/[slug]/sheet?module=N` | Fiche de révision d'un module, en PDF (les points « à retenir » de ses leçons) |
 | `/api/auth/send-email` | Hook d'envoi des mails d'authentification Supabase |
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |

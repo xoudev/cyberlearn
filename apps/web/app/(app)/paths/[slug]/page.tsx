@@ -430,6 +430,14 @@ export default async function PathDetailPage({
                     <span className="cp-gate__marker" />
                   </div>
                   <div className="cp-gate__side">
+                    <a
+                      className="btn btn--ghost btn--sm"
+                      href={`/api/paths/${slug}/sheet?module=${String(mod.number)}`}
+                      download
+                      title="La fiche de révision du module, les points à retenir de ses leçons, en PDF"
+                    >
+                      Fiche PDF
+                    </a>
                     <span className="cp-gate__count">
                       <b>{mod.indices.length}</b> missions
                     </span>

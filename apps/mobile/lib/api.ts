@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
+import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
 import type { ChallengeDetail, ChallengeItem } from "@/lib/challenges";
 import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
@@ -1229,4 +1230,18 @@ export async function completeChallengeApi(challengeId: string): Promise<{ error
   } catch {
     return { error: "Connexion au serveur impossible." };
   }
+}
+
+// ── Revision sheets (the site's PDF, as words) ──────────────────────────────
+
+/** The revision sheet of a module: the "à retenir" points of its lessons. */
+export async function fetchSheetApi(slug: string, module: number): Promise<RevisionSheet> {
+  const res = await authedFetch(
+    `/api/mobile/sheet?path=${encodeURIComponent(slug)}&module=${String(module)}`,
+  );
+  const body = (await res.json()) as
+    | { ok: true; sheet: RevisionSheet }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.sheet;
 }
