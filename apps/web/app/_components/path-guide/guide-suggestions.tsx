@@ -1,6 +1,6 @@
 import React from "react";
-import type { PathSuggestion } from "@cyberlearn/lib";
-import type { SuggestedPath } from "@/lib/paths/suggestions";
+import type { PathSuggestion } from "@cyberlearn/lib/paths/suggest";
+import type { SuggestedPath } from "@/lib/paths/guide-answers";
 import "./path-guide.css";
 
 const DOMAIN: Record<string, string> = {

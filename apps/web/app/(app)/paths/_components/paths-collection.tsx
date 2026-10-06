@@ -24,6 +24,8 @@ import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { ProgressBar } from "@/components/progress-bar";
+import type { LearningAnswers, SuggestedPath } from "@/lib/paths/guide-answers";
+import { PathGuideDialog } from "./path-guide-dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,6 +62,8 @@ interface Props {
   doneCount: number;
   totalXp: number;
   totalHours: number;
+  /** What the guide's window suggests from, and the answers it starts with. */
+  guide: { catalogue: SuggestedPath[]; saved: Partial<LearningAnswers> };
 }
 
 // ── Design meta ─────────────────────────────────────────────────────────────────
@@ -415,6 +419,7 @@ export function PathsCollection({
   doneCount,
   totalXp,
   totalHours,
+  guide,
 }: Props): React.ReactElement {
   const [filter, setFilter] = useState<Filter>("all");
   const [trackFilter, setTrackFilter] = useState<TrackFilter>("all");
@@ -454,11 +459,7 @@ export function PathsCollection({
                 "Chaque parcours mène d'une compétence brute à un certificat vérifiable. Tu progresses mission par mission."
               }
             </p>
-            <Link href="/paths/guide" className="pc2-guide">
-              <span className="pc2-guide__tag">Guide</span>
-              Pas sûr de par où commencer ? Deux questions pour te proposer un parcours
-              <span aria-hidden="true">→</span>
-            </Link>
+            <PathGuideDialog catalogue={guide.catalogue} saved={guide.saved} />
           </div>
           <div className="pc2-telemetry">
             <div className="pc2-telemetry__row">

@@ -285,6 +285,8 @@ export default function ShotCapture(): React.JSX.Element {
           doneCount={1}
           totalXp={7550}
           totalHours={35}
+          // The guide's window stays closed in a capture: nothing to suggest from.
+          guide={{ catalogue: [], saved: {} }}
         />
       </Frame>
 

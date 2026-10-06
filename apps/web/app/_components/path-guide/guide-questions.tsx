@@ -1,6 +1,6 @@
 import React from "react";
-import { GOAL_CHOICES, LEVEL_CHOICES } from "@cyberlearn/lib";
-import type { LearningAnswers } from "@/lib/paths/suggestions";
+import { GOAL_CHOICES, LEVEL_CHOICES } from "@cyberlearn/lib/paths/suggest";
+import type { LearningAnswers } from "@/lib/paths/guide-answers";
 import "./path-guide.css";
 
 /**
@@ -8,17 +8,21 @@ import "./path-guide.css";
  * start from (one). Each choice shows examples, so somebody who does not know
  * the words ("réseau", "SOC") can still recognise what they want.
  *
- * A plain GET form: no script needed, and the answers land in the address,
- * which is what the page reads to suggest.
+ * With `action`, a plain GET form: no script needed, and the answers land in
+ * the address, which is what the onboarding page reads to suggest. With
+ * `onSubmit` instead, the form stays where it is and hands its answers over:
+ * the guide's window on the catalogue suggests without leaving the page.
  */
 export function GuideQuestions({
   action,
+  onSubmit,
   answers,
   error,
   submitLabel,
   hidden,
 }: {
-  action: string;
+  action?: string;
+  onSubmit?: (form: FormData) => void;
   answers: Partial<LearningAnswers>;
   error: string | null;
   submitLabel: string;
@@ -26,7 +30,17 @@ export function GuideQuestions({
   hidden?: Record<string, string>;
 }): React.ReactElement {
   return (
-    <form action={action} method="get">
+    <form
+      action={action}
+      method="get"
+      onSubmit={
+        onSubmit &&
+        ((event) => {
+          event.preventDefault();
+          onSubmit(new FormData(event.currentTarget));
+        })
+      }
+    >
       {Object.entries(hidden ?? {}).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}

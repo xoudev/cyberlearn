@@ -91,6 +91,8 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       { source: "/profile/edit", destination: "/dashboard?settings=profile", permanent: false },
+      // The path guide is a window over the catalogue now, not a page.
+      { source: "/paths/guide", destination: "/paths", permanent: false },
     ]);
   },
   rewrites() {

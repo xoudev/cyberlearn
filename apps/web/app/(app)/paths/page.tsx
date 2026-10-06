@@ -4,13 +4,14 @@ import { pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
 import { requireRequestUser } from "@/lib/auth";
+import { savedLearningAnswers, toSuggestedPath } from "@/lib/paths/suggestions";
 
 export const metadata: Metadata = { title: "Parcours" };
 
 export default async function PathsPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  const [paths, userProgress] = await Promise.all([
+  const [paths, userProgress, savedAnswers] = await Promise.all([
     prisma.path.findMany({
       // The catalogue, plus the paths built for this reader's own classes: a
       // CLASS path is published, so status alone would hand every class's
@@ -38,7 +39,14 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       where: { userId: authUser.id },
       select: { pathId: true, status: true },
     }),
+    savedLearningAnswers(authUser.id),
   ]);
+
+  // What the guide may suggest: the public catalogue, never a class's own
+  // path, which a teacher hands out (the onboarding's rule too).
+  const guideCatalogue = paths
+    .filter((path) => path.audience === "CATALOGUE")
+    .map((path) => toSuggestedPath({ ...path, lessonCount: path.lessons.length }));
 
   // Build progress lookup
   const progressMap = new Map(userProgress.map((up) => [up.pathId, up.status]));
@@ -121,6 +129,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       doneCount={doneCount}
       totalXp={totalXp}
       totalHours={totalHours}
+      guide={{ catalogue: guideCatalogue, saved: savedAnswers }}
     />
   );
 }
