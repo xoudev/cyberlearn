@@ -220,6 +220,25 @@ function loadExtra(name: "bash" | "terminfo-linux"): Promise<Uint8Array | null> 
  * CSP's 'strict-dynamic' trusts it, and 'wasm-unsafe-eval' (already there for
  * Pyodide) lets it compile its WebAssembly.
  */
+/** A site token's value, for a library that cannot read CSS variables. */
+export function cssToken(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value === "" ? fallback : value;
+}
+
+/** Waits for a font to be ready to measure, without ever blocking the machine. */
+async function waitForFont(font: string): Promise<void> {
+  try {
+    await Promise.race([
+      document.fonts.load(font),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  } catch {
+    // An unknown font: the fallbacks are measured instead.
+  }
+}
+
 function loadV86(): Promise<V86Constructor> {
   runtime ??= new Promise<V86Constructor>((resolve, reject) => {
     const loaded = readV86();
@@ -270,6 +289,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
 
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<TerminalType | null>(null);
+  const resizeRef = useRef<ResizeObserver | null>(null);
   const emulatorRef = useRef<V86Emulator | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [done, setDone] = useState<string[]>([]);
@@ -430,29 +450,37 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         import("@xterm/xterm"),
         import("@xterm/addon-fit"),
       ]);
+      // xterm paints with the colours it is given, not with CSS: it cannot
+      // read var(--…), and fell back to black when it was handed tokens. The
+      // site's tokens are read here, their old values kept as fallbacks.
+      const monoFont = cssToken("--font-mono", "");
+      const fontFamily = monoFont === "" ? "Menlo, monospace" : `${monoFont}, Menlo, monospace`;
+      // Measured before the site's font is there, a cell is too small and the
+      // screen outgrows its frame: wait for the font first.
+      await waitForFont(`13px ${fontFamily}`);
       const term = new Terminal({
         theme: {
-          background: "var(--color-bg-base)",
-          foreground: "var(--color-text-secondary)",
-          cursor: "var(--color-brand-turquoise)",
-          black: "var(--color-bg-base)",
-          blue: "var(--color-rarity-rare)",
-          brightBlue: "var(--color-rarity-rare)",
-          cyan: "var(--color-info)",
-          brightCyan: "var(--color-info)",
-          green: "var(--color-brand-turquoise)",
-          brightGreen: "var(--color-brand-turquoise)",
-          red: "var(--color-category-cybersec)",
-          brightRed: "var(--color-category-cybersec)",
-          yellow: "var(--color-warning)",
-          brightYellow: "var(--color-rarity-legendary)",
+          background: cssToken("--color-bg-base", "#030219"),
+          foreground: cssToken("--color-text-secondary", "#B8B5D1"),
+          cursor: cssToken("--color-brand-turquoise", "#0AFFD4"),
+          black: cssToken("--color-bg-base", "#030219"),
+          blue: cssToken("--color-rarity-rare", "#6E8BFF"),
+          brightBlue: cssToken("--color-rarity-rare", "#6E8BFF"),
+          cyan: cssToken("--color-info", "#4D8BFF"),
+          brightCyan: cssToken("--color-info", "#4D8BFF"),
+          green: cssToken("--color-brand-turquoise", "#0AFFD4"),
+          brightGreen: cssToken("--color-brand-turquoise", "#0AFFD4"),
+          red: cssToken("--color-category-cybersec", "#FF4757"),
+          brightRed: cssToken("--color-category-cybersec", "#FF4757"),
+          yellow: cssToken("--color-warning", "#FFB020"),
+          brightYellow: cssToken("--color-rarity-legendary", "#FFB547"),
           magenta: "#B14DFF",
           brightMagenta: "#D580FF",
-          white: "var(--color-text-primary)",
-          brightWhite: "var(--color-text-primary)",
-          brightBlack: "var(--color-text-disabled)",
+          white: cssToken("--color-text-primary", "#F5F5FA"),
+          brightWhite: cssToken("--color-text-primary", "#F5F5FA"),
+          brightBlack: cssToken("--color-text-disabled", "#3F3D5C"),
         },
-        fontFamily: "JetBrains Mono, Menlo, monospace",
+        fontFamily,
         fontSize: 13,
         lineHeight: 1.35,
         cursorBlink: true,
@@ -462,6 +490,17 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       term.loadAddon(fit);
       term.open(containerRef.current);
       fit.fit();
+      // Fitted again whenever the frame or the screen changes size: the cells
+      // grow once the font has really loaded, after the first fit, and the
+      // screen then outgrew the frame by a row. A fit that changes nothing
+      // changes no size, so this settles at once. The shell learns its size at
+      // setup, after the boot, when the screen has long settled.
+      const observer = new ResizeObserver(() => {
+        fit.fit();
+      });
+      observer.observe(containerRef.current);
+      if (term.element) observer.observe(term.element);
+      resizeRef.current = observer;
       termRef.current = term;
 
       setPhase("booting");
@@ -490,6 +529,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     const emulator = emulatorRef.current;
     emulatorRef.current = null;
     if (emulator) void emulator.destroy().catch(() => undefined);
+    resizeRef.current?.disconnect();
+    resizeRef.current = null;
     termRef.current?.dispose();
     termRef.current = null;
   }, []);
@@ -671,10 +712,13 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       </div>
 
       <div style={{ position: "relative", height }}>
-        <div
-          ref={containerRef}
-          style={{ height: "100%", padding: "12px 14px", boxSizing: "border-box" }}
-        />
+        {/* The margin around the screen sits on a wrapper: xterm's fit measures
+            the screen's parent without its padding, and gave a padded parent
+            one row and a few columns too many. Clipped as well, so the screen
+            stays in its frame whatever xterm does. */}
+        <div style={{ height: "100%", padding: "12px 14px", boxSizing: "border-box" }}>
+          <div ref={containerRef} style={{ height: "100%", overflow: "hidden" }} />
+        </div>
         {phase !== "ready" ? (
           <div
             style={{
