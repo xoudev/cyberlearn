@@ -124,7 +124,7 @@ qui survive à la requête.
 | 31 | **Duels de quiz entre amis** | Deux amis répondent aux mêmes questions en temps réel. | Aucune (Supabase Realtime) | Oui |
 | 32 | **Tournois CTF entre classes ou écoles** | Des défis sur une période donnée, avec un tableau des scores en direct. | Aucune | Oui |
 | 33 | **Write-ups** | Après un défi réussi, l'élève publie sa solution, visible seulement par ceux qui l'ont aussi réussi. | Aucune | Oui |
-| 34 | **Profil portfolio** | Compétences, défis résolus, certificats et bouton « Ajouter à LinkedIn » sur `/u/[username]`. | Aucune | Site, lien depuis l'app |
+| 34 | ~~**Profil portfolio**~~ | ~~Compétences, défis résolus, certificats et bouton « Ajouter à LinkedIn » sur `/u/[username]`.~~ Fait, PR #430 : sur le profil public, les compétences (leçons terminées par catégorie, parcours terminés), les certificats avec leur page de vérification et, sur sa propre page, « Ajouter à LinkedIn », les défis résolus ; les mêmes sections dans l'écran de profil de l'app (`@cyberlearn/lib/social/portfolio`). | Aucune | Oui |
 
 **30. Suivi des exercices.** Aujourd'hui, aucun exercice n'est enregistré un
 par un : `<PythonChallenge>` bloque seulement la fin de sa section tant qu'il

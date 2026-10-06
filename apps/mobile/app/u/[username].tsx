@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import {
@@ -8,6 +9,7 @@ import {
   friendshipMove,
 } from "@cyberlearn/lib/social/friendship";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { lessonsFinishedLabel } from "@cyberlearn/lib/social/portfolio";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
@@ -179,9 +181,95 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
         </View>
       ) : null}
 
+      {profile.skills.length > 0 ? (
+        <View>
+          <SectionLabel eyebrow="02 · compétences" title="Ce qui est acquis." />
+          <View style={{ gap: 8 }}>
+            {profile.skills.map((skill) => (
+              <Card key={skill.category} style={{ gap: 4 }}>
+                <Text variant="micro" style={{ color: skill.color }}>
+                  {skill.label}
+                </Text>
+                <Text variant="h3">{lessonsFinishedLabel(skill.lessons)}</Text>
+                {skill.paths.map((title) => (
+                  <Text key={title} variant="bodySm">
+                    Parcours terminé : {title}
+                  </Text>
+                ))}
+              </Card>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {profile.certificates.length > 0 ? (
+        <View>
+          <SectionLabel
+            eyebrow={`03 · certificats · ${String(profile.certificates.length)}`}
+            title="Attestations obtenues."
+          />
+          <Card style={{ padding: 0 }}>
+            {profile.certificates.map((cert, i) => (
+              <View key={cert.publicId}>
+                {i > 0 ? <Divider /> : null}
+                <View style={{ padding: 12, gap: 8 }}>
+                  <Text variant="micro" style={{ color: colors.textMuted }}>
+                    {monthYear(cert.issuedAt)}
+                    {cert.score !== null ? ` · ${String(cert.score)} %` : ""}
+                  </Text>
+                  <Text variant="h3">{cert.pathTitle}</Text>
+                  <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                    <ActionChip
+                      label="Vérifier"
+                      tone="neutral"
+                      onPress={() => void WebBrowser.openBrowserAsync(cert.verifyUrl)}
+                    />
+                    {cert.linkedInUrl !== null ? (
+                      <ActionChip
+                        label="Ajouter à LinkedIn"
+                        onPress={() => void WebBrowser.openBrowserAsync(cert.linkedInUrl ?? "")}
+                      />
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+            ))}
+          </Card>
+        </View>
+      ) : null}
+
+      {profile.challenges.length > 0 ? (
+        <View>
+          <SectionLabel
+            eyebrow={`04 · défis · ${String(profile.challenges.length)}`}
+            title="Défis résolus."
+          />
+          <Card style={{ padding: 0 }}>
+            {profile.challenges.map((challenge, i) => (
+              <View key={challenge.slug}>
+                {i > 0 ? <Divider /> : null}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text variant="micro" style={{ color: challenge.difficultyColor }}>
+                      {challenge.difficultyLabel}
+                    </Text>
+                    <Text variant="h3" numberOfLines={2}>
+                      {challenge.title}
+                    </Text>
+                  </View>
+                  <Text variant="mono" style={{ fontSize: 11, color: colors.textMuted }}>
+                    {shortDay(challenge.completedAt)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        </View>
+      ) : null}
+
       {profile.recentLessons.length > 0 ? (
         <View>
-          <SectionLabel eyebrow="02 · activité" title="Leçons terminées récemment." />
+          <SectionLabel eyebrow="05 · activité" title="Leçons terminées récemment." />
           <Card style={{ padding: 0 }}>
             {profile.recentLessons.map((lesson, i) => {
               const category = profileCategory(lesson.category);
@@ -281,4 +369,9 @@ function FriendButton({
       ) : null}
     </View>
   );
+}
+
+/** "mars 2026", for a certificate's date. */
+function monthYear(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }

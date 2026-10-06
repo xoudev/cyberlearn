@@ -13,7 +13,13 @@ import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { StatTile } from "@/components/stat-tile";
 import { AvatarView } from "@/components/avatar-view";
 import { XpProgress } from "@/components/xp-progress";
-import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import {
+  certificateVerifyUrl,
+  lessonsFinishedLabel,
+  linkedInCertificateUrl,
+  skillLines,
+} from "@cyberlearn/lib/social/portfolio";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -112,6 +118,16 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   // Resolve "__upload:" markers to short-lived signed URLs before rendering;
   // built-in paths, "__glyph:" markers and null pass through unchanged.
   const avatarSrc = await resolveAvatarSrc(user.avatarUrl);
+
+  // The portfolio: skills read off what is finished, certificates with their
+  // proof, and, on the holder's own page only, the link that adds one to a
+  // LinkedIn profile.
+  const isSelf = viewerId === user.id;
+  const skills = skillLines(
+    user.lessonsByCategory,
+    user.pathProgress.map((pp) => ({ title: pp.path.title, category: pp.path.category })),
+  );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 
   const { level, current, needed } = computeLevel(user.xpTotal);
   const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
@@ -471,10 +487,228 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
           </section>
         )}
 
+        {/* ── Skills: what is finished, by category ────────────────────── */}
+        {skills.length > 0 && (
+          <section style={{ marginBottom: 56 }}>
+            <SectionLabel eyebrow="02 · compétences" title="Ce qui est acquis." />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gap: 14,
+              }}
+            >
+              {skills.map((skill) => (
+                <div key={skill.category} className="card" style={{ padding: "16px 18px" }}>
+                  <div
+                    style={{
+                      ...MONO,
+                      fontSize: 9.5,
+                      fontWeight: 600,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: skill.color,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {skill.label}
+                  </div>
+                  <p
+                    style={{
+                      ...SANS,
+                      fontWeight: 600,
+                      fontSize: 15,
+                      color: "var(--color-text-primary)",
+                      margin: 0,
+                    }}
+                  >
+                    {lessonsFinishedLabel(skill.lessons)}
+                  </p>
+                  {skill.paths.length > 0 && (
+                    <ul
+                      style={{
+                        margin: "8px 0 0",
+                        paddingLeft: 18,
+                        color: "var(--color-text-secondary)",
+                        fontSize: 13,
+                      }}
+                    >
+                      {skill.paths.map((title) => (
+                        <li key={title}>Parcours terminé : {title}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Certificates: the proof, and the way to a LinkedIn profile ── */}
+        {user.certificates.length > 0 && (
+          <section style={{ marginBottom: 56 }}>
+            <SectionLabel
+              eyebrow={`03 · certificats · ${String(user.certificates.length)}`}
+              title="Attestations obtenues."
+            />
+            <div className="card">
+              {user.certificates.map((cert, i) => {
+                const verifyUrl = certificateVerifyUrl(siteUrl, cert.publicId);
+                const cat = categoryMeta(cert.path.category);
+                const dateStr = new Intl.DateTimeFormat("fr-FR", {
+                  month: "long",
+                  year: "numeric",
+                }).format(cert.issuedAt);
+                return (
+                  <div
+                    key={cert.publicId}
+                    className="pub-row"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 18,
+                      padding: "14px 20px",
+                      flexWrap: "wrap",
+                      borderBottom:
+                        i < user.certificates.length - 1
+                          ? "1px solid var(--color-border-subtle)"
+                          : "none",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div
+                        style={{
+                          ...MONO,
+                          fontSize: 9.5,
+                          fontWeight: 600,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: cat.color,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {cat.short} · {dateStr}
+                        {cert.score !== null ? ` · ${String(cert.score)} %` : ""}
+                      </div>
+                      <p
+                        style={{
+                          ...SANS,
+                          fontWeight: 600,
+                          fontSize: 15,
+                          color: "var(--color-text-primary)",
+                          margin: 0,
+                        }}
+                      >
+                        {cert.path.title}
+                      </p>
+                    </div>
+                    <Link href={`/verify/${cert.publicId}`} className="btn btn--ghost btn--sm">
+                      Vérifier
+                    </Link>
+                    {isSelf && (
+                      <a
+                        href={linkedInCertificateUrl({
+                          name: cert.path.title,
+                          issuedAt: cert.issuedAt,
+                          publicId: cert.publicId,
+                          verifyUrl,
+                        })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn--accent btn--ghost btn--sm"
+                      >
+                        Ajouter à LinkedIn
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Challenges solved ────────────────────────────────────────── */}
+        {user.challengeProgress.length > 0 && (
+          <section style={{ marginBottom: 56 }}>
+            <SectionLabel
+              eyebrow={`04 · défis · ${String(user.challengeProgress.length)}`}
+              title="Défis résolus."
+            />
+            <div className="card">
+              {user.challengeProgress.map((cp, i) => {
+                const diff = difficultyMeta(cp.challenge.difficulty);
+                const dateStr = cp.completedAt
+                  ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
+                      cp.completedAt,
+                    )
+                  : "-";
+                return (
+                  <div
+                    key={cp.challenge.slug}
+                    className="pub-row"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 18,
+                      padding: "14px 20px",
+                      borderBottom:
+                        i < user.challengeProgress.length - 1
+                          ? "1px solid var(--color-border-subtle)"
+                          : "none",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          ...MONO,
+                          fontSize: 9.5,
+                          fontWeight: 600,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: diff.color,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {diff.label} · {categoryMeta(cp.challenge.category).short}
+                      </div>
+                      <p
+                        style={{
+                          ...SANS,
+                          fontWeight: 600,
+                          fontSize: 15,
+                          color: "var(--color-text-primary)",
+                          margin: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {cp.challenge.title}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 10.5,
+                        color: "var(--color-text-muted)",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {dateStr}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* ── Recent lessons ───────────────────────────────────────────── */}
         {user.lessonProgress.length > 0 && (
           <section>
-            <SectionLabel eyebrow="02 · activité" title="Leçons terminées récemment." />
+            <SectionLabel eyebrow="05 · activité" title="Leçons terminées récemment." />
             <div className="card">
               {user.lessonProgress.map((lp, i) => {
                 const cat = categoryMeta(lp.lesson.category);
