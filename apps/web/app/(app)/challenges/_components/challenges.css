@@ -1,0 +1,628 @@
+/* The challenges list (/challenges): the header, the three steps, the week's
+   challenge and the cards. Square like the rest of the site; the page's accent
+   is the challenges' red, the status colours stay the site's (solved in the
+   success tone, under way in the warning tone). */
+
+.dfx {
+  --dfx-accent: var(--color-danger);
+  --dfx-accent-soft: color-mix(in srgb, var(--color-danger) 45%, transparent);
+  --dfx-accent-wash: color-mix(in srgb, var(--color-danger) 7%, transparent);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.dfx-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 32px;
+  align-items: end;
+  margin-bottom: 32px;
+}
+.dfx-head .pg-title {
+  margin-bottom: 14px;
+}
+.dfx-head .pg-lede {
+  margin-bottom: 0;
+}
+.dfx-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dfx-tally b {
+  margin-right: 6px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dfx-tally [data-tally="COMPLETED"] b {
+  color: var(--color-success);
+}
+.dfx-tally [data-tally="IN_PROGRESS"] b {
+  color: var(--color-warning);
+}
+.dfx-tally [data-tally="LOCKED"] b {
+  color: var(--color-text-muted);
+}
+
+/* ── The three steps ────────────────────────────────────────────────────── */
+
+.dfx-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 40px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+.dfx-steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 20px 22px;
+}
+.dfx-steps li + li {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.dfx-steps__n {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dfx-accent);
+}
+.dfx-steps h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dfx-steps p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+/* ── Shared bits ────────────────────────────────────────────────────────── */
+
+.dfx-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dfx-eyebrow b {
+  font-weight: 700;
+  color: var(--dfx-accent);
+}
+
+.dfx-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dfx-tag {
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+}
+
+[data-cat="CYBERSEC"] {
+  --dfx-cat: var(--color-category-cybersec);
+}
+[data-cat="DEV"] {
+  --dfx-cat: var(--color-category-dev);
+}
+[data-cat="NETWORK"] {
+  --dfx-cat: var(--color-category-network);
+}
+.dfx-tag[data-cat] {
+  color: var(--dfx-cat);
+  border-color: color-mix(in srgb, var(--dfx-cat) 55%, transparent);
+}
+
+/* The time left on the week's bonus. */
+.dfx-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--color-warning);
+}
+.dfx-timer svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.dfx-timer time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A terminal session, as the machine would print it. */
+.dfx-term {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dfx-term__cmd {
+  color: var(--color-text-primary);
+}
+.dfx-term__p {
+  margin-right: 8px;
+  color: var(--dfx-accent);
+}
+.dfx-term__caret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  vertical-align: -2px;
+  background: var(--dfx-accent);
+  animation: pg-blink 1s step-end infinite;
+}
+
+/* What a locked challenge holds: not shown, only its shape. */
+.dfx-redacted {
+  display: grid;
+  gap: 8px;
+}
+.dfx-redacted span {
+  display: block;
+  height: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-text-muted) 45%, transparent) 0 46px,
+    transparent 46px 52px
+  );
+}
+
+/* ── The week's challenge ───────────────────────────────────────────────── */
+
+.dfx-week {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  margin-bottom: 56px;
+  border: 1px solid var(--dfx-accent-soft);
+  background:
+    linear-gradient(135deg, var(--dfx-accent-wash), transparent 55%), var(--color-bg-elevated);
+  box-shadow: 0 0 40px -18px var(--dfx-accent);
+}
+.dfx-week__main {
+  display: flex;
+  flex-direction: column;
+  padding: 32px 34px;
+}
+.dfx-week__title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+}
+.dfx-week__desc {
+  max-width: 56ch;
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+.dfx-week__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+.dfx-week__side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 26px 28px;
+  border-left: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.dfx-week__side-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dfx-week__side .dfx-term,
+.dfx-week__side .dfx-redacted {
+  flex: 1;
+}
+.dfx-locked-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.dfx-facts {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.dfx-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 0;
+  font-size: 13.5px;
+}
+.dfx-facts dt {
+  color: var(--color-text-muted);
+}
+.dfx-facts dd {
+  margin: 0;
+  text-align: right;
+  color: var(--color-text-primary);
+}
+.dfx-facts dd s {
+  margin-right: 6px;
+  color: var(--color-text-muted);
+}
+
+/* ── The list ───────────────────────────────────────────────────────────── */
+
+.dfx-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.dfx-list-head h2 {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+.dfx-list-head .tabs {
+  margin: 0;
+  border-bottom: 0;
+}
+.dfx .tabs__tab[data-active="true"] {
+  color: var(--dfx-accent);
+  border-bottom-color: var(--dfx-accent);
+  box-shadow: 0 2px 12px -4px var(--dfx-accent-soft);
+}
+.dfx .tabs__tab[data-active="true"] .tabs__count {
+  color: var(--dfx-accent);
+  border-color: var(--dfx-accent-soft);
+}
+
+.dfx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+
+/* ── A challenge's card ─────────────────────────────────────────────────── */
+
+.dfx-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  transition:
+    border-color var(--dur-base) ease,
+    box-shadow var(--dur-base) ease;
+}
+.dfx-card:hover {
+  border-color: var(--dfx-accent-soft);
+  box-shadow: 0 16px 36px -24px var(--dfx-accent);
+}
+.dfx-card[data-status="COMPLETED"] {
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+.dfx-card[data-status="COMPLETED"]:hover {
+  border-color: color-mix(in srgb, var(--color-success) 70%, transparent);
+  box-shadow: 0 16px 36px -24px var(--color-success);
+}
+.dfx-card[data-status="LOCKED"]:hover {
+  border-color: var(--color-border-strong, var(--color-border-default));
+  box-shadow: none;
+}
+
+.dfx-card__peek {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 124px;
+  padding: 14px 16px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.dfx-card__peek-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dfx-card__cat {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dfx-cat, var(--color-text-muted));
+}
+.dfx-card__lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+.dfx-card__lines li {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dfx-card__file {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint, var(--color-text-muted));
+}
+.dfx-card__peek .dfx-term {
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+
+.dfx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--dfx-accent);
+  border: 1px solid var(--dfx-accent-soft);
+}
+.dfx-badge svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dfx-badge[data-status="COMPLETED"] {
+  color: var(--color-bg-base);
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.dfx-badge[data-status="IN_PROGRESS"] {
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 50%, transparent);
+}
+.dfx-badge[data-status="LOCKED"] {
+  color: var(--color-text-muted);
+  border-color: var(--color-border-default);
+}
+
+.dfx-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 18px 20px 16px;
+}
+.dfx-card__ref {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--color-text-muted);
+}
+.dfx-card__title {
+  margin: 0 0 8px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+.dfx-card__desc {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.dfx-card[data-status="LOCKED"] .dfx-card__title,
+.dfx-card[data-status="LOCKED"] .dfx-card__desc {
+  color: var(--color-text-muted);
+}
+.dfx-card__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dfx-card__xp {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dfx-card[data-status="COMPLETED"] .dfx-card__xp {
+  color: var(--color-success);
+}
+
+/* The card's one way in, along its foot. */
+.dfx-card__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--dfx-accent);
+  transition: background var(--dur-fast) ease;
+}
+.dfx-card__go:hover {
+  background: var(--dfx-accent-wash);
+}
+.dfx-card__go:focus-visible {
+  outline: 2px solid var(--dfx-accent);
+  outline-offset: -2px;
+}
+.dfx-card[data-status="COMPLETED"] .dfx-card__go {
+  color: var(--color-success);
+}
+.dfx-card[data-status="COMPLETED"] .dfx-card__go:hover {
+  background: color-mix(in srgb, var(--color-success) 7%, transparent);
+}
+.dfx-card[data-status="IN_PROGRESS"] .dfx-card__go {
+  color: var(--color-warning);
+}
+/* Locked: the way to the challenge that opens it, in words. */
+.dfx-card__go--locked {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-secondary);
+}
+.dfx-card__go--locked b {
+  color: var(--color-text-primary);
+}
+a.dfx-card__go--locked:hover b {
+  color: var(--dfx-accent);
+}
+.dfx-card[data-status="LOCKED"] .dfx-card__go--locked {
+  color: var(--color-text-secondary);
+}
+
+/* The last tile: what comes next week. */
+.dfx-card--next {
+  justify-content: center;
+  padding: 28px 26px;
+  border-style: dashed;
+  background: transparent;
+}
+.dfx-card--next:hover {
+  border-color: var(--color-border-default);
+  box-shadow: none;
+}
+.dfx-card--next h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--color-text-primary);
+}
+.dfx-card--next p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.dfx-card--next p + p {
+  margin-top: 10px;
+}
+.dfx-card--next a {
+  color: var(--color-text-primary);
+  text-underline-offset: 3px;
+}
+.dfx-card--next a:hover {
+  color: var(--dfx-accent);
+}
+
+/* ── Narrow screens ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .dfx-week {
+    grid-template-columns: 1fr;
+  }
+  .dfx-week__side {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+}
+@media (max-width: 900px) {
+  .dfx-head {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .dfx-steps {
+    grid-template-columns: 1fr;
+  }
+  .dfx-steps li + li {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+}
+@media (max-width: 640px) {
+  .dfx-week__main,
+  .dfx-week__side {
+    padding: 22px 18px;
+  }
+  .dfx-week__cta .btn {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dfx-card {
+    transition: none;
+  }
+  .dfx-term__caret {
+    animation: none;
+  }
+}

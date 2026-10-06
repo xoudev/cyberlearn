@@ -39,6 +39,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Sur le site, refonte des paramètres : ils s'ouvrent dans un volet par-dessus la page où tu es, depuis le rouage de la barre du haut ou depuis n'importe quel lien qui y mène (le classement, les révisions, ton profil, un avis de modération). Le volet s'ouvre aussitôt, passer d'une section à l'autre ne recharge rien, et ce que tu as commencé à remplir t'attend quand tu y reviens. Un lien reçu par e-mail ouvre le même volet sur ton tableau de bord.",
       },
       {
+        type: "improved",
+        text: "Refonte de la page Défis. Le défi de la semaine, le même pour tout le monde, vaut le double de son XP jusqu'à lundi, avec son compte à rebours ; chaque défi montre un aperçu de ses pièces (les fichiers de sa machine, les premières lignes de son journal), l'XP que tu y as gagnée, et un défi verrouillé mène directement à celui qui l'ouvre. Des onglets Tous, À faire et Résolus trient la liste. Dans l'app aussi.",
+      },
+      {
         type: "new",
         text: "Chaque parcours a son illustration, sur sa carte du catalogue et en tête de sa page, sur le site comme dans l'app. Un parcours qui n'a pas encore la sienne prend celle de sa catégorie.",
       },

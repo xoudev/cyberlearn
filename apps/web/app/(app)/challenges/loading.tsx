@@ -1,178 +1,117 @@
 import React from "react";
-import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import "./_components/challenges.css";
 
-// Card surface override: real .cc card is #08061f, #1f1b47 hairline, square corners.
-const CARD_STYLE: React.CSSProperties = {
-  background: "#08061f",
-  borderColor: "var(--color-border-subtle)",
-  padding: 0,
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-};
+/**
+ * The challenges list while it loads, drawn on the page's own classes
+ * (challenges.css): the header and its tally, the three steps, the week's
+ * challenge, the tabs and three cards, at their real sizes.
+ */
 
-// Typical first-paint grid count (2-col grid → 6 rows of cards).
-const CARD_COUNT = 6;
-
-function ChallengeCardSkeleton(): React.ReactElement {
+function CardSkeleton(): React.ReactElement {
   return (
-    <SkeletonCard style={CARD_STYLE}>
-      {/* Cover (.cc__cover height 130) */}
-      <div
-        style={{
-          position: "relative",
-          height: 130,
-          background: "var(--color-bg-elevated)",
-          borderBottom: "1px solid var(--color-border-subtle)",
-          display: "grid",
-          placeItems: "center",
-        }}
-      >
-        {/* top-left category tag */}
-        <Skeleton w={84} h={20} style={{ position: "absolute", top: 8, left: 10 }} />
-        {/* top-right diff + type tags */}
-        <div style={{ position: "absolute", top: 8, right: 10, display: "flex", gap: 6 }}>
-          <Skeleton w={64} h={20} />
-          <Skeleton w={48} h={20} />
+    <div className="dfx-card" aria-hidden="true">
+      <div className="dfx-card__peek">
+        <div className="dfx-card__peek-top">
+          <Skeleton w={64} h={10} />
+          <Skeleton w={78} h={20} />
         </div>
-        {/* center icon */}
-        <Skeleton w={48} h={48} radius="circle" />
+        <SkeletonText lines={3} lastWidth="70%" lineHeight={10} gap={9} />
       </div>
-
-      {/* Body (.cc__body padding 18 18 14, gap 8, flex:1) */}
-      <div
-        style={{
-          padding: "18px 18px 14px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          flex: 1,
-        }}
-      >
-        <Skeleton w={72} h={11} />
-        <Skeleton w="80%" h={19} />
-        <SkeletonText lines={2} lastWidth="55%" lineHeight={13} gap={6} />
+      <div className="dfx-card__body">
+        <Skeleton w={110} h={10} style={{ marginBottom: 12 }} />
+        <Skeleton w="72%" h={19} style={{ marginBottom: 12 }} />
+        <SkeletonText lines={2} lastWidth="60%" lineHeight={12} gap={8} />
+        <div className="dfx-card__meta" style={{ paddingTop: 18 }}>
+          <Skeleton w={60} h={11} />
+          <Skeleton w={70} h={11} />
+        </div>
       </div>
-
-      {/* Meta row (.cc__meta padding 10 18) */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          padding: "10px 18px",
-          borderTop: "1px solid rgba(31,27,71,0.4)",
-          background: "rgba(5,4,26,0.4)",
-        }}
-      >
-        <Skeleton w={56} h={11} />
-        <Skeleton w={48} h={11} />
-        <Skeleton w={92} h={11} style={{ marginLeft: "auto" }} />
+      <div className="dfx-card__go">
+        <Skeleton w={140} h={11} />
       </div>
-
-      {/* CTA button (.btn--block) */}
-      <Skeleton w="100%" h={46} radius={0} />
-    </SkeletonCard>
+    </div>
   );
 }
 
 export default function ChallengesLoading(): React.ReactElement {
   return (
-    <div className="chx">
-      {/* ── Breadcrumb ── */}
-      <div className="pg-crumb">
-        <Skeleton w={160} h={12} />
-      </div>
-
-      {/* ── Header ── */}
-      <div className="chx-head">
+    <div className="chx dfx" aria-busy="true" aria-label="Chargement des défis">
+      <header className="dfx-head">
         <div>
-          <Skeleton w="72%" h={64} style={{ marginBottom: 16 }} />
+          <Skeleton w={210} h={14} style={{ marginBottom: 26 }} />
+          <Skeleton w={190} h={58} style={{ marginBottom: 18 }} />
           <SkeletonText
             lines={2}
-            lastWidth="70%"
-            lineHeight={15}
-            gap={8}
-            style={{ maxWidth: 540 }}
+            lastWidth="55%"
+            lineHeight={14}
+            gap={10}
+            style={{ maxWidth: 560 }}
           />
         </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "flex-end" }}>
-          <Skeleton w={96} h={12} />
-          <Skeleton w={110} h={12} />
-          <Skeleton w={112} h={12} />
+        <div className="dfx-tally">
+          <Skeleton w={84} h={12} />
+          <Skeleton w={104} h={12} />
+          <Skeleton w={104} h={12} />
         </div>
-      </div>
+      </header>
 
-      {/* ── Filters ── */}
-      <div className="chx-filters">
-        <div className="chx-filters__row">
-          <Skeleton w={40} h={10} />
-          {[80, 96, 64, 78].map((w) => (
-            <Skeleton key={`cat-${String(w)}`} w={w} h={34} />
-          ))}
-          <span className="chx-filters__split" />
-          <Skeleton w={42} h={10} />
-          {[60, 72, 72, 56].map((w, i) => (
-            <Skeleton key={`type-${String(w)}-${String(i)}`} w={w} h={34} />
-          ))}
-        </div>
-        <Skeleton w={200} h={38} />
-        <Skeleton w={180} h={38} />
-      </div>
-
-      {/* ── Featured panel (.feat 2-col, min-height 320) ── */}
-      <div
-        className="card card--sunken"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1.05fr) minmax(0,1fr)",
-          marginBottom: 32,
-          overflow: "hidden",
-          minHeight: 320,
-        }}
-      >
-        {/* Cover */}
-        <div
-          style={{
-            position: "relative",
-            background: "var(--color-bg-sunken)",
-            borderRight: "1px solid var(--color-border-subtle)",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <Skeleton w={140} h={140} radius="circle" />
-        </div>
-        {/* Body (.feat__body padding 28 32, gap 14) */}
-        <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <Skeleton w={150} h={12} />
-          <Skeleton w={200} h={11} />
-          <Skeleton w="85%" h={34} />
-          <SkeletonText lines={2} lastWidth="60%" lineHeight={14} gap={8} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <Skeleton w={80} h={22} />
-            <Skeleton w={96} h={22} />
-            <Skeleton w={56} h={22} />
-          </div>
-          <Skeleton w={220} h={24} />
-          <Skeleton w="100%" h={46} radius={0} style={{ marginTop: 4 }} />
-        </div>
-      </div>
-
-      {/* ── Section heading ── */}
-      <div className="chx-section-head">
-        <div>
-          <Skeleton w={170} h={11} style={{ marginBottom: 8 }} />
-          <Skeleton w={200} h={26} />
-        </div>
-        <Skeleton w={220} h={11} />
-      </div>
-
-      {/* ── Grid ── */}
-      <div className="chx-grid">
-        {Array.from({ length: CARD_COUNT }).map((_, i) => (
-          <ChallengeCardSkeleton key={`card-${String(i)}`} />
+      <ol className="dfx-steps" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <li key={i}>
+            <Skeleton w={18} h={12} />
+            <div>
+              <Skeleton w="55%" h={15} style={{ marginBottom: 10 }} />
+              <SkeletonText lines={2} lastWidth="70%" lineHeight={12} gap={8} />
+            </div>
+          </li>
         ))}
+      </ol>
+
+      <div className="dfx-week" aria-hidden="true">
+        <div className="dfx-week__main">
+          <Skeleton w={220} h={11} style={{ marginBottom: 18 }} />
+          <Skeleton w="62%" h={40} style={{ marginBottom: 18 }} />
+          <SkeletonText lines={2} lastWidth="65%" lineHeight={14} gap={10} />
+          <div className="dfx-tags" style={{ marginTop: 22 }}>
+            <Skeleton w={78} h={24} />
+            <Skeleton w={78} h={24} />
+            <Skeleton w={48} h={24} />
+          </div>
+          <div className="dfx-week__cta">
+            <Skeleton w={210} h={50} />
+            <Skeleton w={150} h={13} />
+          </div>
+        </div>
+        <div className="dfx-week__side">
+          <div className="dfx-week__side-head">
+            <Skeleton w={96} h={10} />
+            <Skeleton w={52} h={10} />
+          </div>
+          <SkeletonText lines={5} lastWidth="40%" lineHeight={12} gap={11} />
+          <div className="dfx-facts">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i}>
+                <Skeleton w={70} h={12} />
+                <Skeleton w={130} h={12} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="dfx-list-head" aria-hidden="true">
+        <Skeleton w={190} h={26} style={{ marginBottom: 12 }} />
+        <div style={{ display: "flex", gap: 18, paddingBottom: 14 }}>
+          <Skeleton w={66} h={12} />
+          <Skeleton w={82} h={12} />
+          <Skeleton w={88} h={12} />
+        </div>
+      </div>
+      <div className="dfx-grid">
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
     </div>
   );

@@ -1,7 +1,12 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
-import type { ChallengeDetail, ChallengeItem } from "@/lib/challenges";
+import type {
+  ChallengeDetail,
+  ChallengeItem,
+  ChallengeList,
+  WeeklyChallenge,
+} from "@/lib/challenges";
 import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
@@ -1175,13 +1180,13 @@ export async function replySupportTicketApi(
 // ── Challenges (the site's /challenges, apps/web/lib/challenges) ─────────────
 
 /** The active challenges, with where the caller stands. */
-export async function fetchChallengesApi(): Promise<ChallengeItem[]> {
+export async function fetchChallengesApi(): Promise<ChallengeList> {
   const res = await authedFetch("/api/mobile/challenges");
   const body = (await res.json()) as
-    | { ok: true; items: ChallengeItem[] }
+    | { ok: true; items: ChallengeItem[]; weekly?: WeeklyChallenge | null }
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return body.items;
+  return { items: body.items, weekly: body.weekly ?? null };
 }
 
 /** One challenge: statement, state, revealed hints. Never the flag. */
@@ -1198,14 +1203,23 @@ export async function fetchChallengeApi(slug: string): Promise<ChallengeDetail> 
 export async function submitChallengeFlagApi(
   challengeId: string,
   flag: string,
-): Promise<{ correct: boolean; error?: string }> {
+): Promise<{ correct: boolean; error?: string; xpEarned?: number }> {
   try {
     const res = await authedFetch("/api/mobile/challenges/flag", {
       method: "POST",
       body: JSON.stringify({ challengeId, flag }),
     });
-    const body = (await res.json()) as { ok: boolean; correct?: boolean; error?: string };
-    return { correct: body.correct === true, ...(body.error ? { error: body.error } : {}) };
+    const body = (await res.json()) as {
+      ok: boolean;
+      correct?: boolean;
+      error?: string;
+      xpEarned?: number;
+    };
+    return {
+      correct: body.correct === true,
+      ...(body.error ? { error: body.error } : {}),
+      ...(typeof body.xpEarned === "number" ? { xpEarned: body.xpEarned } : {}),
+    };
   } catch {
     return { correct: false, error: "Connexion au serveur impossible." };
   }

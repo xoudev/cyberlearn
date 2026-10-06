@@ -30,6 +30,7 @@
     "./revisions/*": "./src/revisions/*.ts",
     "./settings/*": "./src/settings/*.ts",
     "./changelog/*": "./src/changelog/*.ts",
+    "./challenges/*": "./src/challenges/*.ts",
     "./glossary/*": "./src/glossary/*.ts",
     "./git/*": "./src/git/*.ts",
     "./network/*": "./src/network/*.ts",

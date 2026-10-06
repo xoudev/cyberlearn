@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
@@ -9,6 +9,7 @@ import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, Text } from "@/components/ui";
+import { WeeklyCountdown } from "@/components/weekly-countdown";
 import { completeChallengeApi, revealChallengeHintApi, submitChallengeFlagApi } from "@/lib/api";
 import {
   attemptsLeft,
@@ -57,8 +58,14 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
   const queryClient = useQueryClient();
   const status = STATUS_META[challenge.displayStatus];
   const sections = useMemo(() => parseLesson(challenge.instructions).sections, [challenge]);
+  const router = useRouter();
   const done = challenge.displayStatus === "COMPLETED";
   const locked = challenge.displayStatus === "LOCKED";
+  const weekly = challenge.weekly ?? null;
+  // Twice the reward while this is the week's challenge; what was earned, once solved.
+  const xp = done
+    ? (challenge.xpEarned ?? challenge.xpReward)
+    : challenge.xpReward * (weekly?.multiplier ?? 1);
 
   const refresh = (): void => {
     void queryClient.invalidateQueries({ queryKey: ["challenge", challenge.slug] });
@@ -71,7 +78,7 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <Pill label={status.label} color={status.color} />
           <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-            {`${challenge.refCode} · ${CATEGORY_LABEL[challenge.category]} · ${DIFFICULTY_LABEL[challenge.difficulty]} · ${String(challenge.xpReward)} XP`}
+            {`${challenge.refCode} · ${CATEGORY_LABEL[challenge.category]} · ${DIFFICULTY_LABEL[challenge.difficulty]} · ${String(xp)} XP`}
           </Text>
         </View>
         <Text variant="display" style={{ fontSize: 26 }}>
@@ -80,12 +87,42 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
         <Text variant="body">{challenge.description}</Text>
       </View>
 
+      {weekly !== null ? (
+        <Card accent={colors.danger} style={{ gap: 6 }}>
+          <Text variant="micro" style={{ color: colors.danger }}>
+            DÉFI DE LA SEMAINE
+          </Text>
+          <Text variant="bodySm">
+            {done
+              ? `Résolu cette semaine : ${String(xp)} XP gagnés.`
+              : `${String(xp)} XP jusqu'à lundi, au lieu de ${String(challenge.xpReward)}.`}
+          </Text>
+          <WeeklyCountdown
+            endsAt={weekly.endsAt}
+            prefix={done ? "Prochain défi dans" : `XP ×${String(weekly.multiplier)} encore`}
+            onEnd={refresh}
+          />
+        </Card>
+      ) : null}
+
       {locked && challenge.prerequisiteTitle !== null ? (
-        <Card style={{ gap: 4 }}>
+        <Card style={{ gap: 8 }}>
           <Text variant="micro" style={{ color: colors.textMuted }}>
             VERROUILLÉ
           </Text>
           <Text variant="bodySm">{`Résous d'abord « ${challenge.prerequisiteTitle} ».`}</Text>
+          {challenge.prerequisiteSlug ? (
+            <ActionChip
+              label={`Ouvrir « ${challenge.prerequisiteTitle} »`}
+              tone="danger"
+              onPress={() => {
+                router.push({
+                  pathname: "/challenges/[slug]",
+                  params: { slug: challenge.prerequisiteSlug ?? "" },
+                });
+              }}
+            />
+          ) : null}
         </Card>
       ) : null}
 
@@ -143,7 +180,7 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
           <Text variant="micro" style={{ color: colors.success }}>
             RÉSOLU
           </Text>
-          <Text variant="bodySm">{`Défi résolu : ${String(challenge.xpReward)} XP gagnés.`}</Text>
+          <Text variant="bodySm">{`Défi résolu : ${String(xp)} XP gagnés.`}</Text>
         </Card>
       ) : null}
     </View>

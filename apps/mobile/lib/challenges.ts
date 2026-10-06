@@ -26,6 +26,35 @@ export interface ChallengeItem {
   userAttempts: number;
   displayStatus: ChallengeStatus;
   lockedByTitle: string | null;
+  /** Where the prerequisite is, to go and do it first. */
+  prerequisiteSlug?: string | null;
+  hintCount?: number;
+  /** The XP the solve was worth, the week's bonus included; null before it. */
+  xpEarned?: number | null;
+  /** What the challenge hands over: "La machine « web01 »". */
+  supplied?: string;
+  /** A glimpse of it; none while the challenge is locked. */
+  evidence?: ChallengeEvidence | null;
+}
+
+/** What `ls` shows on a challenge's machine, and the first lines of its main file. */
+export interface ChallengeEvidence {
+  listing: { kind: "cmd" | "out"; text: string }[];
+  excerpt: { file: string; lines: string[] } | null;
+}
+
+/** The challenge of the week, the same for everybody (@cyberlearn/lib/challenges/weekly). */
+export interface WeeklyChallenge {
+  id: string;
+  /** ISO 8601: when the week ends, and the bonus with it. */
+  endsAt: string;
+  multiplier: number;
+  nextId: string | null;
+}
+
+export interface ChallengeList {
+  items: ChallengeItem[];
+  weekly: WeeklyChallenge | null;
 }
 
 export interface ChallengeHint {
@@ -52,8 +81,12 @@ export interface ChallengeDetail {
   userAttempts: number;
   displayStatus: ChallengeStatus;
   prerequisiteTitle: string | null;
+  prerequisiteSlug?: string | null;
   onMachine: boolean;
   hints: ChallengeHint[];
+  xpEarned?: number | null;
+  /** Set while this is the challenge of the week. */
+  weekly?: WeeklyChallenge | null;
 }
 
 /** The site's words for each state. */
@@ -86,4 +119,55 @@ export function takesFlag(type: ChallengeType): boolean {
 /** The attempts left, never below zero. */
 export function attemptsLeft(challenge: { maxAttempts: number; userAttempts: number }): number {
   return Math.max(0, challenge.maxAttempts - challenge.userAttempts);
+}
+
+/** The list's tabs, as on the site: everything, what is left to do, what is done. */
+export type ChallengeFilter = "all" | "todo" | "done";
+
+export const FILTER_LABEL: Record<ChallengeFilter, string> = {
+  all: "Tous",
+  todo: "À faire",
+  done: "Résolus",
+};
+
+export function matchesFilter(item: ChallengeItem, filter: ChallengeFilter): boolean {
+  if (filter === "todo") {
+    return item.displayStatus === "AVAILABLE" || item.displayStatus === "IN_PROGRESS";
+  }
+  if (filter === "done") return item.displayStatus === "COMPLETED";
+  return true;
+}
+
+/**
+ * The list split as the site shows it: the week's challenge on its own, the
+ * others under the tabs, and next week's, named on the last tile.
+ */
+export function splitWeekly(list: ChallengeList): {
+  weekly: ChallengeItem | null;
+  next: ChallengeItem | null;
+  others: ChallengeItem[];
+} {
+  const weeklyId = list.weekly?.id ?? null;
+  const nextId = list.weekly?.nextId ?? null;
+  const weekly = list.items.find((item) => item.id === weeklyId) ?? null;
+  const next =
+    nextId !== null && nextId !== weeklyId
+      ? (list.items.find((item) => item.id === nextId) ?? null)
+      : null;
+  return { weekly, next, others: list.items.filter((item) => item.id !== weekly?.id) };
+}
+
+/** What a challenge is worth to this learner: what they earned, or the reward. */
+export function xpLine(item: ChallengeItem, multiplier = 1): string {
+  if (item.displayStatus === "COMPLETED") {
+    return `${String(item.xpEarned ?? item.xpReward)} XP gagnés`;
+  }
+  return `${String(item.xpReward * multiplier)} XP`;
+}
+
+/** The header's tally: how many of each state, "en cours" left out when there are none. */
+export function tallyOf(items: readonly ChallengeItem[]): { status: ChallengeStatus; n: number }[] {
+  return (["COMPLETED", "IN_PROGRESS", "AVAILABLE", "LOCKED"] as const)
+    .map((status) => ({ status, n: items.filter((i) => i.displayStatus === status).length }))
+    .filter(({ status, n }) => n > 0 || status !== "IN_PROGRESS");
 }
