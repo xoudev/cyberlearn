@@ -30,292 +30,154 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "3.25",
-    date: "2026-10-06",
-    title: "Les paramètres s'ouvrent sur place",
-    changes: [
-      {
-        type: "improved",
-        text: "Sur le site, les paramètres s'ouvrent tout de suite par-dessus la page, sans la quitter, et passer d'une section à l'autre est instantané. Les liens qui y mènent (le classement, les révisions, ton profil, un avis de modération) ouvrent le même volet. Ce que tu as commencé à remplir dans une section t'attend quand tu y reviens.",
-      },
-    ],
-  },
-  {
-    version: "3.24",
-    date: "2026-10-05",
-    title: "Une seule palette, lue par son nom",
-    changes: [
-      {
-        type: "improved",
-        text: "Près de trois mille couleurs écrites en dur dans les pages lisent désormais la palette par son nom. Rien ne change à l'écran aujourd'hui ; demain, une couleur changée dans la palette change partout, et plus rien ne peut dériver d'une page à l'autre.",
-      },
-    ],
-  },
-  {
-    version: "3.23",
-    date: "2026-10-05",
-    title: "La même palette dans les labos",
-    changes: [
-      {
-        type: "fixed",
-        text: "Les exercices et labos de leçon, l'éditeur de leçon, la recherche et le certificat lisent la même palette. La carte de l'exercice OSINT suit désormais l'accent que tu as équipé, au lieu de rester turquoise.",
-      },
-    ],
-  },
-  {
-    version: "3.22",
-    date: "2026-10-05",
-    title: "Le même bouton jusque dans les labos",
-    changes: [
-      {
-        type: "improved",
-        text: "Les boutons écrits à la main dans les pages (l'accueil, le test de positionnement, les notes, les paramètres, les défis) et ceux des labos de leçon rejoignent la famille unique : même hauteur, mêmes capitales, même réaction au survol.",
-      },
-    ],
-  },
-  {
-    version: "3.21",
-    date: "2026-10-05",
-    title: "Un seul bouton",
-    changes: [
-      {
-        type: "improved",
-        text: "Les boutons du tableau de bord, des classes, des amis, des défis, du forum, du guide, de l'examen et du catalogue des parcours étaient dix familles de boutons. Ils sont la même : même hauteur, même capitale, même réaction au survol et au clavier, dans le ton de ce qu'ils font.",
-      },
-    ],
-  },
-  {
-    version: "3.20",
-    date: "2026-10-05",
-    title: "La même carte partout",
-    changes: [
-      {
-        type: "improved",
-        text: "Les cadres du site (un bloc, une tuile, un panneau) avaient dix fonds et deux bordures, posés à la main à chaque fois. Ils en ont trois : la carte, la carte enfoncée, le cadre seul.",
-      },
-    ],
-  },
-  {
-    version: "3.19",
-    date: "2026-10-05",
-    title: "Les petits libellés, à la même taille",
-    changes: [
-      {
-        type: "improved",
-        text: "Les petits libellés en capitales (un surtitre, une méta, une étiquette) avaient vingt-cinq tailles et espacements différents d'une page à l'autre. Ils en ont trois, les mêmes partout.",
-      },
-    ],
-  },
-  {
-    version: "3.18",
-    date: "2026-10-05",
-    title: "Les mêmes coins, les mêmes cadres",
-    changes: [
-      {
-        type: "fixed",
-        text: "Les crochets d'angle, le titre au mot dégradé, l'en-tête de section « // » et la carte sont dessinés une fois pour tout le site ; la page introuvable et la page des comptes suspendus partagent le même cadre. Et plus rien ne peut s'arrondir par mégarde : le rayon des composants est à zéro à la source.",
-      },
-    ],
-  },
-  {
-    version: "3.17",
-    date: "2026-10-05",
-    title: "Les mêmes onglets, les mêmes filtres",
-    changes: [
-      {
-        type: "improved",
-        text: "Les onglets (profil, casier, classement, classe) et les pastilles de filtre (parcours, défis, badges) sont les mêmes d'une page à l'autre, et se présentent au lecteur d'écran comme des onglets et des filtres. Les pastilles s'allument dans la couleur de ce qu'elles filtrent : une catégorie, une rareté.",
-      },
-    ],
-  },
-  {
-    version: "3.16",
-    date: "2026-10-05",
-    title: "Une seule barre de progression",
-    changes: [
-      {
-        type: "improved",
-        text: "Les barres de progression du site (parcours, badges, quêtes, classe, examen, casier, défis) sont la même barre : même piste, même remplissage, même pointe. Et chacune dit désormais au lecteur d'écran ce qu'elle mesure, ce que trois seulement faisaient.",
-      },
-    ],
-  },
-  {
-    version: "3.15",
-    date: "2026-10-05",
-    title: "Les mêmes mots pour les mêmes choses",
-    changes: [
-      {
-        type: "fixed",
-        text: "Une catégorie et une difficulté s'écrivent désormais pareil d'une page à l'autre, et dans l'app : « Réseau » plutôt que « Réseaux » ici et « RÉSEAU » là, « Débutant » sur les défis aussi, où il s'appelait « Facile ». La couleur de chaque catégorie est la même partout : la page des révisions peignait Cybersec en rose et Dev en turquoise, à l'inverse du reste du site.",
-      },
-    ],
-  },
-  {
-    version: "3.14",
-    date: "2026-10-05",
-    title: "Une seule fenêtre pour tout le site",
-    changes: [
-      {
-        type: "improved",
-        text: "Les dix fenêtres qui s'ouvrent par-dessus une page (la fin d'une leçon, le niveau franchi, le recadrage de l'avatar, une note et son partage, la suppression du compte, l'avis de bannissement, le récap) sont la même fenêtre : même fond, même cadre, Échap et un clic à côté pour la fermer, et Tab qui reste dedans au lieu de filer dans la page derrière. Quand une fenêtre s'ouvre par-dessus une autre, Échap ne ferme que celle du dessus.",
-      },
-    ],
-  },
-  {
-    version: "3.13",
-    date: "2026-10-05",
-    title: "Un avatar, un niveau, une rareté : les mêmes partout",
-    changes: [
-      {
-        type: "improved",
-        text: "Ton avatar est dessiné par le même composant dans la barre du haut, sur ton profil, sur ton profil public et sous une leçon que tu as écrite. Un niveau s'écrit « Niv. 7 » partout, dans l'app aussi, au lieu de trois graphies. La barre d'XP du profil public est celle du profil, et les badges du profil sont les cartes de la page des badges.",
-      },
-    ],
-  },
-  {
-    version: "3.12",
-    date: "2026-10-05",
-    title: "Les mêmes briques d'une page à l'autre",
-    changes: [
-      {
-        type: "improved",
-        text: "Le fil d'Ariane, l'encart « rien à afficher », les tuiles de chiffres et le bouton « copier » sont désormais les mêmes sur toutes les pages, au pixel près : ils étaient dessinés jusqu'à dix-sept fois chacun, chaque fois un peu autrement. Le classement nomme les rangs comme le tableau de bord.",
-      },
-    ],
-  },
-  {
-    version: "3.11",
-    date: "2026-10-05",
-    title: "Les paramètres s'ouvrent en volet",
-    changes: [
-      {
-        type: "new",
-        text: "Le rouage de la barre du haut ouvre désormais les paramètres dans un volet, par-dessus la page où tu étais : les sept sections d'un côté, leurs réglages de l'autre, et Échap pour revenir. Les mêmes réglages qu'avant, sans quitter ce que tu faisais. La page complète reste là pour un lien direct ou un rechargement.",
-      },
-    ],
-  },
-  {
-    version: "3.10",
-    date: "2026-10-05",
-    title: "Une seule palette pour tout le site",
-    changes: [
-      {
-        type: "fixed",
-        text: "La page introuvable, la page des comptes suspendus, le catalogue public et le forum lisaient des couleurs qui n'avaient jamais été définies pour eux. Tout le site parle désormais la même palette, définie une fois, les quatre pages qui en gardaient chacune une copie comprises. Les crochets d'angle des cartes et les boutons des panneaux de la barre du haut sont dessinés une seule fois.",
-      },
-    ],
-  },
-  {
-    version: "3.9",
-    date: "2026-10-05",
-    title: "Les révisions reprennent une taille humaine",
-    changes: [
-      {
-        type: "improved",
-        text: "Chaque jour demande désormais cinq révisions au plus, les leçons en retard depuis le plus longtemps d'abord ; les autres attendent leur tour sans être comptées. Une leçon retenue assez de fois sort du cycle au lieu de revenir pour toujours. Et une leçon archivée ne revient plus à réviser.",
-      },
-    ],
-  },
-  {
-    version: "3.8",
-    date: "2026-10-05",
-    title: "La série se lit de la même façon partout",
-    changes: [
-      {
-        type: "improved",
-        text: "La carte de la série du profil est désormais celle du tableau de bord, prolongée de l'année : les jours actifs depuis janvier, le prochain palier et le calendrier des douze derniers mois, dans les mêmes couleurs et avec les mêmes mots. Et c'est « série » partout, plus « streak » ici et « série » là.",
-      },
-    ],
-  },
-  {
-    version: "3.7",
-    date: "2026-10-05",
-    title: "La note des parcours sur leurs cartes",
-    changes: [
-      {
-        type: "fixed",
-        text: "La note moyenne d'un parcours ne s'affichait que sur sa page et sur les cartes des parcours pas encore commencés. Elle figure désormais sur toutes ses cartes, en cours, certifié ou à découvrir, et sur le catalogue public.",
-      },
-    ],
-  },
-  {
-    version: "3.6",
-    date: "2026-10-05",
-    title: "Les nouveautés et les paramètres passent dans la barre du haut",
-    changes: [
-      {
-        type: "improved",
-        text: "Les petits liens sous ton nom, en bas de la barre latérale, ont disparu. Les nouveautés sont un bouton de la barre du haut, à côté des amis, marqué d'un point tant qu'elles ne sont pas lues. Les paramètres s'ouvrent depuis l'icône de rouage, à côté de la cloche. Dans la barre latérale, le casier a rejoint les badges et les certificats, l'aide a rejoint le forum, et le nom du site n'est plus écrit deux fois.",
-      },
-    ],
-  },
-  {
-    version: "3.5",
-    date: "2026-10-05",
-    title: "L'aperçu de l'éditeur s'affiche dans la console",
-    changes: [
-      {
-        type: "fixed",
-        text: "Dans la console, le volet « Aperçu du site » de l'éditeur de leçons restait sur un refus du navigateur : le site n'autorisait pas la console à l'encadrer. Il la reconnaît désormais à son adresse déployée, et l'aperçu s'affiche.",
-      },
-    ],
-  },
-  {
-    version: "3.4",
-    date: "2026-10-05",
-    title: "Les exercices et les labos se remplissent en champs",
-    changes: [
-      {
-        type: "new",
-        text: "Dans l'éditeur de leçons, les dix-sept exercices et labos ont désormais leur formulaire comme les autres composants : le code et la ligne fautive d'un « trouve la faille », les paragraphes et les indices d'un courriel piégé, les sondes d'un pare-feu, les vérifications d'un bac à sable Git, les événements et les questions d'une chasse dans les logs, le lieu d'une photo, les octets à réparer… Chaque bloc est vérifié avec les règles de la page elle-même, et dit sous le champ ce qui n'irait pas.",
-      },
-    ],
-  },
-  {
     version: "3.3",
-    date: "2026-10-05",
-    title: "Une leçon s'écrit par blocs",
+    date: "2026-10-06",
+    title: "Refonte des paramètres et profil portfolio",
     changes: [
       {
+        type: "improved",
+        text: "Sur le site, refonte des paramètres : ils s'ouvrent dans un volet par-dessus la page où tu es, depuis le rouage de la barre du haut ou depuis n'importe quel lien qui y mène (le classement, les révisions, ton profil, un avis de modération). Le volet s'ouvre aussitôt, passer d'une section à l'autre ne recharge rien, et ce que tu as commencé à remplir t'attend quand tu y reviens. Un lien reçu par e-mail ouvre le même volet sur ton tableau de bord.",
+      },
+      {
         type: "new",
-        text: "L'éditeur de leçons, dans la console comme dans la classe d'un professeur, s'ouvre désormais en blocs : des titres, des passages de texte et des composants avec un champ pour chaque chose, le ton d'un encadré, les options d'un quiz et la bonne réponse à cocher, le code de départ d'un bac à sable, les fichiers et les vérifications d'un terminal Linux. Un « + » entre deux blocs en ajoute un depuis le guide, les flèches le déplacent, et un champ que la page refuserait est signalé avant d'enregistrer. Le code MDX reste à un clic, et c'est la même leçon.",
+        text: "Ton profil public devient un portfolio : tes compétences par catégorie, tes certificats avec un bouton « Vérifier » (et, sur ta propre page, « Ajouter à LinkedIn »), et les défis que tu as résolus. L'app montre les mêmes sections.",
+      },
+      {
+        type: "new",
+        text: "Une fiche de révision par module : les points « à retenir » de ses leçons réunis en une fiche, à télécharger en PDF depuis la page du parcours, ou à lire à l'écran dans l'app.",
+      },
+      {
+        type: "new",
+        text: "Un incident à choix : une histoire racontée scène par scène, où chaque décision a sa conséquence. Plusieurs fins à découvrir, et un bilan qui propose de rejouer.",
+      },
+      {
+        type: "new",
+        text: "Une commande s'explique mot par mot : dans les terminaux des leçons, un clic sur une étape de l'exercice ou sur une commande que tu viens de taper détaille la commande, chaque option, les tubes et les redirections. Dans l'app, d'un toucher.",
+      },
+      {
+        type: "new",
+        text: "Une enquête dans de vrais journaux : dans la leçon blue team sur l'analyse de logs, les journaux d'une nuit d'intrusion (auth.log et access.log) sont déposés dans la machine Linux, et c'est à toi de retrouver l'attaque, rien n'est joué d'avance.",
+      },
+      {
+        type: "improved",
+        text: "Les exercices Python peuvent importer pycryptodome, cryptography et pandas.",
+      },
+      {
+        type: "improved",
+        text: "Pour les professeurs : « Ma classe » compte les exercices réussis par chaque élève (le terminal Linux, les défis Python) à côté de ses leçons terminées. Chaque exercice réussi rapporte 10 XP la première fois.",
       },
     ],
   },
   {
     version: "3.2",
     date: "2026-10-05",
-    title: "L'éditeur de leçons montre la vraie page",
+    title: "Refonte du tableau de bord et de la navigation",
     changes: [
       {
+        type: "improved",
+        text: "Sur le site, refonte du tableau de bord autour d'une seule question : que faire maintenant ? Une carte de mission montre la leçon en cours ou la prochaine du parcours, avec le module dessiné leçon par leçon. Dessous, les révisions du jour, les quêtes et la série de la semaine, puis tes chiffres et tes derniers badges. Le niveau est un anneau à côté du bonjour.",
+      },
+      {
+        type: "improved",
+        text: "Refonte de la navigation : la barre latérale se range en trois parties, Apprendre, Progression et Communauté, et ne compte que les révisions dues. Les nouveautés et les paramètres passent dans la barre du haut, à côté de la cloche, et les nouveautés portent un point tant qu'elles ne sont pas lues.",
+      },
+      {
+        type: "improved",
+        text: "Refonte des révisions : cinq par jour au plus, les leçons en retard depuis le plus longtemps d'abord. Une leçon retenue assez de fois sort du cycle, et une leçon archivée ne revient plus à réviser.",
+      },
+      {
+        type: "improved",
+        text: "La série se lit de la même façon sur le tableau de bord et sur ton profil, qui la prolonge de l'année : les jours actifs depuis janvier, le prochain palier et le calendrier des douze derniers mois. Et c'est « série » partout.",
+      },
+      {
+        type: "improved",
+        text: "Un site plus cohérent : les boutons, les cartes, les onglets, les filtres, les barres de progression et les fenêtres sont les mêmes d'une page à l'autre. Une fenêtre se ferme avec Échap ou d'un clic à côté, Tab reste dedans, et Échap ne ferme que celle du dessus. Les barres et les onglets se présentent correctement au lecteur d'écran.",
+      },
+      {
+        type: "fixed",
+        text: "Les mêmes mots et les mêmes couleurs pour les mêmes choses : « Réseau » partout, « Débutant » aussi sur les défis qui disaient « Facile », « Niv. 7 » pour un niveau, dans l'app aussi. Chaque catégorie garde sa couleur, la page des révisions comprise, et la carte de l'exercice OSINT suit l'accent que tu as équipé.",
+      },
+      {
+        type: "fixed",
+        text: "La note moyenne d'un parcours figure sur toutes ses cartes (en cours, certifié, à découvrir) et sur le catalogue public, plus seulement sur sa page.",
+      },
+      {
         type: "new",
-        text: "L'aperçu de l'éditeur de leçons est désormais rendu par le site lui-même, avec les composants des leçons : quiz, bac à sable, terminaux, labos, tout s'affiche comme les apprenants le verront. Il se met à jour après chaque pause de frappe, ou d'un clic, et garde l'endroit où on en était. Un brouillon qui ne s'affiche pas est signalé avec la section et la ligne en cause, avant d'enregistrer. L'ancien aperçu rapide reste à un clic.",
+        text: "Pour les professeurs, refonte de l'éditeur de leçons : la leçon s'écrit par blocs (titres, texte, et chaque composant avec un champ par réglage), les dix-sept exercices et labos ont leur formulaire, un champ que la page refuserait est signalé avant d'enregistrer, et l'aperçu est la vraie page, telle que tes élèves la verront. Le guide liste les vingt-huit composants avec des exemples prêts à insérer, et le code MDX reste à un clic.",
       },
     ],
   },
   {
     version: "3.1",
     date: "2026-10-05",
-    title: "Le guide de l'éditeur de leçons connaît tous les composants",
+    title: "Des labos dans les leçons",
     changes: [
       {
+        type: "new",
+        text: "Une vraie base de données dans les leçons : SQLite tourne dans ton navigateur, tu écris tes requêtes et tu vois le résultat, ou l'erreur exacte. La leçon sur l'injection SQL en fait un labo : contourner une connexion, faire remonter les comptes, entrer dans celui de l'admin, en voyant à chaque essai la requête que reçoit la base.",
+      },
+      {
+        type: "new",
+        text: "Un vrai site PHP à attaquer puis à corriger, dans ton navigateur : tu lis le code d'une page, tu l'attaques (XSS, accès aux données d'un autre), puis tu la corriges, et ton correctif est rejoué sur des attaques que tu n'as pas envoyées.",
+      },
+      {
+        type: "new",
+        text: "Des ateliers réseau : câbler et adresser des PC, des switches et des routeurs puis les tester avec ping, des calculs de sous-réseaux tirés au hasard et corrigés avec le raisonnement, une trame décortiquée octet par octet où un clic nomme chaque champ, et un pare-feu à régler avec des paquets de test qui passent ou non.",
+      },
+      {
+        type: "new",
+        text: "Des outils d'enquête : une chasse dans les logs façon SIEM, filtrer et compter jusqu'à l'attaquant ; un éditeur hexadécimal pour lire un fichier à ses octets, réparer un en-tête et trouver un message caché ; l'OSINT sur photo, où les métadonnées sont lues dans ton navigateur et le lieu se place sur une carte.",
+      },
+      {
+        type: "new",
+        text: "Un atelier crypto : Base64, hexadécimal, César, Vigenère, XOR et SHA-256 sur un même établi, et des messages à déchiffrer.",
+      },
+      {
+        type: "new",
+        text: "Un bac à sable Git : un dépôt simulé, un terminal pour le piloter, et le graphe des branches redessiné à chaque commande.",
+      },
+      {
+        type: "new",
+        text: "Des animations que tu fais avancer pas à pas (la poignée de main TCP, le chiffrement symétrique, la pile d'appels), et des exercices pour remettre des étapes dans l'ordre ou associer des paires.",
+      },
+      {
         type: "improved",
-        text: "Dans l'éditeur de leçons, de la console comme de la classe d'un professeur, le panneau Guide liste désormais les vingt-huit composants d'une leçon, par famille, chacun avec ce qu'il fait, un ou plusieurs exemples prêts à insérer et un lien vers sa section du guide de rédaction. Une recherche filtre par nom, scénario ou langage. L'aperçu nomme chaque composant au lieu d'afficher une balise.",
+        text: "Dans l'app aussi : le bac à sable Git, la trame octet par octet, l'atelier crypto et les exercices d'ordre et de paires.",
       },
     ],
   },
   {
     version: "3.0",
-    date: "2026-10-05",
-    title: "Un tableau de bord qui répond à une question",
+    date: "2026-10-03",
+    title: "Le vrai terminal Linux et les défis CTF",
     changes: [
       {
-        type: "improved",
-        text: "Le tableau de bord du site a été redessiné autour d'une seule question : que faire maintenant ? Une carte de mission montre la leçon en cours ou la prochaine du parcours, avec le module en cours dessiné leçon par leçon. Dessous, les révisions du jour, les quêtes et la série de la semaine, puis une ligne de chiffres et les derniers badges. Le niveau est un anneau à côté du bonjour.",
+        type: "new",
+        text: "Un vrai Linux dans les leçons : la machine tourne dans ton navigateur, avec un vrai bash pour les scripts, et l'exercice vérifie ce que tu as réellement fait sur elle (fichiers, liens, permissions, comptes). Les exercices du parcours Linux s'y font désormais.",
+      },
+      {
+        type: "new",
+        text: "Le parcours Linux est complet : six nouveaux modules (processus et ressources, logiciels et paquets, scripts Bash, services et journaux, disques et sauvegardes, Linux en réseau), puis un projet de fin de parcours, le serveur d'un petit atelier, avec une épreuve pratique chronométrée et un examen final de 50 questions.",
+      },
+      {
+        type: "new",
+        text: "Les défis CTF : trois premiers défis joués sur une machine Linux (Le journal bavard, Le dossier caché, La sauvegarde oubliée), avec un flag propre à chaque élève et des indices payés en XP. Ils sont aussi dans l'app.",
+      },
+      {
+        type: "new",
+        text: "Deux exercices de sécurité, sur le site et dans l'app : « Trouve la faille », cliquer la ligne vulnérable d'un extrait de code puis nommer la faille, et « Boîte mail piégée », signaler dans un courriel ce qui trahit l'hameçonnage.",
+      },
+      {
+        type: "new",
+        text: "Un glossaire : 96 termes techniques soulignés dans les leçons, avec leur définition au survol, et une page Glossaire qui les liste tous.",
       },
       {
         type: "improved",
-        text: "La barre latérale est regroupée en trois parties, Apprendre, Progression et Communauté, avec un bloc compte en bas : avatar, niveau, casier, nouveautés, aide et paramètres. Seules les révisions dues y sont comptées.",
+        text: "Un compte resté inactif deux ans est prévenu par e-mail avant d'être effacé, comme le promet la politique de confidentialité : une connexion ou le lien « Garder mon compte » suffit à le conserver.",
+      },
+      {
+        type: "fixed",
+        text: "Le code des bacs à sable garde son indentation, les étapes du terminal s'affichent une par ligne, et les bacs à sable et défis Python s'affichent dans l'app.",
       },
     ],
   },
