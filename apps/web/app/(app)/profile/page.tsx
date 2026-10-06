@@ -554,7 +554,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           </div>
 
           {/* Edit profile button */}
-          <Link href="/profile/edit" className="btn btn--ghost">
+          <Link href="/settings/profile" className="btn btn--ghost">
             <svg
               width="12"
               height="12"

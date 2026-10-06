@@ -10,6 +10,7 @@ import { CosmeticsProvider } from "@/components/cosmetics-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { SettingsDrawerProvider } from "./settings/_components/SettingsDrawer";
 
 async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmeticAttrs>> {
   try {
@@ -23,11 +24,8 @@ async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmetic
 
 export default async function AppLayout({
   children,
-  panel,
 }: {
   children: React.ReactNode;
-  /** The drawer slot: the settings, when opened from the navbar's gear. */
-  panel: React.ReactNode;
 }): Promise<React.JSX.Element> {
   const cookieStore = await cookies();
 
@@ -45,50 +43,53 @@ export default async function AppLayout({
     // concurrently; React.cache in lib/auth.ts dedupes the auth + user fetch.
     // CosmeticsProvider seeds the equipped-cosmetic attributes from the server
     // (correct first paint) and lets the casier equip them live, app-wide.
+    // SettingsDrawerProvider opens the settings over whatever page is shown,
+    // from the navbar's gear or any link to them, without a navigation.
     <CosmeticsProvider initial={cosmetics}>
-      <SidebarProvider defaultOpen={defaultOpen}>
-        {/* First stop of the Tab key: without it, the content sat behind the
+      <SettingsDrawerProvider>
+        <SidebarProvider defaultOpen={defaultOpen}>
+          {/* First stop of the Tab key: without it, the content sat behind the
             sixteen links of the sidebar and the navbar, every page. */}
-        <a href="#contenu" className="skip-link">
-          Aller au contenu
-        </a>
-        <Suspense
-          fallback={
-            <div
-              style={{
-                width: 240,
-                background: "var(--color-bg-base)",
-                borderRight: "1px solid var(--color-border-subtle)",
-                flexShrink: 0,
-              }}
-            />
-          }
-        >
-          <AppSidebar />
-        </Suspense>
-
-        <div className="flex min-w-0 flex-1 flex-col">
+          <a href="#contenu" className="skip-link">
+            Aller au contenu
+          </a>
           <Suspense
             fallback={
               <div
                 style={{
-                  height: NAVBAR_HEIGHT,
-                  background: "rgba(3,2,25,0.85)",
-                  borderBottom: "1px solid var(--color-border-default)",
+                  width: 240,
+                  background: "var(--color-bg-base)",
+                  borderRight: "1px solid var(--color-border-subtle)",
                   flexShrink: 0,
                 }}
               />
             }
           >
-            <Navbar />
+            <AppSidebar />
           </Suspense>
-          <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-y-auto">
-            {children}
-          </main>
-          <Footer />
-        </div>
-        {panel}
-      </SidebarProvider>
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Suspense
+              fallback={
+                <div
+                  style={{
+                    height: NAVBAR_HEIGHT,
+                    background: "rgba(3,2,25,0.85)",
+                    borderBottom: "1px solid var(--color-border-default)",
+                    flexShrink: 0,
+                  }}
+                />
+              }
+            >
+              <Navbar />
+            </Suspense>
+            <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-y-auto">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </SidebarProvider>
+      </SettingsDrawerProvider>
     </CosmeticsProvider>
   );
 }

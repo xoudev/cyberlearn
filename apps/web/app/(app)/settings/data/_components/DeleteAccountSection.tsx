@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { ModalShell } from "@/components/modal-shell";
+import { useSettingsReload } from "../../_components/settings-reload";
 
 interface Props {
   pendingExpiresAt: string | null;
@@ -20,10 +21,15 @@ export function DeleteAccountSection({
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [state, formAction, pending] = useActionState(requestDeletionAction, INITIAL_STATE);
+  const reloadSettings = useSettingsReload();
 
+  // The page learns of the pending request from the action's revalidation;
+  // the drawer, which loaded its data once, asks for it again.
   useEffect(() => {
-    if (state.success) setOpen(false);
-  }, [state.success]);
+    if (!state.success) return;
+    setOpen(false);
+    reloadSettings();
+  }, [state.success, reloadSettings]);
 
   // The word typed to confirm does not survive a closed dialog.
   useEffect(() => {

@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.25",
+    date: "2026-10-06",
+    title: "Les paramètres s'ouvrent sur place",
+    changes: [
+      {
+        type: "improved",
+        text: "Sur le site, les paramètres s'ouvrent tout de suite par-dessus la page, sans la quitter, et passer d'une section à l'autre est instantané. Les liens qui y mènent (le classement, les révisions, ton profil, un avis de modération) ouvrent le même volet. Ce que tu as commencé à remplir dans une section t'attend quand tu y reviens.",
+      },
+    ],
+  },
+  {
     version: "3.24",
     date: "2026-10-05",
     title: "Une seule palette, lue par son nom",
