@@ -17,6 +17,7 @@ import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
+import { builtInPathCover, resolvePathCovers } from "@/lib/paths/cover";
 
 export async function generateMetadata({
   params,
@@ -215,6 +216,7 @@ export default async function PathDetailPage({
   });
 
   if (!path) notFound();
+  const [cover = builtInPathCover(path)] = await resolvePathCovers([path]);
 
   const cat = categoryMeta(path.category);
   const tagClass = TAG_CLASS[path.category] ?? "cyber";
@@ -333,6 +335,12 @@ export default async function PathDetailPage({
 
         <div className="brief">
           <Brackets />
+          {/* The path's cover (lib/paths/cover.ts), above what it asks of you. */}
+          <div
+            className="brief__cover"
+            aria-hidden="true"
+            style={{ backgroundImage: `url("${cover}")` }}
+          />
           <div className="brief__eyebrow">{"// MISSION.BRIEF"}</div>
           <div className="brief__grid">
             <div className="brief__cell">

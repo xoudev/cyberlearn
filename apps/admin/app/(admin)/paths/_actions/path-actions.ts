@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
-import { pathRefCodeSchema } from "@cyberlearn/types";
+import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { readPathLessonIds } from "./lesson-ids";
 
@@ -23,7 +23,11 @@ const createPathSchema = z.object({
   track: z.enum(["SKILL", "CAREER"]).default("SKILL"),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedHours: z.coerce.number().int().positive().max(500),
-  coverImageUrl: z.url().optional().or(z.literal("")),
+  // The upload field's marker, as on a lesson; a URL pasted before it existed.
+  coverImageUrl: z
+    .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
+    .optional()
+    .or(z.literal("")),
   publishNow: z.coerce.boolean().optional(),
 });
 

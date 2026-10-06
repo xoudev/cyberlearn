@@ -11,6 +11,7 @@ import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail } from "@/lib/queries";
 import { missionStates } from "@/lib/missions";
+import { PathCover } from "@/components/path-cover";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@/lib/rating";
@@ -85,6 +86,10 @@ function PathBody({
     <View style={{ gap: 20 }}>
       {/* Hero */}
       <Rise index={0}>
+        <PathCover
+          slug={data.slug}
+          style={{ aspectRatio: 16 / 7, borderWidth: 1, marginBottom: 14 }}
+        />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cat }} />
           <Text variant="micro" style={{ color: cat }}>

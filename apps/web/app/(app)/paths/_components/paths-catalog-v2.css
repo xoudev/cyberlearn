@@ -1004,6 +1004,38 @@
   z-index: 1;
   transition: transform var(--dur-slow) var(--ease-out);
 }
+/* A cover image (lib/paths/cover.ts) fills the area under the chips; the
+   grid, the tint and the glyph drawn for a card without one step aside. */
+.pc2-root .game-card__img,
+.pc2-root .active-card__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.pc2-root .hero-path__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+/* Without a glyph to size it, the room keeps the image in view once the hero
+   is stacked. */
+.pc2-root .hero-path__console--image .hero-glyph {
+  min-height: 180px;
+}
+.pc2-root .hero-path__console--image::before,
+.pc2-root .game-card__cover--image::before,
+.pc2-root .game-card__cover--image::after,
+.pc2-root .game-card__cover--image .game-card__glyph,
+.pc2-root .active-card__glyph--image::before {
+  display: none;
+}
+.pc2-root .game-card:hover .game-card__img,
+.pc2-root .active-card:hover .active-card__img {
+  transform: scale(1.04);
+}
 /* bottom-right is the only free corner of the cover: __cat is top-left,
    __diff top-right, __id bottom-left. */
 .pc2-root .game-card__track {

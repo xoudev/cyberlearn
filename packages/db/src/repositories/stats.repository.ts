@@ -28,6 +28,8 @@ export interface PublicCatalogPath extends FeaturedPath {
   hasCertificate: boolean;
   /** The learners' average, null until somebody has rated the path. */
   rating: { avg: number; count: number } | null;
+  /** As stored: an uploaded cover's marker, or null. The site resolves it. */
+  coverImageUrl: string | null;
 }
 
 export const statsRepository = {
@@ -107,6 +109,7 @@ export const statsRepository = {
         certificateTemplate: true,
         avgRating: true,
         ratingsCount: true,
+        coverImageUrl: true,
         lessons: { select: { lesson: { select: { xpReward: true } } } },
       },
     });
@@ -127,6 +130,7 @@ export const statsRepository = {
         path.avgRating !== null && path.ratingsCount > 0
           ? { avg: path.avgRating, count: path.ratingsCount }
           : null,
+      coverImageUrl: path.coverImageUrl,
     }));
   },
 };

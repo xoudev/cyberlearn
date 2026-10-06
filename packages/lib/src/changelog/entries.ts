@@ -40,6 +40,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "new",
+        text: "Chaque parcours a son illustration, sur sa carte du catalogue et en tête de sa page, sur le site comme dans l'app. Un parcours qui n'a pas encore la sienne prend celle de sa catégorie.",
+      },
+      {
+        type: "new",
         text: "Ton profil public devient un portfolio : tes compétences par catégorie, tes certificats avec un bouton « Vérifier » (et, sur ta propre page, « Ajouter à LinkedIn »), et les défis que tu as résolus. L'app montre les mêmes sections.",
       },
       {

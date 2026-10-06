@@ -17,6 +17,8 @@ export interface PathCatalogCardData {
   hasCert: boolean;
   /** Learners' average, shown once somebody has rated the path. */
   rating?: PathRating | null;
+  /** Its cover (lib/paths/cover.ts): an uploaded image, or its illustration. */
+  coverSrc?: string | null;
 }
 
 export type Kind = "cyber" | "dev" | "net";
@@ -142,7 +144,17 @@ export function PathCatalogCard({
   return (
     <Link id={id} href={href} className={`game-card game-card--${kind}`}>
       <Brackets />
-      <div className="game-card__cover">
+      <div className={`game-card__cover${path.coverSrc ? " game-card__cover--image" : ""}`}>
+        {path.coverSrc && (
+          // A background, not an <img>: the picture is decoration, the card's
+          // title says what it is, and a signed URL must not be cached by the
+          // image optimizer past its expiry.
+          <span
+            className="game-card__img"
+            aria-hidden="true"
+            style={{ backgroundImage: `url("${path.coverSrc}")` }}
+          />
+        )}
         <span className="game-card__cat">{category.short}</span>
         <span className="game-card__track">{TRACK_META[path.track] ?? "Compétence"}</span>
         <span className="game-card__diff">

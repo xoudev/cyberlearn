@@ -46,6 +46,8 @@ export interface SerializedPath {
   progressDone: number;
   progressTotal: number;
   rating: { avg: number; count: number } | null;
+  /** Its cover (lib/paths/cover.ts): an uploaded image, or its illustration. */
+  coverSrc: string | null;
   /** Next not-yet-completed lesson (in-progress paths only) - drives the hero panel. */
   nextLesson: {
     n: string;
@@ -219,11 +221,23 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
         </div>
       </div>
-      <div className="hero-path__console">
-        <div className="hero-glyph">
-          <span className="hero-glyph__halo" />
-          <KindGlyph kind={kind} size={132} />
-        </div>
+      <div className={`hero-path__console${path.coverSrc ? " hero-path__console--image" : ""}`}>
+        {path.coverSrc ? (
+          <>
+            <span
+              className="hero-path__img"
+              aria-hidden="true"
+              style={{ backgroundImage: `url("${path.coverSrc}")` }}
+            />
+            {/* Holds the room above the next mission, as the glyph does. */}
+            <div className="hero-glyph" />
+          </>
+        ) : (
+          <div className="hero-glyph">
+            <span className="hero-glyph__halo" />
+            <KindGlyph kind={kind} size={132} />
+          </div>
+        )}
         {path.nextLesson && (
           <Link href={`/lessons/${path.nextLesson.slug}`} className="hero-next">
             <div className="hero-next__lbl">Prochaine mission · {path.nextLesson.n}</div>
@@ -247,8 +261,16 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
   return (
     <Link href={`/paths/${path.slug}`} className={`active-card active-card--${kind}`}>
       <Brackets />
-      <div className="active-card__glyph">
-        <KindGlyph kind={kind} size={56} />
+      <div className={`active-card__glyph${path.coverSrc ? " active-card__glyph--image" : ""}`}>
+        {path.coverSrc ? (
+          <span
+            className="active-card__img"
+            aria-hidden="true"
+            style={{ backgroundImage: `url("${path.coverSrc}")` }}
+          />
+        ) : (
+          <KindGlyph kind={kind} size={56} />
+        )}
       </div>
       <div className="active-card__body">
         <div className="active-card__top">
