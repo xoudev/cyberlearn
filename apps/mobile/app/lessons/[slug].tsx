@@ -195,6 +195,12 @@ export default function LessonReader(): React.JSX.Element {
           height={4}
           delay={0}
         />
+        {data.offline === true ? (
+          <Text variant="bodySm" style={{ color: colors.warning }}>
+            Lu hors ligne, depuis la copie enregistrée : la progression, les quiz et les notes
+            attendent le réseau.
+          </Text>
+        ) : null}
       </View>
 
       {/* Body */}
