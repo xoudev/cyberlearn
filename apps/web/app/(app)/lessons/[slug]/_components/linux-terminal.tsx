@@ -22,6 +22,7 @@ import {
 import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-terminal/timer";
 import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
 import { CommandExplanation } from "./command-explanation";
+import { useExerciseRecord } from "./use-exercise-record";
 
 /**
  * A real Linux in the lesson: v86, an x86 emulator in WebAssembly, boots a
@@ -275,6 +276,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   // The last lines typed, and the one being explained (a step or a typed line).
   const [typed, setTyped] = useState<string[]>([]);
   const [explained, setExplained] = useState<string | null>(null);
+  const recordExercise = useExerciseRecord();
   const [passed, setPassed] = useState<string[]>([]);
   // The clock of a timed exercise: when the machine became ready, the time
   // last read, when everything asked was done, and the score at the limit.
@@ -542,6 +544,11 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   useEffect(() => {
     if (startedAt !== null && allDone && finishedAt === null) setFinishedAt(Date.now());
   }, [startedAt, allDone, finishedAt]);
+
+  // Done, for the teacher's class view: once, keyed by the exercise's id or title.
+  useEffect(() => {
+    if (allDone && total > 0) recordExercise(props.id ?? title, "TERMINAL");
+  }, [allDone, total, recordExercise, props.id, title]);
 
   // At the limit, the score is kept: it is the result of the exercise, even
   // if the learner goes on to finish.

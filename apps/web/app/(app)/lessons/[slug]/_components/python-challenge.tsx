@@ -6,6 +6,7 @@ import { parseChallengeTests, type ChallengeTestCase } from "@cyberlearn/types";
 import { getPythonRuntime, type PythonTestResult } from "@/lib/python/runtime";
 import { useCodeDraft } from "@/lib/lessons/code-draft";
 import { useLessonCompletion } from "./lesson-completion-context";
+import { useExerciseRecord } from "./use-exercise-record";
 import {
   DraftControls,
   ErrorHint,
@@ -115,6 +116,7 @@ function PythonChallengeBody({
   const EditorRef = useRef<typeof MonacoEditorComp | null>(null);
 
   const completion = useLessonCompletion();
+  const recordExercise = useExerciseRecord();
   const completionRef = useRef(completion);
   completionRef.current = completion;
 
@@ -136,8 +138,12 @@ function PythonChallengeBody({
     testResults !== null && testResults.length > 0 && testResults.every((r) => r.passed);
 
   useEffect(() => {
-    if (allPassed) completionRef.current?.markDone(itemId);
-  }, [allPassed, itemId]);
+    if (allPassed) {
+      completionRef.current?.markDone(itemId);
+      // Done, for the teacher's class view, and a little XP the first time.
+      recordExercise(itemId, "PYTHON");
+    }
+  }, [allPassed, itemId, recordExercise]);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
     // SAFETY: BeforeMount provides the full Monaco namespace; defineTheme is a standard API

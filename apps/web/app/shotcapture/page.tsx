@@ -198,6 +198,7 @@ const ESTABLISHMENTS: TaughtEstablishment[] = [
                 username: "lina",
                 level: 3,
                 completed: 4,
+                exercises: 2,
                 activeThisWeek: false,
               },
               {
@@ -206,6 +207,7 @@ const ESTABLISHMENTS: TaughtEstablishment[] = [
                 username: "theo",
                 level: 4,
                 completed: 7,
+                exercises: 3,
                 activeThisWeek: false,
               },
               {
@@ -214,6 +216,7 @@ const ESTABLISHMENTS: TaughtEstablishment[] = [
                 username: "ines",
                 level: 6,
                 completed: 14,
+                exercises: 7,
                 activeThisWeek: true,
               },
               {
@@ -222,6 +225,7 @@ const ESTABLISHMENTS: TaughtEstablishment[] = [
                 username: "sacha",
                 level: 7,
                 completed: 19,
+                exercises: 9,
                 activeThisWeek: true,
               },
               {
@@ -230,6 +234,7 @@ const ESTABLISHMENTS: TaughtEstablishment[] = [
                 username: "amelie",
                 level: 9,
                 completed: 26,
+                exercises: 13,
                 activeThisWeek: true,
               },
             ],

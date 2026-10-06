@@ -74,6 +74,15 @@ function quizScoreOf(
 }
 
 export const lessonRepository = {
+  /** The id of a published lesson this reader may open, by slug; null otherwise. */
+  async findIdBySlug(slug: string, viewerId: string): Promise<string | null> {
+    const lesson = await prisma.lesson.findFirst({
+      where: { slug, ...lessonsVisibleTo(viewerId) },
+      select: { id: true },
+    });
+    return lesson?.id ?? null;
+  },
+
   /** The title and the text of lessons, for a module's revision sheet. */
   async findRecapSources(ids: readonly string[]) {
     if (ids.length === 0) return [];
