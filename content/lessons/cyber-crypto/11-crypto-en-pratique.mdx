@@ -74,6 +74,30 @@ gpg sert plutôt à signer et à chiffrer pour quelqu'un en particulier, avec de
 
 La première commande tire seize octets d'aléa, utile pour un sel ou une clé brute. La deuxième chiffre, la troisième déchiffre, la quatrième calcule l'empreinte d'un fichier à comparer avec celle annoncée par l'éditeur.
 
+La même chose en Python, avec la bibliothèque `pycryptodome`, disponible dans les exercices du site : une clé tirée au hasard, le mode GCM qui chiffre et signe d'un coup, et une étiquette qui refuse le moindre octet modifié. Lance le code, puis change le message ou l'octet abîmé.
+
+<CodePlayground language="python" starterCode={`from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+
+cle = get_random_bytes(16)  # 128 bits tires au hasard : jamais un mot de passe tel quel
+chiffreur = AES.new(cle, AES.MODE_GCM)
+chiffre, etiquette = chiffreur.encrypt_and_digest(b"RDV demain 9 h")
+print("chiffre   :", chiffre.hex())
+print("nonce     :", chiffreur.nonce.hex())
+print("etiquette :", etiquette.hex())
+
+dechiffreur = AES.new(cle, AES.MODE_GCM, nonce=chiffreur.nonce)
+print("dechiffre :", dechiffreur.decrypt_and_verify(chiffre, etiquette).decode())
+
+# Un octet modifie en route : l'etiquette ne colle plus, le dechiffrement refuse.
+abime = bytes([chiffre[0] ^ 1]) + chiffre[1:]
+try:
+    AES.new(cle, AES.MODE_GCM, nonce=chiffreur.nonce).decrypt_and_verify(abime, etiquette)
+except ValueError as erreur:
+    print("refuse    :", erreur)`} />
+
+Trois choses à voir : la clé ne sort jamais du programme (en vrai, elle vient d'un gestionnaire de secrets, pas d'un fichier à côté du code) ; le nonce change à chaque chiffrement et voyage avec le message, en clair, sans que ce soit un secret ; et l'étiquette fait du chiffrement un chiffrement authentifié, celui qu'on veut partout aujourd'hui.
+
 ## ne pas se piéger soi-même
 
 Une fois que tu chiffres pour de vrai, une vérité s'impose. Un bon chiffrement n'a pas de porte dérobée. Si tu perds le mot de passe ou la clé qui ouvre tes données chiffrées, personne ne pourra les récupérer. Pas le support, pas un expert, pas une astuce. La donnée est mathématiquement inaccessible.
