@@ -38,7 +38,8 @@
     "./crypto/*": "./src/crypto/*.ts",
     "./logs/*": "./src/logs/*.ts",
     "./files/*": "./src/files/*.ts",
-    "./story/*": "./src/story/*.ts"
+    "./story/*": "./src/story/*.ts",
+    "./terminal/*": "./src/terminal/*.ts"
   },
   "scripts": {
     "build": "tsc",

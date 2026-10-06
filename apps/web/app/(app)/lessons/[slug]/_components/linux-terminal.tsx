@@ -20,6 +20,8 @@ import {
   type StateCheck,
 } from "@/lib/linux-terminal/session";
 import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-terminal/timer";
+import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
+import { CommandExplanation } from "./command-explanation";
 
 /**
  * A real Linux in the lesson: v86, an x86 emulator in WebAssembly, boots a
@@ -31,6 +33,32 @@ import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-ter
  * 15 MB (public/runtimes/v86, verified by scripts/verify-runtimes.sh), which
  * the browser then keeps.
  */
+
+/** A typed line, offered for an explanation. */
+const CHIP: React.CSSProperties = {
+  fontFamily: "var(--font-mono, monospace)",
+  fontSize: 11,
+  padding: "3px 8px",
+  border: "1px solid #2A2560",
+  background: "transparent",
+  color: "#B8B5D1",
+  cursor: "pointer",
+  overflowWrap: "anywhere",
+};
+
+/** A step of the exercise: the command, clickable for its explanation. */
+const STEP: React.CSSProperties = {
+  font: "inherit",
+  color: "inherit",
+  background: "transparent",
+  border: 0,
+  padding: 0,
+  textAlign: "left",
+  cursor: "pointer",
+  textDecoration: "underline dotted",
+  textUnderlineOffset: 3,
+  overflowWrap: "anywhere",
+};
 
 // ── Props (MDX-supplied, so read, not trusted) ───────────────────────────────
 
@@ -244,6 +272,9 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const emulatorRef = useRef<V86Emulator | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [done, setDone] = useState<string[]>([]);
+  // The last lines typed, and the one being explained (a step or a typed line).
+  const [typed, setTyped] = useState<string[]>([]);
+  const [explained, setExplained] = useState<string | null>(null);
   const [passed, setPassed] = useState<string[]>([]);
   // The clock of a timed exercise: when the machine became ready, the time
   // last read, when everything asked was done, and the score at the limit.
@@ -367,6 +398,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
 
       const track = createLineTracker(
         (line) => {
+          setTyped((prev) => rememberTyped(prev, line));
           if (!expectedRef.current.includes(line)) return;
           setDone((prev) => (prev.includes(line) ? prev : [...prev, line]));
         },
@@ -706,7 +738,16 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                     <span style={{ flexShrink: 0 }}>
                       {ok ? "✓" : "○"} {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span style={{ overflowWrap: "anywhere" }}>{cmd}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExplained(cmd);
+                      }}
+                      aria-label={`Expliquer : ${cmd}`}
+                      style={STEP}
+                    >
+                      {cmd}
+                    </button>
                   </li>
                 );
               })}
@@ -777,6 +818,51 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         </div>
       ) : null}
 
+      {typed.length > 0 ? (
+        <div
+          style={{
+            borderTop: "1px solid #1F1B47",
+            padding: "10px 18px",
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              color: "#7F7BA9",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+            }}
+          >
+            Tes dernières commandes
+          </span>
+          {typed.map((line) => (
+            <button
+              key={line}
+              type="button"
+              onClick={() => {
+                setExplained(line);
+              }}
+              aria-label={`Expliquer : ${line}`}
+              style={CHIP}
+            >
+              {line}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {explained !== null ? (
+        <CommandExplanation
+          line={explained}
+          onClose={() => {
+            setExplained(null);
+          }}
+        />
+      ) : null}
       {hints.length > 0 ? (
         <div
           style={{

@@ -3,6 +3,8 @@
 import "@xterm/xterm/css/xterm.css";
 import React, { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
+import { CommandExplanation } from "./command-explanation";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import { getTerminalScenario } from "@cyberlearn/lib";
 
@@ -19,6 +21,18 @@ const simulatedTerminalPropsSchema = z.object({
   hints: z.array(z.string().max(500)).optional(),
   onComplete: z.function().optional(),
 });
+
+/** A typed line, offered for an explanation. */
+const CHIP: React.CSSProperties = {
+  fontFamily: "var(--font-mono, monospace)",
+  fontSize: 11,
+  padding: "3px 8px",
+  border: "1px solid #2A2560",
+  background: "transparent",
+  color: "#B8B5D1",
+  cursor: "pointer",
+  overflowWrap: "anywhere",
+};
 
 // ── Inline scenarios (kept for backwards compat - not moved to lib) ───────────
 
@@ -533,6 +547,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
 
   // Reflected as state so the progress bar re-renders
   const [completedCount, setCompletedCount] = useState(0);
+  // The last lines typed, and the one being explained.
+  const [typed, setTyped] = useState<string[]>([]);
+  const [explained, setExplained] = useState<string | null>(null);
 
   const isPs = shell === "powershell";
 
@@ -705,6 +722,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
             prompt();
             return;
           }
+          setTyped((prev) => rememberTyped(prev, cmd));
 
           const response = commandMap[cmd];
           if (response === "__CLEAR__") {
@@ -872,6 +890,51 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         }}
       />
 
+      {typed.length > 0 ? (
+        <div
+          style={{
+            borderTop: "1px solid #1F1B47",
+            padding: "10px 18px",
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              color: "#7F7BA9",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+            }}
+          >
+            Tes dernières commandes
+          </span>
+          {typed.map((line) => (
+            <button
+              key={line}
+              type="button"
+              onClick={() => {
+                setExplained(line);
+              }}
+              aria-label={`Expliquer : ${line}`}
+              style={CHIP}
+            >
+              {line}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {explained !== null ? (
+        <CommandExplanation
+          line={explained}
+          onClose={() => {
+            setExplained(null);
+          }}
+        />
+      ) : null}
       {/* Hints panel - rendered below the terminal */}
       {hints.length > 0 && (
         <div
