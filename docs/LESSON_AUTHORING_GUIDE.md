@@ -591,6 +591,8 @@ Les commandes du `scenario` + les commandes `commands` sont fusionnées - `comma
 
 ---
 
+Un clic sur l'une des dernières commandes tapées (une rangée sous le terminal) l'explique mot par mot : la commande et ce qu'elle fait, chaque option, les valeurs, les tubes et les redirections, d'après la table de `packages/lib/src/terminal/commands.ts` (environ deux cents commandes et leurs options usuelles). Une commande absente de la table est quand même découpée, options et arguments nommés pour ce qu'ils sont, sans le sens de chaque option : pour l'y ajouter, c'est là. Dans l'app, la fiche du terminal explique chaque commande d'un toucher, avec le même moteur (`@cyberlearn/lib/terminal/explain`).
+
 ### 5.4b LinuxTerminal - Un vrai Linux dans la leçon
 
 Un vrai système Linux (noyau 6.8, BusyBox, shell root) qui démarre dans le
@@ -620,6 +622,12 @@ tourne sur nos serveurs.
 
 À savoir en écrivant :
 
+- Un clic sur une étape, ou sur l'une des dernières commandes tapées (une
+  rangée sous le terminal), l'explique mot par mot : la commande, chaque
+  option, les valeurs, les tubes et les redirections, d'après la table de
+  `packages/lib/src/terminal/commands.ts`. Une commande absente de la table est
+  découpée quand même, sans le sens de chaque option : pour l'y ajouter, c'est
+  là. L'app explique de même chaque commande de la fiche, d'un toucher.
 - La machine ne démarre qu'au clic sur **Démarrer la machine** : le premier
   démarrage télécharge environ 15 Mo, gardés ensuite par le navigateur.
   Quelques secondes de démarrage.
