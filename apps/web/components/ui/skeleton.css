@@ -14,17 +14,17 @@
   }
 }
 
-/* Base placeholder block. Resting colour matches the old skeleton (#1f1b47)
+/* Base placeholder block. Resting colour matches the old skeleton (var(--color-border-subtle))
    so dimensions/contrast are unchanged; the moving highlight adds the brand
    turquoise/blue accent on top. */
 .cl-skel {
-  background-color: #1f1b47;
+  background-color: var(--color-border-subtle);
   background-image: linear-gradient(
     90deg,
     transparent 0%,
     transparent 30%,
     color-mix(in oklab, var(--cosmetic-accent) 16%, transparent) 46%,
-    color-mix(in oklab, #6e8bff 18%, transparent) 54%,
+    color-mix(in oklab, var(--color-rarity-rare) 18%, transparent) 54%,
     transparent 70%,
     transparent 100%
   );
@@ -35,11 +35,11 @@
 }
 
 /* Standard card surface shared by the loading states (matches the real
-   cards: #0a0826 fill + #1f1b47 hairline). Override border/radius inline
+   cards: var(--color-bg-elevated) fill + var(--color-border-subtle) hairline). Override border/radius inline
    where a specific card differs, to keep skeletons layout-accurate. */
 .cl-skel-card {
-  background: #0a0826;
-  border: 1px solid #1f1b47;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
 }
 

@@ -61,7 +61,14 @@ function HexAvatar({
       {/* Gradient ring */}
       <div style={{ position: "absolute", inset: 0, background: grad, clipPath: HEX_CLIP }} />
       {/* Inner background */}
-      <div style={{ position: "absolute", inset: 3, background: "#0A0826", clipPath: HEX_CLIP }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 3,
+          background: "var(--color-bg-elevated)",
+          clipPath: HEX_CLIP,
+        }}
+      />
       {/* Inner content area */}
       <div
         style={{
@@ -121,7 +128,7 @@ function HexAvatar({
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           color,
-          background: "#030219",
+          background: "var(--color-bg-base)",
           padding: "4px 10px",
           border: `1px solid ${color}90`,
           boxShadow: `0 0 12px ${color}58`,
@@ -232,7 +239,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         style={{
           marginBottom: 56,
           paddingBottom: 40,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           alignItems: "start",
         }}
       >
@@ -255,7 +262,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontSize: "clamp(40px, 5vw, 64px)",
                 lineHeight: 0.95,
                 letterSpacing: "-0.04em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 14px",
                 overflowWrap: "anywhere",
               }}
@@ -289,7 +296,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 Niveau {level}
@@ -305,7 +312,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   className="mono-label"
                   href="/my-class"
                   style={{
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     textDecoration: "none",
                     display: "inline-flex",
                     alignItems: "center",
@@ -316,16 +323,19 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                     style={{
                       width: 1,
                       height: 11,
-                      background: "#2A2560",
+                      background: "var(--color-border-default)",
                       display: "inline-block",
                     }}
                   />
-                  Classe <b style={{ color: "#B8B5D1", fontWeight: 600 }}>{primaryClass.name}</b>
-                  <span style={{ color: "#7F7BA9" }}>
+                  Classe{" "}
+                  <b style={{ color: "var(--color-text-secondary)", fontWeight: 600 }}>
+                    {primaryClass.name}
+                  </b>
+                  <span style={{ color: "var(--color-text-muted)" }}>
                     {primaryClass.promotion.establishment.name} · {primaryClass.promotion.name}
                   </span>
                   {classes.length > 1 && (
-                    <span style={{ color: "#7F7BA9" }}>+{classes.length - 1}</span>
+                    <span style={{ color: "var(--color-text-muted)" }}>+{classes.length - 1}</span>
                   )}
                 </Link>
               )}
@@ -336,11 +346,13 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontFamily: "var(--font-mono)",
                 fontSize: 13,
                 letterSpacing: "0.06em",
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 margin: "0 0 24px",
               }}
             >
-              <b style={{ color: "#F5F5FA", fontWeight: 600 }}>{user.displayName}</b>
+              <b style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
+                {user.displayName}
+              </b>
             </p>
 
             {user.bio && (
@@ -349,7 +361,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   fontFamily: "var(--font-sans)",
                   fontSize: 14,
                   lineHeight: 1.55,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   maxWidth: 540,
                   margin: "0 0 18px",
                 }}
@@ -364,7 +376,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               <span
@@ -377,7 +389,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   flexShrink: 0,
                 }}
               />
-              Membre depuis <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{joinedStr}</b>
+              Membre depuis{" "}
+              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>{joinedStr}</b>
             </div>
           </div>
         </div>
@@ -442,7 +455,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 14,
                 display: "flex",
                 alignItems: "center",
@@ -492,7 +505,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 lineHeight: 0.9,
                 letterSpacing: "-0.045em",
                 marginBottom: 14,
-                background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
+                background:
+                  "linear-gradient(180deg, var(--color-text-primary), var(--cosmetic-accent))",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -510,14 +524,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 alignItems: "center",
                 gap: 12,
                 paddingTop: 14,
-                borderTop: "1px dashed #1F1B47",
-                color: "#7F7BA9",
+                borderTop: "1px dashed var(--color-border-subtle)",
+                color: "var(--color-text-muted)",
               }}
             >
               <span>
                 Niv. <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{level}</b>
               </span>
-              <span style={{ color: "#1F1B47" }}>/</span>
+              <span style={{ color: "var(--color-border-subtle)" }}>/</span>
               <span>
                 <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
                   {user.streakDays}j
@@ -526,9 +540,12 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               </span>
               {legendaryCount > 0 && (
                 <>
-                  <span style={{ color: "#1F1B47" }}>/</span>
+                  <span style={{ color: "var(--color-border-subtle)" }}>/</span>
                   <span>
-                    <b style={{ color: "#FFB547", fontWeight: 700 }}>{legendaryCount}</b> légendaire
+                    <b style={{ color: "var(--color-rarity-legendary)", fontWeight: 700 }}>
+                      {legendaryCount}
+                    </b>{" "}
+                    légendaire
                     {legendaryCount > 1 ? "s" : ""}
                   </span>
                 </>
@@ -561,7 +578,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           position: "relative",
           marginBottom: 56,
           background: "rgba(5,4,26,0.5)",
-          border: "1px solid #1F1B47",
+          border: "1px solid var(--color-border-subtle)",
         }}
         className="profile-xp-bar"
       >
@@ -574,8 +591,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#7F7BA9",
-            background: "#030219",
+            color: "var(--color-text-muted)",
+            background: "var(--color-bg-base)",
             padding: "0 8px",
           }}
         >
@@ -591,7 +608,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 96,
               lineHeight: 0.85,
               letterSpacing: "-0.05em",
-              background: "linear-gradient(180deg, #F5F5FA 30%, var(--cosmetic-accent))",
+              background:
+                "linear-gradient(180deg, var(--color-text-primary) 30%, var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -604,7 +622,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             <span
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               Niveau actuel
@@ -614,7 +632,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontFamily: "var(--font-sans)",
                 fontWeight: 600,
                 fontSize: 16,
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -631,7 +649,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.06em",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             textAlign: "right",
             lineHeight: 1.5,
           }}
@@ -653,7 +671,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <span
             style={{
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.12em",
             }}
           >
@@ -678,7 +696,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 52,
               lineHeight: 0.9,
               letterSpacing: "-0.04em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             {level}
@@ -686,7 +704,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <sub
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginTop: 10,
             }}
           >
@@ -702,7 +720,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#FFB547"
+              stroke="var(--color-rarity-legendary)"
               strokeWidth="1.6"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -727,7 +745,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontSize: 52,
                 lineHeight: 0.9,
                 letterSpacing: "-0.04em",
-                background: "linear-gradient(180deg, #FFB547, #FF4757)",
+                background:
+                  "linear-gradient(180deg, var(--color-rarity-legendary), var(--color-category-cybersec))",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -742,8 +761,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   fontSize: 18,
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
-                  color: "#7F7BA9",
-                  WebkitTextFillColor: "#3F3D5C",
+                  color: "var(--color-text-muted)",
+                  WebkitTextFillColor: "var(--color-text-disabled)",
                 }}
               >
                 j
@@ -753,7 +772,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <sub
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginTop: 10,
             }}
           >
@@ -770,7 +789,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 52,
               lineHeight: 0.9,
               letterSpacing: "-0.04em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             {completedLessonsCount}
@@ -778,7 +797,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <sub
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginTop: 10,
             }}
           >
@@ -795,7 +814,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 52,
               lineHeight: 0.9,
               letterSpacing: "-0.04em",
-              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
+              background:
+                "linear-gradient(180deg, var(--color-text-primary), var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -806,7 +826,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <sub
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginTop: 10,
             }}
           >
@@ -824,7 +844,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 52,
               lineHeight: 0.9,
               letterSpacing: "-0.04em",
-              background: "linear-gradient(180deg, #F5F5FA, #6E8BFF)",
+              background:
+                "linear-gradient(180deg, var(--color-text-primary), var(--color-rarity-rare))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -835,7 +856,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <sub
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginTop: 10,
             }}
           >
@@ -850,7 +871,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         <h2
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             margin: "0 0 16px",
           }}
         >

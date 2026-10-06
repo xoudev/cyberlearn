@@ -90,9 +90,9 @@ export default async function CertVerifyPage({
       style={{
         position: "relative",
         zIndex: 1,
-        background: "#030219",
+        background: "var(--color-bg-base)",
         minHeight: "100vh",
-        color: "#F5F5FA",
+        color: "var(--color-text-primary)",
       }}
     >
       {/* Ambient glows */}
@@ -135,7 +135,7 @@ export default async function CertVerifyPage({
           justifyContent: "space-between",
           height: 60,
           padding: "0 32px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(3,2,25,0.85)",
           backdropFilter: "blur(24px) saturate(140%)",
           WebkitBackdropFilter: "blur(24px) saturate(140%)",
@@ -160,7 +160,7 @@ export default async function CertVerifyPage({
             alignItems: "center",
             gap: 10,
             textDecoration: "none",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
           }}
         >
           <Image
@@ -178,13 +178,13 @@ export default async function CertVerifyPage({
               letterSpacing: "-0.01em",
             }}
           >
-            cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+            cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
           </span>
         </Link>
         <span
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -195,8 +195,8 @@ export default async function CertVerifyPage({
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--color-brand-turquoise)",
+              boxShadow: "0 0 6px var(--color-brand-turquoise)",
               display: "inline-block",
             }}
           />
@@ -212,7 +212,7 @@ export default async function CertVerifyPage({
           padding: "18px 32px 14px",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.04em",
           borderBottom: "1px solid #1A1640",
           display: "flex",
@@ -220,13 +220,13 @@ export default async function CertVerifyPage({
           gap: 16,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--color-brand-turquoise)" }}>$</span>
         <span>~/</span>
-        <span style={{ color: "#B8B5D1" }}>cyberlearn</span>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#B8B5D1" }}>verify</span>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#F5F5FA" }}>{certCode}</span>
+        <span style={{ color: "var(--color-text-secondary)" }}>cyberlearn</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
+        <span style={{ color: "var(--color-text-secondary)" }}>verify</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
+        <span style={{ color: "var(--color-text-primary)" }}>{certCode}</span>
         <span
           style={{
             marginLeft: "auto",
@@ -250,8 +250,8 @@ export default async function CertVerifyPage({
           justifyContent: "space-between",
           gap: 12,
           padding: "16px 20px",
-          background: isRevoked ? "#FF4757" : "#0AFFD4",
-          color: isRevoked ? "#fff" : "#030219",
+          background: isRevoked ? "var(--color-category-cybersec)" : "var(--color-brand-turquoise)",
+          color: isRevoked ? "#fff" : "var(--color-bg-base)",
           overflow: "hidden",
         }}
       >
@@ -376,7 +376,9 @@ export default async function CertVerifyPage({
             opacity: isRevoked ? 0.8 : 1,
           }}
         >
-          <CornerBrackets color={isRevoked ? "#FF4757" : "#0AFFD4"} />
+          <CornerBrackets
+            color={isRevoked ? "var(--color-category-cybersec)" : "var(--color-brand-turquoise)"}
+          />
 
           {/* Document header */}
           <div
@@ -386,7 +388,7 @@ export default async function CertVerifyPage({
               justifyContent: "space-between",
               marginBottom: 32,
               paddingBottom: 24,
-              borderBottom: "1px solid #1F1B47",
+              borderBottom: "1px solid var(--color-border-subtle)",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -404,15 +406,15 @@ export default async function CertVerifyPage({
                     fontWeight: 700,
                     fontSize: 15,
                     letterSpacing: "-0.01em",
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                   }}
                 >
-                  cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+                  cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
                 </div>
                 <div
                   className="mono-label"
                   style={{
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     marginTop: 2,
                   }}
                 >
@@ -424,7 +426,7 @@ export default async function CertVerifyPage({
               <div
                 className="mono-label mono-label--xs"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   marginBottom: 4,
                 }}
               >
@@ -436,7 +438,7 @@ export default async function CertVerifyPage({
                   fontWeight: 700,
                   fontSize: 13,
                   letterSpacing: "0.1em",
-                  color: "#0AFFD4",
+                  color: "var(--color-brand-turquoise)",
                 }}
               >
                 {certCode}
@@ -449,7 +451,7 @@ export default async function CertVerifyPage({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 10,
               }}
             >
@@ -462,7 +464,7 @@ export default async function CertVerifyPage({
                 fontSize: "clamp(36px, 6vw, 64px)",
                 lineHeight: 0.95,
                 letterSpacing: "-0.04em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 8px",
               }}
             >
@@ -474,7 +476,7 @@ export default async function CertVerifyPage({
                   fontFamily: "var(--font-mono)",
                   fontSize: 14,
                   letterSpacing: "0.06em",
-                  color: "#0AFFD4",
+                  color: "var(--color-brand-turquoise)",
                   marginBottom: 28,
                 }}
               >
@@ -485,7 +487,7 @@ export default async function CertVerifyPage({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 8,
               }}
             >
@@ -497,7 +499,7 @@ export default async function CertVerifyPage({
                 fontWeight: 700,
                 fontSize: "clamp(20px, 2.5vw, 28px)",
                 letterSpacing: "-0.02em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 28px",
               }}
             >
@@ -510,8 +512,8 @@ export default async function CertVerifyPage({
                 display: "grid",
                 gridTemplateColumns: "1fr",
                 gap: 1,
-                background: "#1F1B47",
-                border: "1px solid #1F1B47",
+                background: "var(--color-border-subtle)",
+                border: "1px solid var(--color-border-subtle)",
               }}
               className="verify-meta-grid"
             >
@@ -523,7 +525,13 @@ export default async function CertVerifyPage({
                     cert.score !== null ? (
                       <>
                         {cert.score}
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#7F7BA9" }}>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
                           {" / 100"}
                         </span>
                       </>
@@ -538,11 +546,14 @@ export default async function CertVerifyPage({
                   accent: false,
                 },
               ].map(({ lbl, val, accent }) => (
-                <div key={lbl} style={{ background: "#0A0826", padding: "14px 18px" }}>
+                <div
+                  key={lbl}
+                  style={{ background: "var(--color-bg-elevated)", padding: "14px 18px" }}
+                >
                   <div
                     className="mono-label mono-label--xs"
                     style={{
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       marginBottom: 6,
                     }}
                   >
@@ -554,7 +565,7 @@ export default async function CertVerifyPage({
                       fontWeight: 700,
                       fontSize: 20,
                       letterSpacing: "-0.02em",
-                      color: accent ? "#0AFFD4" : "#F5F5FA",
+                      color: accent ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
                     }}
                   >
                     {val}
@@ -571,14 +582,14 @@ export default async function CertVerifyPage({
               justifyContent: "space-between",
               alignItems: "flex-end",
               paddingTop: 24,
-              borderTop: "1px solid #1F1B47",
+              borderTop: "1px solid var(--color-border-subtle)",
             }}
           >
             <div>
               <div
                 className="mono-label mono-label--xs"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   marginBottom: 8,
                 }}
               >
@@ -589,13 +600,13 @@ export default async function CertVerifyPage({
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   lineHeight: 1.8,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   letterSpacing: "0.03em",
                 }}
               >
-                <b style={{ color: "#B8B5D1" }}>SHA-256</b>
+                <b style={{ color: "var(--color-text-secondary)" }}>SHA-256</b>
                 <br />
-                <span style={{ color: "#7F7BA9" }}>{hashGrouped}</span>
+                <span style={{ color: "var(--color-text-muted)" }}>{hashGrouped}</span>
               </div>
             </div>
           </div>
@@ -610,7 +621,7 @@ export default async function CertVerifyPage({
               padding: "16px 18px",
               background: "rgba(255,71,87,0.08)",
               border: "1px solid rgba(255,71,87,0.35)",
-              borderLeft: "3px solid #FF4757",
+              borderLeft: "3px solid var(--color-category-cybersec)",
             }}
           >
             <div
@@ -621,7 +632,7 @@ export default async function CertVerifyPage({
                 height: 24,
                 border: "1px solid rgba(255,71,87,0.4)",
                 background: "rgba(255,71,87,0.1)",
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 flexShrink: 0,
               }}
             >
@@ -641,12 +652,12 @@ export default async function CertVerifyPage({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.6,
                 letterSpacing: "0.02em",
               }}
             >
-              <b style={{ color: "#F5F5FA" }}>{"// REVOKE.LOG"}</b>
+              <b style={{ color: "var(--color-text-primary)" }}>{"// REVOKE.LOG"}</b>
               <br />
               Révoqué le {revokedStr} · Raison :{" "}
               <span style={{ color: "#fff" }}>{cert.revokedReason}</span>.
@@ -722,11 +733,11 @@ export default async function CertVerifyPage({
                 : "Aucune",
             },
           ].map(({ lbl, val }) => (
-            <div key={lbl} style={{ background: "#0A0826", padding: "14px 16px" }}>
+            <div key={lbl} style={{ background: "var(--color-bg-elevated)", padding: "14px 16px" }}>
               <div
                 className="mono-label mono-label--xs"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   marginBottom: 6,
                 }}
               >
@@ -737,7 +748,7 @@ export default async function CertVerifyPage({
                   fontFamily: "var(--font-mono)",
                   fontWeight: 600,
                   fontSize: 12,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   letterSpacing: "0.04em",
                 }}
               >

@@ -48,7 +48,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
           <div
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 14,
               display: "flex",
               alignItems: "center",
@@ -98,7 +98,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
               fontWeight: 700,
               fontSize: 24,
               letterSpacing: "-0.02em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 10px",
             }}
           >
@@ -109,7 +109,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
           <p
             style={{
               fontSize: 14,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: "1.6",
               margin: "0 0 12px",
             }}
@@ -123,8 +123,8 @@ export default async function DataPage(): Promise<React.JSX.Element> {
             className="mono-label"
             style={{
               paddingTop: 12,
-              borderTop: "1px dashed #1F1B47",
-              color: "#7F7BA9",
+              borderTop: "1px dashed var(--color-border-subtle)",
+              color: "var(--color-text-muted)",
               marginBottom: 18,
               display: "flex",
               flexWrap: "wrap",
@@ -133,13 +133,13 @@ export default async function DataPage(): Promise<React.JSX.Element> {
             }}
           >
             <span>Limite</span>
-            <b style={{ color: "#B8B5D1", fontWeight: 500 }}>1/24H</b>
-            <span style={{ color: "#1F1B47" }}>·</span>
+            <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>1/24H</b>
+            <span style={{ color: "var(--color-border-subtle)" }}>·</span>
             <span>Format</span>
-            <b style={{ color: "#B8B5D1", fontWeight: 500 }}>JSON</b>
-            <span style={{ color: "#1F1B47" }}>·</span>
+            <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>JSON</b>
+            <span style={{ color: "var(--color-border-subtle)" }}>·</span>
             <span>Portée</span>
-            <b style={{ color: "#B8B5D1", fontWeight: 500 }}>17 modèles</b>
+            <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>17 modèles</b>
           </div>
 
           {/* CTA */}

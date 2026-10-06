@@ -66,7 +66,7 @@ export function RevisionsForm({ initial }: { initial: boolean }): React.JSX.Elem
             margin: "8px 0 0",
             fontFamily: "var(--font-mono)",
             fontSize: 11.5,
-            color: "#FF4D6D",
+            color: "var(--color-danger)",
           }}
         >
           {error}

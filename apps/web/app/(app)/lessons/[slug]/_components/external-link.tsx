@@ -44,7 +44,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
     return (
       <span
         style={{
-          color: "#FF4757",
+          color: "var(--color-category-cybersec)",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: "12px",
         }}
@@ -65,7 +65,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          color: "#4D8BFF",
+          color: "var(--color-info)",
           textDecoration: "none",
           display: "inline-flex",
           alignItems: "center",
@@ -75,13 +75,13 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         }}
         onMouseEnter={(e) => {
           const a = e.currentTarget;
-          a.style.borderBottomColor = "#4D8BFF";
+          a.style.borderBottomColor = "var(--color-info)";
           a.style.color = "#7AAAFF";
         }}
         onMouseLeave={(e) => {
           const a = e.currentTarget;
           a.style.borderBottomColor = "rgba(77,139,255,0.3)";
-          a.style.color = "#4D8BFF";
+          a.style.color = "var(--color-info)";
         }}
       >
         {label}
@@ -116,13 +116,13 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;
-        el.style.borderColor = "#2A2560";
+        el.style.borderColor = "var(--color-border-default)";
         el.style.boxShadow =
-          "0 0 0 1px #2A2560, 0 4px 24px color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)";
+          "0 0 0 1px var(--color-border-default), 0 4px 24px color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)";
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget;
-        el.style.borderColor = "#1F1B47";
+        el.style.borderColor = "var(--color-border-subtle)";
         el.style.boxShadow = "none";
       }}
     >
@@ -136,7 +136,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
           justifyContent: "center",
           background: "rgba(77,139,255,0.08)",
           border: "1px solid rgba(77,139,255,0.2)",
-          color: "#4D8BFF",
+          color: "var(--color-info)",
         }}
       >
         <ExternalLinkIcon size={16} aria-hidden />
@@ -147,7 +147,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
           style={{
             fontSize: "14px",
             fontWeight: 600,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             marginBottom: description ? "4px" : "6px",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -161,7 +161,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
           <div
             style={{
               fontSize: "13px",
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               marginBottom: "6px",
               lineHeight: "1.4",
             }}
@@ -173,7 +173,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         <div
           style={{
             fontSize: "11px",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontFamily: "var(--font-mono, monospace)",
             letterSpacing: "0.02em",
             overflow: "hidden",

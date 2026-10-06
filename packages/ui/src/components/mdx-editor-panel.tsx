@@ -58,7 +58,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
         background: "#07051E",
         display: "grid",
         placeItems: "center",
-        color: "#7F7BA9",
+        color: "var(--color-text-muted)",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         letterSpacing: "0.1em",
@@ -76,7 +76,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
  * nothing, so the cursor keeps a literal. Outside the app - in the admin
  * console - tokens.css defines the accent as the brand turquoise, which is what
  * this colour already was. */
-const TURQ = "#0AFFD4";
+const TURQ = "var(--color-brand-turquoise)";
 
 // ── Preview - inline markdown renderer ────────────────────────────────────────
 
@@ -85,7 +85,7 @@ function renderInline(text: string): React.ReactNode {
     switch (token.kind) {
       case "strong":
         return (
-          <strong key={i} style={{ color: "#F5F5FA", fontWeight: 700 }}>
+          <strong key={i} style={{ color: "var(--color-text-primary)", fontWeight: 700 }}>
             {token.text}
           </strong>
         );
@@ -115,7 +115,7 @@ function renderInline(text: string): React.ReactNode {
         return (
           <span
             key={i}
-            style={{ color: "#4D8BFF", textDecoration: "underline", cursor: "pointer" }}
+            style={{ color: "var(--color-info)", textDecoration: "underline", cursor: "pointer" }}
           >
             {token.text}
           </span>
@@ -135,11 +135,16 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
   if (name === "Callout") {
     const type = props.type ?? "info";
     const meta: Record<string, { border: string; bg: string; color: string; label: string }> = {
-      info: { border: "#4D8BFF", bg: "rgba(77,139,255,0.08)", color: "#4D8BFF", label: "INFO" },
+      info: {
+        border: "var(--color-info)",
+        bg: "rgba(77,139,255,0.08)",
+        color: "var(--color-info)",
+        label: "INFO",
+      },
       warning: {
-        border: "#FFB020",
+        border: "var(--color-warning)",
         bg: "rgba(255,176,32,0.08)",
-        color: "#FFB020",
+        color: "var(--color-warning)",
         label: "ATTENTION",
       },
       danger: { border: DANGER, bg: "rgba(255,77,109,0.08)", color: DANGER, label: "DANGER" },
@@ -176,7 +181,14 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         >
           {c.label}
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: "#B8B5D1", lineHeight: 1.65 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.65,
+          }}
+        >
           {inner || "…"}
         </p>
       </div>
@@ -189,7 +201,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         style={{
           margin: "14px 0",
           padding: "14px 16px",
-          background: "#0A0826",
+          background: "var(--color-bg-elevated)",
           border: `1px solid ${BORDER}`,
           borderRadius: 8,
         }}
@@ -198,18 +210,25 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           style={{
             fontFamily: MONO,
             fontSize: 9,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.1em",
             marginBottom: 8,
           }}
         >
           QUIZ · {props.id ?? "?"}
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: "#F5F5FA", fontWeight: 600 }}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", fontWeight: 600 }}>
           {props.question ?? "Question…"}
         </p>
         {props.options && (
-          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#7F7BA9", fontFamily: MONO }}>
+          <p
+            style={{
+              margin: "6px 0 0",
+              fontSize: 11,
+              color: "var(--color-text-muted)",
+              fontFamily: MONO,
+            }}
+          >
             {props.options}
           </p>
         )}
@@ -224,7 +243,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         style={{
           margin: "14px 0",
           background: "#060422",
-          border: `1px solid #1F1B47`,
+          border: `1px solid var(--color-border-subtle)`,
           borderLeft: `3px solid ${ACCENT}`,
           borderRadius: 6,
           overflow: "hidden",
@@ -233,7 +252,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         <div
           style={{
             padding: "5px 14px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -251,7 +270,14 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             {lang}
           </span>
           {name === "CodePlayground" && (
-            <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9, color: "#4D8BFF" }}>
+            <span
+              style={{
+                marginLeft: "auto",
+                fontFamily: MONO,
+                fontSize: 9,
+                color: "var(--color-info)",
+              }}
+            >
               ⚡ interactive
             </span>
           )}
@@ -262,7 +288,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             padding: "10px 14px",
             fontFamily: MONO,
             fontSize: 12,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             lineHeight: 1.6,
           }}
         >
@@ -284,7 +310,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           textAlign: "center",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
           🖼 {props.alt ?? props.src ?? "image"}
         </span>
       </div>
@@ -309,12 +335,23 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         flexWrap: "wrap",
       }}
     >
-      <span style={{ fontFamily: MONO, fontSize: 9, color: "#4D8BFF", letterSpacing: "0.1em" }}>
+      <span
+        style={{
+          fontFamily: MONO,
+          fontSize: 9,
+          color: "var(--color-info)",
+          letterSpacing: "0.1em",
+        }}
+      >
         {spec ? spec.label.toUpperCase() : "COMPOSANT"}
       </span>
-      <code style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>&lt;{name}&gt;</code>
+      <code style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+        &lt;{name}&gt;
+      </code>
       {heading !== undefined && (
-        <span style={{ fontSize: 12, color: "#B8B5D1", flexBasis: "100%" }}>{heading}</span>
+        <span style={{ fontSize: 12, color: "var(--color-text-secondary)", flexBasis: "100%" }}>
+          {heading}
+        </span>
       )}
       {!spec && (
         <span style={{ fontSize: 11, color: DANGER, flexBasis: "100%" }}>
@@ -353,7 +390,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             fontFamily: "var(--font-body, sans-serif)",
             fontWeight: 700,
             fontSize: 22,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "20px 0 12px",
             letterSpacing: "-0.02em",
             lineHeight: 1.2,
@@ -377,7 +414,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             fontFamily: "var(--font-body, sans-serif)",
             fontWeight: 700,
             fontSize: 22,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "24px 0 10px",
             paddingLeft: 14,
             borderLeft: `3px solid ${ACCENT}`,
@@ -389,7 +426,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             style={{
               fontFamily: MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginRight: 8,
               fontWeight: 500,
             }}
@@ -413,7 +450,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             fontFamily: "var(--font-body, sans-serif)",
             fontWeight: 600,
             fontSize: 15,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             margin: "16px 0 6px",
             letterSpacing: "0.01em",
           }}
@@ -450,13 +487,15 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
           style={{
             margin: "14px 0",
             background: "#060422",
-            border: `1px solid #1F1B47`,
+            border: `1px solid var(--color-border-subtle)`,
             borderLeft: `3px solid ${ACCENT}`,
             borderRadius: 6,
             overflow: "hidden",
           }}
         >
-          <div style={{ padding: "5px 14px", borderBottom: "1px solid #1F1B47" }}>
+          <div
+            style={{ padding: "5px 14px", borderBottom: "1px solid var(--color-border-subtle)" }}
+          >
             <span
               style={{
                 fontFamily: MONO,
@@ -475,7 +514,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
               padding: "10px 14px",
               fontFamily: MONO,
               fontSize: 12,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.6,
               overflowX: "auto",
             }}
@@ -500,7 +539,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             <li
               key={i}
               style={{
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 fontSize: 13,
                 lineHeight: 1.7,
                 marginBottom: 3,
@@ -551,7 +590,15 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     }
     if (paras.length > 0) {
       elements.push(
-        <p key={k++} style={{ color: "#B8B5D1", fontSize: 15, lineHeight: 1.75, margin: "10px 0" }}>
+        <p
+          key={k++}
+          style={{
+            color: "var(--color-text-secondary)",
+            fontSize: 15,
+            lineHeight: 1.75,
+            margin: "10px 0",
+          }}
+        >
           {renderInline(paras.join(" "))}
         </p>,
       );
@@ -564,7 +611,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
         style={{
           padding: "48px 0",
           textAlign: "center",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontFamily: MONO,
           fontSize: 11,
           letterSpacing: "0.08em",
@@ -575,7 +622,11 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     );
   }
 
-  return <div style={{ fontFamily: "var(--font-sans)", color: "#B8B5D1" }}>{elements}</div>;
+  return (
+    <div style={{ fontFamily: "var(--font-sans)", color: "var(--color-text-secondary)" }}>
+      {elements}
+    </div>
+  );
 }
 
 // ── Toolbar button ─────────────────────────────────────────────────────────────
@@ -615,7 +666,7 @@ function TBtn({
         background: active || hov ? "rgba(255,255,255,0.06)" : "transparent",
         border: active ? `1px solid ${BORDER}` : "1px solid transparent",
         borderRadius: 3,
-        color: active ? ACCENT : hov ? "#F5F5FA" : "#7F7BA9",
+        color: active ? ACCENT : hov ? "var(--color-text-primary)" : "var(--color-text-muted)",
         fontFamily: mono ? MONO : "inherit",
         fontWeight: mono ? 700 : 400,
         fontSize: 12,
@@ -671,7 +722,7 @@ function GuideRow({
             flex: 1,
             fontFamily: MONO,
             fontSize: 10.5,
-            color: "#44406B",
+            color: "var(--color-text-faint)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -711,7 +762,7 @@ function GuideRow({
               : hov
                 ? `${accent}11`
                 : "transparent",
-            color: done ? ACCENT : hov ? accent : "#7F7BA9",
+            color: done ? ACCENT : hov ? accent : "var(--color-text-muted)",
             fontFamily: MONO,
             fontSize: 9,
             fontWeight: 700,
@@ -729,7 +780,7 @@ function GuideRow({
           style={{
             fontFamily: MONO,
             fontSize: 9,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.04em",
             marginTop: 2,
           }}
@@ -757,7 +808,7 @@ function GuideGroupBlock({
           <code style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: "#D0CDEC" }}>
             &lt;{group.name}&gt;
           </code>
-          <span style={{ fontSize: 10.5, color: "#7F7BA9" }}>{group.label}</span>
+          <span style={{ fontSize: 10.5, color: "var(--color-text-muted)" }}>{group.label}</span>
           {group.docUrl !== undefined && (
             <a
               href={group.docUrl}
@@ -780,7 +831,14 @@ function GuideGroupBlock({
         </div>
       )}
       {group.description !== undefined && (
-        <p style={{ margin: "0 0 4px", fontSize: 10.5, lineHeight: 1.5, color: "#7F7BA9" }}>
+        <p
+          style={{
+            margin: "0 0 4px",
+            fontSize: 10.5,
+            lineHeight: 1.5,
+            color: "var(--color-text-muted)",
+          }}
+        >
           {group.description}
         </p>
       )}
@@ -814,7 +872,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
           style={{
             fontFamily: MONO,
             fontSize: 9,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.12em",
             padding: "10px 16px 6px",
             display: "flex",
@@ -833,7 +891,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
             }}
           />
           GUIDE MDX
-          <span style={{ marginLeft: "auto", color: "#2A2560" }}>
+          <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
             {componentCount} composants · clic → insérer
           </span>
         </div>
@@ -852,7 +910,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
               height: 26,
               background: "#07051E",
               border: `1px solid ${BORDER}`,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               fontFamily: MONO,
               fontSize: 10.5,
               padding: "0 8px",
@@ -864,7 +922,14 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
       </div>
       <div style={{ padding: "4px 16px 32px" }}>
         {sections.length === 0 && (
-          <p style={{ margin: "16px 0", fontSize: 11, color: "#7F7BA9", fontFamily: MONO }}>
+          <p
+            style={{
+              margin: "16px 0",
+              fontSize: 11,
+              color: "var(--color-text-muted)",
+              fontFamily: MONO,
+            }}
+          >
             Rien ne correspond à « {query.trim()} ».
           </p>
         )}
@@ -935,18 +1000,18 @@ function defineTheme(monaco: Parameters<BeforeMount>[0]) {
     ],
     colors: {
       "editor.background": "#07051E",
-      "editor.foreground": "#B8B5D1",
-      "editor.lineHighlightBackground": "#0A0826",
+      "editor.foreground": "var(--color-text-secondary)",
+      "editor.lineHighlightBackground": "var(--color-bg-elevated)",
       "editor.selectionBackground": "#2A256088",
-      "editorLineNumber.foreground": "#3F3D5C",
-      "editorLineNumber.activeForeground": "#7F7BA9",
+      "editorLineNumber.foreground": "var(--color-text-disabled)",
+      "editorLineNumber.activeForeground": "var(--color-text-muted)",
       "editorCursor.foreground": TURQ,
-      "editorIndentGuide.background1": "#1F1B47",
+      "editorIndentGuide.background1": "var(--color-border-subtle)",
       "scrollbarSlider.background": "#2A256066",
       "scrollbarSlider.hoverBackground": "#44406B88",
-      "editorWidget.background": "#0A0826",
+      "editorWidget.background": "var(--color-bg-elevated)",
       "editorWidget.border": BORDER,
-      "editorSuggestWidget.background": "#0A0826",
+      "editorSuggestWidget.background": "var(--color-bg-elevated)",
       "input.background": "#07051E",
       "input.border": BORDER,
     },
@@ -1258,9 +1323,9 @@ export function MdxEditorPanel({
                 }}
                 style={{
                   height: 22,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   border: `1px solid ${BORDER}`,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontFamily: MONO,
                   fontSize: 9,
                   cursor: "pointer",
@@ -1282,7 +1347,7 @@ export function MdxEditorPanel({
                   "go",
                   "rust",
                 ].map((l) => (
-                  <option key={l} value={l} style={{ background: "#0A0826" }}>
+                  <option key={l} value={l} style={{ background: "var(--color-bg-elevated)" }}>
                     {l}
                   </option>
                 ))}
@@ -1321,9 +1386,9 @@ export function MdxEditorPanel({
                 }}
                 style={{
                   height: 22,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   border: `1px solid ${BORDER}`,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontFamily: MONO,
                   fontSize: 9,
                   cursor: "pointer",
@@ -1333,7 +1398,7 @@ export function MdxEditorPanel({
                 }}
               >
                 {(["info", "warning", "danger", "success"] as const).map((t) => (
-                  <option key={t} value={t} style={{ background: "#0A0826" }}>
+                  <option key={t} value={t} style={{ background: "var(--color-bg-elevated)" }}>
                     {t}
                   </option>
                 ))}
@@ -1402,9 +1467,9 @@ export function MdxEditorPanel({
                 }}
                 style={{
                   height: 22,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   border: `1px solid ${BORDER}`,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontFamily: MONO,
                   fontSize: 9,
                   cursor: "pointer",
@@ -1414,7 +1479,7 @@ export function MdxEditorPanel({
                 }}
               >
                 {(["python", "javascript", "c", "asm"] as const).map((l) => (
-                  <option key={l} value={l} style={{ background: "#0A0826" }}>
+                  <option key={l} value={l} style={{ background: "var(--color-bg-elevated)" }}>
                     {l}
                   </option>
                 ))}
@@ -1452,9 +1517,9 @@ export function MdxEditorPanel({
                 }}
                 style={{
                   height: 22,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   border: `1px solid ${BORDER}`,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   fontFamily: MONO,
                   fontSize: 9,
                   cursor: "pointer",
@@ -1464,7 +1529,7 @@ export function MdxEditorPanel({
                 }}
               >
                 {(["bash", "powershell"] as const).map((s) => (
-                  <option key={s} value={s} style={{ background: "#0A0826" }}>
+                  <option key={s} value={s} style={{ background: "var(--color-bg-elevated)" }}>
                     {s}
                   </option>
                 ))}
@@ -1515,7 +1580,7 @@ export function MdxEditorPanel({
               background: showGuide ? "rgba(77,139,255,0.08)" : "transparent",
               border: `1px solid ${showGuide ? "rgba(77,139,255,0.3)" : BORDER}`,
               borderRadius: 3,
-              color: showGuide ? "#4D8BFF" : "#7F7BA9",
+              color: showGuide ? "var(--color-info)" : "var(--color-text-muted)",
               fontFamily: MONO,
               fontSize: 9,
               letterSpacing: "0.1em",
@@ -1558,7 +1623,7 @@ export function MdxEditorPanel({
                 split ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : BORDER
               }`,
               borderRadius: 3,
-              color: split ? ACCENT : "#7F7BA9",
+              color: split ? ACCENT : "var(--color-text-muted)",
               fontFamily: MONO,
               fontSize: 9,
               letterSpacing: "0.1em",
@@ -1600,7 +1665,7 @@ export function MdxEditorPanel({
             padding: "8px 14px",
             borderBottom: `1px solid ${DANGER}55`,
             background: "rgba(255,77,109,0.07)",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             fontSize: 12,
             lineHeight: 1.5,
           }}
@@ -1693,7 +1758,7 @@ export function MdxEditorPanel({
                 style={{
                   fontFamily: MONO,
                   fontSize: 9,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   letterSpacing: "0.12em",
                   marginBottom: 16,
                   display: "flex",
@@ -1712,7 +1777,9 @@ export function MdxEditorPanel({
                   }}
                 />
                 APERÇU RAPIDE
-                <span style={{ marginLeft: "auto", color: "#2A2560" }}>approximation · 350 ms</span>
+                <span style={{ marginLeft: "auto", color: "var(--color-border-default)" }}>
+                  approximation · 350 ms
+                </span>
                 {preview !== undefined && (
                   <PaneButton
                     title="L'aperçu du site : la leçon rendue par le site, avec ses vrais composants"
@@ -1741,7 +1808,7 @@ export function MdxEditorPanel({
           fontFamily: MONO,
           fontSize: 9.5,
           letterSpacing: "0.08em",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           textTransform: "uppercase",
           flexShrink: 0,
         }}
@@ -1762,10 +1829,10 @@ export function MdxEditorPanel({
         <span>LF</span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 14 }}>
           <span>
-            <b style={{ color: "#B8B5D1" }}>{lineCount}</b> lignes
+            <b style={{ color: "var(--color-text-secondary)" }}>{lineCount}</b> lignes
           </span>
           <span>
-            <b style={{ color: "#B8B5D1" }}>{charCount}</b> car.
+            <b style={{ color: "var(--color-text-secondary)" }}>{charCount}</b> car.
           </span>
         </span>
       </div>

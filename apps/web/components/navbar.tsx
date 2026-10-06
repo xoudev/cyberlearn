@@ -79,7 +79,7 @@ export async function Navbar(): Promise<React.ReactElement> {
         background: "rgba(3,2,25,0.85)",
         backdropFilter: "blur(24px) saturate(140%)",
         WebkitBackdropFilter: "blur(24px) saturate(140%)",
-        borderBottom: "1px solid #2A2560",
+        borderBottom: "1px solid var(--color-border-default)",
         position: "sticky",
         top: 0,
         zIndex: 40,

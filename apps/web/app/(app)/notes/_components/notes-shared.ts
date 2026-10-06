@@ -66,13 +66,13 @@ export const CAT: Record<Category, { label: string; color: string }> = {
 
 /** Fixed accent palette for folders (validated server-side too). */
 export const FOLDER_PALETTE: readonly string[] = [
-  "#6E8BFF",
+  "var(--color-rarity-rare)",
   "var(--cosmetic-accent)",
-  "#FF4757",
-  "#FFB020",
+  "var(--color-category-cybersec)",
+  "var(--color-warning)",
   "#B07CFF",
   "#3DD68C",
 ];
 
 /** Default dot colour for a folder with no colour set. */
-export const FOLDER_DEFAULT_COLOR = "#7F7BA9";
+export const FOLDER_DEFAULT_COLOR = "var(--color-text-muted)";

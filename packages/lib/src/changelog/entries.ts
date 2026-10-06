@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.24",
+    date: "2026-10-05",
+    title: "Une seule palette, lue par son nom",
+    changes: [
+      {
+        type: "improved",
+        text: "Près de trois mille couleurs écrites en dur dans les pages lisent désormais la palette par son nom. Rien ne change à l'écran aujourd'hui ; demain, une couleur changée dans la palette change partout, et plus rien ne peut dériver d'une page à l'autre.",
+      },
+    ],
+  },
+  {
     version: "3.23",
     date: "2026-10-05",
     title: "La même palette dans les labos",

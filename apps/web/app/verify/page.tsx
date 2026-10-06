@@ -31,7 +31,7 @@ function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }): React.JSX.Element 
         height: 22,
         ...vertical,
         ...horizontal,
-        borderColor: "#0AFFD4",
+        borderColor: "var(--color-brand-turquoise)",
         borderStyle: "solid",
         borderWidth: 0,
         ...widths,
@@ -49,8 +49,8 @@ function LiveDot(): React.JSX.Element {
         width: 6,
         height: 6,
         borderRadius: "50%",
-        background: "#0AFFD4",
-        boxShadow: "0 0 8px #0AFFD4",
+        background: "var(--color-brand-turquoise)",
+        boxShadow: "0 0 8px var(--color-brand-turquoise)",
         flexShrink: 0,
       }}
     />
@@ -62,7 +62,7 @@ export default function VerifyPage(): React.JSX.Element {
     <div
       style={{
         minHeight: "100vh",
-        background: "#030219",
+        background: "var(--color-bg-base)",
         backgroundImage:
           "linear-gradient(rgba(42,37,96,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(42,37,96,0.25) 1px, transparent 1px)",
         backgroundSize: "38px 38px",
@@ -108,20 +108,26 @@ export default function VerifyPage(): React.JSX.Element {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "linear-gradient(160deg, #0024FF, #0AFFD4)",
+                background:
+                  "linear-gradient(160deg, var(--color-brand-blue), var(--color-brand-turquoise))",
                 clipPath: HEX,
               }}
             />
             <span
               aria-hidden="true"
-              style={{ position: "absolute", inset: 3, background: "#0A0826", clipPath: HEX }}
+              style={{
+                position: "absolute",
+                inset: 3,
+                background: "var(--color-bg-elevated)",
+                clipPath: HEX,
+              }}
             />
             <svg
               width="30"
               height="30"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0AFFD4"
+              stroke="var(--color-brand-turquoise)"
               strokeWidth="1.6"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -138,14 +144,17 @@ export default function VerifyPage(): React.JSX.Element {
         <div
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 12,
             display: "flex",
             alignItems: "center",
             gap: 10,
           }}
         >
-          <span aria-hidden="true" style={{ width: 18, height: 1, background: "#2A2560" }} />
+          <span
+            aria-hidden="true"
+            style={{ width: 18, height: 1, background: "var(--color-border-default)" }}
+          />
           {"// "}cert.verify
         </div>
 
@@ -155,7 +164,7 @@ export default function VerifyPage(): React.JSX.Element {
             fontWeight: 800,
             fontSize: "clamp(28px, 4.5vw, 38px)",
             letterSpacing: "-0.03em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             lineHeight: 1.05,
             margin: "0 0 12px",
           }}
@@ -163,7 +172,8 @@ export default function VerifyPage(): React.JSX.Element {
           Vérifier un{" "}
           <span
             style={{
-              background: "linear-gradient(135deg, #0024FF, #4D8BFF 55%, #0AFFD4)",
+              background:
+                "linear-gradient(135deg, var(--color-brand-blue), var(--color-info) 55%, var(--color-brand-turquoise))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
@@ -176,7 +186,7 @@ export default function VerifyPage(): React.JSX.Element {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 14.5,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             lineHeight: 1.55,
             margin: "0 0 28px",
             maxWidth: "44ch",
@@ -199,18 +209,18 @@ export default function VerifyPage(): React.JSX.Element {
           flexWrap: "wrap",
           alignItems: "center",
           gap: "8px 16px",
-          color: "#44406B",
+          color: "var(--color-text-faint)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <LiveDot /> Signé SHA-256
         </span>
-        <span style={{ color: "#2A2560" }}>/</span>
+        <span style={{ color: "var(--color-border-default)" }}>/</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <LiveDot /> Registre public
         </span>
-        <span style={{ color: "#2A2560" }}>/</span>
-        <span style={{ color: "#7F7BA9" }}>cyberlearn.fr/verify</span>
+        <span style={{ color: "var(--color-border-default)" }}>/</span>
+        <span style={{ color: "var(--color-text-muted)" }}>cyberlearn.fr/verify</span>
       </div>
     </div>
   );

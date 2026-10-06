@@ -24,7 +24,7 @@ export function XpProgress({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
         }}
       >
         <span
@@ -32,7 +32,7 @@ export function XpProgress({
             fontFamily: "var(--font-sans)",
             fontSize: 18,
             fontWeight: 700,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.01em",
             textTransform: "none",
           }}
@@ -74,7 +74,8 @@ export function XpProgress({
             position: "relative",
             height: "100%",
             width: `${pct.toFixed(1)}%`,
-            background: "linear-gradient(90deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+            background:
+              "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
             boxShadow: "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)",
             zIndex: 2,
           }}

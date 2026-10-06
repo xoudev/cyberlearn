@@ -21,7 +21,12 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
 
   return (
     <div
-      style={{ background: "#030219", minHeight: "100vh", position: "relative", color: "#F5F5FA" }}
+      style={{
+        background: "var(--color-bg-base)",
+        minHeight: "100vh",
+        position: "relative",
+        color: "var(--color-text-primary)",
+      }}
     >
       <div
         aria-hidden="true"
@@ -71,8 +76,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
           background: "rgba(3,2,25,0.65)",
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid #2A2560",
-          color: "#7F7BA9",
+          borderBottom: "1px solid var(--color-border-default)",
+          color: "var(--color-text-muted)",
         }}
       >
         <span
@@ -100,13 +105,13 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.01em",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>TEST DE PLACEMENT</span>
         <span
           style={{
@@ -114,7 +119,7 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            color: "#0AFFD4",
+            color: "var(--color-brand-turquoise)",
           }}
         >
           <span
@@ -122,8 +127,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--color-brand-turquoise)",
+              boxShadow: "0 0 6px var(--color-brand-turquoise)",
               display: "inline-block",
               animation: "sidebar-pulse 2s ease-in-out infinite",
             }}
@@ -157,22 +162,25 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
               }}
             >
-              <span style={{ color: "#F5F5FA", fontWeight: 600 }}>
-                ÉTAPE <b style={{ color: "#0AFFD4", fontWeight: 700 }}>03</b> / 03
+              <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
+                ÉTAPE <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>03</b> /
+                03
               </span>
-              <span style={{ color: "#44406B" }}>·</span>
-              <span style={{ color: "#0AFFD4", fontWeight: 600 }}>TEST DE PLACEMENT</span>
+              <span style={{ color: "var(--color-text-faint)" }}>·</span>
+              <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>
+                TEST DE PLACEMENT
+              </span>
             </div>
             <span
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               OPTIONNEL
@@ -184,8 +192,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
               position: "relative",
               height: 4,
               background: "rgba(5,4,26,0.9)",
-              borderTop: "1px solid #2A2560",
-              borderBottom: "1px solid #2A2560",
+              borderTop: "1px solid var(--color-border-default)",
+              borderBottom: "1px solid var(--color-border-default)",
             }}
           >
             <div
@@ -195,7 +203,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
                 top: 0,
                 bottom: 0,
                 width: "100%",
-                background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
+                background:
+                  "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                 boxShadow: "0 0 12px rgba(10,255,212,0.7)",
               }}
             />
@@ -220,7 +229,8 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  color: state === "done" ? "#0AFFD4" : "#F5F5FA",
+                  color:
+                    state === "done" ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
                 }}
               >
                 <span

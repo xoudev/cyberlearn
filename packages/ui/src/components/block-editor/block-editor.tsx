@@ -260,7 +260,7 @@ function InsertMenu({
         margin: "6px 0 2px",
         padding: "10px 12px 12px",
         border: `1px solid ${BORDER}`,
-        background: "#0A0826",
+        background: "var(--color-bg-elevated)",
         display: "flex",
         flexDirection: "column",
         gap: 10,
@@ -415,7 +415,7 @@ function BlockCard({
     block.kind === "heading"
       ? "var(--cosmetic-accent)"
       : block.kind === "text"
-        ? "#44406B"
+        ? "var(--color-text-faint)"
         : componentAccent(block.name);
   const label =
     block.kind === "heading"
@@ -429,7 +429,7 @@ function BlockCard({
     <section
       aria-label={label}
       style={{
-        border: `1px solid ${errorCount > 0 ? `${DANGER}66` : "#1F1B47"}`,
+        border: `1px solid ${errorCount > 0 ? `${DANGER}66` : "var(--color-border-subtle)"}`,
         borderLeft: `3px solid ${errorCount > 0 ? DANGER : accent}`,
         background: "#060422",
       }}
@@ -510,7 +510,7 @@ function BlockCard({
               fontFamily: MONO,
               fontSize: 10.5,
               lineHeight: 1.5,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             {errors[FORM]}
@@ -526,7 +526,7 @@ function BlockCard({
               border: `1px solid ${BORDER}`,
               fontFamily: MONO,
               fontSize: 11,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               overflowX: "auto",
               whiteSpace: "pre",
             }}

@@ -73,7 +73,7 @@ function SectionHeader({
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
           fontSize: 11,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.14em",
         }}
       >
@@ -144,7 +144,7 @@ export function BadgesCollection({
               fontSize: "clamp(44px, 5.4vw, 76px)",
               lineHeight: 0.95,
               letterSpacing: "-0.04em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 14px",
             }}
           >
@@ -152,7 +152,8 @@ export function BadgesCollection({
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                background:
+                  "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -166,7 +167,7 @@ export function BadgesCollection({
                 fontWeight: 600,
                 fontSize: "0.42em",
                 letterSpacing: "0.04em",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 verticalAlign: "0.25em",
                 marginLeft: 14,
               }}
@@ -179,7 +180,7 @@ export function BadgesCollection({
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 15,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               margin: 0,
               maxWidth: 520,
               lineHeight: 1.55,
@@ -199,7 +200,7 @@ export function BadgesCollection({
             style={{
               display: "flex",
               gap: 18,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               flexWrap: "wrap",
             }}
           >
@@ -209,15 +210,15 @@ export function BadgesCollection({
               </b>{" "}
               légendaire
             </span>
-            <span style={{ color: "#44406B" }}>/</span>
+            <span style={{ color: "var(--color-text-faint)" }}>/</span>
             <span>
               <b style={{ color: "var(--color-rarity-epic)" }}>{rarityEarned.EPIC ?? 0}</b> épiques
             </span>
-            <span style={{ color: "#44406B" }}>/</span>
+            <span style={{ color: "var(--color-text-faint)" }}>/</span>
             <span>
               <b style={{ color: "var(--color-rarity-rare)" }}>{rarityEarned.RARE ?? 0}</b> rares
             </span>
-            <span style={{ color: "#44406B" }}>/</span>
+            <span style={{ color: "var(--color-text-faint)" }}>/</span>
             <span>
               <b style={{ color: "var(--color-rarity-common)" }}>{rarityEarned.COMMON ?? 0}</b>{" "}
               communs
@@ -232,11 +233,11 @@ export function BadgesCollection({
             style={{
               display: "flex",
               gap: 14,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             <span>
-              PROGRESSION · <b style={{ color: "#F5F5FA" }}>{Math.round(pct)}%</b>
+              PROGRESSION · <b style={{ color: "var(--color-text-primary)" }}>{Math.round(pct)}%</b>
             </span>
           </div>
         </div>
@@ -250,7 +251,7 @@ export function BadgesCollection({
         <span
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginRight: 6,
           }}
         >
@@ -289,7 +290,7 @@ export function BadgesCollection({
               left: 12,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               pointerEvents: "none",
             }}
             aria-hidden="true"
@@ -308,9 +309,9 @@ export function BadgesCollection({
               width: "100%",
               height: "100%",
               padding: "0 12px 0 36px",
-              background: "#05041A",
-              border: "1px solid #2A2560",
-              color: "#F5F5FA",
+              background: "var(--color-bg-sunken)",
+              border: "1px solid var(--color-border-default)",
+              color: "var(--color-text-primary)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
               outline: "none",
@@ -341,7 +342,7 @@ export function BadgesCollection({
 
       {/* Empty state when search returns nothing */}
       {visibleGroups.length === 0 && (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "#7F7BA9" }}>
+        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--color-text-muted)" }}>
           <p className="mono-label mono-label--md">{"// Aucun badge trouvé"}</p>
         </div>
       )}

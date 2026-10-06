@@ -84,7 +84,7 @@ export function SqlPlayground(
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -102,18 +102,22 @@ export function SqlPlayground(
           SQL · BASE RÉELLE
         </span>
         {exercise.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{exercise.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {exercise.title}
+          </span>
         ) : null}
       </header>
 
       <div style={{ padding: "12px 16px", display: "grid", gap: 10 }}>
         {exercise.task ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{exercise.task}</p>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+            {exercise.task}
+          </p>
         ) : null}
         <p
           style={{
             margin: 0,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontSize: 12.5,
             fontFamily: "var(--font-mono, monospace)",
           }}
@@ -139,8 +143,8 @@ export function SqlPlayground(
           style={{
             width: "100%",
             padding: "10px 12px",
-            background: "#0A0826",
-            border: "1px solid #2A2560",
+            background: "var(--color-bg-elevated)",
+            border: "1px solid var(--color-border-default)",
             color: "#D8D6EA",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 13,
@@ -184,7 +188,7 @@ export function SqlPlayground(
             </p>
           ) : null}
           {outcome?.ok === true && last === null ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
               Requête exécutée, aucune ligne renvoyée.
             </p>
           ) : null}
@@ -195,13 +199,15 @@ export function SqlPlayground(
                 ✓ C&apos;est la bonne réponse.
               </p>
             ) : (
-              <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+              <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
                 Pas encore : {check.reason}
               </p>
             )
           ) : null}
           {exercise.hint && misses >= 2 && !(check?.ok ?? false) ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>Indice : {exercise.hint}</p>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+              Indice : {exercise.hint}
+            </p>
           ) : null}
         </div>
       </div>

@@ -66,9 +66,9 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
           height: 16,
           flexShrink: 0,
           borderRadius: "50%",
-          border: `1px solid ${visible ? "var(--cosmetic-accent)" : "#7F7BA9"}`,
+          border: `1px solid ${visible ? "var(--cosmetic-accent)" : "var(--color-text-muted)"}`,
           background: "transparent",
-          color: visible ? "var(--cosmetic-accent)" : "#7F7BA9",
+          color: visible ? "var(--cosmetic-accent)" : "var(--color-text-muted)",
           fontFamily: MONO,
           fontWeight: 700,
           fontSize: 10,
@@ -133,7 +133,7 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
             fontFamily: SANS,
             fontSize: 12.5,
             lineHeight: 1.55,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
           }}
         >
           {children}

@@ -34,7 +34,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -83,7 +83,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -101,21 +101,30 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
           BOÎTE MAIL PIÉGÉE
         </span>
         {mail.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{mail.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {mail.title}
+          </span>
         ) : null}
         <span
           style={{
             marginLeft: "auto",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 12,
-            color: done ? ACCENT : "#7F7BA9",
+            color: done ? ACCENT : "var(--color-text-muted)",
           }}
         >
           {String(found.length)} / {String(clueParts.length)} indices
         </span>
       </header>
 
-      <p style={{ margin: 0, padding: "12px 16px 0", color: "#B8B5D1", fontSize: 14 }}>
+      <p
+        style={{
+          margin: 0,
+          padding: "12px 16px 0",
+          color: "var(--color-text-secondary)",
+          fontSize: 14,
+        }}
+      >
         Clique sur chaque élément qui te paraît suspect. Survole le lien pour voir où il mène.
       </p>
 
@@ -131,19 +140,19 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
         <div
           style={{
             padding: "8px 6px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
             display: "grid",
             gap: 2,
           }}
         >
           <PartButton part="sender" status={statusOf("sender")} {...shared}>
-            <span style={{ color: "#7F7BA9" }}>De : </span>
-            <strong style={{ color: "#F5F5FA" }}>{mail.fromName}</strong>{" "}
-            <span style={{ color: "#B8B5D1" }}>&lt;{mail.fromAddress}&gt;</span>
+            <span style={{ color: "var(--color-text-muted)" }}>De : </span>
+            <strong style={{ color: "var(--color-text-primary)" }}>{mail.fromName}</strong>{" "}
+            <span style={{ color: "var(--color-text-secondary)" }}>&lt;{mail.fromAddress}&gt;</span>
           </PartButton>
           <PartButton part="subject" status={statusOf("subject")} {...shared}>
-            <span style={{ color: "#7F7BA9" }}>Objet : </span>
-            <strong style={{ color: "#F5F5FA" }}>{mail.subject}</strong>
+            <span style={{ color: "var(--color-text-muted)" }}>Objet : </span>
+            <strong style={{ color: "var(--color-text-primary)" }}>{mail.subject}</strong>
           </PartButton>
         </div>
 
@@ -177,7 +186,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
                   style={{
                     display: "inline-block",
                     padding: "6px 14px",
-                    background: "#0024FF",
+                    background: "var(--color-brand-blue)",
                     color: "#FFFFFF",
                     fontWeight: 600,
                   }}
@@ -195,7 +204,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
                   gap: 8,
                   alignItems: "center",
                   padding: "4px 10px",
-                  border: "1px solid #2A2560",
+                  border: "1px solid var(--color-border-default)",
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 12,
                 }}
@@ -213,10 +222,10 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
             style={{
               minHeight: 26,
               padding: "4px 12px",
-              borderTop: "1px solid #1F1B47",
+              borderTop: "1px solid var(--color-border-subtle)",
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 12,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               overflowWrap: "anywhere",
             }}
           >
@@ -227,7 +236,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
 
       <div aria-live="polite" style={{ padding: "0 16px 16px", display: "grid", gap: 10 }}>
         {lastHarmless !== null && !done ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
             {phishingPartLabel(lastHarmless)} : rien d&apos;anormal ici.
           </p>
         ) : null}
@@ -235,7 +244,10 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
         {shownClues.length > 0 ? (
           <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 8 }}>
             {shownClues.map((clue) => (
-              <li key={clue.part} style={{ color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+              <li
+                key={clue.part}
+                style={{ color: "var(--color-text-secondary)", fontSize: 14, lineHeight: 1.6 }}
+              >
                 <strong style={{ color: RED }}>⚑ {phishingPartLabel(clue.part)}</strong> :{" "}
                 {clue.why}
               </li>
@@ -244,7 +256,14 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
         ) : null}
 
         {done ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+          <p
+            style={{
+              margin: 0,
+              color: "var(--color-text-secondary)",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
             <strong style={{ color: ACCENT }}>
               {found.length < clueParts.length ? "Les indices." : "Tout trouvé."}
             </strong>{" "}
@@ -307,7 +326,7 @@ function PartButton({
         padding: "6px 10px",
         border: `1px solid ${suspect ? RED : "transparent"}`,
         background: suspect ? "rgba(255, 71, 87, 0.10)" : "transparent",
-        color: status === "harmless" ? "#7F7BA9" : "inherit",
+        color: status === "harmless" ? "var(--color-text-muted)" : "inherit",
         font: "inherit",
         textAlign: "left",
         cursor: done ? "default" : "pointer",
@@ -328,9 +347,9 @@ function PartButton({
 
 const SMALL_BUTTON: React.CSSProperties = {
   padding: "6px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 12,
   cursor: "pointer",

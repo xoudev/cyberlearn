@@ -7,10 +7,10 @@ const VARIANTS: Record<
   { border: string; bg: string; iconBg: string; iconColor: string; icon: string }
 > = {
   info: {
-    border: "#4D8BFF",
+    border: "var(--color-info)",
     bg: "rgba(77,139,255,0.06)",
     iconBg: "rgba(77,139,255,0.12)",
-    iconColor: "#4D8BFF",
+    iconColor: "var(--color-info)",
     icon: "ℹ",
   },
   tip: {
@@ -21,24 +21,24 @@ const VARIANTS: Record<
     icon: "✦",
   },
   warning: {
-    border: "#FFB020",
+    border: "var(--color-warning)",
     bg: "rgba(255,176,32,0.05)",
     iconBg: "rgba(255,176,32,0.10)",
-    iconColor: "#FFB020",
+    iconColor: "var(--color-warning)",
     icon: "⚠",
   },
   danger: {
-    border: "#FF4757",
+    border: "var(--color-category-cybersec)",
     bg: "rgba(255,71,87,0.05)",
     iconBg: "rgba(255,71,87,0.10)",
-    iconColor: "#FF4757",
+    iconColor: "var(--color-category-cybersec)",
     icon: "✕",
   },
   note: {
-    border: "#3F3D5C",
+    border: "var(--color-text-disabled)",
     bg: "rgba(63,61,92,0.15)",
     iconBg: "rgba(63,61,92,0.30)",
-    iconColor: "#7F7BA9",
+    iconColor: "var(--color-text-muted)",
     icon: "·",
   },
 };
@@ -109,7 +109,7 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
         <div
           style={{
             fontSize: "14px",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             lineHeight: "1.65",
           }}
         >

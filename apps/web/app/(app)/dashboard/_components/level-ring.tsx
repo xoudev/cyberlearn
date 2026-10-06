@@ -42,11 +42,18 @@ export function LevelRing({
         <svg viewBox="0 0 96 96">
           <defs>
             <linearGradient id="dash-ring-gradient" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#0024FF" />
+              <stop offset="0" stopColor="var(--color-brand-blue)" />
               <stop offset="1" style={{ stopColor: "var(--cosmetic-accent)" }} />
             </linearGradient>
           </defs>
-          <circle cx="48" cy="48" r={RADIUS} fill="none" stroke="#1F1B47" strokeWidth="6" />
+          <circle
+            cx="48"
+            cy="48"
+            r={RADIUS}
+            fill="none"
+            stroke="var(--color-border-subtle)"
+            strokeWidth="6"
+          />
           <circle
             cx="48"
             cy="48"

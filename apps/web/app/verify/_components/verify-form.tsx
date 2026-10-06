@@ -25,7 +25,11 @@ export function VerifyForm(): React.JSX.Element {
     router.push(`/verify/${id}`);
   }
 
-  const borderColor = error ? "#FF4757" : focused ? "#0AFFD4" : "#2A2560";
+  const borderColor = error
+    ? "var(--color-category-cybersec)"
+    : focused
+      ? "var(--color-brand-turquoise)"
+      : "var(--color-border-default)";
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -35,7 +39,7 @@ export function VerifyForm(): React.JSX.Element {
           htmlFor="cert-id"
           style={{
             display: "block",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 10,
           }}
         >
@@ -46,7 +50,7 @@ export function VerifyForm(): React.JSX.Element {
           style={{
             display: "flex",
             alignItems: "center",
-            background: "#05041A",
+            background: "var(--color-bg-sunken)",
             border: `1px solid ${borderColor}`,
             boxShadow: focused ? "0 0 0 1px rgba(10,255,212,0.25)" : "none",
             transition: "border-color 160ms ease, box-shadow 160ms ease",
@@ -58,7 +62,7 @@ export function VerifyForm(): React.JSX.Element {
               padding: "0 12px",
               fontFamily: "var(--font-mono)",
               fontSize: 15,
-              color: error ? "#FF4757" : "#0AFFD4",
+              color: error ? "var(--color-category-cybersec)" : "var(--color-brand-turquoise)",
             }}
           >
             #
@@ -84,7 +88,7 @@ export function VerifyForm(): React.JSX.Element {
               background: "transparent",
               border: "none",
               padding: "13px 14px 13px 0",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               fontSize: 14,
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.02em",
@@ -98,7 +102,12 @@ export function VerifyForm(): React.JSX.Element {
 
         {error ? (
           <p
-            style={{ color: "#FF4757", fontSize: 12, marginTop: 8, fontFamily: "var(--font-mono)" }}
+            style={{
+              color: "var(--color-category-cybersec)",
+              fontSize: 12,
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+            }}
           >
             {error}
           </p>
@@ -107,7 +116,7 @@ export function VerifyForm(): React.JSX.Element {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#44406B",
+              color: "var(--color-text-faint)",
               marginTop: 8,
             }}
           >
@@ -129,8 +138,10 @@ export function VerifyForm(): React.JSX.Element {
           padding: "14px 20px",
           fontWeight: 700,
           border: "none",
-          color: ready ? "#05041A" : "#7F7BA9",
-          background: ready ? "linear-gradient(90deg, #0AFFD4, #4DFFE0)" : "#15122A",
+          color: ready ? "var(--color-bg-sunken)" : "var(--color-text-muted)",
+          background: ready
+            ? "linear-gradient(90deg, var(--color-brand-turquoise), #4DFFE0)"
+            : "#15122A",
           boxShadow: ready ? "0 0 24px rgba(10,255,212,0.28)" : "none",
           cursor: ready ? "pointer" : "not-allowed",
           transition: "background 180ms ease, box-shadow 180ms ease",
@@ -139,12 +150,12 @@ export function VerifyForm(): React.JSX.Element {
         Vérifier <span aria-hidden="true">→</span>
       </button>
 
-      <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 18 }}>
+      <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 18 }}>
         <Link
           className="mono-label mono-label--md"
           href="/"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             textDecoration: "none",
           }}
         >

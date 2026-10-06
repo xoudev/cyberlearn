@@ -29,7 +29,7 @@ const RESPONSIVE_CSS = `
 .pub-row:hover { background: rgba(255,255,255,0.02) !important; }
 @media (max-width: 760px) {
   .pub-stats { grid-template-columns: 1fr; }
-  .pub-stats > div { border-right: none !important; border-bottom: 1px solid #2a2560; }
+  .pub-stats > div { border-right: none !important; border-bottom: 1px solid var(--color-border-default); }
   .pub-stats > div:last-child { border-bottom: none; }
   .pub-level { width: 100%; }
 }
@@ -57,7 +57,7 @@ function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): R
           fontSize: 11,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
@@ -74,7 +74,7 @@ function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): R
           fontSize: "clamp(22px, 3vw, 30px)",
           lineHeight: 1,
           letterSpacing: "-0.02em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: 0,
         }}
       >
@@ -123,7 +123,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(rgba(42,37,96,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(42,37,96,0.14) 1px, transparent 1px), #030219",
+          "linear-gradient(rgba(42,37,96,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(42,37,96,0.14) 1px, transparent 1px), var(--color-bg-base)",
         backgroundSize: "44px 44px, 44px 44px, auto",
         padding: "48px 24px 100px",
       }}
@@ -149,7 +149,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               gap: 8,
               ...MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.08em",
               textDecoration: "none",
               textTransform: "uppercase",
@@ -163,12 +163,14 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#44406B",
+              color: "var(--color-text-faint)",
             }}
           >
             {"// "}
             {isPrivate ? "profil privé · visible par ses amis" : "profil public"} ·{" "}
-            <b style={{ color: "#0AFFD4", fontWeight: 500 }}>@{user.username}</b>
+            <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 500 }}>
+              @{user.username}
+            </b>
           </span>
         </div>
 
@@ -179,12 +181,12 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             padding: "36px 36px 34px",
             background:
               "radial-gradient(ellipse 60% 90% at 18% 0%, rgba(0,36,255,0.12), transparent 60%), rgba(10,8,38,0.6)",
-            border: "1px solid #2A2560",
+            border: "1px solid var(--color-border-default)",
             marginBottom: 22,
             overflow: "hidden",
           }}
         >
-          <CornerBrackets opacity={0.8} color="#0AFFD4" />
+          <CornerBrackets opacity={0.8} color="var(--color-brand-turquoise)" />
           {/* Top strip */}
           <span
             aria-hidden="true"
@@ -194,7 +196,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               left: 0,
               right: 0,
               height: 2,
-              background: "linear-gradient(90deg, transparent, #0AFFD4, transparent)",
+              background:
+                "linear-gradient(90deg, transparent, var(--color-brand-turquoise), transparent)",
               boxShadow: "0 0 12px rgba(10,255,212,0.5)",
             }}
           />
@@ -214,7 +217,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(145deg, #0024FF, #0AFFD4)",
+                  background:
+                    "linear-gradient(145deg, var(--color-brand-blue), var(--color-brand-turquoise))",
                   clipPath: HEX_CLIP,
                 }}
                 aria-hidden="true"
@@ -223,7 +227,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 style={{
                   position: "absolute",
                   inset: 3,
-                  background: "#0A0826",
+                  background: "var(--color-bg-elevated)",
                   clipPath: HEX_CLIP,
                   overflow: "hidden",
                   display: "grid",
@@ -247,13 +251,13 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   fontSize: 11,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   marginBottom: 12,
                 }}
               >
-                <span style={{ color: "#44406B" }}>{"// "}</span>
+                <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
                 OPÉRATEUR · MEMBRE DEPUIS{" "}
-                <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{joinedStr}</b>
+                <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>{joinedStr}</b>
               </div>
               <h1
                 style={{
@@ -263,13 +267,14 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   lineHeight: 0.95,
                   letterSpacing: "-0.035em",
                   margin: "0 0 10px",
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 <em
                   style={{
                     fontStyle: "normal",
-                    background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                    background:
+                      "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -283,7 +288,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 style={{
                   ...MONO,
                   fontSize: 12,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   letterSpacing: "0.04em",
                   margin: user.bio ? "0 0 12px" : 0,
                 }}
@@ -295,7 +300,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   style={{
                     fontFamily: "var(--font-body, sans-serif)",
                     fontSize: 14,
-                    color: "#B8B5D1",
+                    color: "var(--color-text-secondary)",
                     margin: 0,
                     lineHeight: 1.55,
                     maxWidth: 480,
@@ -336,7 +341,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   fontSize: 10,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#0AFFD4",
+                  color: "var(--color-brand-turquoise)",
                   marginBottom: 8,
                 }}
               >
@@ -350,7 +355,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                     fontSize: 56,
                     lineHeight: 0.9,
                     letterSpacing: "-0.05em",
-                    background: "linear-gradient(180deg, #F5F5FA 0%, #6E8BFF 100%)",
+                    background:
+                      "linear-gradient(180deg, var(--color-text-primary) 0%, var(--color-rarity-rare) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -364,7 +370,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                     fontSize: 10,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                   }}
                 >
                   → LVL {level + 1}
@@ -386,19 +392,20 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             {
               label: "XP total",
               value: `+${user.xpTotal.toLocaleString("fr-FR")}`,
-              color: "#0AFFD4",
+              color: "var(--color-brand-turquoise)",
               sub: "expérience cumulée",
             },
             {
               label: "Série en cours",
               value: `${String(user.streakDays)}j`,
-              color: user.streakDays > 0 ? "#FFB547" : "#7F7BA9",
+              color:
+                user.streakDays > 0 ? "var(--color-rarity-legendary)" : "var(--color-text-muted)",
               sub: user.streakDays > 0 ? "🔥 en cours" : "à relancer",
             },
             {
               label: "Badges obtenus",
               value: String(user.badges.length),
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               sub: "trophées gagnés",
             },
           ].map((stat, i) => (
@@ -409,7 +416,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               value={stat.value}
               sub={stat.sub}
               color={stat.color}
-              style={{ borderRight: i < 2 ? "1px solid #2A2560" : "none" }}
+              style={{ borderRight: i < 2 ? "1px solid var(--color-border-default)" : "none" }}
             />
           ))}
         </div>
@@ -452,7 +459,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                       fontSize: 10,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       maxWidth: 120,
                     }}
                   >
@@ -487,7 +494,9 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                       gap: 18,
                       padding: "14px 20px",
                       borderBottom:
-                        i < user.lessonProgress.length - 1 ? "1px solid #1F1B47" : "none",
+                        i < user.lessonProgress.length - 1
+                          ? "1px solid var(--color-border-subtle)"
+                          : "none",
                       transition: "background 150ms ease",
                     }}
                   >
@@ -498,7 +507,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                         fontSize: 22,
                         lineHeight: 1,
                         letterSpacing: "-0.02em",
-                        color: "#44406B",
+                        color: "var(--color-text-faint)",
                         fontVariantNumeric: "tabular-nums",
                         width: 34,
                         flexShrink: 0,
@@ -525,7 +534,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                           ...SANS,
                           fontWeight: 600,
                           fontSize: 15,
-                          color: "#F5F5FA",
+                          color: "var(--color-text-primary)",
                           margin: 0,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -542,7 +551,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                         gap: 8,
                         ...MONO,
                         fontSize: 10.5,
-                        color: "#7F7BA9",
+                        color: "var(--color-text-muted)",
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                         flexShrink: 0,
@@ -553,7 +562,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                         style={{
                           width: 5,
                           height: 5,
-                          background: "#0AFFD4",
+                          background: "var(--color-brand-turquoise)",
                           transform: "rotate(45deg)",
                           boxShadow: "0 0 6px rgba(10,255,212,0.6)",
                         }}

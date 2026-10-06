@@ -59,8 +59,8 @@ export default async function WrappedPage({
             maxWidth: 720,
             padding: "10px 16px",
             background: "#1a1640",
-            border: "1px solid #2a2560",
-            color: "#B8B5D1",
+            border: "1px solid var(--color-border-default)",
+            color: "var(--color-text-secondary)",
             font: "600 13px var(--font-mono)",
             textAlign: "center",
           }}

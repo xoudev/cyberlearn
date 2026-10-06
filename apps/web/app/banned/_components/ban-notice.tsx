@@ -61,7 +61,7 @@ export function BanNotice({
         dismissable={false}
         eyebrow={<span style={{ color: "#ff6b7a" }}>Accès suspendu</span>}
         title="Ton compte est banni."
-        accent="#ff4757"
+        accent="var(--color-danger)"
         maxWidth={520}
         actions={
           <>

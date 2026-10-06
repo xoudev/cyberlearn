@@ -53,7 +53,7 @@ export function ReportNoteForm({
         display: "grid",
         gap: 12,
         padding: "14px 22px",
-        borderBottom: "1px solid #1F1B47",
+        borderBottom: "1px solid var(--color-border-subtle)",
         background: "rgba(255,71,87,0.04)",
       }}
     >
@@ -61,7 +61,7 @@ export function ReportNoteForm({
         <legend
           className="mono-label mono-label--md"
           style={{
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             marginBottom: 8,
           }}
         >
@@ -75,7 +75,7 @@ export function ReportNoteForm({
               alignItems: "center",
               gap: 10,
               fontSize: 14,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               cursor: "pointer",
             }}
           >
@@ -92,7 +92,7 @@ export function ReportNoteForm({
           </label>
         ))}
       </fieldset>
-      <label htmlFor={commentId} style={{ fontSize: 13, color: "#B8B5D1" }}>
+      <label htmlFor={commentId} style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
         Précisions pour l&apos;équipe (facultatif)
       </label>
       <textarea
@@ -106,19 +106,19 @@ export function ReportNoteForm({
         style={{
           width: "100%",
           padding: 10,
-          background: "#05041A",
-          border: "1px solid #2A2560",
-          color: "#F5F5FA",
+          background: "var(--color-bg-sunken)",
+          border: "1px solid var(--color-border-default)",
+          color: "var(--color-text-primary)",
           fontFamily: "var(--font-body)",
           fontSize: 14,
           resize: "vertical",
         }}
       />
-      <p style={{ margin: 0, fontSize: 12, color: "#7F7BA9" }}>
+      <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>
         L&apos;auteur ne saura pas qui a signalé sa note. Elle sera retirée de tes notes reçues.
       </p>
       {error !== null ? (
-        <p role="alert" style={{ margin: 0, fontSize: 13, color: "#FF4757" }}>
+        <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--color-danger)" }}>
           {error}
         </p>
       ) : null}

@@ -30,7 +30,12 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
   return (
     <div
-      style={{ background: "#030219", minHeight: "100vh", position: "relative", color: "#F5F5FA" }}
+      style={{
+        background: "var(--color-bg-base)",
+        minHeight: "100vh",
+        position: "relative",
+        color: "var(--color-text-primary)",
+      }}
     >
       <div
         aria-hidden="true"
@@ -81,8 +86,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
           background: "rgba(3,2,25,0.65)",
           backdropFilter: "blur(20px) saturate(140%)",
           WebkitBackdropFilter: "blur(20px) saturate(140%)",
-          borderBottom: "1px solid #2A2560",
-          color: "#7F7BA9",
+          borderBottom: "1px solid var(--color-border-default)",
+          color: "var(--color-text-muted)",
         }}
       >
         <span
@@ -110,13 +115,13 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.01em",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span style={{ color: "var(--color-text-faint)" }}>/</span>
         <span>ONBOARDING · POSITIONNEMENT</span>
         <span
           style={{
@@ -124,7 +129,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            color: "#0AFFD4",
+            color: "var(--color-brand-turquoise)",
           }}
         >
           <span
@@ -132,8 +137,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--color-brand-turquoise)",
+              boxShadow: "0 0 6px var(--color-brand-turquoise)",
               display: "inline-block",
               animation: "sidebar-pulse 2s ease-in-out infinite",
             }}
@@ -167,22 +172,25 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
               }}
             >
-              <span style={{ color: "#F5F5FA", fontWeight: 600 }}>
-                ÉTAPE <b style={{ color: "#0AFFD4", fontWeight: 700 }}>03</b> / 03
+              <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>
+                ÉTAPE <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>03</b> /
+                03
               </span>
-              <span style={{ color: "#44406B" }}>·</span>
-              <span style={{ color: "#0AFFD4", fontWeight: 600 }}>POSITIONNEMENT</span>
+              <span style={{ color: "var(--color-text-faint)" }}>·</span>
+              <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>
+                POSITIONNEMENT
+              </span>
             </div>
             <span
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               OPTIONNEL
@@ -194,8 +202,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               position: "relative",
               height: 4,
               background: "rgba(5,4,26,0.9)",
-              borderTop: "1px solid #2A2560",
-              borderBottom: "1px solid #2A2560",
+              borderTop: "1px solid var(--color-border-default)",
+              borderBottom: "1px solid var(--color-border-default)",
             }}
           >
             <div
@@ -205,7 +213,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 top: 0,
                 bottom: 0,
                 width: "100%",
-                background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
+                background:
+                  "linear-gradient(90deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                 boxShadow: "0 0 12px rgba(10,255,212,0.7)",
               }}
             />
@@ -230,7 +239,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  color: state === "done" ? "#0AFFD4" : "#F5F5FA",
+                  color:
+                    state === "done" ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
                 }}
               >
                 <span
@@ -282,7 +292,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 position: "absolute",
                 width: 14,
                 height: 14,
-                border: "1.5px solid #0AFFD4",
+                border: "1.5px solid var(--color-brand-turquoise)",
                 top: pos.startsWith("t") ? 8 : undefined,
                 bottom: pos.startsWith("b") ? 8 : undefined,
                 left: pos.endsWith("l") ? 8 : undefined,
@@ -303,7 +313,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               justifyContent: "space-between",
               paddingBottom: 18,
               marginBottom: 26,
-              borderBottom: "1px solid #1F1B47",
+              borderBottom: "1px solid var(--color-border-subtle)",
               position: "relative",
               zIndex: 1,
             }}
@@ -312,19 +322,27 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               className="mono-label mono-label--md"
               style={{
                 fontWeight: 600,
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: 0,
               }}
             >
-              <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> TEST DE POSITIONNEMENT
-              <span style={{ fontWeight: 400, color: "#7F7BA9", fontSize: 11, marginLeft: 8 }}>
+              <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>›</b> TEST DE
+              POSITIONNEMENT
+              <span
+                style={{
+                  fontWeight: 400,
+                  color: "var(--color-text-muted)",
+                  fontSize: 11,
+                  marginLeft: 8,
+                }}
+              >
                 (OPTIONNEL)
               </span>
             </h2>
             <span
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               03/03
@@ -339,7 +357,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 fontSize: "clamp(26px,4vw,34px)",
                 lineHeight: 1.1,
                 letterSpacing: "-0.02em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 14px",
               }}
             >
@@ -347,7 +365,8 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -361,7 +380,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 14.5,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.6,
                 margin: "0 0 26px",
                 maxWidth: 480,
@@ -391,14 +410,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   key={label}
                   style={{
                     padding: "16px 14px",
-                    borderRight: i < 3 ? "1px solid #2A2560" : "none",
+                    borderRight: i < 3 ? "1px solid var(--color-border-default)" : "none",
                   }}
                 >
                   <span
                     className="mono-label mono-label--xs"
                     style={{
                       display: "block",
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       marginBottom: 8,
                     }}
                   >
@@ -410,7 +429,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                       fontWeight: 700,
                       fontSize: 22,
                       letterSpacing: "-0.02em",
-                      color: accent ? "#0AFFD4" : "#F5F5FA",
+                      color: accent ? "var(--color-brand-turquoise)" : "var(--color-text-primary)",
                       lineHeight: 1,
                       display: "flex",
                       alignItems: "baseline",
@@ -423,7 +442,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 11,
-                          color: "#7F7BA9",
+                          color: "var(--color-text-muted)",
                           fontWeight: 500,
                           letterSpacing: "0.04em",
                         }}
@@ -441,17 +460,18 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 letterSpacing: "0.04em",
                 lineHeight: 1.6,
                 padding: "12px 14px",
                 background: "rgba(10,255,212,0.04)",
-                borderLeft: "2px solid #0AFFD4",
+                borderLeft: "2px solid var(--color-brand-turquoise)",
                 marginBottom: 26,
               }}
             >
-              <b style={{ color: "#0AFFD4", fontWeight: 600 }}>Info :</b> Ces réponses servent
-              uniquement à personnaliser les parcours. Aucune note n&apos;est attribuée aux profils.
+              <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>Info :</b> Ces
+              réponses servent uniquement à personnaliser les parcours. Aucune note n&apos;est
+              attribuée aux profils.
             </div>
 
             {/* CTAs */}
@@ -470,7 +490,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 className="mono-label link-cta"
                 href="/onboarding/goals"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   textDecoration: "none",
                   textAlign: "center",
                   display: "block",

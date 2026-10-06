@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
-  background: #030219;
-  color: #f5f5fa;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
 }
 
 .context {
@@ -16,7 +16,8 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 14% 16%, rgba(0, 36, 255, 0.24), transparent 38%),
-    radial-gradient(circle at 78% 82%, rgba(10, 255, 212, 0.08), transparent 34%), #05041a;
+    radial-gradient(circle at 78% 82%, rgba(10, 255, 212, 0.08), transparent 34%),
+    var(--color-bg-sunken);
 }
 
 .context::after {
@@ -39,7 +40,7 @@
   align-items: center;
   gap: 12px;
   width: fit-content;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   text-decoration: none;
   font-family: var(--font-sans);
   font-size: 18px;
@@ -48,13 +49,13 @@
 }
 
 .brandAccent {
-  color: #0affd4;
+  color: var(--color-brand-turquoise);
 }
 
 .eyebrow {
   display: block;
   margin-bottom: 22px;
-  color: #0affd4;
+  color: var(--color-brand-turquoise);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -75,7 +76,7 @@
 .contextText {
   max-width: 560px;
   margin: 28px 0 0;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
   font-family: var(--font-sans);
   font-size: 17px;
   line-height: 1.65;
@@ -85,7 +86,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px 24px;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -98,7 +99,7 @@
   justify-content: center;
   min-height: 100vh;
   padding: 56px clamp(28px, 5vw, 76px);
-  background: #030219;
+  background: var(--color-bg-base);
 }
 
 .card {
@@ -139,7 +140,7 @@
 }
 
 .label {
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
@@ -154,10 +155,10 @@
 .input {
   width: 100%;
   height: 52px;
-  border: 1px solid #2a2560;
+  border: 1px solid var(--color-border-default);
   outline: none;
   background: #080622;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   padding: 0 14px;
   font-family: var(--font-mono);
   font-size: 14px;
@@ -167,7 +168,7 @@
 }
 
 .input:focus {
-  border-color: #0affd4;
+  border-color: var(--color-brand-turquoise);
   background: #0a0828;
 }
 
@@ -186,7 +187,7 @@
   transform: translateY(-50%);
   border: 0;
   background: transparent;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 9px;
@@ -197,7 +198,7 @@
 
 .hint,
 .finePrint {
-  color: #7f7ba9;
+  color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.55;
@@ -210,9 +211,9 @@
 
 .submit {
   min-height: 52px;
-  border: 1px solid #0affd4;
-  background: #0affd4;
-  color: #030219;
+  border: 1px solid var(--color-brand-turquoise);
+  background: var(--color-brand-turquoise);
+  color: var(--color-bg-base);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -240,7 +241,7 @@
 
 .divider span {
   height: 1px;
-  background: #2a2560;
+  background: var(--color-border-default);
 }
 
 .divider b {
@@ -253,9 +254,9 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 1px solid #2a2560;
+  border: 1px solid var(--color-border-default);
   background: #080622;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10px;
@@ -266,7 +267,7 @@
 
 .oauthButton:hover,
 .oauthButton:focus-visible {
-  border-color: #7f7ba9;
+  border-color: var(--color-text-muted);
   background: #0a0828;
 }
 
@@ -278,16 +279,16 @@
 .message {
   margin: 0;
   padding: 13px 14px;
-  border-left: 2px solid #0affd4;
+  border-left: 2px solid var(--color-brand-turquoise);
   background: rgba(10, 255, 212, 0.055);
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.6;
 }
 
 .error {
-  border-left-color: #ff4d6d;
+  border-left-color: var(--color-danger);
   background: rgba(255, 77, 109, 0.07);
   color: #ff8aa0;
 }
@@ -304,7 +305,7 @@
   border: 0;
   background: transparent;
   padding: 0;
-  color: #0affd4;
+  color: var(--color-brand-turquoise);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10px;

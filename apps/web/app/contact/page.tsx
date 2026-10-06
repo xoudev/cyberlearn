@@ -12,8 +12,8 @@ const THEMES = TICKET_FORM_THEMES;
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
   background: "rgba(5,4,26,0.8)",
-  border: "1px solid #2A2560",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  color: "var(--color-text-primary)",
   fontFamily: "var(--font-mono)",
   fontSize: 13,
   padding: "12px 14px",
@@ -65,7 +65,7 @@ export default function ContactPage(): React.ReactElement {
             height="28"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#0AFFD4"
+            stroke="var(--color-brand-turquoise)"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -79,7 +79,7 @@ export default function ContactPage(): React.ReactElement {
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 24,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 10px",
           }}
         >
@@ -89,7 +89,7 @@ export default function ContactPage(): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             margin: 0,
             lineHeight: 1.6,
           }}
@@ -113,14 +113,21 @@ export default function ContactPage(): React.ReactElement {
         <div
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             display: "flex",
             alignItems: "center",
             gap: 8,
             marginBottom: 10,
           }}
         >
-          <span style={{ width: 16, height: 1, background: "#0AFFD4", display: "inline-block" }} />
+          <span
+            style={{
+              width: 16,
+              height: 1,
+              background: "var(--color-brand-turquoise)",
+              display: "inline-block",
+            }}
+          />
           Support
         </div>
         <h1
@@ -128,14 +135,21 @@ export default function ContactPage(): React.ReactElement {
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
             fontSize: 30,
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 8px",
             letterSpacing: "-0.02em",
           }}
         >
           Nous contacter
         </h1>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            color: "var(--color-text-muted)",
+            margin: 0,
+          }}
+        >
           Un bug, une suggestion ou une question ? On te répond.
         </p>
       </div>
@@ -160,7 +174,7 @@ export default function ContactPage(): React.ReactElement {
             htmlFor="contact-email"
             style={{
               display: "block",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 6,
             }}
           >
@@ -183,7 +197,7 @@ export default function ContactPage(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "4px 0 0",
               }}
             >
@@ -199,7 +213,7 @@ export default function ContactPage(): React.ReactElement {
             htmlFor="contact-theme"
             style={{
               display: "block",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 6,
             }}
           >
@@ -224,14 +238,14 @@ export default function ContactPage(): React.ReactElement {
                 padding: "12px 14px",
                 background: "rgba(10,255,212,0.05)",
                 border: "1px solid rgba(10,255,212,0.25)",
-                borderLeft: "3px solid var(--cosmetic-accent, #0AFFD4)",
+                borderLeft: "3px solid var(--cosmetic-accent, var(--color-brand-turquoise))",
               }}
             >
               <p
                 className="mono-label"
                 style={{
                   margin: "0 0 8px",
-                  color: "var(--cosmetic-accent, #0AFFD4)",
+                  color: "var(--cosmetic-accent, var(--color-brand-turquoise))",
                 }}
               >
                 À mettre dans ton message
@@ -242,7 +256,7 @@ export default function ContactPage(): React.ReactElement {
                   paddingLeft: 18,
                   fontSize: 13,
                   lineHeight: 1.7,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                 }}
               >
                 {ESTABLISHMENT_CHECKLIST.map((line) => (
@@ -259,7 +273,7 @@ export default function ContactPage(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "4px 0 0",
               }}
             >
@@ -275,7 +289,7 @@ export default function ContactPage(): React.ReactElement {
             htmlFor="contact-subject"
             style={{
               display: "block",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 6,
             }}
           >
@@ -301,7 +315,7 @@ export default function ContactPage(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "4px 0 0",
               }}
             >
@@ -317,7 +331,7 @@ export default function ContactPage(): React.ReactElement {
             htmlFor="contact-message"
             style={{
               display: "block",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 6,
             }}
           >
@@ -341,7 +355,7 @@ export default function ContactPage(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "4px 0 0",
               }}
             >
@@ -356,7 +370,7 @@ export default function ContactPage(): React.ReactElement {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#FF4757",
+              color: "var(--color-category-cybersec)",
               margin: 0,
               padding: "12px 14px",
               background: "rgba(255,71,87,0.07)",

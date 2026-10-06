@@ -18,13 +18,13 @@ export default function LegalLayout({
     <div
       style={{
         minHeight: "100vh",
-        background: "#030219",
-        color: "#B8B5D1",
+        background: "var(--color-bg-base)",
+        color: "var(--color-text-secondary)",
       }}
     >
       <header
         style={{
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           padding: "16px 24px",
           display: "flex",
           alignItems: "center",
@@ -36,7 +36,7 @@ export default function LegalLayout({
         </Link>
         <span
           style={{
-            color: "#1F1B47",
+            color: "var(--color-border-subtle)",
             fontSize: "13px",
           }}
         >
@@ -44,7 +44,7 @@ export default function LegalLayout({
         </span>
         <span
           style={{
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             fontSize: "14px",
             fontWeight: 600,
           }}

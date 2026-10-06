@@ -34,9 +34,9 @@ interface Props {
 // ── Rarity tokens ─────────────────────────────────────────────────────────────
 
 const CAT_COLOR: Record<string, string> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#6E8BFF",
-  NETWORK: "#0AFFD4",
+  CYBERSEC: "var(--color-category-cybersec)",
+  DEV: "var(--color-rarity-rare)",
+  NETWORK: "var(--color-brand-turquoise)",
 };
 
 // ── Activity feed ─────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
         <p
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           {"// Aucune activité pour l'instant"}
@@ -60,7 +60,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {lessons.map((lp) => {
-        const catColor = CAT_COLOR[lp.category] ?? "#7F7BA9";
+        const catColor = CAT_COLOR[lp.category] ?? "var(--color-text-muted)";
         return (
           <Link key={lp.lessonId} href={`/lessons/${lp.slug}`} style={{ textDecoration: "none" }}>
             <div
@@ -87,7 +87,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                     fontFamily: "var(--font-sans)",
                     fontWeight: 600,
                     fontSize: 13,
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                     margin: "0 0 2px",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -100,7 +100,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     margin: 0,
                   }}
                 >
@@ -123,7 +123,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       letterSpacing: "0.04em",
                     }}
                   >
@@ -148,7 +148,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
         style={{
           marginTop: 48,
           paddingTop: 36,
-          borderTop: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
           textAlign: "center",
           padding: "60px 0",
         }}
@@ -156,7 +156,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
         <p
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           {"// Aucun certificat délivré pour l'instant"}
@@ -172,7 +172,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
       style={{
         marginTop: 48,
         paddingTop: 36,
-        borderTop: "1px solid #1F1B47",
+        borderTop: "1px solid var(--color-border-subtle)",
       }}
     >
       {/* Section head */}
@@ -190,7 +190,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
             fontWeight: 700,
             fontSize: 22,
             letterSpacing: "-0.01em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: 0,
           }}
         >
@@ -199,7 +199,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               fontWeight: 600,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.16em",
               marginRight: 12,
             }}
@@ -212,7 +212,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
           <span
             className="mono-label"
             style={{
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
             }}
           >
             +{certs.length - 1} autre{certs.length > 2 ? "s" : ""}
@@ -232,7 +232,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
             padding: "32px 36px",
             background:
               "linear-gradient(135deg, rgba(0,36,255,0.06), transparent 50%), rgba(5,4,26,0.6)",
-            border: "1px solid #1F1B47",
+            border: "1px solid var(--color-border-subtle)",
           }}
         >
           {/* Corner brackets */}
@@ -335,7 +335,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 fontSize: 26,
                 lineHeight: 1.15,
                 letterSpacing: "-0.02em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 12px",
               }}
             >
@@ -348,17 +348,22 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 flexWrap: "wrap",
                 alignItems: "center",
                 gap: 14,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 14,
               }}
             >
               <span>
                 Délivré ·{" "}
-                <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{latest.issuedDateStr}</b>
+                <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                  {latest.issuedDateStr}
+                </b>
               </span>
-              <span style={{ color: "#1F1B47" }}>/</span>
+              <span style={{ color: "var(--color-border-subtle)" }}>/</span>
               <span>
-                ID · <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{latest.id.slice(-12)}</b>
+                ID ·{" "}
+                <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                  {latest.id.slice(-12)}
+                </b>
               </span>
             </div>
             <div
@@ -378,7 +383,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>SHA-256</span>
               <span
                 style={{
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -424,7 +429,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 gap: 8,
                 padding: "10px 14px",
                 fontWeight: 600,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
               }}
             >
@@ -458,9 +463,9 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
         trailing={
           <>
             <span>TRIER · RÉCENTS</span>
-            <span style={{ color: "#1F1B47" }}>/</span>
+            <span style={{ color: "var(--color-border-subtle)" }}>/</span>
             <span>
-              VUE · <b style={{ color: "#F5F5FA" }}>GRILLE</b>
+              VUE · <b style={{ color: "var(--color-text-primary)" }}>GRILLE</b>
             </span>
           </>
         }
@@ -475,7 +480,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
             <p
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
               }}
             >
               {"// Aucun badge obtenu pour l'instant"}

@@ -62,7 +62,7 @@ function ChallengeMisconfigured({
         margin: "32px 0",
         padding: "18px 20px",
         border: "1px solid rgba(255,176,32,0.45)",
-        borderLeft: "3px solid #FFB020",
+        borderLeft: "3px solid var(--color-warning)",
         background: "rgba(255,176,32,0.06)",
       }}
     >
@@ -72,19 +72,21 @@ function ChallengeMisconfigured({
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          color: "#FFB020",
+          color: "var(--color-warning)",
           marginBottom: 8,
         }}
       >
         Défi indisponible{title !== undefined ? ` · ${title}` : ""}
       </div>
-      <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.55 }}>
+      <p
+        style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14, lineHeight: 1.55 }}
+      >
         Ce défi est mal configuré et ne peut pas être lancé. Tu peux continuer la leçon.
       </p>
       <p
         style={{
           margin: "10px 0 0",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12,
           lineHeight: 1.5,
@@ -153,16 +155,16 @@ function PythonChallengeBody({
         { token: "identifier", foreground: "E0DDFF" },
       ],
       colors: {
-        "editor.background": "#0A0826",
+        "editor.background": "var(--color-bg-elevated)",
         "editor.foreground": "#E0DDFF",
         "editor.lineHighlightBackground": "#1A1838",
-        "editorLineNumber.foreground": "#3F3D5C",
+        "editorLineNumber.foreground": "var(--color-text-disabled)",
         "editorLineNumber.activeForeground": "var(--cosmetic-accent)",
-        "editor.selectionBackground": "#2A2560",
+        "editor.selectionBackground": "var(--color-border-default)",
         "editorCursor.foreground": "var(--cosmetic-accent)",
-        "editor.inactiveSelectionBackground": "#1F1B47",
-        "editorIndentGuide.background1": "#1F1B47",
-        "editorWhitespace.foreground": "#2A2560",
+        "editor.inactiveSelectionBackground": "var(--color-border-subtle)",
+        "editorIndentGuide.background1": "var(--color-border-subtle)",
+        "editorWhitespace.foreground": "var(--color-border-default)",
       },
     });
   };
@@ -194,7 +196,7 @@ function PythonChallengeBody({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.6)",
         }}
       >
@@ -204,7 +206,7 @@ function PythonChallengeBody({
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontWeight: 600,
             display: "inline-flex",
             alignItems: "center",
@@ -245,7 +247,7 @@ function PythonChallengeBody({
         <div
           style={{
             padding: "14px 20px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
             background: "rgba(5,4,26,0.3)",
           }}
         >
@@ -254,7 +256,7 @@ function PythonChallengeBody({
               margin: 0,
               fontFamily: "var(--font-body, sans-serif)",
               fontSize: 14,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.65,
             }}
           >
@@ -311,9 +313,9 @@ function PythonChallengeBody({
             display: "block",
             width: "100%",
             height: 240,
-            background: "#0A0826",
+            background: "var(--color-bg-elevated)",
             border: "none",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontFamily: "JetBrains Mono, monospace",
             fontSize: 13,
             lineHeight: 1.7,
@@ -330,7 +332,7 @@ function PythonChallengeBody({
         style={{
           display: "flex",
           alignItems: "stretch",
-          borderTop: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
       >
@@ -404,8 +406,10 @@ function PythonChallengeBody({
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: allPassed ? "var(--cosmetic-accent)" : "#FF4757",
-                    boxShadow: `0 0 6px ${allPassed ? "var(--cosmetic-accent)" : "#FF4757"}`,
+                    background: allPassed
+                      ? "var(--cosmetic-accent)"
+                      : "var(--color-category-cybersec)",
+                    boxShadow: `0 0 6px ${allPassed ? "var(--cosmetic-accent)" : "var(--color-category-cybersec)"}`,
                     flexShrink: 0,
                   }}
                 />
@@ -415,7 +419,7 @@ function PythonChallengeBody({
                     fontSize: 10,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: allPassed ? "var(--cosmetic-accent)" : "#FF4757",
+                    color: allPassed ? "var(--cosmetic-accent)" : "var(--color-category-cybersec)",
                   }}
                 >
                   {passedCount}/{totalCount} · {allPassed ? "VALIDÉ" : "ÉCHEC"}
@@ -429,7 +433,7 @@ function PythonChallengeBody({
                   fontSize: 10,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#44406B",
+                  color: "var(--color-text-faint)",
                 }}
               >
                 EN ATTENTE
@@ -462,7 +466,7 @@ function PythonChallengeBody({
                 fontFamily: "var(--font-mono, monospace)",
                 fontSize: 10,
                 letterSpacing: "0.1em",
-                color: "#44406B",
+                color: "var(--color-text-faint)",
               }}
             >
               challenge.py · python 3.12
@@ -477,8 +481,8 @@ function PythonChallengeBody({
       {testResults !== null && (
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
-            background: "#030219",
+            borderTop: "1px solid var(--color-border-subtle)",
+            background: "var(--color-bg-base)",
           }}
         >
           {testResults.map((result, i) => {
@@ -509,7 +513,9 @@ function PythonChallengeBody({
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 11,
                     fontWeight: 700,
-                    color: result.passed ? "var(--cosmetic-accent)" : "#FF4757",
+                    color: result.passed
+                      ? "var(--cosmetic-accent)"
+                      : "var(--color-category-cybersec)",
                     paddingTop: 1,
                   }}
                 >
@@ -525,7 +531,7 @@ function PythonChallengeBody({
                       marginBottom: !result.passed ? 4 : 0,
                     }}
                   >
-                    <span style={{ color: "#44406B" }}>{label} · </span>
+                    <span style={{ color: "var(--color-text-faint)" }}>{label} · </span>
                     <span style={{ color: "#B14DFF" }}>{result.input}</span>
                   </div>
                   {!result.passed && (
@@ -534,7 +540,7 @@ function PythonChallengeBody({
                         fontFamily: "var(--font-mono, monospace)",
                         fontSize: 11,
                         lineHeight: 1.5,
-                        color: "#FF4757",
+                        color: "var(--color-category-cybersec)",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
                       }}
@@ -549,13 +555,13 @@ function PythonChallengeBody({
                         fontFamily: "var(--font-mono, monospace)",
                         fontSize: 11,
                         lineHeight: 1.5,
-                        color: "#7F7BA9",
+                        color: "var(--color-text-muted)",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
                         marginTop: 4,
                       }}
                     >
-                      <span style={{ color: "#44406B" }}>affiché : </span>
+                      <span style={{ color: "var(--color-text-faint)" }}>affiché : </span>
                       {result.output.trimEnd()}
                     </div>
                   )}
@@ -574,8 +580,8 @@ function PythonChallengeBody({
                     <span style={{ color: "var(--cosmetic-accent)" }}>{result.actual}</span>
                   ) : (
                     <span>
-                      <span style={{ color: "#44406B" }}>attendu : </span>
-                      <span style={{ color: "#7F7BA9" }}>{result.expected}</span>
+                      <span style={{ color: "var(--color-text-faint)" }}>attendu : </span>
+                      <span style={{ color: "var(--color-text-muted)" }}>{result.expected}</span>
                     </span>
                   )}
                 </div>

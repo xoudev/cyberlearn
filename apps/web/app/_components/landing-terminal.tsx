@@ -22,20 +22,21 @@ function colorize(type: string, raw: string): React.ReactNode {
     const parts = raw.split(" ");
     return (
       <>
-        <span style={{ color: "#0AFFD4" }}>{parts[0]}</span> {parts.slice(1).join(" ")}
+        <span style={{ color: "var(--color-brand-turquoise)" }}>{parts[0]}</span>{" "}
+        {parts.slice(1).join(" ")}
       </>
     );
   }
   if (type === "comment") {
-    return <span style={{ color: "#7F7BA9" }}>{raw}</span>;
+    return <span style={{ color: "var(--color-text-muted)" }}>{raw}</span>;
   }
   if (type === "out") {
     const m = /^(\[.\])\s(.+:\s)(.+)$/.exec(raw);
     if (m) {
       return (
         <>
-          <span style={{ color: "#0AFFD4" }}>{m[1]}</span> {m[2]}
-          <span style={{ color: "#FFB020" }}>{m[3]}</span>
+          <span style={{ color: "var(--color-brand-turquoise)" }}>{m[1]}</span> {m[2]}
+          <span style={{ color: "var(--color-warning)" }}>{m[3]}</span>
         </>
       );
     }
@@ -48,19 +49,19 @@ function colorize(type: string, raw: string): React.ReactNode {
       if (!seg) return null;
       if (/^(import|def|return|for|if|in|range|chr)$/.test(seg))
         return (
-          <span key={i} style={{ color: "#4D8BFF" }}>
+          <span key={i} style={{ color: "var(--color-info)" }}>
             {seg}
           </span>
         );
       if (/^".*"$/.test(seg) || seg.startsWith('f"'))
         return (
-          <span key={i} style={{ color: "#0AFFD4" }}>
+          <span key={i} style={{ color: "var(--color-brand-turquoise)" }}>
             {seg}
           </span>
         );
       if (/^\d+$/.test(seg))
         return (
-          <span key={i} style={{ color: "#FFB020" }}>
+          <span key={i} style={{ color: "var(--color-warning)" }}>
             {seg}
           </span>
         );
@@ -102,7 +103,7 @@ export function LandingTerminal(): React.ReactElement {
       style={{
         overflow: "hidden",
         boxShadow:
-          "0 0 0 1px #2A2560, 0 32px 64px rgba(0,36,255,0.15), 0 0 80px rgba(10,255,212,0.06)",
+          "0 0 0 1px var(--color-border-default), 0 32px 64px rgba(0,36,255,0.15), 0 0 80px rgba(10,255,212,0.06)",
         fontFamily: "var(--font-mono)",
       }}
     >
@@ -113,31 +114,47 @@ export function LandingTerminal(): React.ReactElement {
           alignItems: "center",
           gap: 8,
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "#07062A",
         }}
       >
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF4757" }} />
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FFB020" }} />
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#0AFFD4" }} />
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            background: "var(--color-category-cybersec)",
+          }}
+        />
+        <span
+          style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--color-warning)" }}
+        />
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            background: "var(--color-brand-turquoise)",
+          }}
+        />
         <span
           style={{
             marginLeft: 12,
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.08em",
           }}
         >
-          ~/<b style={{ color: "#B8B5D1" }}>ctf/web-101</b> · sandbox
+          ~/<b style={{ color: "var(--color-text-secondary)" }}>ctf/web-101</b> · sandbox
         </span>
         <span
           className="mono-label mono-label--xs"
           style={{
             marginLeft: "auto",
             fontWeight: 700,
-            color: "#030219",
-            background: "#0AFFD4",
+            color: "var(--color-bg-base)",
+            background: "var(--color-brand-turquoise)",
             padding: "3px 8px",
           }}
         >
@@ -151,7 +168,7 @@ export function LandingTerminal(): React.ReactElement {
           padding: "16px 20px 20px",
           fontSize: 13,
           lineHeight: 1.65,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           minHeight: 260,
           // Let long `white-space: pre` code lines scroll inside the box on
           // narrow phones instead of being clipped by the outer overflow:hidden.
@@ -175,8 +192,8 @@ export function LandingTerminal(): React.ReactElement {
                   display: "inline-block",
                   width: 7,
                   height: 13,
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 8px #0AFFD4",
+                  background: "var(--color-brand-turquoise)",
+                  boxShadow: "0 0 8px var(--color-brand-turquoise)",
                   verticalAlign: "-2px",
                   marginLeft: 2,
                   animation: "blink 1s step-end infinite",
@@ -197,8 +214,8 @@ export function LandingTerminal(): React.ReactElement {
               fontWeight: 700,
               fontSize: 12,
               letterSpacing: "0.14em",
-              color: "#030219",
-              background: "#0AFFD4",
+              color: "var(--color-bg-base)",
+              background: "var(--color-brand-turquoise)",
               padding: "8px 16px",
               boxShadow: "0 0 24px rgba(10,255,212,0.6)",
             }}

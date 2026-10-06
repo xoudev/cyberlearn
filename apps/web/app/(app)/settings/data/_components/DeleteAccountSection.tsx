@@ -49,9 +49,17 @@ export function DeleteAccountSection({
     >
       <div style={{ padding: 24 }}>
         {/* Description */}
-        <p style={{ margin: "0 0 14px", color: "#F5F5FA", fontWeight: 500, fontSize: 14 }}>
-          Cette action est <span style={{ color: "#FF4757", fontWeight: 700 }}>irréversible</span>.
-          Les éléments suivants seront supprimés ou anonymisés :
+        <p
+          style={{
+            margin: "0 0 14px",
+            color: "var(--color-text-primary)",
+            fontWeight: 500,
+            fontSize: 14,
+          }}
+        >
+          Cette action est{" "}
+          <span style={{ color: "var(--color-danger)", fontWeight: 700 }}>irréversible</span>. Les
+          éléments suivants seront supprimés ou anonymisés :
         </p>
 
         <ul
@@ -75,13 +83,13 @@ export function DeleteAccountSection({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 display: "flex",
                 gap: 8,
                 alignItems: "flex-start",
               }}
             >
-              <span style={{ color: "#FF4757", flexShrink: 0 }}>·</span>
+              <span style={{ color: "var(--color-danger)", flexShrink: 0 }}>·</span>
               {item}
             </li>
           ))}
@@ -89,7 +97,7 @@ export function DeleteAccountSection({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               display: "flex",
               gap: 8,
               alignItems: "flex-start",
@@ -127,7 +135,7 @@ export function DeleteAccountSection({
               onClick={() => {
                 setOpen(false);
               }}
-              style={{ color: "#4D8BFF", textDecoration: "none", fontSize: 11 }}
+              style={{ color: "var(--color-info)", textDecoration: "none", fontSize: 11 }}
             >
               ▶ Voir mes certificats →
             </Link>
@@ -139,12 +147,12 @@ export function DeleteAccountSection({
           htmlFor="delete-confirm-input"
           style={{
             display: "block",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 6,
           }}
         >
           Pour confirmer, tapez{" "}
-          <b style={{ color: "#FF4757", letterSpacing: "0.12em" }}>SUPPRIMER</b>
+          <b style={{ color: "var(--color-danger)", letterSpacing: "0.12em" }}>SUPPRIMER</b>
         </label>
         <input
           id="delete-confirm-input"
@@ -159,9 +167,9 @@ export function DeleteAccountSection({
           style={{
             width: "100%",
             padding: "8px 12px",
-            background: "#05041A",
-            border: `1px solid ${isConfirmed ? "#FF4757" : "#2A2560"}`,
-            color: "#F5F5FA",
+            background: "var(--color-bg-sunken)",
+            border: `1px solid ${isConfirmed ? "var(--color-danger)" : "var(--color-border-default)"}`,
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-mono)",
             fontSize: 13,
             letterSpacing: "0.08em",
@@ -177,7 +185,7 @@ export function DeleteAccountSection({
               marginTop: 8,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#FF4757",
+              color: "var(--color-danger)",
               letterSpacing: "0.04em",
             }}
           >
@@ -204,9 +212,9 @@ export function DeleteAccountSection({
               style={{
                 padding: "8px 20px",
                 fontWeight: 700,
-                background: isConfirmed && !pending ? "#FF4757" : "transparent",
-                border: `1px solid ${isConfirmed && !pending ? "#FF4757" : "#2A1B1B"}`,
-                color: isConfirmed && !pending ? "#ffffff" : "#3F3D5C",
+                background: isConfirmed && !pending ? "var(--color-danger)" : "transparent",
+                border: `1px solid ${isConfirmed && !pending ? "var(--color-danger)" : "#2A1B1B"}`,
+                color: isConfirmed && !pending ? "#ffffff" : "var(--color-text-disabled)",
                 cursor: isConfirmed && !pending ? "pointer" : "not-allowed",
                 transition: "all 150ms ease",
               }}
@@ -226,17 +234,20 @@ export function DeleteAccountSection({
         style={{
           position: "relative",
           background: "rgba(5,4,26,0.6)",
-          border: isPending ? "1px solid #2A1B1B" : "1px solid #1F1B47",
+          border: isPending ? "1px solid #2A1B1B" : "1px solid var(--color-border-subtle)",
           padding: "18px 20px",
         }}
       >
-        <CornerBrackets size={20} color={isPending ? "#FF4757" : "#2A2560"} />
+        <CornerBrackets
+          size={20}
+          color={isPending ? "var(--color-danger)" : "var(--color-border-default)"}
+        />
 
         {/* Eyebrow */}
         <div
           className="mono-label"
           style={{
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 14,
             display: "flex",
             alignItems: "center",
@@ -248,7 +259,7 @@ export function DeleteAccountSection({
             style={{
               width: 16,
               height: 1,
-              background: isPending ? "#FF4757" : "#3F3D5C",
+              background: isPending ? "var(--color-danger)" : "var(--color-text-disabled)",
               display: "inline-block",
               flexShrink: 0,
             }}
@@ -260,7 +271,7 @@ export function DeleteAccountSection({
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
-              color: isPending ? "#FF4757" : "#3F3D5C",
+              color: isPending ? "var(--color-danger)" : "var(--color-text-disabled)",
               letterSpacing: "0.18em",
             }}
           >
@@ -270,8 +281,8 @@ export function DeleteAccountSection({
                 width: 5,
                 height: 5,
                 borderRadius: "50%",
-                background: isPending ? "#FF4757" : "transparent",
-                border: isPending ? "none" : "1px solid #3F3D5C",
+                background: isPending ? "var(--color-danger)" : "transparent",
+                border: isPending ? "none" : "1px solid var(--color-text-disabled)",
                 boxShadow: isPending ? "0 0 6px #FF475788" : "none",
               }}
             />
@@ -286,7 +297,7 @@ export function DeleteAccountSection({
             fontWeight: 700,
             fontSize: 24,
             letterSpacing: "-0.02em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 10px",
           }}
         >
@@ -297,7 +308,7 @@ export function DeleteAccountSection({
         <p
           style={{
             fontSize: 14,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             lineHeight: "1.6",
             margin: "0 0 12px",
           }}
@@ -311,8 +322,8 @@ export function DeleteAccountSection({
           className="mono-label"
           style={{
             paddingTop: 12,
-            borderTop: "1px dashed #1F1B47",
-            color: "#7F7BA9",
+            borderTop: "1px dashed var(--color-border-subtle)",
+            color: "var(--color-text-muted)",
             marginBottom: 18,
             display: "flex",
             flexWrap: "wrap",
@@ -322,25 +333,27 @@ export function DeleteAccountSection({
         >
           {isPending ? (
             <>
-              <span style={{ color: "#FF4757" }}>
+              <span style={{ color: "var(--color-danger)" }}>
                 Email envoyé · vérifiez votre boite de réception
               </span>
-              <span style={{ color: "#1F1B47" }}>·</span>
+              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
               <span>
                 Lien valide encore{" "}
-                <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{minutesLeft}min</b>
+                <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>
+                  {minutesLeft}min
+                </b>
               </span>
             </>
           ) : (
             <>
               <span>Limite</span>
-              <b style={{ color: "#B8B5D1", fontWeight: 500 }}>3/24H</b>
-              <span style={{ color: "#1F1B47" }}>·</span>
+              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>3/24H</b>
+              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
               <span>Confirmation</span>
-              <b style={{ color: "#B8B5D1", fontWeight: 500 }}>Email</b>
-              <span style={{ color: "#1F1B47" }}>·</span>
+              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>Email</b>
+              <span style={{ color: "var(--color-border-subtle)" }}>·</span>
               <span>Effet</span>
-              <b style={{ color: "#B8B5D1", fontWeight: 500 }}>Immédiat</b>
+              <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>Immédiat</b>
             </>
           )}
         </div>
@@ -356,7 +369,7 @@ export function DeleteAccountSection({
               padding: "8px 20px",
               fontWeight: 600,
               border: "1px solid #2A1B1B",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               cursor: "default",
             }}
           >
@@ -378,11 +391,11 @@ export function DeleteAccountSection({
               fontWeight: 600,
               background: "transparent",
               border: "1px solid #FF475788",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               cursor: "pointer",
             }}
           >
-            <span style={{ color: "#FF4757" }}>&#9656;</span>
+            <span style={{ color: "var(--color-danger)" }}>&#9656;</span>
             Demander la suppression
           </button>
         )}

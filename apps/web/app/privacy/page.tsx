@@ -16,7 +16,7 @@ export default function PrivacyPage(): React.JSX.Element {
         style={{
           fontSize: "30px",
           fontWeight: 700,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "8px",
         }}
       >
@@ -25,7 +25,7 @@ export default function PrivacyPage(): React.JSX.Element {
       <p
         style={{
           fontSize: "13px",
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           fontFamily: "var(--font-mono)",
           marginBottom: "48px",
         }}
@@ -37,15 +37,18 @@ export default function PrivacyPage(): React.JSX.Element {
         <p>
           Le responsable du traitement des données personnelles collectées via Cyber Learn est
           l’éditeur du site (voir{" "}
-          <Link href="/legal" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <Link href="/legal" style={{ color: "var(--color-info)", textDecoration: "none" }}>
             mentions légales
           </Link>
           ). Cyber Learn est édité à titre non-professionnel ; aucun délégué à la protection des
           données (DPO) n’est désigné conformément à l’article 37 du RGPD.
         </p>
         <p style={{ marginTop: "12px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Contact RGPD : </strong>
-          <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#4D8BFF", textDecoration: "none" }}>
+          <strong style={{ color: "var(--color-text-secondary)" }}>Contact RGPD : </strong>
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            style={{ color: "var(--color-info)", textDecoration: "none" }}
+          >
             {CONTACT_EMAIL}
           </a>
         </p>
@@ -118,8 +121,8 @@ export default function PrivacyPage(): React.JSX.Element {
         </Subsection>
 
         <p style={{ marginTop: "16px" }}>
-          <strong style={{ color: "#B8B5D1" }}>Aucune donnée sensible</strong> au sens de l’article
-          9 RGPD n’est collectée.
+          <strong style={{ color: "var(--color-text-secondary)" }}>Aucune donnée sensible</strong>{" "}
+          au sens de l’article 9 RGPD n’est collectée.
         </p>
       </Section>
 
@@ -165,33 +168,45 @@ export default function PrivacyPage(): React.JSX.Element {
       <Section title="4. Durées de conservation">
         <ul style={ulStyle}>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Compte actif</strong> : tant que votre compte
-            existe.
+            <strong style={{ color: "var(--color-text-secondary)" }}>Compte actif</strong> : tant
+            que votre compte existe.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Compte inactif</strong> : votre compte est
-            automatiquement anonymisé après <strong style={{ color: "#B8B5D1" }}>24 mois</strong>{" "}
-            sans connexion, sauf demande de suppression anticipée de votre part. Un e-mail vous
-            prévient au moins 30 jours avant, avec un lien pour garder votre compte.
+            <strong style={{ color: "var(--color-text-secondary)" }}>Compte inactif</strong> : votre
+            compte est automatiquement anonymisé après{" "}
+            <strong style={{ color: "var(--color-text-secondary)" }}>24 mois</strong> sans
+            connexion, sauf demande de suppression anticipée de votre part. Un e-mail vous prévient
+            au moins 30 jours avant, avec un lien pour garder votre compte.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Logs d’authentification</strong> : 12 mois.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Logs d’authentification
+            </strong>{" "}
+            : 12 mois.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Logs d’activité applicatifs</strong> : 6 mois.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Logs d’activité applicatifs
+            </strong>{" "}
+            : 6 mois.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Tickets de support résolus</strong> : 3 mois après
-            résolution.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Tickets de support résolus
+            </strong>{" "}
+            : 3 mois après résolution.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Tickets de support en cours</strong> : 12 mois.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Tickets de support en cours
+            </strong>{" "}
+            : 12 mois.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Certificats émis</strong> : conservés de manière
-            permanente pour permettre leur vérification publique. En cas de suppression de compte,
-            votre nom est remplacé par « Utilisateur supprimé » tout en préservant la validité
-            technique du certificat.
+            <strong style={{ color: "var(--color-text-secondary)" }}>Certificats émis</strong> :
+            conservés de manière permanente pour permettre leur vérification publique. En cas de
+            suppression de compte, votre nom est remplacé par « Utilisateur supprimé » tout en
+            préservant la validité technique du certificat.
           </li>
         </ul>
       </Section>
@@ -233,7 +248,8 @@ export default function PrivacyPage(): React.JSX.Element {
           ]}
         />
         <p style={{ marginTop: "16px" }}>
-          Vos données ne sont <strong style={{ color: "#B8B5D1" }}>jamais vendues</strong> ni cédées
+          Vos données ne sont{" "}
+          <strong style={{ color: "var(--color-text-secondary)" }}>jamais vendues</strong> ni cédées
           à des tiers à des fins commerciales.
         </p>
       </Section>
@@ -248,10 +264,15 @@ export default function PrivacyPage(): React.JSX.Element {
           <li>Les Clauses Contractuelles Types (CCT) approuvées par la Commission européenne.</li>
         </ul>
         <p style={{ marginTop: "12px" }}>
-          Vos <strong style={{ color: "#B8B5D1" }}>données utilisateur principales</strong> (compte,
-          progression, certificats) sont stockées{" "}
-          <strong style={{ color: "#B8B5D1" }}>uniquement dans l’Union européenne</strong> (Supabase
-          Francfort).
+          Vos{" "}
+          <strong style={{ color: "var(--color-text-secondary)" }}>
+            données utilisateur principales
+          </strong>{" "}
+          (compte, progression, certificats) sont stockées{" "}
+          <strong style={{ color: "var(--color-text-secondary)" }}>
+            uniquement dans l’Union européenne
+          </strong>{" "}
+          (Supabase Francfort).
         </p>
       </Section>
 
@@ -259,32 +280,46 @@ export default function PrivacyPage(): React.JSX.Element {
         <p>Conformément aux articles 15 à 22 du RGPD, vous disposez des droits suivants :</p>
         <ul style={{ ...ulStyle, marginTop: "12px" }}>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit d’accès (Art. 15)</strong> : obtenir une
-            copie de vos données.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit d’accès (Art. 15)
+            </strong>{" "}
+            : obtenir une copie de vos données.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit de rectification (Art. 16)</strong> :
-            corriger des données inexactes.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit de rectification (Art. 16)
+            </strong>{" "}
+            : corriger des données inexactes.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit à l’effacement (Art. 17)</strong> : supprimer
-            vos données (« droit à l’oubli »).
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit à l’effacement (Art. 17)
+            </strong>{" "}
+            : supprimer vos données (« droit à l’oubli »).
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit à la limitation (Art. 18)</strong> : limiter
-            le traitement de vos données.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit à la limitation (Art. 18)
+            </strong>{" "}
+            : limiter le traitement de vos données.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit à la portabilité (Art. 20)</strong> :
-            récupérer vos données dans un format structuré.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit à la portabilité (Art. 20)
+            </strong>{" "}
+            : récupérer vos données dans un format structuré.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit d’opposition (Art. 21)</strong> : vous
-            opposer à un traitement basé sur l’intérêt légitime.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit d’opposition (Art. 21)
+            </strong>{" "}
+            : vous opposer à un traitement basé sur l’intérêt légitime.
           </li>
           <li>
-            <strong style={{ color: "#B8B5D1" }}>Droit de retrait du consentement</strong> : à tout
-            moment, lorsque le traitement repose sur votre consentement.
+            <strong style={{ color: "var(--color-text-secondary)" }}>
+              Droit de retrait du consentement
+            </strong>{" "}
+            : à tout moment, lorsque le traitement repose sur votre consentement.
           </li>
         </ul>
 
@@ -297,14 +332,20 @@ export default function PrivacyPage(): React.JSX.Element {
             </li>
             <li>
               Téléchargeant l’export de vos données depuis votre espace personnel{" "}
-              <a href="/settings/data" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+              <a
+                href="/settings/data"
+                style={{ color: "var(--color-info)", textDecoration: "none" }}
+              >
                 /settings/data
               </a>
               ,
             </li>
             <li>
               Demandant la suppression de votre compte depuis la section{" "}
-              <Link href="/settings/data" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+              <Link
+                href="/settings/data"
+                style={{ color: "var(--color-info)", textDecoration: "none" }}
+              >
                 Mes données
               </Link>
               . La suppression est définitive et prend effet immédiatement après confirmation par
@@ -314,7 +355,7 @@ export default function PrivacyPage(): React.JSX.Element {
               Adressant un email à{" "}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                style={{ color: "#4D8BFF", textDecoration: "none" }}
+                style={{ color: "var(--color-info)", textDecoration: "none" }}
               >
                 {CONTACT_EMAIL}
               </a>{" "}
@@ -323,7 +364,8 @@ export default function PrivacyPage(): React.JSX.Element {
           </ul>
           <p style={{ marginTop: "12px" }}>
             Nous répondons dans un délai maximum d’
-            <strong style={{ color: "#B8B5D1" }}>un mois</strong> conformément à l’article 12 RGPD.
+            <strong style={{ color: "var(--color-text-secondary)" }}>un mois</strong> conformément à
+            l’article 12 RGPD.
           </p>
         </Subsection>
 
@@ -331,7 +373,7 @@ export default function PrivacyPage(): React.JSX.Element {
           <p>
             Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une
             réclamation auprès de la{" "}
-            <strong style={{ color: "#B8B5D1" }}>
+            <strong style={{ color: "var(--color-text-secondary)" }}>
               Commission Nationale de l’Informatique et des Libertés (CNIL)
             </strong>{" "}
             :
@@ -341,7 +383,7 @@ export default function PrivacyPage(): React.JSX.Element {
               En ligne :{" "}
               <a
                 href="https://www.cnil.fr/fr/plaintes"
-                style={{ color: "#4D8BFF", textDecoration: "none" }}
+                style={{ color: "var(--color-info)", textDecoration: "none" }}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -356,8 +398,10 @@ export default function PrivacyPage(): React.JSX.Element {
       <Section title="8. Cookies et stockage local" id="cookies">
         <p style={{ marginBottom: "16px" }}>
           Cyber Learn utilise uniquement des{" "}
-          <strong style={{ color: "#B8B5D1" }}>cookies strictement nécessaires</strong> au
-          fonctionnement du service :
+          <strong style={{ color: "var(--color-text-secondary)" }}>
+            cookies strictement nécessaires
+          </strong>{" "}
+          au fonctionnement du service :
         </p>
         <LegalTable
           headers={["Cookie", "Finalité", "Durée"]}
@@ -403,7 +447,7 @@ export default function PrivacyPage(): React.JSX.Element {
           ]}
         />
         <p style={{ marginTop: "16px" }}>
-          <strong style={{ color: "#B8B5D1" }}>
+          <strong style={{ color: "var(--color-text-secondary)" }}>
             Aucun cookie ni traceur publicitaire, analytique ou de tracking comportemental n’est
             utilisé.
           </strong>{" "}
@@ -446,7 +490,7 @@ const ulStyle: React.CSSProperties = {
 const codeStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: "13px",
-  color: "#F5F5FA",
+  color: "var(--color-text-primary)",
 };
 
 function Section({
@@ -464,15 +508,15 @@ function Section({
         style={{
           fontSize: "20px",
           fontWeight: 600,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "16px",
           paddingBottom: "8px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {title}
       </h2>
-      <div style={{ fontSize: "14px", color: "#B8B5D1" }}>{children}</div>
+      <div style={{ fontSize: "14px", color: "var(--color-text-secondary)" }}>{children}</div>
     </section>
   );
 }
@@ -490,7 +534,7 @@ function Subsection({
         style={{
           fontSize: "14px",
           fontWeight: 600,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           marginBottom: "10px",
         }}
       >
@@ -509,7 +553,7 @@ function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }):
           width: "100%",
           borderCollapse: "collapse",
           fontSize: "13px",
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
         }}
       >
         <thead>
@@ -520,9 +564,9 @@ function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }):
                 style={{
                   textAlign: "left",
                   padding: "10px 14px",
-                  background: "#0A0826",
-                  border: "1px solid #1F1B47",
-                  color: "#F5F5FA",
+                  background: "var(--color-bg-elevated)",
+                  border: "1px solid var(--color-border-subtle)",
+                  color: "var(--color-text-primary)",
                   fontWeight: 600,
                   whiteSpace: "nowrap",
                 }}
@@ -540,7 +584,7 @@ function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }):
                   key={j}
                   style={{
                     padding: "10px 14px",
-                    border: "1px solid #1F1B47",
+                    border: "1px solid var(--color-border-subtle)",
                     verticalAlign: "top",
                   }}
                 >

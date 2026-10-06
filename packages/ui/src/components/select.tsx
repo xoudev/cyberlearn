@@ -80,15 +80,15 @@ export interface SelectProps {
  * The defaults are the web app's; the admin maps these to its --a-* scale.
  */
 const C = {
-  bg: "var(--cl-select-bg, #05041a)",
-  fg: "var(--cl-select-fg, #f5f5fa)",
-  muted: "var(--cl-select-fg-muted, #7f7ba9)",
-  border: "var(--cl-select-border, #2a2560)",
-  accent: "var(--cl-select-accent, var(--cosmetic-accent, #0affd4))",
-  panel: "var(--cl-select-panel-bg, #0a0826)",
-  option: "var(--cl-select-option-fg, #b8b5d1)",
+  bg: "var(--cl-select-bg, var(--color-bg-sunken))",
+  fg: "var(--cl-select-fg, var(--color-text-primary))",
+  muted: "var(--cl-select-fg-muted, var(--color-text-muted))",
+  border: "var(--cl-select-border, var(--color-border-default))",
+  accent: "var(--cl-select-accent, var(--cosmetic-accent, var(--color-brand-turquoise)))",
+  panel: "var(--cl-select-panel-bg, var(--color-bg-elevated))",
+  option: "var(--cl-select-option-fg, var(--color-text-secondary))",
   active: "var(--cl-select-option-active-bg, #141040)",
-  off: "var(--cl-select-option-disabled-fg, #44406b)",
+  off: "var(--cl-select-option-disabled-fg, var(--color-text-faint))",
   font: "var(--font-mono, ui-monospace, monospace)",
 } as const;
 

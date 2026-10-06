@@ -5,7 +5,7 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 // 1px #2a2560 hairline, sharp corners (the design uses border-radius: 0).
 const PANEL: React.CSSProperties = {
   background: "rgba(5, 4, 26, 0.6)",
-  border: "1px solid #2a2560",
+  border: "1px solid var(--color-border-default)",
 };
 
 /**
@@ -54,9 +54,9 @@ export default function PathDetailLoading(): React.ReactElement {
               display: "grid",
               gridTemplateColumns: "repeat(2, 1fr)",
               gap: 1,
-              background: "#2a2560",
+              background: "var(--color-border-default)",
               margin: "0 -24px",
-              borderTop: "1px solid #2a2560",
+              borderTop: "1px solid var(--color-border-default)",
             }}
           >
             {Array.from({ length: 4 }).map((_, i) => (

@@ -161,7 +161,7 @@ export function ShareDialog({
                 className="mono-label"
                 style={{
                   fontWeight: 700,
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                   marginBottom: 8,
                 }}
               >
@@ -176,7 +176,7 @@ export function ShareDialog({
                         alignItems: "center",
                         gap: 10,
                         padding: "8px 10px",
-                        border: `1px solid ${picked.has(p.id) ? "var(--cosmetic-accent)" : "#1F1B47"}`,
+                        border: `1px solid ${picked.has(p.id) ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
                         background: picked.has(p.id)
                           ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
                           : "rgba(5,4,26,0.4)",
@@ -231,7 +231,7 @@ export function ShareDialog({
                               display: "block",
                               fontFamily: "var(--font-sans)",
                               fontSize: 14,
-                              color: "#F5F5FA",
+                              color: "var(--color-text-primary)",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
@@ -243,7 +243,7 @@ export function ShareDialog({
                             <span
                               className="mono-label mono-label--xs"
                               style={{
-                                color: "#6E8BFF",
+                                color: "var(--color-rarity-rare)",
                               }}
                             >
                               Professeur
@@ -319,7 +319,7 @@ const mutedLine: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: 12.5,
   lineHeight: 1.6,
-  color: "#7F7BA9",
+  color: "var(--color-text-muted)",
   margin: 0,
 };
 
@@ -329,9 +329,9 @@ const ghostBtn: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   background: "transparent",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   padding: "8px 12px",
   cursor: "pointer",
 };
@@ -342,7 +342,7 @@ const accentBtn: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#05041A",
+  color: "var(--color-bg-sunken)",
   background: "var(--cosmetic-accent)",
   border: "1px solid var(--cosmetic-accent)",
   padding: "8px 12px",

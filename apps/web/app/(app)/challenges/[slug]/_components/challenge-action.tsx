@@ -127,7 +127,13 @@ function FlagForm({
           >
             FLAG CORRECT · CHALLENGE RÉSOLU
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-text-muted)",
+            }}
+          >
             XP crédités sur ton profil.
           </div>
         </div>
@@ -144,7 +150,7 @@ function FlagForm({
           border: "1px solid rgba(255,77,109,0.2)",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#FF4D6D",
+          color: "var(--color-danger)",
           textAlign: "center",
         }}
       >
@@ -158,7 +164,7 @@ function FlagForm({
       <div
         className="mono-label"
         style={{
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           marginBottom: 4,
         }}
       >
@@ -173,7 +179,7 @@ function FlagForm({
             border: "1px solid rgba(255,77,109,0.25)",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#FF4D6D",
+            color: "var(--color-danger)",
           }}
         >
           {state.error}
@@ -192,8 +198,8 @@ function FlagForm({
             flex: 1,
             padding: "11px 14px",
             background: "#060420",
-            border: "1px solid #2A2560",
-            color: "#F5F5FA",
+            border: "1px solid var(--color-border-default)",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-mono)",
             fontSize: 13,
             outline: "none",
@@ -209,7 +215,7 @@ function FlagForm({
             alignItems: "center",
             gap: 8,
             padding: "11px 24px",
-            background: pending ? "#1F1B47" : "#0024FF",
+            background: pending ? "var(--color-border-subtle)" : "var(--color-brand-blue)",
             color: "#fff",
             fontWeight: 700,
             border: "none",
@@ -222,7 +228,9 @@ function FlagForm({
         </button>
       </div>
 
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9" }}>
+      <div
+        style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}
+      >
         {remaining} tentative{remaining > 1 ? "s" : ""} restante{remaining > 1 ? "s" : ""} sur{" "}
         {maxAttempts}
       </div>
@@ -243,7 +251,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
       <div
         className="mono-label"
         style={{
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           marginBottom: 4,
         }}
       >
@@ -258,7 +266,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
             border: "1px solid rgba(255,77,109,0.25)",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#FF4D6D",
+            color: "var(--color-danger)",
           }}
         >
           {state.error}
@@ -276,10 +284,10 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
           gap: 10,
           padding: "14px 32px",
           background: pending
-            ? "#1F1B47"
+            ? "var(--color-border-subtle)"
             : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-          color: pending ? "#7F7BA9" : "var(--cosmetic-accent)",
-          border: `1px solid ${pending ? "#2A2560" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
+          color: pending ? "var(--color-text-muted)" : "var(--cosmetic-accent)",
+          border: `1px solid ${pending ? "var(--color-border-default)" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
           fontWeight: 700,
           cursor: pending ? "not-allowed" : "pointer",
           alignSelf: "flex-start",
@@ -289,7 +297,14 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
         {pending ? "Enregistrement..." : "Marquer comme complété"}
       </button>
 
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9", margin: 0 }}>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          margin: 0,
+        }}
+      >
         Sur l&apos;honneur · valide uniquement si tu as réellement résolu le challenge.
       </p>
     </form>
@@ -311,8 +326,8 @@ export function ChallengeAction({
 
   const panelStyle: React.CSSProperties = {
     padding: "24px 28px",
-    background: "#0A0826",
-    border: "1px solid #1F1B47",
+    background: "var(--color-bg-elevated)",
+    border: "1px solid var(--color-border-subtle)",
   };
 
   if (displayStatus === "LOCKED") {
@@ -323,7 +338,7 @@ export function ChallengeAction({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
           }}

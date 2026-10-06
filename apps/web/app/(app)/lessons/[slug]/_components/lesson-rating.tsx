@@ -85,13 +85,13 @@ export function LessonRating({
       fontWeight: 700,
       letterSpacing: "0.18em",
       textTransform: "uppercase",
-      color: "#7F7BA9",
+      color: "var(--color-text-muted)",
       display: "flex",
       alignItems: "center",
       gap: 10,
       marginBottom: 14,
       paddingBottom: 10,
-      borderBottom: "1px solid #1F1B47",
+      borderBottom: "1px solid var(--color-border-subtle)",
     };
 
     if (!isCompleted) {
@@ -101,7 +101,7 @@ export function LessonRating({
           <div
             style={{
               padding: 18,
-              border: "1px dashed #1F1B47",
+              border: "1px dashed var(--color-border-subtle)",
               background: "rgba(5,4,26,0.5)",
               textAlign: "center",
             }}
@@ -114,7 +114,7 @@ export function LessonRating({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
-                color: "#44406B",
+                color: "var(--color-text-faint)",
                 marginBottom: 14,
               }}
             >
@@ -142,7 +142,7 @@ export function LessonRating({
                   height="16"
                   viewBox="0 0 18 18"
                   fill="none"
-                  stroke="#2A2560"
+                  stroke="var(--color-border-default)"
                   strokeWidth="1.3"
                   aria-hidden="true"
                 >
@@ -155,7 +155,7 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-body, sans-serif)",
                 fontSize: 12,
-                color: "#44406B",
+                color: "var(--color-text-faint)",
                 margin: 0,
                 lineHeight: 1.5,
               }}
@@ -201,7 +201,7 @@ export function LessonRating({
                 aria-label={`${String(n)} étoile${n > 1 ? "s" : ""}`}
               >
                 {n <= displayScore ? (
-                  <StarFilled size={20} color="#FFB020" />
+                  <StarFilled size={20} color="var(--color-warning)" />
                 ) : (
                   <StarEmpty size={20} />
                 )}
@@ -250,7 +250,7 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "8px 0 0",
               }}
             >
@@ -284,7 +284,7 @@ export function LessonRating({
           <div
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -306,7 +306,7 @@ export function LessonRating({
               fontFamily: "var(--font-sans)",
               fontWeight: 700,
               fontSize: 16,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: 0,
               letterSpacing: "-0.01em",
             }}
@@ -320,13 +320,13 @@ export function LessonRating({
             <div
               style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}
             >
-              <StarFilled size={14} color="#FFB020" />
+              <StarFilled size={14} color="var(--color-warning)" />
               <span
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   fontSize: 18,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   letterSpacing: "-0.02em",
                 }}
               >
@@ -337,7 +337,7 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 letterSpacing: "0.06em",
               }}
             >
@@ -355,7 +355,7 @@ export function LessonRating({
             gap: 10,
             padding: "14px 16px",
             background: "rgba(42,37,96,0.4)",
-            border: "1px solid #2A2560",
+            border: "1px solid var(--color-border-default)",
           }}
         >
           <svg
@@ -363,7 +363,7 @@ export function LessonRating({
             height="14"
             viewBox="0 0 16 16"
             fill="none"
-            stroke="#7F7BA9"
+            stroke="var(--color-text-muted)"
             strokeWidth="1.5"
             strokeLinecap="round"
           >
@@ -374,7 +374,7 @@ export function LessonRating({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.04em",
             }}
           >
@@ -412,7 +412,7 @@ export function LessonRating({
                 aria-label={`${String(n)} étoile${n > 1 ? "s" : ""}`}
               >
                 {n <= displayScore ? (
-                  <StarFilled size={28} color="#FFB020" />
+                  <StarFilled size={28} color="var(--color-warning)" />
                 ) : (
                   <StarEmpty size={28} />
                 )}
@@ -423,7 +423,7 @@ export function LessonRating({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   letterSpacing: "0.04em",
                   alignSelf: "center",
                   marginLeft: 8,
@@ -448,9 +448,9 @@ export function LessonRating({
                 width: "100%",
                 marginBottom: 14,
                 padding: "10px 14px",
-                background: "#05041A",
-                border: "1px solid #2A2560",
-                color: "#F5F5FA",
+                background: "var(--color-bg-sunken)",
+                border: "1px solid var(--color-border-default)",
+                color: "var(--color-text-primary)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
                 lineHeight: 1.6,
@@ -466,11 +466,11 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 margin: "0 0 14px",
                 padding: "10px 14px",
                 background: "rgba(10,8,38,0.5)",
-                border: "1px solid #1F1B47",
+                border: "1px solid var(--color-border-subtle)",
               }}
             >
               {feedback}
@@ -482,7 +482,7 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FF4757",
+                color: "var(--color-category-cybersec)",
                 margin: "0 0 12px",
               }}
             >
@@ -499,9 +499,9 @@ export function LessonRating({
               style={{
                 padding: "10px 22px",
                 fontWeight: 700,
-                background: selected ? "#0024FF" : "transparent",
-                border: `1px solid ${selected ? "#0024FF" : "#2A2560"}`,
-                color: selected ? "#fff" : "#7F7BA9",
+                background: selected ? "var(--color-brand-blue)" : "transparent",
+                border: `1px solid ${selected ? "var(--color-brand-blue)" : "var(--color-border-default)"}`,
+                color: selected ? "#fff" : "var(--color-text-muted)",
                 cursor: selected && !isPending ? "pointer" : "default",
                 transition: "all 180ms ease",
               }}
@@ -540,7 +540,7 @@ function StarEmpty({ size }: { size: number }) {
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#2A2560"
+      stroke="var(--color-border-default)"
       strokeWidth="1.5"
       aria-hidden="true"
     >

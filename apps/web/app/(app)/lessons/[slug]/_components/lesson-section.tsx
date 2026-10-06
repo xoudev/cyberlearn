@@ -103,7 +103,7 @@ function SectionUnavailable(): React.ReactElement {
         margin: "24px 0",
         padding: "18px 20px",
         border: "1px solid rgba(255,176,32,0.45)",
-        borderLeft: "3px solid #FFB020",
+        borderLeft: "3px solid var(--color-warning)",
         background: "rgba(255,176,32,0.06)",
       }}
     >
@@ -113,13 +113,15 @@ function SectionUnavailable(): React.ReactElement {
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          color: "#FFB020",
+          color: "var(--color-warning)",
           marginBottom: 8,
         }}
       >
         Section indisponible
       </div>
-      <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.55 }}>
+      <p
+        style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14, lineHeight: 1.55 }}
+      >
         Cette partie de la leçon n&apos;a pas pu s&apos;afficher. L&apos;équipe a été prévenue, et
         le reste de la leçon est lisible.
       </p>

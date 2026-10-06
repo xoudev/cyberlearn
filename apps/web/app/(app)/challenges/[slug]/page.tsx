@@ -31,10 +31,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ── Color maps ────────────────────────────────────────────────────────────────
 
 const TYPE_COLOR: Record<string, string> = {
-  CTF: "#FF4D6D",
-  PUZZLE: "#4D8BFF",
+  CTF: "var(--color-danger)",
+  PUZZLE: "var(--color-info)",
   LAB: "var(--cosmetic-accent)",
-  SCRIPT: "#7F7BA9",
+  SCRIPT: "var(--color-text-muted)",
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ function BracketCorner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }): React.React
         position: "absolute",
         width: 14,
         height: 14,
-        borderColor: "#FF4D6D",
+        borderColor: "var(--color-danger)",
         pointerEvents: "none",
         zIndex: 2,
         top,
@@ -127,7 +127,7 @@ function SectionHead({ label, meta }: { label: string; meta?: string }): React.R
         alignItems: "center",
         gap: 12,
         paddingBottom: 14,
-        borderBottom: "1px dashed #1F1B47",
+        borderBottom: "1px dashed var(--color-border-subtle)",
         marginBottom: 28,
       }}
     >
@@ -139,7 +139,7 @@ function SectionHead({ label, meta }: { label: string; meta?: string }): React.R
         <span
           style={{
             marginLeft: "auto",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             fontWeight: 500,
             fontSize: 10,
             letterSpacing: "0.12em",
@@ -205,7 +205,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   const catLabel = categoryMeta(challenge.category).short;
   const catColor = categoryMeta(challenge.category).color;
   const diffColor = difficultyMeta(challenge.difficulty).color;
-  const typeColor = TYPE_COLOR[challenge.type] ?? "#7F7BA9";
+  const typeColor = TYPE_COLOR[challenge.type] ?? "var(--color-text-muted)";
   const userAttempts = userProgress?.attempts ?? 0;
   const remaining = Math.max(0, challenge.maxAttempts - userAttempts);
   const solveCount: number = challenge._count.progress;
@@ -228,9 +228,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
     displayStatus === "COMPLETED"
       ? "var(--cosmetic-accent)"
       : displayStatus === "IN_PROGRESS"
-        ? "#4D8BFF"
+        ? "var(--color-info)"
         : displayStatus === "LOCKED"
-          ? "#7F7BA9"
+          ? "var(--color-text-muted)"
           : "var(--cosmetic-accent)";
 
   return (
@@ -244,22 +244,25 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           gap: 0,
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.04em",
           padding: "7px 16px",
           marginBottom: 36,
         }}
       >
         <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700, marginRight: 10 }}>$</span>
-        <span style={{ color: "#B8B5D1" }}>~</span>
-        <span style={{ color: "#7F7BA9", margin: "0 4px" }}>/</span>
-        <span style={{ color: "#B8B5D1" }}>cyberlearn</span>
-        <span style={{ color: "#7F7BA9", margin: "0 4px" }}>/</span>
-        <Link href="/challenges" style={{ color: "#B8B5D1", textDecoration: "none" }}>
+        <span style={{ color: "var(--color-text-secondary)" }}>~</span>
+        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
+        <span style={{ color: "var(--color-text-secondary)" }}>cyberlearn</span>
+        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
+        <Link
+          href="/challenges"
+          style={{ color: "var(--color-text-secondary)", textDecoration: "none" }}
+        >
           défis
         </Link>
-        <span style={{ color: "#7F7BA9", margin: "0 4px" }}>/</span>
-        <span style={{ color: "#FF4D6D" }}>{challenge.slug}</span>
+        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
+        <span style={{ color: "var(--color-danger)" }}>{challenge.slug}</span>
       </div>
 
       {/* ── Hero (2-col grid) ─────────────────────────────────────────────────── */}
@@ -277,12 +280,12 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           <div
             className="mono-label"
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               fontWeight: 600,
               marginBottom: 18,
             }}
           >
-            <span style={{ color: "#FF4D6D" }}>{"// "}</span>
+            <span style={{ color: "var(--color-danger)" }}>{"// "}</span>
             {challenge.refCode}
           </div>
 
@@ -293,7 +296,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               fontSize: "clamp(40px, 5.2vw, 68px)",
               lineHeight: 0.98,
               letterSpacing: "-0.035em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 26px",
             }}
           >
@@ -301,7 +304,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {titleEm !== null && (
               <>
                 {" · "}
-                <em style={{ fontStyle: "normal", color: "#FF4D6D" }}>{titleEm}</em>
+                <em style={{ fontStyle: "normal", color: "var(--color-danger)" }}>{titleEm}</em>
               </>
             )}
           </h1>
@@ -332,7 +335,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 16,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.6,
               maxWidth: 580,
               margin: 0,
@@ -363,9 +366,9 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 18px",
-              borderBottom: "1px solid #1F1B47",
+              borderBottom: "1px solid var(--color-border-subtle)",
               background: "rgba(255,77,109,0.05)",
-              color: "#FF4D6D",
+              color: "var(--color-danger)",
               fontWeight: 600,
             }}
           >
@@ -401,7 +404,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>XP Récompense
@@ -425,7 +428,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Limite de temps
@@ -435,7 +438,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   fontSize: 18,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   lineHeight: 1,
                 }}
               >
@@ -448,7 +451,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Tentatives
@@ -458,7 +461,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   fontSize: 18,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   lineHeight: 1,
                 }}
               >
@@ -471,7 +474,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               <span
                 className="mono-label"
                 style={{
-                  color: "#7F7BA9",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Statut
@@ -507,7 +510,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             className="btn btn--danger btn--lg btn--block"
             href="#challenge-action"
             style={{
-              borderTop: "1px solid #FF4D6D",
+              borderTop: "1px solid var(--color-danger)",
               textAlign: "center",
               boxSizing: "border-box",
             }}
@@ -555,7 +558,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   files={machineFiles}
                 />
               ) : (
-                <p role="note" style={{ color: "#B8B5D1", fontSize: 14 }}>
+                <p role="note" style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
                   La machine de ce défi est indisponible pour le moment.
                 </p>
               )}
@@ -604,7 +607,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
-                    color: "#F5F5FA",
+                    color: "var(--color-text-primary)",
                     flex: 1,
                     wordBreak: "break-all",
                     lineHeight: 1.5,
@@ -634,7 +637,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   padding: "9px 18px",
                   background: "transparent",
                   border: "1px solid rgba(77,139,255,0.3)",
-                  color: "#4D8BFF",
+                  color: "var(--color-info)",
                   fontWeight: 700,
                   textDecoration: "none",
                 }}
@@ -690,7 +693,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                 alignItems: "center",
                 gap: 12,
                 paddingBottom: 14,
-                borderBottom: "1px dashed #1F1B47",
+                borderBottom: "1px dashed var(--color-border-subtle)",
                 marginBottom: 16,
               }}
             >
@@ -701,14 +704,14 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12.5,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.8,
                 letterSpacing: "0.02em",
                 padding: "14px 16px",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ color: "#7F7BA9" }}>Résolutions</span>
+                <span style={{ color: "var(--color-text-muted)" }}>Résolutions</span>
                 <strong style={{ color: "var(--cosmetic-accent)" }}>{String(solveCount)}</strong>
               </div>
               <div
@@ -719,8 +722,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   borderTop: "1px dashed rgba(31,27,71,0.6)",
                 }}
               >
-                <span style={{ color: "#7F7BA9" }}>Limite de temps</span>
-                <strong style={{ color: "#F5F5FA" }}>
+                <span style={{ color: "var(--color-text-muted)" }}>Limite de temps</span>
+                <strong style={{ color: "var(--color-text-primary)" }}>
                   {challenge.timeLimitMin > 0
                     ? `${String(challenge.timeLimitMin)} min`
                     : "Illimitée"}
@@ -735,8 +738,10 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                     borderTop: "1px dashed rgba(31,27,71,0.6)",
                   }}
                 >
-                  <span style={{ color: "#7F7BA9" }}>First blood</span>
-                  <strong style={{ color: "#F5F5FA" }}>{firstBlood.displayName}</strong>
+                  <span style={{ color: "var(--color-text-muted)" }}>First blood</span>
+                  <strong style={{ color: "var(--color-text-primary)" }}>
+                    {firstBlood.displayName}
+                  </strong>
                 </div>
               )}
             </div>
@@ -750,7 +755,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           marginTop: 64,
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          border: "1px solid #1F1B47",
+          border: "1px solid var(--color-border-subtle)",
           background: "rgba(10,8,38,0.5)",
         }}
       >
@@ -765,7 +770,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               gap: 4,
               padding: "22px 24px",
               fontWeight: 700,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               textDecoration: "none",
               transition: "color 200ms ease, background 200ms ease",
               minHeight: 70,
@@ -773,7 +778,12 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           >
             ← Défi précédent
             <span
-              style={{ fontSize: 9, color: "#7F7BA9", fontWeight: 500, letterSpacing: "0.16em" }}
+              style={{
+                fontSize: 9,
+                color: "var(--color-text-muted)",
+                fontWeight: 500,
+                letterSpacing: "0.16em",
+              }}
             >
               {adjacent.prev.title}
             </span>
@@ -793,22 +803,33 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               gap: 4,
               padding: "22px 24px",
               fontWeight: 700,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               textDecoration: "none",
-              borderLeft: "1px solid #1F1B47",
+              borderLeft: "1px solid var(--color-border-subtle)",
               transition: "color 200ms ease, background 200ms ease",
               minHeight: 70,
             }}
           >
             Défi suivant →
             <span
-              style={{ fontSize: 9, color: "#7F7BA9", fontWeight: 500, letterSpacing: "0.16em" }}
+              style={{
+                fontSize: 9,
+                color: "var(--color-text-muted)",
+                fontWeight: 500,
+                letterSpacing: "0.16em",
+              }}
             >
               {adjacent.next.title}
             </span>
           </Link>
         ) : (
-          <div style={{ padding: "22px 24px", borderLeft: "1px solid #1F1B47", minHeight: 70 }} />
+          <div
+            style={{
+              padding: "22px 24px",
+              borderLeft: "1px solid var(--color-border-subtle)",
+              minHeight: 70,
+            }}
+          />
         )}
       </nav>
     </div>

@@ -249,7 +249,7 @@ function Frame({ id, children }: { id: string; children: React.ReactNode }): Rea
   return (
     <div
       id={id}
-      style={{ width: 1440, padding: 40, background: "var(--bg-base, #030219)" }}
+      style={{ width: 1440, padding: 40, background: "var(--bg-base, var(--color-bg-base))" }}
       className="page-container"
     >
       {children}
@@ -261,7 +261,7 @@ export default function ShotCapture(): React.JSX.Element {
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
-    <div style={{ background: "#030219" }}>
+    <div style={{ background: "var(--color-bg-base)" }}>
       <Frame id="cap-paths">
         <div style={{ marginBottom: 28 }}>
           <LevelRing

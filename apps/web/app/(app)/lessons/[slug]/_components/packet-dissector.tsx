@@ -24,15 +24,15 @@ import { parsePacketDissector } from "@cyberlearn/types";
 const BYTES_PER_ROW = 16;
 
 const LAYER_COLORS: Record<PacketLayer, string> = {
-  eth: "#4D8BFF",
-  arp: "#0AFFD4",
-  ip: "#0AFFD4",
-  tcp: "#FFB020",
-  udp: "#FFB020",
-  icmp: "#FFB020",
+  eth: "var(--color-info)",
+  arp: "var(--color-brand-turquoise)",
+  ip: "var(--color-brand-turquoise)",
+  tcp: "var(--color-warning)",
+  udp: "var(--color-warning)",
+  icmp: "var(--color-warning)",
   payload: "#FF6BCB",
-  padding: "#7F7BA9",
-  fcs: "#B8B5D1",
+  padding: "var(--color-text-muted)",
+  fcs: "var(--color-text-secondary)",
 };
 
 const tint = (layer: PacketLayer, strength: number): string =>
@@ -61,7 +61,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -110,7 +110,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -121,16 +121,27 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           DÉCORTIQUER UN PAQUET
         </span>
         {dissector.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{dissector.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {dissector.title}
+          </span>
         ) : null}
-        <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: MONO,
+            fontSize: 12,
+            color: "var(--color-text-muted)",
+          }}
+        >
           {String(frame.bytes.length)} octets
         </span>
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
         {dissector.task ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{dissector.task}</p>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+            {dissector.task}
+          </p>
         ) : null}
 
         <div
@@ -153,14 +164,14 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 padding: "3px 8px",
                 border: `1px solid ${LAYER_COLORS[span.layer]}`,
                 background: tint(span.layer, 14),
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 fontFamily: MONO,
                 fontSize: 11,
                 cursor: "pointer",
               }}
             >
               {LAYER_NAMES[span.layer]}
-              <span style={{ color: "#7F7BA9" }}>{String(span.length)} o</span>
+              <span style={{ color: "var(--color-text-muted)" }}>{String(span.length)} o</span>
             </button>
           ))}
         </div>
@@ -184,7 +195,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                   fontSize: 13,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "#3F3D5C", width: 36 }}>
+                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 36 }}>
                   {(row[0] ?? 0).toString(16).padStart(4, "0")}
                 </span>
                 <span role="presentation" style={{ display: "flex", gap: 3 }}>
@@ -207,7 +218,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                           padding: "2px 0",
                           border: `1px solid ${inField ? LAYER_COLORS[layer] : "transparent"}`,
                           background: tint(layer, inField ? 45 : 16),
-                          color: inField ? "#F5F5FA" : "#B8B5D1",
+                          color: inField
+                            ? "var(--color-text-primary)"
+                            : "var(--color-text-secondary)",
                           fontFamily: MONO,
                           fontSize: 13,
                           cursor: "pointer",
@@ -219,7 +232,10 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                     );
                   })}
                 </span>
-                <span aria-hidden="true" style={{ color: "#7F7BA9", whiteSpace: "pre" }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-muted)", whiteSpace: "pre" }}
+                >
                   {row.map((offset) => ascii(frame.bytes[offset] ?? 0)).join("")}
                 </span>
               </div>
@@ -231,14 +247,14 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           aria-live="polite"
           style={{
             padding: "10px 12px",
-            border: `1px solid ${field === undefined ? "#1F1B47" : LAYER_COLORS[field.layer]}`,
+            border: `1px solid ${field === undefined ? "var(--color-border-subtle)" : LAYER_COLORS[field.layer]}`,
             display: "grid",
             gap: 6,
             minHeight: 56,
           }}
         >
           {field === undefined ? (
-            <p style={{ margin: 0, color: "#7F7BA9", fontSize: 14 }}>
+            <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 14 }}>
               Clique sur un octet pour savoir à quel champ il appartient, ou sur une couche pour en
               voir le premier champ.
             </p>
@@ -254,7 +270,14 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
               >
                 {LAYER_NAMES[field.layer].toUpperCase()} · {range(field)}
               </p>
-              <p style={{ margin: 0, color: "#F5F5FA", fontSize: 15, fontWeight: 600 }}>
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--color-text-primary)",
+                  fontSize: 15,
+                  fontWeight: 600,
+                }}
+              >
                 {field.name}
               </p>
               <p
@@ -262,13 +285,20 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                   margin: 0,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   whiteSpace: "pre-wrap",
                 }}
               >
                 {field.value}
               </p>
-              <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--color-text-secondary)",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
                 {field.meaning}
               </p>
             </>
@@ -276,7 +306,14 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
         </div>
 
         {toFind.length > 0 ? (
-          <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 8 }}>
+          <div
+            style={{
+              borderTop: "1px solid var(--color-border-subtle)",
+              paddingTop: 10,
+              display: "grid",
+              gap: 8,
+            }}
+          >
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
               {toFind.map((f) => {
                 const ok = found.includes(f.id);
@@ -287,7 +324,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                     style={{
                       fontFamily: MONO,
                       fontSize: 12,
-                      color: ok ? ACCENT : current ? "#F5F5FA" : "#6B6890",
+                      color: ok ? ACCENT : current ? "var(--color-text-primary)" : "#6B6890",
                     }}
                   >
                     {ok ? "✓" : "○"} {f.name}

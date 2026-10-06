@@ -38,7 +38,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
           style={{
             fontFamily: "var(--font-body, sans-serif)",
             fontSize: 14,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             marginBottom: 28,
             lineHeight: 1.5,
           }}

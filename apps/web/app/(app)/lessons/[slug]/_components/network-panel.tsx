@@ -36,8 +36,8 @@ interface PanelProps {
 const field: React.CSSProperties = {
   width: "100%",
   padding: "6px 8px",
-  background: "#0A0826",
-  border: "1px solid #2A2560",
+  background: "var(--color-bg-elevated)",
+  border: "1px solid var(--color-border-default)",
   color: "#D8D6EA",
   fontFamily: MONO,
   fontSize: 13,
@@ -47,7 +47,7 @@ const labelStyle: React.CSSProperties = {
   display: "grid",
   gap: 3,
   fontSize: 12,
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
 };
 
 /** A text field that commits what parses, keeps what does not, and says so. */
@@ -89,7 +89,7 @@ function Field({
             setWhy(result.why);
           }
         }}
-        style={{ ...field, borderColor: why === null ? "#2A2560" : RED }}
+        style={{ ...field, borderColor: why === null ? "var(--color-border-default)" : RED }}
       />
       {why !== null ? <span style={{ color: RED, fontSize: 11 }}>{why}</span> : null}
     </label>
@@ -134,7 +134,8 @@ function AddressField({
       key={`${device.id}:${port}:${current ? addressText(current) : ""}`}
       label={
         <>
-          <span style={{ fontFamily: MONO, color: "#F5F5FA" }}>{port}</span> {note}
+          <span style={{ fontFamily: MONO, color: "var(--color-text-primary)" }}>{port}</span>{" "}
+          {note}
         </>
       }
       value={current ? addressText(current) : ""}
@@ -164,7 +165,7 @@ function RouteRow({
   return (
     <li style={{ display: "flex", gap: 8, alignItems: "center", fontFamily: MONO, fontSize: 12 }}>
       <span style={{ color: "#D8D6EA" }}>{to}</span>
-      <span style={{ color: "#7F7BA9" }}>via {formatIp(route.via)}</span>
+      <span style={{ color: "var(--color-text-muted)" }}>via {formatIp(route.via)}</span>
       <button
         type="button"
         onClick={onRemove}
@@ -241,7 +242,7 @@ export function NetworkPanel({
   if (device === null) {
     return (
       <aside aria-label="Configuration" style={panel}>
-        <p style={{ margin: 0, color: "#7F7BA9", fontSize: 13 }}>
+        <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 13 }}>
           Sélectionne un appareil sur le schéma pour le configurer. Tire un câble depuis le point
           sous un appareil jusqu&apos;à un autre.
         </p>
@@ -257,7 +258,14 @@ export function NetworkPanel({
   };
   return (
     <aside aria-label={`Configuration de ${device.name}`} style={panel}>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: "#7F7BA9" }}>
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          color: "var(--color-text-muted)",
+        }}
+      >
         {KIND_LABEL[device.kind].toUpperCase()}
       </div>
       <Field
@@ -307,7 +315,9 @@ export function NetworkPanel({
             />
           ))}
           <div style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontSize: 12, color: "#B8B5D1" }}>Routes statiques</span>
+            <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+              Routes statiques
+            </span>
             {device.routes.length === 0 ? (
               <span style={{ fontSize: 12, color: "#5A5680" }}>
                 Aucune : seuls les réseaux de ses ports sont joignables.
@@ -334,7 +344,7 @@ export function NetworkPanel({
         </>
       ) : null}
       {device.kind === "switch" ? (
-        <p style={{ margin: 0, fontSize: 13, color: "#B8B5D1" }}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)" }}>
           Un switch relie ses ports et apprend les adresses MAC : rien à configurer. Ports câblés :{" "}
           {PORTS.switch
             .map((port) => {
@@ -367,7 +377,7 @@ const panel: React.CSSProperties = {
   gap: 10,
   alignContent: "start",
   padding: 12,
-  border: "1px solid #1F1B47",
-  background: "#030219",
+  border: "1px solid var(--color-border-subtle)",
+  background: "var(--color-bg-base)",
   minWidth: 0,
 };

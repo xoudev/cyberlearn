@@ -509,7 +509,7 @@ type CatFilter = ChallengeItem["category"] | "TOUS";
 type TypeFilter = ChallengeItem["type"] | "TOUS";
 
 const CAT_PILLS: PillItem<CatFilter>[] = [
-  { key: "TOUS", label: "Tous", color: "#b8b5d1" },
+  { key: "TOUS", label: "Tous", color: "var(--color-text-secondary)" },
   ...CATEGORY_ORDER.map((c) => ({
     key: c,
     label: CATEGORY_META[c].short,
@@ -644,12 +644,19 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
           style={{
             padding: "48px 40px",
             textAlign: "center",
-            border: "1px dashed #2A2560",
+            border: "1px dashed var(--color-border-default)",
             background: "rgba(5,4,26,0.4)",
             marginBottom: 32,
           }}
         >
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#7F7BA9", margin: 0 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 13,
+              color: "var(--color-text-muted)",
+              margin: 0,
+            }}
+          >
             Aucun défi disponible pour le moment.
           </p>
         </div>
@@ -672,7 +679,7 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
           style={{
             padding: "80px 40px",
             textAlign: "center",
-            border: "1px dashed #2A2560",
+            border: "1px dashed var(--color-border-default)",
             background: "rgba(5,4,26,0.4)",
           }}
         >
@@ -681,13 +688,20 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
               fontFamily: "var(--font-sans)",
               fontWeight: 600,
               fontSize: 18,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 8px",
             }}
           >
             Aucun défi trouvé
           </p>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-text-muted)",
+              margin: 0,
+            }}
+          >
             Essaie d&apos;autres filtres pour trouver tes challenges.
           </p>
         </div>

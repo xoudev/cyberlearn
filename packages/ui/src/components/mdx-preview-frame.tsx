@@ -154,7 +154,7 @@ export function PaneButton({
         padding: "0 8px",
         border: `1px solid ${BORDER}`,
         background: "transparent",
-        color: disabled ? "#44406B" : "#7F7BA9",
+        color: disabled ? "var(--color-text-faint)" : "var(--color-text-muted)",
         fontFamily: MONO,
         fontSize: 9,
         fontWeight: 700,
@@ -211,7 +211,7 @@ export function MdxPreviewFrame({
         style={{
           fontFamily: MONO,
           fontSize: 9,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.12em",
           padding: "10px 16px",
           display: "flex",
@@ -236,7 +236,12 @@ export function MdxPreviewFrame({
           aria-live="polite"
           style={{
             marginLeft: "auto",
-            color: state.error !== null ? DANGER : state.stale || state.busy ? "#B8B5D1" : ACCENT,
+            color:
+              state.error !== null
+                ? DANGER
+                : state.stale || state.busy
+                  ? "var(--color-text-secondary)"
+                  : ACCENT,
           }}
         >
           {status}
@@ -261,7 +266,7 @@ export function MdxPreviewFrame({
             padding: "8px 16px",
             borderBottom: `1px solid ${DANGER}55`,
             background: "rgba(255,77,109,0.07)",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             fontSize: 12,
             lineHeight: 1.5,
             flexShrink: 0,
@@ -281,7 +286,7 @@ export function MdxPreviewFrame({
               height: "100%",
               display: "grid",
               placeItems: "center",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               fontFamily: MONO,
               fontSize: 11,
               letterSpacing: "0.08em",
@@ -299,7 +304,7 @@ export function MdxPreviewFrame({
               height: "100%",
               border: 0,
               display: "block",
-              background: "#030219",
+              background: "var(--color-bg-base)",
             }}
           />
         )}

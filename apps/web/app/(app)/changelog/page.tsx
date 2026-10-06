@@ -30,8 +30,8 @@ function EntryCard({
           width: 11,
           height: 11,
           borderRadius: "50%",
-          background: isLatest ? "var(--cosmetic-accent)" : "#0A0826",
-          border: `2px solid ${isLatest ? "var(--cosmetic-accent)" : "#2A2560"}`,
+          background: isLatest ? "var(--cosmetic-accent)" : "var(--color-bg-elevated)",
+          border: `2px solid ${isLatest ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
           boxShadow: isLatest
             ? "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)"
             : "none",
@@ -45,7 +45,7 @@ function EntryCard({
           top: 20,
           bottom: 0,
           width: 1,
-          background: "#1F1B47",
+          background: "var(--color-border-subtle)",
         }}
       />
 
@@ -64,9 +64,9 @@ function EntryCard({
             fontWeight: 700,
             fontSize: 12,
             letterSpacing: "0.08em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             padding: "4px 10px",
-            border: `1px solid ${isLatest ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
+            border: `1px solid ${isLatest ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "var(--color-border-default)"}`,
             background: isLatest
               ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
               : "rgba(10,8,38,0.6)",
@@ -89,7 +89,7 @@ function EntryCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             letterSpacing: "0.04em",
             marginLeft: "auto",
           }}
@@ -104,7 +104,7 @@ function EntryCard({
           fontWeight: 800,
           fontSize: 22,
           letterSpacing: "-0.02em",
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           margin: "0 0 16px",
         }}
       >
@@ -137,7 +137,7 @@ function EntryCard({
                   fontFamily: "var(--font-body)",
                   fontSize: 14.5,
                   lineHeight: 1.55,
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                 }}
               >
                 {change.text}
@@ -172,7 +172,7 @@ export default function ChangelogPage(): React.ReactElement {
             fontWeight: 800,
             fontSize: 40,
             letterSpacing: "-0.03em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 12px",
           }}
         >

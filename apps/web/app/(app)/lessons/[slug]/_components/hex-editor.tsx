@@ -25,18 +25,18 @@ const BYTES_PER_ROW = 16;
 
 const field: React.CSSProperties = {
   padding: "6px 10px",
-  border: "1px solid #2A2560",
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--color-border-default)",
+  background: "var(--color-bg-elevated)",
+  color: "var(--color-text-primary)",
   fontFamily: MONO,
   fontSize: 13,
 };
 
 const small: React.CSSProperties = {
   padding: "4px 10px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -60,7 +60,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -123,7 +123,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -134,19 +134,35 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           ÉDITEUR HEXADÉCIMAL
         </span>
         {editor.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{editor.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {editor.title}
+          </span>
         ) : null}
-        <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: MONO,
+            fontSize: 12,
+            color: "var(--color-text-muted)",
+          }}
+        >
           {editor.filename ? `${editor.filename} · ` : ""}
           {String(bytes.length)} octets
         </span>
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{editor.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+          {editor.task}
+        </p>
 
-        <p aria-live="polite" style={{ margin: 0, fontSize: 14, color: "#B8B5D1" }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>TYPE RÉEL </span>
+        <p
+          aria-live="polite"
+          style={{ margin: 0, fontSize: 14, color: "var(--color-text-secondary)" }}
+        >
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+            TYPE RÉEL{" "}
+          </span>
           {kind === null ? (
             <span style={{ color: AMBER }}>aucune signature connue à l&apos;octet 0</span>
           ) : (
@@ -180,7 +196,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                   fontSize: 13,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "#3F3D5C", width: 64 }}>
+                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 64 }}>
                   {at.toString(16).padStart(8, "0")}
                 </span>
                 <span role="presentation" style={{ display: "flex", gap: 3 }}>
@@ -203,9 +219,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                           padding: "2px 0",
                           border: `1px solid ${isSelected ? ACCENT : changed ? AMBER : "transparent"}`,
                           background: isSelected
-                            ? "color-mix(in srgb, var(--cosmetic-accent, #0AFFD4) 25%, transparent)"
+                            ? "color-mix(in srgb, var(--cosmetic-accent, var(--color-brand-turquoise)) 25%, transparent)"
                             : "transparent",
-                          color: changed ? AMBER : "#B8B5D1",
+                          color: changed ? AMBER : "var(--color-text-secondary)",
                           fontFamily: MONO,
                           fontSize: 13,
                           cursor: "pointer",
@@ -217,7 +233,10 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                     );
                   })}
                 </span>
-                <span aria-hidden="true" style={{ color: "#7F7BA9", whiteSpace: "pre" }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-muted)", whiteSpace: "pre" }}
+                >
                   {bytes
                     .slice(at, at + BYTES_PER_ROW)
                     .map((b) => asciiOf(b))
@@ -236,7 +255,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
             }}
             style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}
           >
-            <span style={{ fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-secondary)" }}>
               {selected === null
                 ? "Clique sur un octet pour le modifier."
                 : `Octet ${String(selected)} : ${hex2(original[selected] ?? 0)} à l'origine`}
@@ -281,7 +300,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
 
         {runs.length > 0 ? (
           <div style={{ display: "grid", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
               TEXTE LISIBLE DANS LES OCTETS
             </span>
             <ul
@@ -305,7 +324,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                     aria-label={`Octet ${String(run.offset)} : ${run.text}`}
                     style={small}
                   >
-                    <span style={{ color: "#7F7BA9" }}>
+                    <span style={{ color: "var(--color-text-muted)" }}>
                       {run.offset.toString(16).padStart(4, "0")}{" "}
                     </span>
                     {run.text}
@@ -327,18 +346,28 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                 style={{
                   fontFamily: MONO,
                   fontSize: 12,
-                  color: met[i] === true ? ACCENT : "#B8B5D1",
+                  color: met[i] === true ? ACCENT : "var(--color-text-secondary)",
                 }}
               >
                 {met[i] === true ? "✓" : "○"} {repair.label}
-                <span style={{ color: "#7F7BA9" }}> (octet {String(repair.offset)})</span>
+                <span style={{ color: "var(--color-text-muted)" }}>
+                  {" "}
+                  (octet {String(repair.offset)})
+                </span>
               </li>
             ))}
           </ul>
         ) : null}
 
         {questions.length > 0 ? (
-          <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 10, display: "grid", gap: 10 }}>
+          <div
+            style={{
+              borderTop: "1px solid var(--color-border-subtle)",
+              paddingTop: 10,
+              display: "grid",
+              gap: 10,
+            }}
+          >
             {questions.map((question) => {
               const verdict = verdicts[question.label];
               return (
@@ -350,7 +379,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                   }}
                   style={{ display: "grid", gap: 6 }}
                 >
-                  <label style={{ color: "#F5F5FA", fontSize: 14 }}>
+                  <label style={{ color: "var(--color-text-primary)", fontSize: 14 }}>
                     {verdict === "right" ? (
                       <span style={{ color: ACCENT, fontFamily: MONO }}>✓ </span>
                     ) : null}
@@ -384,7 +413,10 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                     <p style={{ margin: 0, color: RED, fontSize: 14 }}>
                       Non, ce n&apos;est pas ça.
                       {question.hint ? (
-                        <span style={{ color: "#B8B5D1" }}> Indice : {question.hint}</span>
+                        <span style={{ color: "var(--color-text-secondary)" }}>
+                          {" "}
+                          Indice : {question.hint}
+                        </span>
                       ) : null}
                     </p>
                   ) : null}
@@ -403,9 +435,14 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
         </div>
 
         {editor.hints && editor.hints.length > 0 ? (
-          <details style={{ borderTop: "1px solid #1F1B47", paddingTop: 10 }}>
+          <details style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: 10 }}>
             <summary
-              style={{ cursor: "pointer", fontFamily: MONO, fontSize: 12, color: "#B8B5D1" }}
+              style={{
+                cursor: "pointer",
+                fontFamily: MONO,
+                fontSize: 12,
+                color: "var(--color-text-secondary)",
+              }}
             >
               Indices ({String(editor.hints.length)})
             </summary>
@@ -413,7 +450,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
               style={{
                 margin: "8px 0 0",
                 paddingLeft: 20,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 fontSize: 14,
                 display: "grid",
                 gap: 4,

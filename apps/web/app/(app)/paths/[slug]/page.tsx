@@ -316,7 +316,7 @@ export default async function PathDetailPage({
                 className="pd2-tag"
                 title={`Note moyenne des apprenants : ${path.avgRating.toFixed(1).replace(".", ",")} sur 5`}
               >
-                <span aria-hidden="true" style={{ color: "#FFB020" }}>
+                <span aria-hidden="true" style={{ color: "var(--color-warning)" }}>
                   ★
                 </span>{" "}
                 {path.avgRating.toFixed(1).replace(".", ",")} · {path.ratingsCount} avis

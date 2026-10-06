@@ -292,8 +292,8 @@ function StepperTimeline({
       style={{
         margin: "0 0 64px",
         padding: "28px 8px 24px",
-        borderTop: "1px solid #1F1B47",
-        borderBottom: "1px solid #1F1B47",
+        borderTop: "1px solid var(--color-border-subtle)",
+        borderBottom: "1px solid var(--color-border-subtle)",
         position: "relative",
         overflowX: "auto",
       }}
@@ -330,7 +330,7 @@ function StepperTimeline({
             right: 14,
             top: 47,
             height: 1,
-            background: "#1F1B47",
+            background: "var(--color-border-subtle)",
             zIndex: 0,
           }}
         />
@@ -382,7 +382,11 @@ function StepperTimeline({
               >
                 <b
                   style={{
-                    color: isDone ? "var(--cosmetic-accent)" : isCurrent ? "#F5F5FA" : "#3F3D5C",
+                    color: isDone
+                      ? "var(--cosmetic-accent)"
+                      : isCurrent
+                        ? "var(--color-text-primary)"
+                        : "var(--color-text-disabled)",
                   }}
                 >
                   {String(i + 1).padStart(2, "0")} · {section.text}
@@ -411,7 +415,7 @@ function StepperTimeline({
                     display: "inline-block",
                     width: 18,
                     height: 18,
-                    background: "#030219",
+                    background: "var(--color-bg-base)",
                     border: "2px solid var(--cosmetic-accent)",
                     transform: "rotate(45deg)",
                     flexShrink: 0,
@@ -423,8 +427,8 @@ function StepperTimeline({
                     display: "inline-block",
                     width: 14,
                     height: 14,
-                    background: "#030219",
-                    border: "1.5px solid #2A2560",
+                    background: "var(--color-bg-base)",
+                    border: "1.5px solid var(--color-border-default)",
                     transform: "rotate(45deg)",
                     flexShrink: 0,
                   }}
@@ -437,7 +441,11 @@ function StepperTimeline({
                   marginTop: 10,
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 10,
-                  color: isDone ? "var(--cosmetic-accent)" : isCurrent ? "#F5F5FA" : "#3F3D5C",
+                  color: isDone
+                    ? "var(--cosmetic-accent)"
+                    : isCurrent
+                      ? "var(--color-text-primary)"
+                      : "var(--color-text-disabled)",
                   letterSpacing: "0.08em",
                 }}
               >
@@ -484,10 +492,10 @@ function StepperRail({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 14,
             paddingBottom: 10,
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           <span>Dans cette leçon</span>
@@ -524,7 +532,11 @@ function StepperRail({
                   boxShadow: isCurrent
                     ? "-2px 0 12px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)"
                     : "none",
-                  color: isCurrent ? "#F5F5FA" : isDone ? "#B8B5D1" : "#44406B",
+                  color: isCurrent
+                    ? "var(--color-text-primary)"
+                    : isDone
+                      ? "var(--color-text-secondary)"
+                      : "var(--color-text-faint)",
                   cursor: isClickable ? "pointer" : "default",
                   border: "none",
                   borderLeft: `2px solid ${isCurrent ? "var(--cosmetic-accent)" : "transparent"}`,
@@ -539,7 +551,8 @@ function StepperRail({
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: isDone || isCurrent ? "var(--cosmetic-accent)" : "#3F3D5C",
+                    color:
+                      isDone || isCurrent ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
                     letterSpacing: "0.1em",
                   }}
                 >
@@ -550,7 +563,8 @@ function StepperRail({
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: isDone || isCurrent ? "var(--cosmetic-accent)" : "#3F3D5C",
+                    color:
+                      isDone || isCurrent ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
                     letterSpacing: "0.06em",
                   }}
                 >
@@ -610,7 +624,7 @@ function SectionNavBar({
             border: "1px solid rgba(255,176,32,0.2)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
-            color: "#FFB020",
+            color: "var(--color-warning)",
             letterSpacing: "0.1em",
             display: "flex",
             alignItems: "center",
@@ -658,21 +672,21 @@ function SectionNavBar({
             textTransform: "uppercase",
             cursor: currentStep === 0 ? "default" : "pointer",
             background: "transparent",
-            color: currentStep === 0 ? "#2A2560" : "#7F7BA9",
+            color: currentStep === 0 ? "var(--color-border-default)" : "var(--color-text-muted)",
             border: 0,
             minHeight: 60,
             transition: "color 180ms ease, background 180ms ease",
           }}
           onMouseEnter={(e) => {
             if (currentStep > 0) {
-              e.currentTarget.style.color = "#F5F5FA";
+              e.currentTarget.style.color = "var(--color-text-primary)";
               e.currentTarget.style.background =
                 "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)";
             }
           }}
           onMouseLeave={(e) => {
             if (currentStep > 0) {
-              e.currentTarget.style.color = "#7F7BA9";
+              e.currentTarget.style.color = "var(--color-text-muted)";
               e.currentTarget.style.background = "transparent";
             }
           }}
@@ -697,7 +711,7 @@ function SectionNavBar({
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
             }}
           >
             Section {String(currentStep + 1).padStart(2, "0")} /{" "}
@@ -736,8 +750,8 @@ function SectionNavBar({
             fontSize: 11,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            background: disabled ? "rgba(0,36,255,0.15)" : "#0024FF",
-            color: disabled ? "#2A2560" : "#ffffff",
+            background: disabled ? "rgba(0,36,255,0.15)" : "var(--color-brand-blue)",
+            color: disabled ? "var(--color-border-default)" : "#ffffff",
             border: 0,
             cursor: disabled ? "not-allowed" : "pointer",
             boxShadow: disabled
@@ -750,7 +764,7 @@ function SectionNavBar({
             if (!disabled) e.currentTarget.style.background = "#1F3BFF";
           }}
           onMouseLeave={(e) => {
-            if (!disabled) e.currentTarget.style.background = "#0024FF";
+            if (!disabled) e.currentTarget.style.background = "var(--color-brand-blue)";
           }}
         >
           {isPending ? (
@@ -824,7 +838,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           width={16}
           height={16}
           fill="none"
-          stroke="#030219"
+          stroke="var(--color-bg-base)"
           strokeWidth={2.2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -848,7 +862,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             margin: 0,
           }}
         >

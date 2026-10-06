@@ -17,7 +17,7 @@
     var(--bg-primary);
 }
 .standalone-page--danger {
-  --page-accent: #ff4757;
+  --page-accent: var(--color-category-cybersec);
   --page-glow: 255, 71, 87;
 }
 .standalone-page__grid {

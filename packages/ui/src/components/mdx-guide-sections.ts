@@ -40,14 +40,14 @@ export interface GuideSection {
 }
 
 const FAMILY_ACCENTS: Record<LessonComponentFamily, string> = {
-  callout: "#4D8BFF",
-  quiz: "#FFB020",
-  code: "#0AFFD4",
+  callout: "var(--color-info)",
+  quiz: "var(--color-warning)",
+  code: "var(--color-brand-turquoise)",
   terminal: "#B14DFF",
   media: "#FF6B9D",
-  reading: "#FF4D6D",
-  database: "#6E8BFF",
-  git: "#FFB547",
+  reading: "var(--color-danger)",
+  database: "var(--color-rarity-rare)",
+  git: "var(--color-rarity-legendary)",
   network: "#4DD4FF",
   investigation: "#39FF14",
   crypto: "#FF4DD2",
@@ -58,13 +58,13 @@ const FAMILY_ACCENTS: Record<LessonComponentFamily, string> = {
 /** The colour of a component's family, for the block editor's cards; a quiet grey for a name the registry lacks. */
 export function componentAccent(name: string): string {
   const family = lessonComponent(name)?.family;
-  return family === undefined ? "#7F7BA9" : FAMILY_ACCENTS[family];
+  return family === undefined ? "var(--color-text-muted)" : FAMILY_ACCENTS[family];
 }
 
 const MARKDOWN_SECTION: GuideSection = {
   id: "markdown",
   title: "Markdown",
-  accent: "#7F7BA9",
+  accent: "var(--color-text-muted)",
   groups: [
     {
       label: "Texte",

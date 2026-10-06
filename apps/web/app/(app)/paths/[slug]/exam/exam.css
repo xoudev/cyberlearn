@@ -858,7 +858,7 @@
   background: var(--teal);
 }
 .exam-root .q-dot.is-current span {
-  color: #05041a;
+  color: var(--color-bg-sunken);
 }
 
 /* ==========================================================================

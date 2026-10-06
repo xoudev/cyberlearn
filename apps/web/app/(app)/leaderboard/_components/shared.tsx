@@ -48,7 +48,7 @@ export function HexAvatar({
         style={{
           position: "absolute",
           inset: 2,
-          background: "#0A0826",
+          background: "var(--color-bg-elevated)",
           clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
         }}
       />

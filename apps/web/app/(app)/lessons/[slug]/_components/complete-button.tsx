@@ -46,14 +46,15 @@ export function CompleteButton({
           variant === "ghost"
             ? {
                 background: "transparent",
-                color: "#7F7BA9",
-                border: "1px solid #2A2560",
+                color: "var(--color-text-muted)",
+                border: "1px solid var(--color-border-default)",
                 padding: fullWidth ? "10px 16px" : "10px 20px",
                 width: fullWidth ? "100%" : undefined,
                 transition: "color 180ms ease, background 180ms ease",
               }
             : {
-                background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
+                background:
+                  "linear-gradient(135deg, var(--color-brand-blue), var(--cosmetic-accent))",
                 color: "#ffffff",
                 padding: fullWidth ? "10px 16px" : "10px 20px",
                 width: fullWidth ? "100%" : undefined,
@@ -63,7 +64,7 @@ export function CompleteButton({
         }
         onMouseEnter={(e) => {
           if (variant === "ghost") {
-            e.currentTarget.style.color = "#F5F5FA";
+            e.currentTarget.style.color = "var(--color-text-primary)";
             e.currentTarget.style.background = "rgba(255,255,255,0.04)";
           } else {
             e.currentTarget.style.boxShadow =
@@ -73,7 +74,7 @@ export function CompleteButton({
         }}
         onMouseLeave={(e) => {
           if (variant === "ghost") {
-            e.currentTarget.style.color = "#7F7BA9";
+            e.currentTarget.style.color = "var(--color-text-muted)";
             e.currentTarget.style.background = "transparent";
           } else {
             e.currentTarget.style.boxShadow =

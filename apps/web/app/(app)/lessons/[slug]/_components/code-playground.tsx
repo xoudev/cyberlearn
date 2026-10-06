@@ -183,16 +183,16 @@ export function CodePlayground({
         { token: "identifier", foreground: "E0DDFF" },
       ],
       colors: {
-        "editor.background": "#0A0826",
+        "editor.background": "var(--color-bg-elevated)",
         "editor.foreground": "#E0DDFF",
         "editor.lineHighlightBackground": "#1A1838",
-        "editorLineNumber.foreground": "#3F3D5C",
+        "editorLineNumber.foreground": "var(--color-text-disabled)",
         "editorLineNumber.activeForeground": "var(--cosmetic-accent)",
-        "editor.selectionBackground": "#2A2560",
+        "editor.selectionBackground": "var(--color-border-default)",
         "editorCursor.foreground": "var(--cosmetic-accent)",
-        "editor.inactiveSelectionBackground": "#1F1B47",
-        "editorIndentGuide.background1": "#1F1B47",
-        "editorWhitespace.foreground": "#2A2560",
+        "editor.inactiveSelectionBackground": "var(--color-border-subtle)",
+        "editorIndentGuide.background1": "var(--color-border-subtle)",
+        "editorWhitespace.foreground": "var(--color-border-default)",
       },
     });
   };
@@ -234,10 +234,15 @@ export function CodePlayground({
         label: "JavaScript Sandbox",
         badge: "Web Worker · ES6",
         ext: "js",
-        color: "#FFB020",
+        color: "var(--color-warning)",
       },
-      c: { label: "C Sandbox", badge: "jscpp", ext: "c", color: "#4D8BFF" },
-      asm: { label: "Assembly x86-64", badge: "NASM · Simulé", ext: "asm", color: "#FF4757" },
+      c: { label: "C Sandbox", badge: "jscpp", ext: "c", color: "var(--color-info)" },
+      asm: {
+        label: "Assembly x86-64",
+        badge: "NASM · Simulé",
+        ext: "asm",
+        color: "var(--color-category-cybersec)",
+      },
     };
   const {
     label: sandboxLabel,
@@ -262,9 +267,9 @@ export function CodePlayground({
   };
   const STATUS_COLOR: Record<typeof runStatus, string> = {
     ready: "var(--cosmetic-accent)",
-    loading: "#FFB020",
+    loading: "var(--color-warning)",
     success: "var(--cosmetic-accent)",
-    error: "#FF4757",
+    error: "var(--color-category-cybersec)",
   };
   const statusColor = STATUS_COLOR[runStatus];
 
@@ -283,7 +288,7 @@ export function CodePlayground({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.6)",
         }}
       >
@@ -293,7 +298,7 @@ export function CodePlayground({
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontWeight: 600,
             display: "inline-flex",
             alignItems: "center",
@@ -385,9 +390,9 @@ export function CodePlayground({
             display: "block",
             width: "100%",
             height: 220,
-            background: "#0A0826",
+            background: "var(--color-bg-elevated)",
             border: "none",
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontFamily: "JetBrains Mono, monospace",
             fontSize: 13,
             lineHeight: 1.7,
@@ -404,7 +409,7 @@ export function CodePlayground({
         style={{
           display: "flex",
           alignItems: "stretch",
-          borderTop: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
       >
@@ -425,7 +430,7 @@ export function CodePlayground({
             fontSize: 11,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            background: running ? "rgba(0,36,255,0.4)" : "#0024FF",
+            background: running ? "rgba(0,36,255,0.4)" : "var(--color-brand-blue)",
             color: "#ffffff",
             border: 0,
             borderRight: "1px solid rgba(0,36,255,0.5)",
@@ -438,7 +443,7 @@ export function CodePlayground({
             if (!running) e.currentTarget.style.background = "#1F3BFF";
           }}
           onMouseLeave={(e) => {
-            if (!running) e.currentTarget.style.background = "#0024FF";
+            if (!running) e.currentTarget.style.background = "var(--color-brand-blue)";
           }}
         >
           {running ? (
@@ -527,7 +532,7 @@ export function CodePlayground({
                 fontFamily: "var(--font-mono, monospace)",
                 fontSize: 10,
                 letterSpacing: "0.1em",
-                color: "#44406B",
+                color: "var(--color-text-faint)",
               }}
             >
               main.{langExt} ·{" "}
@@ -549,8 +554,8 @@ export function CodePlayground({
       {result !== null && (
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
-            background: "#030219",
+            borderTop: "1px solid var(--color-border-subtle)",
+            background: "var(--color-bg-base)",
             padding: "16px 18px",
             fontFamily: "JetBrains Mono, monospace",
             fontSize: 12.5,
@@ -579,8 +584,16 @@ export function CodePlayground({
               .filter(Boolean)
               .map((line, i) => (
                 <div key={i} style={{ display: "flex", gap: 8 }}>
-                  <span style={{ color: "#FF4757", flexShrink: 0, userSelect: "none" }}>!!!</span>
-                  <span style={{ color: "#FF4757" }}>{line}</span>
+                  <span
+                    style={{
+                      color: "var(--color-category-cybersec)",
+                      flexShrink: 0,
+                      userSelect: "none",
+                    }}
+                  >
+                    !!!
+                  </span>
+                  <span style={{ color: "var(--color-category-cybersec)" }}>{line}</span>
                 </div>
               ))}
           {result.error && <ErrorHint hint={result.hint} />}
@@ -589,7 +602,9 @@ export function CodePlayground({
               <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0, userSelect: "none" }}>
                 &gt;&gt;&gt;
               </span>
-              <span style={{ color: "#7F7BA9", fontStyle: "italic" }}>(aucune sortie)</span>
+              <span style={{ color: "var(--color-text-muted)", fontStyle: "italic" }}>
+                (aucune sortie)
+              </span>
             </div>
           )}
         </div>
@@ -600,14 +615,14 @@ export function CodePlayground({
           style={{
             padding: "6px 18px",
             background: "rgba(3,2,25,0.5)",
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9,
             letterSpacing: "0.12em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
-          Sortie attendue : <b style={{ color: "#7F7BA9" }}>{expectedOutput}</b>
+          Sortie attendue : <b style={{ color: "var(--color-text-muted)" }}>{expectedOutput}</b>
         </div>
       )}
 

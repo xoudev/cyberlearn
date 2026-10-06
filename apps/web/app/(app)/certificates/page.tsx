@@ -10,7 +10,7 @@ import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary
 
 export const metadata: Metadata = { title: "Mes certificats" };
 
-const GOLD = "#FFB547";
+const GOLD = "var(--color-rarity-legendary)";
 
 // ── Shared bits ───────────────────────────────────────────────────────────────
 
@@ -87,11 +87,11 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontSize: 11,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 14,
             }}
           >
-            <span style={{ color: "#44406B" }}>{"// "}</span>
+            <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
             REGISTRE · <b style={{ color: GOLD, fontWeight: 500 }}>SHA-256</b> · VÉRIFIABLE
           </div>
           <h1
@@ -101,7 +101,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontSize: "clamp(40px, 5.5vw, 72px)",
               lineHeight: 1,
               letterSpacing: "-0.035em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 16px",
             }}
           >
@@ -111,7 +111,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                 <em
                   style={{
                     fontStyle: "normal",
-                    background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                    background:
+                      "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -126,7 +127,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                 <em
                   style={{
                     fontStyle: "normal",
-                    background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                    background:
+                      "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -142,7 +144,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 15,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               margin: 0,
               maxWidth: 520,
               lineHeight: 1.55,
@@ -163,7 +165,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               gap: 18,
               ...MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               flexWrap: "wrap",
@@ -173,16 +175,23 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               <b style={{ color: GOLD }}>{activeCerts.length}</b> actif
               {activeCerts.length !== 1 ? "s" : ""}
             </span>
-            <span style={{ color: "#44406B" }}>/</span>
+            <span style={{ color: "var(--color-text-faint)" }}>/</span>
             <span>
-              <b style={{ color: revokedCerts.length > 0 ? "#FF4757" : "#7F7BA9" }}>
+              <b
+                style={{
+                  color:
+                    revokedCerts.length > 0
+                      ? "var(--color-category-cybersec)"
+                      : "var(--color-text-muted)",
+                }}
+              >
                 {revokedCerts.length}
               </b>{" "}
               révoqué{revokedCerts.length !== 1 ? "s" : ""}
             </span>
-            <span style={{ color: "#44406B" }}>/</span>
+            <span style={{ color: "var(--color-text-faint)" }}>/</span>
             <span>
-              <b style={{ color: "#F5F5FA" }}>~{totalHours}h</b> validées
+              <b style={{ color: "var(--color-text-primary)" }}>~{totalHours}h</b> validées
             </span>
           </div>
           <div
@@ -190,7 +199,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               width: 320,
               maxWidth: "100%",
               height: 1,
-              background: "linear-gradient(90deg, #2A2560, transparent)",
+              background: "linear-gradient(90deg, var(--color-border-default), transparent)",
             }}
             aria-hidden="true"
           />
@@ -198,7 +207,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             style={{
               ...MONO,
               fontSize: 11,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}
@@ -214,7 +223,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
           style={{
             padding: "80px 40px",
             textAlign: "center",
-            border: "1px dashed #2A2560",
+            border: "1px dashed var(--color-border-default)",
             background: "rgba(5,4,26,0.4)",
             position: "relative",
           }}
@@ -230,7 +239,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontSize: 11,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               margin: "0 0 10px",
             }}
           >
@@ -241,7 +250,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontFamily: "var(--font-sans)",
               fontWeight: 700,
               fontSize: 20,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 8px",
             }}
           >
@@ -251,7 +260,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 14,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               margin: "0 auto 26px",
               maxWidth: 380,
               lineHeight: 1.55,
@@ -267,8 +276,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               alignItems: "center",
               gap: 10,
               padding: "14px 28px",
-              background: "#0024FF",
-              border: "1px solid #0024FF",
+              background: "var(--color-brand-blue)",
+              border: "1px solid var(--color-brand-blue)",
               color: "#fff",
               ...MONO,
               fontWeight: 700,
@@ -302,7 +311,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             const isRevoked = !!cert.revokedAt;
             const certRef = cert.publicId.slice(0, 8).toUpperCase();
             const hashSnippet = `${cert.sha256Hash.slice(0, 10)}…${cert.sha256Hash.slice(-4)}`;
-            const accent = isRevoked ? "#44406B" : GOLD;
+            const accent = isRevoked ? "var(--color-text-faint)" : GOLD;
 
             return (
               <article
@@ -313,7 +322,9 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                   flexDirection: "column",
                   background: isRevoked ? "rgba(7,5,32,0.4)" : "rgba(10,8,38,0.5)",
                   border: `1px solid ${
-                    isRevoked ? "#1F1B47" : `color-mix(in oklab, ${GOLD} 28%, #1f1b47)`
+                    isRevoked
+                      ? "var(--color-border-subtle)"
+                      : `color-mix(in oklab, ${GOLD} 28%, #1f1b47)`
                   }`,
                   opacity: isRevoked ? 0.65 : 1,
                   overflow: "hidden",
@@ -367,11 +378,19 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                           fontSize: 9,
                           letterSpacing: "0.14em",
                           textTransform: "uppercase",
-                          color: "#7F7BA9",
+                          color: "var(--color-text-muted)",
                         }}
                       >
                         {"// "}
-                        <b style={{ color: isRevoked ? "#44406B" : "#B8B5D1" }}>CERT-{certRef}</b>
+                        <b
+                          style={{
+                            color: isRevoked
+                              ? "var(--color-text-faint)"
+                              : "var(--color-text-secondary)",
+                          }}
+                        >
+                          CERT-{certRef}
+                        </b>
                       </div>
                     </div>
                     {isRevoked ? (
@@ -382,7 +401,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                           fontWeight: 700,
                           letterSpacing: "0.18em",
                           textTransform: "uppercase",
-                          color: "#FF4757",
+                          color: "var(--color-category-cybersec)",
                           background: "rgba(255,71,87,0.1)",
                           border: "1px solid rgba(255,71,87,0.3)",
                           padding: "4px 10px",
@@ -404,7 +423,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       fontSize: 21,
                       lineHeight: 1.15,
                       letterSpacing: "-0.015em",
-                      color: isRevoked ? "#7F7BA9" : "#F5F5FA",
+                      color: isRevoked ? "var(--color-text-muted)" : "var(--color-text-primary)",
                       margin: "0 0 12px",
                     }}
                   >
@@ -421,7 +440,9 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       marginBottom: 16,
                     }}
                   >
-                    <span style={{ ...MONO, fontSize: 11, color: "#7F7BA9" }}>{cat}</span>
+                    <span style={{ ...MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+                      {cat}
+                    </span>
                     <span
                       style={{
                         display: "inline-flex",
@@ -439,7 +460,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     >
                       {diff.label}
                     </span>
-                    <span style={{ ...MONO, fontSize: 11, color: "#7F7BA9" }}>
+                    <span style={{ ...MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
                       ~{String(cert.path.estimatedHours)}h
                     </span>
                   </div>
@@ -456,12 +477,19 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       fontSize: 10.5,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <span>Délivré le</span>
-                      <b style={{ color: isRevoked ? "#7F7BA9" : "#F5F5FA", fontWeight: 600 }}>
+                      <b
+                        style={{
+                          color: isRevoked
+                            ? "var(--color-text-muted)"
+                            : "var(--color-text-primary)",
+                          fontWeight: 600,
+                        }}
+                      >
                         {issuedAt}
                       </b>
                     </div>
@@ -470,7 +498,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                         <span>Score examen</span>
                         <b
                           style={{
-                            color: isRevoked ? "#7F7BA9" : "var(--cosmetic-accent)",
+                            color: isRevoked ? "var(--color-text-muted)" : "var(--cosmetic-accent)",
                             fontWeight: 600,
                           }}
                         >
@@ -480,12 +508,16 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <span>SHA-256</span>
-                      <span style={{ color: "#44406B", textTransform: "none" }}>{hashSnippet}</span>
+                      <span style={{ color: "var(--color-text-faint)", textTransform: "none" }}>
+                        {hashSnippet}
+                      </span>
                     </div>
                     {isRevoked && cert.revokedReason && (
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <span style={{ color: "#FF4757" }}>Motif</span>
-                        <span style={{ color: "#FF4757", textTransform: "none" }}>
+                        <span style={{ color: "var(--color-category-cybersec)" }}>Motif</span>
+                        <span
+                          style={{ color: "var(--color-category-cybersec)", textTransform: "none" }}
+                        >
                           {cert.revokedReason}
                         </span>
                       </div>
@@ -511,7 +543,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                         fontSize: 10,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
-                        color: "#B8B5D1",
+                        color: "var(--color-text-secondary)",
                         textDecoration: "none",
                         borderRight: "1px solid #1A1640",
                       }}
@@ -532,7 +564,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                         fontSize: 10,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
-                        background: "#0024FF",
+                        background: "var(--color-brand-blue)",
                         color: "#fff",
                         textDecoration: "none",
                         boxShadow: "0 0 16px rgba(0,36,255,0.3)",

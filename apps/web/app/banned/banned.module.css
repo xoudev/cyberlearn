@@ -22,7 +22,7 @@
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 
 .facts {
@@ -46,24 +46,24 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 .factValue {
   font: 12px var(--font-mono);
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   text-align: right;
 }
 
 .reason {
   margin: 0;
   padding: 14px 16px;
-  border-left: 2px solid #ff4757;
+  border-left: 2px solid var(--color-danger);
   background: rgba(255, 71, 87, 0.06);
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   white-space: pre-wrap;
 }
 
@@ -91,9 +91,9 @@
 }
 
 .primary {
-  border-color: #ff4757;
-  background: #ff4757;
-  color: #030219;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-bg-base);
 }
 .primary:hover {
   background: #ff6b7a;
@@ -106,10 +106,10 @@
 
 .ghost {
   background: transparent;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 .ghost:hover {
-  border-color: #7f7ba9;
+  border-color: var(--color-text-muted);
   background: rgba(111, 107, 153, 0.08);
 }
 
@@ -124,7 +124,7 @@
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 
 /* ── The appeal ─────────────────────────────────────────────────────────── */
@@ -140,7 +140,7 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 .textarea {
@@ -149,7 +149,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border-strong);
   background: rgba(5, 4, 26, 0.9);
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
@@ -177,5 +177,5 @@
   background: rgba(10, 255, 212, 0.05);
   font: 12px var(--font-mono);
   line-height: 1.55;
-  color: #0affd4;
+  color: var(--color-brand-turquoise);
 }

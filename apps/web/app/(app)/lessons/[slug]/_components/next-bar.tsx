@@ -36,7 +36,7 @@ export function NextBar({
 }: NextBarProps): React.ReactElement {
   const catColor = next ? categoryMeta(next.category).color : "var(--cosmetic-accent)";
   const diffLabel = next ? difficultyMeta(next.difficulty).label : "";
-  const diffColor = next ? difficultyMeta(next.difficulty).color : "#6E8BFF";
+  const diffColor = next ? difficultyMeta(next.difficulty).color : "var(--color-rarity-rare)";
 
   // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
@@ -78,7 +78,7 @@ export function NextBar({
             display: "flex",
             flexDirection: "column",
             gap: 8,
-            borderRight: "1px solid #2A2560",
+            borderRight: "1px solid var(--color-border-default)",
             minWidth: 0,
             position: "relative",
             zIndex: 1,
@@ -109,7 +109,7 @@ export function NextBar({
                 fontFamily: "var(--font-mono, monospace)",
                 fontSize: 10,
                 letterSpacing: "0.08em",
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 textDecoration: "none",
               }}
             >
@@ -150,7 +150,11 @@ export function NextBar({
                 {diffLabel}
               </span>
               <span
-                style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "#7F7BA9" }}
+                style={{
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 9,
+                  color: "var(--color-text-muted)",
+                }}
               >
                 {next.estimatedMinutes} min · +{next.xpReward} XP
               </span>
@@ -163,7 +167,7 @@ export function NextBar({
               fontWeight: 700,
               fontSize: 18,
               letterSpacing: "-0.01em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: 0,
               lineHeight: 1.2,
             }}
@@ -181,7 +185,7 @@ export function NextBar({
                 display: "flex",
                 alignItems: "center",
                 padding: "0 24px",
-                borderRight: "1px solid #2A2560",
+                borderRight: "1px solid var(--color-border-default)",
               }}
             >
               <CompleteButton
@@ -200,7 +204,7 @@ export function NextBar({
               e.currentTarget.style.background = "#1F3BFF";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#0024FF";
+              e.currentTarget.style.background = "var(--color-brand-blue)";
             }}
           >
             {next ? "Leçon suivante" : "Retour au parcours"}

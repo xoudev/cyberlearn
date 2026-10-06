@@ -157,7 +157,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           gap: 10,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.04em",
           padding: "6px 14px",
           marginBottom: 40,
@@ -171,15 +171,15 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         >
           leçons
         </Link>
-        <span style={{ color: "#1F1B47" }}>/</span>
+        <span style={{ color: "var(--color-border-subtle)" }}>/</span>
         <Link
           href={`/lessons?category=${catKey}`}
           className="breadcrumb-link"
           style={{ color: "inherit", textDecoration: "none" }}
         >
-          <b style={{ color: "#F5F5FA", fontWeight: 500 }}>{cat.slug}</b>
+          <b style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>{cat.slug}</b>
         </Link>
-        <span style={{ color: "#1F1B47" }}>/</span>
+        <span style={{ color: "var(--color-border-subtle)" }}>/</span>
         <span style={{ color: "var(--cosmetic-accent)" }}>{lesson.slug}.lesson</span>
       </div>
 
@@ -210,7 +210,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               fontSize: "clamp(28px, 6vw, 80px)",
               lineHeight: 0.95,
               letterSpacing: "-0.035em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 22px",
             }}
           >
@@ -221,7 +221,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
             style={{
               fontFamily: "var(--font-body, sans-serif)",
               fontSize: 17,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               lineHeight: 1.55,
               maxWidth: 560,
               margin: 0,
@@ -239,7 +239,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 18px",
-              borderBottom: "1px solid #2A2560",
+              borderBottom: "1px solid var(--color-border-default)",
               background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 10,
@@ -252,7 +252,13 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               <span className="briefing-dot" />
               mission briefing
             </span>
-            <span style={{ color: "#7F7BA9", letterSpacing: "0.08em", textTransform: "none" }}>
+            <span
+              style={{
+                color: "var(--color-text-muted)",
+                letterSpacing: "0.08em",
+                textTransform: "none",
+              }}
+            >
               id · {lesson.refCode.slice(-8)}
             </span>
           </div>
@@ -274,7 +280,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                   fontWeight: 600,
                   fontSize: 22,
                   letterSpacing: "0.02em",
-                  color: "#F5F5FA",
+                  color: "var(--color-text-primary)",
                   lineHeight: 1,
                 }}
               >
@@ -319,7 +325,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                   fontFamily: "var(--font-mono, monospace)",
                   fontWeight: 600,
                   fontSize: 11,
-                  color: isCompleted ? "var(--cosmetic-accent)" : "#FFB547",
+                  color: isCompleted ? "var(--cosmetic-accent)" : "var(--color-rarity-legendary)",
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   lineHeight: 1,
@@ -348,7 +354,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                     gap: 8,
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
                     marginBottom: 8,
@@ -369,7 +375,8 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                       position: "absolute",
                       inset: 0,
                       width: isCompleted ? "100%" : "0%",
-                      background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
+                      background:
+                        "linear-gradient(90deg, var(--color-brand-blue), var(--cosmetic-accent))",
                       boxShadow:
                         "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
                     }}
@@ -525,7 +532,7 @@ function BriefingRow({
           gap: 8,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 10,
-          color: "#7F7BA9",
+          color: "var(--color-text-muted)",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
         }}

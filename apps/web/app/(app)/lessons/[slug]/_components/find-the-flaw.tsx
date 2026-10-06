@@ -30,7 +30,7 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -59,7 +59,7 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
     setWrongOptions([]);
   };
 
-  const accent = "var(--cosmetic-accent, #0AFFD4)";
+  const accent = "var(--cosmetic-accent, var(--color-brand-turquoise))";
   const found = stage !== "line";
 
   return (
@@ -74,7 +74,7 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -92,11 +92,20 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
           TROUVE LA FAILLE
         </span>
         {flaw.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{flaw.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {flaw.title}
+          </span>
         ) : null}
       </header>
 
-      <p style={{ margin: 0, padding: "12px 16px 0", color: "#B8B5D1", fontSize: 14 }}>
+      <p
+        style={{
+          margin: 0,
+          padding: "12px 16px 0",
+          color: "var(--color-text-secondary)",
+          fontSize: 14,
+        }}
+      >
         {stage === "line"
           ? "Clique sur la ligne vulnérable."
           : "Ligne trouvée. Quelle est cette faille ?"}
@@ -136,11 +145,11 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
                   border: "none",
                   borderLeft: `3px solid ${isFlaw ? accent : isWrong ? RED : "transparent"}`,
                   background: isFlaw
-                    ? "color-mix(in srgb, var(--cosmetic-accent, #0AFFD4) 12%, transparent)"
+                    ? "color-mix(in srgb, var(--cosmetic-accent, var(--color-brand-turquoise)) 12%, transparent)"
                     : isWrong
                       ? "rgba(255, 71, 87, 0.10)"
                       : "transparent",
-                  color: "#B8B5D1",
+                  color: "var(--color-text-secondary)",
                   textAlign: "left",
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 13,
@@ -150,7 +159,10 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
                 }}
                 className="find-the-flaw__line"
               >
-                <span aria-hidden="true" style={{ color: "#3F3D5C", userSelect: "none" }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-disabled)", userSelect: "none" }}
+                >
                   {String(n).padStart(width, " ")}
                 </span>
                 <span>{text}</span>
@@ -167,7 +179,9 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
           </p>
         ) : null}
         {stage === "line" && wrongLines.length >= 2 && flaw.hint ? (
-          <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>Indice : {flaw.hint}</p>
+          <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+            Indice : {flaw.hint}
+          </p>
         ) : null}
 
         {found ? (
@@ -185,11 +199,11 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
                   disabled={stage === "done" || wrong}
                   style={{
                     padding: "10px 14px",
-                    border: `1px solid ${right ? accent : wrong ? RED : "#2A2560"}`,
+                    border: `1px solid ${right ? accent : wrong ? RED : "var(--color-border-default)"}`,
                     background: right
-                      ? "color-mix(in srgb, var(--cosmetic-accent, #0AFFD4) 10%, transparent)"
+                      ? "color-mix(in srgb, var(--cosmetic-accent, var(--color-brand-turquoise)) 10%, transparent)"
                       : "transparent",
-                    color: wrong ? "#7F7BA9" : "#F5F5FA",
+                    color: wrong ? "var(--color-text-muted)" : "var(--color-text-primary)",
                     textAlign: "left",
                     fontSize: 14,
                     cursor: stage === "done" || wrong ? "default" : "pointer",
@@ -205,7 +219,14 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
 
         {stage === "done" ? (
           <>
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--color-text-secondary)",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
               <strong style={{ color: accent }}>Trouvé.</strong> {flaw.explanation}
             </p>
             <button

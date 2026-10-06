@@ -39,7 +39,7 @@ export default function LessonDetailLoading(): React.ReactElement {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 18px",
-              borderBottom: "1px solid #2A2560",
+              borderBottom: "1px solid var(--color-border-default)",
               background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
             }}
           >
@@ -69,8 +69,8 @@ export default function LessonDetailLoading(): React.ReactElement {
         style={{
           margin: "0 0 64px",
           padding: "28px 8px 24px",
-          borderTop: "1px solid #1F1B47",
-          borderBottom: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
+          borderBottom: "1px solid var(--color-border-subtle)",
           overflowX: "auto",
         }}
       >
@@ -119,7 +119,7 @@ export default function LessonDetailLoading(): React.ReactElement {
             <div
               style={{
                 padding: "8px 16px",
-                borderBottom: "1px solid #1F1B47",
+                borderBottom: "1px solid var(--color-border-subtle)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -149,7 +149,7 @@ export default function LessonDetailLoading(): React.ReactElement {
                 style={{
                   paddingBottom: 10,
                   marginBottom: 14,
-                  borderBottom: "1px solid #1F1B47",
+                  borderBottom: "1px solid var(--color-border-subtle)",
                   display: "flex",
                   gap: 10,
                   alignItems: "center",

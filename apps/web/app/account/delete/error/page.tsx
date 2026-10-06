@@ -2,26 +2,26 @@ import Link from "next/link";
 import React from "react";
 
 const MESSAGES: Record<string, { text: string; accent: string }> = {
-  missing: { text: "Lien invalide ou expiré.", accent: "#FFB020" },
-  invalid: { text: "Lien invalide ou expiré.", accent: "#FFB020" },
+  missing: { text: "Lien invalide ou expiré.", accent: "var(--color-warning)" },
+  invalid: { text: "Lien invalide ou expiré.", accent: "var(--color-warning)" },
   expired: {
     text: "Ce lien de confirmation a expiré. Si vous souhaitez toujours supprimer votre compte, renouvelez la demande depuis vos paramètres.",
-    accent: "#FFB020",
+    accent: "var(--color-warning)",
   },
-  used: { text: "Ce lien a déjà été utilisé.", accent: "#FFB020" },
+  used: { text: "Ce lien a déjà été utilisé.", accent: "var(--color-warning)" },
   internal: {
     text: "Une erreur est survenue lors de la suppression. Contactez privacy@cyberlearn.fr si le problème persiste.",
-    accent: "#FF4757",
+    accent: "var(--color-danger)",
   },
   auth_cleanup_failed: {
     text: "Vos données ont été supprimées de notre base, mais nous n'avons pas pu finaliser la suppression côté authentification. Notre équipe a été notifiée. Contactez privacy@cyberlearn.fr pour confirmer la clôture complète.",
-    accent: "#FF4757",
+    accent: "var(--color-danger)",
   },
 };
 
 const DEFAULT: { text: string; accent: string } = {
   text: "Une erreur est survenue. Veuillez réessayer ou contacter le support.",
-  accent: "#FF4757",
+  accent: "var(--color-danger)",
 };
 
 export default async function AccountDeleteErrorPage({
@@ -37,7 +37,7 @@ export default async function AccountDeleteErrorPage({
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#030219",
+        backgroundColor: "var(--color-bg-base)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -52,21 +52,21 @@ export default async function AccountDeleteErrorPage({
             fontFamily: "monospace",
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 24,
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
           }}
         >
-          <span style={{ color: "#0AFFD4" }}>$</span>
+          <span style={{ color: "var(--color-brand-turquoise)" }}>$</span>
           <span>~/</span>
-          <span style={{ color: "#B8B5D1" }}>cyberlearn</span>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "var(--color-text-secondary)" }}>cyberlearn</span>
+          <span style={{ color: "var(--color-text-faint)" }}>/</span>
           <span>compte</span>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "var(--color-text-faint)" }}>/</span>
           <span>suppression</span>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "var(--color-text-faint)" }}>/</span>
           <span style={{ color: accent }}>échec</span>
         </div>
 
@@ -76,7 +76,7 @@ export default async function AccountDeleteErrorPage({
             fontFamily: "monospace",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             marginBottom: 16,
             display: "flex",
             alignItems: "center",
@@ -86,7 +86,12 @@ export default async function AccountDeleteErrorPage({
           {"// ACCOUNT.DELETE.ERROR"}
           <span
             aria-hidden="true"
-            style={{ flex: 1, height: 1, background: "#1F1B47", display: "inline-block" }}
+            style={{
+              flex: 1,
+              height: 1,
+              background: "var(--color-border-subtle)",
+              display: "inline-block",
+            }}
           />
         </div>
 
@@ -181,14 +186,21 @@ export default async function AccountDeleteErrorPage({
               fontWeight: 700,
               fontSize: 22,
               letterSpacing: "-0.02em",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               margin: "0 0 14px",
             }}
           >
             Impossible de confirmer la suppression
           </h1>
 
-          <p style={{ fontSize: 14, color: "#B8B5D1", lineHeight: 1.65, margin: "0 0 24px" }}>
+          <p
+            style={{
+              fontSize: 14,
+              color: "var(--color-text-secondary)",
+              lineHeight: 1.65,
+              margin: "0 0 24px",
+            }}
+          >
             {text}
           </p>
 
@@ -196,12 +208,12 @@ export default async function AccountDeleteErrorPage({
           <div
             style={{
               paddingTop: 14,
-              borderTop: "1px dashed #1F1B47",
+              borderTop: "1px dashed var(--color-border-subtle)",
               fontFamily: "monospace",
               fontSize: 10,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginBottom: 24,
               display: "flex",
               flexWrap: "wrap",
@@ -210,9 +222,9 @@ export default async function AccountDeleteErrorPage({
           >
             <span>Raison</span>
             <b style={{ color: accent, fontWeight: 500 }}>{reason || "unknown"}</b>
-            <span style={{ color: "#1F1B47" }}>·</span>
+            <span style={{ color: "var(--color-border-subtle)" }}>·</span>
             <span>Contact</span>
-            <b style={{ color: "#4D8BFF", fontWeight: 500 }}>privacy@cyberlearn.fr</b>
+            <b style={{ color: "var(--color-info)", fontWeight: 500 }}>privacy@cyberlearn.fr</b>
           </div>
 
           <Link
@@ -228,7 +240,7 @@ export default async function AccountDeleteErrorPage({
               fontSize: 12,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               textDecoration: "none",
             }}
           >

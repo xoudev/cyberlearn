@@ -65,7 +65,13 @@ export function LandingClient({
 }): React.ReactElement {
   const [demoOpen, setDemoOpen] = useState(false);
   return (
-    <div style={{ background: "#030219", color: "#F5F5FA", position: "relative" }}>
+    <div
+      style={{
+        background: "var(--color-bg-base)",
+        color: "var(--color-text-primary)",
+        position: "relative",
+      }}
+    >
       <VideoModal
         open={demoOpen}
         onClose={() => {
@@ -132,7 +138,7 @@ export function LandingClient({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 28,
                 padding: "6px 12px",
               }}
@@ -142,14 +148,14 @@ export function LandingClient({
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
+                  background: "var(--color-brand-turquoise)",
+                  boxShadow: "0 0 6px var(--color-brand-turquoise)",
                   display: "inline-block",
                 }}
               />
               <span>
-                <b style={{ color: "#B8B5D1" }}>Plateforme FR</b> · 100% en ligne · sans
-                installation
+                <b style={{ color: "var(--color-text-secondary)" }}>Plateforme FR</b> · 100% en
+                ligne · sans installation
               </span>
             </div>
 
@@ -161,7 +167,7 @@ export function LandingClient({
                 fontSize: "clamp(44px, 5.5vw, 80px)",
                 lineHeight: 0.95,
                 letterSpacing: "-0.04em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 24px",
               }}
             >
@@ -169,7 +175,8 @@ export function LandingClient({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -185,7 +192,7 @@ export function LandingClient({
                 fontFamily: "var(--font-sans)",
                 fontSize: 17,
                 lineHeight: 1.6,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 margin: "0 0 36px",
                 maxWidth: 520,
               }}
@@ -241,8 +248,8 @@ export function LandingClient({
         {/* ── Stats strip ───────────────────────────────────────────────────── */}
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
-            borderBottom: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
             background: "rgba(10,8,38,0.4)",
           }}
         >
@@ -270,14 +277,16 @@ export function LandingClient({
                     style={{
                       width: 1,
                       height: 18,
-                      background: "#1F1B47",
+                      background: "var(--color-border-subtle)",
                       margin: "0 28px",
                       flexShrink: 0,
                     }}
                   />
                 )}
-                <span style={{ color: "#7F7BA9" }}>
-                  {num && <b style={{ color: "#F5F5FA", marginRight: 6 }}>{num}</b>}
+                <span style={{ color: "var(--color-text-muted)" }}>
+                  {num && (
+                    <b style={{ color: "var(--color-text-primary)", marginRight: 6 }}>{num}</b>
+                  )}
                   {label}
                 </span>
               </React.Fragment>
@@ -292,7 +301,7 @@ export function LandingClient({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
@@ -300,7 +309,12 @@ export function LandingClient({
               }}
             >
               <span
-                style={{ width: 20, height: 1, background: "#0AFFD4", display: "inline-block" }}
+                style={{
+                  width: 20,
+                  height: 1,
+                  background: "var(--color-brand-turquoise)",
+                  display: "inline-block",
+                }}
               />
               02 · LE SYSTÈME
             </div>
@@ -312,7 +326,7 @@ export function LandingClient({
                 fontSize: "clamp(36px, 4.5vw, 60px)",
                 lineHeight: 1.0,
                 letterSpacing: "-0.035em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 18px",
               }}
             >
@@ -320,7 +334,8 @@ export function LandingClient({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -334,7 +349,7 @@ export function LandingClient({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 16,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.6,
                 margin: 0,
               }}
@@ -359,7 +374,7 @@ export function LandingClient({
                       padding: "20px",
                       fontFamily: "var(--font-mono)",
                       fontSize: 12,
-                      borderLeft: "3px solid #0AFFD4",
+                      borderLeft: "3px solid var(--color-brand-turquoise)",
                     }}
                   >
                     {[
@@ -370,8 +385,18 @@ export function LandingClient({
                       { num: "06", text: 'scan("10.0.0.1")', comment: false },
                     ].map(({ num, text, comment }) => (
                       <div key={num} style={{ display: "flex", gap: 16, lineHeight: 1.7 }}>
-                        <span style={{ color: "#7F7BA9", minWidth: 20 }}>{num}</span>
-                        <span style={{ color: comment ? "#3F3D5C" : "#B8B5D1" }}>{text}</span>
+                        <span style={{ color: "var(--color-text-muted)", minWidth: 20 }}>
+                          {num}
+                        </span>
+                        <span
+                          style={{
+                            color: comment
+                              ? "var(--color-text-disabled)"
+                              : "var(--color-text-secondary)",
+                          }}
+                        >
+                          {text}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -390,14 +415,14 @@ export function LandingClient({
                         justifyContent: "space-between",
                         fontFamily: "var(--font-mono)",
                         fontSize: 10,
-                        color: "#7F7BA9",
+                        color: "var(--color-text-muted)",
                         marginBottom: 8,
                         letterSpacing: "0.08em",
                       }}
                     >
                       <span>LVL · 14 → 15</span>
                       <span>
-                        <b style={{ color: "#F5F5FA" }}>2840</b> / 3500 XP
+                        <b style={{ color: "var(--color-text-primary)" }}>2840</b> / 3500 XP
                       </span>
                     </div>
                     <div
@@ -409,7 +434,7 @@ export function LandingClient({
                           fontWeight: 800,
                           fontSize: 32,
                           letterSpacing: "-0.04em",
-                          color: "#F5F5FA",
+                          color: "var(--color-text-primary)",
                           lineHeight: 1,
                         }}
                       >
@@ -419,7 +444,7 @@ export function LandingClient({
                         style={{
                           flex: 1,
                           height: 8,
-                          background: "#1F1B47",
+                          background: "var(--color-border-subtle)",
                           borderRadius: 999,
                           overflow: "hidden",
                         }}
@@ -428,7 +453,8 @@ export function LandingClient({
                           style={{
                             width: "81%",
                             height: "100%",
-                            background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
+                            background:
+                              "linear-gradient(90deg, var(--color-brand-blue), var(--color-brand-turquoise))",
                             boxShadow: "0 0 12px rgba(10,255,212,0.5)",
                             borderRadius: 999,
                           }}
@@ -436,7 +462,13 @@ export function LandingClient({
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 10 }}>
-                      {(["#FFB547", "#0AFFD4", "#6E8BFF"] as const).map((color) => (
+                      {(
+                        [
+                          "var(--color-rarity-legendary)",
+                          "var(--color-brand-turquoise)",
+                          "var(--color-rarity-rare)",
+                        ] as const
+                      ).map((color) => (
                         <div
                           key={color}
                           style={{
@@ -484,7 +516,7 @@ export function LandingClient({
                       <div
                         className="mono-label mono-label--xs"
                         style={{
-                          color: "#0AFFD4",
+                          color: "var(--color-brand-turquoise)",
                           marginBottom: 10,
                         }}
                       >
@@ -495,7 +527,7 @@ export function LandingClient({
                           fontFamily: "var(--font-sans)",
                           fontWeight: 700,
                           fontSize: 14,
-                          color: "#F5F5FA",
+                          color: "var(--color-text-primary)",
                           marginBottom: 12,
                         }}
                       >
@@ -507,7 +539,7 @@ export function LandingClient({
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 9,
-                          color: "#7F7BA9",
+                          color: "var(--color-text-muted)",
                           lineHeight: 1.8,
                           letterSpacing: "0.04em",
                         }}
@@ -533,7 +565,7 @@ export function LandingClient({
                             style={{
                               width: 8,
                               height: 8,
-                              background: on ? "#0AFFD4" : "transparent",
+                              background: on ? "var(--color-brand-turquoise)" : "transparent",
                             }}
                           />
                         );
@@ -560,11 +592,11 @@ export function LandingClient({
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       letterSpacing: "0.18em",
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       marginBottom: 10,
                     }}
                   >
-                    {num} <b style={{ color: "#B8B5D1" }}>{label}</b>
+                    {num} <b style={{ color: "var(--color-text-secondary)" }}>{label}</b>
                   </div>
                   <h3
                     style={{
@@ -572,7 +604,7 @@ export function LandingClient({
                       fontWeight: 700,
                       fontSize: 20,
                       letterSpacing: "-0.02em",
-                      color: "#F5F5FA",
+                      color: "var(--color-text-primary)",
                       margin: "0 0 10px",
                     }}
                   >
@@ -583,7 +615,7 @@ export function LandingClient({
                       fontFamily: "var(--font-sans)",
                       fontSize: 14,
                       lineHeight: 1.6,
-                      color: "#B8B5D1",
+                      color: "var(--color-text-secondary)",
                       margin: 0,
                     }}
                   >
@@ -604,7 +636,7 @@ export function LandingClient({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
@@ -612,7 +644,12 @@ export function LandingClient({
               }}
             >
               <span
-                style={{ width: 20, height: 1, background: "#0AFFD4", display: "inline-block" }}
+                style={{
+                  width: 20,
+                  height: 1,
+                  background: "var(--color-brand-turquoise)",
+                  display: "inline-block",
+                }}
               />
               03 · LES PARCOURS
             </div>
@@ -624,7 +661,7 @@ export function LandingClient({
                 fontSize: "clamp(36px, 4.5vw, 60px)",
                 lineHeight: 1.0,
                 letterSpacing: "-0.035em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 18px",
               }}
             >
@@ -632,7 +669,8 @@ export function LandingClient({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -646,7 +684,7 @@ export function LandingClient({
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 16,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.6,
                 margin: 0,
               }}
@@ -671,7 +709,7 @@ export function LandingClient({
                   href={`/catalogue#${path.slug}`}
                   style={{
                     position: "relative",
-                    background: "#0A0826",
+                    background: "var(--color-bg-elevated)",
                     border: `1px solid ${color}33`,
                     padding: "24px 24px 22px",
                     display: "flex",
@@ -722,7 +760,7 @@ export function LandingClient({
                     <span
                       className="mono-label mono-label--xs"
                       style={{
-                        color: "#7F7BA9",
+                        color: "var(--color-text-muted)",
                       }}
                     >
                       {lvl}
@@ -738,7 +776,7 @@ export function LandingClient({
                         fontWeight: 700,
                         fontSize: 20,
                         letterSpacing: "-0.02em",
-                        color: "#F5F5FA",
+                        color: "var(--color-text-primary)",
                         margin: "0 0 10px",
                       }}
                     >
@@ -749,7 +787,7 @@ export function LandingClient({
                         fontFamily: "var(--font-sans)",
                         fontSize: 13.5,
                         lineHeight: 1.55,
-                        color: "#B8B5D1",
+                        color: "var(--color-text-secondary)",
                         margin: 0,
                         display: "-webkit-box",
                         WebkitLineClamp: 2,
@@ -766,18 +804,23 @@ export function LandingClient({
                       justifyContent: "space-between",
                       alignItems: "center",
                       paddingTop: 8,
-                      borderTop: "1px solid #1F1B47",
+                      borderTop: "1px solid var(--color-border-subtle)",
                       fontFamily: "var(--font-mono)",
                       fontSize: 11,
-                      color: "#7F7BA9",
+                      color: "var(--color-text-muted)",
                       letterSpacing: "0.06em",
                     }}
                   >
                     <span>
-                      <b style={{ color: "#F5F5FA" }}>{path.lessons}</b> leçons ·{" "}
-                      <b style={{ color: "#0AFFD4" }}>{formatNumberFr(path.xp)}</b> XP
+                      <b style={{ color: "var(--color-text-primary)" }}>{path.lessons}</b> leçons ·{" "}
+                      <b style={{ color: "var(--color-brand-turquoise)" }}>
+                        {formatNumberFr(path.xp)}
+                      </b>{" "}
+                      XP
                     </span>
-                    <span style={{ color: "#0AFFD4", fontWeight: 700 }}>→</span>
+                    <span style={{ color: "var(--color-brand-turquoise)", fontWeight: 700 }}>
+                      →
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -789,8 +832,8 @@ export function LandingClient({
           className="landing-cta-section"
           style={{
             position: "relative",
-            borderTop: "1px solid #1F1B47",
-            borderBottom: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
             textAlign: "center",
             overflow: "hidden",
           }}
@@ -820,7 +863,7 @@ export function LandingClient({
             <div
               className="mono-label"
               style={{
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 marginBottom: 24,
               }}
             >
@@ -834,7 +877,7 @@ export function LandingClient({
                 fontSize: "clamp(44px, 6vw, 88px)",
                 lineHeight: 0.95,
                 letterSpacing: "-0.04em",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
                 margin: "0 0 40px",
               }}
             >
@@ -842,7 +885,8 @@ export function LandingClient({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background:
+                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-turquoise) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -871,7 +915,7 @@ export function LandingClient({
         </section>
 
         {/* ── Footer ────────────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: "1px solid #1F1B47" }}>
+        <footer style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
           <div
             className="landing-footer-inner"
             style={{
@@ -891,7 +935,7 @@ export function LandingClient({
                 alignItems: "center",
                 gap: 10,
                 textDecoration: "none",
-                color: "#F5F5FA",
+                color: "var(--color-text-primary)",
               }}
             >
               <Image
@@ -909,7 +953,7 @@ export function LandingClient({
                   letterSpacing: "-0.01em",
                 }}
               >
-                cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+                cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
               </span>
             </Link>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 28px" }}>
@@ -927,7 +971,7 @@ export function LandingClient({
                   href={href}
                   className="footer-link mono-label"
                   style={{
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                     textDecoration: "none",
                   }}
                 >
@@ -939,7 +983,7 @@ export function LandingClient({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--color-text-muted)",
                 letterSpacing: "0.06em",
               }}
             >

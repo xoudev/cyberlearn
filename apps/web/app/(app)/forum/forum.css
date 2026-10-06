@@ -28,7 +28,7 @@
   content: "";
   width: 24px;
   height: 1px;
-  background: #2a2560;
+  background: var(--color-border-default);
   flex-shrink: 0;
 }
 /* The basis, not the text, is what makes this drop below the tags: once the
@@ -45,7 +45,7 @@
   font-weight: 800;
   font-size: clamp(30px, 5vw, 48px);
   letter-spacing: -0.03em;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   line-height: 1.1;
 }
 .fo-title em {
@@ -59,7 +59,7 @@
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 
 .fo-crumb {
@@ -70,10 +70,10 @@
   margin-bottom: 18px;
   font: 11px var(--font-mono);
   letter-spacing: 0.08em;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-crumb a {
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
   text-decoration: none;
 }
 .fo-crumb a:hover {
@@ -96,7 +96,7 @@
   padding: 20px;
   text-decoration: none;
   background: rgba(5, 4, 26, 0.5);
-  border: 1px solid #1f1b47;
+  border: 1px solid var(--color-border-subtle);
   border-left: 3px solid var(--fo-accent, var(--cosmetic-accent));
   transition:
     border-color 150ms,
@@ -104,7 +104,7 @@
 }
 .fo-cat:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
-  border-color: #2a2560;
+  border-color: var(--color-border-default);
   border-left-color: var(--fo-accent, var(--cosmetic-accent));
 }
 .fo-cat h2 {
@@ -112,7 +112,7 @@
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 17px;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
 }
 .fo-cat p {
   margin: 0;
@@ -127,9 +127,9 @@
   justify-content: space-between;
   gap: 10px;
   padding-top: 10px;
-  border-top: 1px solid #1f1b47;
+  border-top: 1px solid var(--color-border-subtle);
   font: 10.5px var(--font-mono);
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 /* ── Threads ────────────────────────────────────────────────────────────── */
@@ -159,7 +159,7 @@
   padding: 14px 16px;
   text-decoration: none;
   background: rgba(5, 4, 26, 0.5);
-  border: 1px solid #1f1b47;
+  border: 1px solid var(--color-border-subtle);
   border-left: 3px solid var(--fo-accent, var(--cosmetic-accent));
   transition:
     border-color 150ms,
@@ -167,7 +167,7 @@
 }
 .fo-topic:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
-  border-color: #2a2560;
+  border-color: var(--color-border-default);
   border-left-color: var(--fo-accent, var(--cosmetic-accent));
 }
 .fo-topic-title {
@@ -178,7 +178,7 @@
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 15px;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   line-height: 1.3;
 }
 .fo-topic-preview {
@@ -195,13 +195,13 @@
 .fo-topic-meta {
   margin-top: 6px;
   font: 10.5px var(--font-mono);
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-topic-count {
   text-align: center;
   min-width: 64px;
   font-family: var(--font-mono);
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 .fo-topic-count strong {
   display: block;
@@ -212,7 +212,7 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 
 .fo-tag {
@@ -227,7 +227,7 @@
   color: var(--cosmetic-accent);
 }
 .fo-tag--locked {
-  color: #ffb020;
+  color: var(--color-warning);
 }
 .fo-tag--hidden {
   color: #ff6b7a;
@@ -238,7 +238,7 @@
 .fo-post {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
-  border: 1px solid #1f1b47;
+  border: 1px solid var(--color-border-subtle);
   background: rgba(5, 4, 26, 0.5);
   margin-bottom: 10px;
 }
@@ -252,7 +252,7 @@
   align-items: center;
   gap: 6px;
   padding: 18px 12px;
-  border-right: 1px solid #1f1b47;
+  border-right: 1px solid var(--color-border-subtle);
   text-align: center;
 }
 .fo-post-author img,
@@ -264,26 +264,26 @@
   display: grid;
   place-items: center;
   background: #110f33;
-  border: 1px solid #2a2560;
+  border: 1px solid var(--color-border-default);
   font: 700 15px var(--font-mono);
-  color: #b8b5d1;
+  color: var(--color-text-secondary);
 }
 .fo-post-name {
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 13px;
-  color: #f5f5fa;
+  color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
 .fo-post-role {
   font: 700 9px var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6e8bff;
+  color: var(--color-rarity-rare);
 }
 .fo-post-level {
   font: 10px var(--font-mono);
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-post-body {
   display: flex;
@@ -299,9 +299,9 @@
   flex-wrap: wrap;
   padding-bottom: 10px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #1f1b47;
+  border-bottom: 1px solid var(--color-border-subtle);
   font: 10.5px var(--font-mono);
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-post-tools {
   display: flex;
@@ -314,7 +314,7 @@
   display: grid;
   gap: 14px;
   padding: 20px;
-  border: 1px solid #1f1b47;
+  border: 1px solid var(--color-border-subtle);
   background: rgba(5, 4, 26, 0.5);
 }
 .fo-label {
@@ -323,15 +323,15 @@
   font: 700 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-input,
 .fo-textarea {
   width: 100%;
   padding: 10px 12px;
   background: rgba(3, 2, 25, 0.6);
-  border: 1px solid #2a2560;
-  color: #f5f5fa;
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
   font-family: var(--font-mono);
   font-size: 13.5px;
   line-height: 1.6;
@@ -348,7 +348,7 @@
 .fo-hint {
   font: 11px var(--font-mono);
   line-height: 1.5;
-  color: #7f7ba9;
+  color: var(--color-text-muted);
 }
 .fo-error {
   margin: 0;
@@ -367,7 +367,7 @@
   padding: 10px 12px;
   font: 11px var(--font-mono);
   line-height: 1.5;
-  color: #ffb547;
+  color: var(--color-rarity-legendary);
   border: 1px solid rgba(255, 181, 71, 0.35);
   background: rgba(255, 181, 71, 0.07);
 }
@@ -391,7 +391,7 @@
     gap: 10px;
     padding: 12px 14px;
     border-right: 0;
-    border-bottom: 1px solid #1f1b47;
+    border-bottom: 1px solid var(--color-border-subtle);
     text-align: left;
   }
   .fo-post-author img,

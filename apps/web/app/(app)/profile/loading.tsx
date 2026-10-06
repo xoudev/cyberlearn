@@ -1,7 +1,7 @@
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const HAIRLINE = "#1F1B47";
+const HAIRLINE = "var(--color-border-subtle)";
 const PANEL_BG = "rgba(5,4,26,0.5)";
 
 export default function ProfileLoading(): React.ReactElement {
@@ -87,7 +87,7 @@ export default function ProfileLoading(): React.ReactElement {
             h={39}
             w="100%"
             radius={0}
-            style={{ border: "1px solid #2A2560", background: "transparent" }}
+            style={{ border: "1px solid var(--color-border-default)", background: "transparent" }}
           />
         </div>
       </section>

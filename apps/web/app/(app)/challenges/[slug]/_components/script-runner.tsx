@@ -140,12 +140,12 @@ const BUILTINS = new Set([
 ]);
 
 const TOKEN_STYLE: Record<TokenType, React.CSSProperties> = {
-  keyword: { color: "#4D8BFF", fontWeight: 600 },
+  keyword: { color: "var(--color-info)", fontWeight: 600 },
   builtin: { color: "#B14DFF" },
   string: { color: "var(--cosmetic-accent)" },
-  comment: { color: "#7F7BA9", fontStyle: "italic" },
-  number: { color: "#FFB020" },
-  decorator: { color: "#FF4D6D" },
+  comment: { color: "var(--color-text-muted)", fontStyle: "italic" },
+  number: { color: "var(--color-warning)" },
+  decorator: { color: "var(--color-danger)" },
   operator: { color: "#8B88B8" },
   text: {},
 };
@@ -357,7 +357,11 @@ export function ScriptRunner({
   const attemptsExhausted = attemptsLeft === 0 && userAttempts >= maxAttempts;
 
   // Status dot color
-  const dotColor = isLoading ? "#FFB020" : isRunning ? "#4D8BFF" : "var(--cosmetic-accent)";
+  const dotColor = isLoading
+    ? "var(--color-warning)"
+    : isRunning
+      ? "var(--color-info)"
+      : "var(--cosmetic-accent)";
 
   const highlighted = useMemo(() => tokenizePython(code), [code]);
 
@@ -378,7 +382,7 @@ export function ScriptRunner({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
       >
@@ -388,7 +392,7 @@ export function ScriptRunner({
             display: "inline-flex",
             alignItems: "center",
             gap: 10,
-            color: "#B8B5D1",
+            color: "var(--color-text-secondary)",
             fontWeight: 600,
           }}
         >
@@ -429,7 +433,7 @@ export function ScriptRunner({
           fontFamily: "var(--font-mono)",
           fontSize: 13,
           lineHeight: 1.7,
-          background: "#0A0826",
+          background: "var(--color-bg-elevated)",
           overflowX: "auto",
           minHeight: 160,
         }}
@@ -438,11 +442,11 @@ export function ScriptRunner({
         <div
           style={{
             background: "rgba(5,4,26,0.6)",
-            borderRight: "1px solid #1F1B47",
+            borderRight: "1px solid var(--color-border-subtle)",
             padding: "16px 0",
             textAlign: "right",
             userSelect: "none",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             flexShrink: 0,
           }}
         >
@@ -467,7 +471,7 @@ export function ScriptRunner({
               fontSize: 13,
               lineHeight: 1.7,
               background: "transparent",
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
               whiteSpace: "pre",
               wordBreak: "normal",
               overflow: "hidden",
@@ -506,7 +510,7 @@ export function ScriptRunner({
               background: "transparent",
               border: "none",
               color: "transparent",
-              caretColor: "#F5F5FA",
+              caretColor: "var(--color-text-primary)",
               fontFamily: "var(--font-mono)",
               fontSize: 13,
               lineHeight: 1.7,
@@ -542,7 +546,7 @@ export function ScriptRunner({
         style={{
           display: "flex",
           alignItems: "stretch",
-          borderTop: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
       >
@@ -559,8 +563,8 @@ export function ScriptRunner({
             padding: "0 22px",
             minHeight: 46,
             fontWeight: 700,
-            background: canRun ? "#0024FF" : "#1A1840",
-            color: canRun ? "#fff" : "#3F3D5C",
+            background: canRun ? "var(--color-brand-blue)" : "#1A1840",
+            color: canRun ? "#fff" : "var(--color-text-disabled)",
             border: "none",
             borderRight: "1px solid rgba(0,36,255,0.4)",
             cursor: canRun ? "pointer" : "not-allowed",
@@ -597,7 +601,7 @@ export function ScriptRunner({
           <span>{isLoading ? "Chargement..." : isRunning ? "Exécution..." : "Prêt"}</span>
           <span
             style={{
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               marginLeft: "auto",
               letterSpacing: "0.1em",
               fontWeight: 500,
@@ -611,13 +615,13 @@ export function ScriptRunner({
       {/* Output area */}
       <div
         style={{
-          borderTop: "1px solid #1F1B47",
-          background: "#030219",
+          borderTop: "1px solid var(--color-border-subtle)",
+          background: "var(--color-bg-base)",
           padding: "14px 18px",
           fontFamily: "var(--font-mono)",
           fontSize: 12.5,
           lineHeight: 1.7,
-          color: "#F5F5FA",
+          color: "var(--color-text-primary)",
           minHeight: 70,
         }}
       >
@@ -631,8 +635,8 @@ export function ScriptRunner({
                 line.kind === "good"
                   ? "var(--cosmetic-accent)"
                   : line.kind === "err"
-                    ? "#FF4D6D"
-                    : "#B8B5D1",
+                    ? "var(--color-danger)"
+                    : "var(--color-text-secondary)",
             }}
           >
             <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>{">>>"}</span>
@@ -672,10 +676,10 @@ export function ScriptRunner({
         <div
           className="mono-label"
           style={{
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             background: "rgba(5,4,26,0.5)",
             padding: "16px 20px",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           Challenge verrouillé · complète les prérequis
@@ -687,7 +691,7 @@ export function ScriptRunner({
             borderTop: "1px solid rgba(255,77,109,0.2)",
             background: "rgba(255,77,109,0.04)",
             padding: "16px 20px",
-            color: "#FF4D6D",
+            color: "var(--color-danger)",
           }}
         >
           Plus de tentatives disponibles
@@ -699,7 +703,7 @@ export function ScriptRunner({
             display: "grid",
             gridTemplateColumns: "auto 1fr auto",
             alignItems: "stretch",
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             background: "rgba(255,77,109,0.04)",
           }}
         >
@@ -712,8 +716,8 @@ export function ScriptRunner({
               gap: 8,
               padding: "0 18px",
               fontWeight: 700,
-              color: "#FF4D6D",
-              borderRight: "1px solid #1F1B47",
+              color: "var(--color-danger)",
+              borderRight: "1px solid var(--color-border-subtle)",
               background: "rgba(255,77,109,0.08)",
               whiteSpace: "nowrap",
             }}
@@ -739,8 +743,8 @@ export function ScriptRunner({
                 padding: "14px 16px",
                 fontFamily: "var(--font-mono)",
                 fontSize: 14,
-                color: "#F5F5FA",
-                caretColor: "#FF4D6D",
+                color: "var(--color-text-primary)",
+                caretColor: "var(--color-danger)",
                 width: "100%",
               }}
             />
@@ -750,7 +754,7 @@ export function ScriptRunner({
                   padding: "0 16px 10px",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#FF4D6D",
+                  color: "var(--color-danger)",
                   letterSpacing: "0.06em",
                 }}
               >
@@ -768,7 +772,7 @@ export function ScriptRunner({
               padding: "0 22px",
               minHeight: 50,
               fontWeight: 700,
-              background: flagPending ? "#2A1520" : "#FF4D6D",
+              background: flagPending ? "#2A1520" : "var(--color-danger)",
               color: "#fff",
               border: "none",
               borderLeft: "1px solid rgba(255,77,109,0.4)",

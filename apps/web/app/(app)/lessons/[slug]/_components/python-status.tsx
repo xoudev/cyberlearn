@@ -51,7 +51,7 @@ export function PythonStatusNotice({
           padding: "10px 16px",
           borderTop: "1px solid rgba(255,176,32,0.35)",
           background: "rgba(255,176,32,0.06)",
-          color: "#FFB020",
+          color: "var(--color-warning)",
         }}
       >
         <span>Python n&apos;a pas pu démarrer. Ton code est conservé.</span>
@@ -69,7 +69,7 @@ export function PythonStatusNotice({
             textTransform: "uppercase",
             padding: "6px 12px",
             background: "transparent",
-            color: "#FFB020",
+            color: "var(--color-warning)",
             border: "1px solid rgba(255,176,32,0.5)",
             cursor: "pointer",
           }}
@@ -86,9 +86,9 @@ export function PythonStatusNotice({
         style={{
           ...MONO,
           padding: "10px 16px",
-          borderTop: "1px solid #1F1B47",
+          borderTop: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.6)",
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
         }}
       >
         Démarrage de Python. La première fois, le navigateur télécharge l&apos;interpréteur : cela
@@ -110,7 +110,9 @@ export function DraftControls({
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       {restored && (
-        <span style={{ ...MONO, fontSize: 10, color: "#7F7BA9" }}>Brouillon retrouvé</span>
+        <span style={{ ...MONO, fontSize: 10, color: "var(--color-text-muted)" }}>
+          Brouillon retrouvé
+        </span>
       )}
       <button
         type="button"
@@ -123,8 +125,8 @@ export function DraftControls({
           textTransform: "uppercase",
           padding: "4px 8px",
           background: "transparent",
-          color: "#7F7BA9",
-          border: "1px solid #2A2560",
+          color: "var(--color-text-muted)",
+          border: "1px solid var(--color-border-default)",
           cursor: "pointer",
         }}
       >
@@ -142,8 +144,8 @@ export function ErrorHint({
 }): React.ReactElement | null {
   if (!hint) return null;
   return (
-    <div style={{ ...MONO, marginTop: 6, color: "#B8B5D1" }}>
-      <span style={{ color: "#FFB020" }}>Piste : </span>
+    <div style={{ ...MONO, marginTop: 6, color: "var(--color-text-secondary)" }}>
+      <span style={{ color: "var(--color-warning)" }}>Piste : </span>
       {hint}
     </div>
   );

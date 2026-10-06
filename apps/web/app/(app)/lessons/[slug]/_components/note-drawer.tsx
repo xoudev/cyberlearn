@@ -41,7 +41,7 @@ function ToolBtn({
         height: 28,
         background: "transparent",
         border: "none",
-        color: "#B8B5D1",
+        color: "var(--color-text-secondary)",
         fontFamily: "var(--font-mono)",
         fontSize: 13,
         cursor: "pointer",
@@ -137,9 +137,9 @@ export function NoteDrawer({
           gap: 10,
           padding: "12px 16px",
           fontWeight: 700,
-          color: open ? "#05041A" : "var(--cosmetic-accent)",
+          color: open ? "var(--color-bg-sunken)" : "var(--cosmetic-accent)",
           background: open ? "var(--cosmetic-accent)" : "rgba(10,8,38,0.92)",
-          border: `1px solid ${open ? "var(--cosmetic-accent)" : "#2A2560"}`,
+          border: `1px solid ${open ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
           boxShadow: "0 6px 24px rgba(0,0,0,0.5)",
           cursor: "pointer",
           backdropFilter: "blur(8px)",
@@ -182,7 +182,7 @@ export function NoteDrawer({
           width,
           zIndex: 46,
           background: "#08061c",
-          borderLeft: "1px solid #2A2560",
+          borderLeft: "1px solid var(--color-border-default)",
           transform: open ? "translateX(0)" : "translateX(105%)",
           transition: "transform 240ms cubic-bezier(0.2,0.7,0.2,1)",
           display: "flex",
@@ -196,7 +196,7 @@ export function NoteDrawer({
             alignItems: "center",
             gap: 12,
             padding: "18px 18px 16px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           <span
@@ -243,7 +243,7 @@ export function NoteDrawer({
               fontFamily: "var(--font-sans)",
               fontWeight: 700,
               fontSize: 15,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             Mes notes
@@ -295,7 +295,7 @@ export function NoteDrawer({
         </div>
 
         {/* Linked-lesson badge */}
-        <div style={{ padding: "12px 18px", borderBottom: "1px solid #1F1B47" }}>
+        <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--color-border-subtle)" }}>
           <div
             style={{
               display: "flex",
@@ -306,7 +306,7 @@ export function NoteDrawer({
               border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
             }}
           >
             <span
@@ -331,7 +331,7 @@ export function NoteDrawer({
             alignItems: "center",
             gap: 2,
             padding: "8px 14px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           <ToolBtn
@@ -359,7 +359,12 @@ export function NoteDrawer({
             <b>H</b>
           </ToolBtn>
           <span
-            style={{ width: 1, height: 16, background: "#2A2560", margin: "0 6px" }}
+            style={{
+              width: 1,
+              height: 16,
+              background: "var(--color-border-default)",
+              margin: "0 6px",
+            }}
             aria-hidden="true"
           />
           <ToolBtn
@@ -425,10 +430,10 @@ export function NoteDrawer({
             justifyContent: "space-between",
             gap: 10,
             padding: "12px 18px",
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
           }}
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
@@ -438,7 +443,7 @@ export function NoteDrawer({
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: status === "saving" ? "#FFB020" : "var(--cosmetic-accent)",
+                background: status === "saving" ? "var(--color-warning)" : "var(--cosmetic-accent)",
               }}
             />
             {status === "saving" ? "Enregistrement…" : "Sauvegardé auto"}
@@ -470,7 +475,7 @@ const hdrBtn: React.CSSProperties = {
   width: 28,
   height: 28,
   background: "transparent",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   color: "#8B88A8",
   cursor: "pointer",
   borderRadius: 2,

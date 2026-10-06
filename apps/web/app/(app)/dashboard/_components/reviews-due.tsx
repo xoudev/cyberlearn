@@ -3,9 +3,9 @@ import Link from "next/link";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 const CAT_COLORS: Record<string, string> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#6E8BFF",
-  NETWORK: "#0AFFD4",
+  CYBERSEC: "var(--color-category-cybersec)",
+  DEV: "var(--color-rarity-rare)",
+  NETWORK: "var(--color-brand-turquoise)",
 };
 
 export interface ReviewRow {
@@ -73,7 +73,9 @@ export function ReviewsDue({
                   <Link href={`/lessons/${row.lesson.slug}`} className="dash-rev">
                     <i
                       className="dash-rev-dot"
-                      style={{ background: CAT_COLORS[row.lesson.category] ?? "#6E8BFF" }}
+                      style={{
+                        background: CAT_COLORS[row.lesson.category] ?? "var(--color-rarity-rare)",
+                      }}
                       aria-hidden="true"
                     />
                     <span className="dash-rev-title">

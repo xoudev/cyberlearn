@@ -26,7 +26,7 @@ export default async function AccountDeleteConfirmPage({
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#030219",
+        backgroundColor: "var(--color-bg-base)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -39,7 +39,7 @@ export default async function AccountDeleteConfirmPage({
         style={{
           maxWidth: 520,
           width: "100%",
-          borderTop: "2px solid #FF4757",
+          borderTop: "2px solid var(--color-danger)",
           padding: "32px 30px",
         }}
       >
@@ -50,7 +50,7 @@ export default async function AccountDeleteConfirmPage({
             fontWeight: 600,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#FF4757",
+            color: "var(--color-danger)",
             marginBottom: 18,
           }}
         >
@@ -62,18 +62,32 @@ export default async function AccountDeleteConfirmPage({
             fontWeight: 800,
             fontSize: 26,
             letterSpacing: "-0.03em",
-            color: "#F5F5FA",
+            color: "var(--color-text-primary)",
             margin: "0 0 14px",
           }}
         >
           Confirmer la suppression de ton compte
         </h1>
 
-        <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "#B8B5D1", margin: "0 0 10px" }}>
+        <p
+          style={{
+            fontSize: 14.5,
+            lineHeight: 1.65,
+            color: "var(--color-text-secondary)",
+            margin: "0 0 10px",
+          }}
+        >
           Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.
-          <b style={{ color: "#F5F5FA" }}> Cette action est irréversible.</b>
+          <b style={{ color: "var(--color-text-primary)" }}> Cette action est irréversible.</b>
         </p>
-        <p style={{ fontSize: 13, lineHeight: 1.6, color: "#7F7BA9", margin: "0 0 26px" }}>
+        <p
+          style={{
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: "var(--color-text-muted)",
+            margin: "0 0 26px",
+          }}
+        >
           Si tu n&apos;es pas à l&apos;origine de cette demande, ferme simplement cette page : rien
           ne sera supprimé.
         </p>
@@ -95,7 +109,7 @@ export default async function AccountDeleteConfirmPage({
               alignItems: "center",
               minHeight: 44,
               padding: "0 22px",
-              color: "#B8B5D1",
+              color: "var(--color-text-secondary)",
               fontFamily: "monospace",
               fontWeight: 700,
               fontSize: 11,

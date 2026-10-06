@@ -27,10 +27,11 @@ export const BADGE_RARITY_VAR: Record<BadgeRarity, string> = {
 
 /** The ring a rarity earns: the profile's avatar frame, a medallion's rim. */
 export const BADGE_RARITY_GRADIENT: Record<BadgeRarity, string> = {
-  LEGENDARY: "linear-gradient(135deg, #FFB547 0%, #FF4757 50%, #0024FF 100%)",
-  EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, #0024FF 100%)",
-  RARE: "linear-gradient(135deg, #6E8BFF 0%, #4A3FCC 100%)",
-  COMMON: "linear-gradient(135deg, #B8B5D1 0%, #7F7BA9 100%)",
+  LEGENDARY:
+    "linear-gradient(135deg, var(--color-rarity-legendary) 0%, var(--color-category-cybersec) 50%, var(--color-brand-blue) 100%)",
+  EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, var(--color-brand-blue) 100%)",
+  RARE: "linear-gradient(135deg, var(--color-rarity-rare) 0%, #4A3FCC 100%)",
+  COMMON: "linear-gradient(135deg, var(--color-text-secondary) 0%, var(--color-text-muted) 100%)",
 };
 
 /** Narrow an arbitrary string (e.g. a serialized rarity) to a BadgeRarity. */

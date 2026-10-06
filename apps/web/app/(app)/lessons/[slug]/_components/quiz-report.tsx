@@ -75,7 +75,11 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
         {reported ? (
           <span
             role={justSent ? "status" : undefined}
-            style={{ fontFamily: "var(--font-body, sans-serif)", fontSize: 13, color: "#B8B5D1" }}
+            style={{
+              fontFamily: "var(--font-body, sans-serif)",
+              fontSize: 13,
+              color: "var(--color-text-secondary)",
+            }}
           >
             {justSent
               ? "Merci, c'est signalé. L'équipe va relire cette question."
@@ -104,7 +108,7 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
       style={{
         margin: "16px 0 0",
         padding: "16px 18px",
-        border: "1px solid #2A2560",
+        border: "1px solid var(--color-border-default)",
         background: "rgba(5,4,26,0.6)",
       }}
     >
@@ -115,7 +119,7 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
           fontSize: 10.5,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
         }}
       >
         Qu&apos;est-ce qui ne va pas ?
@@ -131,14 +135,14 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
               minHeight: 36,
               padding: "6px 10px",
               cursor: "pointer",
-              border: `1px solid ${reason === key ? "var(--cosmetic-accent)" : "#1F1B47"}`,
+              border: `1px solid ${reason === key ? "var(--cosmetic-accent)" : "var(--color-border-subtle)"}`,
               background:
                 reason === key
                   ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
                   : "transparent",
               fontFamily: "var(--font-body, sans-serif)",
               fontSize: 14,
-              color: "#F5F5FA",
+              color: "var(--color-text-primary)",
             }}
           >
             <input
@@ -180,9 +184,9 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
             marginTop: 6,
             padding: "10px 12px",
             resize: "vertical",
-            border: "1px solid #2A2560",
-            background: "#05041A",
-            color: "#F5F5FA",
+            border: "1px solid var(--color-border-default)",
+            background: "var(--color-bg-sunken)",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-body, sans-serif)",
             fontSize: 14,
             lineHeight: 1.5,
@@ -214,9 +218,9 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
             fontSize: 11,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            border: "1px solid #0024FF",
-            background: reason === null ? "transparent" : "#0024FF",
-            color: reason === null ? "#3F3D5C" : "#FFFFFF",
+            border: "1px solid var(--color-brand-blue)",
+            background: reason === null ? "transparent" : "var(--color-brand-blue)",
+            color: reason === null ? "var(--color-text-disabled)" : "#FFFFFF",
             cursor: reason === null ? "not-allowed" : pending ? "wait" : "pointer",
           }}
         >

@@ -18,7 +18,7 @@ export function KeepCard({
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#030219",
+        backgroundColor: "var(--color-bg-base)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -31,7 +31,7 @@ export function KeepCard({
         style={{
           maxWidth: 520,
           width: "100%",
-          borderTop: "2px solid #0AFFD4",
+          borderTop: "2px solid var(--color-brand-turquoise)",
           padding: "32px 28px",
         }}
       >
@@ -40,16 +40,25 @@ export function KeepCard({
             fontFamily: "monospace",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#7F7BA9",
+            color: "var(--color-text-muted)",
             margin: "0 0 16px",
           }}
         >
           {tag}
         </p>
-        <h1 style={{ color: "#F5F5FA", fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>
+        <h1
+          style={{
+            color: "var(--color-text-primary)",
+            fontSize: 22,
+            fontWeight: 700,
+            margin: "0 0 16px",
+          }}
+        >
           {title}
         </h1>
-        <div style={{ color: "#B8B5D1", fontSize: 15, lineHeight: 1.6 }}>{children}</div>
+        <div style={{ color: "var(--color-text-secondary)", fontSize: 15, lineHeight: 1.6 }}>
+          {children}
+        </div>
       </div>
     </main>
   );
@@ -59,8 +68,8 @@ export const keepButtonStyle: React.CSSProperties = {
   display: "inline-block",
   marginTop: 8,
   padding: "12px 20px",
-  background: "#0AFFD4",
-  color: "#030219",
+  background: "var(--color-brand-turquoise)",
+  color: "var(--color-bg-base)",
   border: "none",
   fontWeight: 700,
   fontSize: 15,

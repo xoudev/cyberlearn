@@ -6,16 +6,16 @@ import { interpolate } from "remotion";
 export const SCENE = { width: 800, height: 450 } as const;
 
 export const INK = {
-  bg: "#05041A",
-  panel: "#0A0826",
-  line: "#2A2560",
-  text: "#F5F5FA",
-  soft: "#B8B5D1",
-  muted: "#7F7BA9",
-  accent: "#0AFFD4",
-  amber: "#FFB020",
+  bg: "var(--color-bg-sunken)",
+  panel: "var(--color-bg-elevated)",
+  line: "var(--color-border-default)",
+  text: "var(--color-text-primary)",
+  soft: "var(--color-text-secondary)",
+  muted: "var(--color-text-muted)",
+  accent: "var(--color-brand-turquoise)",
+  amber: "var(--color-warning)",
   purple: "#7B61FF",
-  red: "#FF4757",
+  red: "var(--color-category-cybersec)",
 } as const;
 
 export const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";

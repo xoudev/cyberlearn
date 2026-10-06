@@ -21,9 +21,9 @@ import { parsePutInOrder } from "@cyberlearn/types";
 
 const button: React.CSSProperties = {
   padding: "8px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#F5F5FA",
+  color: "var(--color-text-primary)",
   textAlign: "left",
   fontSize: 14,
   cursor: "pointer",
@@ -31,9 +31,9 @@ const button: React.CSSProperties = {
 
 const small: React.CSSProperties = {
   padding: "6px 12px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   fontFamily: MONO,
   fontSize: 12,
   cursor: "pointer",
@@ -54,7 +54,7 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
           margin: "24px 0",
           padding: "14px 16px",
           border: `1px solid ${RED}`,
-          color: "#B8B5D1",
+          color: "var(--color-text-secondary)",
           fontSize: 14,
         }}
       >
@@ -112,7 +112,7 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--color-border-subtle)",
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -123,12 +123,16 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
           DANS L&apos;ORDRE
         </span>
         {exercise.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{exercise.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {exercise.title}
+          </span>
         ) : null}
       </header>
 
       <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{exercise.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+          {exercise.task}
+        </p>
 
         <ol
           aria-label="Ta réponse"
@@ -145,20 +149,29 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
                   alignItems: "center",
                   gap: 10,
                   padding: "6px 10px",
-                  border: `1px ${text === null ? "dashed" : "solid"} ${isLocked ? ACCENT : "#2A2560"}`,
+                  border: `1px ${text === null ? "dashed" : "solid"} ${isLocked ? ACCENT : "var(--color-border-default)"}`,
                   background: isLocked
-                    ? "color-mix(in srgb, var(--cosmetic-accent, #0AFFD4) 10%, transparent)"
+                    ? "color-mix(in srgb, var(--cosmetic-accent, var(--color-brand-turquoise)) 10%, transparent)"
                     : "transparent",
                 }}
               >
-                <span style={{ fontFamily: MONO, fontSize: 12, color: "#7F7BA9", width: 20 }}>
+                <span
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 12,
+                    color: "var(--color-text-muted)",
+                    width: 20,
+                  }}
+                >
                   {String(position + 1)}
                 </span>
                 {text === null ? (
-                  <span style={{ color: "#3F3D5C", fontSize: 14 }}>…</span>
+                  <span style={{ color: "var(--color-text-disabled)", fontSize: 14 }}>…</span>
                 ) : (
                   <>
-                    <span style={{ flex: 1, color: "#F5F5FA", fontSize: 14 }}>{text}</span>
+                    <span style={{ flex: 1, color: "var(--color-text-primary)", fontSize: 14 }}>
+                      {text}
+                    </span>
                     {isLocked ? (
                       <span
                         aria-label="à la bonne place"
@@ -187,7 +200,9 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
 
         {pool.length > 0 ? (
           <div role="group" aria-label="À placer" style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>À PLACER</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+              À PLACER
+            </span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {pool.map((index) => (
                 <button
@@ -214,10 +229,19 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
             </p>
           ) : null}
           {tries > 0 && !done && exercise.hint ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>Indice : {exercise.hint}</p>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+              Indice : {exercise.hint}
+            </p>
           ) : null}
           {done ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.6 }}>
+            <p
+              style={{
+                margin: 0,
+                color: "var(--color-text-secondary)",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
               <strong style={{ color: ACCENT }}>Dans l&apos;ordre.</strong>
               {exercise.explanation ? ` ${exercise.explanation}` : ""}
             </p>
