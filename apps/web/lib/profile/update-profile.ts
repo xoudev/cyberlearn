@@ -4,7 +4,7 @@ import { AVATAR_PATHS, UPLOADED_AVATAR_PREFIX } from "@cyberlearn/types";
 
 /**
  * Editing one's own profile: the name shown, the bio, and optionally one of
- * the built-in avatars. Shared by the site's /settings/profile and the app
+ * the built-in avatars. Shared by the site's settings drawer and the app
  * (/api/mobile/settings/profile), so both accept exactly the same values.
  *
  * Callers are responsible for AUTHENTICATION: `userId` must be a verified

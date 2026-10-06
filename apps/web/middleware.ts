@@ -204,7 +204,6 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/locker",
   "/my-class",
   "/profile",
-  "/settings",
   "/support",
   "/wrapped",
   "/changelog",
@@ -380,7 +379,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // Unauthenticated user trying to access a protected route
     if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirectTo", pathname);
+      // The query comes along: /dashboard?settings=notifications, where a
+      // settings link from an e-mail lands, opens the drawer after sign-in.
+      loginUrl.searchParams.set("redirectTo", `${pathname}${request.nextUrl.search}`);
       const redirectResponse = NextResponse.redirect(loginUrl);
       applySecurityHeaders(redirectResponse, nonce, pathname);
       return redirectResponse;
@@ -400,7 +401,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
       ) {
         const mfaUrl = new URL("/mfa", request.url);
-        mfaUrl.searchParams.set("next", pathname);
+        mfaUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
         const redirectResponse = NextResponse.redirect(mfaUrl);
         applySecurityHeaders(redirectResponse, nonce, pathname);
         return redirectResponse;

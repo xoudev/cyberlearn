@@ -34,7 +34,11 @@ export interface ModerationAnnouncement {
   sanctionLabel?: string | null;
 }
 
-/** Where somebody reads their own moderation record. */
+/**
+ * Where somebody reads their own moderation record: the address of the
+ * settings section, which the site's drawer opens (redirected to the
+ * dashboard when followed from outside) and the app maps to its screen.
+ */
 const RECORD_PATH = "/settings/moderation";
 
 export async function announceModeration(input: ModerationAnnouncement): Promise<void> {

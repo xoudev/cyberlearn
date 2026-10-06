@@ -10,7 +10,7 @@ import { CosmeticsProvider } from "@/components/cosmetics-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { SettingsDrawerProvider } from "./settings/_components/SettingsDrawer";
+import { SettingsDrawerProvider } from "./_settings/_components/SettingsDrawer";
 
 async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmeticAttrs>> {
   try {

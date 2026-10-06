@@ -5,7 +5,7 @@
  * analyser and the second turns the filter into a puzzle people retry until
  * they beat it.
  *
- * Shared by the site's /settings/moderation and the app's screen, so the same
+ * Shared by the site's settings drawer and the app's screen, so the same
  * decision reads the same way on both.
  */
 

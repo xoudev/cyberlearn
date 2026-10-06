@@ -79,6 +79,18 @@ const nextConfig: NextConfig = {
       { source: "/certifs", destination: "/certificates", permanent: true },
       { source: "/legal/cgu", destination: "/legal/terms", permanent: true },
       { source: "/ma-classe", destination: "/my-class", permanent: true },
+      // The settings have no pages: they are a drawer over the page. Their
+      // addresses live on in e-mails, stored notifications and the app's
+      // links, and land on the dashboard with the drawer open on the section
+      // (?settings=, read by the drawer). Not permanent: a browser must not
+      // remember where an address of the site goes.
+      { source: "/settings", destination: "/dashboard?settings=profile", permanent: false },
+      {
+        source: "/settings/:section",
+        destination: "/dashboard?settings=:section",
+        permanent: false,
+      },
+      { source: "/profile/edit", destination: "/dashboard?settings=profile", permanent: false },
     ]);
   },
   rewrites() {

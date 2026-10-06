@@ -1,6 +1,6 @@
 /**
  * The notification settings, in the words the site uses, for the site's
- * /settings/notifications and the app's settings screen alike. Each says what
+ * settings drawer and the app's settings screen alike. Each says what
  * actually happens: a switch for something that is not sent yet is shown, and
  * shown as not available, rather than promising it.
  */

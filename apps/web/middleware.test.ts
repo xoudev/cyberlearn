@@ -67,14 +67,15 @@ describe("OAuth Site URL fallback", () => {
 });
 
 describe("protected route classification", () => {
-  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/settings/account"])(
+  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/profile"])(
     "protects known application route %s",
     (path) => {
       expect(isProtectedRoute(path)).toBe(true);
     },
   );
 
-  it.each(["/catalogue", "/contact", "/page-inconnue", "/u/introuvable"])(
+  // /settings has no page: next.config redirects it before the middleware.
+  it.each(["/catalogue", "/contact", "/page-inconnue", "/u/introuvable", "/settings"])(
     "lets Next render public and unknown route %s",
     (path) => {
       expect(isProtectedRoute(path)).toBe(false);
@@ -143,6 +144,30 @@ describe("the landing page is for people who are not signed in", () => {
     const response = await middleware(new NextRequest("https://cyberlearn.fr/?code=test-code"));
 
     expect(location(response)).toBe("/auth/callback");
+  });
+});
+
+describe("a visitor sent to sign in", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+  });
+
+  it("comes back to the address asked for, query included", async () => {
+    // A settings link from an e-mail lands on /dashboard?settings=...; the
+    // drawer opens on that section only if the query survives the sign-in.
+    const response = await middleware(
+      new NextRequest("https://cyberlearn.fr/dashboard?settings=notifications"),
+    );
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/login");
+    expect(location.searchParams.get("redirectTo")).toBe("/dashboard?settings=notifications");
+  });
+
+  it("comes back to a plain path as it was", async () => {
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/lessons/python"));
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.searchParams.get("redirectTo")).toBe("/lessons/python");
   });
 });
 

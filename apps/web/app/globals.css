@@ -1872,13 +1872,6 @@ aside[data-state="collapsed"] .sidebar-account {
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
-.settings-drawer-foot a {
-  color: var(--color-text-secondary);
-  text-decoration: none;
-}
-.settings-drawer-foot a:hover {
-  color: var(--color-text-primary);
-}
 @media (max-width: 720px) {
   .settings-drawer-body {
     flex-direction: column;
@@ -1905,8 +1898,8 @@ aside[data-state="collapsed"] .sidebar-account {
   }
 }
 
-/* The settings sections, the same on their page and in the drawer: the
-   section list, and the two rows that stack on a narrow screen. */
+/* The settings drawer's section list, and the two form rows that stack on a
+   narrow screen. */
 .settings-nav {
   display: flex;
   flex-direction: column;

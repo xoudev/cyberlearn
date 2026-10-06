@@ -1,6 +1,6 @@
 /**
- * The reader's own moderation record in the app: the site's
- * /settings/moderation, with the same words (@cyberlearn/lib/moderation/record
+ * The reader's own moderation record in the app: the site's settings
+ * section, with the same words (@cyberlearn/lib/moderation/record
  * and the surface nouns of the notices). The server decides what the reader is
  * shown about themselves; this module only words it.
  */
