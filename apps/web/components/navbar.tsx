@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NAVBAR_HEIGHT } from "@/lib/chrome";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
@@ -13,25 +14,6 @@ import { GlobalSearch } from "./global-search";
 import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
 import { WrappedChip } from "./wrapped-chip";
-
-function GearGlyph(): React.ReactElement {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="8" cy="8" r="2.4" />
-      <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" />
-    </svg>
-  );
-}
 
 export async function Navbar(): Promise<React.ReactElement> {
   let displayName = "";
@@ -112,7 +94,7 @@ export async function Navbar(): Promise<React.ReactElement> {
           title="Paramètres"
           aria-label="Paramètres"
         >
-          <GearGlyph />
+          <Settings size={16} strokeWidth={1.75} aria-hidden="true" />
         </Link>
 
         {/* The avatar, a link to the profile. The level is no longer written
