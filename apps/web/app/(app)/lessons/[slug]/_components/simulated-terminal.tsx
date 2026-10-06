@@ -27,9 +27,9 @@ const CHIP: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 11,
   padding: "3px 8px",
-  border: "1px solid #2A2560",
+  border: "1px solid var(--color-border-default)",
   background: "transparent",
-  color: "#B8B5D1",
+  color: "var(--color-text-secondary)",
   cursor: "pointer",
   overflowWrap: "anywhere",
 };
@@ -902,7 +902,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       {typed.length > 0 ? (
         <div
           style={{
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--color-border-subtle)",
             padding: "10px 18px",
             display: "flex",
             gap: 8,
@@ -914,7 +914,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
             style={{
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 10,
-              color: "#7F7BA9",
+              color: "var(--color-text-muted)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
             }}
