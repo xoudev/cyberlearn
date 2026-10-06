@@ -702,7 +702,7 @@ function FileRow({
             height: 7,
             borderRadius: 999,
             background: status.color,
-            boxShadow: `0 0 5px ${status.color}80`,
+            boxShadow: `0 0 5px color-mix(in srgb, ${status.color} 50%, transparent)`,
             flexShrink: 0,
           }}
         />

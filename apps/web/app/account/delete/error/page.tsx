@@ -163,7 +163,7 @@ export default async function AccountDeleteErrorPage({
               fontSize: 10,
               letterSpacing: "0.18em",
               color: accent,
-              border: `1px solid ${accent}40`,
+              border: `1px solid color-mix(in srgb, ${accent} 25%, transparent)`,
               padding: "4px 10px",
               marginBottom: 20,
             }}
@@ -175,7 +175,7 @@ export default async function AccountDeleteErrorPage({
                 height: 5,
                 borderRadius: "50%",
                 background: accent,
-                boxShadow: `0 0 6px ${accent}88`,
+                boxShadow: `0 0 6px color-mix(in srgb, ${accent} 53%, transparent)`,
               }}
             />
             ÉCHEC

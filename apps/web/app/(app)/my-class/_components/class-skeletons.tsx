@@ -107,8 +107,8 @@ function ActionsSkeleton({
 const RULE = "1px solid var(--color-border-default)";
 
 /**
- * MdxEditorPanel, which has no class of its own: its frame, the 40px toolbar
- * (Blocs, Code, then Guide and Split at the far end), the two 620px panes at
+ * The shared MDX editor panel, which has no class of its own: its frame, the
+ * 40px toolbar (Blocs, Code, then Guide and Split at the far end), the two 620px panes at
  * 55% and 45% (the blocks, the site's preview under its header line) and the
  * status bar.
  */

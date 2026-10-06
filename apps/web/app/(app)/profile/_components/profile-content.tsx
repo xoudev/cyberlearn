@@ -78,7 +78,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                   height: 32,
                   background: catColor,
                   flexShrink: 0,
-                  boxShadow: `0 0 8px ${catColor}60`,
+                  boxShadow: `0 0 8px color-mix(in srgb, ${catColor} 38%, transparent)`,
                 }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>

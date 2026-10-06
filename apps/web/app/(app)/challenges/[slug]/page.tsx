@@ -325,20 +325,20 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             <AngularTag
               label={catLabel}
               color={catColor}
-              bg={`${catColor}1A`}
-              border={`${catColor}66`}
+              bg={`color-mix(in srgb, ${catColor} 10%, transparent)`}
+              border={`color-mix(in srgb, ${catColor} 40%, transparent)`}
             />
             <AngularTag
               label={difficultyMeta(challenge.difficulty).label}
               color={diffColor}
-              bg={`${diffColor}14`}
-              border={`${diffColor}66`}
+              bg={`color-mix(in srgb, ${diffColor} 8%, transparent)`}
+              border={`color-mix(in srgb, ${diffColor} 40%, transparent)`}
             />
             <AngularTag
               label={challenge.type}
               color={typeColor}
-              bg={`${typeColor}0F`}
-              border={`${typeColor}4D`}
+              bg={`color-mix(in srgb, ${typeColor} 6%, transparent)`}
+              border={`color-mix(in srgb, ${typeColor} 30%, transparent)`}
             />
           </div>
 

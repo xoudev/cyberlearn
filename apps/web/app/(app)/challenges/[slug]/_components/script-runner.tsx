@@ -403,7 +403,7 @@ export function ScriptRunner({
               height: 8,
               borderRadius: "50%",
               background: dotColor,
-              boxShadow: `0 0 8px ${dotColor}b3`,
+              boxShadow: `0 0 8px color-mix(in srgb, ${dotColor} 70%, transparent)`,
               display: "inline-block",
               // SAFETY: inline animation keyword accepted by browsers
               animation: "pulse 2s ease-in-out infinite",

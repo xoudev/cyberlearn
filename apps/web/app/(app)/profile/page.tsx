@@ -130,8 +130,8 @@ function HexAvatar({
           color,
           background: "var(--color-bg-base)",
           padding: "4px 10px",
-          border: `1px solid ${color}90`,
-          boxShadow: `0 0 12px ${color}58`,
+          border: `1px solid color-mix(in srgb, ${color} 56%, transparent)`,
+          boxShadow: `0 0 12px color-mix(in srgb, ${color} 35%, transparent)`,
           whiteSpace: "nowrap",
         }}
       >

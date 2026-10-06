@@ -39,7 +39,7 @@ export function ActiveToggle({
         gap: 6,
         padding: "3px 8px",
         background: "transparent",
-        border: `1px solid ${color}44`,
+        border: `1px solid color-mix(in srgb, ${color} 27%, transparent)`,
         cursor: isPending ? "wait" : "pointer",
         fontFamily: "var(--font-mono)",
         fontSize: 9,
