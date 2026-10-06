@@ -1,18 +1,12 @@
 import { cn } from "@cyberlearn/ui";
 import "./skeleton.css";
 
-type Radius = "pill" | "circle" | number;
+/** Square, like the site; "circle" only for an element that is round itself (a ring). */
+type Radius = "circle";
 
 function toLength(value: number | string | undefined): string | undefined {
   if (value === undefined) return undefined;
   return typeof value === "number" ? `${String(value)}px` : value;
-}
-
-function resolveRadius(radius: Radius | undefined): string | number | undefined {
-  if (radius === undefined) return undefined;
-  if (radius === "pill") return 999;
-  if (radius === "circle") return "50%";
-  return radius;
 }
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -20,7 +14,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   w?: number | string;
   /** Convenience height - number is treated as px, string as a CSS length. */
   h?: number | string;
-  /** Border-radius shorthand: "pill", "circle", or a px value. */
+  /** "circle" for a round element; every other block is square, as the site is. */
   radius?: Radius;
 }
 
@@ -35,7 +29,7 @@ function Skeleton({ className, w, h, radius, style, ...props }: SkeletonProps): 
       style={{
         width: toLength(w),
         height: toLength(h),
-        borderRadius: resolveRadius(radius),
+        borderRadius: radius === "circle" ? "50%" : undefined,
         ...style,
       }}
       {...props}

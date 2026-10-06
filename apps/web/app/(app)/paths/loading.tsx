@@ -1,199 +1,176 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import "./_components/paths-catalog-v2.css";
 
-/** Page tokens (mirrors .pc2-root): square corners + #2a2560 hairline. */
-const PC2_BORDER = "var(--color-border-default)";
-const CARD_STYLE: React.CSSProperties = {
-  borderColor: PC2_BORDER,
-  background: "rgba(10, 8, 38, 0.6)",
-};
+/**
+ * The paths catalogue while it loads, drawn on the page's own classes
+ * (paths-catalog-v2.css): the breadcrumb, the header and its telemetry, the
+ * filter bar, the path to resume with its cover, then the cards to discover,
+ * each topped by its cover image.
+ */
 
-/** A square-cornered, page-toned card surface used by every pc2 card. */
-function Pc2Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}): React.ReactElement {
+function SectionLabelSkeleton({ tag, count }: { tag: number; count: number }): React.ReactElement {
   return (
-    <div style={{ border: `1px solid ${PC2_BORDER}`, ...CARD_STYLE, ...style }}>{children}</div>
-  );
-}
-
-/** Mirrors <SectionLabel>: a short tag + count + flexing rule. */
-function SectionLabelSkeleton(): React.ReactElement {
-  return (
-    <div className="pc2-section">
-      <Skeleton w={120} h={12} />
-      <Skeleton w={150} h={11} />
+    <div className="pc2-section" aria-hidden="true">
+      <span className="pc2-section__tag">
+        <Skeleton w={tag} h={12} />
+      </span>
+      <Skeleton w={count} h={11} />
       <span className="pc2-section__rule" />
     </div>
   );
 }
 
-/** Mirrors one .active-card in the secondary row (glyph rail + body). */
-function SecondaryCardSkeleton(): React.ReactElement {
+/** A row of filter pills (.pills), each block the size of its pill. */
+function PillsSkeleton({ widths }: { widths: readonly number[] }): React.ReactElement {
   return (
-    <Pc2Card style={{ display: "grid", gridTemplateColumns: "132px minmax(0, 1fr)" }}>
-      <div
-        style={{ display: "grid", placeItems: "center", borderRight: `1px solid ${PC2_BORDER}` }}
-      >
-        <Skeleton w={56} h={56} radius={0} />
+    <div className="pills">
+      {widths.map((w, i) => (
+        <Skeleton key={i} w={w} h={34} />
+      ))}
+    </div>
+  );
+}
+
+/** One `.game-card`: the cover image, the title, two lines, the stats, the button. */
+function GameCardSkeleton(): React.ReactElement {
+  return (
+    <div className="game-card" aria-hidden="true">
+      <div className="game-card__cover game-card__cover--image">
+        <Skeleton w="100%" h="100%" />
       </div>
-      <div style={{ padding: "20px 22px 18px", minWidth: 0 }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <Skeleton w={78} h={20} radius={0} />
-          <Skeleton w={60} h={12} style={{ marginLeft: "auto" }} />
+      <div className="game-card__body">
+        <Skeleton w="78%" h={19} />
+        <SkeletonText lines={2} lastWidth="64%" lineHeight={12} gap={8} />
+        <div className="game-card__stats">
+          <Skeleton w={52} h={10} />
+          <Skeleton w={30} h={10} />
+          <Skeleton w={66} h={10} />
+          <Skeleton w={40} h={10} />
         </div>
-        <Skeleton h={22} w="78%" style={{ marginBottom: 12 }} />
-        <Skeleton h={11} w="62%" style={{ marginBottom: 16 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-          <Skeleton w="40%" h={10} />
-          <Skeleton w={32} h={10} />
-        </div>
-        <Skeleton h={7} radius={0} />
-        <Skeleton w={110} h={11} style={{ marginTop: 16 }} />
       </div>
-    </Pc2Card>
+      <div className="game-card__foot">
+        <Skeleton w="100%" h={44} />
+      </div>
+    </div>
   );
 }
 
 export default function PathsLoading(): React.ReactElement {
   return (
-    <div className="pc2-root">
+    <div className="pc2-root" aria-busy="true" aria-label="Chargement des parcours">
       <div className="pc2">
-        {/* breadcrumb */}
-        <div className="pg-crumb">
-          <Skeleton w={210} h={12} />
+        <div className="pg-crumb" aria-hidden="true">
+          <Skeleton w={205} h={14} />
         </div>
 
-        {/* header: title + sub (left) / telemetry (right) */}
-        <header className="pc2-head">
+        <header className="pc2-head" aria-hidden="true">
           <div>
-            <Skeleton h={62} w="72%" style={{ marginBottom: 16 }} />
-            <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
-              <Skeleton h={14} w="100%" />
-              <Skeleton h={14} w="84%" />
+            {/* .pc2-title: clamp(44px, 5.4vw, 76px), two balanced lines. */}
+            <Skeleton w="82%" h="clamp(38px, 4.6vw, 64px)" style={{ marginBottom: 6 }} />
+            <Skeleton w="60%" h="clamp(38px, 4.6vw, 64px)" style={{ marginBottom: 16 }} />
+            <SkeletonText
+              lines={2}
+              lastWidth="58%"
+              lineHeight={15}
+              gap={10}
+              style={{ maxWidth: 520 }}
+            />
+            <div className="pc2-guide">
+              <Skeleton w={42} h={10} />
+              <Skeleton w={360} h={13} style={{ maxWidth: "100%" }} />
             </div>
           </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              alignItems: "flex-end",
-              paddingBottom: 6,
-            }}
-          >
-            <Skeleton w={280} h={11} />
+          <div className="pc2-telemetry">
+            <div className="pc2-telemetry__row">
+              <Skeleton w={78} h={11} />
+              <span className="pc2-telemetry__sep" />
+              <Skeleton w={78} h={11} />
+              <span className="pc2-telemetry__sep" />
+              <Skeleton w={108} h={11} />
+            </div>
             <div className="pc2-telemetry__rule" />
-            <Skeleton w={220} h={11} />
+            <div className="pc2-telemetry__row">
+              <Skeleton w={116} h={11} />
+              <span className="pc2-telemetry__sep" />
+              <Skeleton w={116} h={11} />
+            </div>
           </div>
         </header>
 
-        {/* filters: label + pills + search (pushed right) */}
-        <div className="pc2-filters">
-          <Skeleton w={64} h={10} />
+        <div className="pc2-filters" aria-hidden="true">
+          <Skeleton w={84} h={12} style={{ marginRight: 4 }} />
           <div className="pc2-filters__group">
-            {(["all", "cyber", "dev", "net"] as const).map((id) => (
-              <Skeleton key={id} w={id === "all" ? 78 : 104} h={34} radius={0} />
-            ))}
+            <PillsSkeleton widths={[80, 114, 72, 97]} />
           </div>
           <span className="pc2-filters__sep" />
-          <Skeleton w={230} h={34} radius={0} style={{ marginLeft: "auto" }} />
+          <Skeleton w={56} h={12} style={{ marginRight: 4 }} />
+          <div className="pc2-filters__group">
+            <PillsSkeleton widths={[80, 131, 97]} />
+          </div>
+          <span className="pc2-filters__sep" />
+          <div className="pc2-search">
+            <Skeleton w="100%" h={34} />
+          </div>
         </div>
 
-        {/* "Reprendre" - hero active path */}
-        <SectionLabelSkeleton />
-        <Pc2Card
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.55fr) minmax(0, 1fr)",
-          }}
-        >
-          {/* hero main */}
-          <div style={{ padding: "34px 38px 30px", minWidth: 0 }}>
-            <div style={{ display: "flex", gap: 10, marginBottom: 26, flexWrap: "wrap" }}>
-              <Skeleton w={92} h={24} radius={0} />
-              <Skeleton w={84} h={24} radius={0} />
-              <Skeleton w={108} h={24} radius={0} />
-              <Skeleton w={96} h={14} style={{ marginLeft: "auto" }} />
+        <SectionLabelSkeleton tag={92} count={150} />
+        {/* The accent modifier: the tint stays neutral while the category is unknown. */}
+        <div className="hero-path hero-path--net" aria-hidden="true">
+          <div className="hero-path__main">
+            <div className="hero-path__topline">
+              <Skeleton w={108} h={25} />
+              <Skeleton w={96} h={25} />
+              <Skeleton w={108} h={25} />
+              <Skeleton w={110} h={25} />
+              <Skeleton w={74} h={11} style={{ marginLeft: "auto" }} />
             </div>
-            <Skeleton h={44} w="68%" style={{ marginBottom: 16 }} />
-            <div
-              style={{
-                maxWidth: 540,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                marginBottom: 24,
-              }}
-            >
-              <Skeleton h={13} w="100%" />
-              <Skeleton h={13} w="88%" />
+            <Skeleton w="80%" h="clamp(30px, 3.2vw, 44px)" style={{ marginBottom: 6 }} />
+            <Skeleton w="52%" h="clamp(30px, 3.2vw, 44px)" style={{ marginBottom: 16 }} />
+            <SkeletonText
+              lines={2}
+              lastWidth="66%"
+              lineHeight={14}
+              gap={9}
+              style={{ maxWidth: 540, marginBottom: 24 }}
+            />
+            <div className="hero-path__stats">
+              <Skeleton w={86} h={12} />
+              <Skeleton w={30} h={12} />
+              <Skeleton w={76} h={12} />
+              <Skeleton w={92} h={12} />
             </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 14,
-                padding: "16px 0",
-                borderTop: `1px solid ${PC2_BORDER}`,
-              }}
-            >
-              <Skeleton w={96} h={12} />
-              <Skeleton w={64} h={12} />
-              <Skeleton w={88} h={12} />
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 9 }}>
-                <Skeleton w={220} h={11} />
-                <Skeleton w={48} h={20} />
+            <div className="hero-path__foot">
+              <div className="hero-prog">
+                <Skeleton w={200} h={11} />
+                <Skeleton w={44} h={18} />
               </div>
-              <Skeleton h={12} radius={0} />
-              <div style={{ display: "flex", gap: 12, marginTop: 22 }}>
-                <Skeleton w={220} h={50} radius={0} />
-                <Skeleton w={120} h={50} radius={0} />
+              <Skeleton h={12} />
+              <div className="hero-path__cta-row">
+                <Skeleton w={270} h={50} />
+                <Skeleton w={110} h={50} />
               </div>
             </div>
           </div>
-          {/* hero console */}
-          <div
-            style={{
-              borderLeft: `1px solid ${PC2_BORDER}`,
-              background: "var(--color-bg-sunken)",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div
-              style={{ flex: 1, display: "grid", placeItems: "center", padding: "38px 24px 10px" }}
-            >
-              <Skeleton w={132} h={132} radius="circle" />
-            </div>
-            <Pc2Card
-              style={{
-                margin: "0 18px 18px",
-                padding: "16px 18px",
-                background: "rgba(3, 2, 25, 0.78)",
-              }}
-            >
-              <Skeleton w={180} h={10} style={{ marginBottom: 9 }} />
-              <Skeleton h={16} w="80%" style={{ marginBottom: 10 }} />
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <Skeleton w={120} h={11} />
-                <Skeleton w={64} h={11} />
+          <div className="hero-path__console hero-path__console--image">
+            {/* The path's cover fills the console, under the next mission. */}
+            <Skeleton style={{ position: "absolute", inset: 0 }} />
+            <div className="hero-glyph" />
+            <div className="hero-next">
+              <Skeleton w={160} h={9} style={{ marginBottom: 10 }} />
+              <Skeleton w="76%" h={16} style={{ marginBottom: 10 }} />
+              <div className="hero-next__meta">
+                <Skeleton w={110} h={10} />
+                <Skeleton w={64} h={10} />
               </div>
-            </Pc2Card>
+            </div>
           </div>
-        </Pc2Card>
+        </div>
 
-        {/* "Progression" - secondary row: 3 equal cards */}
-        <SectionLabelSkeleton />
-        <div className="pc2-duo">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SecondaryCardSkeleton key={i} />
+        <SectionLabelSkeleton tag={112} count={96} />
+        <div className="pc2-discover">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <GameCardSkeleton key={i} />
           ))}
         </div>
       </div>

@@ -226,7 +226,15 @@ export function BadgesCollection({
           </div>
 
           {/* Global progress bar */}
-          <ProgressBar value={pct} size="md" tip label="Badges obtenus" style={{ maxWidth: 320 }} />
+          <ProgressBar
+            value={pct}
+            size="md"
+            tip
+            label="Badges obtenus"
+            // In a column aligned to the start, the bar takes its width from
+            // here, not from the column: without one it shrank to 2px.
+            style={{ width: "100%", maxWidth: 320 }}
+          />
 
           <div
             className="mono-label"

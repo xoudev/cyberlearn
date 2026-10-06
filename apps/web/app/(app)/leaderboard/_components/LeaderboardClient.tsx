@@ -8,6 +8,7 @@ import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
+import "./leaderboard.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Crumb } from "@/components/crumb";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
@@ -525,35 +526,6 @@ export function LeaderboardClient({
 
   return (
     <>
-      <style>{`
-        @keyframes cl-blink { 0%,50%{opacity:1} 50.01%,100%{opacity:0} }
-        @keyframes cl-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-        @media (prefers-reduced-motion:reduce){.cl-caret{animation:none!important}.cl-live-dot{animation:none!important}}
-        .cl-row:not(.cl-row-head):hover{background:color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)!important}
-
-        /* Podium: 3-across only on wide screens. Content width drops to
-           viewport-240 once the sidebar reappears at 1024px, so the podium
-           (needs ~1000px for 3 columns) stays 3-across only from 1280px up.
-           Below that it becomes a single centered column. */
-        @media (max-width: 1279px) {
-          .cl-podium {
-            grid-template-columns: min(100%, 440px) !important;
-            justify-content: center;
-            align-items: stretch !important;
-            gap: 20px !important;
-            margin-bottom: 56px !important;
-          }
-          /* Drop the desktop "staircase" offset when stacked vertically. */
-          .cl-podium > * { transform: none !important; }
-          /* DOM order is silver, gold, bronze; reorder so the winner leads:
-             gold #1, then #2, then #3. */
-          .cl-podium > :nth-child(1) { order: 2; }
-          .cl-podium > :nth-child(2) { order: 1; }
-          .cl-podium > :nth-child(3) { order: 3; }
-        }
-
-      `}</style>
-
       <div className="page-container">
         {/* Breadcrumb */}
         <Crumb segments={["classement"]} />

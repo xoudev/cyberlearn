@@ -1,183 +1,195 @@
 import React from "react";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
-
-// Surface that mirrors a .pd2 panel (brief / ablock / mission card): dark fill +
-// 1px #2a2560 hairline, sharp corners (the design uses border-radius: 0).
-const PANEL: React.CSSProperties = {
-  background: "rgba(5, 4, 26, 0.6)",
-  border: "1px solid var(--color-border-default)",
-};
+import "./path-detail.css";
 
 /**
- * Loading state for /paths/[slug] (the serpentine quest-log path).
- * Reuses the real .pd2 layout/grid classes so the first paint occupies the same
- * boxes as the loaded page (breadcrumb → hero → progress → body grid). The
- * serpentine itself is rendered as a faithful-but-simpler set of alternating
- * mission-card placeholders plus a final-boss card, matching node/card sizes.
+ * A path while it loads, drawn on the page's own classes (path-detail.css):
+ * the breadcrumb, the hero and its brief topped by the path's cover, the
+ * progress line, then the checkpoint path (a module gate, missions
+ * alternating sides of the rail, the certificate at the end) beside the
+ * objectives and the rating.
  */
-export default function PathDetailLoading(): React.ReactElement {
-  const NODE_COUNT = 4;
 
+/** One mission card on its side of the rail (.cp-card). */
+function MissionCardSkeleton(): React.ReactElement {
   return (
-    <div className="pd2">
-      {/* breadcrumb (mono, 12px, ~13px tall) */}
-      <div className="pg-crumb">
-        <Skeleton w={220} h={12} />
+    <div className="cp-cell cp-cell--card">
+      <div className="cp-card">
+        <span className="cp-card__leader" />
+        <div className="cp-card__head">
+          <Skeleton w={84} h={9} />
+          <Skeleton w={72} h={18} style={{ marginLeft: "auto" }} />
+        </div>
+        <Skeleton w="78%" h={17} style={{ marginBottom: 12 }} />
+        <div className="cp-card__meta">
+          <Skeleton w={72} h={17} />
+          <Skeleton w={52} h={10} />
+          <Skeleton w={40} h={10} />
+        </div>
+        <div className="cp-card__action">
+          <Skeleton w={150} h={11} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A row of the serpentine: the card on one side, the node on the rail. */
+function MissionRowSkeleton({ index }: { index: number }): React.ReactElement {
+  const left = index % 2 === 0;
+  return (
+    <div
+      className={`cp-row ${left ? "is-left" : "is-right"}${index === 0 ? " cp-row--first" : ""}`}
+    >
+      {left ? <MissionCardSkeleton /> : <div className="cp-cell cp-cell--empty" />}
+      <div className="cp-mid">
+        <span className="cp-node">
+          <Skeleton className="cp-node__n" w={18} h={13} />
+        </span>
+      </div>
+      {left ? <div className="cp-cell cp-cell--empty" /> : <MissionCardSkeleton />}
+    </div>
+  );
+}
+
+export default function PathDetailLoading(): React.ReactElement {
+  return (
+    <div className="pd2" aria-busy="true" aria-label="Chargement du parcours">
+      <div className="pg-crumb" aria-hidden="true">
+        <Skeleton w={330} h={14} />
       </div>
 
-      {/* hero: 1.5fr title block + 1fr brief panel */}
-      <section className="pd2-hero">
+      <section className="pd2-hero" aria-hidden="true">
         <div>
           <div className="pd2-hero__tags">
-            <Skeleton w={96} h={26} radius={0} />
-            <Skeleton w={120} h={26} radius={0} />
+            <Skeleton w={84} h={24} />
+            <Skeleton w={104} h={24} />
+            <Skeleton w={112} h={24} />
           </div>
-          {/* title clamp(46–82px); two lines of a large heading */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, margin: "0 0 20px" }}>
-            <Skeleton w="80%" h={58} />
-            <Skeleton w="55%" h={58} />
-          </div>
+          {/* .pd2-title: clamp(46px, 5.6vw, 82px), two balanced lines. */}
+          <Skeleton w="84%" h="clamp(40px, 4.9vw, 70px)" style={{ marginBottom: 7 }} />
+          <Skeleton w="58%" h="clamp(40px, 4.9vw, 70px)" style={{ marginBottom: 20 }} />
           <SkeletonText
             lines={3}
-            lastWidth="45%"
-            lineHeight={14}
-            gap={9}
+            lastWidth="46%"
+            lineHeight={15}
+            gap={10}
             style={{ maxWidth: 600 }}
           />
         </div>
 
-        {/* mission brief panel */}
-        <div style={{ ...PANEL, padding: "22px 24px 24px" }}>
-          <Skeleton w={140} h={10} style={{ marginBottom: 18 }} />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 1,
-              background: "var(--color-border-default)",
-              margin: "0 -24px",
-              borderTop: "1px solid var(--color-border-default)",
-            }}
-          >
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} style={{ background: "#06041d", padding: "15px 20px" }}>
-                <Skeleton w={64} h={9} style={{ marginBottom: 8 }} />
-                <Skeleton w={84} h={26} />
+        <div className="brief">
+          {/* The path's cover, edge to edge across the top of the brief. */}
+          <div className="brief__cover">
+            <Skeleton style={{ aspectRatio: "16 / 7" }} />
+          </div>
+          <div className="brief__eyebrow">
+            <Skeleton w={118} h={10} />
+          </div>
+          <div className="brief__grid">
+            {[64, 92, 64].map((label, i) => (
+              <div key={i} className="brief__cell">
+                <Skeleton w={label} h={9} style={{ marginBottom: 8 }} />
+                <Skeleton w={i === 2 ? 96 : 64} h={26} />
               </div>
             ))}
+            <div className="brief__cell brief__cell--cert">
+              <Skeleton w={18} h={18} />
+              <div>
+                <Skeleton w={84} h={10} style={{ marginBottom: 5 }} />
+                <Skeleton w={60} h={10} />
+              </div>
+            </div>
           </div>
-          <Skeleton h={50} radius={0} style={{ marginTop: 18 }} />
+          <Skeleton h={48} style={{ marginTop: 18 }} />
         </div>
       </section>
 
-      {/* path-wide progress bar */}
-      <div className="pd2-prog">
-        <Skeleton w={110} h={14} />
-        <div className="pd2-prog__bar card card--ghost" />
-        <Skeleton w={120} h={12} />
+      <div className="pd2-prog" aria-hidden="true">
+        <Skeleton w={112} h={16} />
+        <Skeleton className="pd2-prog__bar" h={8} />
+        <Skeleton w={100} h={11} />
       </div>
 
-      {/* body: serpentine path (1fr) + aside (320px) */}
-      <div className="pd2-body">
+      <div className="pd2-body" aria-hidden="true">
         <div className="cpath">
-          {/* module gate */}
           <div className="cp-gate">
             <div className="cp-gate__side cp-gate__side--l">
               <span className="cp-gate__rule" />
-              <Skeleton w={84} h={11} />
+              <span className="cp-gate__label">
+                <Skeleton w={84} h={11} />
+                <Skeleton w={130} h={11} style={{ marginTop: 6 }} />
+              </span>
             </div>
             <div className="cp-mid">
               <span className="cp-gate__marker" />
             </div>
             <div className="cp-gate__side">
-              <Skeleton w={70} h={10} />
+              <Skeleton w={104} h={34} />
+              <Skeleton w={72} h={10} />
               <span className="cp-gate__rule" />
             </div>
           </div>
 
-          {/* alternating mission-card placeholders */}
-          {Array.from({ length: NODE_COUNT }).map((_, i) => {
-            const side = i % 2 === 0 ? "is-left" : "is-right";
-            return (
-              <div key={i} className={`cp-row ${side}${i === 0 ? " cp-row--first" : ""}`}>
-                {side === "is-left" ? (
-                  <div className="cp-cell cp-cell--card">
-                    <div className="cp-card" style={PANEL}>
-                      <Skeleton w={120} h={10} style={{ marginBottom: 12 }} />
-                      <Skeleton w="85%" h={18} style={{ marginBottom: 12 }} />
-                      <Skeleton w={160} h={11} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="cp-cell cp-cell--empty" />
-                )}
-                <div className="cp-mid">
-                  <Skeleton w={58} h={66} radius={8} />
-                </div>
-                {side === "is-right" ? (
-                  <div className="cp-cell cp-cell--card">
-                    <div className="cp-card" style={PANEL}>
-                      <Skeleton w={120} h={10} style={{ marginBottom: 12 }} />
-                      <Skeleton w="85%" h={18} style={{ marginBottom: 12 }} />
-                      <Skeleton w={160} h={11} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="cp-cell cp-cell--empty" />
-                )}
-              </div>
-            );
-          })}
+          {[0, 1, 2, 3, 4].map((i) => (
+            <MissionRowSkeleton key={i} index={i} />
+          ))}
 
-          {/* final boss certificate card */}
-          <div
-            style={{
-              ...PANEL,
-              marginTop: 4,
-              padding: "38px 32px 34px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 18,
-            }}
-          >
-            <Skeleton w={140} h={10} />
-            <Skeleton w={116} h={132} radius={8} />
-            <Skeleton w={240} h={28} />
-            <Skeleton w={420} h={14} />
-            <Skeleton w={240} h={48} radius={0} />
+          <div className="cp-final">
+            <div className="cp-cell cp-cell--empty" />
+            <div className="cp-mid" />
+            <div className="cp-cell cp-cell--empty" />
+            <div className="cp-boss">
+              <span className="cp-boss__connector" />
+              <Skeleton w={230} h={10} style={{ marginBottom: 22 }} />
+              <Skeleton w={116} h={132} style={{ marginBottom: 22 }} />
+              <Skeleton w={340} h={26} style={{ maxWidth: "100%", marginBottom: 12 }} />
+              <SkeletonText
+                lines={2}
+                lastWidth="70%"
+                lineHeight={12}
+                gap={9}
+                style={{ width: "100%", maxWidth: 460, marginBottom: 22 }}
+              />
+              <Skeleton w={300} h={40} style={{ maxWidth: "100%" }} />
+            </div>
           </div>
         </div>
 
-        {/* aside: objectives + badges blocks */}
         <aside className="pd2-aside">
-          <div style={{ ...PANEL, padding: "22px 22px 24px" }}>
-            <Skeleton w={120} h={10} style={{ marginBottom: 16 }} />
-            <Skeleton w={180} h={16} style={{ marginBottom: 16 }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} w={i % 2 === 0 ? "100%" : "80%"} h={13} />
-              ))}
+          <div className="ablock">
+            <div className="ablock__eyebrow">
+              <Skeleton w={112} h={10} />
             </div>
+            <Skeleton w={190} h={15} style={{ marginBottom: 16 }} />
+            <ul className="skill-list">
+              {["62%", "48%", "70%", "40%", "56%"].map((last, i) => (
+                <li key={i}>
+                  <SkeletonText
+                    lines={2}
+                    lastWidth={last}
+                    lineHeight={11}
+                    gap={8}
+                    style={{ flex: 1, marginTop: 4 }}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
-
-          <div style={{ ...PANEL, padding: "22px 22px 24px" }}>
-            <Skeleton w={120} h={10} style={{ marginBottom: 16 }} />
-            <Skeleton w={180} h={16} style={{ marginBottom: 16 }} />
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "14px 10px",
-                justifyItems: "center",
-                marginBottom: 18,
-              }}
-            >
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} w={64} h={72} radius={8} />
-              ))}
+          <div className="ablock">
+            <div className="ablock__eyebrow">
+              <Skeleton w={96} h={10} />
             </div>
-            <Skeleton h={40} radius={0} />
+            <div className="card card--sunken" style={{ padding: "28px 32px" }}>
+              <Skeleton w={90} h={10} style={{ marginBottom: 8 }} />
+              <Skeleton w={150} h={15} style={{ marginBottom: 20 }} />
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} w={28} h={28} />
+                ))}
+              </div>
+              <Skeleton w={150} h={34} />
+            </div>
           </div>
         </aside>
       </div>

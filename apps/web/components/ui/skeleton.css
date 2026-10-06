@@ -31,16 +31,14 @@
   background-repeat: no-repeat;
   background-size: 700px 100%;
   animation: cl-skel-shimmer 1.6s ease-in-out infinite;
-  border-radius: 6px;
 }
 
 /* Standard card surface shared by the loading states (matches the real
-   cards: var(--color-bg-elevated) fill + var(--color-border-subtle) hairline). Override border/radius inline
-   where a specific card differs, to keep skeletons layout-accurate. */
+   cards: var(--color-bg-elevated) fill + var(--color-border-subtle) hairline),
+   square like them. A skeleton drawn on its page's own classes needs none. */
 .cl-skel-card {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

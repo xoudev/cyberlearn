@@ -1,93 +1,133 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 
 /**
- * Loading state for /revisions. Mirrors the real page's outer container
- * (.page-container), breadcrumb + eyebrow + big h1 + subtitle, and the bordered
- * review list (.review-row-layout rows on a #2A2560/#0A0826 surface) plus the
- * footer strip - so first paint occupies the same boxes (zero layout shift).
+ * The revisions while they load, drawn on the page's own classes
+ * (`.page-container`, `.card`, `.review-row-layout`) and the spacings it sets
+ * inline: the breadcrumb, eyebrow, title and lede, the day's session (the
+ * first row open on its grading buttons, a footer strip), the way back, then
+ * the upcoming reviews.
  */
-export default function RevisionsLoading(): React.ReactElement {
-  const ROWS = 6;
 
+const ROWS = [0, 1, 2, 3];
+const UPCOMING = ["46%", "38%", "52%"];
+const ROW_RULE = "1px solid var(--color-border-subtle)";
+
+/** One review row (.review-row-layout): index, category and title, due, time, toggle. */
+function ReviewRowSkeleton({ title }: { title: string }): React.ReactElement {
   return (
-    <div className="page-container">
-      {/* Breadcrumb line */}
-      <div style={{ marginBottom: 28 }}>
-        <Skeleton w={240} h={12} />
+    <div className="review-row-layout">
+      <Skeleton w={36} h={28} />
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <Skeleton w={64} h={18} />
+          <Skeleton w={118} h={10} />
+        </div>
+        <Skeleton w={title} h={14} />
+      </div>
+      <Skeleton w={96} h={10} />
+      <Skeleton w={44} h={10} />
+      <Skeleton w={60} h={10} />
+    </div>
+  );
+}
+
+export default function RevisionsLoading(): React.ReactElement {
+  return (
+    <div className="page-container" aria-busy="true" aria-label="Chargement des révisions">
+      <div className="pg-crumb" aria-hidden="true">
+        <Skeleton w={205} h={14} />
       </div>
 
-      {/* Eyebrow (// SESSION · SM-2 · …) */}
-      <div style={{ marginBottom: 14 }}>
-        <Skeleton w={320} h={11} />
+      <div aria-hidden="true">
+        <Skeleton w={300} h={10} style={{ maxWidth: "100%", marginBottom: 17 }} />
+        {/* The h1: clamp(40px, 5.5vw, 72px), two lines within 920px. */}
+        <div style={{ maxWidth: 920, marginBottom: 24 }}>
+          <Skeleton w="84%" h="clamp(34px, 4.6vw, 62px)" style={{ marginBottom: 14 }} />
+          <Skeleton w="46%" h="clamp(34px, 4.6vw, 62px)" />
+        </div>
+        <SkeletonText
+          lines={2}
+          lastWidth="72%"
+          lineHeight={14}
+          gap={10}
+          style={{ maxWidth: 620, marginBottom: 44 }}
+        />
       </div>
 
-      {/* Big h1 (clamp 40-72, line-height 1.1) */}
-      <div style={{ margin: "0 0 24px", maxWidth: 920 }}>
-        <Skeleton w="70%" h={64} radius={8} />
-      </div>
-
-      {/* Subtitle */}
-      <div style={{ maxWidth: 620, margin: "0 0 44px" }}>
-        <Skeleton w="100%" h={14} style={{ marginBottom: 8 }} />
-        <Skeleton w="80%" h={14} />
-      </div>
-
-      {/* Review list */}
-      <section style={{ marginBottom: 0 }}>
+      <section aria-hidden="true">
         <div className="card" style={{ overflow: "hidden" }}>
-          {Array.from({ length: ROWS }).map((_, i) => (
-            <div
-              key={i}
-              className="review-row-layout"
-              style={{
-                borderBottom: i < ROWS - 1 ? "1px solid rgba(31,27,71,0.6)" : "none",
-              }}
-            >
-              {/* index chip (64px col) */}
-              <Skeleton w={36} h={28} radius={0} />
-
-              {/* body: badge row + title */}
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <Skeleton w={84} h={14} radius={0} />
-                  <Skeleton w={72} h={10} />
+          {ROWS.map((i) => (
+            <div key={i} style={{ borderBottom: ROW_RULE }}>
+              <ReviewRowSkeleton title={`${String(58 - i * 6)}%`} />
+              {i === 0 && (
+                <div
+                  style={{
+                    padding: "14px 24px 18px 80px",
+                    borderTop: "1px dashed var(--color-border-subtle)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Skeleton w={330} h={11} style={{ maxWidth: "100%" }} />
+                    <Skeleton w={140} h={27} />
+                  </div>
+                  <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                    <Skeleton h={34} style={{ flex: 1 }} />
+                    <Skeleton h={34} style={{ flex: 1 }} />
+                    <Skeleton h={34} style={{ flex: 1 }} />
+                  </div>
                 </div>
-                <Skeleton w="58%" h={15} />
-              </div>
-
-              {/* due */}
-              <Skeleton w={96} h={11} />
-
-              {/* time */}
-              <Skeleton w={42} h={11} />
-
-              {/* go */}
-              <Skeleton w={70} h={11} />
+              )}
             </div>
           ))}
-
-          {/* Footer strip */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "12px 24px",
-              borderTop: "1px solid rgba(31,27,71,0.6)",
-              background: "#050416",
+              gap: 16,
+              padding: "14px 24px",
+              background: "var(--color-bg-sunken)",
             }}
           >
-            <Skeleton w={320} h={10} />
-            <Skeleton w={120} h={10} />
+            <Skeleton w={330} h={10} style={{ maxWidth: "60%" }} />
+            <Skeleton w={130} h={10} />
           </div>
         </div>
       </section>
 
-      {/* CTAs */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 32 }}>
-        <Skeleton w={220} h={52} radius={0} />
-        <Skeleton w={160} h={12} />
+      <div aria-hidden="true" style={{ display: "flex", alignItems: "center", marginTop: 32 }}>
+        <Skeleton w={170} h={10} style={{ margin: "18px 8px" }} />
+      </div>
+
+      <div aria-hidden="true" style={{ marginTop: 56 }}>
+        <Skeleton w={176} h={10} style={{ marginBottom: 16 }} />
+        <div className="card card--ghost" style={{ overflow: "hidden" }}>
+          {UPCOMING.map((w, i) => (
+            <div
+              key={w}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                padding: "13px 18px",
+                borderBottom: i < UPCOMING.length - 1 ? ROW_RULE : "none",
+              }}
+            >
+              <Skeleton w={w} h={12} />
+              <Skeleton w={120} h={9} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StatTile } from "@/components/stat-tile";
 import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
 import { ProgressBar } from "@/components/progress-bar";
+import "./locker.css";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -126,7 +127,6 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
       {...wrap}
       style={{
         height: 56,
-        borderRadius: 6,
         display: "grid",
         placeItems: "center",
         overflow: "hidden",
@@ -137,7 +137,6 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
           style={{
             width: "70%",
             height: 8,
-            borderRadius: 4,
             background: "var(--cosmetic-accent)",
             boxShadow: "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
           }}
@@ -148,7 +147,6 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
           style={{
             width: "78%",
             height: 38,
-            borderRadius: 4,
             background: "var(--cosmetic-terminal-bg)",
             padding: 6,
             fontFamily: "var(--font-mono)",
@@ -167,7 +165,6 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
           style={{
             width: 34,
             height: 34,
-            borderRadius: 4,
             border: "2px solid var(--cosmetic-frame-accent)",
             boxShadow:
               "0 0 14px color-mix(in srgb, var(--cosmetic-frame-accent) calc(var(--cosmetic-frame-glow) * 100%), transparent)",
@@ -214,7 +211,6 @@ function Card({
               display: "grid",
               placeItems: "center",
               background: "rgba(3,2,25,0.6)",
-              borderRadius: 6,
               color: "var(--color-text-muted)",
               fontSize: 18,
             }}
@@ -373,32 +369,6 @@ export function LockerClient({
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}>
-      {/* Responsive layout: two columns on wide screens, single stacked column
-          below 1024px (where the app sidebar becomes an off-canvas drawer and the
-          content area is too narrow for the content grid + 320px preview side by
-          side). Media queries live here because inline styles cannot be overridden
-          by a class breakpoint. */}
-      <style>{`
-        .casier-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
-          gap: 28px;
-          align-items: start;
-        }
-        .casier-preview {
-          position: sticky;
-          top: 24px;
-        }
-        @media (max-width: 1024px) {
-          .casier-layout {
-            grid-template-columns: minmax(0, 1fr);
-          }
-          .casier-preview {
-            position: static;
-            top: auto;
-          }
-        }
-      `}</style>
       <div
         className="mono-label"
         style={{
@@ -546,7 +516,6 @@ export function LockerClient({
           {/* Mini terminal, so the equipped terminal-theme reads at a glance */}
           <div
             style={{
-              borderRadius: 6,
               border: "1px solid var(--color-border-subtle)",
               background: "var(--cosmetic-terminal-bg)",
               color: "var(--cosmetic-terminal-fg)",

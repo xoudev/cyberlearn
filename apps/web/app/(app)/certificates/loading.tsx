@@ -1,92 +1,138 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
 
-const CARD_COUNT = 3;
+/**
+ * The certificates register while it loads, drawn on the page's own layout
+ * (certificates/page.tsx): the breadcrumb, the `catalog-header-grid` header
+ * with its eyebrow, title and telemetry, then the auto-fill grid of
+ * certificate cards. The card has no class of its own, so it stands on
+ * `SkeletonCard` with the card's own paddings, rows and action bar.
+ */
+
+const RULE = "1px solid var(--color-border-subtle)";
+
+function CertificateCardSkeleton(): React.ReactElement {
+  return (
+    <SkeletonCard style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "22px 24px 20px", flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 14,
+          }}
+        >
+          <div>
+            <Skeleton w={84} h={9} style={{ marginBottom: 11 }} />
+            <Skeleton w={130} h={9} />
+          </div>
+          <Skeleton w={30} h={34} />
+        </div>
+        <Skeleton w="78%" h={21} style={{ marginBottom: 14 }} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 16,
+          }}
+        >
+          <Skeleton w={110} h={11} />
+          <Skeleton w={78} h={19} />
+          <Skeleton w={30} h={11} />
+        </div>
+        <div
+          style={{
+            borderTop: RULE,
+            paddingTop: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 7,
+          }}
+        >
+          {[
+            { label: 76, value: 120 },
+            { label: 92, value: 36 },
+            { label: 54, value: 128 },
+          ].map((row) => (
+            <div
+              key={row.label}
+              style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}
+            >
+              <Skeleton w={row.label} h={10} />
+              <Skeleton w={row.value} h={10} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", borderTop: RULE }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            padding: "15px 16px",
+            borderRight: RULE,
+          }}
+        >
+          <Skeleton w={70} h={10} />
+        </div>
+        <Skeleton h={40} style={{ flex: 1.3 }} />
+      </div>
+    </SkeletonCard>
+  );
+}
 
 export default function CertificatesLoading(): React.ReactElement {
   return (
-    <div className="page-container">
-      {/* Breadcrumb */}
-      <Skeleton h={13} w={240} style={{ marginBottom: 26 }} />
+    <div className="page-container" aria-busy="true" aria-label="Chargement des certificats">
+      <div className="pg-crumb" aria-hidden="true">
+        <Skeleton w={200} h={12} />
+      </div>
 
-      {/* Header: title block left + telemetry right */}
-      <div className="catalog-header-grid" style={{ marginBottom: 40 }}>
+      <div className="catalog-header-grid" style={{ marginBottom: 40 }} aria-hidden="true">
         <div>
-          <Skeleton h={11} w={260} style={{ marginBottom: 14 }} />
-          <Skeleton h={64} w="65%" style={{ marginBottom: 16 }} />
-          <Skeleton h={14} w="80%" style={{ marginBottom: 8 }} />
-          <Skeleton h={14} w="55%" />
+          <Skeleton w={300} h={11} style={{ marginBottom: 17, maxWidth: "100%" }} />
+          <Skeleton
+            w={560}
+            h="clamp(40px, 5.5vw, 72px)"
+            style={{ maxWidth: "90%", marginBottom: 16 }}
+          />
+          <SkeletonText
+            lines={2}
+            lastWidth="56%"
+            lineHeight={14}
+            gap={9}
+            style={{ maxWidth: 520 }}
+          />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Skeleton h={11} w={300} />
-          <Skeleton h={1} w={320} />
-          <Skeleton h={11} w={280} />
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
+        >
+          <div style={{ display: "flex", gap: 30, flexWrap: "wrap", padding: "3px 0" }}>
+            <Skeleton w={64} h={11} />
+            <Skeleton w={84} h={11} />
+            <Skeleton w={104} h={11} />
+          </div>
+          <Skeleton w={320} h={1} style={{ maxWidth: "100%" }} />
+          <Skeleton w={350} h={11} style={{ maxWidth: "100%", margin: "3px 0" }} />
         </div>
       </div>
 
-      {/* Certificate cards grid */}
       <div
+        aria-hidden="true"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
           gap: 18,
         }}
       >
-        {Array.from({ length: CARD_COUNT }).map((_, i) => (
-          <div
-            className="card card--sunken"
-            key={`cert-skel-${String(i)}`}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div style={{ padding: "22px 24px 20px", flex: 1 }}>
-              {/* Eyebrow + seal */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: 14,
-                }}
-              >
-                <div>
-                  <Skeleton h={10} w={90} style={{ marginBottom: 8 }} />
-                  <Skeleton h={9} w={120} />
-                </div>
-                <Skeleton w={30} h={34} radius={0} />
-              </div>
-              {/* Title */}
-              <Skeleton h={22} w="85%" style={{ marginBottom: 12 }} />
-              {/* Meta row */}
-              <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                <Skeleton h={11} w={90} />
-                <Skeleton h={16} w={70} radius={0} />
-                <Skeleton h={11} w={36} />
-              </div>
-              {/* Authenticity rows */}
-              <div
-                style={{
-                  borderTop: "1px solid #1A1640",
-                  paddingTop: 14,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                <Skeleton h={10} w="100%" />
-                <Skeleton h={10} w="100%" />
-                <Skeleton h={10} w="80%" />
-              </div>
-            </div>
-            {/* Actions */}
-            <div style={{ display: "flex", borderTop: "1px solid #1A1640" }}>
-              <Skeleton h={40} style={{ flex: 1 }} />
-              <Skeleton h={40} style={{ flex: 1.3 }} />
-            </div>
-          </div>
-        ))}
+        <CertificateCardSkeleton />
+        <CertificateCardSkeleton />
+        <CertificateCardSkeleton />
       </div>
     </div>
   );

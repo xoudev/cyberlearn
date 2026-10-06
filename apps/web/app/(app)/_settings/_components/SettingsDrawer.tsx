@@ -271,13 +271,13 @@ export function SettingsDrawerProvider({
             onClose={close}
           >
             {data !== null ? (
-              <Suspense fallback={<SettingsSkeleton />}>
+              <Suspense fallback={<SettingsSkeleton section={visible.section} />}>
                 <SettingsPanels data={data} section={visible.section} />
               </Suspense>
             ) : failed ? (
               <SettingsLoadError onRetry={retry} />
             ) : (
-              <SettingsSkeleton />
+              <SettingsSkeleton section={visible.section} />
             )}
           </SettingsDrawerFrame>
         </SettingsReloadContext>
