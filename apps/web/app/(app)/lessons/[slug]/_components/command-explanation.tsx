@@ -2,6 +2,7 @@
 
 import React from "react";
 import { explainLine, PART_KIND_LABELS, type PartKind } from "@cyberlearn/lib/terminal/explain";
+import { ACCENT, MONO } from "@cyberlearn/ui";
 
 /**
  * A command line explained word by word (@cyberlearn/lib/terminal/explain):
@@ -9,18 +10,15 @@ import { explainLine, PART_KIND_LABELS, type PartKind } from "@cyberlearn/lib/te
  * one of the lines they typed. Client-side because its parents are.
  */
 
-const MONO = "var(--font-mono, monospace)";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-
 const KIND_COLOR: Record<PartKind, string> = {
   command: ACCENT,
   subcommand: ACCENT,
-  option: "#F5F5FA",
-  value: "#F5F5FA",
-  operand: "#F5F5FA",
+  option: "var(--color-text-primary)",
+  value: "var(--color-text-primary)",
+  operand: "var(--color-text-primary)",
   operator: "#FF6B9D",
-  assignment: "#FFB020",
-  unknown: "#7F7BA9",
+  assignment: "var(--color-warning)",
+  unknown: "var(--color-text-muted)",
 };
 
 export function CommandExplanation({
@@ -35,7 +33,7 @@ export function CommandExplanation({
     <section
       aria-label={`Explication : ${line}`}
       style={{
-        borderTop: "1px solid #1F1B47",
+        borderTop: "1px solid var(--color-border-subtle)",
         padding: "14px 18px",
         background: "rgba(5,4,26,0.5)",
         display: "grid",
@@ -56,7 +54,12 @@ export function CommandExplanation({
           {"// "} Explication
         </span>
         <code
-          style={{ fontFamily: MONO, fontSize: 12, color: "#F5F5FA", overflowWrap: "anywhere" }}
+          style={{
+            fontFamily: MONO,
+            fontSize: 12,
+            color: "var(--color-text-primary)",
+            overflowWrap: "anywhere",
+          }}
         >
           {line}
         </code>
@@ -73,17 +76,29 @@ export function CommandExplanation({
       </header>
 
       {parts.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: "#B8B5D1" }}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)" }}>
           Rien à expliquer : la ligne est vide.
         </p>
       ) : null}
 
       {commands.length > 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: "#B8B5D1", lineHeight: 1.55 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.55,
+          }}
+        >
           {commands.map((command, k) => (
             <React.Fragment key={k}>
               {k > 0 ? " · " : ""}
-              <strong style={{ fontFamily: MONO, color: command.known ? ACCENT : "#7F7BA9" }}>
+              <strong
+                style={{
+                  fontFamily: MONO,
+                  color: command.known ? ACCENT : "var(--color-text-muted)",
+                }}
+              >
                 {command.name}
               </strong>
               {" : "}
@@ -127,13 +142,13 @@ export function CommandExplanation({
                     fontSize: 9,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: "#7F7BA9",
+                    color: "var(--color-text-muted)",
                   }}
                 >
                   {PART_KIND_LABELS[part.kind]}
                 </span>
               </span>
-              <span style={{ color: "#B8B5D1" }}>{part.role}</span>
+              <span style={{ color: "var(--color-text-secondary)" }}>{part.role}</span>
             </li>
           ))}
         </ul>
