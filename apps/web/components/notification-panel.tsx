@@ -10,6 +10,7 @@ import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
+import { useSettingsDrawer } from "@/app/(app)/settings/_components/SettingsDrawer";
 
 // Keyed on the enum rather than on string: a new NotificationType now fails to
 // compile until it has an icon, instead of reaching the panel with a blank
@@ -97,6 +98,20 @@ export function NotificationPanel({
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useClickOutside(open, panelRef, buttonRef, setOpen);
+
+  // A notice that points at the settings (a moderation decision points at
+  // the record) opens them over the page, like every other link to them.
+  const settings = useSettingsDrawer();
+  const follow = useCallback(
+    (url: string): void => {
+      if (settings?.openHref(url)) {
+        setOpen(false);
+        return;
+      }
+      window.location.href = url;
+    },
+    [settings],
+  );
 
   // Load notifications when panel opens
   useEffect(() => {
@@ -320,6 +335,7 @@ export function NotificationPanel({
                   key={item.id}
                   item={item}
                   onRead={handleMarkRead}
+                  onFollow={follow}
                   isPending={isPending}
                 />
               ))}
@@ -334,9 +350,11 @@ export function NotificationPanel({
 function NotificationRow({
   item,
   onRead,
+  onFollow,
 }: {
   item: NotificationItem;
   onRead: (id: string) => void;
+  onFollow: (url: string) => void;
   isPending: boolean;
 }) {
   const isUnread = !item.readAt;
@@ -363,7 +381,7 @@ function NotificationRow({
       }}
       onClick={() => {
         if (isUnread) onRead(item.id);
-        if (item.actionUrl) window.location.href = item.actionUrl;
+        if (item.actionUrl) onFollow(item.actionUrl);
       }}
     >
       {/* Icon */}

@@ -11,6 +11,7 @@ import { updateProfileAction } from "../_actions/update-profile";
 import { uploadAvatarAction } from "@/lib/avatar/actions";
 import { AvatarCropper } from "@/components/avatar-cropper";
 import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
+import { useSettingsReload } from "../../_components/settings-reload";
 
 const AVATARS = [
   { path: "/avatars/av-1.svg", label: "CYBER" },
@@ -76,6 +77,7 @@ export function ProfileForm({
   initialAvatarPreview,
 }: ProfileFormProps): React.JSX.Element {
   const router = useRouter();
+  const reloadSettings = useSettingsReload();
   const [pending, startTransition] = useTransition();
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [bio, setBio] = useState(initialBio);
@@ -101,7 +103,9 @@ export function ProfileForm({
       setCropFile(null);
       if (res.ok) {
         toast.success("Photo importée");
+        // The navbar's avatar, and in the drawer the preview's signed URL.
         router.refresh();
+        reloadSettings();
       } else {
         toast.error(res.error ?? "Échec de l'envoi");
       }

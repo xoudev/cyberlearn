@@ -20,8 +20,6 @@ const RESPONSIVE_CSS = `
   .settings-shell__nav { position: static !important; }
 }
 @media (max-width: 720px) { .settings-shell__head { grid-template-columns: 1fr !important; gap: 16px !important; } }
-@media (max-width: 600px) { .settings-profile__row { grid-template-columns: 1fr !important; } }
-@media (max-width: 680px) { .settings-visibility { grid-template-columns: 1fr !important; } }
 `;
 
 export default async function SettingsLayout({

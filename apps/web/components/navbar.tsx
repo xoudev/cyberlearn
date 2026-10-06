@@ -86,13 +86,17 @@ export async function Navbar(): Promise<React.ReactElement> {
         {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
         {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
-        {/* The settings, behind their icon: a section's address, which opens
-            as a drawer over the page from inside the site (see @panel). */}
+        {/* The settings, behind their icon: a section's address, which the
+            settings drawer opens over the page instead of following it (see
+            settings/_components/SettingsDrawer). Not prefetched: the page is
+            never navigated to from here, the drawer loads its own data. */}
         <Link
           href="/settings/profile"
+          prefetch={false}
           className="navbar-icon-link"
           title="Paramètres"
           aria-label="Paramètres"
+          aria-haspopup="dialog"
         >
           <Settings size={16} strokeWidth={1.75} aria-hidden="true" />
         </Link>

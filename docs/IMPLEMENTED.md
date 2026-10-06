@@ -160,7 +160,7 @@
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
 - Préférences : thème (dark/light/system), locale, e-mails de notification, rappels de révision
-- Les paramètres s'ouvrent en volet par-dessus la page depuis le rouage de la barre du haut (route interceptée `(app)/@panel/(.)settings/[section]`, mêmes formulaires que les pages) ; un rechargement ou un lien direct ouvre la page complète
+- Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans `(app)/layout.tsx`, les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Pages et volet partagent les chargeurs (`settings/_lib/load-settings.ts`) et les vues de section ; un rechargement ou un lien direct ouvre la page complète
 
 #### Notifications
 - 15 types : REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED,

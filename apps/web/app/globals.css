@@ -1751,16 +1751,23 @@ aside[data-state="collapsed"] .sidebar-account {
 /* The settings drawer: over the page, from the right, the sections down one
    side and the section's own forms beside them. Full width on a phone, where
    the sections become a row to scroll. */
-.settings-drawer-root {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
+/* The drawer is a ModalShell without chrome (Escape, focus kept inside, the
+   page locked behind, nested dialogs on top of it): the overlay is its own,
+   lighter than a centred dialog's, with the panel against the right edge. */
+.modal-shell.settings-drawer-root {
+  display: block;
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
 }
 .settings-drawer-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(3, 2, 25, 0.6);
   backdrop-filter: blur(2px);
+  animation: modal-shell-fade 180ms ease;
 }
 .settings-drawer {
   position: absolute;
@@ -1786,7 +1793,8 @@ aside[data-state="collapsed"] .sidebar-account {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .settings-drawer {
+  .settings-drawer,
+  .settings-drawer-backdrop {
     animation: none;
   }
 }
@@ -1882,9 +1890,36 @@ aside[data-state="collapsed"] .sidebar-account {
     padding: 8px 12px;
     overflow-x: auto;
   }
+  /* One scrolling row of sections instead of a column over the content. */
   .settings-drawer-nav .settings-nav {
     flex-direction: row;
     gap: 4px;
+  }
+  /* !important: the label lays itself out inline, as flex. */
+  .settings-drawer-nav .settings-nav__label {
+    display: none !important;
+  }
+  .settings-drawer-nav .settings-nav > button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* The settings sections, the same on their page and in the drawer: the
+   section list, and the two rows that stack on a narrow screen. */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+@media (max-width: 600px) {
+  .settings-profile__row {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 680px) {
+  .settings-visibility {
+    grid-template-columns: 1fr !important;
   }
 }
 

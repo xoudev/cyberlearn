@@ -48,7 +48,10 @@ export interface ModalShellProps {
   dismissable?: boolean;
   /** A coloured top edge on the frame. */
   accent?: string;
-  /** A class on the frame, for a stylesheet scoped to the content. */
+  /**
+   * A class on the frame, for a stylesheet scoped to the content. With no
+   * chrome, the overlay is the frame: the class goes on it.
+   */
   className?: string;
   children: React.ReactNode;
 }
@@ -162,7 +165,7 @@ export function ModalShell({
         role="dialog"
         aria-modal="true"
         {...name}
-        className="modal-shell modal-shell--bare"
+        className={cn("modal-shell modal-shell--bare", className)}
       >
         {children}
       </div>
