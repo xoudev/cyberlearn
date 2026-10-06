@@ -160,6 +160,14 @@
   border: 1px solid var(--border);
   padding: 22px 24px 24px;
 }
+/* The cover across the top of the card, edge to edge over its padding. */
+.pd2 .brief__cover {
+  margin: -22px -24px 20px;
+  aspect-ratio: 16 / 7;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--border);
+}
 .pd2 .brief__eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;

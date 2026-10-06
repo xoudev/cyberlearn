@@ -6,6 +6,7 @@ import { Card, EmptyState, UI } from "../../../_components/admin-ui";
 import { EditPathClient } from "./_components/EditPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
+import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
 export const metadata: Metadata = { title: "Éditer le parcours" };
 
@@ -90,6 +91,7 @@ export default async function EditPathPage({
           coverImageUrl: path.coverImageUrl ?? "",
           status: path.status,
         }}
+        coverPreview={await resolveLessonCoverSrc(path.coverImageUrl)}
         currentLessons={currentLessons}
         availableLessons={availableLessons}
       />

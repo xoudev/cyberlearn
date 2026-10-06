@@ -56,3 +56,22 @@ describe("a path to discover", () => {
     expect(html).not.toContain("★");
   });
 });
+
+describe("a path's cover on its card", () => {
+  it("is drawn under the chips, in place of the glyph", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(PathCatalogCard, {
+        path: { ...PATH, coverSrc: "/covers/paths/reseaux.svg" },
+      }),
+    );
+    expect(html).toContain("game-card__cover game-card__cover--image");
+    expect(html).toContain("background-image:url(&quot;/covers/paths/reseaux.svg&quot;)");
+    expect(html).toContain('class="game-card__img" aria-hidden="true"');
+  });
+
+  it("leaves the glyph in place without one", () => {
+    const html = renderToStaticMarkup(React.createElement(PathCatalogCard, { path: PATH }));
+    expect(html).not.toContain("game-card__img");
+    expect(html).toContain('class="game-card__cover"');
+  });
+});

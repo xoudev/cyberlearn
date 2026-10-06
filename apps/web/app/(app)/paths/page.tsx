@@ -5,6 +5,7 @@ import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
 import { requireRequestUser } from "@/lib/auth";
 import { savedLearningAnswers, toSuggestedPath } from "@/lib/paths/suggestions";
+import { resolvePathCovers } from "@/lib/paths/cover";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -66,7 +67,9 @@ export default async function PathsPage(): Promise<React.ReactElement> {
   const completedLessonIds = new Set(completedLessonsByPath.map((r) => r.lessonId));
 
   // Build serialized paths
-  const serialized: SerializedPath[] = paths.map((path) => {
+  const covers = await resolvePathCovers(paths);
+
+  const serialized: SerializedPath[] = paths.map((path, index) => {
     const pathStatus = progressMap.get(path.id);
     let status: SerializedPath["status"] = "idle";
     if (pathStatus === "COMPLETED") status = "done";
@@ -106,6 +109,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       xpTotal,
       lessonCount,
       hasCert: path.certificateTemplate !== null,
+      coverSrc: covers[index] ?? null,
       status,
       progressDone,
       progressTotal: lessonCount,

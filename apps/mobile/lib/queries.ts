@@ -7,6 +7,7 @@ import {
   fetchChallengesApi,
   fetchLessonAccessApi,
   fetchMyRankApi,
+  fetchPathCoversApi,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
@@ -360,6 +361,21 @@ export function usePaths(userId: string | undefined) {
       ]);
       return toPathCards((pathsRes.data ?? []) as RawPath[], statuses);
     },
+  });
+}
+
+/**
+ * The covers of the paths this reader may open, by slug. An uploaded image is
+ * signed for an hour: read again after half of it, so a card never holds an
+ * expired address.
+ */
+export function usePathCovers(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["path-covers", userId],
+    queryFn: fetchPathCoversApi,
+    enabled: userId !== undefined,
+    staleTime: 30 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
   });
 }
 

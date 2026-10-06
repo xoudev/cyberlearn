@@ -4,6 +4,7 @@ import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { createPathAction, type CreatePathState } from "../../_actions/path-actions";
 import { Select } from "@cyberlearn/ui";
+import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1052,42 +1053,14 @@ export function NewPathClient({
             </Help>
           </div>
 
-          {/* Cover image */}
+          {/* Cover image: uploaded to the private bucket, like a lesson's. */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// 1280×720 recommandé">URL image de couverture</Label>
-            <div
-              className="le-prefix"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: "#7F7BA9",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
-                }}
-              >
-                ↗
-              </span>
-              <input
-                name="coverImageUrl"
-                type="url"
-                placeholder="https://…"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
-              />
-            </div>
+            <Label hint="// 1280×720 · bucket privé">Image de couverture</Label>
+            <CoverUploadField initialMarker={null} initialPreview={null} />
+            <Help>
+              Sans image envoyée, le site montre l&apos;illustration du parcours, ou celle de sa
+              catégorie.
+            </Help>
           </div>
 
           {/* Publish toggle */}

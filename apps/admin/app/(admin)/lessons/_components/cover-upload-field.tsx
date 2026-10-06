@@ -25,7 +25,7 @@ const btnBase: React.CSSProperties = {
 };
 
 /**
- * Cover image picker for the lesson create/edit forms. The admin can either
+ * Cover image picker for the lesson and path create/edit forms. The admin can either
  * paste an image URL (re-hosted into the bucket) or upload a file. Both paths
  * store a `__cover:` marker in a hidden `coverImageUrl` field that the form
  * submits, and show a live preview.

@@ -10,11 +10,12 @@ import type { FriendLists, PublicProfile } from "@/lib/friends";
 import type { QaQuestion } from "@/lib/lesson-qa";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
+import { readPathCovers, type PathCover } from "@/lib/path-covers";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
+export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
   // A multipart body sets its own Content-Type, boundary included.
@@ -331,6 +332,15 @@ export async function fetchLessonAccessApi(): Promise<{ unlockAll: boolean }> {
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return { unlockAll: body.unlockAll };
+}
+
+// ── Path covers (the site's illustrations, and the images sent from the console) ──
+
+/** The covers of the paths this reader may open, by slug. */
+export async function fetchPathCoversApi(): Promise<Map<string, PathCover>> {
+  const res = await authedFetch("/api/mobile/path-covers");
+  const body: unknown = await res.json();
+  return readPathCovers(body);
 }
 
 // ── Rank (the site's dashboard figure) ────────────────────────────────────────

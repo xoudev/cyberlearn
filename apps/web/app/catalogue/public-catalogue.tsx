@@ -10,7 +10,12 @@ import { EmptyState } from "@/components/empty-state";
 
 type Category = "ALL" | "CYBERSEC" | "DEV" | "NETWORK";
 
-export function PublicCatalogue({ paths }: { paths: PublicCatalogPath[] }): React.JSX.Element {
+export function PublicCatalogue({
+  paths,
+}: {
+  /** Each with its cover resolved on the server (lib/paths/cover.ts). */
+  paths: (PublicCatalogPath & { coverSrc: string })[];
+}): React.JSX.Element {
   const [category, setCategory] = useState<Category>("ALL");
   const [search, setSearch] = useState("");
   const visiblePaths = useMemo(() => {

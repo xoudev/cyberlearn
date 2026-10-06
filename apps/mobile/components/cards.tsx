@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { View } from "react-native";
-import { colors } from "@cyberlearn/tokens";
+import { colors, space } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
+import { PathCover } from "@/components/path-cover";
 import { Card, Pill, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, type ProgressStatus } from "@/lib/db";
 import type { LessonCard, PathCard } from "@/lib/queries";
@@ -25,6 +26,16 @@ export const PathCardView = React.memo(function PathCardView({
       onPress={() => router.push({ pathname: "/paths/[slug]", params: { slug: path.slug } })}
     >
       <Card accent={cat} style={{ gap: 8 }}>
+        {/* Edge to edge on top of the card, as on the site's catalogue. */}
+        <PathCover
+          slug={path.slug}
+          style={{
+            height: 120,
+            marginTop: -space.lg,
+            marginHorizontal: -space.lg,
+            marginBottom: 4,
+          }}
+        />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cat }} />
           <Text variant="micro" style={{ color: cat }}>
