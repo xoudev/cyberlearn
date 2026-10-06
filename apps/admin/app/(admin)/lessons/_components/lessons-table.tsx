@@ -685,7 +685,7 @@ function bulkBtn(color: string, pending: boolean): React.CSSProperties {
     gap: 6,
     padding: "6px 14px",
     background: "transparent",
-    border: `1px solid ${color}66`,
+    border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`,
     color,
     fontFamily: "var(--font-mono)",
     fontSize: 10,

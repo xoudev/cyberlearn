@@ -264,7 +264,7 @@ export function MdxPreviewFrame({
           style={{
             margin: 0,
             padding: "8px 16px",
-            borderBottom: `1px solid ${DANGER}55`,
+            borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
             background: "rgba(255,77,109,0.07)",
             color: "var(--color-text-primary)",
             fontSize: 12,

@@ -17,7 +17,7 @@ export function TierBadge({ tier }: { tier: Tier }): React.ReactElement {
         gap: 8,
         padding: "5px 12px 5px 8px",
         border: `1px solid ${tier.color}`,
-        background: `${tier.color}14`,
+        background: `color-mix(in srgb, ${tier.color} 8%, transparent)`,
         whiteSpace: "nowrap",
       }}
     >
@@ -29,7 +29,7 @@ export function TierBadge({ tier }: { tier: Tier }): React.ReactElement {
           flexShrink: 0,
           clipPath: HEX,
           background: tier.color,
-          boxShadow: `0 0 8px ${tier.color}66`,
+          boxShadow: `0 0 8px color-mix(in srgb, ${tier.color} 40%, transparent)`,
         }}
       />
       <span

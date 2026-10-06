@@ -429,7 +429,7 @@ function BlockCard({
     <section
       aria-label={label}
       style={{
-        border: `1px solid ${errorCount > 0 ? `${DANGER}66` : "var(--color-border-subtle)"}`,
+        border: `1px solid ${errorCount > 0 ? `color-mix(in srgb, ${DANGER} 40%, transparent)` : "var(--color-border-subtle)"}`,
         borderLeft: `3px solid ${errorCount > 0 ? DANGER : accent}`,
         background: "#060422",
       }}
@@ -505,7 +505,7 @@ function BlockCard({
             style={{
               margin: "0 0 10px",
               padding: "6px 10px",
-              border: `1px solid ${DANGER}55`,
+              border: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
               background: "rgba(255,77,109,0.07)",
               fontFamily: MONO,
               fontSize: 10.5,

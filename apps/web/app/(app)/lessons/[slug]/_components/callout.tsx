@@ -67,7 +67,7 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
         padding: "14px 18px",
         background: v.bg,
         borderLeft: `3px solid ${v.border}`,
-        border: `1px solid ${v.border}22`,
+        border: `1px solid color-mix(in srgb, ${v.border} 13%, transparent)`,
         borderLeftColor: v.border,
       }}
     >

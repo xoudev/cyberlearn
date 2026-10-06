@@ -164,7 +164,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           margin: "14px 0",
           padding: "12px 16px",
           background: c.bg,
-          border: `1px solid ${c.border}44`,
+          border: `1px solid color-mix(in srgb, ${c.border} 27%, transparent)`,
           borderLeft: `3px solid ${c.border}`,
           borderRadius: "0 6px 6px 0",
         }}
@@ -754,13 +754,13 @@ function GuideRow({
               done
                 ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)"
                 : hov
-                  ? `${accent}66`
+                  ? `color-mix(in srgb, ${accent} 40%, transparent)`
                   : "rgba(31,27,71,0.8)"
             }`,
             background: done
               ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
               : hov
-                ? `${accent}11`
+                ? `color-mix(in srgb, ${accent} 7%, transparent)`
                 : "transparent",
             color: done ? ACCENT : hov ? accent : "var(--color-text-muted)",
             fontFamily: MONO,
@@ -943,7 +943,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
                   borderRadius: "50%",
                   background: section.accent,
                   flexShrink: 0,
-                  boxShadow: `0 0 5px ${section.accent}88`,
+                  boxShadow: `0 0 5px color-mix(in srgb, ${section.accent} 53%, transparent)`,
                 }}
               />
               <span
@@ -1663,7 +1663,7 @@ export function MdxEditorPanel({
           style={{
             margin: 0,
             padding: "8px 14px",
-            borderBottom: `1px solid ${DANGER}55`,
+            borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
             background: "rgba(255,77,109,0.07)",
             color: "var(--color-text-primary)",
             fontSize: 12,

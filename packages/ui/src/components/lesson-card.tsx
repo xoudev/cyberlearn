@@ -925,7 +925,7 @@ function CatalogCard({
               style={{
                 marginLeft: 4,
                 padding: "1px 6px",
-                border: `1px solid ${quizScoreColor(quizScore)}66`,
+                border: `1px solid color-mix(in srgb, ${quizScoreColor(quizScore)} 40%, transparent)`,
                 color: quizScoreColor(quizScore),
                 fontWeight: 700,
                 letterSpacing: "0.06em",

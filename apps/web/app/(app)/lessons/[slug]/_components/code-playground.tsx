@@ -311,7 +311,7 @@ export function CodePlayground({
               height: 8,
               borderRadius: "50%",
               background: langColor,
-              boxShadow: `0 0 8px ${langColor}99`,
+              boxShadow: `0 0 8px color-mix(in srgb, ${langColor} 60%, transparent)`,
               animation: "pulse 2s ease-in-out infinite",
             }}
           />
@@ -326,8 +326,8 @@ export function CodePlayground({
             textTransform: "uppercase",
             color: langColor,
             padding: "4px 8px",
-            border: `1px solid ${langColor}59`,
-            background: `${langColor}0D`,
+            border: `1px solid color-mix(in srgb, ${langColor} 35%, transparent)`,
+            background: `color-mix(in srgb, ${langColor} 5%, transparent)`,
           }}
         >
           {sandboxBadge}

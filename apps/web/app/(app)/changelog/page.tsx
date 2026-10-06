@@ -124,7 +124,7 @@ function EntryCard({
                   fontWeight: 700,
                   color: meta.color,
                   background: meta.bg,
-                  border: `1px solid ${meta.color}40`,
+                  border: `1px solid color-mix(in srgb, ${meta.color} 25%, transparent)`,
                   padding: "3px 8px",
                   minWidth: 96,
                   textAlign: "center",

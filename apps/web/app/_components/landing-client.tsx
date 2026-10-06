@@ -476,8 +476,8 @@ export function LandingClient({
                             height: 50,
                             display: "grid",
                             placeItems: "center",
-                            background: `${color}1A`,
-                            border: `1px solid ${color}55`,
+                            background: `color-mix(in srgb, ${color} 10%, transparent)`,
+                            border: `1px solid color-mix(in srgb, ${color} 33%, transparent)`,
                             clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
                           }}
                         >
@@ -710,7 +710,7 @@ export function LandingClient({
                   style={{
                     position: "relative",
                     background: "var(--color-bg-elevated)",
-                    border: `1px solid ${color}33`,
+                    border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
                     padding: "24px 24px 22px",
                     display: "flex",
                     flexDirection: "column",
@@ -721,11 +721,11 @@ export function LandingClient({
                     transition: "border-color 200ms ease, transform 200ms ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = `${color}66`;
+                    e.currentTarget.style.borderColor = `color-mix(in srgb, ${color} 40%, transparent)`;
                     e.currentTarget.style.transform = "translateY(-3px)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = `${color}33`;
+                    e.currentTarget.style.borderColor = `color-mix(in srgb, ${color} 20%, transparent)`;
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
@@ -734,7 +734,7 @@ export function LandingClient({
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: `radial-gradient(ellipse 100% 70% at 50% 120%, ${color}18, transparent 70%)`,
+                      background: `radial-gradient(ellipse 100% 70% at 50% 120%, color-mix(in srgb, ${color} 9%, transparent), transparent 70%)`,
                       pointerEvents: "none",
                     }}
                   />
@@ -750,8 +750,8 @@ export function LandingClient({
                       style={{
                         fontWeight: 700,
                         color: color,
-                        background: `${color}14`,
-                        border: `1px solid ${color}44`,
+                        background: `color-mix(in srgb, ${color} 8%, transparent)`,
+                        border: `1px solid color-mix(in srgb, ${color} 27%, transparent)`,
                         padding: "4px 10px",
                       }}
                     >
