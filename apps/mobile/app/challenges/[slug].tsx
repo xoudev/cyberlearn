@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { ChallengeWriteups } from "@/components/challenge-writeups";
 import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
@@ -183,6 +184,8 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
           <Text variant="bodySm">{`Défi résolu : ${String(xp)} XP gagnés.`}</Text>
         </Card>
       ) : null}
+
+      {!locked ? <ChallengeWriteups challengeId={challenge.id} /> : null}
     </View>
   );
 }

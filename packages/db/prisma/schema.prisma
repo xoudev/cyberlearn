@@ -65,6 +65,7 @@ model User {
   quizReports       QuizReport[]
   questions         LessonQuestion[]
   answers           LessonAnswer[]
+  challengeWriteups ChallengeWriteup[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -788,6 +789,7 @@ model Challenge {
   dependents   Challenge[]             @relation("ChallengeDeps")
   progress     UserChallengeProgress[]
   hints        ChallengeHint[]
+  writeups     ChallengeWriteup[]
 
   @@index([category, difficulty, isActive])
   @@map("challenges")
@@ -1906,4 +1908,26 @@ model ExerciseCompletion {
   @@unique([userId, lessonId, exerciseId])
   @@index([lessonId])
   @@map("exercise_completions")
+}
+
+/// A learner's solution to a challenge, published once it is solved and read
+/// only by the others who solved it too. One per person and challenge: a new
+/// version replaces the old one. Screened like every text a person publishes
+/// to another: what the screen flags is written hidden and goes to the queue.
+model ChallengeWriteup {
+  id          String   @id @default(uuid()) @db.Uuid
+  challengeId String   @db.Uuid
+  /// Null after RGPD anonymization: the solution stays, its author does not.
+  userId      String?  @db.Uuid
+  content     String   @db.Text
+  isHidden    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([challengeId, userId])
+  @@index([challengeId, isHidden])
+  @@map("challenge_writeups")
 }

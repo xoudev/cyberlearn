@@ -15,6 +15,7 @@ const SURFACE_LABEL: Record<string, string> = {
   "note.share": "Note partagée",
   "forum.topic": "Sujet du forum",
   "forum.post": "Message du forum",
+  "challenge.writeup": "Solution d'un défi",
 };
 
 const RULE_LABEL: Record<string, string> = {

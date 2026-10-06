@@ -171,3 +171,32 @@ export function tallyOf(items: readonly ChallengeItem[]): { status: ChallengeSta
     .map((status) => ({ status, n: items.filter((i) => i.displayStatus === status).length }))
     .filter(({ status, n }) => n > 0 || status !== "IN_PROGRESS");
 }
+
+// ── Write-ups (the site's lib/challenges/writeups.ts) ───────────────────────
+
+export interface WriteupView {
+  id: string;
+  content: string;
+  /** Null for an erased account: the solution stays, without its author. */
+  author: { name: string; username: string | null } | null;
+  updatedAt: string;
+}
+
+/** The reader's own solution; `isHidden` while it waits for a moderator. */
+export interface OwnWriteup {
+  content: string;
+  isHidden: boolean;
+  updatedAt: string;
+}
+
+/** The count only until the challenge is solved, then the solutions. */
+export type WriteupBoard =
+  | { solved: false; count: number }
+  | { solved: true; count: number; own: OwnWriteup | null; others: WriteupView[] };
+
+export type WriteupReply = { ok: true; heldForReview?: true } | { ok: false; error: string };
+
+/** "3 solutions publiées", as the site says it. */
+export function solutionsLabel(count: number): string {
+  return `${String(count)} solution${count > 1 ? "s" : ""} publiée${count > 1 ? "s" : ""}`;
+}

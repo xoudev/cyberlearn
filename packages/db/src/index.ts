@@ -76,6 +76,7 @@ export {
 } from "./repositories/path.repository.js";
 export { certificateRepository } from "./repositories/certificate.repository.js";
 export { exerciseRepository } from "./repositories/exercise.repository.js";
+export { writeupRepository } from "./repositories/writeup.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
 export {

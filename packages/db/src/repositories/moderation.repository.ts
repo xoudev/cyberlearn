@@ -82,6 +82,7 @@ export const MODERATION_SURFACE = {
   lessonAnswer: "lesson.answer",
   forumTopic: "forum.topic",
   forumPost: "forum.post",
+  challengeWriteup: "challenge.writeup",
 } as const;
 
 export type ModerationSurface = (typeof MODERATION_SURFACE)[keyof typeof MODERATION_SURFACE];
@@ -154,6 +155,14 @@ const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
     },
     destroy: async (id) => {
       await prisma.forumPost.deleteMany({ where: { id } });
+    },
+  },
+  [MODERATION_SURFACE.challengeWriteup]: {
+    restore: async (id) => {
+      await prisma.challengeWriteup.updateMany({ where: { id }, data: { isHidden: false } });
+    },
+    destroy: async (id) => {
+      await prisma.challengeWriteup.deleteMany({ where: { id } });
     },
   },
 };

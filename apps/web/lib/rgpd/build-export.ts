@@ -149,6 +149,15 @@ export interface ExportPayload {
       createdAt: Date;
     }[];
   };
+  /** The solutions published to challenges, hidden ones included. */
+  challengeWriteups: {
+    challengeTitle: string;
+    challengeSlug: string;
+    content: string;
+    isHidden: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
   contactTickets: {
     subject: string;
     theme: string;
@@ -233,6 +242,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     ratings,
     questions,
     answers,
+    writeups,
     tickets,
     notifications,
     skipWaivers,
@@ -381,6 +391,16 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         upvotes: true,
         createdAt: true,
         question: { select: { id: true, title: true } },
+      },
+    }),
+    prisma.challengeWriteup.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        isHidden: true,
+        createdAt: true,
+        updatedAt: true,
+        challenge: { select: { title: true, slug: true } },
       },
     }),
     prisma.contactTicket.findMany({
@@ -646,6 +666,14 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         createdAt: a.createdAt,
       })),
     },
+    challengeWriteups: writeups.map((w) => ({
+      challengeTitle: w.challenge.title,
+      challengeSlug: w.challenge.slug,
+      content: w.content,
+      isHidden: w.isHidden,
+      createdAt: w.createdAt,
+      updatedAt: w.updatedAt,
+    })),
     contactTickets: tickets,
     notifications,
     skipWaivers: skipWaivers.map((w) => ({
