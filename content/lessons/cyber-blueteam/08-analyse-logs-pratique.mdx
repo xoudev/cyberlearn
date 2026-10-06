@@ -106,6 +106,266 @@ Reprends la même méthode sur un autre extrait et observe ce que chaque command
 
 <SimulatedTerminal shell="bash" scenario="bash" title="Compter et regrouper les utilisateurs ciblés" commands={{"grep 'Failed password' auth.log | grep -oE 'for [a-z]+' | sort | uniq -c | sort -rn": "291 for admin\n38 for root\n13 for postgres", "grep 'Accepted password' auth.log | wc -l": "2", "grep 'Accepted password' auth.log": "Jan 10 03:14:88 srv sshd: Accepted password for admin from 203.0.113.9\nJan 10 09:02:11 srv sshd: Accepted password for jordan from 192.168.1.20"}} />
 
+Maintenant, pour de vrai. Les deux journaux de cette nuit-là sont dans la machine : `auth.log`, celui de SSH et de sudo, et `access.log`, celui du serveur web. Rien n'est joué d'avance ici, les commandes sont les tiennes. Mène l'enquête avec `grep`, `awk`, `sort` et `uniq`, puis écris chaque réponse dans le fichier demandé, avec `echo` : c'est ce que la machine vérifie.
+
+<LinuxTerminal
+  title="L'enquête, pour de vrai"
+  height={460}
+  files={{
+    "auth.log": `Jan 10 00:00:00 srv CRON[1802]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 00:00:01 srv CRON[1802]: pam_unix(cron:session): session closed for user root
+Jan 10 00:30:00 srv CRON[1810]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 00:30:01 srv CRON[1810]: pam_unix(cron:session): session closed for user root
+Jan 10 01:00:00 srv CRON[1817]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 01:00:01 srv CRON[1817]: pam_unix(cron:session): session closed for user root
+Jan 10 01:05:32 srv sshd[1927]: Failed password for root from 198.51.100.7 port 53915 ssh2
+Jan 10 01:30:00 srv CRON[1824]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 01:30:01 srv CRON[1824]: pam_unix(cron:session): session closed for user root
+Jan 10 01:31:04 srv sshd[1931]: Failed password for root from 198.51.100.7 port 57623 ssh2
+Jan 10 01:58:08 srv sshd[1950]: Failed password for root from 198.51.100.7 port 43323 ssh2
+Jan 10 02:00:00 srv CRON[1829]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 02:00:01 srv CRON[1829]: pam_unix(cron:session): session closed for user root
+Jan 10 02:01:18 srv sshd[1919]: Failed password for root from 198.51.100.7 port 52344 ssh2
+Jan 10 02:02:52 srv sshd[1957]: Failed password for invalid user pi from 192.0.2.5 port 44034 ssh2
+Jan 10 02:09:23 srv sshd[1964]: Failed password for invalid user pi from 192.0.2.5 port 55058 ssh2
+Jan 10 02:11:08 srv sshd[1956]: Failed password for invalid user pi from 192.0.2.5 port 54654 ssh2
+Jan 10 02:25:22 srv sshd[1910]: Failed password for root from 198.51.100.7 port 49917 ssh2
+Jan 10 02:29:25 srv sshd[1953]: Failed password for root from 198.51.100.7 port 45353 ssh2
+Jan 10 02:30:00 srv CRON[1834]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 02:30:01 srv CRON[1834]: pam_unix(cron:session): session closed for user root
+Jan 10 02:39:52 srv sshd[1968]: Failed password for invalid user pi from 192.0.2.5 port 40499 ssh2
+Jan 10 02:41:55 srv sshd[1934]: Failed password for root from 198.51.100.7 port 52758 ssh2
+Jan 10 03:00:00 srv CRON[1841]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 03:00:01 srv CRON[1841]: pam_unix(cron:session): session closed for user root
+Jan 10 03:09:40 srv sshd[1974]: Failed password for admin from 203.0.113.9 port 51002 ssh2
+Jan 10 03:09:46 srv sshd[1975]: Failed password for invalid user test from 203.0.113.9 port 51005 ssh2
+Jan 10 03:09:49 srv sshd[1982]: Failed password for admin from 203.0.113.9 port 51009 ssh2
+Jan 10 03:09:53 srv sshd[1989]: Failed password for admin from 203.0.113.9 port 51014 ssh2
+Jan 10 03:09:59 srv sshd[1997]: Failed password for root from 203.0.113.9 port 51019 ssh2
+Jan 10 03:10:03 srv sshd[1998]: Failed password for admin from 203.0.113.9 port 51024 ssh2
+Jan 10 03:10:06 srv sshd[1999]: Failed password for admin from 203.0.113.9 port 51030 ssh2
+Jan 10 03:10:12 srv sshd[2000]: Failed password for admin from 203.0.113.9 port 51032 ssh2
+Jan 10 03:10:15 srv sshd[2001]: Failed password for admin from 203.0.113.9 port 51034 ssh2
+Jan 10 03:10:18 srv sshd[2003]: Failed password for admin from 203.0.113.9 port 51038 ssh2
+Jan 10 03:10:24 srv sshd[2006]: Failed password for invalid user test from 203.0.113.9 port 51042 ssh2
+Jan 10 03:10:27 srv sshd[2015]: Failed password for admin from 203.0.113.9 port 51046 ssh2
+Jan 10 03:10:31 srv sshd[2024]: Failed password for admin from 203.0.113.9 port 51049 ssh2
+Jan 10 03:10:34 srv sshd[2030]: Failed password for admin from 203.0.113.9 port 51055 ssh2
+Jan 10 03:10:38 srv sshd[2034]: Failed password for admin from 203.0.113.9 port 51060 ssh2
+Jan 10 03:10:41 srv sshd[2043]: Failed password for admin from 203.0.113.9 port 51064 ssh2
+Jan 10 03:10:47 srv sshd[2052]: Failed password for admin from 203.0.113.9 port 51068 ssh2
+Jan 10 03:10:53 srv sshd[2060]: Failed password for admin from 203.0.113.9 port 51073 ssh2
+Jan 10 03:10:57 srv sshd[2068]: Failed password for root from 203.0.113.9 port 51076 ssh2
+Jan 10 03:11:03 srv sshd[2077]: Failed password for admin from 203.0.113.9 port 51078 ssh2
+Jan 10 03:11:09 srv sshd[2083]: Failed password for admin from 203.0.113.9 port 51081 ssh2
+Jan 10 03:11:12 srv sshd[2089]: Failed password for admin from 203.0.113.9 port 51083 ssh2
+Jan 10 03:11:18 srv sshd[2096]: Failed password for admin from 203.0.113.9 port 51085 ssh2
+Jan 10 03:11:22 srv sshd[2100]: Failed password for admin from 203.0.113.9 port 51090 ssh2
+Jan 10 03:11:25 srv sshd[2109]: Failed password for admin from 203.0.113.9 port 51096 ssh2
+Jan 10 03:11:29 srv sshd[2110]: Failed password for admin from 203.0.113.9 port 51099 ssh2
+Jan 10 03:11:33 srv sshd[2113]: Failed password for admin from 203.0.113.9 port 51102 ssh2
+Jan 10 03:11:39 srv sshd[2116]: Failed password for admin from 203.0.113.9 port 51104 ssh2
+Jan 10 03:11:43 srv sshd[2125]: Failed password for admin from 203.0.113.9 port 51107 ssh2
+Jan 10 03:11:46 srv sshd[2126]: Failed password for admin from 203.0.113.9 port 51113 ssh2
+Jan 10 03:11:50 srv sshd[2129]: Failed password for admin from 203.0.113.9 port 51116 ssh2
+Jan 10 03:11:53 srv sshd[2137]: Failed password for admin from 203.0.113.9 port 51119 ssh2
+Jan 10 03:11:58 srv sshd[2138]: Failed password for root from 203.0.113.9 port 51122 ssh2
+Jan 10 03:12:01 srv sshd[2142]: Failed password for admin from 203.0.113.9 port 51125 ssh2
+Jan 10 03:12:04 srv sshd[2145]: Failed password for invalid user test from 203.0.113.9 port 51127 ssh2
+Jan 10 03:12:10 srv sshd[2151]: Failed password for root from 203.0.113.9 port 51129 ssh2
+Jan 10 03:12:14 srv sshd[2153]: Failed password for admin from 203.0.113.9 port 51131 ssh2
+Jan 10 03:12:19 srv sshd[2154]: Failed password for admin from 203.0.113.9 port 51136 ssh2
+Jan 10 03:12:22 srv sshd[2160]: Failed password for admin from 203.0.113.9 port 51138 ssh2
+Jan 10 03:12:25 srv sshd[2166]: Failed password for admin from 203.0.113.9 port 51140 ssh2
+Jan 10 03:12:30 srv sshd[1920]: Failed password for root from 198.51.100.7 port 45403 ssh2
+Jan 10 03:12:30 srv sshd[2172]: Failed password for admin from 203.0.113.9 port 51143 ssh2
+Jan 10 03:12:36 srv sshd[2178]: Failed password for admin from 203.0.113.9 port 51147 ssh2
+Jan 10 03:12:41 srv sshd[2184]: Failed password for admin from 203.0.113.9 port 51153 ssh2
+Jan 10 03:12:45 srv sshd[2187]: Failed password for admin from 203.0.113.9 port 51158 ssh2
+Jan 10 03:12:51 srv sshd[2193]: Failed password for admin from 203.0.113.9 port 51163 ssh2
+Jan 10 03:12:56 srv sshd[2198]: Failed password for admin from 203.0.113.9 port 51166 ssh2
+Jan 10 03:13:02 srv sshd[2207]: Failed password for admin from 203.0.113.9 port 51171 ssh2
+Jan 10 03:13:06 srv sshd[2213]: Failed password for root from 203.0.113.9 port 51176 ssh2
+Jan 10 03:13:12 srv sshd[2216]: Failed password for admin from 203.0.113.9 port 51182 ssh2
+Jan 10 03:13:17 srv sshd[2218]: Failed password for invalid user test from 203.0.113.9 port 51184 ssh2
+Jan 10 03:13:20 srv sshd[2226]: Failed password for admin from 203.0.113.9 port 51188 ssh2
+Jan 10 03:13:26 srv sshd[2234]: Failed password for admin from 203.0.113.9 port 51191 ssh2
+Jan 10 03:13:32 srv sshd[2237]: Failed password for root from 203.0.113.9 port 51195 ssh2
+Jan 10 03:13:38 srv sshd[2245]: Failed password for admin from 203.0.113.9 port 51197 ssh2
+Jan 10 03:13:41 srv sshd[2250]: Failed password for admin from 203.0.113.9 port 51200 ssh2
+Jan 10 03:13:45 srv sshd[2258]: Failed password for admin from 203.0.113.9 port 51205 ssh2
+Jan 10 03:13:49 srv sshd[2261]: Failed password for root from 203.0.113.9 port 51209 ssh2
+Jan 10 03:13:54 srv sshd[2265]: Failed password for root from 203.0.113.9 port 51212 ssh2
+Jan 10 03:14:02 srv sshd[2267]: Accepted password for admin from 203.0.113.9 port 51999 ssh2
+Jan 10 03:14:02 srv sshd[2267]: pam_unix(sshd:session): session opened for user admin by (uid=0)
+Jan 10 03:16:40 srv sudo[2274]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+Jan 10 03:16:40 srv sudo[2274]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:16:41 srv sudo[2274]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:19:12 srv sudo[2276]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/sbin/useradd -m -s /bin/bash support2
+Jan 10 03:19:12 srv sudo[2276]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:19:13 srv sudo[2276]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:19:43 srv sudo[2280]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/passwd support2
+Jan 10 03:19:43 srv sudo[2280]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:19:44 srv sudo[2280]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:21:05 srv sudo[2285]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/sed -i s/^support2.*/support2 ALL=(ALL) NOPASSWD:ALL/ /etc/sudoers
+Jan 10 03:21:05 srv sudo[2285]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:21:06 srv sudo[2285]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:24:30 srv sudo[2292]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/tar czf /tmp/.cache.tgz /var/lib/mysql
+Jan 10 03:24:30 srv sudo[2292]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:24:31 srv sudo[2292]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:28:52 srv sudo[2294]:    admin : TTY=pts/1 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/rm /var/log/auth.log.1
+Jan 10 03:28:52 srv sudo[2294]: pam_unix(sudo:session): session opened for user root(uid=0) by admin(uid=1001)
+Jan 10 03:28:53 srv sudo[2294]: pam_unix(sudo:session): session closed for user root
+Jan 10 03:29:13 srv sshd[1901]: Failed password for root from 198.51.100.7 port 48195 ssh2
+Jan 10 03:30:00 srv CRON[1845]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 03:30:01 srv CRON[1845]: pam_unix(cron:session): session closed for user root
+Jan 10 03:31:07 srv sshd[2294]: pam_unix(sshd:session): session closed for user admin
+Jan 10 03:43:47 srv sshd[1937]: Failed password for root from 198.51.100.7 port 45927 ssh2
+Jan 10 04:00:00 srv CRON[1849]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 04:00:01 srv CRON[1849]: pam_unix(cron:session): session closed for user root
+Jan 10 04:08:57 srv sshd[1944]: Failed password for root from 198.51.100.7 port 56338 ssh2
+Jan 10 04:30:00 srv CRON[1856]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 04:30:01 srv CRON[1856]: pam_unix(cron:session): session closed for user root
+Jan 10 04:59:22 srv sshd[1947]: Failed password for root from 198.51.100.7 port 59741 ssh2
+Jan 10 05:00:00 srv CRON[1859]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 05:00:01 srv CRON[1859]: pam_unix(cron:session): session closed for user root
+Jan 10 05:30:00 srv CRON[1862]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 05:30:01 srv CRON[1862]: pam_unix(cron:session): session closed for user root
+Jan 10 06:00:00 srv CRON[1867]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 06:00:01 srv CRON[1867]: pam_unix(cron:session): session closed for user root
+Jan 10 06:30:00 srv CRON[1871]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 06:30:01 srv CRON[1871]: pam_unix(cron:session): session closed for user root
+Jan 10 07:00:00 srv CRON[1879]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 07:00:01 srv CRON[1879]: pam_unix(cron:session): session closed for user root
+Jan 10 07:30:00 srv CRON[1883]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 07:30:01 srv CRON[1883]: pam_unix(cron:session): session closed for user root
+Jan 10 07:52:19 srv sshd[2296]: Accepted publickey for jordan from 192.168.1.20 port 57660 ssh2
+Jan 10 07:52:19 srv sshd[2296]: pam_unix(sshd:session): session opened for user jordan by (uid=0)
+Jan 10 08:00:00 srv CRON[1887]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 08:00:01 srv CRON[1887]: pam_unix(cron:session): session closed for user root
+Jan 10 08:29:40 srv sshd[2314]: Failed password for alice from 10.0.0.5 port 50212 ssh2
+Jan 10 08:29:47 srv sshd[2318]: Failed password for alice from 10.0.0.5 port 50212 ssh2
+Jan 10 08:30:00 srv CRON[1895]: pam_unix(cron:session): session opened for user root by (uid=0)
+Jan 10 08:30:01 srv CRON[1895]: pam_unix(cron:session): session closed for user root
+Jan 10 08:30:04 srv sshd[2303]: Accepted password for alice from 10.0.0.5 port 53707 ssh2
+Jan 10 08:30:04 srv sshd[2303]: pam_unix(sshd:session): session opened for user alice by (uid=0)
+Jan 10 08:41:55 srv sshd[2311]: Accepted publickey for jordan from 192.168.1.20 port 53276 ssh2
+Jan 10 08:41:55 srv sshd[2311]: pam_unix(sshd:session): session opened for user jordan by (uid=0)`,
+    "access.log": `10.0.0.12 - - [10/Jan/2026:00:04:57 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+172.16.4.9 - - [10/Jan/2026:00:30:11 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:00:47:11 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.31 - - [10/Jan/2026:01:08:58 +0100] "GET /favicon.ico HTTP/1.1" 304 0 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:01:16:22 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:01:38:47 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.31 - - [10/Jan/2026:01:38:54 +0100] "GET /contact HTTP/1.1" 200 4310 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+172.16.4.9 - - [10/Jan/2026:01:46:03 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+172.16.4.9 - - [10/Jan/2026:01:53:09 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+172.16.4.9 - - [10/Jan/2026:02:02:56 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:02:05:09 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.12 - - [10/Jan/2026:02:11:05 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:02:12:43 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+172.16.4.9 - - [10/Jan/2026:02:26:07 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:02:32:46 +0100] "GET /produits HTTP/1.1" 200 14210 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.12 - - [10/Jan/2026:02:33:11 +0100] "GET /contact HTTP/1.1" 200 4310 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.5 - - [10/Jan/2026:02:36:53 +0100] "GET /contact HTTP/1.1" 200 4310 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+172.16.4.9 - - [10/Jan/2026:02:39:08 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+198.51.100.23 - - [10/Jan/2026:02:40:11 +0100] "GET /wp-login.php HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:40:19 +0100] "GET /.env HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:40:25 +0100] "GET /phpmyadmin/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:40:34 +0100] "GET /admin/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:40:41 +0100] "GET /backup.zip HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:40:50 +0100] "GET /.git/config HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:02 +0100] "GET /config.php.bak HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:10 +0100] "GET /wp-admin/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:21 +0100] "GET /xmlrpc.php HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:29 +0100] "GET /.aws/credentials HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:40 +0100] "GET /db.sql HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:41:52 +0100] "GET /admin/login HTTP/1.1" 200 112 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:00 +0100] "GET /manager/html HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:09 +0100] "GET /cgi-bin/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:18 +0100] "GET /.DS_Store HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:27 +0100] "GET /server-status HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:32 +0100] "GET /api/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:42 +0100] "GET /robots.txt HTTP/1.1" 200 112 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:49 +0100] "GET /sitemap.xml HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:42:54 +0100] "GET /console HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:03 +0100] "GET /debug HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:10 +0100] "GET /.htpasswd HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:15 +0100] "GET /old/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:24 +0100] "GET /test.php HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:33 +0100] "GET /shell.php HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:42 +0100] "GET /uploads/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:51 +0100] "GET /vendor/phpunit/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:43:58 +0100] "GET /solr/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:44:04 +0100] "GET /jenkins/ HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+198.51.100.23 - - [10/Jan/2026:02:44:16 +0100] "GET /.ssh/id_rsa HTTP/1.1" 404 162 "-" "python-requests/2.31.0"
+192.168.1.20 - - [10/Jan/2026:02:51:49 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:03:17:30 +0100] "GET /favicon.ico HTTP/1.1" 200 1150 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:03:23:31 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+172.16.4.9 - - [10/Jan/2026:03:34:24 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+203.0.113.9 - - [10/Jan/2026:03:35:20 +0100] "GET /produits?id=1' HTTP/1.1" 500 1830 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+203.0.113.9 - - [10/Jan/2026:03:36:00 +0100] "GET /produits?id=1'%20OR%20'1'='1 HTTP/1.1" 200 61250 "-" "Mozilla/5.0 (X11; Linux x86_64) sqlmap/1.8"
+203.0.113.9 - - [10/Jan/2026:03:37:11 +0100] "GET /produits?id=1%20UNION%20SELECT%20null,null,null-- HTTP/1.1" 500 1830 "-" "Mozilla/5.0 (X11; Linux x86_64) sqlmap/1.8"
+203.0.113.9 - - [10/Jan/2026:03:37:57 +0100] "GET /produits?id=1%20UNION%20SELECT%20null,null,null,null-- HTTP/1.1" 200 14890 "-" "Mozilla/5.0 (X11; Linux x86_64) sqlmap/1.8"
+203.0.113.9 - - [10/Jan/2026:03:38:50 +0100] "GET /produits?id=1%20UNION%20SELECT%20login,mot_de_passe,null,null%20FROM%20utilisateurs-- HTTP/1.1" 200 15934 "-" "Mozilla/5.0 (X11; Linux x86_64) sqlmap/1.8"
+10.0.0.12 - - [10/Jan/2026:03:38:52 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+203.0.113.9 - - [10/Jan/2026:03:40:13 +0100] "POST /admin/login HTTP/1.1" 302 0 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+203.0.113.9 - - [10/Jan/2026:03:41:30 +0100] "GET /admin/ HTTP/1.1" 200 8840 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+203.0.113.9 - - [10/Jan/2026:03:42:57 +0100] "GET /admin/export?table=clients HTTP/1.1" 200 1849302 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:03:46:06 +0100] "GET /contact HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:03:51:18 +0100] "GET /favicon.ico HTTP/1.1" 200 1150 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+192.168.1.20 - - [10/Jan/2026:04:16:18 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:04:23:08 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:04:28:54 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:04:37:20 +0100] "GET /favicon.ico HTTP/1.1" 200 1150 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:04:45:53 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+172.16.4.9 - - [10/Jan/2026:04:49:14 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:04:53:49 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:05:04:43 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:05:06:34 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:05:12:28 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:05:12:37 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:05:13:28 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+192.168.1.20 - - [10/Jan/2026:05:26:26 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.31 - - [10/Jan/2026:05:47:42 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+192.168.1.20 - - [10/Jan/2026:05:48:13 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.5 - - [10/Jan/2026:05:52:52 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.31 - - [10/Jan/2026:05:57:34 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.12 - - [10/Jan/2026:06:05:11 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:06:05:16 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.12 - - [10/Jan/2026:06:06:18 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:06:09:12 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.5 - - [10/Jan/2026:06:17:13 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+192.168.1.20 - - [10/Jan/2026:06:17:21 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.12 - - [10/Jan/2026:06:17:57 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+192.168.1.20 - - [10/Jan/2026:06:25:24 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.5 - - [10/Jan/2026:06:44:23 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.12 - - [10/Jan/2026:07:00:43 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.5 - - [10/Jan/2026:07:18:49 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+192.168.1.20 - - [10/Jan/2026:07:25:49 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+10.0.0.5 - - [10/Jan/2026:07:31:38 +0100] "GET /panier HTTP/1.1" 200 6210 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+172.16.4.9 - - [10/Jan/2026:07:33:42 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.12 - - [10/Jan/2026:07:58:00 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:08:00:23 +0100] "GET /produits/casque-usb HTTP/1.1" 200 9860 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.31 - - [10/Jan/2026:08:05:29 +0100] "GET /produits/clavier-compact HTTP/1.1" 200 10112 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.5 - - [10/Jan/2026:08:07:00 +0100] "GET /static/app.js HTTP/1.1" 200 48020 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:08:21:27 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.31 - - [10/Jan/2026:08:25:10 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.31 - - [10/Jan/2026:08:26:10 +0100] "GET /static/app.css HTTP/1.1" 200 21400 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+172.16.4.9 - - [10/Jan/2026:08:31:11 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.31 - - [10/Jan/2026:08:31:17 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.5 - - [10/Jan/2026:08:31:49 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+10.0.0.5 - - [10/Jan/2026:08:42:36 +0100] "GET /contact HTTP/1.1" 200 4310 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+10.0.0.31 - - [10/Jan/2026:08:51:21 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0"
+192.168.1.20 - - [10/Jan/2026:08:58:07 +0100] "GET / HTTP/1.1" 200 5120 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+192.168.1.20 - - [10/Jan/2026:08:58:48 +0100] "GET /compte HTTP/1.1" 200 7008 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"`
+  }}
+  checks={[{"label": "L'adresse de la force brute est dans reponse-ip.txt", "path": "reponse-ip.txt", "expect": "file", "contains": "203.0.113.9"}, {"label": "Le compte qui a cédé est dans reponse-compte.txt", "path": "reponse-compte.txt", "expect": "file", "contains": "admin"}, {"label": "L'heure du succès est dans reponse-heure.txt", "path": "reponse-heure.txt", "expect": "file", "contains": "03:14"}, {"label": "Le compte créé par l'attaquant est dans reponse-compte-cree.txt", "path": "reponse-compte-cree.txt", "expect": "file", "contains": "support2"}, {"label": "L'adresse qui a scanné le site est dans reponse-scan.txt", "path": "reponse-scan.txt", "expect": "file", "contains": "198.51.100.23"}, {"label": "L'adresse de l'export des clients est dans reponse-export.txt", "path": "reponse-export.txt", "expect": "file", "contains": "/admin/export"}]}
+  hints={["Commence large : wc -l sur chaque journal, puis grep -c 'Failed password' auth.log.", "Les adresses : grep 'Failed password' auth.log | grep -oE '([0-9]+\\.){3}[0-9]+' | sort | uniq -c | sort -rn | head -3.", "Le compte et l'heure : grep Accepted auth.log, puis regarde la ligne qui suit la rafale.", "Ce que l'attaquant a fait : grep COMMAND auth.log, dans l'ordre du temps.", "Le scanner : grep -c ' 404 ' access.log, puis awk '$9 == 404 {print $1}' access.log | sort | uniq -c | sort -rn.", "L'export : trie les réponses par taille, sort -k10 -n access.log | tail -3, ou cherche export.", "Une réponse s'écrit avec echo : echo 203.0.113.9 > reponse-ip.txt."]}
+/>
+
+Six réponses, six fichiers. Le journal SSH raconte la force brute, son succès et les six commandes passées sous `sudo` dans le quart d'heure qui suit : la lecture du fichier des mots de passe, un compte créé puis mis dans `sudoers`, les bases de données archivées dans `/tmp`, et un journal supprimé. Le journal web raconte un scanner à 2 h 40, qui essaie trente chemins connus, puis une injection SQL depuis la même adresse que la force brute, qui finit par un export de la table des clients de 1,8 Mo. Deux journaux, une seule histoire.
+
 <QuizGroup>
 
 <Quiz id="q-1" question="Dans un journal SSH, quel enchaînement signale une force brute réussie ?" options={["Un seul échec suivi d'un succès depuis une IP différente", "Une longue rafale d'échecs puis un succès, le tout depuis la même IP", "Plusieurs succès consécutifs depuis des IP variées", "Une absence totale d'échecs avant un succès"]} correct={1} />
