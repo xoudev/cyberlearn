@@ -15,6 +15,7 @@ import { PacketDissectorExercise } from "@/components/packet-dissector";
 import { PhishingEmailExercise } from "@/components/phishing-email";
 import { PutInOrderExercise } from "@/components/put-in-order";
 import { SubnetDrillExercise } from "@/components/subnet-drill";
+import { TerminalCard } from "@/components/terminal-card";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import { glossaryHits } from "@/lib/glossary";
@@ -618,88 +619,7 @@ export function BlockView({
         </View>
       );
     case "terminal":
-      return (
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: colors.borderDefault,
-            backgroundColor: theme.terminal.background,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderSubtle,
-            }}
-          >
-            <View
-              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }}
-            />
-            <View
-              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warning }}
-            />
-            <View
-              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }}
-            />
-            <Text variant="micro" style={{ marginLeft: 6, color: colors.textMuted }}>
-              {block.title ?? "Terminal"}
-            </Text>
-          </View>
-          <View style={{ padding: 12, gap: 6 }}>
-            {block.timeLimitMinutes !== undefined ? (
-              <Text variant="bodySm" style={{ color: colors.warning }}>
-                Épreuve chronométrée : {block.timeLimitMinutes} minute
-                {block.timeLimitMinutes > 1 ? "s" : ""}, à passer dans le vrai terminal, sur le
-                site.
-              </Text>
-            ) : null}
-            {block.commands.length > 0 ? (
-              <>
-                <Text variant="micro" style={{ color: colors.textMuted }}>
-                  Commandes à essayer
-                </Text>
-                {block.commands.map((c, i) => (
-                  <Text
-                    key={i}
-                    style={{
-                      fontFamily: `${fonts.mono}_500Medium`,
-                      fontSize: 12.5,
-                      color: theme.terminal.foreground,
-                    }}
-                  >
-                    $ {c}
-                  </Text>
-                ))}
-              </>
-            ) : (
-              <Text
-                style={{
-                  fontFamily: `${fonts.mono}_400Regular`,
-                  fontSize: 12.5,
-                  color: theme.terminal.foreground,
-                }}
-              >
-                $ _ terminal interactif (sur le web)
-              </Text>
-            )}
-            {block.hints.length > 0 ? (
-              <View style={{ marginTop: 4, gap: 3 }}>
-                {block.hints.map((h, i) => (
-                  <Text key={i} variant="bodySm" style={{ color: colors.textMuted }}>
-                    › {h}
-                  </Text>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        </View>
-      );
+      return <TerminalCard block={block} />;
     case "placeholder":
       return (
         <View
