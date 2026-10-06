@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { parsePhpLab, type PhpRequestInput, phpLabFiles } from "@cyberlearn/types";
 import { describeFinding } from "@/lib/php/executable";
@@ -28,11 +29,6 @@ import type { WorkerLike } from "@/lib/sql/sandbox";
  * the injected code would have run is told by reading the answer with the
  * HTML parser, not by running it.
  */
-
-const RED = "#FF4757";
-const AMBER = "#FFB020";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 type Verdict = { ok: true } | { ok: false; reason: string };
 

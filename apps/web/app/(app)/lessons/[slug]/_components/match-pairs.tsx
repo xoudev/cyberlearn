@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import {
   isComplete,
@@ -18,10 +19,6 @@ import { parseMatchPairs } from "@cyberlearn/types";
  * pairs lock, the wrong ones come back below. Client-side because it answers
  * clicks; nothing is sent anywhere.
  */
-
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 
 const button: React.CSSProperties = {
   padding: "8px 12px",

@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.23",
+    date: "2026-10-05",
+    title: "La même palette dans les labos",
+    changes: [
+      {
+        type: "fixed",
+        text: "Les exercices et labos de leçon, l'éditeur de leçon, la recherche et le certificat lisent la même palette. La carte de l'exercice OSINT suit désormais l'accent que tu as équipé, au lieu de rester turquoise.",
+      },
+    ],
+  },
+  {
     version: "3.22",
     date: "2026-10-05",
     title: "Le même bouton jusque dans les labos",

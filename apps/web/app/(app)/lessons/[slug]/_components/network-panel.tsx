@@ -1,5 +1,6 @@
 "use client";
 
+import { MONO, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { formatIp, isHostAddress, parseCidr, parseIp } from "@cyberlearn/lib/network/ip";
 import {
@@ -21,9 +22,6 @@ import {
  * value is kept as soon as it reads as an address; one that does not is
  * shown in red and leaves the device as it was.
  */
-
-const RED = "#FF4757";
-const MONO = "var(--font-mono, monospace)";
 
 export type DevicePatch = Partial<Pick<Device, "name" | "addresses" | "gateway" | "routes">>;
 

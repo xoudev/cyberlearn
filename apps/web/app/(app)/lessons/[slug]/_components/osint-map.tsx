@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT } from "@cyberlearn/ui";
 import "leaflet/dist/leaflet.css";
 import "./photo-osint.css";
 import React, { useEffect, useRef, useState } from "react";
@@ -14,7 +15,6 @@ import { type Point, TOWNS } from "@/lib/osint/geo";
  * draws in the page's DOM; it is loaded when the map mounts, not before.
  */
 
-const ACCENT = "#0AFFD4";
 const POINT = "#FFB020";
 /** Metropolitan France, Corsica included. */
 const FRANCE: Leaflet.LatLngBoundsExpression = [

@@ -1,5 +1,6 @@
 "use client";
 
+import { BORDER, MUTED } from "@cyberlearn/ui";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchGroup, SearchKind, SearchResult } from "@/lib/search/results";
@@ -29,9 +30,6 @@ const KIND_MARK: Record<SearchKind, string> = {
   lesson: "M3 2h7l3 3v9H3z",
   note: "M3 2h9v12H3zM5 5h5M5 8h5M5 11h3",
 };
-
-const BORDER = "#2A2560";
-const MUTED = "#7F7BA9";
 
 /** Long enough to stop typing, short enough not to feel like waiting. */
 const DEBOUNCE_MS = 180;

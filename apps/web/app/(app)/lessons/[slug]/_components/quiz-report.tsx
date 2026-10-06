@@ -1,5 +1,6 @@
 "use client";
 
+import { MUTED, RED } from "@cyberlearn/ui";
 import React, { useId, useState } from "react";
 import {
   QUIZ_REPORT_COMMENT_MAX,
@@ -16,9 +17,6 @@ import { useLessonQuiz } from "./lesson-quiz-context";
  * and the team never heard of it. The report goes to the console, grouped by
  * question. Only on a lesson page: an editor preview has nobody to report to.
  */
-
-const MUTED = "#7F7BA9";
-const RED = "#FF4757";
 
 const linkStyle: React.CSSProperties = {
   background: "none",

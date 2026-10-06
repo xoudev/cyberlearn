@@ -1,5 +1,6 @@
 "use client";
 
+import { RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { flawLines, parseFindTheFlaw } from "@cyberlearn/types";
 
@@ -12,8 +13,6 @@ import { flawLines, parseFindTheFlaw } from "@cyberlearn/types";
  * wrong one, when the author wrote one), then the name. The explanation comes
  * with the right name. "Recommencer" starts over.
  */
-
-const RED = "#FF4757";
 
 type Stage = "line" | "name" | "done";
 

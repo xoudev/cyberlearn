@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCENT, MONO, RED } from "@cyberlearn/ui";
 import "@xyflow/react/dist/style.css";
 import "./network-lab.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -50,9 +51,6 @@ import { type DevicePatch, NetworkPanel } from "./network-panel";
  * lives in the learner's browser and nothing is sent anywhere.
  */
 
-const RED = "#FF4757";
-const ACCENT = "var(--cosmetic-accent, #0AFFD4)";
-const MONO = "var(--font-mono, monospace)";
 const LIT_FOR_MS = 2500;
 
 interface DeviceData extends Record<string, unknown> {

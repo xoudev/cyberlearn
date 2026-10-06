@@ -1,5 +1,6 @@
 "use client";
 
+import { MONO } from "@cyberlearn/ui";
 import React, { useEffect, useId, useRef, useState } from "react";
 
 interface InfoTipProps {
@@ -8,7 +9,6 @@ interface InfoTipProps {
   children: React.ReactNode;
 }
 
-const MONO = "var(--font-mono)";
 const SANS = "var(--font-sans)";
 
 /**

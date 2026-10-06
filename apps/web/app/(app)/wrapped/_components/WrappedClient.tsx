@@ -1,5 +1,6 @@
 "use client";
 
+import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { StatTile } from "@/components/stat-tile";
@@ -12,7 +13,6 @@ import {
 
 // ── Style language (shared dark / neon idiom, one accent per card) ────────────
 
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 
 const DOMAIN_LABEL: Record<string, string> = {
