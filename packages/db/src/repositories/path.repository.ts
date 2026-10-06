@@ -113,6 +113,29 @@ export const pathRepository = {
     return rows.map((r) => r.path);
   },
 
+  /**
+   * What a module's revision sheet is cut from: the path's modules and its
+   * lessons in order, each with its module, for the reader who may open the
+   * path. The lessons' text is fetched apart, for the one module asked.
+   */
+  async findSheetOutline(slug: string, viewerId: string) {
+    return prisma.path.findFirst({
+      where: { slug, ...pathsVisibleTo(viewerId) },
+      select: {
+        slug: true,
+        title: true,
+        modules: {
+          orderBy: { position: "asc" },
+          select: { id: true, position: true, title: true, description: true },
+        },
+        lessons: {
+          orderBy: { position: "asc" },
+          select: { lessonId: true, moduleId: true },
+        },
+      },
+    });
+  },
+
   /** Returns the IDs of all required lessons in a path. */
   async findLessonIds(pathId: string): Promise<string[]> {
     const rows = await prisma.pathLesson.findMany({
