@@ -26,6 +26,7 @@ const SURFACE_NOUN: Record<string, string> = {
   "lesson.answer": "ta réponse",
   "forum.topic": "ton sujet",
   "forum.post": "ton message",
+  "challenge.writeup": "ta solution",
   "note.share": "ta note",
 };
 

@@ -6,6 +6,8 @@ import type {
   ChallengeItem,
   ChallengeList,
   WeeklyChallenge,
+  WriteupBoard,
+  WriteupReply,
 } from "@/lib/challenges";
 import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
@@ -1268,4 +1270,47 @@ export async function fetchSheetApi(slug: string, module: number): Promise<Revis
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
   return body.sheet;
+}
+
+// ── Challenge write-ups (the site's lib/challenges/writeups.ts) ─────────────
+
+/** A challenge's write-ups: the count until it is solved, then the solutions. */
+export async function fetchWriteupsApi(challengeId: string): Promise<WriteupBoard> {
+  const res = await authedFetch(
+    `/api/mobile/challenges/writeups?challengeId=${encodeURIComponent(challengeId)}`,
+  );
+  const body = (await res.json()) as
+    | { ok: true; board: WriteupBoard }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.board;
+}
+
+/** Publishes or replaces the reader's solution, screened as on the site. */
+export async function publishWriteupApi(
+  challengeId: string,
+  content: string,
+): Promise<WriteupReply> {
+  try {
+    const res = await authedFetch("/api/mobile/challenges/writeups", {
+      method: "POST",
+      body: JSON.stringify({ challengeId, content }),
+    });
+    return (await res.json()) as WriteupReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Removes the reader's own solution. */
+export async function deleteWriteupApi(challengeId: string): Promise<WriteupReply> {
+  try {
+    const res = await authedFetch("/api/mobile/challenges/writeups", {
+      method: "DELETE",
+      body: JSON.stringify({ challengeId }),
+    });
+    return (await res.json()) as WriteupReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
 }

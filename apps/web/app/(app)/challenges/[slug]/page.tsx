@@ -17,6 +17,8 @@ import { ChallengeAction } from "./_components/challenge-action";
 import { HintsPanel } from "./_components/hints-panel";
 import { CopyButton } from "@/components/copy-button";
 import { ScriptRunner } from "./_components/script-runner";
+import { WriteupsSection } from "./_components/writeups-section";
+import { writeupBoardFor } from "@/lib/challenges/writeups";
 import type { DisplayStatus } from "../_components/challenges-client";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
@@ -164,7 +166,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   if (!challenge) notFound();
 
   const now = new Date();
-  const [userProgress, revealedHintsData, userData, adjacent, firstBlood, weekly] =
+  const [userProgress, revealedHintsData, userData, adjacent, firstBlood, weekly, writeupBoard] =
     await Promise.all([
       challengeRepository.getUserProgress(user.id, challenge.id),
       challenge.hints.length > 0
@@ -174,6 +176,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
       challengeRepository.findAdjacentChallenges(challenge.id, challenge.orderIndex),
       challengeRepository.getFirstBlood(challenge.id),
       weeklyStateOf(challenge.id, now),
+      writeupBoardFor(user.id, challenge.id),
     ]);
 
   // Compute display status
@@ -806,6 +809,10 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           </section>
         </aside>
       </div>
+
+      {writeupBoard !== null ? (
+        <WriteupsSection challengeId={challenge.id} board={writeupBoard} />
+      ) : null}
 
       {/* ── Bottom nav ────────────────────────────────────────────────────────── */}
       <nav

@@ -49,6 +49,7 @@ export interface DeletionSummary {
   certificatesAnonymized: number;
   questionsAnonymized: number;
   answersAnonymized: number;
+  writeupsAnonymized: number;
   ratingsAnonymized: number;
   contactTicketsAnonymized: number;
   auditLogsAnonymized: number;
@@ -129,6 +130,7 @@ export async function deleteAccount(
       certificatesAnonymized,
       questionsAnonymized,
       answersAnonymized,
+      writeupsAnonymized,
       ratingsAnonymized,
       contactTicketsAnonymized,
       auditLogsAnonymized,
@@ -136,6 +138,7 @@ export async function deleteAccount(
       tx.certificate.count({ where: { userId } }),
       tx.lessonQuestion.count({ where: { userId } }),
       tx.lessonAnswer.count({ where: { userId } }),
+      tx.challengeWriteup.count({ where: { userId } }),
       tx.rating.count({ where: { userId } }),
       tx.contactTicket.count({ where: { userId } }),
       tx.auditLog.count({ where: { actorId: userId } }),
@@ -162,6 +165,7 @@ export async function deleteAccount(
     });
     await tx.lessonQuestion.updateMany({ where: { userId }, data: { userId: null } });
     await tx.lessonAnswer.updateMany({ where: { userId }, data: { userId: null } });
+    await tx.challengeWriteup.updateMany({ where: { userId }, data: { userId: null } });
     await tx.rating.updateMany({ where: { userId }, data: { userId: null } });
     await tx.contactTicket.updateMany({ where: { userId }, data: { userId: null, email: null } });
 
@@ -191,6 +195,7 @@ export async function deleteAccount(
           certificatesAnonymized,
           questionsAnonymized,
           answersAnonymized,
+          writeupsAnonymized,
           ratingsAnonymized,
           contactTicketsAnonymized,
           auditLogsAnonymized,
@@ -204,6 +209,7 @@ export async function deleteAccount(
       certificatesAnonymized,
       questionsAnonymized,
       answersAnonymized,
+      writeupsAnonymized,
       ratingsAnonymized,
       contactTicketsAnonymized,
       auditLogsAnonymized,
