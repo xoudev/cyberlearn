@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FileDown } from "lucide-react";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
@@ -436,6 +437,7 @@ export default async function PathDetailPage({
                       download
                       title="La fiche de révision du module, les points à retenir de ses leçons, en PDF"
                     >
+                      <FileDown size={14} strokeWidth={1.75} aria-hidden="true" />
                       Fiche PDF
                     </a>
                     <span className="cp-gate__count">

@@ -7,8 +7,9 @@ import { Screen } from "@/components/screen";
 import { SectionLabel } from "@/components/ui";
 
 /**
- * "Trouver mon parcours": the site's /paths/guide. Two questions, then two or
- * three paths with the reason each was picked. Nothing is recorded.
+ * "Trouver mon parcours": the site's guide window, over its catalogue. Two
+ * questions, then two or three paths with the reason each was picked.
+ * Nothing is recorded.
  */
 export default function PathGuide(): React.JSX.Element {
   const router = useRouter();

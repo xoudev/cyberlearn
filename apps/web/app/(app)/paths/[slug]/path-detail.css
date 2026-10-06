@@ -1204,6 +1204,29 @@
   .pd2 .cp-gate__side--l {
     justify-content: flex-start;
   }
+  /* The module divider on one side too, like the rows: its marker on the
+     rail, the module's name and then its sheet and count beside it. Without
+     this the name fell into the rail's 64px and the sheet's button under it. */
+  .pd2 .cp-gate {
+    grid-template-areas:
+      "mid label"
+      "mid side";
+    row-gap: 8px;
+  }
+  .pd2 .cp-gate .cp-mid {
+    grid-area: mid;
+  }
+  .pd2 .cp-gate__side--l {
+    grid-area: label;
+    padding-left: 16px;
+  }
+  .pd2 .cp-gate__side:not(.cp-gate__side--l) {
+    grid-area: side;
+    padding-left: 16px;
+  }
+  .pd2 .cp-gate__rule {
+    display: none;
+  }
   .pd2 .cp-boss__title {
     font-size: 24px;
   }

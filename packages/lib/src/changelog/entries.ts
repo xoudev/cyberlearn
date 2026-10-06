@@ -44,7 +44,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "new",
-        text: "Une fiche de révision par module : les points « à retenir » de ses leçons réunis en une fiche, à télécharger en PDF depuis la page du parcours, ou à lire à l'écran dans l'app.",
+        text: "Une fiche de révision par module : les points « à retenir » de ses leçons réunis en une fiche. Sur la page d'un parcours, le bouton « Fiche PDF » à côté du nom de chaque module la télécharge ; dans l'app, elle se lit à l'écran.",
       },
       {
         type: "new",

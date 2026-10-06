@@ -214,6 +214,15 @@
   color: var(--color-brand-turquoise);
 }
 
+/* The same words as a button, in the guide's window. */
+button.pg-recap__edit {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
 .pg-cta {
   display: inline-flex;
   align-items: center;
@@ -233,32 +242,20 @@
 
 /* Buttons: the onboarding's, square. .btn-blue (globals) adds the hover glow. */
 
-/* /paths/guide: the questions and suggestions, in a panel under the catalogue's header. */
-.pg-panel {
-  position: relative;
-  max-width: 720px;
-  padding: 28px 32px 24px;
-  border: 1px solid var(--color-border-default);
-  background: rgba(10, 8, 38, 0.85);
+/* The guide's window over the catalogue: the questions, then the suggestions. */
+.pg-dialog {
+  padding: 22px 24px 24px;
 }
 
-.pg-back {
-  display: inline-block;
-  margin-top: 18px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.pg-back:hover {
-  color: var(--color-brand-turquoise);
+.pg-dialog__intro {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
 }
 
 @media (max-width: 640px) {
-  .pg-panel {
-    padding: 22px 16px 18px;
+  .pg-dialog {
+    padding: 18px 16px 18px;
   }
 }
