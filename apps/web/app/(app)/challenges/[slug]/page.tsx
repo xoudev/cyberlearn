@@ -9,6 +9,8 @@ import { requireRequestUser } from "@/lib/auth";
 import { challengeRepository, userRepository } from "@cyberlearn/db";
 import { machineFilesWithFlag, parseChallengeMachine } from "@cyberlearn/types";
 import { personalFlag } from "@/lib/challenges/flag";
+import { weeklyStateOf } from "@/lib/challenges/catalogue";
+import { WeeklyCountdown } from "../_components/weekly-countdown";
 import { env } from "@/lib/env";
 import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
 import { ChallengeAction } from "./_components/challenge-action";
@@ -161,15 +163,18 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   const challenge = await challengeRepository.findBySlug(slug);
   if (!challenge) notFound();
 
-  const [userProgress, revealedHintsData, userData, adjacent, firstBlood] = await Promise.all([
-    challengeRepository.getUserProgress(user.id, challenge.id),
-    challenge.hints.length > 0
-      ? challengeRepository.getRevealedHintsWithContent(user.id, challenge.id)
-      : Promise.resolve([]),
-    userRepository.findForGamification(user.id),
-    challengeRepository.findAdjacentChallenges(challenge.id, challenge.orderIndex),
-    challengeRepository.getFirstBlood(challenge.id),
-  ]);
+  const now = new Date();
+  const [userProgress, revealedHintsData, userData, adjacent, firstBlood, weekly] =
+    await Promise.all([
+      challengeRepository.getUserProgress(user.id, challenge.id),
+      challenge.hints.length > 0
+        ? challengeRepository.getRevealedHintsWithContent(user.id, challenge.id)
+        : Promise.resolve([]),
+      userRepository.findForGamification(user.id),
+      challengeRepository.findAdjacentChallenges(challenge.id, challenge.orderIndex),
+      challengeRepository.getFirstBlood(challenge.id),
+      weeklyStateOf(challenge.id, now),
+    ]);
 
   // Compute display status
   let displayStatus: DisplayStatus;
@@ -209,6 +214,12 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   const userAttempts = userProgress?.attempts ?? 0;
   const remaining = Math.max(0, challenge.maxAttempts - userAttempts);
   const solveCount: number = challenge._count.progress;
+  const solved = displayStatus === "COMPLETED";
+  // What the solve is worth now, or was: twice the reward while this is the
+  // week's challenge (@cyberlearn/lib/challenges/weekly).
+  const xpShown = solved
+    ? (userProgress?.xpEarned ?? challenge.xpReward)
+    : challenge.xpReward * (weekly?.multiplier ?? 1);
 
   // Split title on " - " for colored em part
   const titleParts = challenge.title.split(" - ");
@@ -407,7 +418,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   color: "var(--color-text-muted)",
                 }}
               >
-                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>XP Récompense
+                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>
+                {solved ? "XP gagnés" : "XP Récompense"}
               </span>
               <span
                 style={{
@@ -419,8 +431,14 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
                   letterSpacing: "-0.01em",
                 }}
               >
-                +{String(challenge.xpReward)} XP
+                +{String(xpShown)} XP
               </span>
+              {!solved && weekly !== null && (
+                <span className="mono-label" style={{ color: "var(--color-warning)" }}>
+                  ×{String(weekly.multiplier)} cette semaine, au lieu de{" "}
+                  {String(challenge.xpReward)}
+                </span>
+              )}
             </div>
 
             {/* Time */}
@@ -505,18 +523,58 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             </div>
           </div>
 
-          {/* CTA button scrolls to action section */}
-          <a
-            className="btn btn--danger btn--lg btn--block"
-            href="#challenge-action"
-            style={{
-              borderTop: "1px solid var(--color-danger)",
-              textAlign: "center",
-              boxSizing: "border-box",
-            }}
-          >
-            Relever le défi →
-          </a>
+          {/* The week's challenge: the bonus, and how long it lasts. */}
+          {weekly !== null && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "12px 22px",
+                borderTop: "1px solid var(--color-border-subtle)",
+              }}
+            >
+              <span
+                className="mono-label"
+                style={{ color: "var(--color-danger)", fontWeight: 700 }}
+              >
+                Défi de la semaine
+              </span>
+              <WeeklyCountdown
+                endsAt={weekly.endsAt}
+                nowMs={now.getTime()}
+                prefix={solved ? "Prochain défi dans" : `XP ×${String(weekly.multiplier)} encore`}
+              />
+            </div>
+          )}
+
+          {/* The way in, by state: to the flag, or to the challenge that opens this one. */}
+          {displayStatus === "LOCKED" && challenge.prerequisite !== null ? (
+            <Link
+              className="btn btn--danger btn--ghost btn--lg btn--block"
+              href={`/challenges/${challenge.prerequisite.slug}`}
+            >
+              Termine d&apos;abord « {challenge.prerequisite.title} » →
+            </Link>
+          ) : solved ? (
+            <a className="btn btn--ghost btn--lg btn--block" href="#challenge-action">
+              Défi résolu
+            </a>
+          ) : (
+            <a
+              className="btn btn--danger btn--lg btn--block"
+              href={challenge.type === "SCRIPT" ? "#challenge-script" : "#challenge-action"}
+              style={{
+                borderTop: "1px solid var(--color-danger)",
+                textAlign: "center",
+                boxSizing: "border-box",
+              }}
+            >
+              {displayStatus === "IN_PROGRESS" ? "Reprendre le défi →" : "Relever le défi →"}
+            </a>
+          )}
         </div>
       </section>
 
@@ -567,7 +625,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
           {/* Python sandbox - SCRIPT type only */}
           {challenge.type === "SCRIPT" && (
-            <div style={{ marginBottom: 32 }}>
+            <div id="challenge-script" style={{ marginBottom: 32 }}>
               <SectionHead label="Environnement Python" meta="Pyodide · WebAssembly · isolé" />
               <ScriptRunner
                 starterCode={challenge.starterCode ?? ""}

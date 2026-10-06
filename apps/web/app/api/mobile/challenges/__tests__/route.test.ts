@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
-  challengeItemsFor: vi.fn<(u: string) => Promise<unknown[]>>(),
+  challengeCatalogueFor: vi.fn<(u: string) => Promise<{ items: unknown[]; weekly: unknown }>>(),
   challengeDetailFor: vi.fn<(u: string, s: string) => Promise<unknown>>(),
   submitFlagFor: vi.fn<(u: string, c: string, f: string) => Promise<unknown>>(),
   revealHintFor: vi.fn<(u: string, h: string) => Promise<unknown>>(),
@@ -12,7 +12,7 @@ const m = vi.hoisted(() => ({
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("@/lib/challenges/catalogue", () => ({
-  challengeItemsFor: m.challengeItemsFor,
+  challengeCatalogueFor: m.challengeCatalogueFor,
   challengeDetailFor: m.challengeDetailFor,
 }));
 vi.mock("@/lib/challenges/play", () => ({
@@ -56,11 +56,12 @@ describe("the challenge routes", () => {
     expect(m.submitFlagFor).not.toHaveBeenCalled();
   });
 
-  it("list the caller's challenges", async () => {
-    m.challengeItemsFor.mockResolvedValue([{ slug: "journal-bavard" }]);
+  it("list the caller's challenges, and the week's challenge", async () => {
+    const weekly = { id: "c1", endsAt: "2026-10-12T00:00:00.000Z", multiplier: 2, nextId: "c2" };
+    m.challengeCatalogueFor.mockResolvedValue({ items: [{ slug: "journal-bavard" }], weekly });
     const res = await list.GET(new NextRequest("https://cyberlearn.fr/api/mobile/challenges"));
-    expect(await res.json()).toEqual({ ok: true, items: [{ slug: "journal-bavard" }] });
-    expect(m.challengeItemsFor).toHaveBeenCalledWith("user-1");
+    expect(await res.json()).toEqual({ ok: true, items: [{ slug: "journal-bavard" }], weekly });
+    expect(m.challengeCatalogueFor).toHaveBeenCalledWith("user-1");
   });
 
   it("refuse a slug that is not one, and say when a challenge is not there", async () => {

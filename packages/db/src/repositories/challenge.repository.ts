@@ -16,16 +16,32 @@ export interface ChallengeWithProgress {
   isActive: boolean;
   orderIndex: number;
   prerequisiteId: string | null;
+  /** The prerequisite's slug, to send the learner there. */
+  prerequisiteSlug: string | null;
+  /** The machine's files, as stored ({{FLAG}} placeholders, never a flag). */
+  machine: unknown;
+  attachmentUrl: string | null;
+  resourceUrl: string | null;
+  hintCount: number;
   userStatus: ProgressStatus | null;
   userAttempts: number;
   userCompletedAt: Date | null;
+  /** The XP the solve was worth, the week's bonus included; null before it. */
+  userXpEarned: number | null;
 }
+
+/**
+ * The catalogue's order: the author's, then the oldest first. The challenge of
+ * the week takes its turn in it (@cyberlearn/lib/challenges/weekly), so the
+ * page and the XP credit must read the same one.
+ */
+const CATALOGUE_ORDER = [{ orderIndex: "asc" as const }, { createdAt: "asc" as const }];
 
 export const challengeRepository = {
   async findAllActive(userId: string): Promise<ChallengeWithProgress[]> {
     const challenges = await prisma.challenge.findMany({
       where: { isActive: true },
-      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+      orderBy: CATALOGUE_ORDER,
       select: {
         id: true,
         refCode: true,
@@ -41,9 +57,14 @@ export const challengeRepository = {
         isActive: true,
         orderIndex: true,
         prerequisiteId: true,
+        prerequisite: { select: { slug: true } },
+        machine: true,
+        attachmentUrl: true,
+        resourceUrl: true,
+        _count: { select: { hints: true } },
         progress: {
           where: { userId },
-          select: { status: true, attempts: true, completedAt: true },
+          select: { status: true, attempts: true, completedAt: true, xpEarned: true },
           take: 1,
         },
       },
@@ -64,10 +85,26 @@ export const challengeRepository = {
       isActive: c.isActive,
       orderIndex: c.orderIndex,
       prerequisiteId: c.prerequisiteId,
+      prerequisiteSlug: c.prerequisite?.slug ?? null,
+      machine: c.machine,
+      attachmentUrl: c.attachmentUrl,
+      resourceUrl: c.resourceUrl,
+      hintCount: c._count.hints,
       userStatus: c.progress[0]?.status ?? null,
       userAttempts: c.progress[0]?.attempts ?? 0,
       userCompletedAt: c.progress[0]?.completedAt ?? null,
+      userXpEarned: c.progress[0]?.xpEarned ?? null,
     }));
+  },
+
+  /** The active challenges' ids, in the catalogue's order. */
+  async findActiveIdsInOrder(): Promise<string[]> {
+    const rows = await prisma.challenge.findMany({
+      where: { isActive: true },
+      orderBy: CATALOGUE_ORDER,
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
   },
 
   async findBySlug(slug: string) {
@@ -94,7 +131,7 @@ export const challengeRepository = {
         // is written in by the page.
         machine: true,
         prerequisiteId: true,
-        prerequisite: { select: { title: true } },
+        prerequisite: { select: { title: true, slug: true } },
         hints: {
           orderBy: { orderIndex: "asc" },
           select: { id: true, orderIndex: true, xpCost: true },

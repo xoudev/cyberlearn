@@ -80,7 +80,7 @@ function FlagForm({
   userAttempts: number;
 }): React.ReactElement {
   const [state, action, pending] = useActionState(
-    (_prev: { correct: boolean; error?: string }, formData: FormData) =>
+    (_prev: { correct: boolean; error?: string; xpEarned?: number }, formData: FormData) =>
       submitFlagAction(challengeId, (formData.get("flag") as string | null) ?? ""),
     { correct: false },
   );
@@ -105,7 +105,6 @@ function FlagForm({
           style={{
             width: 56,
             height: 56,
-            borderRadius: "50%",
             background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
             display: "grid",
             placeItems: "center",
@@ -134,7 +133,9 @@ function FlagForm({
               color: "var(--color-text-muted)",
             }}
           >
-            XP crédités sur ton profil.
+            {state.xpEarned !== undefined
+              ? `+${String(state.xpEarned)} XP crédités sur ton profil.`
+              : "XP crédités sur ton profil."}
           </div>
         </div>
       </div>

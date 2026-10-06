@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
 import { dayKey, registerActivity } from "@cyberlearn/lib";
+import { challengeXp, weeklyChallengeId } from "@cyberlearn/lib/challenges/weekly";
 import { flagsMatch, personalFlag } from "@/lib/challenges/flag";
 import { env } from "@/lib/env";
 import { recordQuestProgress } from "@/lib/quests/progress";
@@ -41,7 +42,7 @@ export async function submitFlagFor(
   userId: string,
   challengeId: string,
   submittedFlag: string,
-): Promise<{ correct: boolean; error?: string }> {
+): Promise<{ correct: boolean; error?: string; xpEarned?: number }> {
   if (!z.guid().safeParse(challengeId).success) return { correct: false, error: "ID invalide." };
   const flagParsed = z.string().trim().min(1).max(500).safeParse(submittedFlag);
   if (!flagParsed.success) return { correct: false, error: "Flag invalide." };
@@ -86,8 +87,8 @@ export async function submitFlagFor(
   }
 
   // Correct: award XP and mark complete
-  await awardChallengeXp(userId, challengeId, challenge.xpReward, challenge.title);
-  return { correct: true };
+  const xpEarned = await awardChallengeXp(userId, challengeId, challenge.xpReward, challenge.title);
+  return xpEarned === null ? { correct: true } : { correct: true, xpEarned };
 }
 
 // ── Complete (PUZZLE / LAB: honor system) ──────────────────────────────────────
@@ -95,7 +96,7 @@ export async function submitFlagFor(
 export async function completeFor(
   userId: string,
   challengeId: string,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; xpEarned?: number }> {
   if (!z.guid().safeParse(challengeId).success) return { error: "ID invalide." };
 
   const challenge = await prisma.challenge.findUnique({
@@ -109,8 +110,8 @@ export async function completeFor(
   const existing = await challengeRepository.getUserProgress(userId, challengeId);
   if (existing?.status === "COMPLETED") return {};
 
-  await awardChallengeXp(userId, challengeId, challenge.xpReward, challenge.title);
-  return {};
+  const xpEarned = await awardChallengeXp(userId, challengeId, challenge.xpReward, challenge.title);
+  return xpEarned === null ? {} : { xpEarned };
 }
 
 // ── Reveal hint ───────────────────────────────────────────────────────────────
@@ -163,12 +164,19 @@ export async function revealHintFor(
 
 // ── Internal XP award ─────────────────────────────────────────────────────────
 
+/**
+ * Marks the challenge solved and credits its XP, once: twice the reward when
+ * it is the challenge of the week (@cyberlearn/lib/challenges/weekly), the
+ * one the page names, since both read the catalogue in the same order.
+ * Returns the XP credited, or null when nothing was (already solved, or no
+ * such learner).
+ */
 async function awardChallengeXp(
   userId: string,
   challengeId: string,
   xpReward: number,
   challengeTitle: string,
-): Promise<void> {
+): Promise<number | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -181,9 +189,12 @@ async function awardChallengeXp(
     },
   });
 
-  if (!user) return;
+  if (!user) return null;
 
   const now = new Date();
+  const weekly =
+    weeklyChallengeId(await challengeRepository.findActiveIdsInOrder(), now) === challengeId;
+  const amount = challengeXp(xpReward, weekly);
   const streak = registerActivity(
     {
       currentStreak: user.streakDays,
@@ -195,7 +206,7 @@ async function awardChallengeXp(
   ).state;
   const today = new Date(dayKey(now));
 
-  await prisma.$transaction(async (tx) => {
+  const credited = await prisma.$transaction(async (tx) => {
     // Ensure a progress row exists, then atomically flip it to COMPLETED only if
     // it is not already. The transaction that wins this flip is the ONLY one that
     // credits XP / streak / notification - idempotent against a double submit or
@@ -208,9 +219,9 @@ async function awardChallengeXp(
     });
     const completed = await tx.userChallengeProgress.updateMany({
       where: { userId, challengeId, status: { not: "COMPLETED" } },
-      data: { status: "COMPLETED", completedAt: now },
+      data: { status: "COMPLETED", completedAt: now, xpEarned: amount },
     });
-    if (completed.count === 0) return;
+    if (completed.count === 0) return false;
 
     await tx.user.update({
       where: { id: userId },
@@ -231,18 +242,23 @@ async function awardChallengeXp(
         userId,
         type: "BADGE_EARNED",
         title: `Challenge complété : ${challengeTitle}`,
-        body: `+${String(xpReward)} XP remportés !`,
+        body: weekly
+          ? `+${String(amount)} XP remportés, le double : c'était le défi de la semaine !`
+          : `+${String(amount)} XP remportés !`,
         actionUrl: "/challenges",
-        metadata: { xpReward, challengeId },
+        metadata: { xpReward: amount, challengeId, weekly },
       },
     });
     // Single XP source of truth - emits the LEVEL_UP notification when crossed.
-    await creditXp(tx, userId, xpReward, "CHALLENGE", {
-      notifyXp: xpReward,
+    await creditXp(tx, userId, amount, "CHALLENGE", {
+      notifyXp: amount,
       metadata: { challengeId },
     });
+    return true;
   });
+  if (!credited) return null;
 
   // Weekly quests: a challenge completion keeps the streak quest moving too.
   await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
+  return amount;
 }

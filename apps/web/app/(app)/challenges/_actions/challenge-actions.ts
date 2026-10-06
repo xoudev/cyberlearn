@@ -18,14 +18,16 @@ function refresh(): void {
 export async function submitFlagAction(
   challengeId: string,
   submittedFlag: string,
-): Promise<{ correct: boolean; error?: string }> {
+): Promise<{ correct: boolean; error?: string; xpEarned?: number }> {
   const user = await requireRequestUser();
   const result = await submitFlagFor(user.id, challengeId, submittedFlag);
   refresh();
   return result;
 }
 
-export async function completeChallengeAction(challengeId: string): Promise<{ error?: string }> {
+export async function completeChallengeAction(
+  challengeId: string,
+): Promise<{ error?: string; xpEarned?: number }> {
   const user = await requireRequestUser();
   const result = await completeFor(user.id, challengeId);
   refresh();

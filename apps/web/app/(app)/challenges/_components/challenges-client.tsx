@@ -1,22 +1,17 @@
 "use client";
 
-// "use client" justified: filter state (useState) + countdown (useEffect/setInterval)
+// "use client" justification: the tabs filter the list in place, and the
+// week's countdown ticks (weekly-countdown.tsx).
 
-import { type PillItem, Pills } from "@/components/pills";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Select } from "@cyberlearn/ui";
-import type { ChallengeItem, DisplayStatus } from "@/lib/challenges/catalogue";
+import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { Crumb } from "@/components/crumb";
-import {
-  CATEGORY_META,
-  CATEGORY_ORDER,
-  categoryMeta,
-  difficultyMeta,
-} from "@cyberlearn/lib/content/vocabulary";
-import { ProgressBar } from "@/components/progress-bar";
-
-// ── Serializable item type (passed from server) ───────────────────────────────
+import { EmptyState } from "@/components/empty-state";
+import { Tabs, type TabItem } from "@/components/tabs";
+import type { ChallengeItem, DisplayStatus, WeeklyChallenge } from "@/lib/challenges/catalogue";
+import { WeeklyCountdown } from "./weekly-countdown";
+import "./challenges.css";
 
 // Defined with the data that fills them (lib/challenges/catalogue.ts), where
 // the app's routes read them too.
@@ -24,694 +19,517 @@ export type { ChallengeItem, DisplayStatus };
 
 interface Props {
   items: ChallengeItem[];
-  featured: ChallengeItem | null;
-  featuredEndMs: number;
+  weekly: WeeklyChallenge | null;
+  /** The server's clock when it built the page, for the countdown's first paint. */
+  nowMs: number;
 }
 
-// ── SVG Icons ─────────────────────────────────────────────────────────────────
+// ── Words ─────────────────────────────────────────────────────────────────────
 
-function IconTarget({ size = 56 }: { size?: number }): React.ReactElement {
+const TYPE_LABEL: Record<ChallengeItem["type"], string> = {
+  CTF: "CTF",
+  PUZZLE: "Puzzle",
+  LAB: "Lab",
+  SCRIPT: "Script",
+};
+
+const STATUS_LABEL: Record<DisplayStatus, string> = {
+  COMPLETED: "Résolu",
+  IN_PROGRESS: "En cours",
+  AVAILABLE: "Disponible",
+  LOCKED: "Verrouillé",
+};
+
+/** What the learner hands in: a flag, or the challenge marked done on trust. */
+function answerOf(type: ChallengeItem["type"]): string {
+  return type === "CTF" || type === "SCRIPT" ? "Un flag" : "Le défi, marqué fait";
+}
+
+function timeOf(minutes: number): string {
+  return minutes > 0 ? `${String(minutes)} min` : "Libre";
+}
+
+function attemptsLeft(item: ChallengeItem): number {
+  return Math.max(0, item.maxAttempts - item.userAttempts);
+}
+
+function plural(n: number, word: string): string {
+  return `${word}${n > 1 ? "s" : ""}`;
+}
+
+function href(slug: string): string {
+  return `/challenges/${slug}`;
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+function IconCheck(): React.JSX.Element {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="32" cy="32" r="22" />
-      <circle cx="32" cy="32" r="14" />
-      <circle cx="32" cy="32" r="6" />
-      <circle cx="32" cy="32" r="1.5" fill="currentColor" />
-      <path d="M32 4 V16 M32 48 V60 M4 32 H16 M48 32 H60" />
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 8.5 6.5 12 13 4.5" />
     </svg>
   );
 }
 
-function IconCrosshair({ size = 44 }: { size?: number }): React.ReactElement {
+function IconLock(): React.JSX.Element {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="32" cy="32" r="18" />
-      <circle cx="32" cy="32" r="3" fill="currentColor" />
-      <path d="M32 6 V20 M32 44 V58 M6 32 H20 M44 32 H58" />
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="3.5" y="7" width="9" height="6.5" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
     </svg>
   );
 }
 
-function IconPuzzle({ size = 44 }: { size?: number }): React.ReactElement {
+// ── Pieces ────────────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: DisplayStatus }): React.JSX.Element {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 18 H26 V14 C26 10 28 8 32 8 C36 8 38 10 38 14 V18 H50 V30 H46 C42 30 40 32 40 36 C40 40 42 42 46 42 H50 V54 H38 V50 C38 46 36 44 32 44 C28 44 26 46 26 50 V54 H14 V42 H18 C22 42 24 40 24 36 C24 32 22 30 18 30 H14 Z" />
-    </svg>
-  );
-}
-
-function IconTerminal({ size = 44 }: { size?: number }): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="6" y="10" width="52" height="44" rx="2" />
-      <path d="M6 20 H58" />
-      <path d="M16 32 L24 38 L16 44" />
-      <path d="M30 46 H44" />
-    </svg>
-  );
-}
-
-function IconLock({ size = 14 }: { size?: number }): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="7" width="10" height="7" rx="1" />
-      <path d="M5 7 V5 C5 3 6 2 8 2 C10 2 11 3 11 5 V7" />
-    </svg>
-  );
-}
-
-function IconCheck({ size = 13 }: { size?: number }): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 8 L7 12 L13 4" />
-    </svg>
-  );
-}
-
-function IconClock({ size = 11 }: { size?: number }): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="8" cy="8" r="6" />
-      <path d="M8 4.5 V8 L10.5 9.5" />
-    </svg>
-  );
-}
-
-function IconArrow({ size = 11 }: { size?: number }): React.ReactElement {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-    </svg>
-  );
-}
-
-// ── Difficulty bars ───────────────────────────────────────────────────────────
-
-type DiffKind = "easy" | "med" | "hard";
-
-/** The stylesheet's three moods for four levels: the last two are both hard. */
-function diffKind(level: number): DiffKind {
-  return level <= 1 ? "easy" : level === 2 ? "med" : "hard";
-}
-
-function DiffBars({ difficulty }: { difficulty: ChallengeItem["difficulty"] }): React.ReactElement {
-  const { level, label } = difficultyMeta(difficulty);
-  const kind = diffKind(level);
-  return (
-    <span className={`cc__diff cc__diff--${kind}`}>
-      <span className="cc__diff-bars">
-        {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={i < level ? "on" : ""} />
-        ))}
-      </span>
-      {label.toUpperCase()}
+    <span className="dfx-badge" data-status={status}>
+      {status === "COMPLETED" && <IconCheck />}
+      {status === "LOCKED" && <IconLock />}
+      {STATUS_LABEL[status]}
     </span>
   );
 }
 
-// ── Category helpers ──────────────────────────────────────────────────────────
-
-function catCssKey(cat: ChallengeItem["category"]): "cyber" | "dev" | "net" {
-  if (cat === "CYBERSEC") return "cyber";
-  if (cat === "DEV") return "dev";
-  return "net";
-}
-
-function catLabel(cat: ChallengeItem["category"]): string {
-  return categoryMeta(cat).short.toUpperCase();
-}
-
-function typeModifier(type: ChallengeItem["type"]): string {
-  if (type === "PUZZLE") return "cc__type--puzzle";
-  if (type === "LAB") return "cc__type--lab";
-  if (type === "SCRIPT") return "cc__type--script";
-  return "";
-}
-
-function TypeIcon({
-  type,
-  size = 44,
-}: {
-  type: ChallengeItem["type"];
-  size?: number;
-}): React.ReactElement {
-  if (type === "CTF") return <IconCrosshair size={size} />;
-  if (type === "PUZZLE") return <IconPuzzle size={size} />;
-  if (type === "SCRIPT") {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 44 44"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="14 16 8 22 14 28" />
-        <polyline points="30 16 36 22 30 28" />
-        <line x1="26" y1="12" x2="18" y2="32" />
-      </svg>
-    );
-  }
-  return <IconTerminal size={size} />;
-}
-
-// ── Countdown component ───────────────────────────────────────────────────────
-
-interface CountdownValue {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-}
-
-function computeCountdown(endMs: number): CountdownValue {
-  const diff = Math.max(0, endMs - Date.now());
-  const totalSecs = Math.floor(diff / 1000);
-  return {
-    days: Math.floor(totalSecs / 86400),
-    hours: Math.floor((totalSecs % 86400) / 3600),
-    minutes: Math.floor((totalSecs % 3600) / 60),
-    seconds: totalSecs % 60,
-  };
-}
-
-function Countdown({ endMs }: { endMs: number }): React.ReactElement {
-  const [value, setValue] = useState<CountdownValue>(() => computeCountdown(endMs));
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setValue(computeCountdown(endMs));
-    }, 1000);
-    return () => {
-      clearInterval(id);
-    };
-  }, [endMs]);
-
-  const pad = (n: number): string => String(n).padStart(2, "0");
-
+/** A locked challenge's evidence: its shape, not its content. */
+function Redacted({ rows }: { rows: number }): React.JSX.Element {
+  const widths = ["92%", "64%", "78%", "48%", "70%"];
   return (
-    <div className="feat__countdown">
-      <span className="feat__countdown-label">SE TERMINE DANS</span>
-      <span className="feat__countdown-time">
-        <span>
-          {value.days}
-          <u>J</u>
-        </span>
-        <span>
-          {pad(value.hours)}
-          <u>H</u>
-        </span>
-        <span>
-          {pad(value.minutes)}
-          <u>M</u>
-        </span>
-        <span>
-          {pad(value.seconds)}
-          <u>S</u>
-        </span>
-      </span>
+    <div className="dfx-redacted" role="img" aria-label="Contenu verrouillé">
+      {widths.slice(0, rows).map((width) => (
+        <span key={width} style={{ width }} />
+      ))}
     </div>
   );
 }
 
-// ── Featured challenge card ───────────────────────────────────────────────────
+function hasListing(item: ChallengeItem): boolean {
+  return (item.evidence?.listing.length ?? 0) > 0;
+}
 
-function Featured({
-  challenge,
-  endMs,
-}: {
-  challenge: ChallengeItem;
-  endMs: number;
-}): React.ReactElement {
-  const ck = catCssKey(challenge.category);
-  const tm = typeModifier(challenge.type);
+/** The machine as `ls` shows it, the commands at a prompt, a caret after. */
+function Listing({ item }: { item: ChallengeItem }): React.JSX.Element {
+  const listing = item.evidence?.listing ?? [];
   return (
-    <section className="feat">
-      {/* Cover */}
-      <div className="feat__cover">
-        <span className="feat__corner tl" />
-        <span className="feat__corner tr" />
-        <span className="feat__corner bl" />
-        <span className="feat__corner br" />
-        <span className="feat__coords">{"// PAYLOAD.LIVE"}</span>
-        <span className="feat__coords feat__coords--right">
-          [{challenge.type} · {challenge.refCode}]
+    <pre className="dfx-term">
+      {listing.map((line, index) =>
+        line.kind === "cmd" ? (
+          <span key={`${String(index)}-cmd`} className="dfx-term__cmd">
+            <span className="dfx-term__p" aria-hidden="true">
+              $
+            </span>
+            {line.text}
+            {"\n"}
+          </span>
+        ) : (
+          <span key={`${String(index)}-out`}>
+            {line.text}
+            {"\n"}
+          </span>
+        ),
+      )}
+      <span className="dfx-term__p" aria-hidden="true">
+        $
+      </span>
+      <span className="dfx-term__caret" aria-hidden="true" />
+    </pre>
+  );
+}
+
+/** The top of a card: the first lines of the challenge's main file, or its listing. */
+function Peek({ item }: { item: ChallengeItem }): React.JSX.Element {
+  if (item.displayStatus === "LOCKED") return <Redacted rows={3} />;
+  const excerpt = item.evidence?.excerpt ?? null;
+  if (excerpt !== null) {
+    return (
+      <>
+        <ul className="dfx-card__lines">
+          {excerpt.lines.map((line, index) => (
+            <li key={`${String(index)}-${line}`} title={line}>
+              {line}
+            </li>
+          ))}
+        </ul>
+        <span className="dfx-card__file">{excerpt.file}</span>
+      </>
+    );
+  }
+  if (hasListing(item)) return <Listing item={item} />;
+  return <p className="dfx-card__file">{item.supplied}</p>;
+}
+
+// ── The week's challenge ──────────────────────────────────────────────────────
+
+function WeekAction({ item }: { item: ChallengeItem }): React.JSX.Element {
+  switch (item.displayStatus) {
+    case "COMPLETED":
+      return (
+        <Link href={href(item.slug)} className="btn btn--ghost btn--lg">
+          Revoir le défi <span aria-hidden="true">→</span>
+        </Link>
+      );
+    case "IN_PROGRESS":
+      return (
+        <Link href={href(item.slug)} className="btn btn--danger btn--lg">
+          Reprendre le défi <span aria-hidden="true">→</span>
+        </Link>
+      );
+    case "LOCKED":
+      return item.prerequisiteSlug !== null && item.lockedByTitle !== null ? (
+        <Link href={href(item.prerequisiteSlug)} className="btn btn--danger btn--ghost btn--lg">
+          Termine d&apos;abord « {item.lockedByTitle} » <span aria-hidden="true">→</span>
+        </Link>
+      ) : (
+        <span className="btn btn--ghost btn--lg" aria-disabled="true">
+          Verrouillé
         </span>
-        <div className="feat__cover-glyph">
-          <IconTarget size={140} />
+      );
+    case "AVAILABLE":
+      return (
+        <Link href={href(item.slug)} className="btn btn--danger btn--lg">
+          Relever le défi <span aria-hidden="true">→</span>
+        </Link>
+      );
+  }
+}
+
+function WeekPanel({
+  item,
+  weekly,
+  nowMs,
+}: {
+  item: ChallengeItem;
+  weekly: WeeklyChallenge;
+  nowMs: number;
+}): React.JSX.Element {
+  const diff = difficultyMeta(item.difficulty);
+  const solved = item.displayStatus === "COMPLETED";
+  const left = attemptsLeft(item);
+  return (
+    <section className="dfx-week" aria-labelledby="dfx-week-title">
+      <div className="dfx-week__main">
+        <p className="dfx-eyebrow">
+          <b>Défi de la semaine</b>
+          <span>{item.refCode}</span>
+        </p>
+        <h2 id="dfx-week-title" className="dfx-week__title">
+          {item.title}
+        </h2>
+        <p className="dfx-week__desc">{item.description}</p>
+        <div className="dfx-tags">
+          <span className="dfx-tag" data-cat={item.category}>
+            {categoryMeta(item.category).short}
+          </span>
+          <span className="dfx-tag">{diff.label}</span>
+          <span className="dfx-tag">{TYPE_LABEL[item.type]}</span>
+          {item.displayStatus !== "AVAILABLE" && <StatusBadge status={item.displayStatus} />}
         </div>
-        <span className="feat__bonus">+2X XP</span>
+        <div className="dfx-week__cta">
+          <WeekAction item={item} />
+          <WeeklyCountdown
+            endsAt={weekly.endsAt}
+            nowMs={nowMs}
+            prefix={solved ? "Prochain défi dans" : `XP ×${String(weekly.multiplier)} encore`}
+          />
+        </div>
       </div>
 
-      {/* Body */}
-      <div className="feat__body">
-        <span className="feat__label">
-          <span className="feat__label__pulse" />
-          DÉFI DE LA SEMAINE
-        </span>
-
-        <div className="feat__ref">
-          {"// "}
-          {challenge.refCode} · {(challenge.title.split(" ")[0] ?? challenge.refCode).toUpperCase()}
+      <div className="dfx-week__side">
+        <div className="dfx-week__side-head">
+          <span>Pièce fournie</span>
+          <span>Aperçu</span>
         </div>
-
-        <h2 className="feat__title">{challenge.title}</h2>
-
-        <p className="feat__desc">{challenge.description}</p>
-
-        <div className="feat__tags">
-          <span className={`cc__tag cc__tag--${ck}`}>{catLabel(challenge.category)}</span>
-          <DiffBars difficulty={challenge.difficulty} />
-          <span className={`cc__type ${tm}`}>{challenge.type}</span>
-        </div>
-
-        <Countdown endMs={endMs} />
-
-        <div className="feat__cta">
-          <Link href={`/challenges/${challenge.slug}`} className="btn btn--danger btn--block">
-            RELEVER LE DÉFI <IconArrow size={13} />
-          </Link>
-        </div>
+        {item.displayStatus === "LOCKED" ? (
+          <>
+            <Redacted rows={5} />
+            {item.lockedByTitle !== null && (
+              <p className="dfx-locked-note">
+                La machine s&apos;ouvre une fois « {item.lockedByTitle} » résolu.
+              </p>
+            )}
+          </>
+        ) : hasListing(item) ? (
+          <Listing item={item} />
+        ) : (
+          <p className="dfx-locked-note">{item.supplied}</p>
+        )}
+        <dl className="dfx-facts">
+          <div>
+            <dt>Fourni</dt>
+            <dd>{item.supplied}</dd>
+          </div>
+          <div>
+            <dt>À rendre</dt>
+            <dd>{answerOf(item.type)}</dd>
+          </div>
+          <div>
+            <dt>Temps</dt>
+            <dd>{timeOf(item.timeLimitMin)}</dd>
+          </div>
+          <div>
+            <dt>Récompense</dt>
+            <dd>
+              {solved ? (
+                `${String(item.xpEarned ?? item.xpReward)} XP gagnés`
+              ) : (
+                <>
+                  <s>{item.xpReward} XP</s>
+                  {item.xpReward * weekly.multiplier} XP cette semaine
+                </>
+              )}
+            </dd>
+          </div>
+          {!solved && (
+            <div>
+              <dt>Essais</dt>
+              <dd>
+                {left} sur {item.maxAttempts}
+              </dd>
+            </div>
+          )}
+          {item.hintCount > 0 && (
+            <div>
+              <dt>Indices</dt>
+              <dd>{item.hintCount}, payés en XP</dd>
+            </div>
+          )}
+        </dl>
       </div>
     </section>
   );
 }
 
-// ── Challenge card ────────────────────────────────────────────────────────────
+// ── A challenge's card ────────────────────────────────────────────────────────
 
-function CCCard({ challenge }: { challenge: ChallengeItem }): React.ReactElement {
-  const ck = catCssKey(challenge.category);
-  const tm = typeModifier(challenge.type);
-  const isDone = challenge.displayStatus === "COMPLETED";
-  const isProg = challenge.displayStatus === "IN_PROGRESS";
-  const isLocked = challenge.displayStatus === "LOCKED";
-
-  const attemptsUsedPct =
-    challenge.maxAttempts > 0
-      ? Math.min(100, Math.round((challenge.userAttempts / challenge.maxAttempts) * 100))
-      : 0;
-  const remaining = Math.max(0, challenge.maxAttempts - challenge.userAttempts);
-
-  let cls = `cc cc--${ck}`;
-  if (isDone) cls += " cc--done";
-  if (isProg) cls += " cc--prog";
-  if (isLocked) cls += " cc--locked";
-
-  return (
-    <article className={cls}>
-      <span className="cc__tick tl" />
-      <span className="cc__tick tr" />
-      <span className="cc__tick bl" />
-      <span className="cc__tick br" />
-
-      {/* Cover */}
-      <div className="cc__cover">
-        <div className="cc__cover-tl">
-          <span className={`cc__tag cc__tag--${ck}`}>{catLabel(challenge.category)}</span>
-        </div>
-        <div className="cc__cover-tr">
-          {isDone ? (
-            <span className="cc__solved">
-              <IconCheck size={11} /> RÉSOLU
-            </span>
-          ) : isLocked ? (
-            <span className="cc__lock">
-              <IconLock />
-            </span>
-          ) : (
-            <>
-              <DiffBars difficulty={challenge.difficulty} />
-              <span className={`cc__type ${tm}`}>{challenge.type}</span>
-            </>
-          )}
-        </div>
-        <span className="cc__icon">
-          <TypeIcon type={challenge.type} size={48} />
-        </span>
-      </div>
-
-      {/* Body */}
-      <div className="cc__body">
-        <div className="cc__ref">
-          {"// "}
-          {challenge.refCode}
-        </div>
-        <h3 className="cc__title">{challenge.title}</h3>
-        <p className="cc__desc">{challenge.description}</p>
-      </div>
-
-      {/* Progress bar (IN_PROGRESS only; shows attempts used) */}
-      {isProg && (
-        <ProgressBar value={attemptsUsedPct} size="xs" tone="warning" label="Essais utilisés" />
-      )}
-
-      {/* Meta row */}
-      <div className="cc__meta">
-        <span className="cc__meta-xp">{challenge.xpReward} XP</span>
-        <span className="cc__meta-time">
-          <IconClock /> {challenge.timeLimitMin > 0 ? `${String(challenge.timeLimitMin)} MIN` : "∞"}
-        </span>
-        {isProg ? (
-          <span className="cc__prog-ind" style={{ marginLeft: "auto" }}>
-            {String(challenge.userAttempts)}/{String(challenge.maxAttempts)} · EN COURS
-          </span>
-        ) : isDone ? (
-          <span
-            className="cc__meta-tries"
-            style={{ color: "var(--brand-turquoise)", marginLeft: "auto" }}
-          >
-            RÉSOLU
-          </span>
-        ) : isLocked ? (
-          <span className="cc__meta-tries" style={{ marginLeft: "auto" }}>
-            VERROUILLÉ
-          </span>
-        ) : (
-          <span className="cc__meta-tries">
-            {remaining} ESSAI{remaining > 1 ? "S" : ""} RESTANT{remaining > 1 ? "S" : ""}
-          </span>
-        )}
-      </div>
-
-      {/* Locked prerequisite message */}
-      {isLocked && challenge.lockedByTitle !== null && (
-        <div className="cc__lock-msg">
-          <IconLock size={12} />
+function CardAction({ item }: { item: ChallengeItem }): React.JSX.Element {
+  switch (item.displayStatus) {
+    case "COMPLETED":
+      return (
+        <Link href={href(item.slug)} className="dfx-card__go">
+          Voir le défi <span aria-hidden="true">→</span>
+        </Link>
+      );
+    case "IN_PROGRESS": {
+      const left = attemptsLeft(item);
+      return (
+        <Link href={href(item.slug)} className="dfx-card__go">
+          Reprendre · {left} {plural(left, "essai")} {plural(left, "restant")}{" "}
+          <span aria-hidden="true">→</span>
+        </Link>
+      );
+    }
+    case "LOCKED":
+      return item.prerequisiteSlug !== null && item.lockedByTitle !== null ? (
+        <Link href={href(item.prerequisiteSlug)} className="dfx-card__go dfx-card__go--locked">
           <span>
-            Complète d&apos;abord&nbsp;: <b>{challenge.lockedByTitle}</b>
+            Termine d&apos;abord <b>{item.lockedByTitle}</b>
           </span>
-        </div>
-      )}
-
-      {/* CTA button */}
-      {isDone ? (
-        <Link
-          href={`/challenges/${challenge.slug}`}
-          className="btn btn--accent btn--ghost btn--block"
-        >
-          VOIR LE DÉFI <IconArrow size={12} />
         </Link>
-      ) : isProg ? (
-        <Link href={`/challenges/${challenge.slug}`} className="btn btn--warning btn--block">
-          CONTINUER <IconArrow size={12} />
-        </Link>
-      ) : isLocked ? (
-        <span className="btn btn--ghost btn--block" aria-disabled="true">
-          <IconLock size={12} /> VERROUILLÉ
-        </span>
       ) : (
-        <Link href={`/challenges/${challenge.slug}`} className="btn btn--danger btn--block">
-          RELEVER LE DÉFI <IconArrow size={12} />
+        <p className="dfx-card__go dfx-card__go--locked">Verrouillé</p>
+      );
+    case "AVAILABLE":
+      return (
+        <Link href={href(item.slug)} className="dfx-card__go">
+          Relever le défi <span aria-hidden="true">→</span>
         </Link>
-      )}
+      );
+  }
+}
+
+function ChallengeCard({ item }: { item: ChallengeItem }): React.JSX.Element {
+  const solved = item.displayStatus === "COMPLETED";
+  return (
+    <article className="dfx-card" data-status={item.displayStatus}>
+      <div className="dfx-card__peek">
+        <div className="dfx-card__peek-top">
+          <span className="dfx-card__cat" data-cat={item.category}>
+            {categoryMeta(item.category).short}
+          </span>
+          <StatusBadge status={item.displayStatus} />
+        </div>
+        <Peek item={item} />
+      </div>
+      <div className="dfx-card__body">
+        <p className="dfx-card__ref">
+          {item.refCode} · {TYPE_LABEL[item.type]}
+        </p>
+        <h3 className="dfx-card__title">{item.title}</h3>
+        <p className="dfx-card__desc">{item.description}</p>
+        <div className="dfx-card__meta">
+          <span className="dfx-card__xp">
+            {solved
+              ? `${String(item.xpEarned ?? item.xpReward)} XP gagnés`
+              : `${String(item.xpReward)} XP`}
+          </span>
+          <span>{difficultyMeta(item.difficulty).label}</span>
+        </div>
+      </div>
+      <CardAction item={item} />
     </article>
   );
 }
 
-// ── Main client component ─────────────────────────────────────────────────────
+/** The last tile: how the week's challenge turns, and which one comes next. */
+function NextTile({ next }: { next: ChallengeItem | null }): React.JSX.Element {
+  return (
+    <aside className="dfx-card dfx-card--next">
+      <p className="dfx-eyebrow">
+        <b>Chaque lundi</b>
+      </p>
+      <h3>Un nouveau défi de la semaine</h3>
+      <p>
+        Chaque défi du catalogue passe à son tour en défi de la semaine, du lundi au dimanche, et
+        vaut alors le double de son XP.
+      </p>
+      {next !== null && (
+        <p>
+          La semaine prochaine : <Link href={href(next.slug)}>{next.title}</Link>.
+        </p>
+      )}
+    </aside>
+  );
+}
 
-type CatFilter = ChallengeItem["category"] | "TOUS";
-type TypeFilter = ChallengeItem["type"] | "TOUS";
+// ── The page ──────────────────────────────────────────────────────────────────
 
-const CAT_PILLS: PillItem<CatFilter>[] = [
-  { key: "TOUS", label: "Tous", color: "var(--color-text-secondary)" },
-  ...CATEGORY_ORDER.map((c) => ({
-    key: c,
-    label: CATEGORY_META[c].short,
-    color: CATEGORY_META[c].color,
-  })),
-];
-// The challenges' own red, the page's accent.
-const TYPE_PILLS: PillItem<TypeFilter>[] = (["CTF", "SCRIPT", "PUZZLE", "LAB"] as const).map(
-  (t) => ({ key: t, label: t, color: "var(--danger-red)" }),
-);
-type DiffFilter = ChallengeItem["difficulty"] | "TOUS";
-type StatFilter = DisplayStatus | "TOUS";
-
-/** The filter row's type scale; the control brings the rest of its skin. */
-const FILTER_TRIGGER: React.CSSProperties = {
-  fontSize: 10.5,
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  padding: "8px 12px",
+/** The header's tally, one word a state; "en cours" does not take an s. */
+const TALLY_WORD: Record<DisplayStatus, string> = {
+  COMPLETED: "résolu",
+  IN_PROGRESS: "en cours",
+  AVAILABLE: "disponible",
+  LOCKED: "verrouillé",
 };
 
-export function ChallengesClient({ items, featured, featuredEndMs }: Props): React.ReactElement {
-  const [cat, setCat] = useState<CatFilter>("TOUS");
-  const [type, setType] = useState<TypeFilter>("TOUS");
-  const [diff, setDiff] = useState<DiffFilter>("TOUS");
-  const [status, setStatus] = useState<StatFilter>("TOUS");
+type Filter = "all" | "todo" | "done";
 
-  const inProgress = items.filter((c) => c.displayStatus === "IN_PROGRESS").length;
-  const completed = items.filter((c) => c.displayStatus === "COMPLETED").length;
-  const available = items.filter((c) => c.displayStatus === "AVAILABLE").length;
-
-  const filtered = items.filter((c) => {
-    if (featured !== null && c.id === featured.id) return false;
-    if (cat !== "TOUS" && c.category !== cat) return false;
-    if (type !== "TOUS" && c.type !== type) return false;
-    if (diff !== "TOUS" && c.difficulty !== diff) return false;
-    if (status !== "TOUS" && c.displayStatus !== status) return false;
-    return true;
-  });
-
-  // The type pill pressed again lets go: back to all of them.
-  function handleTypeToggle(t: TypeFilter): void {
-    setType((prev) => (prev === t ? "TOUS" : t));
+function matches(item: ChallengeItem, filter: Filter): boolean {
+  if (filter === "todo") {
+    return item.displayStatus === "AVAILABLE" || item.displayStatus === "IN_PROGRESS";
   }
+  if (filter === "done") return item.displayStatus === "COMPLETED";
+  return true;
+}
+
+const EMPTY: Record<Exclude<Filter, "all">, { title: string; message: string }> = {
+  todo: {
+    title: "Rien à faire pour l'instant",
+    message:
+      "Tout ce qui est ouvert est résolu. Un défi verrouillé s'ouvre quand celui qui le précède est fait.",
+  },
+  done: {
+    title: "Aucun défi résolu",
+    message: "Le défi de la semaine vaut le double d'XP : c'est un bon premier.",
+  },
+};
+
+export function ChallengesClient({ items, weekly, nowMs }: Props): React.ReactElement {
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const featured = weekly === null ? null : (items.find((item) => item.id === weekly.id) ?? null);
+  const nextId = weekly?.nextId ?? null;
+  const next =
+    nextId !== null && nextId !== weekly?.id
+      ? (items.find((item) => item.id === nextId) ?? null)
+      : null;
+  // Under "Tous", the week's challenge has its panel above; a filter asked for
+  // by name shows it in the list too, where it belongs.
+  const shown = items.filter(
+    (item) => matches(item, filter) && (filter !== "all" || item.id !== featured?.id),
+  );
+
+  const count = (status: DisplayStatus): number =>
+    items.filter((item) => item.displayStatus === status).length;
+  const tally = (["COMPLETED", "IN_PROGRESS", "AVAILABLE", "LOCKED"] as const)
+    .map((status) => ({ status, n: count(status) }))
+    .filter(({ status, n }) => n > 0 || status !== "IN_PROGRESS");
+
+  const tabs: TabItem<Filter>[] = [
+    { key: "all", label: "Tous", count: items.length },
+    { key: "todo", label: "À faire", count: items.filter((i) => matches(i, "todo")).length },
+    { key: "done", label: "Résolus", count: items.filter((i) => matches(i, "done")).length },
+  ];
 
   return (
-    <div className="chx">
-      {/* ── Breadcrumb ──────────────────────────────────────────────── */}
-      <Crumb segments={["défis"]} />
-
-      {/* ── Header ──────────────────────────────────────────────────── */}
-      <div className="chx-head">
+    <div className="chx dfx">
+      <header className="dfx-head">
         <div>
-          <h1 className="chx-title">
-            DÉFIS &amp; <em>CHALLENGES</em>
-          </h1>
-          <p className="chx-sub">
-            Teste tes compétences en conditions réelles. CTF, puzzles de code, labs réseau, le
-            terrain attaque, à toi de défendre.
+          <Crumb segments={["défis"]} />
+          <h1 className="pg-title">Défis</h1>
+          <p className="pg-lede">
+            Des enquêtes sur pièces. Chaque défi te confie une machine Linux, dans ton navigateur :
+            tu fouilles ses fichiers, tu trouves le flag, tu le soumets. Rien à installer.
           </p>
         </div>
-        <div className="chx-stats">
-          <span className="chx-stats__item chx-stats__item--prog">
-            <span className="chx-stats__dot chx-stats__dot--prog" />
-            <b>{inProgress}</b> EN COURS
-          </span>
-          <span className="chx-stats__sep">·</span>
-          <span className="chx-stats__item chx-stats__item--done">
-            <span className="chx-stats__dot chx-stats__dot--done" />
-            <b>{completed}</b> COMPLÉTÉS
-          </span>
-          <span className="chx-stats__sep">·</span>
-          <span className="chx-stats__item chx-stats__item--avail">
-            <span className="chx-stats__dot chx-stats__dot--avail" />
-            <b>{available}</b> DISPONIBLES
-          </span>
-        </div>
-      </div>
-
-      {/* ── Filters ─────────────────────────────────────────────────── */}
-      <div className="chx-filters">
-        <div className="chx-filters__row">
-          <span className="chx-filters__label">{"// CAT"}</span>
-          <Pills label="Catégorie" items={CAT_PILLS} value={cat} onChange={setCat} />
-
-          <span className="chx-filters__split" />
-
-          <span className="chx-filters__label">{"// TYPE"}</span>
-          <Pills label="Type" items={TYPE_PILLS} value={type} onChange={handleTypeToggle} />
-        </div>
-
-        <Select
-          block={false}
-          aria-label="Difficulté"
-          triggerStyle={FILTER_TRIGGER}
-          value={diff}
-          options={[
-            { value: "TOUS", label: "DIFFICULTÉ · TOUTES" },
-            { value: "BEGINNER", label: "FACILE" },
-            { value: "INTERMEDIATE", label: "INTERMÉDIAIRE" },
-            { value: "ADVANCED", label: "AVANCÉ" },
-            { value: "EXPERT", label: "EXPERT" },
-          ]}
-          onChange={(next) => {
-            setDiff(next as DiffFilter);
-          }}
-        />
-
-        <Select
-          block={false}
-          aria-label="Statut"
-          triggerStyle={FILTER_TRIGGER}
-          value={status}
-          options={[
-            { value: "TOUS", label: "STATUT · TOUS" },
-            { value: "AVAILABLE", label: "DISPONIBLE" },
-            { value: "IN_PROGRESS", label: "EN COURS" },
-            { value: "COMPLETED", label: "COMPLÉTÉ" },
-            { value: "LOCKED", label: "VERROUILLÉ" },
-          ]}
-          onChange={(next) => {
-            setStatus(next as StatFilter);
-          }}
-        />
-      </div>
-
-      {/* ── Featured ────────────────────────────────────────────────── */}
-      {featured !== null ? (
-        <Featured challenge={featured} endMs={featuredEndMs} />
-      ) : (
-        <div
-          style={{
-            padding: "48px 40px",
-            textAlign: "center",
-            border: "1px dashed var(--color-border-default)",
-            background: "rgba(5,4,26,0.4)",
-            marginBottom: 32,
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-text-muted)",
-              margin: 0,
-            }}
-          >
-            Aucun défi disponible pour le moment.
-          </p>
-        </div>
-      )}
-
-      {/* ── Section heading ─────────────────────────────────────────── */}
-      <div className="chx-section-head">
-        <div>
-          <span className="chx-section-head__eyebrow">{"// AVAILABLE.STACK"}</span>
-          <h2 className="chx-section-head__title">Tous les défis</h2>
-        </div>
-        <span className="chx-section-head__count">
-          <b>{filtered.length}</b> ENTRÉES · TRIÉ PAR PERTINENCE
-        </span>
-      </div>
-
-      {/* ── Grid ────────────────────────────────────────────────────── */}
-      {filtered.length === 0 ? (
-        <div
-          style={{
-            padding: "80px 40px",
-            textAlign: "center",
-            border: "1px dashed var(--color-border-default)",
-            background: "rgba(5,4,26,0.4)",
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 600,
-              fontSize: 18,
-              color: "var(--color-text-primary)",
-              margin: "0 0 8px",
-            }}
-          >
-            Aucun défi trouvé
-          </p>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--color-text-muted)",
-              margin: 0,
-            }}
-          >
-            Essaie d&apos;autres filtres pour trouver tes challenges.
-          </p>
-        </div>
-      ) : (
-        <div className="chx-grid">
-          {filtered.map((c) => (
-            <CCCard key={c.id} challenge={c} />
+        <ul className="dfx-tally" aria-label="Où tu en es">
+          {tally.map(({ status, n }) => (
+            <li key={status} data-tally={status}>
+              <b>{n}</b>
+              {status === "IN_PROGRESS" ? TALLY_WORD[status] : plural(n, TALLY_WORD[status])}
+            </li>
           ))}
-        </div>
+        </ul>
+      </header>
+
+      <ol className="dfx-steps">
+        <li>
+          <span className="dfx-steps__n">01</span>
+          <div>
+            <h2>Ouvre la machine</h2>
+            <p>Chaque défi a la sienne, avec ses pièces : journaux, configurations, archives.</p>
+          </div>
+        </li>
+        <li>
+          <span className="dfx-steps__n">02</span>
+          <div>
+            <h2>Enquête à ta façon</h2>
+            <p>ls, grep, find : tes commandes, ton rythme. Un indice se paie en XP.</p>
+          </div>
+        </li>
+        <li>
+          <span className="dfx-steps__n">03</span>
+          <div>
+            <h2>Soumets le flag</h2>
+            <p>
+              Il est à toi seul. Le bon te rapporte l&apos;XP du défi, le double pour le défi de la
+              semaine.
+            </p>
+          </div>
+        </li>
+      </ol>
+
+      {featured !== null && weekly !== null && (
+        <WeekPanel item={featured} weekly={weekly} nowMs={nowMs} />
       )}
+
+      <section aria-labelledby="dfx-list-title">
+        <div className="dfx-list-head">
+          <h2 id="dfx-list-title">Tous les défis</h2>
+          <Tabs label="Filtrer les défis" items={tabs} value={filter} onChange={setFilter} />
+        </div>
+
+        {shown.length === 0 && filter !== "all" ? (
+          <EmptyState title={EMPTY[filter].title} message={EMPTY[filter].message}>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                setFilter("all");
+              }}
+            >
+              Voir tous les défis
+            </button>
+          </EmptyState>
+        ) : (
+          <div className="dfx-grid">
+            {shown.map((item) => (
+              <ChallengeCard key={item.id} item={item} />
+            ))}
+            {filter === "all" && <NextTile next={next} />}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
