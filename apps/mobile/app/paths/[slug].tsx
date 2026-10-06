@@ -12,6 +12,7 @@ import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail } from "@/lib/queries";
 import { missionStates } from "@/lib/missions";
 import { PathCover } from "@/components/path-cover";
+import { OfflineToggle } from "@/components/offline-toggle";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@/lib/rating";
@@ -194,6 +195,16 @@ function PathBody({
                         FICHE DE RÉVISION ›
                       </Text>
                     </Pressable>
+                    <OfflineToggle
+                      pathSlug={data.slug}
+                      pathTitle={data.title}
+                      moduleNumber={moduleStart.number}
+                      moduleTitle={moduleStart.title}
+                      lessonSlugs={moduleStart.indices.flatMap((index) => {
+                        const mission = data.missions[index];
+                        return mission === undefined ? [] : [mission.slug];
+                      })}
+                    />
                   </View>
                 ) : null}
                 <PressableScale disabled={state === "locked"} onPress={() => onOpenLesson(m.slug)}>

@@ -10,6 +10,8 @@ import {
   fetchPathCoversApi,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { readLesson, refreshLesson } from "@/lib/offline";
+import { offlineStorage } from "@/lib/offline-store";
 import {
   fetchExamStatusApi,
   fetchForumApi,
@@ -671,6 +673,8 @@ export interface LessonDetail {
   xpReward: number;
   contentMdx: string;
   status: ProgressStatus | null;
+  /** Read from the copy saved on the phone: the network did not answer. */
+  offline?: boolean;
 }
 
 export function useLessonDetail(userId: string | undefined, slug: string | undefined) {
@@ -684,8 +688,21 @@ export function useLessonDetail(userId: string | undefined, slug: string | undef
         .eq("slug", slug as string) // gated by `enabled`
         .eq("status", "PUBLISHED")
         .single();
+      // SAFETY: the select names exactly the columns of LessonDetail but its status.
       const lesson = res.data as Omit<LessonDetail, "status"> | null;
-      if (!lesson) throw new Error("Leçon introuvable");
+      if (!lesson) {
+        // No answer from the network (not "no such lesson", PGRST116): the copy
+        // saved for reading offline, if any.
+        const unreachable = res.error !== null && res.error.code !== "PGRST116";
+        const saved = unreachable ? await readLesson(offlineStorage, slug ?? "") : null;
+        if (saved !== null) {
+          // SAFETY: a saved lesson was written from this same select.
+          return { ...(saved as Omit<LessonDetail, "status">), status: null, offline: true };
+        }
+        throw new Error("Leçon introuvable");
+      }
+      // Online: a saved copy, if there is one, takes the text just read.
+      void refreshLesson(offlineStorage, lesson).catch(() => undefined);
 
       let status: ProgressStatus | null = null;
       if (userId) {

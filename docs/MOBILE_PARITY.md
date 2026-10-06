@@ -103,6 +103,12 @@ RLS — jamais réécrites côté app.
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |
 | Modération côté auteur : ce qui a été signalé, où, quand et ce qu'il en est advenu, sans score ni règle (mêmes mots, `@cyberlearn/lib/moderation/record`) ; les avis de modération y mènent | ✅ (volet des paramètres, Modération) | ✅ (`app/moderation.tsx`) |
 
+### Dans l'app seulement
+
+| Surface | Pourquoi l'app seule |
+| --- | --- |
+| **Lecture hors ligne** : un module d'un parcours enregistré sur le téléphone (« Lire hors ligne » sous l'en-tête du module), ses leçons lisibles sans réseau, la liste des modules enregistrés et la place qu'ils prennent dans l'écran « Hors ligne » (`lib/offline.ts`, `lib/offline-store.ts`). La progression, les quiz et les notes attendent le réseau | Le site se lit dans un navigateur, qui suppose le réseau : c'est dans un train ou un sous-sol, avec le téléphone, qu'on lit sans connexion. Un service worker sur le site ferait la même chose pour un usage marginal, avec un cache à maintenir en face du rendu serveur |
+
 ### Encore dû
 
 Rien pour l'instant. La dernière comparaison, page par page, du site et des
