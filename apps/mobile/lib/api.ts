@@ -1,6 +1,8 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
+import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
+import type { MockOverview } from "@/lib/mock-exam";
 import type {
   ChallengeDetail,
   ChallengeItem,
@@ -1310,6 +1312,61 @@ export async function deleteWriteupApi(challengeId: string): Promise<WriteupRepl
       body: JSON.stringify({ challengeId }),
     });
     return (await res.json()) as WriteupReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── Mock exams (the site's lib/exam/mock-exam.ts) ───────────────────────────
+
+/** What a path's mock exam covers, and the attempts already made. */
+export async function fetchMockOverviewApi(slug: string): Promise<MockOverview> {
+  const res = await authedFetch(`/api/mobile/mock-exam?slug=${encodeURIComponent(slug)}`);
+  const body = (await res.json()) as
+    | { ok: true; overview: MockOverview }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.overview;
+}
+
+export type MockStartReply =
+  | {
+      ok: true;
+      attemptId: string;
+      startedAt: string;
+      timeLimitMinutes: number;
+      questions: MockQuestion[];
+    }
+  | { ok: false; error: string };
+
+/** Starts an attempt, or resumes the one running. */
+export async function startMockExamApi(pathId: string): Promise<MockStartReply> {
+  try {
+    const res = await authedFetch("/api/mobile/mock-exam", {
+      method: "POST",
+      body: JSON.stringify({ pathId }),
+    });
+    return (await res.json()) as MockStartReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export type MockSubmitReply =
+  | { ok: true; late: boolean; result: MockResult }
+  | { ok: false; error: string };
+
+/** Hands the copy in: the score is computed on the server. */
+export async function submitMockExamApi(
+  attemptId: string,
+  answers: Record<string, number>,
+): Promise<MockSubmitReply> {
+  try {
+    const res = await authedFetch("/api/mobile/mock-exam/submit", {
+      method: "POST",
+      body: JSON.stringify({ attemptId, answers }),
+    });
+    return (await res.json()) as MockSubmitReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }

@@ -397,6 +397,14 @@ export default async function PathDetailPage({
           <Link href={firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#"} className="brief__cta">
             {heroCtaLabel} {ARROW}
           </Link>
+          <Link
+            href={`/paths/${slug}/mock-exam`}
+            className="btn btn--ghost btn--sm"
+            style={{ marginTop: 10 }}
+            title="Un entraînement chronométré : trois questions par module, le score par module, sans certificat ni XP"
+          >
+            Examen blanc
+          </Link>
         </div>
       </section>
 

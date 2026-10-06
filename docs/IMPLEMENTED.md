@@ -20,6 +20,7 @@
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement |
+| `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction |
 | `/u/[username]` | Profil public d'un utilisateur : badges, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, activité |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
 | `/download` | Page de téléchargement de l'app mobile |
