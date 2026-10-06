@@ -24,6 +24,8 @@ const TYPE_META: Record<string, { icon: string; color: string }> = {
   LEAGUE: { icon: "♟", color: colors.promote },
   REVIEW_DUE: { icon: "↻", color: colors.textSecondary },
   FORUM_REPLY: { icon: "❝", color: colors.info },
+  DUEL_INVITE: { icon: "⚔", color: colors.accent },
+  DUEL_RESULT: { icon: "⚑", color: colors.warning },
 };
 
 function timeAgo(iso: string): string {

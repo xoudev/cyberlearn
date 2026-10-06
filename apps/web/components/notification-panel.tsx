@@ -32,6 +32,8 @@ const TYPE_ICON: Record<NotificationType, string> = {
   // Drawn rather than typed - see FriendGlyph below.
   FRIEND_REQUEST: "",
   FRIEND_ACCEPTED: "",
+  DUEL_INVITE: "⚔",
+  DUEL_RESULT: "🏁",
 };
 
 /** The two types that get a drawn mark instead of a character. */

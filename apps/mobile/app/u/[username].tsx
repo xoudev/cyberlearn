@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
@@ -65,6 +65,7 @@ export default function PublicProfileScreen(): React.JSX.Element {
 }
 
 function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element {
+  const router = useRouter();
   const { theme } = useCosmetics();
   const fr = (value: number): string => value.toLocaleString("fr-FR");
   const percent =
@@ -110,6 +111,16 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
         {profile.isSelf ? null : (
           <FriendButton targetId={profile.id} initial={profile.friendship} />
         )}
+        {profile.friendship === "friends" ? (
+          <View style={{ alignSelf: "flex-start" }}>
+            <ActionChip
+              label="Défier en duel"
+              onPress={() => {
+                router.push({ pathname: "/duels", params: { ami: profile.id } });
+              }}
+            />
+          </View>
+        ) : null}
       </Card>
 
       {/* Level */}

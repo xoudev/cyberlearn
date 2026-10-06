@@ -149,6 +149,16 @@ export interface ExportPayload {
       createdAt: Date;
     }[];
   };
+  /** The quiz duels played, sent or received, with the reader's own answers. */
+  duels: {
+    pathTitle: string;
+    role: "challenger" | "opponent";
+    status: string;
+    won: boolean | null;
+    createdAt: Date;
+    finishedAt: Date | null;
+    answers: { index: number; selected: number; correct: boolean; answeredAt: Date }[];
+  }[];
   /** The mock exams handed in, with their score by module. */
   mockExams: {
     pathTitle: string;
@@ -253,6 +263,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     answers,
     writeups,
     mockExams,
+    duels,
     tickets,
     notifications,
     skipWaivers,
@@ -422,6 +433,21 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         startedAt: true,
         submittedAt: true,
         path: { select: { title: true } },
+      },
+    }),
+    prisma.duel.findMany({
+      where: { OR: [{ challengerId: userId }, { opponentId: userId }] },
+      select: {
+        challengerId: true,
+        status: true,
+        winnerId: true,
+        createdAt: true,
+        finishedAt: true,
+        path: { select: { title: true } },
+        answers: {
+          where: { userId },
+          select: { index: true, selected: true, correct: true, answeredAt: true },
+        },
       },
     }),
     prisma.contactTicket.findMany({
@@ -687,6 +713,15 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         createdAt: a.createdAt,
       })),
     },
+    duels: duels.map((d) => ({
+      pathTitle: d.path.title,
+      role: d.challengerId === userId ? ("challenger" as const) : ("opponent" as const),
+      status: d.status,
+      won: d.status !== "FINISHED" ? null : d.winnerId === userId,
+      createdAt: d.createdAt,
+      finishedAt: d.finishedAt,
+      answers: d.answers,
+    })),
     mockExams: mockExams.map((e) => ({
       pathTitle: e.path.title,
       score: e.score,

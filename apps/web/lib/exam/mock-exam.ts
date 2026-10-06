@@ -73,8 +73,11 @@ const GRACE_MS = 60_000;
 const uuid = z.guid();
 const answersSchema = z.record(z.string().regex(/^\d{1,3}$/), z.number().int().min(0).max(25));
 
-/** The quizzes of a path's published lessons, each filed under its module. */
-async function loadSources(pathId: string): Promise<MockSource[]> {
+/**
+ * The quizzes of a path's published lessons, each filed under its module.
+ * The duels draw from it too (lib/social/duels.ts).
+ */
+export async function loadSources(pathId: string): Promise<MockSource[]> {
   const path = await prisma.path.findUnique({
     where: { id: pathId },
     select: {
