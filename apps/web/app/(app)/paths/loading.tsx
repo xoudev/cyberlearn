@@ -9,13 +9,7 @@ import "./_components/paths-catalog-v2.css";
  * each topped by its cover image.
  */
 
-function SectionLabelSkeleton({
-  tag,
-  count,
-}: {
-  tag: number;
-  count: number;
-}): React.ReactElement {
+function SectionLabelSkeleton({ tag, count }: { tag: number; count: number }): React.ReactElement {
   return (
     <div className="pc2-section" aria-hidden="true">
       <span className="pc2-section__tag">

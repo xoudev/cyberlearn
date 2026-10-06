@@ -181,7 +181,9 @@ export default function LessonDetailLoading(): React.ReactElement {
           </div>
 
           <div className="section-nav-bar">
-            <div style={{ display: "flex", alignItems: "center", padding: "0 24px", minHeight: 60 }}>
+            <div
+              style={{ display: "flex", alignItems: "center", padding: "0 24px", minHeight: 60 }}
+            >
               <Skeleton w={104} h={11} />
             </div>
             <div className="section-nav-center">

@@ -1,5 +1,6 @@
 import React from "react";
 import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import "./_components/leaderboard.css";
 import styles from "./_components/leaderboard.module.css";
 
 /**
@@ -9,27 +10,6 @@ import styles from "./_components/leaderboard.module.css";
  * cards with no class, so `SkeletonCard`), the `position` banner, and the
  * `players` grid of `card card--sunken` player cards.
  */
-
-/**
- * The podium's stacking below 1280px. LeaderboardClient writes this rule in
- * its own inline `<style>`, which the loading state cannot import: the same
- * rule, so the podium stacks at the same width.
- */
-const PODIUM_RULES = `
-  @media (max-width: 1279px) {
-    .cl-podium {
-      grid-template-columns: min(100%, 440px) !important;
-      justify-content: center;
-      align-items: stretch !important;
-      gap: 20px !important;
-      margin-bottom: 56px !important;
-    }
-    .cl-podium > * { transform: none !important; }
-    .cl-podium > :nth-child(1) { order: 2; }
-    .cl-podium > :nth-child(2) { order: 1; }
-    .cl-podium > :nth-child(3) { order: 3; }
-  }
-`;
 
 /** Global, Amis, Ligue, Ce mois, Cette semaine: each label's width in 11px mono. */
 const TAB_WIDTHS = [57, 38, 48, 66, 124];
@@ -97,8 +77,6 @@ function PlayerCardSkeleton(): React.ReactElement {
 export default function LeaderboardLoading(): React.ReactElement {
   return (
     <div className="page-container" aria-busy="true" aria-label="Chargement du classement">
-      <style>{PODIUM_RULES}</style>
-
       <div className="pg-crumb" aria-hidden="true">
         <Skeleton w={210} h={12} />
       </div>

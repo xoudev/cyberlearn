@@ -1,5 +1,6 @@
 import React from "react";
 import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
+import "./_components/locker.css";
 
 /**
  * The locker while it loads, drawn on the page's own layout and classes
@@ -9,33 +10,6 @@ import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
  * terminal, equipped slots). The cosmetic card has no class of its own, so
  * it stands on `SkeletonCard` with the card's own padding and rows.
  */
-
-/**
- * The two-column layout and its collapse below 1024px. LockerClient writes
- * these rules in its own inline `<style>`, which the loading state cannot
- * import: the same rules, so the columns fall at the same width.
- */
-const LAYOUT_RULES = `
-  .casier-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 28px;
-    align-items: start;
-  }
-  .casier-preview {
-    position: sticky;
-    top: 24px;
-  }
-  @media (max-width: 1024px) {
-    .casier-layout {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .casier-preview {
-      position: static;
-      top: auto;
-    }
-  }
-`;
 
 /** Thèmes, Hexagones, Cadres, Accents: each label's width in 11px mono. */
 const TAB_WIDTHS = [57, 86, 57, 67];
@@ -121,7 +95,6 @@ export default function LockerLoading(): React.ReactElement {
       aria-label="Chargement du casier"
       style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}
     >
-      <style>{LAYOUT_RULES}</style>
       <div aria-hidden="true">
         <Skeleton w={250} h={10} style={{ margin: "3px 0 13px" }} />
         <Skeleton

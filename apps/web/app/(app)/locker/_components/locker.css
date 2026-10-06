@@ -1,0 +1,24 @@
+/* The locker's layout: the cosmetics and the 320px preview side by side on
+   wide screens, stacked below 1024px (where the app sidebar becomes an
+   off-canvas drawer and the content area is too narrow for both). Shared by
+   LockerClient and the page's loading skeleton. */
+
+.casier-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: start;
+}
+.casier-preview {
+  position: sticky;
+  top: 24px;
+}
+@media (max-width: 1024px) {
+  .casier-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .casier-preview {
+    position: static;
+    top: auto;
+  }
+}

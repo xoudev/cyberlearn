@@ -99,7 +99,13 @@ export default function ExamLoading(): React.ReactElement {
               </div>
               <div className="exam-note">
                 <Skeleton w={13} h={13} />
-                <SkeletonText lines={2} lastWidth="55%" lineHeight={10} gap={7} style={{ flex: 1 }} />
+                <SkeletonText
+                  lines={2}
+                  lastWidth="55%"
+                  lineHeight={10}
+                  gap={7}
+                  style={{ flex: 1 }}
+                />
               </div>
             </aside>
           </div>
