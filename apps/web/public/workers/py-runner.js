@@ -46,6 +46,10 @@
 
 // Save the original before importScripts - Pyodide must not affect this reference.
 const _addListener = self.addEventListener.bind(self);
+// The runtime's own fetch, kept for installing the wheels the site ships
+// (/runtimes/pyodide/*.whl) once everything else is refused below.
+const _fetch = self.fetch.bind(self);
+const RUNTIME_DIR = new URL("/runtimes/pyodide/", self.location.href);
 
 // importScripts must run at top level, before any neutralization.
 importScripts("/runtimes/pyodide/pyodide.js");
@@ -65,9 +69,22 @@ function initPyodide() {
       // Pyodide uses fetch/importScripts/addEventListener during boot;
       // safe to block only after init.
 
-      // 1. Network APIs - block any outbound call from user code
-      self.fetch = () => {
-        throw new Error("Network access is not allowed in challenge code.");
+      // 1. Network APIs - block any outbound call from user code. The one
+      //    exception is the runtime's own directory on this origin: that is
+      //    where loadPackage reads the wheels the site ships (pandas,
+      //    pycryptodome, cryptography and what they need), and nothing else
+      //    is served there.
+      self.fetch = (input, init) => {
+        const target = new URL(
+          input instanceof Request ? input.url : String(input),
+          self.location.href,
+        );
+        const local =
+          target.origin === RUNTIME_DIR.origin &&
+          target.pathname.startsWith(RUNTIME_DIR.pathname) &&
+          /\.(whl|zip|json)$/.test(target.pathname);
+        if (!local) throw new Error("Network access is not allowed in challenge code.");
+        return _fetch(input, init);
       };
       self.XMLHttpRequest = function () {
         throw new Error("Network access is not allowed in challenge code.");
@@ -168,6 +185,21 @@ del _BlockedImport
   return pyodideReady;
 }
 
+/**
+ * The packages the learner's code imports, installed from the wheels the site
+ * ships before the code runs: pandas, pycryptodome, cryptography and what they
+ * need, read off pyodide-lock.json and fetched from the runtime's directory. A
+ * package the site does not ship is left to Python, which says the module is
+ * not found in its own words.
+ */
+async function loadImports(py, code) {
+  try {
+    await py.loadPackagesFromImports(code, { messageCallback: () => {} });
+  } catch (_) {
+    // Not shipped, or unreadable: the import fails in Python, as it should.
+  }
+}
+
 // Start loading Pyodide immediately on worker creation
 initPyodide().catch((err) => {
   self.postMessage({ type: "error", error: String(err) });
@@ -196,6 +228,7 @@ async function handleMessage(event) {
       return;
     }
 
+    await loadImports(await initPyodide(), code);
     const results = [];
     for (const test of tests) {
       const r = JSON.parse(await runTest(code, test.input));
@@ -225,6 +258,7 @@ async function handleMessage(event) {
       });
       return;
     }
+    await loadImports(await initPyodide(), code);
     const r = JSON.parse(await runScript(code));
     self.postMessage({ id, output: r.output, error: r.ok ? null : r.error, hint: r.hint ?? null });
   }

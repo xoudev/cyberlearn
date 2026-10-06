@@ -41,6 +41,17 @@ check_file "${PYODIDE}/pyodide.asm.js"      "3a889f073e628c2196c705b42fa0e955ba2
 check_file "${PYODIDE}/pyodide.asm.wasm"    "f7fefe563134714a17abd65516d94960e8dbd96fe6778a7a842947fc9686b3a1" "pyodide/pyodide.asm.wasm"
 check_file "${PYODIDE}/pyodide-lock.json"   "be1807745da93daa09d360b109c17a0e526e74d664d1f1b9870aafcce98ce426" "pyodide/pyodide-lock.json"
 check_file "${PYODIDE}/python_stdlib.zip"   "6030964967e447c887abc46c5f0967c55688644d759496de82a3ef09f49f5cba" "pyodide/python_stdlib.zip"
+# The packages the lessons may import, installed on import from this directory.
+check_file "${PYODIDE}/cffi-1.17.1-cp312-cp312-pyodide_2024_0_wasm32.whl" "e63b1be17f345759089c983584abc1fde327c0eed326d00323fc8d7d4285c847" "pyodide/cffi-1.17.1-cp312-cp312-pyodide_2024_0_wasm32.whl"
+check_file "${PYODIDE}/cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl" "e7ea7fbbb4313a9ba2af9eae543e88e014c9893704226cfe95a762df799bb5e2" "pyodide/cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl"
+check_file "${PYODIDE}/numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl" "d9cc75a959bbfb14efe05e26ca04cb2c85acbdad8b0a07a1c0140c4b820b4eec" "pyodide/numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl"
+check_file "${PYODIDE}/openssl-1.1.1w.zip" "f41e9ac321494b4b4eb1b4a41921dee7c69440ac324800ac39d0dba3df96b7f6" "pyodide/openssl-1.1.1w.zip"
+check_file "${PYODIDE}/pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl" "c5de410f0624d310276ad28ed8f98ff58dc1ba18ffda93688c846195af939f7c" "pyodide/pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl"
+check_file "${PYODIDE}/pycparser-2.22-py3-none-any.whl" "70457c82283bd1d0f2691587c938b4299a294008a4d2dc4076e05f38e1d30039" "pyodide/pycparser-2.22-py3-none-any.whl"
+check_file "${PYODIDE}/pycryptodome-3.20.0-cp35-abi3-pyodide_2024_0_wasm32.whl" "82bbe0cdffb1f2bd4285e197e0066c9cdd565948e8d302a55f8b4e7773940a46" "pyodide/pycryptodome-3.20.0-cp35-abi3-pyodide_2024_0_wasm32.whl"
+check_file "${PYODIDE}/python_dateutil-2.9.0.post0-py2.py3-none-any.whl" "ae746faed61551f3cc0d663f52f732551c3e3f8c6c61c6b36862440819acd470" "pyodide/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+check_file "${PYODIDE}/pytz-2024.1-py2.py3-none-any.whl" "dc3559afd49896fa97d16d17cc802d2ee8e5247d26a15cb4338656b5b079dc00" "pyodide/pytz-2024.1-py2.py3-none-any.whl"
+check_file "${PYODIDE}/six-1.16.0-py2.py3-none-any.whl" "894f203bc82a942d3a405dbd15ac331a6bd3f63fedadfbb5a557a8ed7f13a9b3" "pyodide/six-1.16.0-py2.py3-none-any.whl"
 
 # ── JSCPP 2.0.9 (browser IIFE bundle) ────────────────────────────────────────
 # Rebuild with: bash scripts/build-jscpp/build.sh

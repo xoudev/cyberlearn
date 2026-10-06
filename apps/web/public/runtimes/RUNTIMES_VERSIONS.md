@@ -23,6 +23,29 @@ a version bump.
 
 **Total**: ~14.2 MB
 
+### Packages the lessons may import
+
+Installed on import by `loadPackagesFromImports` (`public/workers/py-runner.js`,
+`public/pyodide-worker.js`), from this directory and nowhere else: the worker's
+fetch is refused everywhere but `/runtimes/pyodide/`. Same CDN directory as the
+runtime; the hashes are the ones `pyodide-lock.json` carries for each file.
+
+| File | Package | Size | SHA-256 |
+|------|---------|------|---------|
+| `cffi-1.17.1-cp312-cp312-pyodide_2024_0_wasm32.whl` | cffi 1.17.1 | 152 263 B | `e63b1be17f345759089c983584abc1fde327c0eed326d00323fc8d7d4285c847` |
+| `cryptography-42.0.5-cp312-cp312-pyodide_2024_0_wasm32.whl` | cryptography 42.0.5 | 761 269 B | `e7ea7fbbb4313a9ba2af9eae543e88e014c9893704226cfe95a762df799bb5e2` |
+| `numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl` | numpy 2.0.2 | 3 106 119 B | `d9cc75a959bbfb14efe05e26ca04cb2c85acbdad8b0a07a1c0140c4b820b4eec` |
+| `openssl-1.1.1w.zip` | openssl 1.1.1w | 2 025 919 B | `f41e9ac321494b4b4eb1b4a41921dee7c69440ac324800ac39d0dba3df96b7f6` |
+| `pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl` | pandas 2.2.3 | 5 707 178 B | `c5de410f0624d310276ad28ed8f98ff58dc1ba18ffda93688c846195af939f7c` |
+| `pycparser-2.22-py3-none-any.whl` | pycparser 2.22 | 117 552 B | `70457c82283bd1d0f2691587c938b4299a294008a4d2dc4076e05f38e1d30039` |
+| `pycryptodome-3.20.0-cp35-abi3-pyodide_2024_0_wasm32.whl` | pycryptodome 3.20.0 | 1 127 510 B | `82bbe0cdffb1f2bd4285e197e0066c9cdd565948e8d302a55f8b4e7773940a46` |
+| `python_dateutil-2.9.0.post0-py2.py3-none-any.whl` | python-dateutil 2.9.0.post0 | 229 892 B | `ae746faed61551f3cc0d663f52f732551c3e3f8c6c61c6b36862440819acd470` |
+| `pytz-2024.1-py2.py3-none-any.whl` | pytz 2024.1 | 505 474 B | `dc3559afd49896fa97d16d17cc802d2ee8e5247d26a15cb4338656b5b079dc00` |
+| `six-1.16.0-py2.py3-none-any.whl` | six 1.16.0 | 11 053 B | `894f203bc82a942d3a405dbd15ac331a6bd3f63fedadfbb5a557a8ed7f13a9b3` |
+
+**Total**: ~13.7 MB (pandas and numpy are most of it; a lesson that
+imports neither downloads neither).
+
 ### Upgrade procedure
 
 1. Update `PYODIDE_VERSION` in `scripts/download-runtimes.sh`

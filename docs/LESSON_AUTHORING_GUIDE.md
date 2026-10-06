@@ -333,7 +333,7 @@ for i in range(5):
 </CodePlayground>
 ```
 
-Bibliothèques disponibles : tout ce que Pyodide supporte nativement - `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, etc.  
+Bibliothèques disponibles : toute la bibliothèque standard (`math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`...), et trois bibliothèques servies par le site, installées à la demande dès qu'un code les importe : `pycryptodome` (`from Crypto.Cipher import AES`), `cryptography` (`from cryptography.fernet import Fernet`) et `pandas` (`import pandas as pd`, avec `numpy`). Le premier import télécharge la bibliothèque (un à neuf mégaoctets selon celle-ci), que le navigateur garde ensuite. Rien ne vient d'ailleurs : pas de `pip`, pas de `micropip`.  
 **Non disponible** : I/O fichier, réseau, `subprocess`, bibliothèques natives C.
 
 #### JavaScript ES2022 (Web Worker)

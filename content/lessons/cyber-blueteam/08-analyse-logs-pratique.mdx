@@ -70,6 +70,29 @@ La combinaison gagnante pour trouver qui frappe le plus fort : extraire les IP, 
 
 Lis bien la séquence. La première commande dit qu'il y a 342 échecs au total : beaucoup, mais on ne sait pas encore si c'est un attaquant ou du bruit. La deuxième concentre 318 de ces 342 échecs sur une seule IP, 203.0.113.9. La troisième révèle que cette même IP a fini par réussir une connexion. La quatrième compte 319 lignes pour elle : 318 échecs et 1 succès. Le verdict tombe seul : force brute réussie contre le compte admin.
 
+Quand le journal grossit, les mêmes questions se posent à `pandas`, disponible dans les exercices Python du site : chaque ligne devient une rangée d'un tableau, et compter, trier, filtrer tient en une ligne. Le même raisonnement que les tubes, dans un langage qu'on peut relire.
+
+<CodePlayground language="python" starterCode={`import pandas as pd
+
+lignes = """Jan 10 03:11:02 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51022 ssh2
+Jan 10 03:11:05 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51028 ssh2
+Jan 10 03:12:40 srv sshd[2050]: Failed password for root from 198.51.100.7 port 40112 ssh2
+Jan 10 03:14:02 srv sshd[2055]: Accepted password for admin from 203.0.113.9 port 51999 ssh2
+Jan 10 07:52:19 srv sshd[2296]: Accepted publickey for jordan from 192.168.1.20 port 57660 ssh2""".splitlines()
+
+def lire(ligne):
+    mots = ligne.split()
+    # Jan 10 03:11:02 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51022 ssh2
+    return {"heure": mots[2], "resultat": mots[5], "compte": mots[8], "ip": mots[10]}
+
+df = pd.DataFrame([lire(l) for l in lignes])
+print(df)
+print()
+print("echecs par adresse :")
+print(df[df.resultat == "Failed"].ip.value_counts())
+print()
+print("premier succes :", df[df.resultat == "Accepted"].iloc[0].to_dict())`} />
+
 ## reconstruire l'histoire
 
 Trouver l'IP coupable n'est pas la fin de l'enquête, c'est le début. La question devient : une fois entré, qu'a fait l'attaquant ?
