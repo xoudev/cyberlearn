@@ -181,6 +181,18 @@ describe("lessonSyncOverview", () => {
     expect(o.unreadable[0]?.file).toBe("b.mdx");
   });
 
+  it("reads every lesson of the repository: one it cannot read is never imported", async () => {
+    // Nor is any lesson that needs it: twenty Linux lessons with a description
+    // over the 500 characters of the column were left out, and fifteen others
+    // refused for a prerequisite "introuvable".
+    const repository = findLessonsDir();
+    expect(repository).not.toBeNull();
+    m.findMany.mockResolvedValue([]);
+    const o = await lessonSyncOverview(repository ?? "");
+    expect(o.unreadable).toEqual([]);
+    expect(o.notImported.length).toBeGreaterThan(100);
+  });
+
   it("lists the files not imported yet so that each follows its prerequisites", async () => {
     const needs = (refCode: string, prereq: string): string =>
       file(refCode).replace("prerequisites: []", `prerequisites: ["${prereq}"]`);

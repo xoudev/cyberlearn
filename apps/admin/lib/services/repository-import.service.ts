@@ -20,7 +20,12 @@ import {
 } from "@cyberlearn/db/catalogue";
 import type { ImportValidationError } from "@cyberlearn/types";
 import { importValidatedLesson, validateMdxContent } from "./lesson-import.service";
-import { findLessonsDir, readRepositoryLessons } from "./lesson-sync.service";
+import {
+  findLessonsDir,
+  readLessonFile,
+  readRepositoryLessons,
+  type RepositoryLessonFile,
+} from "./lesson-sync.service";
 
 /**
  * Bringing what the repository holds into the database, from the console.
@@ -61,6 +66,37 @@ function declaredRefCode(content: string): string | null {
   return null;
 }
 
+const MISSING_PREREQUISITE = /^Prerequis introuvable: (\S+)$/;
+
+/**
+ * Says why a prerequisite is missing, from the repository's own files: no file
+ * declares it, its file is refused before it can be imported (the reason
+ * given), or it is simply not imported yet. "Introuvable" alone sent people
+ * looking for a lesson that was in the repository all along, under a
+ * frontmatter the sync could not read.
+ */
+function explainMissingPrerequisites(
+  errors: ImportValidationError[],
+  files: RepositoryLessonFile[],
+): ImportValidationError[] {
+  return errors.map((error) => {
+    const missing =
+      error.field === "prerequisites" ? MISSING_PREREQUISITE.exec(error.message) : null;
+    const refCode = missing?.[1];
+    if (refCode === undefined) return error;
+    const source = files.find((f) => declaredRefCode(f.content) === refCode);
+    if (!source) {
+      return { ...error, message: `${error.message} (aucun fichier du dépôt ne la déclare)` };
+    }
+    const read = readLessonFile(source);
+    const why =
+      "refCode" in read
+        ? `son fichier, ${source.file}, n'est pas encore importé : importe-le d'abord`
+        : `son fichier, ${source.file}, est refusé par l'import (${read.message})`;
+    return { ...error, message: `${error.message} : ${why}` };
+  });
+}
+
 /** Prisma's unique-constraint error, recognised without importing the runtime. */
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
@@ -87,9 +123,8 @@ export async function importLessonFromRepository(
     };
   }
 
-  const source = (await readRepositoryLessons(dir)).find(
-    (f) => declaredRefCode(f.content) === refCode,
-  );
+  const files = await readRepositoryLessons(dir);
+  const source = files.find((f) => declaredRefCode(f.content) === refCode);
   if (!source) {
     return {
       ok: false,
@@ -104,7 +139,7 @@ export async function importLessonFromRepository(
       ok: false,
       reason: "invalid",
       message: `${source.file} ne passe pas les contrôles de l'import.`,
-      errors: result.errors,
+      errors: explainMissingPrerequisites(result.errors, files),
     };
   }
 
