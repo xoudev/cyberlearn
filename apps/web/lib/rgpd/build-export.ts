@@ -149,6 +149,15 @@ export interface ExportPayload {
       createdAt: Date;
     }[];
   };
+  /** The mock exams handed in, with their score by module. */
+  mockExams: {
+    pathTitle: string;
+    score: number | null;
+    domains: unknown;
+    late: boolean;
+    startedAt: Date;
+    submittedAt: Date | null;
+  }[];
   /** The solutions published to challenges, hidden ones included. */
   challengeWriteups: {
     challengeTitle: string;
@@ -243,6 +252,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     questions,
     answers,
     writeups,
+    mockExams,
     tickets,
     notifications,
     skipWaivers,
@@ -401,6 +411,17 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         createdAt: true,
         updatedAt: true,
         challenge: { select: { title: true, slug: true } },
+      },
+    }),
+    prisma.mockExamAttempt.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        domains: true,
+        late: true,
+        startedAt: true,
+        submittedAt: true,
+        path: { select: { title: true } },
       },
     }),
     prisma.contactTicket.findMany({
@@ -666,6 +687,14 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         createdAt: a.createdAt,
       })),
     },
+    mockExams: mockExams.map((e) => ({
+      pathTitle: e.path.title,
+      score: e.score,
+      domains: e.domains,
+      late: e.late,
+      startedAt: e.startedAt,
+      submittedAt: e.submittedAt,
+    })),
     challengeWriteups: writeups.map((w) => ({
       challengeTitle: w.challenge.title,
       challengeSlug: w.challenge.slug,

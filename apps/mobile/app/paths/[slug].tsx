@@ -45,6 +45,9 @@ export default function PathDetail(): React.JSX.Element {
               params: { slug: slug ?? "", module: String(module), title: data.title },
             })
           }
+          onOpenMockExam={() =>
+            router.push({ pathname: "/mock-exam/[slug]", params: { slug: data.slug } })
+          }
           onRated={() => void refetch()}
         />
       )}
@@ -57,12 +60,14 @@ function PathBody({
   userId,
   onOpenLesson,
   onOpenSheet,
+  onOpenMockExam,
   onRated,
 }: {
   data: NonNullable<ReturnType<typeof usePathDetail>["data"]>;
   userId: string | undefined;
   onOpenLesson: (slug: string) => void;
   onOpenSheet: (module: number) => void;
+  onOpenMockExam: () => void;
   onRated: () => void;
 }): React.JSX.Element {
   const average = averageLine(data.avgRating, data.ratingsCount);
@@ -283,6 +288,21 @@ function PathBody({
       {total > 0 ? (
         <Rise index={3}>
           <PathFinalCard userId={userId} slug={data.slug} missionCount={total} />
+        </Rise>
+      ) : null}
+
+      {total > 0 ? (
+        <Rise index={3}>
+          <Card style={{ gap: 8 }}>
+            <Text variant="micro" style={{ color: colors.accent, letterSpacing: 1.5 }}>
+              {"// EXAMEN BLANC"}
+            </Text>
+            <Text variant="bodySm">
+              Trois questions par module, chronométrées, et le score par module, comme à une
+              certification : un entraînement, sans certificat ni XP.
+            </Text>
+            <GradientButton label="Passer un examen blanc" onPress={onOpenMockExam} />
+          </Card>
         </Rise>
       ) : null}
 

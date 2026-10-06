@@ -66,6 +66,7 @@ model User {
   questions         LessonQuestion[]
   answers           LessonAnswer[]
   challengeWriteups ChallengeWriteup[]
+  mockExamAttempts  MockExamAttempt[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -698,6 +699,7 @@ model Path {
   lessons      PathLesson[]
   modules      PathModule[]
   progress     UserPathProgress[]
+  mockExams    MockExamAttempt[]
   certificates Certificate[]
   ratings      Rating[]
   quiz         Quiz?
@@ -1930,4 +1932,34 @@ model ChallengeWriteup {
   @@unique([challengeId, userId])
   @@index([challengeId, isHidden])
   @@map("challenge_writeups")
+}
+
+/// A mock exam (examen blanc): a timed draw over a path's lesson quizzes, a few
+/// questions from each module, scored by module as a certification reports its
+/// domains. Practice only: no certificate, no XP, no waiting period. The drawn
+/// questions are referred to by lesson and quiz id with their option order;
+/// the answer key stays in the lessons, read on the server when it is scored.
+model MockExamAttempt {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  pathId           String    @db.Uuid
+  /// The drawn questions: lesson, quiz, domain, option order.
+  questions        Json
+  /// The shown option picked, by question index.
+  answers          Json?
+  /// Percent, once handed in.
+  score            Int?
+  /// The score per domain, as it was handed back.
+  domains          Json?
+  timeLimitMinutes Int
+  /// Handed in after the time allowed, and its minute of grace.
+  late             Boolean   @default(false)
+  startedAt        DateTime  @default(now())
+  submittedAt      DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path Path @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@index([userId, pathId, startedAt])
+  @@map("mock_exam_attempts")
 }
