@@ -141,8 +141,14 @@ interface ParsedFile {
   fields: LessonFields;
 }
 
-/** The file's fields, read from its frontmatter only. The full check runs on update. */
-function parseFile(f: RepositoryLessonFile): ParsedFile | { file: string; message: string } {
+/**
+ * The file's fields, read from its frontmatter only. The full check runs on
+ * update. A file refused here is listed as unreadable and never imported, so
+ * neither is any lesson that needs it.
+ */
+export function readLessonFile(
+  f: RepositoryLessonFile,
+): ParsedFile | { file: string; message: string } {
   let parsed: matter.GrayMatterFile<string>;
   try {
     parsed = matter(f.content);
@@ -262,7 +268,7 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
   if (dir === null) return empty;
 
   const files = await readRepositoryLessons(dir);
-  const parsed = files.map(parseFile);
+  const parsed = files.map(readLessonFile);
   const readable = parsed.filter((p): p is ParsedFile => "refCode" in p);
   const unreadable = parsed.filter(
     (p): p is { file: string; message: string } => !("refCode" in p),
@@ -397,7 +403,7 @@ export async function applyLessonUpdate(
 
   const files = await readRepositoryLessons(dir);
   const source = files
-    .map((f) => ({ f, p: parseFile(f) }))
+    .map((f) => ({ f, p: readLessonFile(f) }))
     .find(({ p }) => "refCode" in p && p.refCode === refCode);
   if (!source) {
     return {

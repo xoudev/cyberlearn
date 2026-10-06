@@ -110,10 +110,62 @@ describe("importLessonFromRepository", () => {
       ok: false,
       reason: "invalid",
       message: "f1/01008-le-bit.mdx ne passe pas les contrôles de l'import.",
-      errors,
+      errors: [
+        {
+          field: "prerequisites",
+          message: "Prerequis introuvable: CL-LSN-01007-V01 (aucun fichier du dépôt ne la déclare)",
+        },
+      ],
     });
     expect(m.importValidatedLesson).not.toHaveBeenCalled();
     expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("says when a missing prerequisite is a file the import refuses, and why", async () => {
+    // What happened to twenty Linux lessons: a description over 500
+    // characters, the file listed as unreadable, and every lesson after it
+    // refused with a bare "introuvable".
+    write("lessons/f1/01008-le-bit.mdx", LESSON);
+    write(
+      "lessons/f1/01007-avant.mdx",
+      `---\nrefCode: CL-LSN-01007-V01\nslug: avant\ntitle: "Avant"\ndescription: "${"x".repeat(501)}"\ncategory: DEV\ndifficulty: BEGINNER\nestimatedMinutes: 20\nxpReward: 50\nprerequisites: []\n---\n\nTexte.\n`,
+    );
+    m.validateMdxContent.mockResolvedValue({
+      valid: false,
+      errors: [{ field: "prerequisites", message: "Prerequis introuvable: CL-LSN-01007-V01" }],
+      warnings: [],
+    });
+    const result = await importLessonFromRepository(
+      "CL-LSN-01008-V01",
+      "admin-1",
+      path.join(root, "lessons"),
+    );
+    expect(result.ok).toBe(false);
+    const message = result.ok ? "" : (result.errors?.[0]?.message ?? "");
+    expect(message).toContain("son fichier, f1/01007-avant.mdx, est refusé par l'import");
+    expect(message).toContain("description");
+  });
+
+  it("says when a missing prerequisite is only waiting to be imported", async () => {
+    write("lessons/f1/01008-le-bit.mdx", LESSON);
+    write(
+      "lessons/f1/01007-avant.mdx",
+      `---\nrefCode: CL-LSN-01007-V01\nslug: avant\ntitle: "Avant"\ndescription: "Ce qui vient avant le bit."\ncategory: DEV\ndifficulty: BEGINNER\nestimatedMinutes: 20\nxpReward: 50\nprerequisites: []\n---\n\nTexte.\n`,
+    );
+    m.validateMdxContent.mockResolvedValue({
+      valid: false,
+      errors: [{ field: "prerequisites", message: "Prerequis introuvable: CL-LSN-01007-V01" }],
+      warnings: [],
+    });
+    const result = await importLessonFromRepository(
+      "CL-LSN-01008-V01",
+      "admin-1",
+      path.join(root, "lessons"),
+    );
+    const message = result.ok ? "" : (result.errors?.[0]?.message ?? "");
+    expect(message).toBe(
+      "Prerequis introuvable: CL-LSN-01007-V01 : son fichier, f1/01007-avant.mdx, n'est pas encore importé : importe-le d'abord",
+    );
   });
 
   it("imports the file as the import page would, and records where it came from", async () => {
