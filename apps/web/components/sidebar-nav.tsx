@@ -121,6 +121,14 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
           <path d="M9 12.5l3.5-3.5M7 12.5L3.5 9M11.5 13.5l2-2M4.5 13.5l-2-2" />
         </svg>
       );
+    case "tournament":
+      // A flag on its pole: the CTF's prize.
+      return (
+        <svg {...STROKE}>
+          <path d="M3.5 14.5V1.5" />
+          <path d="M3.5 2.5h8l-2 3 2 3h-8" />
+        </svg>
+      );
     case "classes":
       return (
         <svg {...STROKE}>

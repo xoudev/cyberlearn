@@ -21,6 +21,7 @@ export type SidebarIcon =
   | "forum"
   | "duel"
   | "classes"
+  | "tournament"
   | "support";
 
 export interface SidebarItem {
@@ -70,7 +71,11 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
     { href: "/duels", label: "Duels", icon: "duel", count: null },
   ];
   if (input.hasClasses) {
-    community.push({ href: "/my-class", label: "Mes classes", icon: "classes", count: null });
+    // A tournament brings classes together: without one, there is none to play.
+    community.push(
+      { href: "/my-class", label: "Mes classes", icon: "classes", count: null },
+      { href: "/tournaments", label: "Tournois", icon: "tournament", count: null },
+    );
   }
   // Help is somebody answering: it belongs with the people, not under the account.
   community.push({ href: "/support", label: "Aide", icon: "support", count: null });

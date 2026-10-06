@@ -159,6 +159,13 @@ export interface ExportPayload {
     finishedAt: Date | null;
     answers: { index: number; selected: number; correct: boolean; answeredAt: Date }[];
   }[];
+  /** The flags found in CTF tournaments, and what each was worth there. */
+  tournamentSolves: {
+    tournamentTitle: string;
+    challengeTitle: string;
+    points: number;
+    solvedAt: Date;
+  }[];
   /** The mock exams handed in, with their score by module. */
   mockExams: {
     pathTitle: string;
@@ -264,6 +271,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     writeups,
     mockExams,
     duels,
+    tournamentSolves,
     tickets,
     notifications,
     skipWaivers,
@@ -448,6 +456,16 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
           where: { userId },
           select: { index: true, selected: true, correct: true, answeredAt: true },
         },
+      },
+    }),
+    prisma.tournamentSolve.findMany({
+      where: { userId },
+      orderBy: { solvedAt: "asc" },
+      select: {
+        points: true,
+        solvedAt: true,
+        tournament: { select: { title: true } },
+        challenge: { select: { title: true } },
       },
     }),
     prisma.contactTicket.findMany({
@@ -721,6 +739,12 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       createdAt: d.createdAt,
       finishedAt: d.finishedAt,
       answers: d.answers,
+    })),
+    tournamentSolves: tournamentSolves.map((t) => ({
+      tournamentTitle: t.tournament.title,
+      challengeTitle: t.challenge.title,
+      points: t.points,
+      solvedAt: t.solvedAt,
     })),
     mockExams: mockExams.map((e) => ({
       pathTitle: e.path.title,

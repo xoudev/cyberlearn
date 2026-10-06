@@ -31,6 +31,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Classement", route: "/leaderboard" },
   { label: "Amis", route: "/friends" },
   { label: "Duels", route: "/duels" },
+  { label: "Tournois", route: "/tournaments" },
   { label: "Bloc-notes", route: "/notes" },
   { label: "Casier", route: "/locker" },
   { label: "Révisions", route: "/revisions" },

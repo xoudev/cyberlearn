@@ -54,7 +54,7 @@ describe("sidebarGroups", () => {
     ]);
   });
 
-  it("ends the community with the help page, after the classes when there are some", () => {
+  it("ends the community with the help page, after the classes and their tournaments", () => {
     const without = sidebarGroups(BASE).find((g) => g.label === "Communauté");
     expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/duels", "/support"]);
     const withClasses = sidebarGroups({ ...BASE, hasClasses: true }).find(
@@ -64,6 +64,7 @@ describe("sidebarGroups", () => {
       "/forum",
       "/duels",
       "/my-class",
+      "/tournaments",
       "/support",
     ]);
   });

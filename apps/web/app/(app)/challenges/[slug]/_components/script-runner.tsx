@@ -12,6 +12,13 @@ interface Props {
   displayStatus: DisplayStatus;
   maxAttempts: number;
   userAttempts: number;
+  /**
+   * Where the flag goes, when not to the catalogue: a tournament counts its
+   * own flags (app/(app)/tournaments), with no cap on attempts.
+   */
+  submitFlag?: (flag: string) => Promise<{ correct: boolean; error?: string }>;
+  /** Said in place of the flag field when no flag can be given here now. */
+  flagNotice?: string;
 }
 
 type RunnerState = "loading" | "ready" | "running" | "error";
@@ -263,6 +270,8 @@ export function ScriptRunner({
   displayStatus,
   maxAttempts,
   userAttempts,
+  submitFlag,
+  flagNotice,
 }: Props): React.ReactElement {
   const [code, setCode] = useState(starterCode);
   const [outputLines, setOutputLines] = useState<OutputLine[]>([
@@ -274,8 +283,10 @@ export function ScriptRunner({
   const runIdRef = useRef(0);
 
   const [flagState, flagAction, flagPending] = useActionState(
-    (_prev: { correct: boolean; error?: string }, formData: FormData) =>
-      submitFlagAction(challengeId, (formData.get("flag") as string | null) ?? ""),
+    (_prev: { correct: boolean; error?: string }, formData: FormData) => {
+      const flag = (formData.get("flag") as string | null) ?? "";
+      return submitFlag === undefined ? submitFlagAction(challengeId, flag) : submitFlag(flag);
+    },
     { correct: false },
   );
 
@@ -671,6 +682,18 @@ export function ScriptRunner({
             }}
           />
           Challenge résolu · FLAG correct
+        </div>
+      ) : flagNotice !== undefined ? (
+        <div
+          className="mono-label"
+          style={{
+            borderTop: "1px solid var(--color-border-subtle)",
+            background: "rgba(5,4,26,0.5)",
+            padding: "16px 20px",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          {flagNotice}
         </div>
       ) : isLocked ? (
         <div

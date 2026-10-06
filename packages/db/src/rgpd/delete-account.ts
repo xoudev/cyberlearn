@@ -25,6 +25,7 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *   LessonQuestion  userId → null (the thread stays readable)
  *   LessonAnswer    userId → null
  *   Rating          userId → null (aggregates stay honest)
+ *   TournamentSolve userId → null (the team keeps the points of the flag)
  *   ContactTicket   userId → null, email → null
  *   AuditLog        actorId → null, actorHashedId → HMAC, anonymized → true
  *   Lesson          authorId → null, by the foreign key's ON DELETE SET NULL
@@ -50,6 +51,7 @@ export interface DeletionSummary {
   questionsAnonymized: number;
   answersAnonymized: number;
   writeupsAnonymized: number;
+  tournamentSolvesAnonymized: number;
   ratingsAnonymized: number;
   contactTicketsAnonymized: number;
   auditLogsAnonymized: number;
@@ -131,6 +133,7 @@ export async function deleteAccount(
       questionsAnonymized,
       answersAnonymized,
       writeupsAnonymized,
+      tournamentSolvesAnonymized,
       ratingsAnonymized,
       contactTicketsAnonymized,
       auditLogsAnonymized,
@@ -139,6 +142,7 @@ export async function deleteAccount(
       tx.lessonQuestion.count({ where: { userId } }),
       tx.lessonAnswer.count({ where: { userId } }),
       tx.challengeWriteup.count({ where: { userId } }),
+      tx.tournamentSolve.count({ where: { userId } }),
       tx.rating.count({ where: { userId } }),
       tx.contactTicket.count({ where: { userId } }),
       tx.auditLog.count({ where: { actorId: userId } }),
@@ -166,6 +170,7 @@ export async function deleteAccount(
     await tx.lessonQuestion.updateMany({ where: { userId }, data: { userId: null } });
     await tx.lessonAnswer.updateMany({ where: { userId }, data: { userId: null } });
     await tx.challengeWriteup.updateMany({ where: { userId }, data: { userId: null } });
+    await tx.tournamentSolve.updateMany({ where: { userId }, data: { userId: null } });
     await tx.rating.updateMany({ where: { userId }, data: { userId: null } });
     await tx.contactTicket.updateMany({ where: { userId }, data: { userId: null, email: null } });
 
@@ -196,6 +201,7 @@ export async function deleteAccount(
           questionsAnonymized,
           answersAnonymized,
           writeupsAnonymized,
+          tournamentSolvesAnonymized,
           ratingsAnonymized,
           contactTicketsAnonymized,
           auditLogsAnonymized,
@@ -210,6 +216,7 @@ export async function deleteAccount(
       questionsAnonymized,
       answersAnonymized,
       writeupsAnonymized,
+      tournamentSolvesAnonymized,
       ratingsAnonymized,
       contactTicketsAnonymized,
       auditLogsAnonymized,

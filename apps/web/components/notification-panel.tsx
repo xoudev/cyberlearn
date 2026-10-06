@@ -34,6 +34,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   FRIEND_ACCEPTED: "",
   DUEL_INVITE: "⚔",
   DUEL_RESULT: "🏁",
+  TOURNAMENT_ANNOUNCED: "🏆",
 };
 
 /** The two types that get a drawn mark instead of a character. */

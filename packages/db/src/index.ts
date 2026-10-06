@@ -79,6 +79,7 @@ export { exerciseRepository } from "./repositories/exercise.repository.js";
 export { writeupRepository } from "./repositories/writeup.repository.js";
 export { mockExamRepository } from "./repositories/mock-exam.repository.js";
 export { duelRepository } from "./repositories/duel.repository.js";
+export { tournamentRepository } from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
 export {

@@ -27,6 +27,7 @@ const { mockTx, mockPrisma, mockStorageRemove, mockDeleteUser, mockCleanupError,
       lessonQuestion: { count: vi.fn(), updateMany: vi.fn() },
       lessonAnswer: { count: vi.fn(), updateMany: vi.fn() },
       challengeWriteup: { count: vi.fn(), updateMany: vi.fn() },
+      tournamentSolve: { count: vi.fn(), updateMany: vi.fn() },
       rating: { count: vi.fn(), updateMany: vi.fn() },
       contactTicket: { count: vi.fn(), updateMany: vi.fn() },
       auditLog: { count: vi.fn(), updateMany: vi.fn(), create: vi.fn() },
@@ -94,6 +95,7 @@ beforeEach(() => {
   mockTx.lessonQuestion.count.mockResolvedValue(1);
   mockTx.lessonAnswer.count.mockResolvedValue(2);
   mockTx.challengeWriteup.count.mockResolvedValue(1);
+  mockTx.tournamentSolve.count.mockResolvedValue(4);
   mockTx.rating.count.mockResolvedValue(1);
   mockTx.contactTicket.count.mockResolvedValue(1);
   mockTx.auditLog.count.mockResolvedValue(3);
@@ -108,6 +110,7 @@ beforeEach(() => {
   mockTx.lessonQuestion.updateMany.mockResolvedValue({ count: 1 });
   mockTx.lessonAnswer.updateMany.mockResolvedValue({ count: 2 });
   mockTx.challengeWriteup.updateMany.mockResolvedValue({ count: 1 });
+  mockTx.tournamentSolve.updateMany.mockResolvedValue({ count: 4 });
   mockTx.rating.updateMany.mockResolvedValue({ count: 1 });
   mockTx.contactTicket.updateMany.mockResolvedValue({ count: 1 });
   mockTx.auditLog.updateMany.mockResolvedValue({ count: 3 });
@@ -125,6 +128,7 @@ describe("happy path", () => {
     expect(summary.questionsAnonymized).toBe(1);
     expect(summary.answersAnonymized).toBe(2);
     expect(summary.writeupsAnonymized).toBe(1);
+    expect(summary.tournamentSolvesAnonymized).toBe(4);
     expect(summary.ratingsAnonymized).toBe(1);
     expect(summary.contactTicketsAnonymized).toBe(1);
     expect(summary.auditLogsAnonymized).toBe(3);
@@ -215,6 +219,7 @@ describe("happy path", () => {
             questionsAnonymized: 1,
             answersAnonymized: 2,
             writeupsAnonymized: 1,
+            tournamentSolvesAnonymized: 4,
             ratingsAnonymized: 1,
             contactTicketsAnonymized: 1,
             auditLogsAnonymized: 3,
