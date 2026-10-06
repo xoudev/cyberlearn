@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { classRepository, lessonsVisibleTo, prisma } from "@cyberlearn/db";
+import { classRepository, exerciseRepository, lessonsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
@@ -84,6 +84,9 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   const completions = await classRepository.findCompletions(rosterMemberIds, [
     ...new Set(assignments.map((a) => a.lessonId)),
   ]);
+  // The exercises each student finished inside lessons (the real terminal,
+  // the Python challenges), as the pages verified them: shown, not rewarded.
+  const exercisesByUser = await exerciseRepository.countByUsers(rosterMemberIds);
 
   const now = Date.now();
   const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
@@ -210,6 +213,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     taught,
     rosters,
     completedByUser,
+    exercisesByUser,
     workByClass,
     ownByClass,
     pathsByClass,
@@ -321,6 +325,7 @@ function buildTaught(
   taught: Awaited<ReturnType<typeof classRepository.findForTeacher>>,
   rosters: Map<string, Awaited<ReturnType<typeof classRepository.findMembersVisibleTo>>>,
   completedByUser: Map<string, number>,
+  exercisesByUser: Map<string, number>,
   workByClass: Map<string, ClassWorkItem[]>,
   ownByClass: Map<string, ClassLessonRow[]>,
   pathsByClass: Map<string, ClassPathRow[]>,
@@ -351,6 +356,7 @@ function buildTaught(
           username: m.user.username,
           level: m.user.level,
           completed: completedByUser.get(m.user.id) ?? 0,
+          exercises: exercisesByUser.get(m.user.id) ?? 0,
           activeThisWeek: m.user.lastActiveAt.getTime() >= activeSince,
         })),
       })),

@@ -69,6 +69,7 @@ model User {
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
   challengeProgress UserChallengeProgress[]
+  exerciseCompletions ExerciseCompletion[]
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
   lessonPreviews    LessonPreview[]
@@ -507,6 +508,7 @@ model Lesson {
 
   pathLessons      PathLesson[]
   progress         UserLessonProgress[]
+  exerciseCompletions ExerciseCompletion[]
   quizAnswers      LessonQuizAnswer[]
   quizReports      QuizReport[]
   reviewSchedules  ReviewSchedule[]
@@ -1754,6 +1756,7 @@ enum XpSource {
   QUEST
   CHALLENGE
   REVIEW
+  EXERCISE
 }
 
 // One row per XP credit, written inside creditXp's transaction. Append-only and
@@ -1874,4 +1877,31 @@ model ForumPost {
   @@index([topicId, isHidden, createdAt])
   @@index([authorId])
   @@map("forum_posts")
+}
+
+/// What kind of exercise a lesson's page verified.
+enum ExerciseKind {
+  TERMINAL
+  PYTHON
+}
+
+/// One exercise finished inside a lesson, as the page verified it: the real
+/// terminal's checks all green, a Python challenge's tests all passed. The
+/// browser is the judge, so a row can be forged: a teacher sees it as done and
+/// it pays a little XP, never the rewards of a flag the server checks.
+model ExerciseCompletion {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @db.Uuid
+  lessonId    String       @db.Uuid
+  /// The exercise within the lesson: a PythonChallenge's id, a LinuxTerminal's title.
+  exerciseId  String       @db.VarChar(200)
+  kind        ExerciseKind
+  completedAt DateTime     @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, exerciseId])
+  @@index([lessonId])
+  @@map("exercise_completions")
 }

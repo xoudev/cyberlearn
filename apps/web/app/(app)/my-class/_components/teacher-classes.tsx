@@ -36,6 +36,8 @@ export interface TaughtStudent {
   username: string | null;
   level: number;
   completed: number;
+  /** Exercises finished inside lessons, as the pages verified them. */
+  exercises: number;
   activeThisWeek: boolean;
 }
 
@@ -211,7 +213,8 @@ function ClassCard({
                       label="Leçons terminées, par rapport au premier"
                     />
                     <span className="cls-person__meta">
-                      {levelLabel(s.level)} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
+                      {levelLabel(s.level)} · {s.completed} leçon{s.completed > 1 ? "s" : ""} ·{" "}
+                      {s.exercises} exercice{s.exercises > 1 ? "s" : ""}
                       {!s.activeThisWeek && " · inactif"}
                     </span>
                   </li>
