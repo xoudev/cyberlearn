@@ -41,6 +41,55 @@
   border: 1px solid var(--color-border-subtle);
 }
 
+/* A page that loads shows its shape, not its colours. A skeleton is drawn on
+   its page's own classes, so it would inherit an accent border, a glow, a
+   tinted wash or a coloured bar: inside a loading root (aria-busy="true"),
+   every border takes the neutral hairline, nothing casts a shadow, and only
+   the shimmer blocks keep a background image. */
+/* The accents themselves take a neutral tone in a loading root, so a dash,
+   a dot or a mark drawn in one (often by a pseudo-element) goes neutral too.
+   The aliases are restated: :root resolved them already. */
+[aria-busy="true"] {
+  --color-brand-turquoise: var(--color-border-default);
+  --color-brand-blue: var(--color-border-default);
+  --brand-turquoise: var(--color-border-default);
+  --brand-blue: var(--color-border-default);
+  --cosmetic-accent: var(--color-border-default);
+  --cosmetic-frame-accent: var(--color-border-default);
+  --cosmetic-frame-glow: transparent;
+  --teal: var(--color-border-default);
+  --amber: var(--color-border-default);
+  --warning: var(--color-border-default);
+  --red: var(--color-border-default);
+  --danger: var(--color-border-default);
+  --color-success: var(--color-border-default);
+  --color-warning: var(--color-border-default);
+  --color-danger: var(--color-border-default);
+  --color-info: var(--color-border-default);
+  --color-rarity-common: var(--color-border-default);
+  --color-rarity-rare: var(--color-border-default);
+  --color-rarity-epic: var(--color-border-default);
+  --color-rarity-legendary: var(--color-border-default);
+  --color-category-cybersec: var(--color-border-default);
+  --color-category-dev: var(--color-border-default);
+  --color-category-network: var(--color-border-default);
+}
+[aria-busy="true"],
+[aria-busy="true"] *,
+[aria-busy="true"] *::before,
+[aria-busy="true"] *::after {
+  border-color: var(--color-border-subtle) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+[aria-busy="true"],
+[aria-busy="true"] *:not(.cl-skel),
+[aria-busy="true"] *::before,
+[aria-busy="true"] *::after {
+  background-image: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cl-skel {
     animation: none;
