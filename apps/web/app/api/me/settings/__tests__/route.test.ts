@@ -9,7 +9,7 @@ const { auth, loadSettings, logger } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth", () => auth);
-vi.mock("@/app/(app)/settings/_lib/load-settings", () => ({ loadSettings }));
+vi.mock("@/app/(app)/_settings/_lib/load-settings", () => ({ loadSettings }));
 vi.mock("@cyberlearn/lib/logger", () => ({
   logger,
   errorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),

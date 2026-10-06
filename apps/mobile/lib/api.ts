@@ -76,7 +76,7 @@ export async function updatePasswordApi(input: {
 
 /**
  * Edits the name shown, the bio and, when given, the avatar (one of the
- * built-in ones), through the site's service (/settings/profile).
+ * built-in ones), through the site's service (/api/mobile/settings/profile).
  */
 export async function updateProfileApi(input: {
   displayName: string;
@@ -690,7 +690,7 @@ export async function fetchMyClass(): Promise<MyClassData> {
   return { classes: body.classes, work: body.work };
 }
 
-// ── The reader's own moderation record (the site's /settings/moderation) ──────
+// ── The reader's own moderation record (the site's settings, Modération) ──────
 
 /** One recorded decision about the reader's own writing. */
 export interface ModerationEvent {

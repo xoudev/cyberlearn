@@ -10,7 +10,7 @@ import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
-import { useSettingsDrawer } from "@/app/(app)/settings/_components/SettingsDrawer";
+import { useSettingsDrawer } from "@/app/(app)/_settings/_components/SettingsDrawer";
 
 // Keyed on the enum rather than on string: a new NotificationType now fails to
 // compile until it has an icon, instead of reaching the panel with a blank

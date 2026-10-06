@@ -3,7 +3,7 @@ import { moderationRepository } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
 /**
- * The reader's own moderation record, as /settings/moderation shows it: when,
+ * The reader's own moderation record, as the site's settings show it: when,
  * where, the excerpt, how it ended. Served by the API because the table is
  * readable by admins only under RLS: each row also carries the score and the
  * rules that fired, which the author is never shown. The repository's select

@@ -1,6 +1,6 @@
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
-import { loadSettings } from "@/app/(app)/settings/_lib/load-settings";
+import { loadSettings } from "@/app/(app)/_settings/_lib/load-settings";
 
 /**
  * Every settings section of the caller, in one answer: what the settings

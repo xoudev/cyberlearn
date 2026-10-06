@@ -60,8 +60,8 @@
 | `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande |
 | `/wrapped` | Récap annuel, ouvert du 1er décembre au 7 janvier |
 | `/changelog` | Notes de version |
-| `/profile` · `/profile/edit` | Profil et édition |
-| `/settings` | Réglages : `account`, `profile`, `preferences`, `notifications`, `privacy`, `moderation`, `data` |
+| `/profile` | Profil |
+| `/settings/<section>` | Pas de page : redirection vers `/dashboard?settings=<section>`, où le volet des paramètres s'ouvre sur la section (`profile`, `privacy`, `preferences`, `notifications`, `moderation`, `account`, `data`). `/profile/edit` redirige vers la section profil |
 
 #### API Routes
 
@@ -160,7 +160,7 @@
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
 - Préférences : thème (dark/light/system), locale, e-mails de notification, rappels de révision
-- Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans `(app)/layout.tsx`, les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Pages et volet partagent les chargeurs (`settings/_lib/load-settings.ts`) et les vues de section ; un rechargement ou un lien direct ouvre la page complète
+- Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans `(app)/layout.tsx`, les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse
 
 #### Notifications
 - 15 types : REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED,

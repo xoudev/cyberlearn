@@ -31,7 +31,6 @@ export async function uploadAvatarAction(
   if (!result.ok) return { error: result.error };
 
   // Refresh the surfaces that show the avatar (the navbar lives in the app layout).
-  revalidatePath("/settings/profile");
   revalidatePath("/profile");
   revalidatePath("/", "layout");
 
