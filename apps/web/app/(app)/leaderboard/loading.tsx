@@ -75,7 +75,7 @@ function PodiumCardSkeleton({ gold }: { gold: boolean }): React.ReactElement {
 
 function PlayerCardSkeleton(): React.ReactElement {
   return (
-    <li className={`card card--sunken ${styles.player}`}>
+    <li className={["card card--sunken", styles.player].join(" ")}>
       <div className={styles.playerTop}>
         <Skeleton w={38} h={24} style={{ margin: "3px 0" }} />
       </div>
