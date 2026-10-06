@@ -716,25 +716,6 @@ function CatalogCard({
           </>
         )}
 
-        {/* Coordinate label top-left */}
-        <span
-          style={{
-            position: "absolute",
-            top: 8,
-            left: 8,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9.5,
-            letterSpacing: "0.14em",
-            color: "var(--color-text-muted)",
-            background: "rgba(3,2,25,0.7)",
-            padding: "2px 6px",
-            border: "1px solid rgba(42,37,96,0.5)",
-            zIndex: 2,
-          }}
-        >
-          // {catLabel}
-        </span>
-
         {/* Lesson ref code top-right */}
         {refCode !== undefined && (
           <span
