@@ -1,101 +1,110 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import styles from "./_components/leaderboard.module.css";
 
-// Grid template shared by the leaderboard header + rows (mirrors the real table).
-const ROW_COLS = "80px minmax(0,1fr) 160px 130px 120px";
+/**
+ * The leaderboard while it loads, drawn on the page's own classes and layout
+ * (LeaderboardClient.tsx, leaderboard.module.css): the breadcrumb, the title
+ * with its `tabs`, the meta strip, the `cl-podium` of three (inline-styled
+ * cards with no class, so `SkeletonCard`), the `position` banner, and the
+ * `players` grid of `card card--sunken` player cards.
+ */
 
-// Bracket-corner border used by the real podium / banner surfaces.
-const SURFACE_BORDER = "1px solid var(--color-border-default)";
-const SURFACE_BG = "rgba(5,4,26,0.6)";
+/**
+ * The podium's stacking below 1280px. LeaderboardClient writes this rule in
+ * its own inline `<style>`, which the loading state cannot import: the same
+ * rule, so the podium stacks at the same width.
+ */
+const PODIUM_RULES = `
+  @media (max-width: 1279px) {
+    .cl-podium {
+      grid-template-columns: min(100%, 440px) !important;
+      justify-content: center;
+      align-items: stretch !important;
+      gap: 20px !important;
+      margin-bottom: 56px !important;
+    }
+    .cl-podium > * { transform: none !important; }
+    .cl-podium > :nth-child(1) { order: 2; }
+    .cl-podium > :nth-child(2) { order: 1; }
+    .cl-podium > :nth-child(3) { order: 3; }
+  }
+`;
 
-function PodiumSkeleton({ tall }: { tall: boolean }): React.ReactElement {
+/** Global, Amis, Ligue, Ce mois, Cette semaine: each label's width in 11px mono. */
+const TAB_WIDTHS = [57, 38, 48, 66, 124];
+
+function PodiumCardSkeleton({ gold }: { gold: boolean }): React.ReactElement {
   return (
-    <div
+    <SkeletonCard
       style={{
         position: "relative",
-        background: SURFACE_BG,
-        border: SURFACE_BORDER,
         padding: "28px 22px 26px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        minHeight: tall ? 440 : 380,
-        transform: tall ? undefined : "translateY(20px)",
+        minHeight: gold ? 440 : 380,
+        transform: gold ? undefined : "translateY(20px)",
       }}
     >
-      {/* rank plate */}
-      <Skeleton w={120} h={26} style={{ position: "absolute", top: -13 }} />
-      {/* hex avatar */}
       <Skeleton
-        w={tall ? 100 : 80}
-        h={tall ? 115 : 92}
-        radius={12}
-        style={{ margin: "14px 0 18px" }}
+        w={124}
+        h={31}
+        style={{ position: "absolute", top: -18, left: "50%", transform: "translateX(-50%)" }}
       />
-      {/* handle */}
-      <Skeleton w={tall ? 200 : 160} h={tall ? 26 : 22} style={{ marginBottom: 12 }} />
-      {/* sub-handle */}
-      <Skeleton w={120} h={11} style={{ marginBottom: 18 }} />
-      {/* XP value */}
-      <Skeleton w={tall ? 180 : 140} h={tall ? 48 : 36} style={{ marginBottom: 16 }} />
-      {/* level badge */}
-      <Skeleton w={150} h={28} style={{ marginBottom: 14 }} />
-      {/* streak */}
-      <Skeleton w={110} h={13} />
-    </div>
+      <Skeleton w={gold ? 100 : 80} h={gold ? 115 : 92} style={{ margin: "14px 0 18px" }} />
+      <Skeleton w={gold ? 170 : 140} h={gold ? 26 : 22} style={{ marginBottom: 8 }} />
+      <Skeleton w={110} h={11} style={{ marginBottom: 20 }} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 8,
+          marginBottom: 14,
+        }}
+      >
+        <Skeleton w={gold ? 150 : 112} h={gold ? 48 : 36} />
+        <Skeleton w={22} h={12} />
+      </div>
+      <Skeleton w={170} h={30} />
+      <Skeleton w={110} h={11} style={{ marginTop: 14 }} />
+    </SkeletonCard>
   );
 }
 
-function TableRowSkeleton(): React.ReactElement {
+function PlayerCardSkeleton(): React.ReactElement {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: ROW_COLS,
-        alignItems: "center",
-        gap: 16,
-        padding: "14px 24px",
-        borderBottom: "1px solid rgba(31,27,71,0.5)",
-      }}
-    >
-      {/* rank */}
-      <Skeleton w={44} h={22} />
-      {/* player */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-        <Skeleton w={28} h={32} radius={8} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-          <Skeleton w={150} h={14} />
-          <Skeleton w={100} h={11} />
+    <li className={`card card--sunken ${styles.player}`}>
+      <div className={styles.playerTop}>
+        <Skeleton w={38} h={24} style={{ margin: "3px 0" }} />
+      </div>
+      <div className={styles.playerIdentity}>
+        <Skeleton w={44} h={51} style={{ flexShrink: 0 }} />
+        <div className={styles.identity}>
+          <Skeleton w="62%" h={15} style={{ margin: "2px 0" }} />
+          <Skeleton w="78%" h={10} />
         </div>
       </div>
-      {/* XP */}
-      <Skeleton w={90} h={18} style={{ justifySelf: "end" }} />
-      {/* level */}
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-        <Skeleton w={20} h={18} />
-        <Skeleton w={64} h={18} />
+      <div className={styles.playerBottom}>
+        <Skeleton w={104} h={23} style={{ margin: "3px 0" }} />
+        <Skeleton w={44} h={11} />
       </div>
-      {/* streak */}
-      <Skeleton w={56} h={18} style={{ justifySelf: "end" }} />
-    </div>
+    </li>
   );
 }
 
 export default function LeaderboardLoading(): React.ReactElement {
-  const podium = [
-    { id: "silver", tall: false },
-    { id: "gold", tall: true },
-    { id: "bronze", tall: false },
-  ];
-  const rowCount = 8;
-
   return (
-    <div className="page-container">
-      {/* Breadcrumb */}
-      <Skeleton w={260} h={13} style={{ marginBottom: 28 }} />
+    <div className="page-container" aria-busy="true" aria-label="Chargement du classement">
+      <style>{PODIUM_RULES}</style>
 
-      {/* Head: eyebrow + title, with filter pills on the right */}
+      <div className="pg-crumb" aria-hidden="true">
+        <Skeleton w={210} h={12} />
+      </div>
+
       <div
+        aria-hidden="true"
         style={{
           display: "flex",
           alignItems: "flex-end",
@@ -106,29 +115,23 @@ export default function LeaderboardLoading(): React.ReactElement {
         }}
       >
         <div>
-          <Skeleton w={320} h={12} style={{ marginBottom: 14 }} />
-          <Skeleton w={560} h={60} style={{ maxWidth: "100%" }} />
+          <Skeleton w={150} h={12} style={{ marginBottom: 17 }} />
+          <Skeleton w={620} h="clamp(40px, 5.5vw, 72px)" style={{ maxWidth: "100%" }} />
         </div>
-        {/* Filter pills */}
-        <div
-          style={{
-            display: "inline-flex",
-            gap: 3,
-            border: SURFACE_BORDER,
-            background: "rgba(5,4,26,0.5)",
-            padding: 3,
-          }}
-        >
-          {["global", "month", "week"].map((id) => (
-            <Skeleton key={id} w={120} h={38} />
+        <div className="tabs">
+          {TAB_WIDTHS.map((w) => (
+            <div key={w} className="tabs__tab">
+              <Skeleton w={w} h={11} style={{ margin: "2px 0" }} />
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Meta strip */}
       <div
+        aria-hidden="true"
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           gap: 16,
           margin: "18px 0 48px",
@@ -136,13 +139,13 @@ export default function LeaderboardLoading(): React.ReactElement {
           borderBottom: "1px dashed var(--color-border-default)",
         }}
       >
-        {[140, 90, 70, 110].map((w, i) => (
-          <Skeleton key={String(i)} w={w} h={11} />
-        ))}
+        <Skeleton w={150} h={11} />
+        <Skeleton w={170} h={11} />
       </div>
 
-      {/* Podium */}
       <section
+        className="cl-podium"
+        aria-hidden="true"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1.15fr 1fr",
@@ -151,91 +154,31 @@ export default function LeaderboardLoading(): React.ReactElement {
           marginBottom: 96,
         }}
       >
-        {podium.map((p) => (
-          <PodiumSkeleton key={p.id} tall={p.tall} />
-        ))}
+        <PodiumCardSkeleton gold={false} />
+        <PodiumCardSkeleton gold />
+        <PodiumCardSkeleton gold={false} />
       </section>
 
-      {/* Your position banner */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "auto auto 1fr auto auto",
-          alignItems: "center",
-          gap: 32,
-          padding: "24px 32px 24px 36px",
-          marginBottom: 56,
-          background: SURFACE_BG,
-          border: SURFACE_BORDER,
-          borderLeft: "3px solid var(--cosmetic-accent)",
-        }}
-      >
-        <Skeleton w={110} h={28} />
-        <Skeleton w={90} h={64} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          <Skeleton w={200} h={24} />
-          <Skeleton w={160} h={11} />
+      <div className={styles.position} aria-hidden="true">
+        <Skeleton w={58} h={32} style={{ margin: "3px 0" }} />
+        <div className={styles.identity}>
+          <Skeleton w={210} h={10} style={{ maxWidth: "100%" }} />
+          <Skeleton w={170} h={10} style={{ maxWidth: "100%" }} />
         </div>
-        <span
-          style={{ width: 1, alignSelf: "stretch", background: "var(--color-border-default)" }}
-        />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-          <Skeleton w={70} h={10} />
-          <Skeleton w={100} h={28} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-          <Skeleton w={90} h={10} />
-          <Skeleton w={60} h={28} />
-        </div>
-      </section>
-
-      {/* Table */}
-      <div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <Skeleton w={220} h={12} />
-          <Skeleton w={120} h={11} />
-        </div>
-
-        <div
-          style={{
-            position: "relative",
-            border: SURFACE_BORDER,
-            background: "rgba(5,4,26,0.5)",
-            overflow: "hidden",
-          }}
-        >
-          {/* Table header */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: ROW_COLS,
-              alignItems: "center",
-              gap: 16,
-              padding: "12px 24px",
-              borderBottom: SURFACE_BORDER,
-              background: "rgba(0,0,0,0.25)",
-            }}
-          >
-            <Skeleton w={16} h={10} />
-            <Skeleton w={60} h={10} />
-            <Skeleton w={60} h={10} style={{ justifySelf: "end" }} />
-            <Skeleton w={50} h={10} />
-            <Skeleton w={50} h={10} style={{ justifySelf: "end" }} />
-          </div>
-
-          {/* Rows */}
-          {Array.from({ length: rowCount }).map((_, i) => (
-            <TableRowSkeleton key={String(i)} />
-          ))}
-        </div>
+        <Skeleton w={112} h={23} />
       </div>
+
+      <section aria-hidden="true">
+        <div className={styles.sectionHeading}>
+          <Skeleton w={140} h={12} />
+          <Skeleton w={52} h={12} />
+        </div>
+        <ol className={styles.players}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <PlayerCardSkeleton key={i} />
+          ))}
+        </ol>
+      </section>
     </div>
   );
 }
