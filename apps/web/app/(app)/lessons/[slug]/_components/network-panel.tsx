@@ -171,7 +171,8 @@ function RouteRow({
         type="button"
         onClick={onRemove}
         aria-label={`Retirer la route ${to}`}
-        style={{ ...smallButton, marginLeft: "auto" }}
+        className="btn btn--ghost btn--sm"
+        style={{ marginLeft: "auto" }}
       >
         ×
       </button>
@@ -223,7 +224,7 @@ function NewRoute({ onAdd }: { readonly onAdd: (route: Route) => void }): React.
           spellCheck={false}
           style={{ ...field, flex: 1, minWidth: 0 }}
         />
-        <button type="button" onClick={add} style={smallButton}>
+        <button type="button" onClick={add} className="btn btn--ghost btn--sm">
           Ajouter
         </button>
       </div>
@@ -353,7 +354,8 @@ export function NetworkPanel({
           onClick={() => {
             onDelete(device.id);
           }}
-          style={{ ...smallButton, justifySelf: "start", color: RED, borderColor: RED }}
+          className="btn btn--ghost btn--sm"
+          style={{ justifySelf: "start", color: RED, borderColor: RED }}
         >
           Supprimer {device.name}
         </button>
@@ -370,14 +372,4 @@ const panel: React.CSSProperties = {
   border: "1px solid #1F1B47",
   background: "#030219",
   minWidth: 0,
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
 };

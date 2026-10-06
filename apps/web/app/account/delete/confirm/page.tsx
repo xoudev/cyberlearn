@@ -84,22 +84,7 @@ export default async function AccountDeleteConfirmPage({
           style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
         >
           <input type="hidden" name="token" value={token} />
-          <button
-            type="submit"
-            style={{
-              minHeight: 44,
-              padding: "0 22px",
-              background: "#FF4757",
-              border: "1px solid #FF4757",
-              color: "#fff",
-              fontFamily: "monospace",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-            }}
-          >
+          <button className="btn btn--danger btn--sm" type="submit">
             Supprimer définitivement
           </button>
           <Link

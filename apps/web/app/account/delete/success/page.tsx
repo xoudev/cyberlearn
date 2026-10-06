@@ -194,23 +194,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
             <b style={{ color: "#B8B5D1", fontWeight: 500 }}>Effacées</b>
           </div>
 
-          <Link
-            href="/"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "9px 22px",
-              fontFamily: "monospace",
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              background: "#0024FF",
-              color: "#ffffff",
-              textDecoration: "none",
-            }}
-          >
+          <Link className="btn" href="/">
             <span>&#9656;</span>
             Retour à l&apos;accueil
           </Link>

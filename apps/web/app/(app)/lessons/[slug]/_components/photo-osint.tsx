@@ -210,7 +210,8 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
               type="button"
               onClick={() => void read()}
               disabled={busy}
-              style={{ ...primaryButton, justifySelf: "start" }}
+              className="btn btn--accent btn--sm"
+              style={{ justifySelf: "start" }}
             >
               {busy ? "Lecture…" : "Lire les métadonnées (EXIF)"}
             </button>
@@ -253,7 +254,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
                 fontSize: 13,
               }}
             />
-            <button type="submit" disabled={found} style={smallButton}>
+            <button type="submit" disabled={found} className="btn btn--ghost btn--sm">
               Placer
             </button>
           </form>
@@ -273,7 +274,8 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
               type="button"
               onClick={check}
               disabled={guess === null || found}
-              style={{ ...primaryButton, marginLeft: "auto" }}
+              className="btn btn--accent btn--sm"
+              style={{ marginLeft: "auto" }}
             >
               Valider ce lieu
             </button>
@@ -319,7 +321,8 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
                   type="button"
                   onClick={() => void clean()}
                   disabled={busy}
-                  style={{ ...smallButton, justifySelf: "start" }}
+                  className="btn btn--ghost btn--sm"
+                  style={{ justifySelf: "start" }}
                 >
                   {busy ? "Nettoyage…" : "Nettoyer la photo, puis relire ses métadonnées"}
                 </button>
@@ -343,23 +346,3 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
     </section>
   );
 }
-
-const primaryButton: React.CSSProperties = {
-  padding: "8px 16px",
-  border: "none",
-  background: "var(--cosmetic-accent, #0AFFD4)",
-  color: "#030219",
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "7px 12px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
-};

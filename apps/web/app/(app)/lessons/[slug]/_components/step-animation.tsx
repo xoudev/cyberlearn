@@ -138,8 +138,8 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
                   playStep(i);
                 }}
                 aria-current={i === step ? "step" : undefined}
+                className="btn btn--ghost btn--sm"
                 style={{
-                  ...smallButton,
                   color: i === step ? "#030219" : i < step ? ACCENT : "#B8B5D1",
                   background: i === step ? ACCENT : "transparent",
                   borderColor: i <= step ? ACCENT : "#2A2560",
@@ -167,7 +167,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
               playStep(Math.max(0, step - 1));
             }}
             disabled={step === 0}
-            style={smallButton}
+            className="btn btn--ghost btn--sm"
           >
             ◀ Précédent
           </button>
@@ -177,7 +177,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
               if (playing) send("pause", frame, null);
               else playStep(step);
             }}
-            style={primaryButton}
+            className="btn btn--accent btn--sm"
           >
             {playing ? "Pause" : "▶ Lire cette étape"}
           </button>
@@ -187,7 +187,7 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
               playStep(Math.min(last, step + 1));
             }}
             disabled={step === last}
-            style={smallButton}
+            className="btn btn--ghost btn--sm"
           >
             Suivant ▶
           </button>
@@ -196,7 +196,8 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
             onClick={() => {
               send("play", 0, null);
             }}
-            style={{ ...smallButton, marginLeft: "auto" }}
+            className="btn btn--ghost btn--sm"
+            style={{ marginLeft: "auto" }}
           >
             Tout lire
           </button>
@@ -211,23 +212,3 @@ export function StepAnimation(props: Record<string, unknown>): React.ReactElemen
     </section>
   );
 }
-
-const primaryButton: React.CSSProperties = {
-  padding: "7px 16px",
-  border: "none",
-  background: "var(--cosmetic-accent, #0AFFD4)",
-  color: "#030219",
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
-};

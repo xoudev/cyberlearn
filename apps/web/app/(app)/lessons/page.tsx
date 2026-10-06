@@ -579,7 +579,7 @@ function LessonsEmpty(): React.ReactElement {
         </svg>
       }
     >
-      <Link href="/lessons" className="btn-blue" style={{ display: "inline-block" }}>
+      <Link href="/lessons" className="btn">
         Réinitialiser les filtres
       </Link>
     </EmptyState>

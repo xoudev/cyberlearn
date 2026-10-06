@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.22",
+    date: "2026-10-05",
+    title: "Le même bouton jusque dans les labos",
+    changes: [
+      {
+        type: "improved",
+        text: "Les boutons écrits à la main dans les pages (l'accueil, le test de positionnement, les notes, les paramètres, les défis) et ceux des labos de leçon rejoignent la famille unique : même hauteur, mêmes capitales, même réaction au survol.",
+      },
+    ],
+  },
+  {
     version: "3.21",
     date: "2026-10-05",
     title: "Un seul bouton",

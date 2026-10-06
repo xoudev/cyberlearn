@@ -132,36 +132,23 @@ export function AvatarCropper({
   const actions = (
     <>
       <button
-        className="mono-label"
+        className="btn btn--ghost"
         type="button"
         onClick={onCancel}
         disabled={busy}
         style={{
           flex: "0 0 auto",
-          height: 44,
-          padding: "0 18px",
-          background: "transparent",
-          border: "1px solid #2A2560",
-          color: "#B8B5D1",
-          fontWeight: 600,
-          cursor: busy ? "not-allowed" : "pointer",
         }}
       >
         Annuler
       </button>
       <button
-        className="mono-label"
+        className="btn"
         type="button"
         onClick={handleConfirm}
         disabled={busy || !natural}
         style={{
           flex: 1,
-          height: 44,
-          border: "1px solid #0024FF",
-          background: "#0024FF",
-          color: "#fff",
-          fontWeight: 700,
-          cursor: busy || !natural ? "not-allowed" : "pointer",
           opacity: busy || !natural ? 0.6 : 1,
         }}
       >

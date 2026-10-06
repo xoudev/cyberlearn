@@ -210,17 +210,11 @@ export function FindTheFlaw(props: Record<string, unknown>): React.ReactElement 
               <strong style={{ color: accent }}>Trouvé.</strong> {flaw.explanation}
             </p>
             <button
+              className="btn btn--ghost btn--sm"
               type="button"
               onClick={restart}
               style={{
                 justifySelf: "start",
-                padding: "6px 12px",
-                border: "1px solid #2A2560",
-                background: "transparent",
-                color: "#B8B5D1",
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 12,
-                cursor: "pointer",
               }}
             >
               Recommencer

@@ -399,23 +399,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               minWidth: 200,
             }}
           >
-            <Link
-              className="mono-label"
-              href={`/api/certificates/${latest.id}/download`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                padding: "12px 18px",
-                fontWeight: 700,
-                background: "var(--cosmetic-accent)",
-                color: "#030219",
-                border: "1px solid var(--cosmetic-accent)",
-                textDecoration: "none",
-                boxShadow: "0 0 18px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
-              }}
-            >
+            <Link className="btn btn--accent" href={`/api/certificates/${latest.id}/download`}>
               <svg
                 width="13"
                 height="13"

@@ -456,47 +456,12 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Link
-                className="mono-label mono-label--md btn-blue"
-                href="/onboarding/placement-test/questions"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                  width: "100%",
-                  height: 52,
-                  fontWeight: 700,
-                  border: "1px solid #0024FF",
-                  background: "#0024FF",
-                  color: "#FFFFFF",
-                  textDecoration: "none",
-                  boxShadow: "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)",
-                  transition: "background 180ms ease, box-shadow 180ms ease",
-                }}
-              >
+              <Link className="btn btn--lg btn--block" href="/onboarding/placement-test/questions">
                 Commencer le test <span style={{ fontSize: 16 }}>→</span>
               </Link>
 
               <form action={skipOnboarding}>
-                <button
-                  className="mono-label mono-label--md btn-ghost"
-                  type="submit"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 12,
-                    width: "100%",
-                    height: 52,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    background: "transparent",
-                    border: "1px solid #2A2560",
-                    color: "#B8B5D1",
-                    transition: "border-color 180ms ease, color 180ms ease, background 180ms ease",
-                  }}
-                >
+                <button className="btn btn--ghost btn--lg btn--block" type="submit">
                   Passer → Accéder au dashboard
                 </button>
               </form>

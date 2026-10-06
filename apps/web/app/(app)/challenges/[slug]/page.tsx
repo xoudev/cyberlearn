@@ -504,21 +504,10 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
           {/* CTA button scrolls to action section */}
           <a
-            className="mono-label mono-label--md"
+            className="btn btn--danger btn--lg btn--block"
             href="#challenge-action"
             style={{
-              display: "block",
-              width: "100%",
-              padding: "18px 24px",
-              fontWeight: 700,
-              background: "#FF4D6D",
-              color: "#fff",
-              border: "none",
               borderTop: "1px solid #FF4D6D",
-              cursor: "pointer",
-              transition: "background 200ms ease",
-              boxShadow: "0 0 28px rgba(255,77,109,0.3), inset 0 0 0 1px rgba(255,255,255,0.15)",
-              textDecoration: "none",
               textAlign: "center",
               boxSizing: "border-box",
             }}

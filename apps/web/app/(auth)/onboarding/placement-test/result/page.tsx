@@ -424,22 +424,7 @@ export default async function PlacementResultPage({
                 D&apos;après ton profil, ce parcours correspond à ton niveau et tes objectifs. Les
                 prérequis débutant et intermédiaire de tes domaines maîtrisés sont déjà validés.
               </p>
-              <Link
-                href={`/paths/${recPath}`}
-                className="btn-teal mono-label mono-label--md"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "12px 24px",
-                  fontWeight: 700,
-                  background: "#0AFFD4",
-                  color: "#030219",
-                  border: "1px solid #0AFFD4",
-                  textDecoration: "none",
-                  boxShadow: "0 0 24px rgba(10,255,212,0.35)",
-                }}
-              >
+              <Link href={`/paths/${recPath}`} className="btn btn--accent">
                 Voir le parcours
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                   <path
@@ -479,20 +464,9 @@ export default async function PlacementResultPage({
           <div style={{ display: "flex", gap: 12 }}>
             <Link
               href="/dashboard"
-              className="btn-blue mono-label mono-label--md"
+              className="btn btn--lg"
               style={{
                 flex: 1,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                padding: "14px 24px",
-                fontWeight: 700,
-                background: "#0024FF",
-                color: "#fff",
-                border: "1px solid #0024FF",
-                textDecoration: "none",
-                boxShadow: "0 0 24px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)",
               }}
             >
               Accéder au tableau de bord
@@ -506,16 +480,7 @@ export default async function PlacementResultPage({
                 />
               </svg>
             </Link>
-            <Link
-              href="/lessons"
-              className="btn-ghost mono-label mono-label--md card card--ghost"
-              style={{
-                padding: "14px 20px",
-                fontWeight: 700,
-                color: "#B8B5D1",
-                textDecoration: "none",
-              }}
-            >
+            <Link href="/lessons" className="btn btn--ghost btn--lg">
               Explorer les leçons
             </Link>
           </div>

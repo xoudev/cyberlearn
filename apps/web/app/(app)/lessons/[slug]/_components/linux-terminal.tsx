@@ -662,21 +662,9 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                   </p>
                 ) : null}
                 <button
+                  className="btn btn--accent btn--sm"
                   type="button"
                   onClick={() => void start()}
-                  style={{
-                    padding: "0 22px",
-                    minHeight: 44,
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontWeight: 700,
-                    fontSize: 11,
-                    letterSpacing: "0.2em",
-                    textTransform: "uppercase",
-                    background: "var(--cosmetic-accent)",
-                    color: "#030219",
-                    border: 0,
-                    cursor: "pointer",
-                  }}
                 >
                   Démarrer la machine
                 </button>

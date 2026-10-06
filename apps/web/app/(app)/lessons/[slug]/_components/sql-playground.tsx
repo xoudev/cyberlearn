@@ -155,7 +155,7 @@ export function SqlPlayground(
             type="button"
             onClick={() => void run()}
             disabled={running || query.trim() === ""}
-            style={primaryButton}
+            className="btn btn--accent btn--sm"
           >
             {running ? "Exécution…" : "Exécuter"}
           </button>
@@ -165,7 +165,7 @@ export function SqlPlayground(
               sandbox.current?.reset();
               setOutcome(null);
             }}
-            style={smallButton}
+            className="btn btn--ghost btn--sm"
           >
             Réinitialiser la base
           </button>
@@ -210,23 +210,3 @@ export function SqlPlayground(
     </section>
   );
 }
-
-const primaryButton: React.CSSProperties = {
-  padding: "8px 16px",
-  border: "none",
-  background: "var(--cosmetic-accent, #0AFFD4)",
-  color: "#030219",
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "7px 12px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
-};

@@ -41,21 +41,10 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
       <>
         {held && <HeldNotice />}
         <button
-          className="mono-label"
+          className="btn btn--ghost"
           type="button"
           onClick={() => {
             setOpen(true);
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 20px",
-            fontWeight: 700,
-            background: "transparent",
-            border: "1px solid #2A2560",
-            color: "#B8B5D1",
-            cursor: "pointer",
           }}
         >
           <svg

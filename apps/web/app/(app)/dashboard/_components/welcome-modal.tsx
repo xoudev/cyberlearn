@@ -41,38 +41,10 @@ export function WelcomeModal(): React.ReactElement | null {
       title="Bienvenue sur CyberLearn"
       actions={
         <>
-          <Link
-            className="mono-label"
-            href="/lessons"
-            onClick={dismiss}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "13px 22px",
-              fontWeight: 700,
-              background: "#0024FF",
-              border: "1px solid #0024FF",
-              color: "#fff",
-              textDecoration: "none",
-              boxShadow: "0 0 24px rgba(0,36,255,0.4)",
-            }}
-          >
+          <Link className="btn" href="/lessons" onClick={dismiss}>
             Lancer ma première leçon →
           </Link>
-          <button
-            className="mono-label"
-            type="button"
-            onClick={dismiss}
-            style={{
-              padding: "13px 20px",
-              fontWeight: 700,
-              background: "transparent",
-              border: "1px solid #2A2560",
-              color: "#B8B5D1",
-              cursor: "pointer",
-            }}
-          >
+          <button className="btn btn--ghost" type="button" onClick={dismiss}>
             Passer
           </button>
         </>

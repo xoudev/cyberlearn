@@ -80,23 +80,7 @@ export function PublicNavbar(): React.JSX.Element {
         >
           Connexion
         </Link>
-        <Link
-          className="mono-label mono-label--md"
-          href="/register"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "11px 20px",
-            fontWeight: 700,
-            background: "#0024FF",
-            border: "1px solid #0024FF",
-            color: "#fff",
-            textDecoration: "none",
-            boxShadow: "0 0 20px rgba(0,36,255,0.4)",
-            transition: "background 180ms ease",
-          }}
-        >
+        <Link className="btn" href="/register">
           <span className="landing-cta-long">Commencer gratuitement</span>
           <span className="landing-cta-short">Commencer</span>
           <svg

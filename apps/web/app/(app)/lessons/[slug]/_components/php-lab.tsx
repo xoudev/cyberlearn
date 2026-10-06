@@ -184,7 +184,8 @@ export function PhpLab(
             setVerification(null);
           }}
           disabled={code === lab.code}
-          style={{ ...smallButton, marginLeft: "auto" }}
+          className="btn btn--ghost btn--sm"
+          style={{ marginLeft: "auto" }}
         >
           Remettre le code d&apos;origine
         </button>
@@ -208,8 +209,8 @@ export function PhpLab(
                   onClick={() => {
                     setOpenFile(page);
                   }}
+                  className="btn btn--ghost btn--sm"
                   style={{
-                    ...smallButton,
                     color: page === shown ? "#030219" : "#B8B5D1",
                     background: page === shown ? ACCENT : "transparent",
                     borderColor: page === shown ? ACCENT : "#2A2560",
@@ -267,7 +268,7 @@ export function PhpLab(
                       ...(shortcut.body ? { body: shortcut.body } : {}),
                     });
                   }}
-                  style={smallButton}
+                  className="btn btn--ghost btn--sm"
                 >
                   {shortcut.label}
                 </button>
@@ -306,7 +307,7 @@ export function PhpLab(
               <button
                 type="submit"
                 disabled={running || verifying || url.trim() === ""}
-                style={primaryButton}
+                className="btn btn--accent btn--sm"
               >
                 {running ? "Envoi…" : "Envoyer"}
               </button>
@@ -373,8 +374,8 @@ export function PhpLab(
                       onClick={() => {
                         setView(which);
                       }}
+                      className="btn btn--ghost btn--sm"
                       style={{
-                        ...smallButton,
                         color: view === which ? "#030219" : "#B8B5D1",
                         background: view === which ? ACCENT : "transparent",
                         borderColor: view === which ? ACCENT : "#2A2560",
@@ -458,7 +459,8 @@ export function PhpLab(
                 type="button"
                 onClick={() => void verify()}
                 disabled={running || verifying}
-                style={{ ...primaryButton, justifySelf: "start" }}
+                className="btn btn--accent btn--sm"
+                style={{ justifySelf: "start" }}
               >
                 {verifying ? "Vérification…" : "Vérifier mon correctif"}
               </button>
@@ -524,24 +526,4 @@ const codeBox: React.CSSProperties = {
   fontSize: 12.5,
   lineHeight: 1.6,
   tabSize: 4,
-};
-
-const primaryButton: React.CSSProperties = {
-  padding: "7px 16px",
-  border: "none",
-  background: "var(--cosmetic-accent, #0AFFD4)",
-  color: "#030219",
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const smallButton: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "1px solid #2A2560",
-  background: "transparent",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12,
-  cursor: "pointer",
 };
