@@ -70,6 +70,8 @@ model User {
   duelsSent         Duel[]                  @relation("DuelChallenger")
   duelsReceived     Duel[]                  @relation("DuelOpponent")
   duelAnswers       DuelAnswer[]
+  tournamentsMade   Tournament[]            @relation("TournamentCreator")
+  tournamentSolves  TournamentSolve[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -182,6 +184,8 @@ model Class {
   lessonLinks LessonClass[]
   pathLinks   PathClass[]
   resources   ClassResource[]
+  tournaments TournamentClass[]
+  teamSolves  TournamentSolve[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
@@ -796,6 +800,8 @@ model Challenge {
   progress     UserChallengeProgress[]
   hints        ChallengeHint[]
   writeups     ChallengeWriteup[]
+  tournaments  TournamentChallenge[]
+  teamSolves   TournamentSolve[]
 
   @@index([category, difficulty, isActive])
   @@map("challenges")
@@ -1420,6 +1426,7 @@ enum NotificationType {
   FRIEND_ACCEPTED
   DUEL_INVITE
   DUEL_RESULT
+  TOURNAMENT_ANNOUNCED
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.
@@ -2023,4 +2030,86 @@ model DuelAnswer {
 
   @@unique([duelId, userId, index])
   @@map("duel_answers")
+}
+
+/// Who a tournament ranks: each class, or each school with its classes together.
+enum TournamentTeamScope {
+  CLASS
+  ESTABLISHMENT
+}
+
+/// A CTF tournament between classes, or between the schools they belong to:
+/// challenges of the catalogue, open over a window, each worth its points to a
+/// team the first time one of its members finds the flag. Composed in the
+/// console, like the classes it brings together.
+model Tournament {
+  id          String              @id @default(uuid()) @db.Uuid
+  title       String              @db.VarChar(120)
+  description String              @default("") @db.VarChar(1000)
+  startsAt    DateTime
+  endsAt      DateTime
+  teamScope   TournamentTeamScope @default(CLASS)
+  createdById String?             @db.Uuid
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  createdBy  User?                 @relation("TournamentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  classes    TournamentClass[]
+  challenges TournamentChallenge[]
+  solves     TournamentSolve[]
+
+  @@index([startsAt])
+  @@map("tournaments")
+}
+
+/// A class taking part: its members play, its teachers watch.
+model TournamentClass {
+  tournamentId String @db.Uuid
+  classId      String @db.Uuid
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([tournamentId, classId])
+  @@index([classId])
+  @@map("tournament_classes")
+}
+
+/// A challenge in a tournament, and what it is worth there. A challenge that
+/// served in one cannot be deleted (RESTRICT): the scores rest on it.
+model TournamentChallenge {
+  tournamentId String @db.Uuid
+  challengeId  String @db.Uuid
+  points       Int
+  orderIndex   Int    @default(0)
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  challenge  Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+
+  @@id([tournamentId, challengeId])
+  @@index([challengeId])
+  @@map("tournament_challenges")
+}
+
+/// A flag found during a tournament, checked on the server: one per player and
+/// challenge. The class is the team the player stood for when they found it.
+model TournamentSolve {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @db.Uuid
+  challengeId  String   @db.Uuid
+  /// Null once the account is erased: the team keeps its points.
+  userId       String?  @db.Uuid
+  classId      String   @db.Uuid
+  points       Int
+  solvedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  challenge  Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, challengeId, userId])
+  @@index([tournamentId, solvedAt])
+  @@index([userId])
+  @@map("tournament_solves")
 }

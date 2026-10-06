@@ -21,6 +21,7 @@
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement |
 | `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat |
+| `/tournaments` · `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct |
 | `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction |
 | `/u/[username]` | Profil public d'un utilisateur : badges, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, activité |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
@@ -242,6 +243,7 @@
 | `/users/[id]` | Un compte : rôle, bannissement, remise à zéro, suppression |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
+| `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/moderation` | File de relecture des contenus signalés |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
 | `/audit` | Journal d'audit (qui a fait quoi, quand) |

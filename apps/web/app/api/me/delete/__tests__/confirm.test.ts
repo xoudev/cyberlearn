@@ -93,6 +93,8 @@ beforeEach(() => {
     questionsAnonymized: 0,
     answersAnonymized: 0,
     writeupsAnonymized: 0,
+
+    tournamentSolvesAnonymized: 0,
     ratingsAnonymized: 0,
     contactTicketsAnonymized: 0,
     auditLogsAnonymized: 0,
@@ -233,6 +235,8 @@ describe("POST /api/me/delete/confirm - the auth identity survived", () => {
       questionsAnonymized: 0,
       answersAnonymized: 0,
       writeupsAnonymized: 0,
+
+      tournamentSolvesAnonymized: 0,
       ratingsAnonymized: 0,
       contactTicketsAnonymized: 0,
       auditLogsAnonymized: 0,
@@ -252,6 +256,8 @@ describe("POST /api/me/delete/confirm - the auth identity survived", () => {
       questionsAnonymized: 0,
       answersAnonymized: 0,
       writeupsAnonymized: 0,
+
+      tournamentSolvesAnonymized: 0,
       ratingsAnonymized: 0,
       contactTicketsAnonymized: 0,
       auditLogsAnonymized: 0,

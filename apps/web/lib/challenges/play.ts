@@ -22,9 +22,10 @@ import { creditXp } from "@/lib/xp/credit";
  * The flag a learner must find. On a Linux machine it is their own (see
  * lib/challenges/flag.ts), and without the key to compute it the challenge is
  * unavailable rather than open to a flag anyone could work out; otherwise it is
- * the one the author wrote.
+ * the one the author wrote. A tournament checks its flags with it too
+ * (lib/tournaments), so a flag is right or wrong the same way everywhere.
  */
-function expectedFlag(
+export function expectedFlag(
   challenge: { id: string; flag: string | null; machine: unknown },
   userId: string,
 ): { ok: true; flag: string } | { ok: false; error: string } {

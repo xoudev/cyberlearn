@@ -190,6 +190,22 @@ export async function checkNotifyingWrite(userId: string): Promise<RateLimitResu
   return toResult(await limiter.limit(userId));
 }
 
+/**
+ * 10 tournament flags per user per minute. A tournament has no cap on
+ * attempts, unlike a challenge of the catalogue: this is what stands between a
+ * player and a script trying flags, while leaving room for a typo or two.
+ */
+export async function checkFlagSubmission(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "flag",
+    (r) =>
+      new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(10, "1 m"), prefix: "rl:flag" }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /** 20 hint reveals per user per hour. */
 export async function checkHintReveal(userId: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;

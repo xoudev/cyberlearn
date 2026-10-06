@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, JSON_NULL_IN_DB } from "@cyberlearn/db";
+import { prisma, JSON_NULL_IN_DB, tournamentRepository } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 import { type ChallengeMachine, parseChallengeMachine } from "@cyberlearn/types";
 
@@ -216,6 +216,11 @@ export async function deleteChallengeAction(id: string): Promise<{ error?: strin
     return {
       error: `Impossible de supprimer : ${String(progress)} progression(s) utilisateur liée(s).`,
     };
+  }
+  // A tournament's scores rest on its challenges: the foreign key refuses the
+  // delete (RESTRICT), and this says why before it gets the chance.
+  if (await tournamentRepository.isUsed(id)) {
+    return { error: "Impossible de supprimer : ce défi a servi dans un tournoi. Désactive-le." };
   }
 
   await prisma.challenge.delete({ where: { id } });

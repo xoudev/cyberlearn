@@ -14,6 +14,7 @@ export type InAppRoute =
   | { pathname: "/paths/[slug]"; params: { slug: string } }
   | { pathname: "/u/[username]"; params: { username: string } }
   | { pathname: "/duels/[id]"; params: { id: string } }
+  | { pathname: "/tournaments/[id]"; params: { id: string } }
   | {
       pathname:
         | "/lessons"
@@ -22,7 +23,8 @@ export type InAppRoute =
         | "/profile"
         | "/revisions"
         | "/friends"
-        | "/duels";
+        | "/duels"
+        | "/tournaments";
     };
 
 const SLUG = "([a-z0-9-]+)";
@@ -49,6 +51,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // A duel's invitation, acceptance or result opens the duel.
   const duel = /^\/duels\/([0-9a-f-]{36})$/u.exec(path)?.[1];
   if (duel) return { pathname: "/duels/[id]", params: { id: duel } };
+  // A tournament announced to the reader's class opens the tournament.
+  const tournament = /^\/tournaments\/([0-9a-f-]{36})$/u.exec(path)?.[1];
+  if (tournament) return { pathname: "/tournaments/[id]", params: { id: tournament } };
   switch (path) {
     case "/lessons":
     case "/notes":
@@ -57,6 +62,7 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/profile":
     case "/friends":
     case "/duels":
+    case "/tournaments":
       return { pathname: path };
     // The badges live under the profile tab in the app.
     case "/badges":

@@ -29,6 +29,15 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/duels/pas-un-id")).toBeNull();
   });
 
+  it("opens a tournament on its screen, and the tournaments list", () => {
+    expect(inAppRouteFor("/tournaments/22222222-2222-4222-8222-222222222222")).toEqual({
+      pathname: "/tournaments/[id]",
+      params: { id: "22222222-2222-4222-8222-222222222222" },
+    });
+    expect(inAppRouteFor("/tournaments")).toEqual({ pathname: "/tournaments" });
+    expect(inAppRouteFor("/tournaments/pas-un-id")).toBeNull();
+  });
+
   it("opens the profile a friend request or an acceptance points at", () => {
     expect(inAppRouteFor("/u/alex-b")).toEqual({
       pathname: "/u/[username]",

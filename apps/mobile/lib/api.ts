@@ -2,6 +2,12 @@ import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
 import type { DuelBoard, DuelView } from "@/lib/duels";
+import type {
+  TournamentChallengeView,
+  TournamentFlagReply,
+  TournamentSummary,
+  TournamentView,
+} from "@/lib/tournaments";
 import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
 import type { MockOverview } from "@/lib/mock-exam";
 import type {
@@ -1437,6 +1443,66 @@ export async function answerDuelApi(
       body: JSON.stringify({ action: "answer", duelId, index, selected }),
     });
     return (await res.json()) as DuelReply<{ correct: boolean; correctIndex: number }>;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── CTF tournaments (the site's lib/tournaments/tournaments.ts) ─────────────
+
+/** The tournaments the reader's classes take part in. */
+export async function fetchTournamentsApi(): Promise<TournamentSummary[]> {
+  const res = await authedFetch("/api/mobile/tournaments");
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/route.ts).
+  const body = (await res.json()) as
+    | { ok: true; tournaments: TournamentSummary[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.tournaments;
+}
+
+/** One tournament, its challenges and its scoreboard; null when it is not the reader's. */
+export async function fetchTournamentApi(id: string): Promise<TournamentView | null> {
+  const res = await authedFetch(`/api/mobile/tournaments/play?id=${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/play/route.ts).
+  const body = (await res.json()) as
+    | { ok: true; tournament: TournamentView }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.tournament;
+}
+
+/** One challenge of a tournament, to play; null when it is not open to the reader. */
+export async function fetchTournamentChallengeApi(
+  id: string,
+  slug: string,
+): Promise<TournamentChallengeView | null> {
+  const res = await authedFetch(
+    `/api/mobile/tournaments/play?id=${encodeURIComponent(id)}&slug=${encodeURIComponent(slug)}`,
+  );
+  if (res.status === 404) return null;
+  // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/play/route.ts).
+  const body = (await res.json()) as
+    | { ok: true; challenge: TournamentChallengeView }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.challenge;
+}
+
+/** Gives a flag: the server checks it and counts it once for the player and their team. */
+export async function submitTournamentFlagApi(
+  tournamentId: string,
+  challengeId: string,
+  flag: string,
+): Promise<TournamentFlagReply> {
+  try {
+    const res = await authedFetch("/api/mobile/tournaments/play", {
+      method: "POST",
+      body: JSON.stringify({ tournamentId, challengeId, flag }),
+    });
+    // SAFETY: the route's own JSON, the service's TournamentFlagResult.
+    return (await res.json()) as TournamentFlagReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
