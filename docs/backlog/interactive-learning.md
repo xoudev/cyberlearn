@@ -120,7 +120,7 @@ qui survive à la requête.
 
 | # | Idée | Ce que ça apporte | Dépendance | Mobile |
 | --- | --- | --- | --- | --- |
-| 30 | **Suivi des exercices pour les profs** | Les exercices réussis (terminal, Python) apparaissent dans le tableau de bord de la classe, avec un peu d'XP. | Aucune | Oui |
+| 30 | ~~**Suivi des exercices pour les profs**~~ | ~~Les exercices réussis (terminal, Python) apparaissent dans le tableau de bord de la classe, avec un peu d'XP.~~ Fait, PR #431 : le vrai terminal (toutes ses vérifications vertes) et un défi Python (tous ses tests passés) enregistrent l'exercice (`exercise_completions`, une ligne par élève et par exercice, RLS), 10 XP la première fois ; dans « Ma classe », côté professeur, chaque élève affiche ses exercices réussis à côté de ses leçons terminées. | Aucune | Vue professeur web seul |
 | 31 | **Duels de quiz entre amis** | Deux amis répondent aux mêmes questions en temps réel. | Aucune (Supabase Realtime) | Oui |
 | 32 | **Tournois CTF entre classes ou écoles** | Des défis sur une période donnée, avec un tableau des scores en direct. | Aucune | Oui |
 | 33 | **Write-ups** | Après un défi réussi, l'élève publie sa solution, visible seulement par ceux qui l'ont aussi réussi. | Aucune | Oui |
