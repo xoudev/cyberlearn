@@ -56,11 +56,16 @@ describe("sidebarGroups", () => {
 
   it("ends the community with the help page, after the classes when there are some", () => {
     const without = sidebarGroups(BASE).find((g) => g.label === "Communauté");
-    expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/support"]);
+    expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/duels", "/support"]);
     const withClasses = sidebarGroups({ ...BASE, hasClasses: true }).find(
       (g) => g.label === "Communauté",
     );
-    expect(withClasses?.items.map((i) => i.href)).toEqual(["/forum", "/my-class", "/support"]);
+    expect(withClasses?.items.map((i) => i.href)).toEqual([
+      "/forum",
+      "/duels",
+      "/my-class",
+      "/support",
+    ]);
   });
 
   it("keeps the account pages out of the list: they are reached from the navbar", () => {

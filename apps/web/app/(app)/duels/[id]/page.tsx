@@ -1,0 +1,28 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import React from "react";
+import { Crumb } from "@/components/crumb";
+import { requireRequestUser } from "@/lib/auth";
+import { duelViewFor } from "@/lib/social/duels";
+import { DuelPlay } from "./_components/duel-play";
+
+export const metadata: Metadata = { title: "Duel" };
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+/** A duel, for one of its two players: not found for anybody else. */
+export default async function DuelPage({ params }: Props): Promise<React.ReactElement> {
+  const { id } = await params;
+  const user = await requireRequestUser();
+  const view = await duelViewFor(user.id, id);
+  if (view === null) notFound();
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", display: "grid", gap: 24 }}>
+      <Crumb segments={[{ label: "duels", href: "/duels" }, view.other.name]} />
+      <DuelPlay initial={view} />
+    </div>
+  );
+}

@@ -30,6 +30,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Ma classe", route: "/my-class" },
   { label: "Classement", route: "/leaderboard" },
   { label: "Amis", route: "/friends" },
+  { label: "Duels", route: "/duels" },
   { label: "Bloc-notes", route: "/notes" },
   { label: "Casier", route: "/locker" },
   { label: "Révisions", route: "/revisions" },

@@ -1,6 +1,7 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
+import type { DuelBoard, DuelView } from "@/lib/duels";
 import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
 import type { MockOverview } from "@/lib/mock-exam";
 import type {
@@ -1367,6 +1368,75 @@ export async function submitMockExamApi(
       body: JSON.stringify({ attemptId, answers }),
     });
     return (await res.json()) as MockSubmitReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── Quiz duels (the site's lib/social/duels.ts) ─────────────────────────────
+
+/** The reader's duels, with the friends and the paths a duel can be sent on. */
+export async function fetchDuelsApi(): Promise<DuelBoard> {
+  const res = await authedFetch("/api/mobile/duels");
+  const body = (await res.json()) as ({ ok: true } & DuelBoard) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { duels: body.duels, friends: body.friends, paths: body.paths };
+}
+
+export type DuelReply<T extends object = object> =
+  | ({ ok: true } & T)
+  | { ok: false; error: string };
+
+/** Challenges a friend on a path. */
+export async function createDuelApi(
+  opponentId: string,
+  pathId: string,
+): Promise<DuelReply<{ id: string }>> {
+  try {
+    const res = await authedFetch("/api/mobile/duels", {
+      method: "POST",
+      body: JSON.stringify({ opponentId, pathId }),
+    });
+    return (await res.json()) as DuelReply<{ id: string }>;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** One duel as the reader sees it; null when it is not theirs. */
+export async function fetchDuelApi(id: string): Promise<DuelView | null> {
+  const res = await authedFetch(`/api/mobile/duels/play?id=${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  const body = (await res.json()) as { ok: true; duel: DuelView } | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.duel;
+}
+
+/** Accepts or declines an invitation. */
+export async function respondToDuelApi(id: string, accept: boolean): Promise<DuelReply> {
+  try {
+    const res = await authedFetch("/api/mobile/duels/play", {
+      method: "POST",
+      body: JSON.stringify({ action: "respond", id, accept }),
+    });
+    return (await res.json()) as DuelReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Answers a question; the server says if it was right, and which option was. */
+export async function answerDuelApi(
+  duelId: string,
+  index: number,
+  selected: number,
+): Promise<DuelReply<{ correct: boolean; correctIndex: number }>> {
+  try {
+    const res = await authedFetch("/api/mobile/duels/play", {
+      method: "POST",
+      body: JSON.stringify({ action: "answer", duelId, index, selected }),
+    });
+    return (await res.json()) as DuelReply<{ correct: boolean; correctIndex: number }>;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }

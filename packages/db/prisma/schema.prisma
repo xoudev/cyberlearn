@@ -67,6 +67,9 @@ model User {
   answers           LessonAnswer[]
   challengeWriteups ChallengeWriteup[]
   mockExamAttempts  MockExamAttempt[]
+  duelsSent         Duel[]                  @relation("DuelChallenger")
+  duelsReceived     Duel[]                  @relation("DuelOpponent")
+  duelAnswers       DuelAnswer[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -700,6 +703,7 @@ model Path {
   modules      PathModule[]
   progress     UserPathProgress[]
   mockExams    MockExamAttempt[]
+  duels        Duel[]
   certificates Certificate[]
   ratings      Rating[]
   quiz         Quiz?
@@ -1414,6 +1418,8 @@ enum NotificationType {
   FORUM_REPLY
   FRIEND_REQUEST
   FRIEND_ACCEPTED
+  DUEL_INVITE
+  DUEL_RESULT
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.
@@ -1962,4 +1968,59 @@ model MockExamAttempt {
 
   @@index([userId, pathId, startedAt])
   @@map("mock_exam_attempts")
+}
+
+/// Where a duel stands. A pending one waits a day to be accepted; an active
+/// one lasts a day, then is settled with the answers given.
+enum DuelStatus {
+  PENDING
+  ACTIVE
+  FINISHED
+  DECLINED
+  EXPIRED
+}
+
+/// A quiz duel between two friends: the same questions, drawn from a path's
+/// lesson quizzes (lesson, quiz and option order, never the answer key, which
+/// stays in the lessons), answered by both, the most right answers winning.
+model Duel {
+  id           String     @id @default(uuid()) @db.Uuid
+  challengerId String     @db.Uuid
+  opponentId   String     @db.Uuid
+  pathId       String     @db.Uuid
+  status       DuelStatus @default(PENDING)
+  questions    Json
+  createdAt    DateTime   @default(now())
+  acceptedAt   DateTime?
+  finishedAt   DateTime?
+  expiresAt    DateTime
+  /// Null for a draw, and until the end.
+  winnerId     String?    @db.Uuid
+
+  challenger User         @relation("DuelChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent   User         @relation("DuelOpponent", fields: [opponentId], references: [id], onDelete: Cascade)
+  path       Path         @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  answers    DuelAnswer[]
+
+  @@index([challengerId, status])
+  @@index([opponentId, status])
+  @@map("duels")
+}
+
+/// One answer in a duel, checked on the server when it is given. One per
+/// player and question: an answer is final.
+model DuelAnswer {
+  id         String   @id @default(uuid()) @db.Uuid
+  duelId     String   @db.Uuid
+  userId     String   @db.Uuid
+  index      Int
+  selected   Int
+  correct    Boolean
+  answeredAt DateTime @default(now())
+
+  duel Duel @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([duelId, userId, index])
+  @@map("duel_answers")
 }

@@ -20,6 +20,15 @@ describe("inAppRouteFor", () => {
     });
   });
 
+  it("opens a duel on its screen, and the duels list", () => {
+    expect(inAppRouteFor("/duels/11111111-1111-4111-8111-111111111111")).toEqual({
+      pathname: "/duels/[id]",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+    });
+    expect(inAppRouteFor("/duels")).toEqual({ pathname: "/duels" });
+    expect(inAppRouteFor("/duels/pas-un-id")).toBeNull();
+  });
+
   it("opens the profile a friend request or an acceptance points at", () => {
     expect(inAppRouteFor("/u/alex-b")).toEqual({
       pathname: "/u/[username]",

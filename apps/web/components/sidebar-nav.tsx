@@ -113,6 +113,14 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
           <path d="M13 6h1.5v6.5h-1v1.7l-2-1.7H7" />
         </svg>
       );
+    case "duel":
+      // Two crossed blades: a match between two people.
+      return (
+        <svg {...STROKE}>
+          <path d="M2.5 2.5l8 8M13.5 2.5l-8 8" />
+          <path d="M9 12.5l3.5-3.5M7 12.5L3.5 9M11.5 13.5l2-2M4.5 13.5l-2-2" />
+        </svg>
+      );
     case "classes":
       return (
         <svg {...STROKE}>

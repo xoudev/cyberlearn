@@ -19,6 +19,7 @@ export type SidebarIcon =
   | "locker"
   | "trophy"
   | "forum"
+  | "duel"
   | "classes"
   | "support";
 
@@ -64,7 +65,10 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
     { href: "/notes", label: "Bloc-notes", icon: "note", count: null },
   );
 
-  const community: SidebarItem[] = [{ href: "/forum", label: "Forum", icon: "forum", count: null }];
+  const community: SidebarItem[] = [
+    { href: "/forum", label: "Forum", icon: "forum", count: null },
+    { href: "/duels", label: "Duels", icon: "duel", count: null },
+  ];
   if (input.hasClasses) {
     community.push({ href: "/my-class", label: "Mes classes", icon: "classes", count: null });
   }

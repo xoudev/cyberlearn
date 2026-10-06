@@ -13,7 +13,17 @@ export type InAppRoute =
   | { pathname: "/lessons/[slug]"; params: { slug: string } }
   | { pathname: "/paths/[slug]"; params: { slug: string } }
   | { pathname: "/u/[username]"; params: { username: string } }
-  | { pathname: "/lessons" | "/notes" | "/my-class" | "/profile" | "/revisions" | "/friends" };
+  | { pathname: "/duels/[id]"; params: { id: string } }
+  | {
+      pathname:
+        | "/lessons"
+        | "/notes"
+        | "/my-class"
+        | "/profile"
+        | "/revisions"
+        | "/friends"
+        | "/duels";
+    };
 
 const SLUG = "([a-z0-9-]+)";
 
@@ -36,6 +46,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   const username = new RegExp(`^/u/${SLUG}$`, "u").exec(path)?.[1];
   if (username) return { pathname: "/u/[username]", params: { username } };
 
+  // A duel's invitation, acceptance or result opens the duel.
+  const duel = /^\/duels\/([0-9a-f-]{36})$/u.exec(path)?.[1];
+  if (duel) return { pathname: "/duels/[id]", params: { id: duel } };
   switch (path) {
     case "/lessons":
     case "/notes":
@@ -43,6 +56,7 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/revisions":
     case "/profile":
     case "/friends":
+    case "/duels":
       return { pathname: path };
     // The badges live under the profile tab in the app.
     case "/badges":
