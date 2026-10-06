@@ -48,7 +48,8 @@ function LessonCardSkeleton(): React.ReactElement {
 
 export function LessonsBodySkeleton(): React.ReactElement {
   return (
-    <>
+    // A loading root of its own: it is also the page's Suspense fallback.
+    <div aria-busy="true" aria-label="Chargement des leçons" style={{ display: "contents" }}>
       <div className="catalog-header-grid" aria-hidden="true">
         <div>
           {/* The h1: clamp(42px, 5vw, 68px), "N missions" over "disponibles". */}
@@ -92,6 +93,6 @@ export function LessonsBodySkeleton(): React.ReactElement {
           <LessonCardSkeleton key={i} />
         ))}
       </div>
-    </>
+    </div>
   );
 }
