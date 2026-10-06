@@ -20,7 +20,7 @@
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement |
-| `/u/[username]` | Profil public d'un utilisateur |
+| `/u/[username]` | Profil public d'un utilisateur : badges, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, activité |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
 | `/download` | Page de téléchargement de l'app mobile |
 | `/banned` | Page d'un compte suspendu, avec dépôt d'appel |

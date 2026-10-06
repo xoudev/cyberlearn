@@ -134,14 +134,55 @@ export const userRepository = {
           orderBy: { completedAt: "desc" },
           take: 10,
         },
+        // The portfolio: what is finished, and what proves it.
+        pathProgress: {
+          where: { status: "COMPLETED" },
+          select: {
+            completedAt: true,
+            path: { select: { title: true, slug: true, category: true } },
+          },
+          orderBy: { completedAt: "desc" },
+        },
+        certificates: {
+          where: { revokedAt: null },
+          select: {
+            publicId: true,
+            issuedAt: true,
+            score: true,
+            path: { select: { title: true, slug: true, category: true } },
+          },
+          orderBy: { issuedAt: "desc" },
+        },
+        challengeProgress: {
+          where: { status: "COMPLETED" },
+          select: {
+            completedAt: true,
+            challenge: { select: { title: true, slug: true, difficulty: true, category: true } },
+          },
+          orderBy: { completedAt: "desc" },
+          take: 30,
+        },
       },
     });
     if (!user) return null;
-    if (user.preferences?.publicProfile !== false) return user;
-    if (viewerId === null) return null;
-    if (viewerId === user.id) return user;
+    let allowed = user.preferences?.publicProfile !== false;
+    if (!allowed && viewerId !== null) {
+      allowed =
+        viewerId === user.id ||
+        (await friendshipRepository.between(viewerId, user.id))?.status === "ACCEPTED";
+    }
+    if (!allowed) return null;
 
-    const friendship = await friendshipRepository.between(viewerId, user.id);
-    return friendship?.status === "ACCEPTED" ? user : null;
+    // The skills line counts lessons finished by category: a count per
+    // category, rather than every row of a long progress.
+    const counted = await prisma.lesson.groupBy({
+      by: ["category"],
+      where: { progress: { some: { userId: user.id, status: "COMPLETED" } } },
+      _count: { _all: true },
+    });
+    return {
+      ...user,
+      lessonsByCategory: counted.map((row) => ({ category: row.category, count: row._count._all })),
+    };
   },
 };

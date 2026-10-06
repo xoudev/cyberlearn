@@ -46,6 +46,36 @@ export interface ProfileLesson {
   completedAt: string | null;
 }
 
+export interface ProfileSkill {
+  category: string;
+  label: string;
+  short: string;
+  color: string;
+  lessons: number;
+  paths: string[];
+}
+
+export interface ProfileCertificate {
+  publicId: string;
+  pathTitle: string;
+  category: string;
+  issuedAt: string;
+  score: number | null;
+  verifyUrl: string;
+  /** On the holder's own page only. */
+  linkedInUrl: string | null;
+}
+
+export interface ProfileChallenge {
+  title: string;
+  slug: string;
+  category: string;
+  difficulty: string;
+  difficultyLabel: string;
+  difficultyColor: string;
+  completedAt: string | null;
+}
+
 /** Somebody's profile page, as /api/mobile/profile sends it. */
 export interface PublicProfile {
   id: string;
@@ -62,6 +92,9 @@ export interface PublicProfile {
   friendship: FriendshipView;
   badges: ProfileBadge[];
   recentLessons: ProfileLesson[];
+  skills: ProfileSkill[];
+  certificates: ProfileCertificate[];
+  challenges: ProfileChallenge[];
 }
 
 /** The undo button on a row: the same call, three different words, as on the site. */

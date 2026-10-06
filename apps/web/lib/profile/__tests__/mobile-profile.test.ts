@@ -49,6 +49,10 @@ function row(overrides: Record<string, unknown> = {}) {
         lesson: { title: "TCP", slug: "tcp", category: "NETWORK" },
       },
     ],
+    lessonsByCategory: [],
+    pathProgress: [],
+    certificates: [],
+    challengeProgress: [],
     ...overrides,
   };
 }
@@ -108,6 +112,9 @@ describe("mobileProfileView", () => {
             completedAt: "2026-09-01T08:00:00.000Z",
           },
         ],
+        skills: [],
+        certificates: [],
+        challenges: [],
       },
     });
     const text = JSON.stringify(result);
@@ -125,6 +132,66 @@ describe("mobileProfileView", () => {
     m.between.mockResolvedValue(friendship);
     const result = await mobileProfileView(ME, "alex");
     expect(result).toMatchObject({ ok: true, profile: { friendship: view, isPrivate: true } });
+  });
+
+  it("shows the portfolio, with the LinkedIn link on the holder's own page only", async () => {
+    const portfolio = {
+      lessonsByCategory: [{ category: "DEV", count: 5 }],
+      pathProgress: [
+        { completedAt: new Date(), path: { title: "Linux", slug: "linux", category: "DEV" } },
+      ],
+      certificates: [
+        {
+          publicId: "c-1",
+          issuedAt: new Date("2026-03-07T10:00:00Z"),
+          score: 92,
+          path: { title: "Linux", slug: "linux", category: "DEV" },
+        },
+      ],
+      challengeProgress: [
+        {
+          completedAt: new Date("2026-04-01T00:00:00Z"),
+          challenge: {
+            title: "Premier flag",
+            slug: "premier-flag",
+            difficulty: "BEGINNER",
+            category: "CYBERSEC",
+          },
+        },
+      ],
+    };
+    m.findPublicProfile.mockResolvedValue(row(portfolio));
+    const other = await mobileProfileView(ME, "alex");
+    expect(other).toMatchObject({
+      ok: true,
+      profile: {
+        skills: [{ category: "DEV", label: "Développement", lessons: 5, paths: ["Linux"] }],
+        certificates: [
+          {
+            publicId: "c-1",
+            pathTitle: "Linux",
+            issuedAt: "2026-03-07T10:00:00.000Z",
+            score: 92,
+            verifyUrl: "https://cyberlearn.fr/verify/c-1",
+            linkedInUrl: null,
+          },
+        ],
+        challenges: [
+          {
+            title: "Premier flag",
+            slug: "premier-flag",
+            difficultyLabel: "Débutant",
+            completedAt: "2026-04-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    m.findPublicProfile.mockResolvedValue(row({ ...portfolio, id: ME }));
+    const own = await mobileProfileView(ME, "alex");
+    if (!own.ok) throw new Error("own profile refused");
+    expect(own.profile.certificates[0]?.linkedInUrl).toContain("linkedin.com/profile/add?");
+    expect(own.profile.certificates[0]?.linkedInUrl).toContain("certId=c-1");
   });
 
   it("offers no friend button on the reader's own page", async () => {
