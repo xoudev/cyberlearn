@@ -242,3 +242,90 @@ The learner's shell stays `ash`; typing `bash` opens a bash, `exit` leaves it.
 2. Run it: it fails on the first hash mismatch, printing the new hash.
 3. Report the new hashes in `download-runtimes.sh`, `verify-runtimes.sh` and
    this table, then boot a lesson terminal before committing.
+
+## devtools.tar.gz: a real C/assembly toolchain for the v86 machine
+
+A second, opt-in archive next to the image above: bash, git, sqlite3, nasm,
+gcc, gdb, python3. Nothing in it changes the Buildroot image or its kernel -
+every existing lesson's machine is untouched - a lesson that opts in has its
+page fetch this archive instead (or as well) and extract it over `/mnt`,
+the same way the plain `bash` binary already is (`lib/linux-terminal/
+devtools.ts`).
+
+**Served at**: `/runtimes/v86/devtools.tar.gz`
+**Built**: 2026-10-07, with `scripts/build-devtools-runtime.sh`
+**Source**: Alpine Linux 3.20.10 (i386), image digest
+`i386/alpine@sha256:7a8859515d7d0d58007b48d9b52467b3ba496ac2e9f16300792516948a82ac8c`,
+its own prebuilt packages (built on musl libc, the same C library the
+Buildroot image's BusyBox already uses)
+**SHA-256**: `5a9339f61c005b8b2d52e4b43e85bb12684ef12ae97d263c48ac6708b93f01d8`
+**Size**: ~115 MB installed, ~44 MB as shipped (gzip)
+
+### Why Alpine rather than Buildroot
+
+Buildroot, which builds the image above, is a cross-compilation toolchain:
+it builds a compiler that runs on the *build host* and produces binaries for
+the target, not a compiler that runs *on* the target. Shipping gcc inside
+the machine means taking it from a distribution that packages one for its
+own userland - Alpine, on musl, chosen so its binaries run unmodified
+alongside the existing BusyBox image rather than against a different libc.
+
+### What is in it, and what is not
+
+Taken whole from Alpine's own package manifests (`apk info -L <pkg>`) rather
+than reconstructed file by file: a hand-built list kept missing files `ldd`
+never reports - a PIE binary's start-up object, the dev symlink `-lgcc_s`
+needs that its SONAME symlink does not cover, the linker plugin `collect2`
+always loads whether or not anything asks for LTO. Packages: `musl`,
+`musl-utils`, `libgcc`, `libstdc++`, `gmp`, `mpfr4`, `mpc1`, `isl26`, `zlib`,
+`zstd-libs`, `binutils`, `libctf`, `jansson`, `sframe`, `gcc`, `musl-dev`,
+`bash`, `readline`, `ncurses-terminfo-base`, `libncursesw`, `git`, `pcre2`,
+`sqlite-libs`, `nasm`, `gdb`, `libexpat`, `python3`, `sqlite`.
+
+Trimmed afterwards: manuals, docs, Python's test suite/idlelib/tkinter/
+ensurepip, GCC's LTO frontend and C++/Fortran/Go plugins, and the handful of
+binutils/gcc tools no lesson calls directly - `lto-dump` alone, an LTO
+object inspector, is bigger than the rest of binutils combined. `nm`,
+`objdump`, `readelf`, `strings`, `addr2line`, `size`, `windres`, `dlltool`,
+`c++filt`, `elfedit` and the cross-prefixed `i586-alpine-linux-musl-*`
+duplicates of tools already present under their plain name go for the same
+reason. `python3`'s optional C-extension backends (`_decimal`, `_dbm`,
+`_lzma`, `_bz2`, `_ctypes` and the libraries behind them) are not included:
+core Python (arithmetic, strings, loops, files) works; those specific
+imports do not.
+
+**gdb's limitation, found by testing it against a real crash**: a first stop
+- a breakpoint or an unhandled signal - works, and so does everything that
+only reads state once stopped there (`backtrace`, `print`, `up`/`down`).
+Resuming past that point (`next`, `step`, or `continue` past a breakpoint)
+corrupts the inferior, a limitation of v86's CPU emulation (single-instruction
+stepping), not of this packaging; attaching to an already-running process
+(`gdb -p`) is unaffected. The console's write-up for a lesson that uses this
+should read "run it under gdb to see where and why it crashed", not "step
+through it line by line".
+
+### Licence
+
+Alpine's own binaries, redistributed unmodified, each under the licence its
+own package metadata states (`apk list --installed` once built): most
+permissive (MIT, BSD, X11, PSF-2.0, the Zlib licence, SQLite's public-domain
+"blessing"), several copyleft - `bash`, `gdb`, `readline`, `gdbm` under
+GPL-3.0-or-later or later, `musl-utils`, `binutils`, `gcc` and its runtime
+libraries (`libgcc`, `libstdc++`, `libgomp`, `libatomic`) and `git` under
+GPL-2.0, `gmp`/`mpfr4`/`mpc1` under LGPL-3.0-or-later. As for the kernel and
+BusyBox above: unmodified, as Alpine itself publishes them, and a written
+source offer must accompany this archive if it is ever distributed in any
+other form than this public repository. The corresponding sources are
+Alpine's own `aports` tree (`https://gitlab.alpinelinux.org/alpine/aports`)
+at the `3.20.10` release each package above was built from.
+
+### Upgrade procedure
+
+1. Change `ALPINE_IMAGE` in `scripts/build-devtools-runtime.sh` to a newer
+   digest (`docker pull i386/alpine:3.20` then `docker inspect --format=
+   '{{index .RepoDigests 0}}'`).
+2. Run it; it prints the new `devtools.tar.gz` hash.
+3. Report the new hash in `verify-runtimes.sh` and this table, boot a devtools
+   lesson exercise before committing, and re-run the probes this file's
+   "What is in it" section describes (a breakpoint stop, `next` still being
+   the one that must not be relied on).

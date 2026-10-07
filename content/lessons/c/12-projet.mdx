@@ -274,6 +274,60 @@ La taille fixe a une limite évidente : au-delà de `CAPACITE`, on refuse les aj
 
 L'autre limite, c'est que tout disparaît à la fermeture du programme. Pour garder l'inventaire d'une exécution à l'autre, on l'écrit dans un fichier avec `fopen`, `fprintf` et `fclose`, puis on le relit au démarrage. Sur votre machine, avec `gcc`, vous pouvez ajouter un menu interactif au clavier (`scanf` et un `switch`), la suppression d'un produit, la sauvegarde et l'allocation dynamique, une fonctionnalité à la fois. Compilez avec `gcc -Wall -Wextra -o inventaire inventaire.c`, corrigez chaque avertissement, et vous tenez votre premier vrai projet C.
 
+## compilé pour de vrai, avec un vrai gcc
+
+Le bac à sable ci-dessus interprète le C ; il n'écrit jamais d'exécutable. La machine ci-dessous est un vrai Linux, avec un vrai `gcc` : les mêmes avertissements, le même exécutable, qu'une machine de développement ordinaire produirait.
+
+`inventaire.c`, dessous, reprend le `main` de la section précédente, avec une ligne de plus : une sortie au format `cle:valeur`, pensée pour un script, à côté de la ligne « Valeur totale » pensée pour une personne.
+
+<LinuxTerminal
+  devtools
+  title="gcc, puis une vraie base pour le stock"
+  files={{
+    "inventaire.c": "#include <stdio.h>\n#include <string.h>\n\ntypedef struct {\n    char nom[32];\n    int quantite;\n    float prix;\n} Produit;\n\n#define CAPACITE 100\n\nvoid ajouter(Produit inv[], int *n, const char nom[], int q, float p) {\n    if (*n >= CAPACITE) return;\n    Produit *c = &inv[*n];\n    strcpy(c->nom, nom);\n    c->quantite = q;\n    c->prix = p;\n    (*n)++;\n}\n\nfloat valeur_totale(const Produit inv[], int n) {\n    float total = 0.0f;\n    for (int i = 0; i < n; i++) {\n        total += inv[i].quantite * inv[i].prix;\n    }\n    return total;\n}\n\nint main(void) {\n    Produit inventaire[CAPACITE];\n    int nombre = 0;\n\n    ajouter(inventaire, &nombre, \"Clavier\", 12, 29.90f);\n    ajouter(inventaire, &nombre, \"Souris\", 25, 14.50f);\n    ajouter(inventaire, &nombre, \"Ecran\", 4, 159.00f);\n\n    float total = valeur_totale(inventaire, nombre);\n    printf(\"Valeur totale : %.2f euros\\n\", total);\n    printf(\"TOTAL:%.2f\\n\", total);\n    return 0;\n}\n",
+    "bug.c": "#include <stdio.h>\n\ntypedef struct {\n    char nom[32];\n    int quantite;\n    float prix;\n} Produit;\n\n/* Le jumeau pointeur de chercher() : trouve une adresse, ou NULL si rien\n * ne correspond - exactement comme chercher() renvoyait -1. */\nProduit *trouver(Produit inv[], int n, const char nom[]) {\n    for (int i = 0; i < n; i++) {\n        if (inv[i].nom[0] == nom[0]) return &inv[i];\n    }\n    return NULL;\n}\n\nint main(void) {\n    Produit inventaire[1] = {{\"Clavier\", 12, 29.90f}};\n    Produit *p = trouver(inventaire, 1, \"Z\");  /* rien ne commence par Z : NULL */\n    printf(\"Quantite : %d\\n\", p->quantite);     /* bug : jamais verifie si p est NULL */\n    return 0;\n}\n",
+  }}
+  expectedCommands={[
+    "gcc -Wall -Wextra -o inventaire inventaire.c",
+    "./inventaire > sortie.txt",
+    "cat sortie.txt",
+    "sqlite3 inventaire.db \"CREATE TABLE stock (produits TEXT, valeur REAL);\"",
+    "sqlite3 inventaire.db \"INSERT INTO stock VALUES ('clavier, souris, ecran', 1357.30);\"",
+    "sqlite3 inventaire.db \"SELECT * FROM stock;\"",
+    "gcc -g -O0 -o bug bug.c",
+    "gdb --batch -ex run -ex bt -ex \"print *p\" ./bug > diagnostic.txt 2>&1",
+    "cat diagnostic.txt",
+  ]}
+  checks={[
+    { label: "inventaire : l'exécutable que gcc a produit", path: "inventaire", expect: "file" },
+    {
+      label: "sortie.txt contient la vraie valeur calculée",
+      path: "sortie.txt",
+      expect: "file",
+      contains: "TOTAL:1357.30",
+    },
+    { label: "inventaire.db : une vraie base, pas un fichier plat", path: "inventaire.db", expect: "file" },
+    { label: "bug : l'exécutable qui plante", path: "bug", expect: "file" },
+    {
+      label: "diagnostic.txt montre le signal que gdb a intercepté",
+      path: "diagnostic.txt",
+      expect: "file",
+      contains: "SIGSEGV",
+    },
+  ]}
+  hints={[
+    "-Wall -Wextra n'empêchent pas gcc de compiler : ils demandent seulement plus d'avertissements.",
+    "> redirige la sortie standard du programme vers un fichier, à la place de l'écran.",
+    "sqlite3 nomdefichier \"instruction SQL\" exécute l'instruction et quitte : un nom de fichier qui n'existe pas encore est créé.",
+    "gdb --batch -ex COMMANDE enchaîne des commandes gdb sans attendre de saisie : run, puis bt (la pile d'appels) une fois le programme arrêté par le signal.",
+    "trouver renvoie NULL comme chercher renvoyait -1 ; main utilise p->quantite sans jamais vérifier p.",
+  ]}
+/>
+
+`TOTAL:1357.30` dans `sortie.txt` est la preuve que c'est bien ce `gcc`-là, sur cette machine, qui a calculé la valeur : rien n'est écrit en dur dans la leçon. `inventaire.db` est une vraie base SQLite, celle-là même que vous retrouverez dans le parcours SQL - une ligne par produit tiendrait aussi bien qu'une ligne pour tout le stock, le `CREATE TABLE` n'aurait qu'à changer de forme.
+
+`bug.c` plante volontairement : `trouver` renvoie `NULL` exactement comme `chercher` renvoyait `-1` pour dire « absent », et `main` ne vérifie jamais lequel des deux cas s'est produit avant de lire `p->quantite`. `gdb` attrape le signal `SIGSEGV` au moment où `main` déréférence ce pointeur nul, et `bt` montre la ligne exacte - c'est tout ce dont vous avez besoin pour localiser un plantage, bien avant de savoir le réparer avec un simple `if (p != NULL)`.
+
 ## à toi de jouer
 
 <Quiz id="q-1" question="Pourquoi passe-t-on le compteur a la fonction ajouter sous la forme d'un pointeur (int *nombre) ?" options={["Pour que la fonction aille plus vite", "Pour que l'incrementation du compteur soit visible dans l'appelant", "Parce qu'un int ne peut pas etre passe autrement", "Pour economiser de la memoire"]} correct={1} />

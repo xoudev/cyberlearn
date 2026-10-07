@@ -71,6 +71,11 @@ check_file "${V86}/bash"                     "eb5062d5e2fa6437dc7e7b5623879c3cde
 # Debian's compiled terminfo entry for TERM=linux (ncurses-base 6.4-4), for bash's line editor
 check_file "${V86}/terminfo-linux"           "b70a4941416eb703a01b5a06fd1c914880452302b0e0b2a7dea12600607824a7" "v86/terminfo-linux"
 
+# A real C/assembly toolchain (bash, git, sqlite3, nasm, gcc, gdb, python3),
+# opt-in, extracted over /mnt by lib/linux-terminal/devtools.ts on the
+# lessons that ask for it. Rebuild with: bash scripts/build-devtools-runtime.sh
+check_file "${V86}/devtools.tar.gz"          "5a9339f61c005b8b2d52e4b43e85bb12684ef12ae97d263c48ac6708b93f01d8" "v86/devtools.tar.gz"
+
 # ── sql.js 1.14.2 (SQLite in WebAssembly, the SQL lessons' real database) ────
 # Update with download-runtimes.sh (SQLJS_VERSION)
 SQLJS="${RUNTIMES}/sqljs"

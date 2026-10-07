@@ -10,6 +10,9 @@
 # Update RUNTIMES_VERSIONS.md and the hashes in verify-runtimes.sh if you
 # bump the version.
 #
+# v86's own devtools.tar.gz (a real C/assembly toolchain for the machine)
+# is built, not downloaded - see build-devtools-runtime.sh instead.
+#
 # Usage:
 #   bash scripts/download-runtimes.sh
 # =============================================================================
