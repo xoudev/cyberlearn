@@ -5,6 +5,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import {
+  BASE_MEMORY_SIZE,
+  DEVTOOLS_FILE,
+  DEVTOOLS_MEMORY_SIZE,
+  installDevtoolsCommand,
+} from "@/lib/linux-terminal/devtools";
+import {
   BASH_FILE,
   checkHolds,
   createLineTracker,
@@ -105,6 +111,12 @@ const propsSchema = z.object({
    * at the limit is kept. The learner may still finish past it.
    */
   timeLimitMinutes: z.number().int().min(1).max(180).optional(),
+  /**
+   * A real C/assembly toolchain (bash, git, sqlite3, nasm, gcc, gdb,
+   * python3), extracted over the machine before the learner sees it: see
+   * lib/linux-terminal/devtools.ts for what that costs and what is in it.
+   */
+  devtools: z.boolean().optional(),
 });
 
 export type LinuxTerminalProps = z.input<typeof propsSchema>;
@@ -216,6 +228,27 @@ function loadExtra(name: "bash" | "terminfo-linux"): Promise<Uint8Array | null> 
 }
 
 /**
+ * The devtools toolchain, gzip-decompressed in the page: the machine's own
+ * BusyBox tar cannot (lib/linux-terminal/devtools.ts). Cached like the
+ * other extras, and worth starting as early as the boot itself - a 44 MB
+ * download is longer than the ~5 s v86 takes to reach its first prompt.
+ */
+function loadDevtools(): Promise<Uint8Array | null> {
+  let file = extras.get("devtools");
+  if (!file) {
+    file = fetch(`${RUNTIME}/devtools.tar.gz`)
+      .then(async (res) => {
+        if (!res.ok || res.body === null) return null;
+        const stream = res.body.pipeThrough(new DecompressionStream("gzip"));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      })
+      .catch(() => null);
+    extras.set("devtools", file);
+  }
+  return file;
+}
+
+/**
  * Loads libv86.js once per page. A script added by the page's own code: the
  * CSP's 'strict-dynamic' trusts it, and 'wasm-unsafe-eval' (already there for
  * Pyodide) lets it compile its WebAssembly.
@@ -265,12 +298,13 @@ function loadV86(): Promise<V86Constructor> {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-type Phase = "idle" | "loading" | "booting" | "ready" | "error";
+type Phase = "idle" | "loading" | "booting" | "installing" | "ready" | "error";
 
 const PHASE_LABEL: Record<Phase, string> = {
   idle: "",
   loading: "Téléchargement de la machine…",
   booting: "Démarrage de Linux…",
+  installing: "Installation de bash, git, gcc, nasm, gdb, python3…",
   ready: "",
   error: "",
 };
@@ -311,6 +345,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   expectedRef.current = expected;
   const checksRef = useRef(checks);
   checksRef.current = checks;
+  const devtoolsRef = useRef(props.devtools ?? false);
+  devtoolsRef.current = props.devtools ?? false;
 
   /**
    * Looks at /mnt in the machine and records which checks hold now.
@@ -347,7 +383,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     (emulator: V86Emulator, term: TerminalType) => {
       const decoder = new TextDecoder();
       let tail = "";
-      let stage: "boot" | "setup" | "live" = "boot";
+      let stage: "boot" | "setup" | "devtools" | "live" = "boot";
       let pending: number[] = [];
       let flushing = false;
       // The live output, decoded, to see the prompt come back: that is when
@@ -388,6 +424,29 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         );
       };
 
+      /**
+       * Writes the devtools archive into the machine and extracts it, kept
+       * off the screen like the boot itself: unlike bash's near-instant
+       * copy, this takes several seconds, and a prompt flickering through
+       * tar's own output would look like the machine had stalled. Falls
+       * through to goLive on its own if the download failed - a lesson
+       * that asked for gcc then has none, which is what no bash already
+       * does when that download fails.
+       */
+      const goDevtools = async (): Promise<void> => {
+        setPhase("installing");
+        const bytes = await loadDevtools();
+        if (bytes === null) {
+          stage = "live";
+          void goLive().catch(() => {
+            setPhase("error");
+          });
+          return;
+        }
+        await emulator.create_file(DEVTOOLS_FILE, bytes);
+        emulator.serial0_send(`${installDevtoolsCommand()}\n`);
+      };
+
       emulator.add_listener("serial0-output-byte", (byte) => {
         if (stage === "live") {
           pending.push(byte);
@@ -410,7 +469,14 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         if (stage === "boot") {
           stage = "setup";
           emulator.serial0_send(setupCommand(Object.keys(filesRef.current), term.cols, term.rows));
+        } else if (stage === "setup" && devtoolsRef.current) {
+          stage = "devtools";
+          void goDevtools().catch(() => {
+            setPhase("error");
+          });
         } else {
+          // "setup" without devtools, or "devtools" just finished: either
+          // way the machine is ready for the learner's own files.
           stage = "live";
           void goLive().catch(() => {
             setPhase("error");
@@ -444,6 +510,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     setPhase("loading");
     void loadExtra("bash");
     void loadExtra("terminfo-linux");
+    // Started now rather than once the machine asks for it: a 44 MB
+    // download outlasts the few seconds v86 takes to boot, so the two run
+    // side by side instead of one after the other.
+    if (devtoolsRef.current) void loadDevtools();
     try {
       const [V86, { Terminal }, { FitAddon }] = await Promise.all([
         loadV86(),
@@ -510,7 +580,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         vga_bios: { url: `${RUNTIME}/vgabios.bin` },
         bzimage: { url: `${RUNTIME}/buildroot-bzimage68.bin` },
         cmdline: "tsc=reliable mitigations=off random.trust_cpu=on",
-        memory_size: 64 * 1024 * 1024,
+        memory_size: devtoolsRef.current ? DEVTOOLS_MEMORY_SIZE : BASE_MEMORY_SIZE,
         vga_memory_size: 2 * 1024 * 1024,
         // The in-memory filesystem the image mounts at /mnt.
         filesystem: {},
@@ -742,7 +812,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               <>
                 <p style={{ margin: 0, maxWidth: 520 }}>
                   Un vrai Linux tourne ici, dans ton navigateur : toutes les commandes marchent, et
-                  rien ne sort de cet onglet. Le premier démarrage télécharge environ 15 Mo.
+                  rien ne sort de cet onglet.{" "}
+                  {props.devtools === true
+                    ? "Le premier démarrage télécharge environ 60 Mo (bash, git, gcc, nasm, gdb, python3 compris)."
+                    : "Le premier démarrage télécharge environ 15 Mo."}
                 </p>
                 {limitMinutes !== null ? (
                   <p style={{ margin: 0, maxWidth: 520, color: "var(--color-warning)" }}>

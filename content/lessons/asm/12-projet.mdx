@@ -174,13 +174,56 @@ le_double:
 
 Remarquez que `le_double` ne reçoit qu'un opérande dans `rax` et fabrique le second elle-même avec `mov rbx, 2`. Une sous-routine n'est pas obligée de tout recevoir de l'appelant ; elle peut poser ses propres constantes. Tentez ensuite une sous-routine `le_carre` qui multiplie un nombre par lui-même : copiez `rax` dans `rbx`, puis `imul rax, rbx`. Même mécanique, une ligne de plus.
 
+## la même addition, assemblée pour de vrai
+
+Le simulateur ci-dessus ne connaît que `println` et `prints` : des instructions qui n'existent pas sur un vrai processeur, écrites pour cette leçon. Un vrai `nasm` n'en a jamais entendu parler. Il attend du x86 véritable : des registres qui écrivent eux-mêmes dans la sortie standard, par un appel système, sans filet.
+
+La machine ci-dessous est un vrai Linux, pas un simulateur, mais un Linux 32 bits : `eax` et `ebx` y remplacent `rax` et `rbx`, mêmes rôles, moitié moins de bits, et l'appel système se déclenche par `int 0x80` plutôt que par l'instruction `syscall` des machines 64 bits. `add` ne change pas : destination d'abord, comme tout ce chapitre.
+
+<LinuxTerminal
+  devtools
+  title="nasm et ld, pour de vrai"
+  files={{
+    "calc.asm": "; calc.asm - l'addition du chapitre 2 (20 + 6), sur une vraie machine 32 bits.\nsection .data\nmsg db \"Addition reelle, par un vrai process Linux.\", 10\nmsglen equ $ - msg\n\nsection .text\nglobal _start\n_start:\n    mov eax, 20\n    mov ebx, 6\n    add eax, ebx            ; eax vaut 26 : la meme addition qu'au chapitre 2\n\n    push eax                ; sys_write va reutiliser eax/ebx/ecx/edx : on garde 26 de cote\n    mov eax, 4               ; sys_write\n    mov ebx, 1               ; stdout\n    mov ecx, msg\n    mov edx, msglen\n    int 0x80\n\n    pop ebx                  ; le 26 d'avant, pas ce que write vient de laisser dans eax\n    mov eax, 1               ; sys_exit : sort avec le resultat comme code de sortie\n    int 0x80\n",
+  }}
+  expectedCommands={[
+    "nasm -f elf32 calc.asm -o calc.o",
+    "ld -m elf_i386 -o calc calc.o",
+    "./calc; echo $? > resultat.txt",
+    "git config --global user.email \"etudiant@cyberlearn.fr\"",
+    "git config --global user.name \"Etudiant\"",
+    "git init",
+    "git add calc.asm resultat.txt",
+    "git commit -m \"calculatrice assemblee et liee avec un vrai outillage\"",
+  ]}
+  checks={[
+    { label: "calc.o : l'objet que nasm a assemblé", path: "calc.o", expect: "file" },
+    { label: "calc : l'exécutable que ld a lié", path: "calc", expect: "file" },
+    {
+      label: "resultat.txt contient le code de sortie du vrai calcul",
+      path: "resultat.txt",
+      expect: "file",
+      contains: "26",
+    },
+    { label: "le dépôt git existe", path: ".git", expect: "dir" },
+  ]}
+  hints={[
+    "nasm -f elf32 produit un objet pour une machine 32 bits comme celle-ci ; -o nomme le fichier de sortie.",
+    "ld attend -m elf_i386 pour lier du code 32 bits, puis -o pour nommer l'exécutable.",
+    "$? contient le code de sortie de la dernière commande : exactement la valeur que push a protégée avant sys_write.",
+    "git config --global ne se fait qu'une fois par machine ; ensuite git sait qui signe chaque commit.",
+  ]}
+/>
+
+`echo $?` lit le code de sortie du programme qui vient de tourner, celui que `sys_exit` a reçu dans `ebx` : c'est bien le 26 que l'addition a calculé, pas un texte écrit en dur. Le `push`/`pop` autour de l'appel à `sys_write` n'est pas décoratif : `write` utilise aussi `eax`, `ebx`, `ecx` et `edx`, et sans cette sauvegarde, le `ebx` que `sys_exit` lirait ensuite serait celui de l'appel précédent, pas le résultat du calcul.
+
 ## votre projet personnel
 
 <Callout type="success">
-Vous avez de quoi aller plus loin. La version qui tourne ici reste bornée : pas de clavier, pas de syscall. Sur votre machine, avec un assembleur installé, rien ne vous empêche d'en faire une calculatrice qui dialogue vraiment avec l'utilisateur.
+Sur votre propre machine, probablement 64 bits, rien ne vous empêche d'aller plus loin : un assembleur installé, un vrai clavier, et une calculatrice qui dialogue vraiment avec l'utilisateur.
 </Callout>
 
-Installez NASM, assemblez sous Linux et liez avec `ld`. Étendez la calculatrice par paliers, du plus simple au plus exigeant.
+Étendez la calculatrice par paliers, du plus simple au plus exigeant.
 
 1. **Saisie réelle.** Lisez deux nombres au clavier avec `sys_read`, au lieu de les coder en dur. C'est là que les appels système entrent en scène.
 2. **Boucle de menu.** Affichez un menu (1 = addition, 2 = soustraction, et ainsi de suite) dans une boucle, et recommencez tant que l'utilisateur ne choisit pas de quitter. Vous y rejouerez les sauts conditionnels.
