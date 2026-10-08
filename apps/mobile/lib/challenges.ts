@@ -120,17 +120,6 @@ export function takesFlag(type: ChallengeType): boolean {
   return type === "CTF" || type === "SCRIPT";
 }
 
-/**
- * A challenge's file as a link the phone can open: an address of its own, or
- * a path on the site. Anything else (a `javascript:` link, a protocol-relative
- * one) is not opened.
- */
-export function siteLink(url: string, siteUrl: string): string | null {
-  if (/^https?:\/\//iu.test(url)) return url;
-  if (url.startsWith("/") && !url.startsWith("//")) return `${siteUrl.replace(/\/+$/u, "")}${url}`;
-  return null;
-}
-
 /** The attempts left, never below zero. */
 export function attemptsLeft(challenge: { maxAttempts: number; userAttempts: number }): number {
   return Math.max(0, challenge.maxAttempts - challenge.userAttempts);

@@ -16,7 +16,6 @@ import {
   attemptsLeft,
   CATEGORY_LABEL,
   DIFFICULTY_LABEL,
-  siteLink,
   STATUS_META,
   takesFlag,
   type ChallengeDetail,
@@ -25,6 +24,7 @@ import { useCosmetics } from "@/lib/cosmetics";
 import { parseLesson } from "@/lib/lesson-blocks";
 import { useChallenge } from "@/lib/queries";
 import { useSession } from "@/lib/session";
+import { siteLink } from "@/lib/tournaments";
 
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 

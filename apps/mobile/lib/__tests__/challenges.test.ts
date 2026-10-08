@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   attemptsLeft,
   matchesFilter,
-  siteLink,
   splitWeekly,
   takesFlag,
   tallyOf,
@@ -34,24 +33,6 @@ describe("takesFlag", () => {
   it("takes a flag for a CTF and a script, a click for a puzzle or a lab", () => {
     const types = ["CTF", "SCRIPT", "PUZZLE", "LAB"] as const;
     expect(types.map((t) => takesFlag(t))).toEqual([true, true, false, false]);
-  });
-});
-
-describe("siteLink", () => {
-  const SITE = "https://cyberlearn.fr";
-
-  it("opens a file's own address, or its path on the site", () => {
-    expect(siteLink("https://files.example.org/dump.pcap", SITE)).toBe(
-      "https://files.example.org/dump.pcap",
-    );
-    expect(siteLink("/files/dump.pcap", SITE)).toBe("https://cyberlearn.fr/files/dump.pcap");
-    expect(siteLink("/files/dump.pcap", `${SITE}/`)).toBe("https://cyberlearn.fr/files/dump.pcap");
-  });
-
-  it("opens nothing else", () => {
-    expect(siteLink("javascript:alert(1)", SITE)).toBeNull();
-    expect(siteLink("//evil.example/x", SITE)).toBeNull();
-    expect(siteLink("dump.pcap", SITE)).toBeNull();
   });
 });
 
