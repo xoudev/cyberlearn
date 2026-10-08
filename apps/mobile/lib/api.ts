@@ -1450,15 +1450,22 @@ export async function answerDuelApi(
 
 // ── CTF tournaments (the site's lib/tournaments/tournaments.ts) ─────────────
 
+/** The reader's tournaments, and the server's clock when it listed them. */
+export interface TournamentList {
+  tournaments: TournamentSummary[];
+  serverNow: string;
+}
+
 /** The tournaments the reader's classes take part in. */
-export async function fetchTournamentsApi(): Promise<TournamentSummary[]> {
+export async function fetchTournamentsApi(): Promise<TournamentList> {
   const res = await authedFetch("/api/mobile/tournaments");
   // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/route.ts).
   const body = (await res.json()) as
-    | { ok: true; tournaments: TournamentSummary[] }
+    | { ok: true; tournaments: TournamentSummary[]; serverNow?: string }
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return body.tournaments;
+  // A site older than this app sends no clock: the phone's stands in for it.
+  return { tournaments: body.tournaments, serverNow: body.serverNow ?? new Date().toISOString() };
 }
 
 /** One tournament, its challenges and its scoreboard; null when it is not the reader's. */

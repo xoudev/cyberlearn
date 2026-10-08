@@ -1,0 +1,1424 @@
+/* Quiz duels (/duels and /duels/[id]): the list with its record, the rules,
+   the invitations, the new duel panel and the duel cards; a duel's page with
+   its scoreboard, the question, the waiting panels and the result. Square
+   like the rest of the site. The page's accent is the reader's own
+   (--cosmetic-accent); an outcome sets the tone of what it is written on (a
+   duel, an answer): a win in the success colour, a loss in the danger one, a
+   wait in the warning one, a draw or a duel that never happened muted.
+
+   Text in a tone ("ink") is the tone itself on the dark theme. On the light
+   one it is pulled toward the text colour, as far as each tone needs: the
+   bright accents and the success green read poorly as type on white, the
+   danger red hardly needs it. */
+
+.dl {
+  --dl-accent: var(--cosmetic-accent);
+  --dl-accent-ink: color-mix(in srgb, var(--cosmetic-accent) 58%, var(--color-text-primary));
+  --dl-accent-soft: color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+  --dl-accent-wash: color-mix(in srgb, var(--cosmetic-accent) 7%, transparent);
+}
+.dark .dl {
+  --dl-accent-ink: var(--cosmetic-accent);
+}
+/* The site's eyebrow sets its bold word in the brand colour, which a light
+   page can hardly read; here it names the duel's path. */
+.dl .pg-eyebrow b {
+  color: var(--dl-accent-ink);
+}
+
+.dl [data-outcome="win"] {
+  --dl-tone: var(--color-success);
+  --dl-tone-mix: 58%;
+}
+.dl [data-outcome="loss"] {
+  --dl-tone: var(--color-danger);
+  --dl-tone-mix: 88%;
+}
+.dl [data-outcome="live"] {
+  --dl-tone: var(--cosmetic-accent);
+  --dl-tone-mix: 58%;
+}
+.dl [data-outcome="wait"] {
+  --dl-tone: var(--color-warning);
+  --dl-tone-mix: 72%;
+}
+.dl [data-outcome="draw"],
+.dl [data-outcome="declined"],
+.dl [data-outcome="expired"] {
+  --dl-tone: var(--color-text-muted);
+  --dl-tone-mix: 100%;
+}
+.dl [data-outcome] {
+  --dl-ink: color-mix(in srgb, var(--dl-tone) var(--dl-tone-mix), var(--color-text-primary));
+}
+.dark .dl [data-outcome] {
+  --dl-ink: var(--dl-tone);
+}
+
+/* ── Shared bits ────────────────────────────────────────────────────────── */
+
+/* A player's monogram: their initials in a square tile; the reader's in the
+   accent. */
+.dl-mono {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+}
+.dl-mono[data-me="true"] {
+  color: var(--dl-accent-ink);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-sunken));
+  border-color: var(--dl-accent-soft);
+}
+.dl-mono--sm {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+.dl-mono--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 17px;
+}
+
+/* The outcome in a word. */
+.dl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--dl-ink);
+  border: 1px solid color-mix(in srgb, var(--dl-tone) 50%, transparent);
+}
+.dl-badge[data-outcome="win"] {
+  color: var(--color-bg-base);
+  background: var(--dl-ink);
+  border-color: var(--dl-ink);
+}
+.dl-badge--lg {
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+/* A duel the page is reading again every few seconds, on the duel's own page
+   only: the list is drawn once. */
+.dl-pulse {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dl-pulse 1.6s ease-in-out infinite;
+}
+@keyframes dl-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* "contre", between two players. */
+.dl-vs {
+  flex: none;
+  padding: 6px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border-default);
+}
+
+.dl-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-danger);
+}
+
+.dl-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--dl-accent-ink);
+}
+.dl-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.dl-link:focus-visible {
+  outline: 2px solid var(--dl-accent-ink);
+  outline-offset: 3px;
+}
+
+/* A section of the list: its title over a dashed rule, a count beside it. */
+.dl-section {
+  margin-bottom: 56px;
+}
+.dl-sec {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--color-border-default);
+}
+.dl-sec__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+.dl-sec__meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── The list: header and record ────────────────────────────────────────── */
+
+/* The title beside the record, until the title would have less than 440px:
+   the record then goes under it. Measured on the content, not the viewport,
+   since the sidebar takes its share. */
+.dl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px 32px;
+  margin-bottom: 32px;
+}
+.dl-head > :first-child {
+  flex: 1 1 440px;
+  min-width: 0;
+}
+.dl-head .pg-title {
+  margin-bottom: 14px;
+}
+.dl-head .pg-lede {
+  margin-bottom: 0;
+}
+
+/* The reader's record: wins, losses, draws, and what is still open. */
+.dl-record {
+  display: flex;
+  flex: none;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+.dl-record li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 92px;
+  padding: 14px 18px 13px;
+}
+.dl-record li + li {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.dl-record b {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--dl-ink, var(--color-text-primary));
+}
+.dl-record [data-outcome="draw"] b {
+  color: var(--color-text-primary);
+}
+.dl-record span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── The rules, three facts ─────────────────────────────────────────────── */
+
+.dl-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 48px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+.dl-rules li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 20px 22px;
+}
+.dl-rules li + li {
+  border-left: 1px solid var(--color-border-subtle);
+}
+.dl-rules__n {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dl-accent-ink);
+}
+.dl-rules__title {
+  margin: 0 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dl-rules__text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+/* ── Invitations ────────────────────────────────────────────────────────── */
+
+/* A lone invitation takes the row; a card wide enough sets its answer beside
+   the challenge rather than under it. */
+.dl-invites {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dl-invites__item {
+  container-type: inline-size;
+}
+.dl-invite {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px 18px;
+  height: 100%;
+  padding: 20px 22px 22px;
+  border: 1px solid var(--dl-accent-soft);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, var(--color-bg-elevated));
+}
+.dl-invite__eyebrow {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dl-accent-ink);
+}
+.dl-invite__text {
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.dl-invite__text strong {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dl-invite__meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+.dl-invite__meta time {
+  color: var(--color-text-secondary);
+}
+.dl-invite__actions {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px dashed var(--dl-accent-soft);
+}
+@container (min-width: 640px) {
+  .dl-invite {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 22px 26px 24px;
+  }
+  .dl-invite__actions {
+    grid-column: auto;
+    padding: 0 0 0 26px;
+    border-top: 0;
+    border-left: 1px dashed var(--dl-accent-soft);
+  }
+}
+
+.dl-respond {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.dl-respond .dl-error {
+  flex-basis: 100%;
+}
+
+/* ── The new duel panel ─────────────────────────────────────────────────── */
+
+.dl-new {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px 28px;
+  padding: 26px 28px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.dl-new__versus {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  min-width: 0;
+}
+.dl-new__me {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+}
+.dl-new__who {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+/* The tiles, the selects and the button share one height (44px, a .btn's),
+   "contre" centred on it. */
+.dl-new__versus .dl-vs {
+  margin-bottom: 9px;
+}
+.dl-new__them {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+.dl-new__go {
+  display: grid;
+}
+.dl-new__error {
+  grid-column: 1 / -1;
+}
+
+/* A field: a mono label over a sunken control. The select stays native; only
+   its frame and its arrow are drawn. */
+.dl-field {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+.dl-field__label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dl-field__control {
+  position: relative;
+  display: block;
+}
+.dl-field__control::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--color-text-muted);
+  border-bottom: 1.5px solid var(--color-text-muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.dl-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  padding: 0 40px 0 14px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  transition: border-color var(--dur-fast) ease;
+}
+.dl-field select:hover {
+  border-color: var(--color-text-muted);
+}
+.dl-field select:focus-visible {
+  outline: 2px solid var(--dl-accent-ink);
+  outline-offset: 2px;
+  border-color: var(--dl-accent-soft);
+}
+.dl-field option {
+  color: var(--color-text-primary);
+  background: var(--color-bg-elevated);
+}
+
+/* ── Duel cards ─────────────────────────────────────────────────────────── */
+
+.dl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dl-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  transition: border-color var(--dur-base) ease;
+}
+.dl-card:hover {
+  border-color: color-mix(in srgb, var(--dl-tone) 55%, transparent);
+}
+.dl-card[data-outcome="win"],
+.dl-card[data-outcome="live"] {
+  border-color: color-mix(in srgb, var(--dl-tone) 40%, transparent);
+}
+.dl-card[data-outcome="win"]:hover,
+.dl-card[data-outcome="live"]:hover {
+  border-color: color-mix(in srgb, var(--dl-tone) 70%, transparent);
+}
+.dl-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.dl-card__path {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+.dl-card__vs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 22px 18px 18px;
+}
+.dl-card__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.dl-card__side--other {
+  align-items: flex-end;
+  text-align: right;
+}
+.dl-card__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-primary);
+}
+.dl-card__score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.dl-card__score b {
+  font-weight: 700;
+}
+/* The reader's score, first, in the duel's tone. */
+.dl-card__score b:first-of-type {
+  color: var(--dl-ink);
+}
+.dl-card[data-outcome="draw"] .dl-card__score b:first-of-type {
+  color: var(--color-text-primary);
+}
+.dl-card__dash {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.dl-card__meta {
+  margin: auto 0 0;
+  padding: 0 18px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+/* The card's one way in, along its foot. */
+.dl-card__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.dl-card__go:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-sunken);
+}
+.dl-card__go:focus-visible {
+  outline: 2px solid var(--dl-accent-ink);
+  outline-offset: -2px;
+}
+.dl-card[data-outcome="live"] .dl-card__go {
+  color: var(--dl-accent-ink);
+}
+.dl-card[data-outcome="live"] .dl-card__go:hover {
+  background: var(--dl-accent-wash);
+}
+
+/* ── A duel: header ─────────────────────────────────────────────────────── */
+
+/* One column with one left edge: the header, the scoreboard and the play
+   column under it. Capped, so the two sides of the board stay a scoreboard
+   on a wide screen rather than two halves far apart. */
+.dl-duel {
+  max-width: 1100px;
+}
+.dl-duel-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px 32px;
+  align-items: end;
+  margin-bottom: 28px;
+}
+.dl-duel-head .pg-title {
+  margin-bottom: 12px;
+  font-size: clamp(32px, 4.2vw, 54px);
+  overflow-wrap: anywhere;
+}
+.dl-duel-head .pg-lede {
+  margin-bottom: 0;
+}
+.dl-state {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+.dl-state__when {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  text-align: right;
+  color: var(--color-text-muted);
+}
+.dl-state__when time {
+  color: var(--color-text-secondary);
+}
+
+/* ── A duel: the scoreboard ─────────────────────────────────────────────── */
+
+.dl-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  margin-bottom: 32px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.dl-side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+  padding: 26px 30px;
+}
+.dl-side[data-side="other"] {
+  flex-direction: row-reverse;
+}
+.dl-side__who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.dl-side[data-side="other"] .dl-side__who {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.dl-side__name {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.dl-side__name strong,
+.dl-side__name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dl-side__name strong {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dl-side__name span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.dl-side__stats {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 10px;
+}
+.dl-side[data-side="other"] .dl-side__stats {
+  justify-items: start;
+}
+.dl-side__score {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+}
+.dl-side[data-side="other"] .dl-side__score {
+  flex-direction: row;
+}
+.dl-side__score b {
+  font-family: var(--font-mono);
+  font-size: clamp(48px, 5vw, 72px);
+  font-weight: 700;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.dl-side[data-side="reader"] .dl-side__score b {
+  color: var(--dl-accent-ink);
+}
+.dl-board[data-outcome] .dl-side[data-side="reader"] .dl-side__score b {
+  color: var(--dl-ink);
+}
+.dl-board[data-outcome="draw"] .dl-side[data-side="reader"] .dl-side__score b {
+  color: var(--color-text-primary);
+}
+/* Not played yet, or never: a dash holds the place of a score, as on the
+   list's cards. */
+.dl-board[data-idle="true"] .dl-side .dl-side__score b {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+/* A word a line ("bonnes / réponses"), as wide as its longest word: a width
+   in ch forgets the letter-spacing and lets that word out of the board. */
+.dl-side__score span {
+  width: min-content;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dl-side[data-side="reader"] .dl-side__score span {
+  text-align: right;
+}
+.dl-side__count {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+/* "contre" on the dashed line between the two sides. */
+.dl-board__vs {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.dl-board__vs::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed var(--color-border-default);
+}
+.dl-board__vs .dl-vs {
+  position: relative;
+  background: var(--color-bg-elevated);
+  border-style: solid;
+}
+
+/* One square a question. Mine: filled when right, crossed when missed, the
+   next one framed in the accent. The other's: filled for each answer given,
+   in grey, since only their count is known. */
+.dl-pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.dl-pip {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-border-default);
+}
+.dl-pip[data-state="right"] {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.dl-pip[data-state="wrong"] {
+  border-color: var(--color-danger);
+}
+.dl-pip[data-state="wrong"]::before,
+.dl-pip[data-state="wrong"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 1.5px;
+  background: var(--color-danger);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.dl-pip[data-state="wrong"]::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+.dl-pip[data-state="current"] {
+  border-color: var(--dl-accent-ink);
+}
+.dl-pip[data-state="current"]::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: color-mix(in srgb, var(--dl-accent-ink) 45%, transparent);
+}
+.dl-pip[data-state="done"] {
+  background: var(--color-text-secondary);
+  border-color: var(--color-text-secondary);
+}
+
+/* ── A duel: the play column ────────────────────────────────────────────── */
+
+/* No width of its own: the play column runs as wide as the scoreboard above
+   it, so the two share one right edge. */
+.dl-play > * + * {
+  margin-top: 20px;
+}
+.dl-play > .dl-live:empty + * {
+  margin-top: 0;
+}
+
+/* The answer just given, in its tone (data-outcome: win when right, loss when
+   missed). */
+.dl-feedback {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--dl-tone) 45%, transparent);
+  background: color-mix(in srgb, var(--dl-tone) 7%, var(--color-bg-elevated));
+}
+.dl-feedback__mark {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--dl-ink);
+  border: 1px solid currentColor;
+}
+.dl-feedback__mark svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dl-feedback__q {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dl-feedback__text {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* The question, as the final exam sets it. */
+.dl-q {
+  padding: 30px 34px 34px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.dl-q__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0 0 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dl-accent-ink);
+}
+.dl-q__eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1.5px;
+  background: var(--dl-accent);
+}
+.dl-q__eyebrow span {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+}
+.dl-q__text {
+  margin: 0 0 26px;
+  font-family: var(--font-sans);
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.dl-opts {
+  display: grid;
+  gap: 10px;
+}
+.dl-opt {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 18px 12px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  border-radius: 0;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.dl-opt:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--dl-accent-wash);
+  border-color: var(--dl-accent-soft);
+}
+.dl-opt:focus-visible {
+  outline: 2px solid var(--dl-accent-ink);
+  outline-offset: 2px;
+}
+.dl-opt:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+.dl-opt[data-picked="true"] {
+  color: var(--color-text-primary);
+  border-color: var(--dl-accent-ink);
+  opacity: 1;
+}
+.dl-opt__key {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  transition:
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+.dl-opt:hover:not(:disabled) .dl-opt__key,
+.dl-opt[data-picked="true"] .dl-opt__key {
+  color: var(--dl-accent-ink);
+  border-color: var(--dl-accent-soft);
+}
+.dl-opt__text {
+  font-size: 15.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Waiting on the other player. */
+.dl-wait {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 24px 26px;
+  border: 1px dashed color-mix(in srgb, var(--color-warning) 55%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-bg-elevated));
+}
+.dl-wait .dl-pulse {
+  margin-top: 8px;
+  color: var(--color-warning);
+}
+.dl-wait__title {
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.dl-wait__text {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* The invitation, answered from the duel itself. */
+.dl-callout {
+  padding: 26px 28px 28px;
+  border: 1px solid var(--dl-accent-soft);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, var(--color-bg-elevated));
+}
+.dl-callout__eyebrow {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dl-accent-ink);
+}
+.dl-callout__text {
+  margin: 0 0 22px;
+  font-family: var(--font-sans);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* A duel that never happened. */
+.dl-off {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding: 24px 26px;
+  border: 1px dashed var(--color-border-default);
+}
+.dl-off__text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+/* The result, in its tone. */
+.dl-result {
+  position: relative;
+  padding: 32px 36px 34px;
+  border: 1px solid color-mix(in srgb, var(--dl-tone) 50%, transparent);
+  border-top: 3px solid var(--dl-tone);
+  background: color-mix(in srgb, var(--dl-tone) 6%, var(--color-bg-elevated));
+}
+.dl-result__eyebrow {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dl-ink);
+}
+.dl-result__title {
+  margin: 0 0 10px;
+  font-family: var(--font-sans);
+  font-size: clamp(44px, 6vw, 78px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--dl-ink);
+}
+.dl-result[data-outcome="draw"] .dl-result__title,
+.dl-result[data-outcome="draw"] .dl-result__eyebrow {
+  color: var(--color-text-primary);
+}
+.dl-result__line {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+}
+.dl-result__note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.dl-result__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+/* The reader's answers, once the duel is settled. */
+.dl-play > .dl-review {
+  margin-top: 44px;
+}
+.dl-review__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--color-border-default);
+}
+.dl-review__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* One answer a row, in its tone: right (win), missed (loss), none given (draw). */
+.dl-review__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.dl-review__n {
+  padding-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.dl-review__domain {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.dl-review__q {
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+.dl-review__a,
+.dl-review__fix {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.dl-review__fix b {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.dl-review__verdict {
+  padding-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--dl-ink);
+}
+
+/* ── Narrow screens ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .dl-new {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dl-new__versus {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 900px) {
+  .dl-duel-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .dl-state {
+    justify-items: start;
+  }
+  .dl-state__when {
+    text-align: left;
+  }
+  .dl-rules {
+    grid-template-columns: 1fr;
+  }
+  .dl-rules li + li {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  /* The scoreboard: each side stacks, the name over the score. */
+  .dl-side,
+  .dl-side[data-side="other"] {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 18px;
+    padding: 20px 18px;
+  }
+  .dl-side[data-side="reader"] {
+    align-items: flex-start;
+  }
+  .dl-side[data-side="other"] {
+    align-items: flex-end;
+  }
+  .dl-side[data-side="reader"] .dl-side__stats {
+    justify-items: start;
+  }
+  .dl-side[data-side="other"] .dl-side__stats {
+    justify-items: end;
+  }
+  .dl-side__score,
+  .dl-side[data-side="other"] .dl-side__score {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dl-side[data-side="reader"] .dl-side__score {
+    align-items: flex-start;
+  }
+  .dl-side[data-side="other"] .dl-side__score {
+    align-items: flex-end;
+  }
+  .dl-side[data-side="reader"] .dl-side__score span {
+    text-align: left;
+  }
+  .dl-side[data-side="other"] .dl-side__score span {
+    text-align: right;
+  }
+  .dl-side__who {
+    max-width: 100%;
+  }
+}
+@media (max-width: 640px) {
+  .dl-section {
+    margin-bottom: 44px;
+  }
+  .dl-sec__title {
+    font-size: 22px;
+  }
+  /* The record wraps rather than squeeze its words: three tallies a row on
+     a phone, the rules between them drawn by the gap. */
+  .dl-record {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 1px;
+    background: var(--color-border-subtle);
+  }
+  .dl-record li {
+    flex: 1 1 100px;
+    min-width: 0;
+    padding: 12px 12px 11px;
+    background: var(--color-bg-elevated);
+  }
+  .dl-record li + li {
+    border-left: 0;
+  }
+  .dl-record b {
+    font-size: 24px;
+  }
+  .dl-record span {
+    letter-spacing: 0.12em;
+  }
+  .dl-new {
+    grid-template-columns: 1fr;
+    padding: 20px 18px;
+  }
+  .dl-new__versus {
+    flex-wrap: wrap;
+  }
+  .dl-new__them {
+    flex-basis: 100%;
+  }
+  .dl-new__go .btn {
+    width: 100%;
+  }
+  .dl-invite {
+    padding: 18px;
+  }
+  .dl-respond .btn {
+    flex: 1;
+  }
+  .dl-side,
+  .dl-side[data-side="other"] {
+    padding: 18px 14px;
+  }
+  /* The monogram over the name, so the name has the side's whole width. */
+  .dl-side__who,
+  .dl-side[data-side="other"] .dl-side__who {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dl-side[data-side="reader"] .dl-side__who {
+    align-items: flex-start;
+  }
+  .dl-side[data-side="other"] .dl-side__who {
+    align-items: flex-end;
+  }
+  .dl-side__name {
+    max-width: 100%;
+  }
+  .dl-board__vs .dl-vs {
+    padding: 5px 6px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+  .dl-side .dl-mono--lg {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+  .dl-side__name strong {
+    font-size: 16px;
+  }
+  .dl-side__name span {
+    display: none;
+  }
+  .dl-q,
+  .dl-callout,
+  .dl-result {
+    padding: 22px 18px 24px;
+  }
+  .dl-opt {
+    gap: 12px;
+    padding: 10px 14px 10px 10px;
+  }
+  .dl-wait,
+  .dl-off {
+    padding: 20px 18px;
+  }
+  .dl-result__cta .btn {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl-pulse {
+    animation: none;
+  }
+  .dl-card,
+  .dl-card__go,
+  .dl-opt,
+  .dl-opt__key,
+  .dl-field select {
+    transition: none;
+  }
+}

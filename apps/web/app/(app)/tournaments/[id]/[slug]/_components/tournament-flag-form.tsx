@@ -5,11 +5,14 @@
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
 import { submitTournamentFlagAction } from "../../../_actions/tournament-actions";
+import { IconCheck, IconFlag } from "../../../_components/parts";
 
 /**
  * The flag of a tournament challenge. A right one counts for the player and
  * their team, once; a wrong one costs nothing but a moment, the rate limit
- * standing in for the catalogue's cap on attempts.
+ * standing in for the catalogue's cap on attempts. Drawn as the flag row of
+ * the catalogue's Python runner is: the field and its button side by side,
+ * the server's answer under them.
  */
 export function TournamentFlagForm({
   tournamentId,
@@ -49,21 +52,18 @@ export function TournamentFlagForm({
   };
 
   return (
-    <form
-      onSubmit={submit}
-      className="card"
-      style={{ padding: "16px 20px", display: "grid", gap: 10 }}
-    >
-      <label
-        htmlFor="tournament-flag"
-        className="mono-label"
-        style={{ color: "var(--color-danger)" }}
-      >
-        ⚑ Flag · {String(points)} points
-      </label>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <form onSubmit={submit} className="trn-flag">
+      <div className="trn-flag__head">
+        <label htmlFor="tournament-flag" className="trn-flag__label">
+          <IconFlag />
+          Flag
+        </label>
+        <span className="trn-flag__pts">{points} points</span>
+      </div>
+      <div className="trn-flag__row">
         <input
           id="tournament-flag"
+          className="trn-flag__input"
           name="flag"
           value={flag}
           onChange={(e) => {
@@ -76,16 +76,6 @@ export function TournamentFlagForm({
           maxLength={500}
           required
           disabled={pending}
-          style={{
-            flex: 1,
-            minWidth: 220,
-            padding: "10px 12px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 14,
-            background: "var(--color-bg-base)",
-            color: "var(--color-text-primary)",
-            border: "1px solid var(--color-border-default)",
-          }}
         />
         <button type="submit" className="btn btn--danger" disabled={pending || flag.trim() === ""}>
           {pending ? "…" : "Valider"}
@@ -94,14 +84,15 @@ export function TournamentFlagForm({
       {message !== null ? (
         <p
           role={message.ok ? "status" : "alert"}
-          style={{
-            margin: 0,
-            color: message.ok ? "var(--cosmetic-accent)" : "var(--color-danger)",
-          }}
+          className="trn-flag__msg"
+          data-ok={message.ok ? "true" : "false"}
         >
+          {message.ok ? <IconCheck /> : null}
           {message.text}
         </p>
-      ) : null}
+      ) : (
+        <p className="trn-flag__hint">Un mauvais flag ne coûte rien.</p>
+      )}
     </form>
   );
 }
