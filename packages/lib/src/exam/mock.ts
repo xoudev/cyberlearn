@@ -77,6 +77,17 @@ export function mockTimeLimitMinutes(questionCount: number): number {
   return Math.max(10, Math.ceil((questionCount * 90) / 60));
 }
 
+/** Under a minute, the clock turns red and says so. */
+export const MOCK_LAST_MINUTE_MS = 60_000;
+
+/** "07:42": the time left, a second begun counted whole, never below 00:00. */
+export function mockClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function sourceKey(lessonId: string, quizId: string): string {
   return `${lessonId}:${quizId}`;
 }
@@ -230,10 +241,115 @@ export function domainVerdict(percent: number): string {
   return "à revoir";
 }
 
+/** A verdict as a tone, for whatever colours it. */
+export type VerdictTone = "ok" | "mid" | "low";
+
+/** A score's tone, read from its verdict so the thresholds stay those of `domainVerdict`. */
+export function verdictTone(percent: number): VerdictTone {
+  switch (domainVerdict(percent)) {
+    case "acquis":
+      return "ok";
+    case "à consolider":
+      return "mid";
+    default:
+      return "low";
+  }
+}
+
 /** The domains to go back to first: under 70 %, the weakest first. */
 export function weakestDomains(domains: readonly DomainScore[], count = 2): DomainScore[] {
   return [...domains]
     .filter((domain) => domain.percent < 70)
     .sort((a, b) => a.percent - b.percent || b.total - a.total)
     .slice(0, count);
+}
+
+/** The line under the score: the modules to go back to first, or that none needs it. */
+export function mockAdvice(domains: readonly DomainScore[]): string {
+  const weakest = weakestDomains(domains);
+  // " et ", not a comma: module titles have commas of their own.
+  return weakest.length > 0
+    ? `À revoir en premier : ${weakest.map((d) => d.domain).join(" et ")}.`
+    : "Tous les modules au-dessus de 70 % : tu es prêt pour l'examen final.";
+}
+
+/** The questions of one module, in the order they were drawn. */
+export interface MockPart {
+  domain: string;
+  questions: MockQuestion[];
+}
+
+/** The paper cut into its modules: the draw keeps a module's questions together. */
+export function mockParts(questions: readonly MockQuestion[]): MockPart[] {
+  const parts: MockPart[] = [];
+  for (const question of questions) {
+    const last = parts.at(-1);
+    if (last?.domain === question.domain) last.questions.push(question);
+    else parts.push({ domain: question.domain, questions: [question] });
+  }
+  return parts;
+}
+
+/** The questions still blank, answers keyed by question index as they are handed in. */
+export function unansweredQuestions(
+  questions: readonly MockQuestion[],
+  answers: Readonly<Record<string, number>>,
+): MockQuestion[] {
+  return questions.filter((question) => answers[String(question.index)] === undefined);
+}
+
+/** What became of a question once handed in. */
+export type MockAnswerState = "right" | "wrong" | "blank";
+
+/** A question's state in the correction: a blank counts as wrong, but is told apart. */
+export function answerState(item: Pick<MockReviewItem, "right" | "selected">): MockAnswerState {
+  if (item.right) return "right";
+  return item.selected === null ? "blank" : "wrong";
+}
+
+/** The word the correction gives each state. */
+export const ANSWER_WORD: Record<MockAnswerState, string> = {
+  right: "Juste",
+  wrong: "Fausse",
+  blank: "Sans réponse",
+};
+
+/** An option's key letter: A, B, C... */
+export function optionKey(k: number): string {
+  return k < 26 ? String.fromCharCode(65 + k) : String(k + 1);
+}
+
+/** What the correction writes beside an option: the right one, the one picked, or both. */
+export function optionTag(
+  item: Pick<MockReviewItem, "correct" | "selected">,
+  k: number,
+): string | null {
+  const right = k === item.correct;
+  const picked = k === item.selected;
+  if (right && picked) return "Ta réponse, juste";
+  if (right) return "Bonne réponse";
+  if (picked) return "Ta réponse";
+  return null;
+}
+
+/** The copy's answers, counted by what became of them. */
+export function answerCounts(review: readonly MockReviewItem[]): Record<MockAnswerState, number> {
+  const counts: Record<MockAnswerState, number> = { right: 0, wrong: 0, blank: 0 };
+  for (const item of review) counts[answerState(item)] += 1;
+  return counts;
+}
+
+/**
+ * The best score over the attempts listed, from two of them (a single attempt
+ * is its own best). Over the list only: the history holds the last few.
+ */
+export function bestScore(history: readonly { score: number }[]): number | null {
+  return history.length > 1 ? Math.max(...history.map((attempt) => attempt.score)) : null;
+}
+
+/** Each module's score at the last attempt, by module; the history comes newest first. */
+export function lastDomainScores(
+  history: readonly { domains: readonly DomainScore[] }[],
+): Map<string, DomainScore> {
+  return new Map((history[0]?.domains ?? []).map((domain) => [domain.domain, domain]));
 }

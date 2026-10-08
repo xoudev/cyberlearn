@@ -179,6 +179,74 @@ export function countdownLabel(ms: number): string {
   return `${String(seconds)} s`;
 }
 
+/** A count and its noun, the plural from two: "1 défi", "3 classes", "0 flag". */
+export function counted(n: number, noun: string): string {
+  return `${String(n)} ${noun}${n > 1 ? "s" : ""}`;
+}
+
+/**
+ * How long a tournament lasts, to the minute and without the units at zero:
+ * "15 min", "2 h", "2 h 30", "1 jour", "1 jour 45 min", "3 jours 4 h",
+ * "2 jours 3 h 15". A countdown says its seconds; a length does not.
+ */
+export function durationLabel(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 60_000));
+  const days = Math.floor(total / 1440);
+  const hours = Math.floor((total % 1440) / 60);
+  const minutes = total % 60;
+  if (days > 0) {
+    const whole = counted(days, "jour");
+    if (hours > 0) {
+      return minutes > 0
+        ? `${whole} ${String(hours)} h ${String(minutes).padStart(2, "0")}`
+        : `${whole} ${String(hours)} h`;
+    }
+    return minutes > 0 ? `${whole} ${String(minutes)} min` : whole;
+  }
+  if (hours > 0) {
+    return minutes > 0
+      ? `${String(hours)} h ${String(minutes).padStart(2, "0")}`
+      : `${String(hours)} h`;
+  }
+  return `${String(minutes)} min`;
+}
+
+/** A window as the site's views send it, in ISO 8601. */
+export interface TournamentWindowIso {
+  startsAt: string;
+  endsAt: string;
+}
+
+/** How much of the window has gone by at `nowMs`: 0 before the start, 1 from the end. */
+export function elapsedShare(window: TournamentWindowIso, nowMs: number): number {
+  const start = Date.parse(window.startsAt);
+  const end = Date.parse(window.endsAt);
+  if (!(end > start)) return nowMs >= end ? 1 : 0;
+  return Math.min(1, Math.max(0, (nowMs - start) / (end - start)));
+}
+
+// ── The list ────────────────────────────────────────────────────────────────
+
+const PHASE_ORDER: Record<TournamentPhase, number> = { RUNNING: 0, UPCOMING: 1, FINISHED: 2 };
+
+/** Running first, ending soonest; then the next to open; then the last to have closed. */
+export function byUrgency(
+  a: TournamentWindowIso & { phase: TournamentPhase },
+  b: TournamentWindowIso & { phase: TournamentPhase },
+): number {
+  if (a.phase !== b.phase) return PHASE_ORDER[a.phase] - PHASE_ORDER[b.phase];
+  if (a.phase === "RUNNING") return a.endsAt.localeCompare(b.endsAt);
+  if (a.phase === "UPCOMING") return a.startsAt.localeCompare(b.startsAt);
+  return b.endsAt.localeCompare(a.endsAt);
+}
+
+/** The list's tally, one word a phase; "en cours" and "à venir" take no s. */
+export function phaseTallyWord(phase: TournamentPhase, n: number): string {
+  if (phase === "RUNNING") return "en cours";
+  if (phase === "UPCOMING") return "à venir";
+  return n > 1 ? "terminés" : "terminé";
+}
+
 // ── Teams ───────────────────────────────────────────────────────────────────
 
 /** A class taking part, with the school it belongs to. */
@@ -194,6 +262,22 @@ export interface TournamentTeam {
   name: string;
   /** The school of a class, or the classes of a school. */
   detail: string;
+}
+
+/** What one team is, as a noun to count: "4 classes", "2 écoles". */
+export const TEAM_NOUN: Record<TournamentTeamScope, string> = {
+  CLASS: "classe",
+  ESTABLISHMENT: "école",
+};
+
+/** Who plays: "4 classes", or "2 écoles · 5 classes". */
+export function teamsLabel(
+  scope: TournamentTeamScope,
+  teamCount: number,
+  classCount: number,
+): string {
+  if (scope === "CLASS") return counted(classCount, "classe");
+  return `${counted(teamCount, "école")} · ${counted(classCount, "classe")}`;
 }
 
 /**
@@ -323,14 +407,14 @@ export function teamStandings(
   teamIds: readonly string[],
   solves: readonly TournamentSolveRow[],
 ): TeamStanding[] {
-  const counted = new Map<string, Map<string, TournamentSolveRow>>();
+  const byTeam = new Map<string, Map<string, TournamentSolveRow>>();
   for (const solve of [...solves].sort(byTime)) {
-    const team = counted.get(solve.teamId) ?? new Map<string, TournamentSolveRow>();
+    const team = byTeam.get(solve.teamId) ?? new Map<string, TournamentSolveRow>();
     if (!team.has(solve.challengeId)) team.set(solve.challengeId, solve);
-    counted.set(solve.teamId, team);
+    byTeam.set(solve.teamId, team);
   }
   const rows = teamIds.map((teamId, order) => {
-    const firsts = [...(counted.get(teamId)?.values() ?? [])];
+    const firsts = [...(byTeam.get(teamId)?.values() ?? [])];
     let reachedAt: Date | null = null;
     for (const solve of firsts) {
       if (reachedAt === null || solve.solvedAt.getTime() > reachedAt.getTime()) {
@@ -402,4 +486,175 @@ export function firstSolves(
 /** "1er", "2e", "3e": a rank as a place. */
 export function placeLabel(rank: number): string {
   return rank === 1 ? "1er" : `${String(rank)}e`;
+}
+
+/**
+ * Once it is over, the teams at the top of the board: one, or several tied
+ * there. None when nobody scored, a podium at zero saying nothing.
+ */
+export function tournamentWinners<T extends { rank: number; points: number }>(
+  teams: readonly T[],
+): T[] {
+  return teams.filter((team) => team.rank === 1 && team.points > 0);
+}
+
+// ── Where the reader stands ─────────────────────────────────────────────────
+
+/** What the board knows of the reader and the teams, to say where the reader stands. */
+export interface TournamentStandingInput {
+  phase: TournamentPhase;
+  teamScope: TournamentTeamScope;
+  teams: readonly { rank: number; points: number; isMine: boolean }[];
+  /** The reader's own score; null for someone who does not play. */
+  me: { points: number; solved: number; rank: number | null } | null;
+}
+
+/** One of the four figures that say where the reader stands. */
+export interface StandingFigure {
+  /** Their team's place, their own place, their points, their flags. */
+  key: "team" | "place" | "points" | "flags";
+  label: string;
+  /** "2e", "300"; null when there is none, which both apps draw as a dash. */
+  value: string | null;
+  /** Beside the value: "pts", "flag", "flags". */
+  unit: string | null;
+  /** Under it: what the place is counted among, or why there is none. */
+  note: string | null;
+}
+
+/**
+ * Where the reader stands once the tournament has started, as four named
+ * figures: their team's place among the teams, their own place, their points
+ * and their flags. A place among teams still all at zero would rank nobody,
+ * so there is none, nor one the reader hid or has yet to earn; the note says
+ * why. Null for someone who does not play.
+ */
+export function standingFigures(view: TournamentStandingInput): StandingFigure[] | null {
+  const { me } = view;
+  if (me === null) return null;
+  const over = view.phase === "FINISHED";
+  const team = view.teams.some((t) => t.points > 0) ? view.teams.find((t) => t.isMine) : undefined;
+  return [
+    {
+      key: "team",
+      label: "Ton équipe",
+      value: team !== undefined ? placeLabel(team.rank) : null,
+      unit: null,
+      note:
+        team !== undefined
+          ? `sur ${counted(view.teams.length, TEAM_NOUN[view.teamScope])}`
+          : over
+            ? "Personne n'a marqué"
+            : "Personne n'a encore marqué",
+    },
+    {
+      key: "place",
+      label: "Ta place",
+      value: me.rank !== null ? placeLabel(me.rank) : null,
+      unit: null,
+      note:
+        me.rank !== null
+          ? null
+          : me.solved > 0
+            ? "Masqué du classement"
+            : over
+              ? "Aucun flag"
+              : "Pas encore de flag",
+    },
+    { key: "points", label: "Tes points", value: String(me.points), unit: "pts", note: null },
+    {
+      key: "flags",
+      label: "Tes flags",
+      value: String(me.solved),
+      unit: me.solved > 1 ? "flags" : "flag",
+      note: null,
+    },
+  ];
+}
+
+// ── A challenge, for the reader ─────────────────────────────────────────────
+
+const CHALLENGE_TYPE_LABELS: Record<string, string> = { CTF: "CTF", SCRIPT: "Script" };
+
+/** A challenge's type in words, for its card and its page: "CTF", "Script". */
+export function challengeTypeLabel(type: string): string {
+  return CHALLENGE_TYPE_LABELS[type] ?? type;
+}
+
+/** What the board knows of a challenge for the reader. */
+export interface TournamentChallengeSolves {
+  solvedByMe: boolean;
+  solvedByMyTeam: boolean;
+  /** Flags found for it, by every team. */
+  solveCount: number;
+}
+
+/** Where a challenge stands for the reader: found by them, by their team, by others, by nobody. */
+export type TournamentChallengeState = "mine" | "team" | "found" | "open";
+
+export function challengeState(c: TournamentChallengeSolves): TournamentChallengeState {
+  if (c.solvedByMe) return "mine";
+  if (c.solvedByMyTeam) return "team";
+  return c.solveCount > 0 ? "found" : "open";
+}
+
+/**
+ * That state in words: "trouvé par toi", "3 flags trouvés". Once it is over,
+ * a challenge nobody found is no longer "pas encore" found.
+ */
+export function challengeStateLabel(c: TournamentChallengeSolves, over: boolean): string {
+  const state = challengeState(c);
+  if (state === "mine") return "trouvé par toi";
+  if (state === "team") return "trouvé par ton équipe";
+  if (state === "found") {
+    const plural = c.solveCount > 1 ? "s" : "";
+    return `${String(c.solveCount)} flag${plural} trouvé${plural}`;
+  }
+  return over ? "pas trouvé" : "pas encore trouvé";
+}
+
+/** The reader's team against the challenges: "1 sur 3 trouvé par ton équipe". */
+export function teamFoundLabel(found: number, total: number): string {
+  return `${String(found)} sur ${String(total)} trouvé${found > 1 ? "s" : ""} par ton équipe`;
+}
+
+/** Where the reader stands with one challenge, on its own page. */
+export type TournamentChallengeStatus = "solved" | "open" | "closed" | "watch";
+
+export const CHALLENGE_STATUS_LABELS: Record<TournamentChallengeStatus, string> = {
+  solved: "Trouvé",
+  open: "À trouver",
+  // The board's word for a challenge nobody can find any more.
+  closed: "Pas trouvé",
+  watch: "Lecture seule",
+};
+
+/** What a challenge's page knows of the reader and the tournament. */
+export interface TournamentChallengeAccess {
+  phase: TournamentPhase;
+  /** Playing for a team, while it runs. */
+  canPlay: boolean;
+  /** The team the reader plays for; null for a teacher, an admin, or a class that left. */
+  myTeam: string | null;
+}
+
+/**
+ * Found; to find; out of reach once it is over; or only to read, for someone
+ * who plays for no team, before the end as after it: "Pas trouvé" is a
+ * player's word, and a teacher has nothing to find.
+ */
+export function challengeStatus(
+  access: TournamentChallengeAccess,
+  solved: boolean,
+): TournamentChallengeStatus {
+  if (solved) return "solved";
+  if (access.myTeam === null) return "watch";
+  if (access.phase === "FINISHED") return "closed";
+  return access.canPlay ? "open" : "watch";
+}
+
+/** Why no flag can be given on a challenge's page, or null while one can. */
+export function flagNotice(access: TournamentChallengeAccess): string | null {
+  if (access.phase === "FINISHED") return "Le tournoi est terminé : les flags ne comptent plus.";
+  return access.canPlay ? null : "Seuls les élèves des classes du tournoi y donnent un flag.";
 }
