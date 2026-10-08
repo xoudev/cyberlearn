@@ -67,12 +67,21 @@ describe("OAuth Site URL fallback", () => {
 });
 
 describe("protected route classification", () => {
-  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/profile"])(
-    "protects known application route %s",
-    (path) => {
-      expect(isProtectedRoute(path)).toBe(true);
-    },
-  );
+  // /duels and /tournaments were left out when they were added: a signed-out
+  // reader following a notification was sent to /login by the page itself,
+  // without the way back, and landed on the dashboard once signed in.
+  it.each([
+    "/dashboard",
+    "/lessons/python",
+    "/paths/linux",
+    "/profile",
+    "/duels",
+    "/duels/d1",
+    "/tournaments",
+    "/tournaments/t1/journal",
+  ])("protects known application route %s", (path) => {
+    expect(isProtectedRoute(path)).toBe(true);
+  });
 
   // /settings has no page: next.config redirects it before the middleware.
   it.each(["/catalogue", "/contact", "/page-inconnue", "/u/introuvable", "/settings"])(
@@ -168,6 +177,15 @@ describe("a visitor sent to sign in", () => {
     const response = await middleware(new NextRequest("https://cyberlearn.fr/lessons/python"));
     const location = new URL(response.headers.get("location") ?? "");
     expect(location.searchParams.get("redirectTo")).toBe("/lessons/python");
+  });
+
+  it("comes back to the tournament or the duel a notification pointed at", async () => {
+    for (const path of ["/tournaments/t1", "/duels/d1"]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.pathname).toBe("/login");
+      expect(location.searchParams.get("redirectTo")).toBe(path);
+    }
   });
 });
 
