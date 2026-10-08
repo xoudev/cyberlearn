@@ -905,10 +905,10 @@
 /* The challenges with the players under them, the teams' ranking in a
    column beside both. Nothing is sticky: the app shell's <main> grows with
    its content and the window scrolls, so a sticky column would never stick.
-   A column holding the teams and fifty players ran far below a short grid
-   of challenges and left the main column empty; the players follow the
-   challenges instead, and the second row takes whatever the teams' column
-   needs beyond them. */
+   The players sit under the challenges, not under the teams: fifty of them
+   in the side column would run far below a short grid of challenges and
+   leave the main column empty. The second row takes whatever the teams'
+   column needs beyond them. */
 .trn-main {
   display: grid;
   grid-template-areas:

@@ -589,9 +589,10 @@ function Paper({
 
 // ── Result ────────────────────────────────────────────────────────────────
 
-/** A question of the correction: closed when it was right, open when it was not. */
+/** A review row's tone, by the state of its answer. */
 const REVIEW_TONE: Record<MockAnswerState, Tone> = { right: "ok", wrong: "low", blank: "none" };
 
+/** A question of the correction: closed when it was right, open when it was not. */
 function ReviewRow({ item }: { item: MockReviewItem }): React.ReactElement {
   const state = answerState(item);
   const tone = REVIEW_TONE[state];

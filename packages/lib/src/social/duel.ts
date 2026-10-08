@@ -14,9 +14,8 @@ import {
  *
  * Pure: the site's service (apps/web/lib/social/duels.ts) draws, checks and
  * settles with it, the answer key never leaving the server, and the app shows
- * what the site returns. Both write a duel the reader's way with the words at
- * the end: its outcome, the record, the small print, the scoreboard's squares,
- * the tie-break and the review of the reader's answers. A question is a
+ * what the site returns. Both apps also take from it the words a duel is shown
+ * in, so the site and the app say the same thing. A question is a
  * lesson's quiz, as in a mock exam (exam/mock.ts), with its option order.
  */
 

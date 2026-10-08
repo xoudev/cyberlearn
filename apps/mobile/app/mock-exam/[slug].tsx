@@ -339,8 +339,9 @@ function ErrorLine({
 // ── Intro ────────────────────────────────────────────────────────────────────
 
 /**
- * Before an attempt: the path, what the exam is and its three figures, the
- * rules a practice run actually has, and the way in; then the modules it
+ * Before an attempt, framed like the final exam's intro: the path, what the
+ * exam is and its three figures, the rules of a practice run (unlike the final
+ * exam's), and the way in; then the modules it
  * covers, numbered (with the last score of each, once there is one), and the
  * attempts already handed in, with the best of them.
  */

@@ -884,8 +884,8 @@
 
 /* ── A duel: the play column ────────────────────────────────────────────── */
 
-/* As wide as the scoreboard above it: a narrower column left its right edge
-   hanging short of the board's, which read as a mistake. */
+/* No width of its own: the play column runs as wide as the scoreboard above
+   it, so the two share one right edge. */
 .dl-play > * + * {
   margin-top: 20px;
 }

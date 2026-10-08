@@ -1450,13 +1450,13 @@ export async function answerDuelApi(
 
 // ── CTF tournaments (the site's lib/tournaments/tournaments.ts) ─────────────
 
-/** The tournaments the reader's classes take part in. */
 /** The reader's tournaments, and the server's clock when it listed them. */
 export interface TournamentList {
   tournaments: TournamentSummary[];
   serverNow: string;
 }
 
+/** The tournaments the reader's classes take part in. */
 export async function fetchTournamentsApi(): Promise<TournamentList> {
   const res = await authedFetch("/api/mobile/tournaments");
   // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/route.ts).
