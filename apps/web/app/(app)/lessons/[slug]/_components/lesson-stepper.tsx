@@ -12,6 +12,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, Zap } from "lucide-react";
+import { StickyRail } from "@/components/sticky-rail";
 import { StepperContext, type StepperContextType } from "./section-pane";
 import { completeLesson } from "../_actions/track-progress";
 import type { CompleteLessonResult } from "../_actions/track-progress";
@@ -252,7 +253,7 @@ export function LessonStepper({
         </div>
 
         {/* Right rail */}
-        <aside className="lesson-stepper-rail">
+        <StickyRail className="lesson-stepper-rail">
           <StepperRail
             sections={sections}
             currentStep={currentStep}
@@ -261,7 +262,7 @@ export function LessonStepper({
             onSelect={handleJump}
             railExtra={railExtra}
           />
-        </aside>
+        </StickyRail>
       </div>
       {completionResult !== null && (
         <LessonCompleteModal
@@ -582,7 +583,7 @@ function StepperRail({
   );
 }
 
-// ── SectionNavBar - sticky bottom section navigation ─────────────────────────
+// ── SectionNavBar - section navigation under the article ──────────────────────
 
 function SectionNavBar({
   currentStep,
@@ -638,7 +639,7 @@ function SectionNavBar({
         </div>
       )}
 
-      {/* Sticky section nav */}
+      {/* Section nav */}
       <div className="section-nav-bar">
         {/* Gradient border overlay */}
         <div

@@ -83,7 +83,13 @@ export default async function AppLayout({
             >
               <Navbar />
             </Suspense>
-            <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-y-auto">
+            {/* The window scrolls, not <main>: nothing bounds its height. It
+              clips what a page lets out sideways (the dashboard's 760px glow)
+              with overflow-x: clip, which is not a scroll container. It was
+              overflow-y: auto, which made <main> the box every sticky element
+              of a page measured itself against, and since that box never
+              scrolled, nothing ever stuck. */}
+            <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-x-clip">
               {children}
             </main>
             <Footer />

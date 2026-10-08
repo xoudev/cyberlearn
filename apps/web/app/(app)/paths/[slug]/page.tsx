@@ -17,6 +17,7 @@ import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
+import { StickyRail } from "@/components/sticky-rail";
 import { builtInPathCover, resolvePathCovers } from "@/lib/paths/cover";
 
 export async function generateMetadata({
@@ -511,7 +512,7 @@ export default async function PathDetailPage({
         </div>
 
         {/* aside */}
-        <aside className="pd2-aside">
+        <StickyRail className="pd2-aside">
           <div className="ablock">
             <div className="ablock__eyebrow">
               - <b>01</b> · OBJECTIFS
@@ -536,7 +537,7 @@ export default async function PathDetailPage({
               ratingsCount={path.ratingsCount}
             />
           </div>
-        </aside>
+        </StickyRail>
       </div>
     </div>
   );

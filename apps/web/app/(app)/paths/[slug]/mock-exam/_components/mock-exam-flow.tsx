@@ -9,6 +9,7 @@ import {
   type MockResult,
 } from "@cyberlearn/lib/exam/mock";
 import type { MockOverview } from "@/lib/exam/mock-exam";
+import { STICKY_TOP } from "@/lib/chrome";
 import { startMockExamAction, submitMockExamAction } from "../_actions/mock-exam-actions";
 
 /**
@@ -121,7 +122,7 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
           className="card"
           style={{
             position: "sticky",
-            top: 12,
+            top: STICKY_TOP,
             zIndex: 2,
             padding: "12px 16px",
             display: "flex",
