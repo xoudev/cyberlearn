@@ -125,9 +125,13 @@ describe("MockExamFlow", () => {
     expect(m.startMockExamAction).toHaveBeenCalledWith("p1");
     expect(screen.getByText("0 / 2 répondues")).toBeTruthy();
     expect(screen.getByText("10:00")).toBeTruthy();
+    expect(screen.getByText("2 questions sans réponse.")).toBeTruthy();
+    // A way to each blank question, named with the number it shows.
+    expect(screen.getByRole("button", { name: "Aller à la question 01" })).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Liste"));
     fireEvent.click(screen.getByLabelText("Date"));
     expect(screen.getByText("2 / 2 répondues")).toBeTruthy();
+    expect(screen.getByText("Toutes les questions ont une réponse.")).toBeTruthy();
     await act(async () => {
       const [handIn] = screen.getAllByRole("button", { name: "Rendre la copie" });
       if (handIn === undefined) throw new Error("no hand-in button");
@@ -143,8 +147,39 @@ describe("MockExamFlow", () => {
     expect(scores[0]?.textContent).toContain("1 / 1 · acquis");
     expect(scores[1]?.textContent).toContain("0 / 1 · à revoir");
     const correction = screen.getByRole("region", { name: "Correction" });
-    expect(correction.textContent).toContain("bonne réponse : Droits");
+    expect(within(correction).getByText("Droits").closest("li")?.textContent).toContain(
+      "Bonne réponse",
+    );
     expect(correction.textContent).toContain("chmod change les droits.");
+    // The wrong answer is opened on its correction, the right one is not.
+    expect(within(correction).getByText("Que fait chmod ?").closest("details")?.open).toBe(true);
+    expect(within(correction).getByText("Que fait ls ?").closest("details")?.open).toBe(false);
+  });
+
+  it("does not carry a failed hand-in's error onto the result", async () => {
+    m.submitMockExamAction.mockResolvedValueOnce({
+      ok: false,
+      error: "Trop d'envois. Réessaie dans un moment.",
+    });
+    render(<MockExamFlow overview={OVERVIEW} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
+      await Promise.resolve();
+    });
+    const handIn = async (): Promise<void> => {
+      await act(async () => {
+        const [button] = screen.getAllByRole("button", { name: "Rendre la copie" });
+        if (button === undefined) throw new Error("no hand-in button");
+        fireEvent.click(button);
+        await Promise.resolve();
+      });
+    };
+    await handIn();
+    expect(screen.getByRole("alert").textContent).toBe("Trop d'envois. Réessaie dans un moment.");
+    await handIn();
+    expect(m.submitMockExamAction).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("50 %")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("hands the copy in by itself when the time is up", async () => {
@@ -169,11 +204,47 @@ describe("MockExamFlow", () => {
     expect(m.submitMockExamAction).toHaveBeenCalledTimes(1);
   });
 
+  it("tries the hand-in at zero once, and leaves the retry to the learner", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+    const start = Date.now();
+    m.startMockExamAction.mockResolvedValue({
+      ok: true,
+      attemptId: "a1",
+      startedAt: new Date(start).toISOString(),
+      timeLimitMinutes: 1,
+      questions: QUESTIONS,
+    });
+    m.submitMockExamAction.mockResolvedValue({ ok: false, error: "Trop de tentatives." });
+    render(<MockExamFlow overview={OVERVIEW} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
+      await Promise.resolve();
+    });
+    // Past zero, then five more ticks of the clock: still a single request.
+    for (const ms of [61_000, 1000, 1000, 1000, 1000, 1000]) {
+      await act(async () => {
+        vi.advanceTimersByTime(ms);
+        await Promise.resolve();
+      });
+    }
+    expect(m.submitMockExamAction).toHaveBeenCalledTimes(1);
+    const [handIn] = screen.getAllByRole("button", { name: "Rendre la copie" });
+    expect(handIn).toBeTruthy();
+  });
+
   it("says so when the path has too few questions", () => {
     render(<MockExamFlow overview={{ ...OVERVIEW, ready: false }} />);
     expect(screen.queryByRole("button", { name: "Commencer l'examen blanc" })).toBeNull();
     expect(
       screen.getByText("Ce parcours n'a pas encore assez de questions pour un examen blanc."),
     ).toBeTruthy();
+  });
+
+  it("says so when no module of the path has a quiz", () => {
+    render(
+      <MockExamFlow overview={{ ...OVERVIEW, domains: [], questionCount: 0, ready: false }} />,
+    );
+    expect(screen.queryByRole("list", { name: "Les modules couverts" })).toBeNull();
+    expect(screen.getByText("Aucun module de ce parcours n'a encore de quiz.")).toBeTruthy();
   });
 });

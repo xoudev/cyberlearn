@@ -8,7 +8,11 @@ import React from "react";
 import { ScriptRunner } from "@/app/(app)/challenges/[slug]/_components/script-runner";
 import { submitTournamentFlagAction } from "../../../_actions/tournament-actions";
 
-/** The catalogue's Python runner, its flag counted by the tournament. */
+/**
+ * The catalogue's Python runner, its flag counted by the tournament. A line
+ * under it says so while a flag can still be given, the runner's own words
+ * being the catalogue's.
+ */
 export function TournamentScript({
   tournamentId,
   challengeId,
@@ -34,15 +38,22 @@ export function TournamentScript({
   };
 
   return (
-    <ScriptRunner
-      starterCode={starterCode}
-      challengeId={challengeId}
-      displayStatus={solved ? "COMPLETED" : "AVAILABLE"}
-      // No cap in a tournament: one attempt "left" that never runs out.
-      maxAttempts={1}
-      userAttempts={0}
-      submitFlag={submitFlag}
-      {...(notice === null ? {} : { flagNotice: notice })}
-    />
+    <div className="trn-script">
+      <ScriptRunner
+        starterCode={starterCode}
+        challengeId={challengeId}
+        displayStatus={solved ? "COMPLETED" : "AVAILABLE"}
+        // No cap in a tournament: one attempt "left" that never runs out.
+        maxAttempts={1}
+        userAttempts={0}
+        submitFlag={submitFlag}
+        {...(notice === null ? {} : { flagNotice: notice })}
+      />
+      {!solved && notice === null ? (
+        <p className="trn-script__note">
+          Le flag donné ici compte pour le tournoi, pas pour le catalogue.
+        </p>
+      ) : null}
+    </div>
   );
 }

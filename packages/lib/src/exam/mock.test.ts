@@ -1,21 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { randomFromText } from "../exercises/arrange";
 import {
+  ANSWER_WORD,
+  answerCounts,
+  answerState,
+  bestScore,
   clientQuestions,
   domainVerdict,
   domainsOf,
   drawMockExam,
+  lastDomainScores,
+  MOCK_LAST_MINUTE_MS,
+  mockAdvice,
+  mockClock,
+  mockParts,
   mockTimeLimitMinutes,
+  optionKey,
+  optionTag,
   scoreMockExam,
   sourceKey,
+  unansweredQuestions,
+  verdictTone,
   weakestDomains,
+  type MockQuestion,
   type MockSource,
 } from "./mock";
 
 /**
  * A mock exam over a small path: a few questions from each module, the
  * options shuffled, no answer key in what is shown, a score per domain, a
- * question that left its lesson left out of the count, and the advice.
+ * question that left its lesson left out of the count, and the advice; then
+ * what both apps read off it: the clock, the paper by module, the blanks, the
+ * answers counted and tagged, the best of the history and the last score of
+ * each module.
  */
 
 function quiz(lessonId: string, quizId: string, domain: string, correct = 1): MockSource {
@@ -125,6 +142,15 @@ describe("time and advice", () => {
     expect(mockTimeLimitMinutes(31)).toBe(47);
   });
 
+  it("prints the clock in minutes and seconds, a second begun counted whole, never below zero", () => {
+    expect(mockClock(10 * 60_000)).toBe("10:00");
+    expect(mockClock(61_500)).toBe("01:02");
+    expect(mockClock(MOCK_LAST_MINUTE_MS - 1)).toBe("01:00");
+    expect(mockClock(0)).toBe("00:00");
+    expect(mockClock(-5_000)).toBe("00:00");
+    expect(MOCK_LAST_MINUTE_MS).toBe(60_000);
+  });
+
   it("names a domain's state and the ones to go back to", () => {
     expect([domainVerdict(85), domainVerdict(60), domainVerdict(20)]).toEqual([
       "acquis",
@@ -138,5 +164,118 @@ describe("time and advice", () => {
       { domain: "D", correct: 2, total: 3, percent: 67 },
     ]);
     expect(weakest.map((d) => d.domain)).toEqual(["C", "B"]);
+  });
+});
+
+describe("verdicts and advice", () => {
+  it("gives each verdict its tone, on the verdict's own thresholds", () => {
+    expect([verdictTone(80), verdictTone(79), verdictTone(50), verdictTone(49)]).toEqual([
+      "ok",
+      "mid",
+      "mid",
+      "low",
+    ]);
+  });
+
+  it('names the modules to go back to with " et ", or says none needs it', () => {
+    expect(
+      mockAdvice([
+        { domain: "Fichiers, droits", correct: 0, total: 3, percent: 0 },
+        { domain: "Réseau", correct: 1, total: 3, percent: 33 },
+        { domain: "Shell", correct: 3, total: 3, percent: 100 },
+      ]),
+    ).toBe("À revoir en premier : Fichiers, droits et Réseau.");
+    expect(mockAdvice([{ domain: "Shell", correct: 3, total: 3, percent: 100 }])).toBe(
+      "Tous les modules au-dessus de 70 % : tu es prêt pour l'examen final.",
+    );
+  });
+});
+
+describe("the paper", () => {
+  const questions: MockQuestion[] = [
+    { index: 0, domain: "Les fichiers", question: "a ?", options: ["A", "B"] },
+    { index: 1, domain: "Les fichiers", question: "b ?", options: ["A", "B"] },
+    { index: 2, domain: "Les droits", question: "c ?", options: ["A", "B"] },
+  ];
+
+  it("cuts the questions into their modules, in the drawn order", () => {
+    expect(mockParts(questions).map((p) => [p.domain, p.questions.map((q) => q.index)])).toEqual([
+      ["Les fichiers", [0, 1]],
+      ["Les droits", [2]],
+    ]);
+    expect(mockParts([])).toEqual([]);
+  });
+
+  it("lists the questions still blank, an answer of 0 being an answer", () => {
+    expect(unansweredQuestions(questions, { "0": 0, "2": 1 }).map((q) => q.index)).toEqual([1]);
+    expect(unansweredQuestions(questions, {})).toHaveLength(3);
+  });
+});
+
+describe("the copy handed in", () => {
+  it("tells a blank from a wrong answer, and counts them", () => {
+    const refs = [
+      { lessonId: "l1", quizId: "q1", domain: "Les fichiers", order: [0, 1, 2, 3] },
+      { lessonId: "l2", quizId: "q1", domain: "Les fichiers", order: [0, 1, 2, 3] },
+      { lessonId: "l3", quizId: "q1", domain: "Les droits", order: [0, 1, 2, 3] },
+    ];
+    const { review } = scoreMockExam(refs, byKey, { "0": 1, "1": 2 });
+    expect(review.map(answerState)).toEqual(["right", "wrong", "blank"]);
+    expect(review.map((item) => ANSWER_WORD[answerState(item)])).toEqual([
+      "Juste",
+      "Fausse",
+      "Sans réponse",
+    ]);
+    expect(answerCounts(review)).toEqual({ right: 1, wrong: 1, blank: 1 });
+    expect(answerCounts([])).toEqual({ right: 0, wrong: 0, blank: 0 });
+  });
+
+  it("tags the option picked and the right one, and leaves the others bare", () => {
+    const options = [0, 1, 2];
+    expect(options.map((k) => optionTag({ correct: 1, selected: 1 }, k))).toEqual([
+      null,
+      "Ta réponse, juste",
+      null,
+    ]);
+    expect(options.map((k) => optionTag({ correct: 1, selected: 2 }, k))).toEqual([
+      null,
+      "Bonne réponse",
+      "Ta réponse",
+    ]);
+    expect(options.map((k) => optionTag({ correct: 0, selected: null }, k))).toEqual([
+      "Bonne réponse",
+      null,
+      null,
+    ]);
+  });
+
+  it("keys the options by letter, by number past Z", () => {
+    expect([0, 1, 25, 26].map(optionKey)).toEqual(["A", "B", "Z", "27"]);
+  });
+});
+
+describe("the history", () => {
+  const attempt = (score: number, domains: { domain: string; percent: number }[] = []) => ({
+    score,
+    domains: domains.map((d) => ({ ...d, correct: 0, total: 3 })),
+  });
+
+  it("gives the best score from two attempts on", () => {
+    expect(bestScore([])).toBeNull();
+    expect(bestScore([attempt(40)])).toBeNull();
+    expect(bestScore([attempt(40), attempt(85), attempt(60)])).toBe(85);
+  });
+
+  it("reads each module's score off the newest attempt only", () => {
+    const last = lastDomainScores([
+      attempt(50, [{ domain: "Les fichiers", percent: 33 }]),
+      attempt(90, [
+        { domain: "Les fichiers", percent: 100 },
+        { domain: "Les droits", percent: 100 },
+      ]),
+    ]);
+    expect([...last.keys()]).toEqual(["Les fichiers"]);
+    expect(last.get("Les fichiers")?.percent).toBe(33);
+    expect(lastDomainScores([]).size).toBe(0);
   });
 });

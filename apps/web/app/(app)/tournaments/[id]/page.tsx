@@ -5,6 +5,7 @@ import { Crumb } from "@/components/crumb";
 import { requireRequestUser } from "@/lib/auth";
 import { tournamentViewFor } from "@/lib/tournaments/tournaments";
 import { TournamentBoard } from "./_components/tournament-board";
+import "../_components/tournaments.css";
 
 export const metadata: Metadata = { title: "Tournoi" };
 
@@ -23,7 +24,7 @@ export default async function TournamentPage({ params }: Props): Promise<React.R
   if (view === null) notFound();
 
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", display: "grid", gap: 24 }}>
+    <div className="page-container trn">
       <Crumb segments={[{ label: "tournois", href: "/tournaments" }, view.title]} />
       <TournamentBoard initial={view} />
     </div>

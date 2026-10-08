@@ -1,14 +1,18 @@
-import { colors } from "@cyberlearn/tokens";
-import {
-  placeLabel,
-  type TournamentPhase,
-  type TournamentTeamScope,
+import { colors, division } from "@cyberlearn/tokens";
+import type {
+  TournamentChallengeState,
+  TournamentChallengeStatus,
+  TournamentPhase,
+  TournamentTeamScope,
 } from "@cyberlearn/lib/challenges/tournament";
 
 /**
  * CTF tournaments as /api/mobile/tournaments sends them: the site's views
  * (apps/web/lib/tournaments/tournaments.ts), mirrored here because the app
- * does not import the site.
+ * does not import the site. What both apps work out about a tournament, its
+ * words and where the reader stands, is @cyberlearn/lib/challenges/tournament;
+ * what is here is the app's own: its colours, its timings, a challenge's file
+ * as a link the phone opens, and the line a flag's answer shows.
  */
 
 export type TournamentRole = "player" | "teacher" | "admin";
@@ -103,30 +107,62 @@ export type TournamentFlagReply =
   | { ok: true; correct: false }
   | { ok: false; error: string };
 
-/** The colour a tournament's phase is drawn in. */
+/** The colour a tournament's phase is drawn in: running in the success tone, as on the site. */
 export const PHASE_COLOR: Record<TournamentPhase, string> = {
-  RUNNING: colors.accent,
+  RUNNING: colors.success,
   UPCOMING: colors.info,
   FINISHED: colors.textMuted,
 };
 
+/** The tournaments' own accent, the challenges' red: a tournament is a CTF. */
+export const TOURNAMENT_ACCENT = colors.danger;
+
 /** How often the tournament screen reads the scoreboard again while it runs, as the site does. */
 export const TOURNAMENT_REFRESH_MS = 5000;
 
-/** Where a challenge stands for the reader, in a word or two. */
-export function challengeStateLine(challenge: TournamentChallengeRow): string {
-  if (challenge.solvedByMe) return "trouvé par toi";
-  if (challenge.solvedByMyTeam) return "trouvé par ton équipe";
-  if (challenge.solveCount === 0) return "pas encore trouvé";
-  const plural = challenge.solveCount > 1 ? "s" : "";
-  return `${String(challenge.solveCount)} flag${plural} trouvé${plural}`;
+/** From five minutes before the end, the countdown takes the warning tone, as on the site. */
+export const COUNTDOWN_LOW_MS = 5 * 60_000;
+
+/**
+ * The colour of a place: the first three in the medal colours once they have
+ * scored, a podium of teams still at zero saying nothing; null otherwise.
+ */
+export function medalColor(rank: number, scored: boolean): string | null {
+  if (!scored) return null;
+  if (rank === 1) return division.OR;
+  if (rank === 2) return division.ARGENT;
+  if (rank === 3) return division.BRONZE;
+  return null;
 }
 
-/** The reader's own score: "300 pts · 2 flags · 3e". */
-export function myStandingLine(me: NonNullable<TournamentView["me"]>): string {
-  const flags = `${String(me.solved)} flag${me.solved > 1 ? "s" : ""}`;
-  const place = me.rank === null ? "" : ` · ${placeLabel(me.rank)}`;
-  return `${String(me.points)} pts · ${flags}${place}`;
+/**
+ * The colour of a challenge's state on the board: found by the reader, by
+ * their team, by others; one nobody found is a call to play while it runs,
+ * and no longer once it is over.
+ */
+export function challengeStateColor(state: TournamentChallengeState, over: boolean): string {
+  if (state === "mine") return colors.success;
+  if (state === "team") return colors.info;
+  if (state === "found" || over) return colors.textMuted;
+  return TOURNAMENT_ACCENT;
+}
+
+/** The colour of the reader's status on a challenge's page. */
+export const CHALLENGE_STATUS_COLOR: Record<TournamentChallengeStatus, string> = {
+  solved: colors.success,
+  open: TOURNAMENT_ACCENT,
+  closed: colors.textSecondary,
+  watch: colors.textSecondary,
+};
+
+/**
+ * A challenge's file as a link the phone can open: an address of its own, or
+ * a path on the site. Anything else is not opened.
+ */
+export function siteLink(url: string, siteUrl: string): string | null {
+  if (/^https?:\/\//iu.test(url)) return url;
+  if (url.startsWith("/") && !url.startsWith("//")) return `${siteUrl.replace(/\/+$/u, "")}${url}`;
+  return null;
 }
 
 /** What a flag's answer says to the player. */

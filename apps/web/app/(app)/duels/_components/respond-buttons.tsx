@@ -1,11 +1,24 @@
 "use client";
 
+// "use client" justification: the answer is sent from the buttons, then the
+// list is read again or the duel opens (router).
+
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
 import { respondToDuelAction } from "../_actions/duel-actions";
 
-/** Accept an invitation (the duel opens) or decline it. */
-export function RespondButtons({ duelId }: { duelId: string }): React.ReactElement {
+/**
+ * Accept an invitation (the duel opens) or decline it. Small on the list's
+ * invitation cards, large on the duel's own page, where it is the one thing
+ * to do.
+ */
+export function RespondButtons({
+  duelId,
+  size = "sm",
+}: {
+  duelId: string;
+  size?: "sm" | "lg";
+}): React.ReactElement {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -23,11 +36,12 @@ export function RespondButtons({ duelId }: { duelId: string }): React.ReactEleme
     });
   };
 
+  const sized = size === "lg" ? "btn--lg" : "btn--sm";
   return (
-    <span style={{ display: "inline-flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+    <div className="dl-respond">
       <button
         type="button"
-        className="btn btn--accent btn--sm"
+        className={`btn btn--accent ${sized}`}
         onClick={() => {
           respond(true);
         }}
@@ -37,7 +51,7 @@ export function RespondButtons({ duelId }: { duelId: string }): React.ReactEleme
       </button>
       <button
         type="button"
-        className="btn btn--ghost btn--sm"
+        className={`btn btn--ghost ${sized}`}
         onClick={() => {
           respond(false);
         }}
@@ -46,10 +60,10 @@ export function RespondButtons({ duelId }: { duelId: string }): React.ReactEleme
         Refuser
       </button>
       {error !== null ? (
-        <span role="alert" style={{ color: "var(--color-danger)", fontSize: 13 }}>
+        <p role="alert" className="dl-error">
           {error}
-        </span>
+        </p>
       ) : null}
-    </span>
+    </div>
   );
 }

@@ -44,12 +44,17 @@ describe("/api/mobile/tournaments", () => {
     expect(m.submitTournamentFlag).not.toHaveBeenCalled();
   });
 
-  it("lists the reader's tournaments", async () => {
+  it("lists the reader's tournaments, with the server's clock", async () => {
     m.listTournamentsFor.mockResolvedValue([{ id: "t1" }]);
-    expect(await (await list.GET(new NextRequest(BASE))).json()).toEqual({
-      ok: true,
-      tournaments: [{ id: "t1" }],
-    });
+    // SAFETY: the route's own JSON, read back in the shape it was written.
+    const body = (await (await list.GET(new NextRequest(BASE))).json()) as {
+      ok: boolean;
+      tournaments: unknown[];
+      serverNow: string;
+    };
+    expect(body.ok).toBe(true);
+    expect(body.tournaments).toEqual([{ id: "t1" }]);
+    expect(Number.isNaN(Date.parse(body.serverNow))).toBe(false);
     expect(m.listTournamentsFor).toHaveBeenCalledWith("u1");
   });
 

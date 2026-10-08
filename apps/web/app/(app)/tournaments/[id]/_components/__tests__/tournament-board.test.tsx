@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TournamentView } from "@/lib/tournaments/tournaments";
 
@@ -85,15 +85,67 @@ describe("TournamentBoard", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(NOW));
     render(<TournamentBoard initial={BASE} />);
-    expect(screen.getByLabelText("Ta place").textContent).toContain("Tu joues pour SIO1-A");
-    expect(screen.getByLabelText("Ta place").textContent).toContain("0 pts · 0 flag · 2e");
+    const place = screen.getByLabelText("Ta place");
+    expect(place.textContent).toContain("Tu joues pour SIO1-A");
+    // Two places, each named: the team's among the classes, then the reader's
+    // own; their points and flags under them.
+    expect(within(place).getByText("Ton équipe").nextElementSibling?.textContent).toBe(
+      "2esur 2 classes",
+    );
+    expect(within(place).getByText("Ta place").nextElementSibling?.textContent).toBe("2e");
+    expect(place.textContent).toContain("0 pts");
+    expect(place.textContent).toContain("0 flag");
     const challenge = screen.getByRole("link", { name: /Le journal/u });
     expect(challenge.getAttribute("href")).toBe("/tournaments/t1/journal");
     expect(challenge.textContent).toContain("trouvé par ton équipe");
     expect(challenge.textContent).toContain("premier : SIO1-B");
-    expect(screen.getByLabelText("Les équipes").textContent).toContain("1erSIO1-B");
+    const teams = screen.getByLabelText("Les équipes");
+    expect(teams.textContent).toContain("1erSIO1-B");
+    expect(within(teams).getByText("Ton équipe")).toBeTruthy();
     expect(screen.getByLabelText("Les joueurs").textContent).toContain("Toi");
-    expect(screen.getByText("Fin dans 1 h 00 min")).toBeTruthy();
+    expect(screen.getByRole("timer").textContent).toBe("Fin dans 1 h 00 min");
+  });
+
+  it("turns the countdown to its warning tone in the last five minutes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-16T13:56:00.000Z"));
+    render(<TournamentBoard initial={{ ...BASE, serverNow: "2026-10-16T13:56:00.000Z" }} />);
+    const timer = screen.getByRole("timer");
+    expect(timer.textContent).toBe("Fin dans 4 min 00 s");
+    expect(timer.getAttribute("data-low")).toBe("true");
+  });
+
+  it("names the winning team once it is over", () => {
+    render(
+      <TournamentBoard
+        initial={{ ...BASE, phase: "FINISHED", serverNow: "2026-10-16T15:00:00.000Z" }}
+      />,
+    );
+    expect(screen.queryByRole("timer")).toBeNull();
+    const result = screen.getByText("Vainqueur").parentElement;
+    expect(result?.textContent).toContain("1erSIO1-B");
+    expect(result?.textContent).toContain("100 points");
+    expect(screen.getByLabelText("Ta place").textContent).toContain("Tu as joué pour SIO1-A");
+  });
+
+  it("says nobody found a flag once it is over, without a 'yet'", () => {
+    render(
+      <TournamentBoard
+        initial={{
+          ...BASE,
+          phase: "FINISHED",
+          serverNow: "2026-10-16T15:00:00.000Z",
+          teams: BASE.teams.map((team) => ({ ...team, rank: 1, points: 0, solved: 0 })),
+          players: [],
+          me: { points: 0, solved: 0, rank: null },
+        }}
+      />,
+    );
+    expect(screen.getByLabelText("Les joueurs").textContent).toContain(
+      "Personne n'a trouvé de flag.",
+    );
+    expect(screen.getByLabelText("Ta place").textContent).toContain("Personne n'a marqué");
+    expect(screen.getByLabelText("Ta place").textContent).toContain("Aucun flag");
   });
 
   it("reads the scoreboard again every few seconds while it runs", async () => {
@@ -133,6 +185,8 @@ describe("TournamentBoard", () => {
     );
     expect(screen.getByText("Le défi s'ouvre au début du tournoi.")).toBeTruthy();
     expect(screen.queryByLabelText("Les joueurs")).toBeNull();
+    // Nobody can have a flag yet: the team the reader will play for, no figures.
+    expect(screen.getByLabelText("Ta place").textContent).toBe("Tu joueras pour SIO1-A");
     await act(async () => {
       vi.advanceTimersByTime(3000);
       await Promise.resolve();
