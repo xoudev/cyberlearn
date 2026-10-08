@@ -83,6 +83,10 @@ export interface ChallengeDetail {
   prerequisiteTitle: string | null;
   prerequisiteSlug?: string | null;
   onMachine: boolean;
+  /** Where to connect, as the site's « Connexion » shows it: "nc host 1337", or an address. */
+  resourceUrl?: string | null;
+  /** The file to download: an address of its own, or a path on the site. */
+  attachmentUrl?: string | null;
   hints: ChallengeHint[];
   xpEarned?: number | null;
   /** Set while this is the challenge of the week. */
@@ -114,6 +118,17 @@ export const CATEGORY_LABEL: Record<ChallengeItem["category"], string> = {
 /** Whether the app takes an answer for this challenge as a flag. */
 export function takesFlag(type: ChallengeType): boolean {
   return type === "CTF" || type === "SCRIPT";
+}
+
+/**
+ * A challenge's file as a link the phone can open: an address of its own, or
+ * a path on the site. Anything else (a `javascript:` link, a protocol-relative
+ * one) is not opened.
+ */
+export function siteLink(url: string, siteUrl: string): string | null {
+  if (/^https?:\/\//iu.test(url)) return url;
+  if (url.startsWith("/") && !url.startsWith("//")) return `${siteUrl.replace(/\/+$/u, "")}${url}`;
+  return null;
 }
 
 /** The attempts left, never below zero. */
