@@ -207,6 +207,8 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/support",
   "/wrapped",
   "/changelog",
+  "/duels",
+  "/tournaments",
   "/onboarding",
 ] as const;
 
