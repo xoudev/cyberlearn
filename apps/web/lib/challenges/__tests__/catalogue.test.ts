@@ -4,13 +4,20 @@ import { weeklyChallengeId } from "@cyberlearn/lib/challenges/weekly";
 /**
  * The challenges as the list shows them: each state, the evidence held back
  * from a locked one, and the week's challenge named the same way the XP
- * credit doubles it.
+ * credit doubles it. One challenge as the app's screen reads it: what the
+ * site's page shows, never the flag.
  */
 
-const m = vi.hoisted(() => ({ findAllActive: vi.fn(), findActiveIdsInOrder: vi.fn() }));
+const m = vi.hoisted(() => ({
+  findAllActive: vi.fn(),
+  findActiveIdsInOrder: vi.fn(),
+  findBySlug: vi.fn(),
+  getUserProgress: vi.fn(),
+  getRevealedHintsWithContent: vi.fn(),
+}));
 vi.mock("@cyberlearn/db", () => ({ challengeRepository: m }));
 
-const { challengeCatalogueFor, weeklyStateOf } = await import("../catalogue");
+const { challengeCatalogueFor, challengeDetailFor, weeklyStateOf } = await import("../catalogue");
 
 const MACHINE = { title: "web01", files: { "logs/auth.log": "Oct 2 sshd\nflag {{FLAG}}\n" } };
 
@@ -46,8 +53,7 @@ function row(id: string, over: Record<string, unknown> = {}): Record<string, unk
 const NOW = new Date("2026-10-06T10:00:00Z");
 
 beforeEach(() => {
-  m.findAllActive.mockReset();
-  m.findActiveIdsInOrder.mockReset();
+  for (const fn of Object.values(m)) fn.mockReset();
   m.findAllActive.mockResolvedValue([
     row("1", { userStatus: "COMPLETED", userXpEarned: 100 }),
     row("2", { prerequisiteId: "1", prerequisiteSlug: "defi-1" }),
@@ -98,5 +104,45 @@ describe("weeklyStateOf", () => {
     const other = ["1", "2", "3"].find((c) => c !== id) ?? "";
     expect((await weeklyStateOf(id, NOW))?.endsAt).toBe("2026-10-12T00:00:00.000Z");
     await expect(weeklyStateOf(other, NOW)).resolves.toBeNull();
+  });
+});
+
+describe("challengeDetailFor", () => {
+  function detailRow(over: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      ...row("4", { machine: null }),
+      instructions: "## Énoncé",
+      starterCode: null,
+      prerequisiteId: null,
+      prerequisite: null,
+      hints: [],
+      ...over,
+    };
+  }
+
+  beforeEach(() => {
+    m.getUserProgress.mockResolvedValue(null);
+    m.findActiveIdsInOrder.mockResolvedValue([]);
+  });
+
+  it("hands over where to connect and the file, as the site's page shows them", async () => {
+    m.findBySlug.mockResolvedValue(
+      detailRow({
+        resourceUrl: "nc host 1337",
+        attachmentUrl: "/files/dump.pcap",
+        flag: "CL{never_sent}",
+      }),
+    );
+    const detail = await challengeDetailFor("user-1", "defi-4");
+    expect(detail?.resourceUrl).toBe("nc host 1337");
+    expect(detail?.attachmentUrl).toBe("/files/dump.pcap");
+    expect(detail).not.toHaveProperty("flag");
+  });
+
+  it("says so when a challenge has neither", async () => {
+    m.findBySlug.mockResolvedValue(detailRow());
+    const detail = await challengeDetailFor("user-1", "defi-4");
+    expect(detail?.resourceUrl).toBeNull();
+    expect(detail?.attachmentUrl).toBeNull();
   });
 });
