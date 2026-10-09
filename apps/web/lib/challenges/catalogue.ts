@@ -186,6 +186,10 @@ export interface ChallengeDetail {
   prerequisiteSlug: string | null;
   /** Played on the site's Linux machine: the app shows the statement and takes the flag. */
   onMachine: boolean;
+  /** Where to connect, as the site's « Connexion » shows it: "nc host 1337", or an address. */
+  resourceUrl: string | null;
+  /** The file to download: an address of its own, or a path on the site. */
+  attachmentUrl: string | null;
   /** A hint's content only once the learner has revealed it. */
   hints: { id: string; orderIndex: number; xpCost: number; content: string | null }[];
   /** The XP the solve was worth, the week's bonus included; null before it. */
@@ -211,8 +215,9 @@ export async function weeklyStateOf(
 }
 
 /**
- * One active challenge for the app: what the site's page shows, less what only
- * the site can play (the machine's files, the Python runner). Never the flag.
+ * One active challenge for the app: what the site's page shows, its connection
+ * and its file included, less what only the site can play (the machine's
+ * files, the Python runner). Never the flag.
  */
 export async function challengeDetailFor(
   userId: string,
@@ -246,6 +251,8 @@ export async function challengeDetailFor(
     prerequisiteTitle: challenge.prerequisite?.title ?? null,
     prerequisiteSlug: challenge.prerequisite?.slug ?? null,
     onMachine: challenge.machine !== null,
+    resourceUrl: challenge.resourceUrl,
+    attachmentUrl: challenge.attachmentUrl,
     hints: challenge.hints.map((h) => ({
       id: h.id,
       orderIndex: h.orderIndex,

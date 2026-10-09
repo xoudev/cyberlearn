@@ -12,7 +12,11 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-/** A duel, for one of its two players: not found for anybody else. */
+/**
+ * A duel, for one of its two players: not found for anybody else. The page
+ * gives it the site's container and breadcrumb; DuelPlay draws the rest
+ * (duels.css), since all of it moves as the duel is read again.
+ */
 export default async function DuelPage({ params }: Props): Promise<React.ReactElement> {
   const { id } = await params;
   const user = await requireRequestUser();
@@ -20,7 +24,7 @@ export default async function DuelPage({ params }: Props): Promise<React.ReactEl
   if (view === null) notFound();
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", display: "grid", gap: 24 }}>
+    <div className="page-container dl">
       <Crumb segments={[{ label: "duels", href: "/duels" }, view.other.name]} />
       <DuelPlay initial={view} />
     </div>

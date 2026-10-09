@@ -24,14 +24,15 @@ import { useCosmetics } from "@/lib/cosmetics";
 import { parseLesson } from "@/lib/lesson-blocks";
 import { useChallenge } from "@/lib/queries";
 import { useSession } from "@/lib/session";
+import { siteLink } from "@/lib/tournaments";
 
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 /**
  * One challenge, as the site's page shows it, less what only the site can
- * play: a Linux machine or the Python runner. The statement, the hints (for
- * the XP they cost) and the flag are here; the machine is one tap away, on
- * the site.
+ * play: a Linux machine or the Python runner. The statement, where to
+ * connect, the file to download, the hints (for the XP they cost) and the
+ * flag are here; the machine is one tap away, on the site.
  */
 export default function ChallengeScreen(): React.JSX.Element {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -63,6 +64,10 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
   const done = challenge.displayStatus === "COMPLETED";
   const locked = challenge.displayStatus === "LOCKED";
   const weekly = challenge.weekly ?? null;
+  // As on the site's page, both are shown whatever the state, a lock included.
+  const resource = challenge.resourceUrl ?? null;
+  const file = challenge.attachmentUrl ?? null;
+  const attachment = file === null ? null : siteLink(file, SITE_URL);
   // Twice the reward while this is the week's challenge; what was earned, once solved.
   const xp = done
     ? (challenge.xpEarned ?? challenge.xpReward)
@@ -162,6 +167,37 @@ function ChallengeBody({ challenge }: { challenge: ChallengeDetail }): React.JSX
           Le code se lance sur le site, dans son interpréteur Python. Le flag qu&apos;il affiche se
           donne ici ou là-bas.
         </Text>
+      ) : null}
+
+      {resource !== null ? (
+        <View style={{ gap: 8 }}>
+          <Text variant="h2">Connexion</Text>
+          <Card accent={theme.accent} style={{ flexDirection: "row", gap: 8 }}>
+            <Text variant="mono" style={{ color: theme.accent }}>
+              $
+            </Text>
+            <Text selectable variant="mono" style={{ flex: 1, color: colors.textPrimary }}>
+              {resource}
+            </Text>
+          </Card>
+          <Text variant="bodySm" style={{ color: colors.textMuted }}>
+            Appuie longuement pour copier.
+          </Text>
+        </View>
+      ) : null}
+
+      {attachment !== null ? (
+        <View style={{ gap: 8 }}>
+          <Text variant="h2">Pièces jointes</Text>
+          <View style={{ alignSelf: "flex-start" }}>
+            <ActionChip
+              label="Télécharger le fichier"
+              onPress={() => {
+                void WebBrowser.openBrowserAsync(attachment);
+              }}
+            />
+          </View>
+        </View>
       ) : null}
 
       {challenge.hints.length > 0 && !locked ? (

@@ -5,6 +5,7 @@ import { Crumb } from "@/components/crumb";
 import { requireRequestUser } from "@/lib/auth";
 import { mockExamOverview } from "@/lib/exam/mock-exam";
 import { MockExamFlow } from "./_components/mock-exam-flow";
+import "./_components/mock-exam.css";
 
 export const metadata: Metadata = { title: "Examen blanc" };
 
@@ -14,7 +15,9 @@ interface Props {
 
 /**
  * A path's mock exam: what it covers, the attempts already made, and the
- * exam itself. Practice only: no certificate, no XP, as many as wanted.
+ * exam itself. Practice only: no certificate, no XP, as many as wanted. In
+ * the site's page container, so it has the width and the gutter of every
+ * other page; the paper itself takes the whole screen while it runs.
  */
 export default async function MockExamPage({ params }: Props): Promise<React.ReactElement> {
   const { slug } = await params;
@@ -23,7 +26,7 @@ export default async function MockExamPage({ params }: Props): Promise<React.Rea
   if (overview === null) notFound();
 
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", display: "grid", gap: 24 }}>
+    <div className="page-container mkx">
       <Crumb
         segments={[
           { label: "parcours", href: "/paths" },

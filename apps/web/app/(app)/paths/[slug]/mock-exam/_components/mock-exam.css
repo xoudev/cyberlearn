@@ -1,0 +1,1383 @@
+/* The mock exam (/paths/[slug]/mock-exam): the practice run of the final
+   exam, in the final exam's vocabulary (the framed intro, hexagon keys, the
+   clock in a pinned bar, the gauge, the review rows) drawn on the site's
+   tokens, so it reads in the light theme as well as the dark one. Square.
+   The page's accent is the learner's own; a verdict keeps the site's status
+   colours: acquis in the success tone, à consolider in the warning tone,
+   à revoir in the danger tone. */
+
+.mkx {
+  --mkx-accent: var(--cosmetic-accent);
+  /* The accent as text: pulled toward the text colour, so a turquoise or an
+     amber stays legible on the light theme's white too. */
+  --mkx-ink: color-mix(in srgb, var(--cosmetic-accent) 55%, var(--color-text-primary));
+  --mkx-soft: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  --mkx-wash: color-mix(in srgb, var(--cosmetic-accent) 8%, var(--color-bg-base));
+  --bk-color: var(--mkx-accent);
+}
+
+/* A verdict, on whatever carries it: a row, a figure, a badge. */
+.mkx [data-tone="ok"] {
+  --mkx-tone: var(--color-success);
+}
+.mkx [data-tone="mid"] {
+  --mkx-tone: var(--color-warning);
+}
+.mkx [data-tone="low"] {
+  --mkx-tone: var(--color-danger);
+}
+/* A question left blank: neutral, so amber only ever means "à consolider". */
+.mkx [data-tone="none"] {
+  --mkx-tone: var(--color-text-muted);
+}
+.mkx [data-tone] {
+  --mkx-tone-ink: color-mix(in srgb, var(--mkx-tone) 75%, var(--color-text-primary));
+  --mkx-tone-soft: color-mix(in srgb, var(--mkx-tone) 40%, transparent);
+  --mkx-tone-wash: color-mix(in srgb, var(--mkx-tone) 8%, transparent);
+}
+
+/* A heading moved to when the stage changes: the focus lands, no ring. */
+.mkx-focus:focus {
+  outline: none;
+}
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+
+/* The exam's hexagon: an outline (::before) and a fill (::after), the
+   content above both. */
+.mkx-hex {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+}
+.mkx-hex::before,
+.mkx-hex::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
+  transition: background var(--dur-fast) ease;
+}
+.mkx-hex::before {
+  inset: 0;
+  background: var(--mkx-hex-line, var(--color-border-default));
+}
+.mkx-hex::after {
+  inset: 1.5px;
+  background: var(--mkx-hex-fill, var(--color-bg-elevated));
+}
+.mkx-hex > * {
+  position: relative;
+  z-index: 1;
+}
+.mkx-hex svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mkx-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 22px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--mkx-ink);
+}
+.mkx-eyebrow::before {
+  content: "";
+  flex-shrink: 0;
+  width: 26px;
+  height: 2px;
+  background: var(--mkx-accent);
+}
+
+/* A section's head: a mono title, a meta on the right, a dashed rule. */
+.mkx-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--color-border-default);
+}
+.mkx-head h2 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+.mkx-head h2 span {
+  color: var(--mkx-ink);
+}
+.mkx-head__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* A score as a bar: the track, the fill in the verdict's colour. */
+.mkx-meter {
+  position: relative;
+  display: block;
+  height: 6px;
+  background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+}
+.mkx-meter > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--mkx-tone, var(--mkx-accent));
+}
+
+.mkx-error {
+  margin: 0 0 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-danger);
+}
+
+.mkx-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  transition: color var(--dur-base) ease;
+}
+.mkx-back:hover {
+  color: var(--color-text-primary);
+}
+.mkx-back:focus-visible {
+  outline: 2px solid var(--mkx-accent);
+  outline-offset: 3px;
+}
+.mkx-back svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* A long button label wraps instead of pushing the page sideways. Two classes
+   deep, so it beats .btn and .btn--lg (height, nowrap) whatever the order the
+   stylesheets load in. */
+.mkx-cta .mkx-start,
+.mkx-actions .btn {
+  height: auto;
+  min-height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  white-space: normal;
+  text-align: center;
+}
+
+/* ── Intro ──────────────────────────────────────────────────────────────── */
+
+/* Capped like the final exam's frame, left-aligned under the breadcrumb, so a
+   wide screen does not stretch the figures and the rows apart. */
+.mkx-intro {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  max-width: 1320px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.mkx-intro__main {
+  display: flex;
+  flex-direction: column;
+  padding: 40px 44px 38px;
+}
+.mkx-intro__side {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  padding: 34px 34px 36px;
+  border-left: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.mkx-intro .pg-title {
+  margin-bottom: 16px;
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.02;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.mkx-intro .pg-lede {
+  margin-bottom: 30px;
+}
+
+/* The figures and the rules stop about where the lede does (62ch). */
+.mkx-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+}
+.mkx-stat {
+  padding: 18px 10px 16px;
+  text-align: center;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.mkx-stat__hex {
+  width: 36px;
+  height: 41px;
+  margin: 0 auto 12px;
+  color: var(--mkx-ink);
+  --mkx-hex-line: var(--mkx-soft);
+  --mkx-hex-fill: var(--color-bg-sunken);
+}
+.mkx-stat__val {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.mkx-stat__val small {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--color-text-muted);
+}
+.mkx-stat__lbl {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.mkx-rules {
+  max-width: 640px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+  border-top: 1px dashed var(--color-border-subtle);
+}
+.mkx-rules li {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--color-border-subtle);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.mkx-rules__k {
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+/* An attempt left running: the clock goes on, so the dot is live. */
+.mkx-live {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  color: var(--mkx-ink);
+}
+.mkx-live__dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mkx-accent);
+  animation: mkx-pulse 1.8s ease-in-out infinite;
+}
+
+.mkx-note {
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border-default);
+  background: var(--color-bg-sunken);
+}
+
+/* Right after the rules, not pinned to the column's foot: when the modules
+   make the side column the taller one, the spare room falls under the button
+   instead of opening a gap above it. */
+.mkx-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 26px;
+}
+.mkx-cta .mkx-start {
+  flex: 1 1 260px;
+  min-height: 52px;
+}
+
+/* The modules covered, numbered in the path's order. */
+.mkx-mods {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: mkx-mod;
+}
+.mkx-mods > li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  counter-increment: mkx-mod;
+}
+.mkx-mods > li::before {
+  content: counter(mkx-mod, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mkx-ink);
+}
+.mkx-mods--loading > li::before {
+  content: "";
+}
+.mkx-mods__name {
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-size: 14.5px;
+  color: var(--color-text-primary);
+}
+.mkx-mods__n {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+.mkx-mods__last {
+  grid-column: 2 / -1;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--mkx-tone-ink);
+}
+
+/* The last attempts, the newest first. */
+.mkx-hist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mkx-hist > li {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.mkx-hist__date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+.mkx-hist__score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--mkx-tone-ink);
+}
+.mkx-hist__late {
+  margin-left: 8px;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.mkx-empty {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* ── Running: the paper takes the screen, as the final exam does ────────── */
+
+.mkx-run {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+.mkx-bar {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.mkx-bar__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "exam progress timer submit";
+  align-items: center;
+  gap: 12px 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px var(--page-gutter);
+}
+.mkx-bar__exam {
+  grid-area: exam;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.mkx-bar__mark {
+  width: 26px;
+  height: 30px;
+  color: var(--mkx-ink);
+  --mkx-hex-line: var(--mkx-soft);
+  --mkx-hex-fill: var(--color-bg-elevated);
+}
+.mkx-bar__mark svg {
+  width: 13px;
+  height: 13px;
+}
+.mkx-bar__txt {
+  min-width: 0;
+}
+.mkx-bar__label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.mkx-bar__name {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-primary);
+}
+.mkx-bar__progress {
+  grid-area: progress;
+  display: grid;
+  gap: 7px;
+  width: 200px;
+}
+.mkx-bar__count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+.mkx-bar__submit {
+  grid-area: submit;
+}
+.mkx-bar__error {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) 12px;
+}
+
+.mkx-timer {
+  grid-area: timer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-sunken);
+  transition:
+    border-color var(--dur-base) ease,
+    background var(--dur-base) ease;
+}
+.mkx-timer__ico {
+  display: grid;
+  color: var(--color-text-muted);
+}
+.mkx-timer__ico svg {
+  width: 16px;
+  height: 16px;
+}
+.mkx-timer__val {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.mkx-timer__low {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-danger);
+}
+.mkx-timer--low {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+}
+.mkx-timer--low .mkx-timer__val,
+.mkx-timer--low .mkx-timer__ico {
+  color: var(--color-danger);
+}
+.mkx-timer--low .mkx-timer__ico {
+  animation: mkx-pulse 1s ease-in-out infinite;
+}
+
+.mkx-run__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mkx-paper {
+  display: grid;
+  gap: 44px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px var(--page-gutter) 72px;
+}
+
+/* A module's questions, under its head. */
+.mkx-part {
+  display: grid;
+  gap: 14px;
+}
+.mkx-part .mkx-head {
+  margin-bottom: 4px;
+}
+.mkx-part .mkx-head h2 {
+  color: var(--mkx-ink);
+}
+
+/* A question: its number and whether it has an answer, the question, the
+   options as keyed rows (real radios, drawn by their labels). */
+.mkx-q {
+  padding: 20px 22px 22px;
+  scroll-margin-top: 20px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  transition: border-color var(--dur-base) ease;
+}
+.mkx-q[data-answered="true"] {
+  border-color: var(--mkx-soft);
+}
+.mkx-q__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.mkx-q__head b {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.mkx-q__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.mkx-q__state::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--color-text-muted);
+}
+.mkx-q[data-answered="true"] .mkx-q__state {
+  color: var(--mkx-ink);
+}
+.mkx-q[data-answered="true"] .mkx-q__state::before {
+  border-color: var(--mkx-accent);
+  background: var(--mkx-accent);
+}
+/* Questions quote URLs and commands with no break in them: they wrap anywhere
+   rather than push the card, and the paper, sideways. */
+.mkx-q__text {
+  margin: 0 0 18px;
+  overflow-wrap: anywhere;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+  text-wrap: pretty;
+}
+.mkx-opts {
+  display: grid;
+  gap: 8px;
+}
+.mkx-opt {
+  position: relative;
+}
+/* The radio stays in the page, for the keyboard and the screen reader; its
+   label is what the eye sees. */
+.mkx-opt__input {
+  position: absolute;
+  top: 50%;
+  left: 24px;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.mkx-opt__label {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 10px 12px;
+  cursor: pointer;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-base);
+  color: var(--color-text-secondary);
+  transition:
+    border-color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.mkx-opt__label:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
+}
+.mkx-opt__input:focus-visible + .mkx-opt__label {
+  outline: 2px solid var(--mkx-accent);
+  outline-offset: 2px;
+}
+.mkx-opt__input:checked + .mkx-opt__label {
+  border-color: var(--mkx-accent);
+  background: var(--mkx-wash);
+  color: var(--color-text-primary);
+}
+.mkx-opt__key {
+  width: 32px;
+  height: 36px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  --mkx-hex-line: var(--color-border-default);
+  --mkx-hex-fill: var(--color-bg-base);
+}
+/* The key letter is drawn, not written: the label's text, and so the radio's
+   accessible name, stays the option alone ("Liste", not "AListe"). */
+.mkx-opt__key > span::before {
+  content: attr(data-key);
+}
+.mkx-opt__input:checked + .mkx-opt__label .mkx-opt__key {
+  color: var(--mkx-ink);
+  --mkx-hex-line: var(--mkx-accent);
+  --mkx-hex-fill: var(--mkx-wash);
+}
+.mkx-opt__text {
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.mkx-opt__check {
+  display: grid;
+  opacity: 0;
+  color: var(--mkx-ink);
+  transition: opacity var(--dur-fast) ease;
+}
+.mkx-opt__check svg {
+  width: 16px;
+  height: 16px;
+}
+.mkx-opt__input:checked + .mkx-opt__label .mkx-opt__check {
+  opacity: 1;
+}
+
+/* The hand-in, at the foot of the paper: what is left blank, and a way to it. */
+.mkx-handin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px 28px;
+  padding: 22px 24px;
+  border: 1px dashed var(--color-border-default);
+  background: var(--color-bg-sunken);
+}
+.mkx-handin[data-complete="true"] {
+  border-color: var(--mkx-soft);
+}
+.mkx-handin__txt {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+.mkx-handin__txt p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.mkx-handin__txt b {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.mkx-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.mkx-jump__btn {
+  min-width: 38px;
+  height: 30px;
+  padding: 0 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-base);
+  transition:
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.mkx-jump__btn:hover {
+  border-color: var(--mkx-accent);
+  color: var(--color-text-primary);
+}
+.mkx-jump__btn:focus-visible {
+  outline: 2px solid var(--mkx-accent);
+  outline-offset: 2px;
+}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+/* Capped like the intro, left-aligned under the breadcrumb. */
+.mkx-result {
+  display: grid;
+  gap: 48px;
+  max-width: 1320px;
+}
+
+.mkx-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: center;
+  gap: 44px;
+  padding: 36px 40px;
+  border: 1px solid var(--mkx-tone-soft);
+  background: var(--color-bg-elevated);
+}
+.mkx-hero::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  left: -1px;
+  height: 2px;
+  background: var(--mkx-tone);
+}
+
+.mkx-gauge {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+.mkx-gauge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.mkx-gauge__track {
+  fill: none;
+  stroke: var(--color-border-subtle);
+  stroke-width: 10;
+}
+.mkx-gauge__fill {
+  fill: none;
+  stroke: var(--mkx-tone);
+  stroke-width: 10;
+}
+.mkx-gauge__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.mkx-gauge__pct {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+.mkx-gauge__sub {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.mkx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 5px 11px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mkx-tone-ink);
+  border: 1px solid var(--mkx-tone-soft);
+  background: var(--mkx-tone-wash);
+}
+.mkx-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: var(--mkx-tone);
+}
+.mkx-hero__title {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+  font-family: var(--font-sans);
+  font-size: clamp(24px, 2.8vw, 36px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+  text-wrap: balance;
+}
+.mkx-hero__desc {
+  max-width: 60ch;
+  margin: 0 0 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.mkx-substats {
+  display: flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 26px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-default);
+}
+.mkx-substats > li {
+  padding: 10px 20px;
+  text-align: center;
+}
+.mkx-substats > li + li {
+  border-left: 1px solid var(--color-border-default);
+}
+.mkx-substats__val {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.mkx-substats__val[data-tone] {
+  color: var(--mkx-tone-ink);
+}
+.mkx-substats__lbl {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.mkx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+/* The scores by module beside the correction, once there is room. */
+.mkx-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 48px;
+}
+.mkx-block {
+  min-width: 0;
+}
+
+.mkx-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.mkx-legend > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mkx-legend > li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--mkx-tone);
+}
+
+.mkx-doms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mkx-dom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name score"
+    "meter meter";
+  align-items: baseline;
+  gap: 10px 16px;
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.mkx-dom__name {
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.mkx-dom__first {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 7px;
+  vertical-align: 2px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mkx-tone-ink);
+  border: 1px solid var(--mkx-tone-soft);
+}
+.mkx-dom__score {
+  grid-area: score;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--mkx-tone-ink);
+}
+.mkx-dom .mkx-meter {
+  grid-area: meter;
+  height: 8px;
+}
+
+/* The correction, one row a question, opened where the answer was wrong. */
+.mkx-revs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mkx-rev {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.mkx-rev[open] {
+  border-color: var(--mkx-tone-soft);
+}
+.mkx-rev__sum {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.mkx-rev__sum::-webkit-details-marker {
+  display: none;
+}
+.mkx-rev__sum:focus-visible {
+  outline: 2px solid var(--mkx-accent);
+  outline-offset: -2px;
+}
+.mkx-rev__mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: var(--mkx-tone-ink);
+  border: 1px solid var(--mkx-tone-soft);
+  background: var(--mkx-tone-wash);
+}
+.mkx-rev__mark svg {
+  width: 13px;
+  height: 13px;
+}
+.mkx-rev__num {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.mkx-rev__num b {
+  font-weight: 700;
+  color: var(--mkx-tone-ink);
+}
+.mkx-rev__q {
+  display: block;
+  overflow-wrap: break-word;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+.mkx-rev__chev {
+  display: grid;
+  color: var(--color-text-muted);
+  transition: transform var(--dur-base) ease;
+}
+.mkx-rev__chev svg {
+  width: 15px;
+  height: 15px;
+}
+.mkx-rev[open] .mkx-rev__chev {
+  transform: rotate(90deg);
+}
+.mkx-rev__body {
+  padding: 2px 20px 20px 60px;
+}
+.mkx-answers {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.mkx-ans {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+}
+.mkx-ans[data-tone] {
+  color: var(--color-text-primary);
+  border-color: var(--mkx-tone-soft);
+  background: var(--mkx-tone-wash);
+}
+.mkx-ans__key {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.mkx-ans[data-tone] .mkx-ans__key {
+  color: var(--mkx-tone-ink);
+}
+.mkx-ans__text {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.mkx-ans__tag {
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mkx-tone-ink);
+  border: 1px solid var(--mkx-tone-soft);
+}
+.mkx-explain {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 11px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
+}
+.mkx-explain > svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--color-info);
+}
+.mkx-explain__txt {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.mkx-explain__lbl {
+  display: block;
+  margin-bottom: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-info);
+}
+
+.mkx-end {
+  padding-top: 22px;
+  border-top: 1px dashed var(--color-border-default);
+}
+
+@keyframes mkx-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Narrow screens ─────────────────────────────────────────────────────── */
+
+/* One column until the content area is really wide. From 1024px the app
+   sidebar takes its 16rem back, so a 1280px viewport leaves about 1030px of
+   content: too little for a 56px title beside the modules, or for the module
+   scores beside the correction (as in exam.css). */
+@media (max-width: 1279px) {
+  .mkx-intro {
+    grid-template-columns: 1fr;
+  }
+  .mkx-intro__side {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .mkx-detail {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .mkx-bar__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "exam timer"
+      "progress submit";
+    gap: 12px 16px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .mkx-bar__progress {
+    width: auto;
+  }
+  .mkx-hero {
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 28px;
+    padding: 28px 26px;
+  }
+  .mkx-gauge {
+    width: 160px;
+    height: 160px;
+  }
+  .mkx-gauge__pct {
+    font-size: 42px;
+  }
+}
+@media (max-width: 640px) {
+  .mkx-intro__main,
+  .mkx-intro__side {
+    padding: 26px 18px 28px;
+  }
+  .mkx-stats {
+    gap: 8px;
+  }
+  .mkx-stat {
+    padding: 14px 6px 12px;
+  }
+  .mkx-stat__val {
+    font-size: 24px;
+  }
+  .mkx-rules li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .mkx-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mkx-cta .mkx-start {
+    flex: 0 0 auto;
+  }
+  .mkx-back {
+    justify-content: center;
+  }
+  /* In the last minute the label goes under the time, so the clock does not
+     grow sideways and squeeze the exam's name out of the bar. */
+  .mkx-timer {
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    justify-content: end;
+    gap: 2px 8px;
+    padding: 6px 10px;
+  }
+  .mkx-timer__low {
+    grid-column: 1 / -1;
+    text-align: right;
+  }
+  .mkx-timer__val {
+    font-size: 18px;
+  }
+  .mkx-q {
+    padding: 16px 14px 18px;
+  }
+  .mkx-q__text {
+    font-size: 16.5px;
+  }
+  .mkx-opt__label {
+    gap: 10px;
+    padding: 8px 12px 8px 8px;
+  }
+  .mkx-handin {
+    padding: 18px 16px;
+  }
+  .mkx-handin .btn {
+    width: 100%;
+  }
+  .mkx-hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 26px 18px;
+    text-align: center;
+  }
+  .mkx-hero__desc,
+  .mkx-substats {
+    margin-right: auto;
+    margin-left: auto;
+  }
+  .mkx-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .mkx-actions .btn {
+    width: 100%;
+  }
+  .mkx-substats > li {
+    padding: 10px 14px;
+  }
+  .mkx-rev__sum {
+    gap: 12px;
+    padding: 14px;
+  }
+  .mkx-rev__body {
+    padding: 2px 14px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mkx-live__dot,
+  .mkx-timer--low .mkx-timer__ico {
+    animation: none;
+  }
+  .mkx-hex::before,
+  .mkx-hex::after,
+  .mkx-back,
+  .mkx-timer,
+  .mkx-q,
+  .mkx-opt__label,
+  .mkx-opt__check,
+  .mkx-jump__btn,
+  .mkx-rev__chev {
+    transition: none;
+  }
+}

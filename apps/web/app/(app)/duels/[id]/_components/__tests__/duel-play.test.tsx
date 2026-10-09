@@ -31,7 +31,8 @@ const { DuelPlay } = await import("../duel-play");
 /**
  * A duel as one player sees it: both scores, the next question, the right
  * answer once wrong, the other's score moving with the page's refresh, the
- * result; and an invitation answered from the duel itself.
+ * result with the reader's answers and a rematch; and an invitation answered
+ * from the duel itself.
  */
 
 afterEach(() => {
@@ -117,20 +118,50 @@ describe("DuelPlay", () => {
     expect(screen.getByText("Défaite.")).toBeTruthy();
     expect(screen.getByText("1 à 2 contre Alex.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Liste" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Rejouer" }).getAttribute("href")).toBe(
+      "/duels?ami=alex",
+    );
+    // The reader's answers, the right one named where they missed.
+    expect(screen.getByText("Ta réponse : Date")).toBeTruthy();
+    expect(screen.getByText("Droits")).toBeTruthy();
+  });
+
+  it("says why a tied score still has a winner", () => {
+    render(
+      <DuelPlay
+        initial={{
+          ...BASE,
+          status: "FINISHED",
+          winner: "reader",
+          readerScore: { answered: 2, correct: 1 },
+          otherScore: { answered: 2, correct: 1 },
+        }}
+      />,
+    );
+    expect(screen.getByText("Victoire !")).toBeTruthy();
+    expect(screen.getByText("À égalité de bonnes réponses : tu as fini avant Alex.")).toBeTruthy();
   });
 
   it("lets the challenged friend answer the invitation from the duel", async () => {
     m.respondToDuelAction.mockResolvedValue({ ok: true });
-    render(
+    const { rerender } = render(
       <DuelPlay
         initial={{ ...BASE, status: "PENDING", readerIsChallenger: false, questions: [] }}
       />,
     );
     expect(screen.getByText(/Alex te défie sur « Linux »/u)).toBeTruthy();
+    // No score before the duel starts: the board says so rather than show zeros.
+    expect(screen.getByLabelText("Les scores").textContent).toContain("pas commencé");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
       await Promise.resolve();
     });
     expect(m.respondToDuelAction).toHaveBeenCalledWith("d1", true);
+    expect(m.push).toHaveBeenCalledWith("/duels/d1");
+    // The page renders again with the duel accepted: the invitation gives way
+    // to the first question, as the server's new view says.
+    rerender(<DuelPlay initial={{ ...BASE, readerIsChallenger: false }} />);
+    expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
+    expect(screen.getByText("Que fait ls ?")).toBeTruthy();
   });
 });
