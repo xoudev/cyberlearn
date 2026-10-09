@@ -132,6 +132,7 @@ html {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
   scroll-behavior: smooth;
+  /* An anchor lands below the sticky navbar: STICKY_TOP in lib/chrome.ts. */
   scroll-padding-top: 80px;
 }
 
@@ -3745,10 +3746,10 @@ span.profile-avatar {
   display: none;
 }
 @media (min-width: 1280px) {
+  /* Its top comes from StickyRail, while the outline fits below the navbar. */
   .lesson-stepper-rail {
     display: block;
     position: sticky;
-    top: 24px;
   }
 }
 
@@ -3759,8 +3760,10 @@ span.profile-avatar {
   align-items: stretch;
   border: 1px solid var(--color-border-subtle);
   background: rgba(10, 8, 38, 0.6);
-  position: sticky;
-  bottom: 16px;
+  /* In the flow, where it has always been seen. It was sticky to the bottom of
+     a parent no taller than itself, so it never followed the page; once the
+     page could stick, all it did was slide over the warning above it. */
+  position: relative;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 5;
@@ -3830,6 +3833,46 @@ a:hover > .lesson-author-card {
 @media (min-width: 1280px) {
   .chx {
     padding: 40px var(--page-gutter) 120px;
+  }
+}
+
+/* A challenge's hero and content grid: the briefing card and the rail beside
+   them where there is room, below them where there is not. They were inline
+   grids, which cannot have a breakpoint: on a phone the rail kept its 320px
+   and the left column - title, instructions, flag form - was squeezed to
+   nothing. 1080px, as for a path's aside: the app sidebar takes 240px back
+   from 1024px. */
+.chx-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  margin-bottom: 40px;
+  align-items: start;
+}
+.chx-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.chx-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+@media (min-width: 1081px) {
+  .chx-hero {
+    grid-template-columns: minmax(0, 1.6fr) minmax(380px, 1fr);
+    gap: 56px;
+    margin-bottom: 56px;
+  }
+  .chx-body {
+    grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
+    gap: 48px;
+  }
+  /* Its top comes from StickyRail, while the rail fits below the navbar. */
+  .chx-rail {
+    position: sticky;
   }
 }
 

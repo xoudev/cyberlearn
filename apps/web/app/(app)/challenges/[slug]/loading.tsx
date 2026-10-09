@@ -3,9 +3,9 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 
 /**
  * A challenge's page while it loads, drawn on the page's own container (.chx)
- * and its own inline grids: the breadcrumb, the hero (title and tags beside the
- * briefing card), the content grid 1.85fr / 1fr (instructions, the Linux
- * machine and the flag form on the left; hints and statistics in the sticky
+ * and its own grids (.chx-hero, .chx-body): the breadcrumb, the hero (title and
+ * tags beside the briefing card), the content grid 1.85fr / 1fr (instructions,
+ * the Linux machine and the flag form on the left; hints and statistics in the
  * rail) and the previous / next nav at the bottom, at their real sizes.
  */
 
@@ -118,16 +118,7 @@ export default function ChallengeLoading(): React.ReactElement {
       </div>
 
       {/* Hero: title, tags and description beside the briefing card */}
-      <section
-        aria-hidden="true"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.6fr) minmax(380px, 1fr)",
-          gap: 56,
-          marginBottom: 56,
-          alignItems: "start",
-        }}
-      >
+      <section aria-hidden="true" className="chx-hero">
         <div>
           <Skeleton w={96} h={11} style={{ marginBottom: 18 }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 26 }}>
@@ -179,16 +170,8 @@ export default function ChallengeLoading(): React.ReactElement {
         </div>
       </section>
 
-      {/* Content grid: the challenge on the left, the sticky rail on the right */}
-      <div
-        aria-hidden="true"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.85fr) minmax(320px, 1fr)",
-          gap: 48,
-          alignItems: "start",
-        }}
-      >
+      {/* Content grid: the challenge on the left, the rail on the right */}
+      <div aria-hidden="true" className="chx-body">
         <div>
           {/* Instructions */}
           <div style={{ marginBottom: 32 }}>
@@ -282,15 +265,7 @@ export default function ChallengeLoading(): React.ReactElement {
         </div>
 
         {/* Right rail */}
-        <aside
-          style={{
-            position: "sticky",
-            top: 24,
-            display: "flex",
-            flexDirection: "column",
-            gap: 36,
-          }}
-        >
+        <aside className="chx-rail">
           <section>
             <SectionHeadSkeleton label={72} meta={84} marginBottom={20} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -16,6 +16,7 @@ import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-term
 import { ChallengeAction } from "./_components/challenge-action";
 import { HintsPanel } from "./_components/hints-panel";
 import { CopyButton } from "@/components/copy-button";
+import { StickyRail } from "@/components/sticky-rail";
 import { ScriptRunner } from "./_components/script-runner";
 import { WriteupsSection } from "./_components/writeups-section";
 import { writeupBoardFor } from "@/lib/challenges/writeups";
@@ -279,16 +280,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
         <span style={{ color: "var(--color-danger)" }}>{challenge.slug}</span>
       </div>
 
-      {/* ── Hero (2-col grid) ─────────────────────────────────────────────────── */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.6fr) minmax(380px, 1fr)",
-          gap: 56,
-          marginBottom: 56,
-          alignItems: "start",
-        }}
-      >
+      {/* ── Hero (2-col grid, stacked on narrow screens: globals.css) ────────── */}
+      <section className="chx-hero">
         {/* Left: title + tags + description */}
         <div>
           <div
@@ -581,15 +574,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
         </div>
       </section>
 
-      {/* ── Content grid (1.85fr | 1fr) ──────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.85fr) minmax(320px, 1fr)",
-          gap: 48,
-          alignItems: "start",
-        }}
-      >
+      {/* ── Content grid (1.85fr | 1fr, stacked on narrow screens) ──────────── */}
+      <div className="chx-body">
         {/* ── Left column ────────────────────────────────────────────────────── */}
         <div>
           {/* Instructions */}
@@ -724,16 +710,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           )}
         </div>
 
-        {/* ── Right rail (sticky) ─────────────────────────────────────────────── */}
-        <aside
-          style={{
-            position: "sticky",
-            top: 24,
-            display: "flex",
-            flexDirection: "column",
-            gap: 36,
-          }}
-        >
+        {/* ── Right rail (sticky while it fits below the navbar) ──────────────── */}
+        <StickyRail className="chx-rail">
           {/* Hints panel */}
           {challenge.hints.length > 0 && (
             <HintsPanel
@@ -807,7 +785,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               )}
             </div>
           </section>
-        </aside>
+        </StickyRail>
       </div>
 
       {writeupBoard !== null ? (

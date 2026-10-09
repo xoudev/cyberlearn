@@ -903,8 +903,9 @@
 /* ── The board: the challenges, the players, the teams ──────────────────── */
 
 /* The challenges with the players under them, the teams' ranking in a
-   column beside both. Nothing is sticky: the app shell's <main> grows with
-   its content and the window scrolls, so a sticky column would never stick.
+   column beside both. The column is not sticky: with forty teams it is often
+   taller than the screen, and a stuck rail that does not fit keeps its
+   bottom out of sight (see railFitsBelowNavbar in lib/chrome.ts).
    The players sit under the challenges, not under the teams: fifty of them
    in the side column would run far below a short grid of challenges and
    leave the main column empty. The second row takes whatever the teams'

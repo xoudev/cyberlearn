@@ -9,9 +9,9 @@
   gap: 28px;
   align-items: start;
 }
+/* Its top comes from StickyRail, while the preview fits below the navbar. */
 .casier-preview {
   position: sticky;
-  top: 24px;
 }
 @media (max-width: 1024px) {
   .casier-layout {
@@ -19,6 +19,5 @@
   }
   .casier-preview {
     position: static;
-    top: auto;
   }
 }

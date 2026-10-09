@@ -11,6 +11,7 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StatTile } from "@/components/stat-tile";
 import { BADGE_RARITY_VAR, toBadgeRarity } from "@cyberlearn/ui";
 import { ProgressBar } from "@/components/progress-bar";
+import { StickyRail } from "@/components/sticky-rail";
 import "./locker.css";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
@@ -435,7 +436,8 @@ export function LockerClient({
         </div>
 
         {/* Right: live preview */}
-        <div
+        <StickyRail
+          as="div"
           {...previewAttrs}
           className="casier-preview card"
           style={{
@@ -567,7 +569,7 @@ export function LockerClient({
               </div>
             ))}
           </div>
-        </div>
+        </StickyRail>
       </div>
     </div>
   );
