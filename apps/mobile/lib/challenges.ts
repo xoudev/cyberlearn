@@ -83,6 +83,10 @@ export interface ChallengeDetail {
   prerequisiteTitle: string | null;
   prerequisiteSlug?: string | null;
   onMachine: boolean;
+  /** Where to connect, as the site's « Connexion » shows it: "nc host 1337", or an address. */
+  resourceUrl?: string | null;
+  /** The file to download: an address of its own, or a path on the site. */
+  attachmentUrl?: string | null;
   hints: ChallengeHint[];
   xpEarned?: number | null;
   /** Set while this is the challenge of the week. */
