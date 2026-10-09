@@ -308,15 +308,16 @@ tire plus `image-size`, et `deepmerge-ts` est monté en 8 par un `overrides`
 
 ## Alertes Dependabot du 9 octobre 2026
 
-Douze alertes ouvertes. Six sont corrigées en montant la dépendance indirecte à
-sa version corrigée, dans la plage que son dépendant déclare déjà, par un
+Douze alertes ouvertes. Cinq se ferment en montant la dépendance indirecte à sa
+version corrigée, dans la plage que son dépendant déclare déjà, par un
 plancher dans les `pnpm.overrides` de la racine (`"paquet@<corrigé":
 "^corrigé"`, comme `dompurify`) : `sharp` 0.35.5 (sous Next), `compression`
 1.8.2 (serveur de dev de la CLI Expo), `source-map-js` 1.2.2 (postcss, Tailwind,
 Vite, jsdom), `shell-quote` 1.12.0 (React Native DevTools, critique mais dont la
 copie installée n'est jamais chargée), `@humanfs/node` 0.16.8 (ESLint) et la
 copie 7.x de `postcss-selector-parser` 7.1.6 (le bundler Remotion du dossier
-marketing). Un `pnpm update --depth Infinity` aurait fait la même chose, mais il
+marketing), dont l'alerte reste toutefois ouverte pour la copie 6.0.10
+ci-dessous. Un `pnpm update --depth Infinity` aurait fait la même chose, mais il
 résolvait aussi à neuf une vingtaine d'autres paquets (rollup, postcss,
 browserslist…) et en dédoublait certains : les planchers ne touchent que les
 paquets visés, et empêchent un retour en arrière.
