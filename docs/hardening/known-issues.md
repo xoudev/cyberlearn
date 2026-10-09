@@ -301,3 +301,75 @@ Trois restent ouvertes, et aucune n'est exécutée par le site en ligne :
 À réexaminer quand Next, Expo ou Prisma publient une version qui relève ces
 dépendances ; ne pas les forcer par un `overrides`, qui ferait tourner Metro ou
 Prisma sur une version majeure qu'ils n'ont pas testée.
+
+Les trois sont parties depuis : Next 16 ne fige plus `postcss@8.4.31`, Metro ne
+tire plus `image-size`, et `deepmerge-ts` est monté en 8 par un `overrides`
+(#323), Prisma ne l'utilisant que pour fusionner sa propre configuration.
+
+## Alertes Dependabot du 9 octobre 2026
+
+Douze alertes ouvertes. Cinq se ferment en montant la dépendance indirecte à sa
+version corrigée, dans la plage que son dépendant déclare déjà, par un
+plancher dans les `pnpm.overrides` de la racine (`"paquet@<corrigé":
+"^corrigé"`, comme `dompurify`) : `sharp` 0.35.5 (sous Next), `compression`
+1.8.2 (serveur de dev de la CLI Expo), `source-map-js` 1.2.2 (postcss, Tailwind,
+Vite, jsdom), `shell-quote` 1.12.0 (React Native DevTools, critique mais dont la
+copie installée n'est jamais chargée), `@humanfs/node` 0.16.8 (ESLint) et la
+copie 7.x de `postcss-selector-parser` 7.1.6 (le bundler Remotion du dossier
+marketing), dont l'alerte reste toutefois ouverte pour la copie 6.0.10
+ci-dessous. Un `pnpm update --depth Infinity` aurait fait la même chose, mais il
+résolvait aussi à neuf une vingtaine d'autres paquets (rollup, postcss,
+browserslist…) et en dédoublait certains : les planchers ne touchent que les
+paquets visés, et empêchent un retour en arrière.
+
+Sept restent ouvertes, et aucune n'exécute de code vulnérable sur une entrée
+d'utilisateur, ni sur le site en ligne, ni dans la console, ni dans l'app sur les
+téléphones :
+
+- **`katex@0.16.47`**, tiré par Mermaid (diagrammes des leçons, dans le
+  navigateur). Le correctif n'existe qu'en 0.18.2, et Mermaid, jusqu'à sa 12.1.0,
+  exige `^0.16.47`. KaTeX n'est chargé que si un libellé de diagramme contient une
+  formule `$$…$$`, ce qu'aucune leçon ne fait ; la faille suppose en plus une
+  pollution de prototype déjà présente dans la page, et Mermaid repasse la sortie
+  de KaTeX par DOMPurify.
+- **`postcss-selector-parser@6.0.10`**, figé par `@tailwindcss/typography`
+  (dépendance exacte, y compris dans sa dernière version 0.5.20). Le correctif
+  n'existe qu'en 7.1.6. Il ne lit que les sélecteurs des styles `prose` du
+  plugin, au build, pas des entrées d'utilisateurs.
+- **`uuid@7.0.3`**, tiré par `xcode@3.0.1` (via `@expo/config-plugins`), qui
+  déclare `^7.0.3`. Le correctif n'existe qu'en 11.1.1, et aucune version de
+  `xcode` ne l'accepte. La faille touche `v3()`, `v5()` et `v6()` appelées avec un
+  tampon fourni ; `xcode` n'appelle que `uuid.v4()` sans tampon, pour nommer les
+  entrées du projet Xcode au `expo prebuild`. L'`uuid@11.1.1` de Mermaid, côté
+  site, est déjà corrigé.
+- **`decode-uri-component@0.2.2`**, tiré par `query-string@7.1.3` (via Expo
+  Router), qui déclare `^0.2.2`. Le correctif est en 0.5.0, un paquet ESM seul
+  que le `require()` de `query-string` 7 ne sait pas charger : un `overrides`
+  casserait le routage de l'app. Expo Router 57 n'appelle de `query-string` que
+  `stringify()`, qui ne décode rien, et décode les liens profonds avec le
+  `decodeURIComponent` natif : la fonction est dans le bundle de l'app, jamais
+  appelée. Expo Router 58 (SDK 58) retire `query-string`.
+- **`sprintf-js@1.0.3`**, tiré par `gray-matter` puis `js-yaml@3` et
+  `argparse@1`, dans la console. Aucune version corrigée n'existe (la 1.1.3, la
+  dernière, est touchée aussi), et `gray-matter` 4.0.3, sa dernière version, exige
+  `js-yaml` 3 : il appelle `safeLoad`, que la 4 a retiré. Le code n'est jamais
+  chargé : `argparse` ne sert qu'à la ligne de commande de `js-yaml`, alors que
+  `gray-matter` n'importe que sa bibliothèque.
+- **`braces@3.0.3`**, tiré par `micromatch@4.0.8` sous `@next/eslint-plugin-next`
+  (via `fast-glob@3.3.1`, épinglé à l'exact) et sous Metro (`metro-file-map`
+  0.84). Aucune version corrigée n'existe. Il ne tourne qu'au lint et au
+  bundling, et n'étend que des motifs écrits dans la configuration du dépôt,
+  jamais un chemin ni une saisie d'utilisateur.
+- **`node-forge@1.4.0`**, tiré par `@expo/cli` et
+  `@expo/code-signing-certificates`. Aucune version corrigée n'existe, et la SDK 58
+  d'Expo le garde. Il ne tourne que dans la CLI d'Expo, sur le poste ou en CI : elle
+  ne vérifie avec lui que des signatures qu'elle vient de produire avec la clé du
+  développeur, et le projet n'active pas la signature des mises à jour
+  `expo-updates`.
+
+À réexaminer avec la montée à la SDK 58 d'Expo (`decode-uri-component`), une
+version de Mermaid qui accepte KaTeX 0.18, une de `@tailwindcss/typography` sur
+`postcss-selector-parser` 7, et pour le reste dès qu'une version corrigée paraît.
+Ne pas forcer les quatre premières par un `overrides` : chacune ferait passer son
+dépendant sur une version majeure qu'il n'a pas testée, et celle de
+`decode-uri-component` le casserait.
