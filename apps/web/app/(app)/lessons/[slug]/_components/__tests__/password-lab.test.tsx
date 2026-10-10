@@ -41,7 +41,9 @@ const PROPS = {
 };
 
 const row = (user: string): HTMLElement =>
-  screen.getByRole("row", { name: new RegExp(`^${user}`, "u") });
+  // A function matcher, not a RegExp built from a variable: the row's name
+  // starts with the account's, without a dynamic pattern (ReDoS-safe).
+  screen.getByRole("row", { name: (accessibleName) => accessibleName.startsWith(user) });
 const press = (name: string | RegExp): void => {
   fireEvent.click(screen.getByRole("button", { name }));
 };
