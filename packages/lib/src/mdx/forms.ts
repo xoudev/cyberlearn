@@ -11,6 +11,7 @@ import {
   parseMatchPairs,
   parseNetworkLab,
   parsePacketDissector,
+  parsePasswordLab,
   parsePhishingEmail,
   parsePhotoOsint,
   parsePhpLab,
@@ -1231,6 +1232,58 @@ const FORMS: readonly ComponentForm[] = [
       },
     ],
   },
+  {
+    name: "PasswordLab",
+    fields: [
+      idField(),
+      titleField,
+      taskField(false, "Au-dessus de la table ; l'atelier dit le reste."),
+      {
+        kind: "rows",
+        key: "accounts",
+        label: "Comptes volés",
+        hint: "De 2 à 12. L'empreinte est le SHA-256 du sel suivi du mot de passe (du mot de passe seul sans sel), en 64 caractères hexadécimaux.",
+        required: true,
+        min: 2,
+        max: 12,
+        columns: [
+          { key: "user", label: "Compte", required: true },
+          { key: "hash", label: "Empreinte", required: true, placeholder: "64 caractères" },
+          { key: "salt", label: "Sel", placeholder: "vide si non salé" },
+          { key: "note", label: "Note", placeholder: "dite une fois le compte passé" },
+        ],
+      },
+      {
+        kind: "number",
+        key: "weak",
+        label: "Comptes qui tombent",
+        hint: "Combien en casse le dictionnaire complet, compte par compte. La sauvegarde le vérifie.",
+        required: true,
+        min: 1,
+        integer: true,
+      },
+      {
+        kind: "text",
+        key: "question",
+        label: "Question de synthèse",
+        hint: "Facultative ; avec ses options et la bonne.",
+      },
+      {
+        kind: "choices",
+        key: "options",
+        correctKey: "correct",
+        label: "Options",
+        hint: "Coche la bonne. Elles gardent cet ordre : elles ne sont pas mélangées.",
+        min: 2,
+      },
+      {
+        kind: "textarea",
+        key: "explanation",
+        label: "Explication",
+        hint: "Affichée une fois la bonne option choisie.",
+      },
+    ],
+  },
 ];
 
 export const COMPONENT_FORMS: ReadonlyMap<string, ComponentForm> = new Map(
@@ -1273,6 +1326,7 @@ const PARSERS: ReadonlyMap<string, Parser> = new Map<string, Parser>([
   ["HexEditor", (attrs) => parseHexEditor(attrs)],
   ["IncidentStory", (attrs) => parseIncidentStory(attrs)],
   ["JwtLab", (attrs) => parseJwtLab(attrs)],
+  ["PasswordLab", (attrs) => parsePasswordLab(attrs)],
 ]);
 
 /**

@@ -29,3 +29,4 @@ export * from "./schemas/log-hunt.schema.js";
 export * from "./schemas/hex-editor.schema.js";
 export * from "./schemas/incident-story.schema.js";
 export * from "./schemas/jwt-lab.schema.js";
+export * from "./schemas/password-lab.schema.js";

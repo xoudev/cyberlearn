@@ -198,7 +198,7 @@ vérifications d'un terminal Linux…). Le « + » entre deux blocs en ajoute un
 depuis le guide ; les flèches le déplacent ; un champ que la page refuserait
 est signalé sous le champ, avant d'enregistrer. Le découpage et la réécriture
 vivent dans `packages/lib/src/mdx/blocks.ts`, les formulaires dans
-`packages/lib/src/mdx/forms.ts` : chacun des trente composants a le sien,
+`packages/lib/src/mdx/forms.ts` : chacun des trente et un composants a le sien,
 exercices et labos compris (lignes pour les cas de test, les sondes ou les
 vérifications ; groupes pour un lieu ou un message à déchiffrer ; JSON pour
 les quelques structures trop profondes, la trame d'un paquet, les appareils
@@ -1609,6 +1609,25 @@ Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés, 
   id="jwt-atelier"
   title="Un jeton, trois façons de le vérifier de travers"
   levels={["decode", "none", "weak-secret", "confusion", "fixed"]}
+### 5.9t PasswordLab - Atelier mots de passe
+
+Une table de comptes volés, telle qu'une base de données la garde : un nom, un sel s'il y en a un, et l'empreinte SHA-256 du sel suivi du mot de passe. L'élève lance une attaque par dictionnaire contre cette table, dans son navigateur, sur des données d'exemple de la plateforme : il choisit un dictionnaire (les 10 mots de passe les plus courants, 200, ou 200 avec leurs variantes : majuscule, chiffre ou année derrière, point d'exclamation) et une méthode (**table pré-calculée** : le dictionnaire est haché une fois et les empreintes volées y sont cherchées ; **compte par compte** : le dictionnaire est repris pour chaque compte, avec son sel), et voit ce qui tombe, au bout de combien d'essais, pour combien de calculs de hash. Ce qui résiste est dit résister, avec la `note` de l'auteur. L'atelier montre ensuite l'effet du sel (deux comptes de même mot de passe n'ont pas la même empreinte, et la table pré-calculée ne trouve aucun compte salé), puis une section « Longueur et lenteur » : un calculateur (type de caractères, longueur, fonction de stockage : SHA-256 seul, bcrypt coût 12, argon2id 64 Mo) donne le nombre de mots de passe possibles et le temps pour tous les essayer, avec ce que coûte un vrai dictionnaire de 14 millions de mots de passe. Rien n'est envoyé nulle part, et aucun champ ne reçoit d'empreinte : l'atelier ne casse que la table de la leçon. L'exercice est réussi quand tous les comptes faibles sont cassés et que la question de synthèse est répondue juste. Sur le site et dans l'app (`@cyberlearn/lib/crypto/cracking`).
+
+```mdx
+<PasswordLab
+  id="mdp-base-volee"
+  title="La base volée d'un forum"
+  task="Lance le dictionnaire sur la table et retrouve les mots de passe qui tombent."
+  accounts={[
+    { "user": "alice", "hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "note": "Le mot de passe le plus courant du monde." },
+    { "user": "hugo", "salt": "Xk3p9a", "hash": "f98c39df280156cf61322f4ec6f722b1fb28304f0c425f587f890fc3c8d1599a", "note": "Salé, mais courant : il tombe, compte par compte." },
+    { "user": "farid", "hash": "59f53d2303f5d6d4565830781758d18daf1217d6fedb059b06a7395fd6ff0ac0", "note": "Huit caractères au hasard : hors dictionnaire, mais courts." }
+  ]}
+  weak={2}
+  question="Qu'est-ce qui protège le mieux un mot de passe volé ?"
+  options={["Un hachage rapide comme SHA-256", "Un mot de passe long, un sel et une fonction lente", "Un sel, sans plus"]}
+  correct={1}
+  explanation="La longueur multiplie les possibilités, le sel force à attaquer chaque compte, la lenteur renchérit chaque essai."
 />
 ```
 
@@ -1636,6 +1655,17 @@ Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés, 
 Les services, leurs clés et leurs mots sont écrits une fois pour les deux apps (`packages/lib/src/crypto/jwt-lab.ts`, signatures dans `jwt.ts` : HMAC et RSA écrits à la main sur le SHA-256 du projet, ECDSA par `@noble/curves`), parce que le moteur JavaScript de l'app n'a pas WebCrypto, dont `jose` a besoin. Les tests comparent tout à `jose` et à `node:crypto`, et `jwt-lab.test.ts` relit chaque atelier des leçons pour vérifier que l'attaque de chaque étape passe chez le service fragile et échoue chez le service corrigé.
 
 Ne mets jamais dans une leçon un vrai jeton ni un vrai secret : le scanner de secrets du dépôt les signalerait, et ce serait un mauvais exemple pour un cours de sécurité.
+| `task` | string | La consigne, au-dessus de la table (optionnel) |
+| `accounts` | objets | De 2 à 12 comptes, dans l'ordre d'affichage : `user`, `hash` (64 caractères hexadécimaux), `salt` (lettres et chiffres, 32 au plus ; absent si le compte n'est pas salé), `note` (optionnel : ce que le bilan dit du compte une fois qu'il est tombé, ou une fois l'attaque la plus large menée sans le casser). **Clés entre guillemets** |
+| `weak` | nombre | Combien de comptes tombent devant le dictionnaire complet, compte par compte : les comptes à trouver |
+| `question` | string | La question de synthèse (optionnelle) |
+| `options` | string[] | De 2 à 5 options, **dans l'ordre où elles s'affichent** : l'atelier ne les mélange pas |
+| `correct` | nombre | L'indice de la bonne option (la première vaut 0) |
+| `explanation` | string | Pourquoi c'est la bonne, montré une fois choisie (optionnel) |
+
+Les props ne contiennent jamais un mot de passe en clair, seulement des empreintes. Pour les produire, calcule le SHA-256 du sel collé au mot de passe, sans retour à la ligne : `printf '%s' 'Xk3p9aazerty' | sha256sum` pour un compte salé `Xk3p9a`, `printf '%s' 'azerty' | sha256sum` pour un compte sans sel. Choisis les comptes contre le dictionnaire de `@cyberlearn/lib/crypto/common-passwords` : les 200 mots, et leurs variantes (une majuscule, `1`, `12`, `123`, `1234`, `2024`, `2025` ou `!` derrière, appliqués aux 40 premiers mots faits de lettres seules). `Dragon2024` tombe dans le troisième dictionnaire seulement ; `azerty123` aussi ; une phrase de trente caractères ne tombe nulle part. Ce que la leçon vérifie avant d'enregistrer : la table est bien formée, et `weak` est exactement le nombre de comptes que le dictionnaire complet casse (le message dit combien). Le test `packages/lib/src/crypto/cracking-lessons.test.ts` rejoue chaque atelier des leçons et dit quel dictionnaire et quelle méthode font tomber quel compte.
+
+Un bon atelier mélange trois sortes de comptes : des mots de passe courants (qui tombent aux premiers essais), des mots de passe qui demandent le dictionnaire élargi ou la méthode compte par compte (le sel), et des mots de passe qui résistent, pour des raisons différentes (hors dictionnaire mais courts, ou longs). Mets au moins deux comptes qui partagent un mot de passe, un sans sel (même empreinte) et deux avec sel (empreintes différentes) : c'est la démonstration du sel. Les débits du calculateur sont des ordres de grandeur pour une carte graphique grand public, arrondis ; l'atelier le dit, il ne prétend pas les mesurer.
 
 ### 5.10 Pièges de syntaxe MDX
 
@@ -1673,6 +1703,7 @@ avant de pousser.
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
 - Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<JwtLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<PasswordLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

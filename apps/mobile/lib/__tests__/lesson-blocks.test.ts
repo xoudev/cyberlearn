@@ -887,3 +887,52 @@ describe("IncidentStory", () => {
     ]);
   });
 });
+
+describe("PasswordLab", () => {
+  const HASH = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+  const OTHER = "f98c39df280156cf61322f4ec6f722b1fb28304f0c425f587f890fc3c8d1599a";
+
+  it("is played in the app with the table and the question the site reads", () => {
+    const lesson = [
+      "## La base volée",
+      "",
+      "<PasswordLab",
+      '  id="mdp"',
+      '  title="La base volée d\'un forum"',
+      '  task="Lance le dictionnaire."',
+      `  accounts={[{ "user": "alice", "hash": "${HASH}", "note": "Le plus courant." }, { "user": "hugo", "salt": "Xk3p9a", "hash": "${OTHER}" }]}`,
+      "  weak={2}",
+      '  question="Qu\'est-ce qui protège le mieux ?"',
+      '  options={["Un hachage rapide", "Un mot de passe long, un sel et une fonction lente"]}',
+      "  correct={1}",
+      '  explanation="Les trois se complètent."',
+      "/>",
+    ].join("\n");
+    const [block] = parseLesson(lesson).sections[0]?.blocks ?? [];
+    if (block?.kind !== "password") throw new Error("not a password lab");
+    expect(block.lab.title).toBe("La base volée d'un forum");
+    expect(block.lab.weak).toBe(2);
+    expect(block.lab.accounts).toEqual([
+      { user: "alice", hash: HASH, note: "Le plus courant." },
+      { user: "hugo", salt: "Xk3p9a", hash: OTHER },
+    ]);
+    expect(block.lab.question).toBe("Qu'est-ce qui protège le mieux ?");
+    expect(block.lab.options).toHaveLength(2);
+    expect(block.lab.correct).toBe(1);
+    expect(block.lab.explanation).toBe("Les trois se complètent.");
+  });
+
+  it("plays a table with no question, as the site does", () => {
+    const lesson = `## A\n\n<PasswordLab id="m" accounts={[{ "user": "a", "hash": "${HASH}" }, { "user": "b", "hash": "${OTHER}" }]} weak={1} />`;
+    const [block] = parseLesson(lesson).sections[0]?.blocks ?? [];
+    if (block?.kind !== "password") throw new Error("not a password lab");
+    expect(block.lab.question).toBeUndefined();
+  });
+
+  it("shows a placeholder for a table the site would refuse", () => {
+    const wrong = `## A\n\n<PasswordLab id="m" accounts={[{ "user": "a", "hash": "abc" }, { "user": "b", "hash": "${OTHER}" }]} weak={1} />`;
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Atelier mots de passe" },
+    ]);
+  });
+});

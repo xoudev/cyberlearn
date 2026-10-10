@@ -3,7 +3,7 @@ import type { LessonComponentName } from "./names.js";
 /**
  * What each lesson component is, for the people who write lessons.
  *
- * The MDX pipeline knows thirty component names (LESSON_COMPONENT_NAMES,
+ * The MDX pipeline knows thirty-one component names (LESSON_COMPONENT_NAMES,
  * in check.ts); the editor's guide used to describe five of them, the five
  * that existed when it was written. Each component added since got a section
  * in docs/LESSON_AUTHORING_GUIDE.md and an example in the showcase lesson, and
@@ -655,6 +655,23 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
         snippet:
           '<JwtLab\n  id="jwt-2"\n  title="Le jeton sans signature"\n  task="Fais accepter un jeton qui te donne le rôle admin."\n  levels={["none", "fixed"]}\n/>\n',
         description: "fixed rejoue les attaques des étapes listées : il en faut au moins une",
+      },
+    ],
+  },
+  {
+    name: "PasswordLab",
+    label: "Atelier mots de passe",
+    family: "crypto",
+    description:
+      "Une table de comptes volés (sel et empreinte SHA-256) sur laquelle l'apprenant lance une attaque par dictionnaire, voit ce qui tombe et ce qui résiste, ce que change le sel, ce que valent la longueur et une fonction lente, puis répond à une question de synthèse.",
+    guide: "5.9t PasswordLab - Atelier mots de passe",
+    examples: [
+      {
+        label: "Base volée",
+        snippet:
+          '<PasswordLab\n  id="mdp-1"\n  title="La base volée d\'un forum"\n  task="Lance le dictionnaire et retrouve les mots de passe qui tombent."\n  accounts={[{ "user": "alice", "hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "note": "Le mot de passe le plus courant du monde." }, { "user": "hugo", "salt": "Xk3p9a", "hash": "f98c39df280156cf61322f4ec6f722b1fb28304f0c425f587f890fc3c8d1599a", "note": "Salé, mais courant : il tombe, compte par compte." }, { "user": "farid", "hash": "59f53d2303f5d6d4565830781758d18daf1217d6fedb059b06a7395fd6ff0ac0", "note": "Huit caractères au hasard : hors dictionnaire, mais courts." }]}\n  weak={2}\n  question="Qu\'est-ce qui protège le mieux un mot de passe volé ?"\n  options={["Un hachage rapide comme SHA-256", "Un mot de passe long, un sel et une fonction lente", "Un sel, sans plus"]}\n  correct={1}\n  explanation="La longueur multiplie les possibilités, le sel force à attaquer chaque compte, la lenteur renchérit chaque essai."\n/>\n',
+        description:
+          "accounts : user, hash, salt (si l'empreinte est salée), note · weak : combien tombent devant le dictionnaire complet",
       },
     ],
   },

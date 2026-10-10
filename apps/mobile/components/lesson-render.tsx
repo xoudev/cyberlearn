@@ -13,6 +13,7 @@ import { JwtLabExercise } from "@/components/jwt-lab";
 import { LogHuntExercise } from "@/components/log-hunt";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
+import { PasswordLabExercise } from "@/components/password-lab";
 import { PhishingEmailExercise } from "@/components/phishing-email";
 import { PutInOrderExercise } from "@/components/put-in-order";
 import { SubnetDrillExercise } from "@/components/subnet-drill";
@@ -323,6 +324,8 @@ export function BlockView({
       return <IncidentStoryExercise story={block.story} />;
     case "jwt":
       return <JwtLabExercise lab={block.lab} />;
+    case "password":
+      return <PasswordLabExercise lab={block.lab} />;
     case "animation":
       return (
         <View

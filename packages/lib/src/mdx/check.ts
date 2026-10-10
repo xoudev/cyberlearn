@@ -16,6 +16,7 @@ import {
   parseMatchPairs,
   parseNetworkLab,
   parsePacketDissector,
+  parsePasswordLab,
   parsePhpLab,
   parsePhishingEmail,
   parsePhotoOsint,
@@ -25,6 +26,7 @@ import {
   parseSqlPlayground,
   parseSubnetDrill,
 } from "@cyberlearn/types";
+import { crackableUsers } from "../crypto/cracking";
 import { runSetup } from "../git/sandbox";
 import { parseRules } from "../network/firewall";
 import { buildFrame, missingFields } from "../network/packet";
@@ -212,6 +214,10 @@ function JwtLabStub(): null {
   return null;
 }
 STUBS.JwtLab = JwtLabStub;
+function PasswordLabStub(): null {
+  return null;
+}
+STUBS.PasswordLab = PasswordLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -433,6 +439,15 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === JwtLabStub) {
     const parsed = parseJwtLab(props);
     if (!parsed.ok) return `Atelier JWT : ${parsed.problem}`;
+  }
+  if (node.type === PasswordLabStub) {
+    const parsed = parsePasswordLab(props);
+    if (!parsed.ok) return `Atelier mots de passe : ${parsed.problem}`;
+    // The goal must be reachable, and exactly that: the dictionary is played against the table.
+    const falling = crackableUsers(parsed.value.accounts).length;
+    if (falling !== parsed.value.weak) {
+      return `Atelier mots de passe : weak vaut ${String(parsed.value.weak)}, mais le dictionnaire complet casse ${String(falling)} ${falling < 2 ? "compte" : "comptes"} de cette table.`;
+    }
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

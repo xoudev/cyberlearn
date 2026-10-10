@@ -2,7 +2,8 @@
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
-// FirewallLab, LogHunt, HexEditor, IncidentStory, JwtLab, StepAnimation, SimulatedTerminal,
+// FirewallLab, LogHunt, HexEditor, IncidentStory, JwtLab, PasswordLab, StepAnimation,
+// SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -19,6 +20,7 @@ import {
   type LogHunt,
   type MatchPairs,
   type PacketDissector,
+  type PasswordLab,
   type PhishingEmail,
   type PutInOrder,
   type SubnetDrill,
@@ -32,6 +34,7 @@ import {
   parseLogHunt,
   parseMatchPairs,
   parsePacketDissector,
+  parsePasswordLab,
   parsePhishingEmail,
   parsePutInOrder,
   parseSubnetDrill,
@@ -136,6 +139,11 @@ export type Block =
       lab: JwtLab;
     }
   | {
+      /** A PasswordLab: the same table of accounts as the site's, attacked on the phone. */
+      kind: "password";
+      lab: PasswordLab;
+    }
+  | {
       /**
        * A SqlPlayground or a SqlInjectionLab: played on the site, where SQLite
        * runs; the app shows what to do and the query in question.
@@ -218,6 +226,7 @@ const CLUES_RE = /\bclues\s*=\s*\{(\[[\s\S]*?\])\}/;
 const SETUP_RE = /\bsetup\s*=\s*\{(\[[\s\S]*?\])\}/;
 const CHECKS_RE = /\bchecks\s*=\s*\{(\[[\s\S]*?\])\}/;
 const COUNT_RE = /\bcount\s*=\s*\{\s*(\d+)\s*\}/;
+const WEAK_RE = /\bweak\s*=\s*\{\s*(\d+)\s*\}/;
 
 /**
  * A `prop={[...]}` of objects written as JSON (keys in double quotes, as the
@@ -497,7 +506,8 @@ type StringPropName =
   | "rules"
   | "bytes"
   | "filename"
-  | "role";
+  | "role"
+  | "question";
 
 /**
  * Every string prop of a tag, written `name="..."`, `` name={`...`} `` or
@@ -505,7 +515,7 @@ type StringPropName =
  * says `title = "x"` is not taken for the title.
  */
 const STRING_PROP_RE =
-  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules|bytes|filename|role)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
+  /\b(starterCode|title|description|id|language|code|explanation|hint|fromName|fromAddress|subject|linkText|linkUrl|attachment|conclusion|task|goal|starterQuery|query|caption|scene|file|input|rules|bytes|filename|role|question)\s*=\s*(?:"([^"]*)"|\{\s*`((?:[^`\\]|\\[\s\S])*)`\s*\}|\{\s*"((?:[^"\\]|\\.)*)"\s*\})/g;
 
 /** A line without the first `indent` spaces or tabs it starts with. */
 function dropIndent(line: string, indent: number): string {
@@ -925,6 +935,26 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "jwt", lab: parsed.value }
         : { kind: "placeholder", label: "Atelier JWT" },
+    );
+  });
+  // PasswordLab → the same table of accounts, attacked natively with the same
+  // dictionary; one the site would refuse is a placeholder.
+  text = replaceSelfClosing(text, "PasswordLab", (tag) => {
+    const parsed = parsePasswordLab({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      accounts: jsonProp(tag, "accounts"),
+      weak: numberProp(tag, WEAK_RE),
+      question: stringProp(tag, "question", 0) ?? undefined,
+      options: jsonProp(tag, "options"),
+      correct: numberProp(tag, CORRECT_RE),
+      explanation: stringProp(tag, "explanation", 0) ?? undefined,
+    });
+    return put(
+      parsed.ok
+        ? { kind: "password", lab: parsed.value }
+        : { kind: "placeholder", label: "Atelier mots de passe" },
     );
   });
   // StepAnimation → its steps as a list: the drawing is the site's
