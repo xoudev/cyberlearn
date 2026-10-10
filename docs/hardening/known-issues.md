@@ -373,3 +373,16 @@ version de Mermaid qui accepte KaTeX 0.18, une de `@tailwindcss/typography` sur
 Ne pas forcer les quatre premières par un `overrides` : chacune ferait passer son
 dépendant sur une version majeure qu'il n'a pas testée, et celle de
 `decode-uri-component` le casserait.
+
+Ces sept alertes sont écartées sur GitHub (« risque toléré » ou « code non
+utilisé »), chacune avec sa raison et un renvoi ici. Les rouvrir dès qu'une des
+conditions ci-dessus est remplie.
+
+Le même jour, six nouvelles alertes visaient Next 16.3.6 : une falsification de
+requête côté serveur dans l'optimisation d'images (élevée), deux
+empoisonnements du cache SSG/ISR, une fuite par les routes d'images de
+métadonnées, une fuite du mode brouillon par `use cache`, et une fuite par le
+point MCP du serveur de dev. Next est monté en 16.3.8, qui ne contient que ces
+correctifs (et un septième, une fuite de cache entre valeurs de paramètres
+racine). Le catalogue le garde sur la ligne 16.3 (`~16.3.8`) : la 16.4 change
+assez de comportements pour être prise à part.
