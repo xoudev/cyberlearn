@@ -2,7 +2,8 @@
 // with a small documented component set (LESSON_AUTHORING_GUIDE): Callout, Quiz,
 // QuizGroup, CodePlayground, PythonChallenge, FindTheFlaw, PhishingEmail, GitSandbox, PhotoOsint,
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
-// FirewallLab, LogHunt, HexEditor, IncidentStory, PasswordLab, StepAnimation, SimulatedTerminal,
+// FirewallLab, LogHunt, HexEditor, IncidentStory, JwtLab, PasswordLab, StepAnimation,
+// SimulatedTerminal,
 // LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
@@ -15,6 +16,7 @@ import {
   type GitSandbox,
   type HexEditor,
   type IncidentStory,
+  type JwtLab,
   type LogHunt,
   type MatchPairs,
   type PacketDissector,
@@ -28,6 +30,7 @@ import {
   parseGitSandbox,
   parseHexEditor,
   parseIncidentStory,
+  parseJwtLab,
   parseLogHunt,
   parseMatchPairs,
   parsePacketDissector,
@@ -129,6 +132,11 @@ export type Block =
       /** An IncidentStory: the same scenes as the site's, decided natively. */
       kind: "story";
       story: IncidentStory;
+    }
+  | {
+      /** A JwtLab: the same services and tokens as the site's, forged and replayed natively. */
+      kind: "jwt";
+      lab: JwtLab;
     }
   | {
       /** A PasswordLab: the same table of accounts as the site's, attacked on the phone. */
@@ -912,6 +920,21 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       parsed.ok
         ? { kind: "story", story: parsed.value }
         : { kind: "placeholder", label: "Incident à choix" },
+    );
+  });
+  // JwtLab → the same services, flawed then corrected, played natively; one the
+  // site would refuse is a placeholder.
+  text = replaceSelfClosing(text, "JwtLab", (tag) => {
+    const parsed = parseJwtLab({
+      id: stringProp(tag, "id", 0) ?? undefined,
+      title: stringProp(tag, "title", 0) ?? undefined,
+      task: stringProp(tag, "task", 0) ?? undefined,
+      levels: jsonProp(tag, "levels"),
+    });
+    return put(
+      parsed.ok
+        ? { kind: "jwt", lab: parsed.value }
+        : { kind: "placeholder", label: "Atelier JWT" },
     );
   });
   // PasswordLab → the same table of accounts, attacked natively with the same

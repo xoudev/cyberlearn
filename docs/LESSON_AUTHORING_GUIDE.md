@@ -198,7 +198,7 @@ vérifications d'un terminal Linux…). Le « + » entre deux blocs en ajoute un
 depuis le guide ; les flèches le déplacent ; un champ que la page refuserait
 est signalé sous le champ, avant d'enregistrer. Le découpage et la réécriture
 vivent dans `packages/lib/src/mdx/blocks.ts`, les formulaires dans
-`packages/lib/src/mdx/forms.ts` : chacun des vingt-huit composants a le sien,
+`packages/lib/src/mdx/forms.ts` : chacun des trente et un composants a le sien,
 exercices et labos compris (lignes pour les cas de test, les sondes ou les
 vérifications ; groupes pour un lieu ou un message à déchiffrer ; JSON pour
 les quelques structures trop profondes, la trame d'un paquet, les appareils
@@ -1600,6 +1600,15 @@ Un choix : `text` (le bouton, 200 caractères au plus), `next` (l'id de la scèn
 
 Pour qu'une histoire apprenne quelque chose : faire converger les branches (deux choix peuvent mener à la même scène, la conséquence fait la différence), réserver les fins `failure` aux décisions que la leçon dit fatales (payer, rebrancher sans chercher la cause), et dire dans chaque `consequence` pourquoi, pas seulement quoi. Trois histoires dans les leçons : la réponse à incident des fondamentaux cyber (10), celle du parcours blue team (07) et la violation de données du RGPD (GRC 06).
 
+### 5.9t JwtLab - Atelier JWT
+
+Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés, puis rejoué contre les mêmes services corrigés. Tout se passe dans la page, sur des clés, des secrets et des jetons d'exemple de la plateforme et sur une horloge fixée (1er janvier 2026, 00 h 10 UTC) : rien n'est envoyé nulle part, et l'atelier ne sert qu'à ces services-là, pas à un jeton qu'on lui apporterait. Sur le site et dans l'app (`@cyberlearn/lib/crypto/jwt-lab`).
+
+```mdx
+<JwtLab
+  id="jwt-atelier"
+  title="Un jeton, trois façons de le vérifier de travers"
+  levels={["decode", "none", "weak-secret", "confusion", "fixed"]}
 ### 5.9t PasswordLab - Atelier mots de passe
 
 Une table de comptes volés, telle qu'une base de données la garde : un nom, un sel s'il y en a un, et l'empreinte SHA-256 du sel suivi du mot de passe. L'élève lance une attaque par dictionnaire contre cette table, dans son navigateur, sur des données d'exemple de la plateforme : il choisit un dictionnaire (les 10 mots de passe les plus courants, 200, ou 200 avec leurs variantes : majuscule, chiffre ou année derrière, point d'exclamation) et une méthode (**table pré-calculée** : le dictionnaire est haché une fois et les empreintes volées y sont cherchées ; **compte par compte** : le dictionnaire est repris pour chaque compte, avec son sel), et voit ce qui tombe, au bout de combien d'essais, pour combien de calculs de hash. Ce qui résiste est dit résister, avec la `note` de l'auteur. L'atelier montre ensuite l'effet du sel (deux comptes de même mot de passe n'ont pas la même empreinte, et la table pré-calculée ne trouve aucun compte salé), puis une section « Longueur et lenteur » : un calculateur (type de caractères, longueur, fonction de stockage : SHA-256 seul, bcrypt coût 12, argon2id 64 Mo) donne le nombre de mots de passe possibles et le temps pour tous les essayer, avec ce que coûte un vrai dictionnaire de 14 millions de mots de passe. Rien n'est envoyé nulle part, et aucun champ ne reçoit d'empreinte : l'atelier ne casse que la table de la leçon. L'exercice est réussi quand tous les comptes faibles sont cassés et que la question de synthèse est répondue juste. Sur le site et dans l'app (`@cyberlearn/lib/crypto/cracking`).
@@ -1628,6 +1637,24 @@ Une table de comptes volés, telle qu'une base de données la garde : un nom, un
 |---|---|---|
 | `id` | string | Identifiant unique dans la leçon (obligatoire) |
 | `title` | string | Titre court (optionnel) |
+| `task` | string | Une consigne au-dessus de l'atelier (optionnel) ; chaque étape dit déjà la sienne |
+| `levels` | string[] | Les étapes proposées, dans cet ordre, la première ouverte : `decode`, `none`, `weak-secret`, `confusion`, `fixed` (défaut : les cinq) |
+
+**Les étapes :**
+
+| Étape | Ce que fait l'élève | Ce qu'il comprend |
+|---|---|---|
+| `decode` | Décode les trois parties d'un jeton et dit combien de temps il reste valable (une heure : `3600`, `1 h`, `une heure`, `60 minutes`) | Le base64url n'est pas un chiffrement : la charge utile se lit sans clé, la signature seule protège de la modification |
+| `none` | Forge un jeton `alg: none` sans signature que le service A accepte avec le rôle `admin` | Le jeton ne doit pas choisir comment on le vérifie : liste blanche d'algorithmes côté serveur |
+| `weak-secret` | Retrouve par dictionnaire (40 mots, un mot à essayer à la main) le secret HS256 du service B, puis resigne un jeton `admin` | Un secret HMAC est aléatoire et long (32 octets), jamais un mot |
+| `confusion` | Fait passer la clé publique du service C pour un secret HMAC (`alg` devient `HS256`), avec une clé RSA (RS256) puis une clé EC (ES256) | Qui vérifie ne doit pas pouvoir signer : l'algorithme est imposé, pas lu dans le jeton |
+| `fixed` | Rejoue ses jetons forgés (ou l'attaque type d'une étape non jouée) contre les trois services corrigés, puis le jeton légitime d'alice | Trois règles ensemble : liste blanche, bonne clé, revendications contrôlées (`exp`, `iss`, `aud`) |
+
+`fixed` rejoue les attaques des étapes listées : il en faut au moins une (`none`, `weak-secret` ou `confusion`), sans quoi la leçon est refusée à l'enregistrement. Une étape est réussie quand le service accepte un jeton `admin` que l'élève a fabriqué (`decode` : quand il donne la bonne durée ; `fixed` : quand chaque attaque est refusée et que le jeton d'alice passe). L'explication « pourquoi » ne s'affiche qu'une fois l'étape réussie.
+
+Les services, leurs clés et leurs mots sont écrits une fois pour les deux apps (`packages/lib/src/crypto/jwt-lab.ts`, signatures dans `jwt.ts` : HMAC et RSA écrits à la main sur le SHA-256 du projet, ECDSA par `@noble/curves`), parce que le moteur JavaScript de l'app n'a pas WebCrypto, dont `jose` a besoin. Les tests comparent tout à `jose` et à `node:crypto`, et `jwt-lab.test.ts` relit chaque atelier des leçons pour vérifier que l'attaque de chaque étape passe chez le service fragile et échoue chez le service corrigé.
+
+Ne mets jamais dans une leçon un vrai jeton ni un vrai secret : le scanner de secrets du dépôt les signalerait, et ce serait un mauvais exemple pour un cours de sécurité.
 | `task` | string | La consigne, au-dessus de la table (optionnel) |
 | `accounts` | objets | De 2 à 12 comptes, dans l'ordre d'affichage : `user`, `hash` (64 caractères hexadécimaux), `salt` (lettres et chiffres, 32 au plus ; absent si le compte n'est pas salé), `note` (optionnel : ce que le bilan dit du compte une fois qu'il est tombé, ou une fois l'attaque la plus large menée sans le casser). **Clés entre guillemets** |
 | `weak` | nombre | Combien de comptes tombent devant le dictionnaire complet, compte par compte : les comptes à trouver |
@@ -1675,6 +1702,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<JwtLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 - Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<PasswordLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie

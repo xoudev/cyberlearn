@@ -673,6 +673,53 @@ describe("CryptoWorkshop", () => {
   });
 });
 
+describe("JwtLab", () => {
+  it("is played in the app with the props the site reads", () => {
+    const lesson = [
+      "## Les jetons",
+      "",
+      "<JwtLab",
+      '  id="jwt-sans-signature"',
+      '  title="Le jeton sans signature"',
+      '  task="Fais-toi accepter comme administrateur."',
+      '  levels={["none", "fixed"]}',
+      "/>",
+    ].join("\n");
+    expect(parseLesson(lesson).sections[0]?.blocks).toEqual([
+      {
+        kind: "jwt",
+        lab: {
+          id: "jwt-sans-signature",
+          title: "Le jeton sans signature",
+          task: "Fais-toi accepter comme administrateur.",
+          levels: ["none", "fixed"],
+        },
+      },
+    ]);
+  });
+
+  it("offers every step when the lesson names none", () => {
+    const blocks = parseLesson('## A\n\n<JwtLab id="j" />').sections[0]?.blocks ?? [];
+    expect(blocks).toEqual([
+      {
+        kind: "jwt",
+        lab: { id: "j", levels: ["decode", "none", "weak-secret", "confusion", "fixed"] },
+      },
+    ]);
+  });
+
+  it("shows a placeholder for a lab the site would refuse", () => {
+    const wrong = '## A\n\n<JwtLab id="j" levels={["rsa"]} />';
+    expect(parseLesson(wrong).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Atelier JWT" },
+    ]);
+    const noAttack = '## A\n\n<JwtLab id="j" levels={["decode", "fixed"]} />';
+    expect(parseLesson(noAttack).sections[0]?.blocks).toEqual([
+      { kind: "placeholder", label: "Atelier JWT" },
+    ]);
+  });
+});
+
 describe("FirewallLab", () => {
   it("is played in the app with the rules the site reads, their indent taken off", () => {
     const lesson = [

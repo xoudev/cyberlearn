@@ -9,6 +9,7 @@ import { CryptoWorkshopExercise } from "@/components/crypto-workshop";
 import { FirewallLabExercise } from "@/components/firewall-lab";
 import { HexEditorExercise } from "@/components/hex-editor";
 import { IncidentStoryExercise } from "@/components/incident-story";
+import { JwtLabExercise } from "@/components/jwt-lab";
 import { LogHuntExercise } from "@/components/log-hunt";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
@@ -321,6 +322,8 @@ export function BlockView({
       return <HexEditorExercise editor={block.editor} />;
     case "story":
       return <IncidentStoryExercise story={block.story} />;
+    case "jwt":
+      return <JwtLabExercise lab={block.lab} />;
     case "password":
       return <PasswordLabExercise lab={block.lab} />;
     case "animation":

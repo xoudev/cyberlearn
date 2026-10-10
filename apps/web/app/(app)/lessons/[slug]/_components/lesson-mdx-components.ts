@@ -28,6 +28,7 @@ import { FirewallLab } from "./firewall-lab";
 import { LogHunt } from "./log-hunt";
 import { HexEditor } from "./hex-editor";
 import { IncidentStory } from "./incident-story";
+import { JwtLab } from "./jwt-lab";
 import { PasswordLab } from "./password-lab";
 
 /**
@@ -68,5 +69,6 @@ export const LESSON_MDX_COMPONENTS = {
   LogHunt,
   HexEditor,
   IncidentStory,
+  JwtLab,
   PasswordLab,
 };

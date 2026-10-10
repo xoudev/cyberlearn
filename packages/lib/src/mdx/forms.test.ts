@@ -243,6 +243,21 @@ describe("the field kinds of the exercises", () => {
     expect(validateComponent(crypto, { id: "c-1", tools: ["xor", "hex"] }, null)).toEqual({});
   });
 
+  it("hold the JwtLab steps to the lab's, and ask for an attack before the corrected services", () => {
+    const jwt = form("JwtLab");
+    expect(validateComponent(jwt, { id: "j-1", levels: ["none", "rsa"] }, null)).toEqual({
+      levels: "« rsa » n'est pas un des choix.",
+    });
+    expect(
+      validateComponent(jwt, { id: "j-1", levels: ["decode", "none", "fixed"] }, null),
+    ).toEqual({});
+    expect(validateComponent(jwt, { id: "j-1" }, null)).toEqual({});
+    expect(validateComponent(jwt, { id: "j-1", levels: ["decode", "fixed"] }, null)).toEqual({
+      [FORM]:
+        "levels demande « fixed » sans attaque à rejouer : ajoute « none », « weak-secret » ou « confusion ».",
+    });
+  });
+
   it("let a JSON field through to the parser", () => {
     const sql = form("SqlPlayground");
     const base = { id: "s-1", schema: "CREATE TABLE t (a INT);" };

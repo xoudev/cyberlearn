@@ -78,10 +78,26 @@ confirmer par un prototype avec notre image avant d'écrire des leçons dessus.
 | 12 | ~~**Éditeur hexadécimal**~~ | ~~Il reconnaît un fichier à ses premiers octets, répare un en-tête corrompu et trouve un message caché dans une image.~~ Fait, PR #397 : `<HexEditor>`, la grille des octets avec le texte qu'ils forment et le format que les premiers annoncent (quinze signatures), un octet réécrit d'un clic, le texte lisible listé comme `strings`, des réparations et des questions ; un programme déguisé en PDF et une image à réparer dans la leçon sur l'hexadécimal, un mot de passe dans un bloc tEXt dans la leçon sur les images ; sur le site et dans l'app. | Aucune | Oui |
 | 13 | ~~**Casser des mots de passe**~~ | ~~Il lance une attaque par dictionnaire sur des hash faibles, dans le navigateur, et voit pourquoi la longueur compte.~~ Fait, PR #461 : `<PasswordLab>`, une table de dix comptes d'exemple (sel et empreinte SHA-256, jamais un mot de passe en clair), une attaque par dictionnaire lancée dans le navigateur (dix mots, deux cents, ou deux cents avec leurs variantes ; table pré-calculée ou compte par compte), ce qui tombe, ce qui résiste, l'effet du sel (même mot de passe, deux empreintes ; la table ne trouve aucun compte salé), un calculateur de longueur et de lenteur (SHA-256 seul, bcrypt, argon2id) et une question de synthèse ; le moteur et le dictionnaire de 200 mots dans `@cyberlearn/lib/crypto/cracking`, la leçon « Atelier : pourquoi un mot de passe tombe » (crypto 13) ; sur le site et dans l'app. | Aucune | Oui |
 | 14 | ~~**Atelier crypto**~~ | ~~Base64, hexadécimal, César, Vigénère, XOR, SHA-256, avec un message à déchiffrer pour valider.~~ Fait, PR #394 : `<CryptoWorkshop>`, les six outils dans `@cyberlearn/lib/crypto` (UTF-8, Base64 et SHA-256 écrits à la main, les mêmes partout), la sortie qui suit la frappe, un message à déchiffrer avec indice ; quatre ateliers dans les leçons crypto 02, 04 et 12 et fondamentaux 01014 ; sur le site et dans l'app. | Aucune | Oui |
-| 15 | **Vraie crypto et JWT** | Il manipule des clés RSA et EC, des signatures, et forge des JWT (`alg: none`, secret faible). | @noble/curves, jose | Oui |
+| 15 | ~~**Vraie crypto et JWT**~~ | ~~Il manipule des clés RSA et EC, des signatures, et forge des JWT (`alg: none`, secret faible).~~ Fait, PR #462 : `<JwtLab>`, un jeton décomposé, puis forgé contre trois services mal réglés (`alg: none`, secret HMAC retrouvé par dictionnaire, confusion d'algorithme où une clé publique RSA ou EC passe pour un secret HMAC), puis rejoué contre les mêmes services corrigés (liste blanche, secret fort, revendications contrôlées) ; clés, secrets et jetons d'exemple, rien n'est envoyé ; HMAC, RS256 et ES256 dans `@cyberlearn/lib/crypto/jwt`, comparés à `jose` par les tests ; une leçon (cryptographie 13) ; sur le site et dans l'app. | @noble/curves, jose (tests) | Oui |
 | 16 | ~~**Site vulnérable**~~ | ~~Il attaque un site : injection SQL, XSS, accès aux données d'un autre, upload piégé. Version simulée, ou vrai site PHP qui tourne dans la page.~~ Fait, PR #390 : `<PhpLab>` sur php-wasm 0.2.0 (PHP 8.4.1, 13 Mo de WebAssembly dans un Web Worker, chaque requête sur une instance neuve et sans réseau), un exercice XSS dans la leçon 03 et un exercice sur l'accès aux données d'un autre dans la leçon 05, que l'élève attaque puis corrige ; une carte dans l'app. | php-wasm | Site seul |
 | 17 | ~~**Vraie base SQL**~~ | ~~Il apprend le SQL, puis réussit une injection sur une vraie base.~~ Fait, PR #385 : `<SqlPlayground>` et `<SqlInjectionLab>` sur sql.js 1.14.2 (SQLite dans un Web Worker, 700 Ko), trois exercices dans la leçon sur l'injection SQL ; une carte dans l'app. | sql.js | Site seul |
 | 18 | ~~**OSINT sur photo**~~ | ~~Il lit les métadonnées d'une photo et retrouve le lieu sur une carte.~~ Fait, PR #387 : `<PhotoOsint>`, les EXIF lus dans le navigateur, une carte sans tuile externe (contours Natural Earth servis par le site), deux exercices dans les leçons OSINT 07 et 08 ; une carte dans l'app. | exifr, Leaflet | Site seul |
+
+**15. Vraie crypto et JWT.** Fait avec `@noble/curves` pour ECDSA (ES256,
+du JavaScript pur) et, pour le reste, du code écrit sur le SHA-256 du projet :
+HMAC (HS256) et la vérification RSA (RS256, en `BigInt`, la clé publique
+suffit). `jose` n'est pas dans le code livré : il s'appuie sur WebCrypto
+(`crypto.subtle`) et sur `TextEncoder`/`TextDecoder` dès l'import, que le moteur
+JavaScript de l'app n'a pas, et le site et l'app doivent donner les mêmes
+réponses. Il sert de référence aux tests (`jwt.test.ts`, `jwt-lab.test.ts`),
+qui font signer et vérifier les mêmes jetons par les deux. Aucune clé privée
+dans le dépôt (un scanner de secrets la signalerait) : les deux jetons
+asymétriques du service C sont signés une fois, la clé privée jetée. Pas fait :
+signer en RSA ou en EC dans la page, qui demanderait de publier une clé privée
+d'exemple, et le jeton collé par l'élève : l'atelier ne sert qu'à ses services.
+La leçon (cryptographie 13, `CL-LSN-193-V01`) n'est pas encore dans un
+parcours : l'ajouter à `seed-paths.ts` ou à la console change le compte de
+douze leçons par parcours.
 
 **16. Site vulnérable.** Fait avec php-wasm, après mesure : 13 Mo de
 WebAssembly (PHP 8.4.1), téléchargés au premier envoi d'une requête seulement,

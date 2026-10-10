@@ -11,6 +11,7 @@ import {
   parseGitSandbox,
   parseHexEditor,
   parseIncidentStory,
+  parseJwtLab,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -209,6 +210,10 @@ function IncidentStoryStub(): null {
   return null;
 }
 STUBS.IncidentStory = IncidentStoryStub;
+function JwtLabStub(): null {
+  return null;
+}
+STUBS.JwtLab = JwtLabStub;
 function PasswordLabStub(): null {
   return null;
 }
@@ -430,6 +435,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === IncidentStoryStub) {
     const parsed = parseIncidentStory(props);
     if (!parsed.ok) return `Incident à choix : ${parsed.problem}`;
+  }
+  if (node.type === JwtLabStub) {
+    const parsed = parseJwtLab(props);
+    if (!parsed.ok) return `Atelier JWT : ${parsed.problem}`;
   }
   if (node.type === PasswordLabStub) {
     const parsed = parsePasswordLab(props);

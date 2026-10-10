@@ -35,6 +35,7 @@ export const LESSON_COMPONENT_NAMES = [
   "LogHunt",
   "HexEditor",
   "IncidentStory",
+  "JwtLab",
   "PasswordLab",
 ] as const;
 
