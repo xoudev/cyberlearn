@@ -5,8 +5,10 @@ packages:
 # Centralized versions - all packages reference these via "catalog:"
 # to prevent version drift across the monorepo.
 catalog:
-  # Core framework
-  next: "^16.3.6"
+  # Core framework. Next stays on the 16.3 patch line (~): 16.3.8 carries the
+  # security fixes, and 16.4 changes behaviour enough to be taken on its own.
+  # @next/eslint-plugin-next follows the same line.
+  next: "~16.3.8"
   react: "^19.3.0"
   react-dom: "^19.3.0"
 
@@ -103,7 +105,7 @@ catalog:
   "typescript-eslint": "^8.70.1"
   "eslint-plugin-react": "^7.37.5"
   "eslint-plugin-react-hooks": "^7.1.1"
-  "@next/eslint-plugin-next": "^16.3.6"
+  "@next/eslint-plugin-next": "~16.3.8"
   "@biomejs/biome": "^2.5.14"
 
   # Git hooks
