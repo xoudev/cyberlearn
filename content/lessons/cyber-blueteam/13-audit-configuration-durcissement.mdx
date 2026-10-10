@@ -1,0 +1,433 @@
+---
+refCode: CL-LSN-17091-V01
+slug: blueteam-audit-configuration
+title: "Auditer une configuration : repérer les faiblesses, les corriger"
+description: "Auditer la configuration d'un serveur Linux sans rien modifier : cadrer la mission, repérer cinq mauvaises configurations classiques (SSH ouvert à root, secret en clair, sudo sans limite, setuid maison, script de root modifiable par tous), les prouver sans recopier les secrets, puis les corriger et vérifier la correction. Avec une copie de configuration déposée dans une vraie machine Linux."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 620
+prerequisites: ["CL-LSN-141-V01"]
+---
+
+Un audit de configuration commence rarement par une découverte spectaculaire. Il commence par un fichier que personne n'a relu depuis le jour où il a été écrit : un `PermitRootLogin yes` hérité d'une installation, une règle `sudo` posée « pour aller vite », un mot de passe collé dans un `.env` « en attendant mieux ». Aucune de ces lignes n'est une faille du logiciel. Le logiciel fait exactement ce qu'on lui a demandé, et c'est le réglage qui laisse la porte ouverte.
+
+Dans cette leçon, tu joues deux rôles, l'un après l'autre. D'abord celui de l'auditeur : la Maison Delmas, une PME qui vend en ligne, t'a confié une mission écrite sur `app01`, son serveur d'application. Tu lis sa configuration, tu repères ce qui est trop ouvert, tu le prouves. Puis celui de l'administrateur, qui reçoit ton rapport et corrige. Tu n'attaques rien et tu ne te connectes à aucune machine : tout se passe dans des fichiers, dans la machine Linux de ton navigateur. Le but n'est pas de savoir « entrer », c'est de savoir ce qu'il faut refermer, et comment vérifier que c'est refermé.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- conduire un audit de configuration dans un périmètre écrit, sans rien modifier de ce que tu audites ;
+- repérer cinq mauvaises configurations classiques d'un serveur Linux : SSH ouvert à root, secret en clair, `sudo` sans limite, programme maison en setuid, script de root modifiable par tous ;
+- pour chacune, expliquer le risque, écrire la correction et vérifier qu'elle tient ;
+- rédiger un constat utilisable : le fichier, la ligne, la preuve, sans recopier le secret ;
+- distinguer le travail de l'auditeur, qui constate, de celui de l'administrateur, qui corrige.
+
+## pourquoi ça compte
+
+Dans la leçon sur l'analyse des logs, un attaquant devine un mot de passe SSH, puis passe six commandes sous `sudo` : lire le fichier des mots de passe, créer un compte, archiver les bases. Le SOC a reconstitué cette nuit après coup. Chaque étape s'appuyait sur un réglage trop large : un SSH qui accepte les mots de passe, un compte qui a droit à tout. L'audit de configuration est l'autre moitié du métier : retirer ces conditions avant l'incident, quand cela ne coûte qu'une ligne à changer.
+
+Il a un avantage rare en sécurité : ses résultats sont concrets. Un constat d'audit n'est pas un risque vague, c'est un fichier, une ligne, un droit, et une correction qu'on sait écrire. C'est aussi ce que proposent les guides de durcissement de l'ANSSI ou du CIS : une liste de réglages à comparer à l'existant. Auditer, c'est faire passer cette liste sur une vraie machine, avec méthode et avec preuves.
+
+## le cadre : une mission écrite
+
+Un audit n'est pas un jeu de piste, c'est une prestation encadrée. Avant d'ouvrir le moindre fichier, trois choses sont écrites et signées dans la lettre de mission.
+
+Le **périmètre** : quelles machines, quels fichiers, quelles méthodes. Ce qui n'est pas listé n'est pas audité, même si l'accès technique existe. L'**autorisation** : qui, côté client, a le pouvoir de la donner, et pour quelle période. Sans elle, lire la configuration d'un serveur qu'on ne gère pas n'est plus un audit : l'article 323-1 du Code pénal réprime l'accès ou le maintien frauduleux dans un système de traitement automatisé de données, et « je voulais seulement regarder » n'a jamais été une défense. Enfin les **règles de conduite**, c'est-à-dire ce que tu as le droit de faire de ce que tu trouves. Elles tiennent en trois habitudes, qu'on retrouve dans toutes les missions sérieuses.
+
+**L'auditeur constate, il ne répare pas.** Modifier un fichier pendant l'audit détruit la preuve de ce qu'il contenait, et peut casser un service de production que personne n'a prévenu. La correction est le travail de l'administrateur, qui la décide avec le rapport sous les yeux, au bon moment.
+
+**Un secret se cite, il ne se recopie pas.** Le rapport dira « le mot de passe de la base est écrit en clair dans `/srv/app/.env` », pas la valeur. Un rapport circule : par courriel, dans un ticket, chez la direction. Y recopier un secret, c'est créer une nouvelle fuite.
+
+**Chaque constat porte sa preuve.** Le chemin du fichier, la ligne, la commande qui l'a montrée. Un constat sans preuve ne se discute pas, il se conteste.
+
+## le décor : un rebond, une cible, une seule machine
+
+Voici le scénario. L'équipe de la Maison Delmas administre `app01` en passant par un **serveur de rebond**, aussi appelé bastion : une machine d'entrée dont le seul rôle est de servir de point de passage vers les serveurs. Le client t'a remis un accès à ce rebond pour la durée de la mission. Et sur ce rebond, après la dernière maintenance, une copie de la configuration de `app01` est restée dans un dossier `cible/`. La configuration de la cible y traîne, et c'est elle, et elle seule, qui est dans ton périmètre.
+
+Un mot sur le dispositif, pour que les choses soient claires : il n'y a pas deux machines ici. Le navigateur fait tourner une seule machine Linux, sans réseau, où le rebond et la copie de la cible partagent le même disque. Les deux rôles se jouent l'un après l'autre : l'auditeur qui constate, puis l'administrateur qui corrige. Rien de ce que tu fais ne sort de ton onglet, et il n'y a aucun serveur réel à atteindre.
+
+<Callout type="warning">
+La copie elle-même est un constat. Une copie de la configuration de production, secrets compris, qui traîne sur une machine de passage ne devrait pas exister. Après une maintenance, on supprime ce qu'on a copié, on garde la trace de ce qui a été fait, et on transmet par un canal contrôlé plutôt que par une copie qui reste. Tu le noteras dans ton rapport.
+</Callout>
+
+## la méthode
+
+Un audit de configuration suit toujours le même fil, de la mission à la vérification.
+
+<Diagram caption="Le cycle d'un audit de configuration">
+flowchart TD
+  A["Périmètre et autorisation"] --> B["Inventaire : ce qui existe"]
+  B --> C["Lecture : configurations, droits, comptes"]
+  C --> D["Constat : l'écart et sa preuve"]
+  D --> E["Classement par risque"]
+  E --> F["Rapport : constat, risque, correction"]
+  F --> G["Correction par l'administrateur"]
+  G --> H["Vérification : on rejoue le contrôle"]
+  H -->|"écart restant"| D
+</Diagram>
+
+L'**inventaire** répond à « qu'est-ce qui existe ? » : la liste des fichiers, des comptes, des services, sans rien interpréter. `find cible -type f` et `ls -la` suffisent ici, et le `-a` compte : les fichiers cachés, ceux dont le nom commence par un point, sont exactement là où l'on range ce qu'on veut oublier, un `.env` ou un `.bash_history`.
+
+La **lecture** compare ce qui est écrit à ce qui devrait l'être. Pour comparer, il faut une référence : les recommandations de l'ANSSI, un référentiel du CIS, ou la politique interne du client. Sans référence, on a une opinion ; avec, on a un écart.
+
+Le **constat** note l'écart avec sa preuve. Le **classement** lui donne un poids, en croisant trois questions. Qui peut atteindre cette faiblesse : un inconnu sur Internet, un compte local, un administrateur seulement ? Que permet-elle : lire une donnée, tout contrôler ? Est-ce facile ? Un secret lisible par tous les comptes locaux ne pèse pas pareil sur une machine qui n'héberge que des administrateurs et sur une machine partagée avec des prestataires.
+
+Le **rapport** transforme chaque constat en fiche : où, preuve, risque, correction, comment vérifier. La **correction** revient à l'administrateur. La **vérification** rejoue le contrôle qui avait trouvé la faiblesse : s'il ne trouve plus rien, c'est fermé ; sinon, on revient au constat.
+
+## les cinq faiblesses de app01
+
+Voici ce que contient la copie, constat par constat, avec pour chacun le risque, la correction et la vérification. Aucune de ces faiblesses n'est un bug : toutes sont un droit donné trop largement.
+
+### 1. Un SSH ouvert à root et aux mots de passe
+
+**Ce qu'on voit.** Dans `etc/ssh/sshd_config`, les lignes actives (`grep -v '^#'` les isole) disent `PermitRootLogin yes`, `PasswordAuthentication yes`, `MaxAuthTries 10` et `X11Forwarding yes`. La ligne `#PermitRootLogin prohibit-password`, juste au-dessus, est un commentaire : elle rappelle la valeur par défaut d'OpenSSH, elle ne règle rien. Sur un vrai serveur, on ne s'arrête pas au fichier : `sshd -T` affiche la configuration que le service applique vraiment, fichiers inclus et valeurs par défaut comprises.
+
+**Pourquoi c'est grave.** Le compte `root` existe sur toutes les machines Linux : l'attaquant n'a pas à deviner son nom, seulement son mot de passe, et les robots qui parcourent Internet l'essaient en permanence, comme tu l'as vu dans les journaux de la leçon précédente. Une connexion directe en root efface aussi la question « qui a fait cela ? » : le journal dit seulement « root ». Et avec les mots de passe acceptés, chaque compte devient un candidat à la devinette.
+
+**La correction.** `PermitRootLogin no`, pour que chacun se connecte avec son propre compte puis élève ses droits quand il en a besoin. `PasswordAuthentication no`, pour n'accepter que les clés, mais seulement après avoir vérifié que la clé de chaque administrateur est en place. `MaxAuthTries 3` limite les essais par connexion, `AllowGroups` liste qui a le droit d'entrer, `X11Forwarding no` coupe une fonction dont personne n'a besoin sur un serveur, et un outil comme fail2ban freine les adresses insistantes. On teste avant d'appliquer (`sshd -t`), on recharge au lieu de redémarrer, et on garde une session ouverte pendant qu'on essaie la nouvelle connexion. La leçon « Durcir SSH » du parcours Linux détaille cette méthode pas à pas.
+
+**La vérification.** `sshd -T | grep -E 'permitrootlogin|passwordauthentication'` montre `no`, et une tentative de connexion en root est refusée.
+
+### 2. Des secrets en clair, lisibles de tous
+
+**Ce qu'on voit.** Le fichier `srv/app/.env` contient `DB_PASSWORD=`, suivi du mot de passe de la base, et `ls -l` montre `-rw-r--r--` : tous les comptes de la machine peuvent le lire. Le mot de passe est faible, le nom de l'entreprise suivi de l'année, un des premiers que tente n'importe quelle liste de mots de passe courants. Et il traîne ailleurs : dans les notes du compte `deploy`, et dans son historique de commandes, où il a été tapé directement sur la ligne. Trois copies, donc trois endroits à nettoyer. `grep -ril password cible` les retrouve toutes.
+
+**Pourquoi c'est grave.** Un fichier lisible de tous donne le secret au premier compte venu : un service web compromis, un prestataire, un compte oublié. Un secret tapé sur la ligne de commande est pire encore : pendant que la commande tourne, les autres comptes le voient dans la liste des processus (`ps`), puis il reste dans l'historique du shell. Et un mot de passe faible n'oppose aucune résistance à qui finit par le lire ou le deviner.
+
+**La correction** se fait à trois niveaux, et le troisième est celui qu'on oublie.
+
+- Les droits : `chmod 600` pour que le propriétaire seul lise le fichier, et `chown` pour que ce propriétaire soit le compte du service qui en a besoin.
+- L'endroit : un secret ne vit ni dans des notes, ni dans l'historique, ni dans le dépôt de code. La plateforme le fournit à l'application (un fichier d'environnement protégé que lit le service, ou un coffre à secrets), et un outil comme gitleaks, que la CI de cette plateforme fait tourner à chaque modification, empêche de l'envoyer par erreur dans le dépôt.
+- Le renouvellement : **on change le secret**. Un secret qui a été lisible par tous doit être considéré comme connu de tous. Fermer les droits empêche les lectures futures, pas celles qui ont déjà eu lieu. Le nouveau mot de passe est long (douze caractères au moins, mieux une phrase de passe), tiré d'un gestionnaire, unique à ce service, sans rapport avec le nom de l'entreprise ni l'année. L'historique se purge, et les commandes n'embarquent plus de secret : on laisse l'outil le demander, par exemple `psql -W`, ou on le lit dans un fichier protégé.
+
+**La vérification.** `ls -l` affiche `-rw-------`, et la lecture depuis un autre compte est refusée.
+
+### 3. Un sudo sans limite pour un compte de service
+
+**Ce qu'on voit.** Le fichier `etc/sudoers.d/deploy` contient `deploy ALL=(ALL) NOPASSWD: ALL`. Traduction : le compte `deploy` peut lancer n'importe quelle commande, sous n'importe quelle identité, sans taper de mot de passe. Sur un vrai serveur, `sudo -l -U deploy` donne la même réponse. Le fichier `DEPLOY.md` explique l'origine de la règle : le compte relance l'application après une mise à jour, et ne fait rien d'autre en root.
+
+**Pourquoi c'est grave.** `deploy` est un compte de service, utilisé par des scripts et des outils de déploiement, avec une clé SSH copiée sur plusieurs machines. Qui met la main sur ce compte, par une clé qui fuit ou un poste compromis, devient root sans rencontrer le moindre obstacle, et sans que le journal distingue une action de maintenance d'une action malveillante. La règle donne un besoin minuscule, relancer un service, et un pouvoir total.
+
+**La correction** est le moindre privilège : on part du besoin réel, et on n'autorise que lui. `deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart delmas-app` : une seule commande, avec son chemin complet et ses arguments exacts. Trois règles de rédaction à garder en tête :
+
+- pas de joker (`*`) dans les arguments, car il étend la règle à des commandes qu'on n'avait pas prévues ;
+- pas de commande qui ouvre elle-même un shell ou qui modifie n'importe quel fichier (éditeurs, pagers, interpréteurs de script), car elle contournerait la limite que la règle prétend poser ; pour modifier un fichier précis, `sudoedit` existe ;
+- une vérification de syntaxe avec `visudo -c` avant d'enregistrer, parce qu'un fichier `sudoers` cassé peut priver tout le monde de `sudo`.
+
+Le `NOPASSWD` n'est pas le défaut en soi : pour un compte d'automatisation, sans humain pour taper un mot de passe, il est normal, à condition que la commande autorisée soit unique et précise. Le défaut, c'est `ALL`.
+
+**La vérification.** `sudo -l -U deploy` ne liste plus qu'une commande, et le journal de `sudo` garde la trace de chaque relance.
+
+### 4. Un programme maison avec le bit setuid
+
+**Ce qu'on voit.** Le bit setuid fait s'exécuter un programme avec les droits de son propriétaire plutôt qu'avec ceux de la personne qui le lance : c'est ce qui permet à `passwd` de modifier le fichier des mots de passe, que seul root peut écrire. La commande `find / -xdev -type f -perm -4000` liste tous les fichiers qui le portent. Dans la copie, trois résultats : `passwd` et `su`, qui viennent de la distribution, et `usr/local/bin/archive-clients`, un outil maison installé par un ticket, « pour que le support puisse l'exécuter sans passer par un administrateur ».
+
+**Pourquoi c'est grave.** Un programme setuid appartenant à root s'exécute en root pour n'importe quel compte qui le lance. Le code de `passwd` est relu par des milliers de personnes depuis des décennies ; celui d'un outil maison, écrit un jeudi soir, ne l'a jamais été. Toute faiblesse du programme (une entrée mal contrôlée, un chemin relatif, une variable d'environnement crue sur parole) s'exécute alors avec les droits de root, pour tous les comptes de la machine. Le bit setuid est un cadeau de droits : on ne le fait qu'à un programme qui en a absolument besoin, et qu'on a relu.
+
+**La correction.** Le réflexe est de retirer le bit : `chmod u-s`. Reste le besoin du support, qui se traite à part, sans donner root à tout le monde : une règle `sudo` limitée à ce programme, journalisée et révocable ; ou un groupe dédié (`chgrp support`, `chmod 750`) pour que seuls ses membres puissent le lancer ; ou, si le programme n'a besoin que d'un pouvoir précis, une capability limitée (`setcap`) plutôt que root en entier. Pour ne pas redécouvrir le problème dans six mois, on garde une liste de référence des fichiers setuid, on la compare après chaque mise à jour avec `diff`, et on monte les partitions qui n'ont pas à en contenir (`/home`, `/tmp`, `/var`) avec l'option `nosuid`.
+
+Comment distinguer un setuid légitime d'un setuid suspect ? Par le paquet qui l'a installé. Sur Debian, `dpkg -S /usr/bin/passwd` répond `passwd`, alors que `dpkg -S /usr/local/bin/archive-clients` répond qu'aucun paquet ne le connaît (c'est `rpm -qf` sur Red Hat). Un fichier setuid qu'aucun paquet n'a installé, et qui dort dans `/usr/local/bin`, mérite toujours une question. Tout setuid n'est pas une faute : c'est un écart à justifier.
+
+**La vérification.** Le même `find` ne liste plus que les programmes de la distribution.
+
+### 5. Un script lancé par root, modifiable par tous
+
+**Ce qu'on voit.** Le fichier `etc/crontab` contient la ligne `30 2 * * * root /opt/scripts/sauvegarde.sh` : chaque nuit à 2 h 30, root lance ce script. `ls -l` montre `-rwxrwxrwx` : tout le monde peut le lire, l'exécuter, et le modifier. La commande `find / -xdev -type f -perm -002` liste tous les fichiers modifiables par n'importe quel compte, et le croisement avec le crontab dit lesquels pèsent vraiment.
+
+**Pourquoi c'est grave.** Ce que root exécute doit être modifiable par root seul. Sinon, n'importe quel compte de la machine, même sans le moindre privilège, peut y glisser ce qu'il veut, et la prochaine exécution de la tâche le lancera avec les droits de root. Avoir le droit d'écrire dans un script que root lance, c'est avoir, dans les faits, un droit de root à retardement. La même logique vaut pour le dossier qui contient le script (qui peut y remplacer le fichier ?) et pour tout fichier que le script lit ou charge.
+
+**La correction.** Le script appartient à root et n'est modifiable que par lui : `chown root:root`, puis `chmod 750`, ou 755 si d'autres comptes doivent pouvoir le lire. Même contrôle sur son dossier et sur chaque dossier parent (`ls -ld /opt /opt/scripts`) : un dossier modifiable par tous permettrait de remplacer le fichier sans le toucher. Dans le script, des chemins absolus partout, pour ne pas dépendre du dossier courant. Et on cherche la cause : un `777` est presque toujours la trace d'un « Permission denied » réglé à la va-vite. Si un autre compte doit lire les sauvegardes, la bonne réponse est un groupe (`backup`) avec des droits de lecture, pas des droits pour tous. Un outil de contrôle d'intégrité comme AIDE, ou le journal d'`auditd`, signale ensuite tout changement sur ces fichiers.
+
+**La vérification.** Le `find ... -perm -002` ne liste plus rien, et le script n'est modifiable que par son propriétaire.
+
+## sur un vrai serveur
+
+La machine Linux des exercices n'a ni `sudo` ni gestionnaire de paquets. Voici donc, dans un terminal simulé, les mêmes contrôles tels qu'on les lance sur un vrai serveur : sur `/` plutôt que sur `cible/`, avec `sshd -T`, `sudo -l` et `dpkg`. Lis chaque sortie en auditeur : qu'est-ce qui est écrit, quelle est la référence, quel est l'écart ?
+
+<SimulatedTerminal
+  shell="bash"
+  title="Les mêmes contrôles, sur un vrai serveur"
+  expectedCommands={["sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|maxauthtries)'", "sudo -l -U deploy", "find / -xdev -type f -perm -4000 2>/dev/null", "dpkg -S /usr/local/bin/archive-clients", "find / -xdev -type f -perm -002 2>/dev/null", "ls -l /opt/scripts/sauvegarde.sh"]}
+  hints={["sshd -T montre la configuration réellement appliquée, pas seulement le fichier.", "Dans la liste des setuid, un seul chemin sort de /usr/bin : lequel ?", "dpkg -S dit quel paquet a installé un fichier. Pas de réponse, pas de paquet.", "Un script modifiable par tous ET lancé par root : retrouve-le dans le crontab."]}
+  commands={{
+    "sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication|maxauthtries)'": "maxauthtries 10\npermitrootlogin yes\npasswordauthentication yes",
+    "sudo -l -U deploy": "User deploy may run the following commands on app01:\n    (ALL) NOPASSWD: ALL",
+    "find / -xdev -type f -perm -4000 2>/dev/null": "/usr/bin/passwd\n/usr/bin/chfn\n/usr/bin/chsh\n/usr/bin/gpasswd\n/usr/bin/newgrp\n/usr/bin/mount\n/usr/bin/umount\n/usr/bin/su\n/usr/bin/sudo\n/usr/local/bin/archive-clients",
+    "dpkg -S /usr/local/bin/archive-clients": "dpkg-query: no path found matching pattern /usr/local/bin/archive-clients",
+    "find / -xdev -type f -perm -002 2>/dev/null": "/opt/scripts/sauvegarde.sh",
+    "ls -l /opt/scripts/sauvegarde.sh": "-rwxrwxrwx 1 root root 214 Oct  3 09:12 /opt/scripts/sauvegarde.sh"
+  }}
+/>
+
+Les trois premières sorties disent trois choses différentes. `sshd -T` donne la vérité de la configuration, celle que le service applique. `sudo -l -U` donne la vérité des droits d'un compte, sans qu'il faille ouvrir un seul fichier `sudoers`. Et `find -perm` donne la vérité des droits sur le disque : il ne croit pas ce que les fichiers racontent d'eux-mêmes, il regarde leur mode.
+
+## à toi de jouer
+
+Maintenant, à ton tour, dans la copie de `app01`. Tu commences par l'audit, en lecture seule. Rien n'est joué d'avance : les commandes sont les tiennes. Lis d'abord la mission, remets la copie dans l'état où elle a été trouvée, fais l'inventaire, puis lis. Pour chaque faiblesse, tu écris une réponse dans le fichier demandé, avec `echo` : c'est ce que la machine vérifie. Une réponse nomme la faiblesse, elle ne recopie jamais le mot de passe. Le script `preparer.sh` fait partie de la mise en place du bac à sable, pas de l'audit : les fichiers entrent dans la machine avec des droits larges, et il rétablit ceux de la cible.
+
+<LinuxTerminal
+  title="L'audit de app01 : lire, constater, prouver"
+  height={460}
+  files={{
+    "mission.txt": `MISSION D'AUDIT : revue de configuration du serveur app01 (Maison Delmas)
+Autorisation : lettre de mission signée par la direction de la Maison Delmas.
+Périmètre : la copie de la configuration de app01 rangée dans le dossier cible/.
+Hors périmètre : tout le reste. Tu lis, tu ne modifies rien dans cible/ pendant l'audit.
+Les programmes de la cible sont de simples fichiers texte dans cette copie : leur contenu importe peu, leurs droits comptent.
+À rendre dans ce dossier, un fichier par réponse. Une réponse nomme la faiblesse (un nom de fichier, de compte ou de directive) et ne recopie jamais un secret.
+reponse-ssh.txt     la directive SSH qui permet à root d'ouvrir une session
+reponse-secret.txt  le fichier de configuration de l'application qui contient le mot de passe de la base
+reponse-sudo.txt    le compte qui a tous les droits root sans mot de passe
+reponse-suid.txt    le programme maison qui porte le bit setuid
+reponse-cron.txt    le script que root lance et que n'importe quel compte peut modifier
+preuve.txt          le jeton déposé dans le dossier de root de la cible
+`,
+    "preparer.sh": `#!/bin/sh
+# Remet la copie de la cible dans l'état où elle a été trouvée sur le rebond.
+# Les fichiers entrent dans la machine avec des droits larges : ce script rétablit les droits d'origine.
+# À lancer une seule fois, avant l'audit : sh preparer.sh
+cd /mnt || exit 1
+chmod -R go-w cible
+chmod 440 cible/etc/sudoers.d/deploy
+chmod 4755 cible/usr/bin/passwd cible/usr/bin/su cible/usr/local/bin/archive-clients
+chmod 777 cible/opt/scripts/sauvegarde.sh
+chmod 700 cible/root
+chmod 600 cible/root/jeton-audit.txt
+echo "Copie de la cible remise dans l'état d'origine. Tu peux commencer l'audit."
+`,
+    "cible/etc/passwd": `root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+deploy:x:1001:1001:Compte de déploiement:/home/deploy:/bin/bash
+hdelmas:x:1002:1002:Hélène Delmas:/home/hdelmas:/bin/bash
+`,
+    "cible/etc/ssh/sshd_config": `# Configuration du serveur SSH de app01
+Port 22
+#PermitRootLogin prohibit-password
+PermitRootLogin yes
+PubkeyAuthentication yes
+PasswordAuthentication yes
+PermitEmptyPasswords no
+MaxAuthTries 10
+UsePAM yes
+X11Forwarding yes
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+`,
+    "cible/etc/sudoers.d/deploy": `# Compte de déploiement de l'application
+deploy ALL=(ALL) NOPASSWD: ALL
+`,
+    "cible/etc/crontab": `SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+# m h dom mon dow user command
+17 * * * * root cd / && run-parts --report /etc/cron.hourly
+25 6 * * * root test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+30 2 * * * root /opt/scripts/sauvegarde.sh
+`,
+    "cible/opt/scripts/sauvegarde.sh": `#!/bin/sh
+# Sauvegarde nocturne de la base de l'application
+DEST=/var/backups/delmas
+DATE=$(date +%F)
+pg_dump delmas | gzip > "$DEST/delmas-$DATE.sql.gz"
+find "$DEST" -name '*.sql.gz' -mtime +14 -delete
+`,
+    "cible/srv/app/.env": `APP_ENV=production
+APP_PORT=8080
+DB_HOST=127.0.0.1
+DB_USER=delmas
+DB_PASSWORD=delmas2024
+`,
+    "cible/srv/app/DEPLOY.md": `# Déploiement de l'application
+Mise à jour : git pull, puis systemctl restart delmas-app.
+Le compte deploy ne fait rien d'autre en root que relancer ce service.
+Les journaux de l'application sont dans /var/log/delmas.
+`,
+    "cible/home/deploy/notes.txt": `À faire cette semaine :
+- renouveler le certificat de app01
+- changer le mot de passe de la base (delmas2024, trop simple, à faire un jour)
+`,
+    "cible/home/deploy/.bash_history": `cd /srv/app
+git pull
+systemctl restart delmas-app
+PGPASSWORD=delmas2024 psql -h 127.0.0.1 -U delmas delmas
+ls -la
+exit
+`,
+    "cible/usr/local/bin/archive-clients": `Programme maison (dépôt interne delmas-tools) : exporte la table des clients vers /var/exports.
+Installé avec le bit setuid par le ticket 482, pour que le support le lance sans administrateur.
+`,
+    "cible/usr/bin/passwd": `Programme fourni par le paquet passwd de la distribution.
+`,
+    "cible/usr/bin/su": `Programme fourni par le paquet util-linux de la distribution.
+`,
+    "cible/root/jeton-audit.txt": `Jeton de fin de mission, exemple pédagogique sans valeur :
+CL{audit-durcissement-ok}
+`
+  }}
+  checks={[
+    {"label": "SSH : la directive qui ouvre une session à root est dans reponse-ssh.txt", "path": "reponse-ssh.txt", "expect": "file", "contains": "PermitRootLogin"},
+    {"label": "Secret : le fichier de configuration qui contient le mot de passe de la base est dans reponse-secret.txt", "path": "reponse-secret.txt", "expect": "file", "contains": ".env"},
+    {"label": "sudo : le compte qui a tous les droits root sans mot de passe est dans reponse-sudo.txt", "path": "reponse-sudo.txt", "expect": "file", "contains": "deploy"},
+    {"label": "setuid : le programme maison qui porte le bit setuid est dans reponse-suid.txt", "path": "reponse-suid.txt", "expect": "file", "contains": "archive-clients"},
+    {"label": "cron : le script de root que tout le monde peut modifier est dans reponse-cron.txt", "path": "reponse-cron.txt", "expect": "file", "contains": "sauvegarde.sh"},
+    {"label": "Preuve : le jeton du dossier de root de la cible est dans preuve.txt", "path": "preuve.txt", "expect": "file", "contains": "CL{audit-durcissement-ok}"}
+  ]}
+  hints={[
+    "Commence par lire la mission (cat mission.txt), puis remets la copie dans l'état d'origine : sh preparer.sh. Sans cela, les droits des fichiers ne sont pas ceux de la cible.",
+    "L'inventaire : find cible -type f liste tous les fichiers. Les fichiers cachés (ceux dont le nom commence par un point) n'apparaissent pas avec ls : utilise ls -la.",
+    "SSH : grep -v '^#' cible/etc/ssh/sshd_config n'affiche que les lignes actives. Cherche la directive qui parle de root.",
+    "Les secrets : grep -ril password cible liste les fichiers qui contiennent le mot password. Pour chacun, regarde ls -l : qui peut le lire ? Dans la réponse, nomme le fichier de configuration de l'application.",
+    "sudo : les règles sont dans cible/etc/sudoers.d/. Sur un vrai serveur, sudo -l -U compte les résume ; ici, tu les lis directement avec cat.",
+    "setuid : find cible -type f -perm -4000 liste les fichiers qui portent le bit. Deux viennent de la distribution : lequel est maison ?",
+    "cron : cat cible/etc/crontab montre ce que root lance. find cible -type f -perm -002 liste les fichiers que tout le monde peut modifier : croise les deux.",
+    "Une réponse s'écrit avec echo : echo PermitRootLogin > reponse-ssh.txt. Nomme la faiblesse, ne recopie jamais un mot de passe.",
+    "La preuve : ls -la cible/root montre un dossier fermé aux autres comptes (drwx------). Ici, ton compte est root, donc tu lis ce qu'il protège : cat cible/root/jeton-audit.txt > preuve.txt."
+  ]}
+/>
+
+Cinq réponses, une preuve. Il reste une chose à remarquer. Tu as pu lire le dossier de root de la cible, fermé à tous les autres comptes, parce que sur ce rebond ton compte est root et que la copie a gardé les fichiers de la cible. C'est le constat zéro de la mission : une copie de la configuration de production, secrets compris, accessible depuis un compte de passage.
+
+Dans un vrai rapport, chaque réponse devient une fiche. Voici celle du secret en clair, valeur masquée :
+
+```text
+Constat 2 : secret en clair, lisible par tous
+Où         : /srv/app/.env, droits -rw-r--r--
+Preuve     : DB_PASSWORD=******** (valeur masquée), commande ls -l et grep -ril password
+Risque     : élevé, tout compte local lit le mot de passe de la base
+Correction : chmod 600, propriétaire = compte du service, mot de passe renouvelé
+Vérifier   : ls -l affiche -rw-------, la lecture depuis un autre compte est refusée
+```
+
+## le jour d'après : corriger
+
+Le rapport est remis, et tu changes de chapeau. Tu es maintenant l'administrateur de `app01`. Le rapport est dans la machine, avec la même copie. Pour chaque constat, tu appliques la correction, puis tu rejoues le contrôle qui avait trouvé la faiblesse. Une précaution d'administrateur avant de commencer : garder l'état d'avant, de quoi montrer ensuite exactement ce qui a changé. Et une vérification qui vaut mieux que la lecture des droits : essayer d'ouvrir le fichier avec un compte ordinaire. Le script prépare pour cela un compte `stagiaire`, sans aucun droit particulier.
+
+<LinuxTerminal
+  title="La correction de app01 : appliquer, puis vérifier"
+  height={420}
+  files={{
+    "rapport-audit.txt": `RAPPORT D'AUDIT de app01, pour l'administrateur
+1. SSH : etc/ssh/sshd_config, PermitRootLogin yes. Root peut ouvrir une session.
+2. Secret : srv/app/.env contient le mot de passe de la base, droits -rw-r--r--, lisible par tous.
+3. sudo : etc/sudoers.d/deploy, le compte deploy a tous les droits root sans mot de passe.
+4. setuid : usr/local/bin/archive-clients, programme maison qui porte le bit setuid.
+5. cron : opt/scripts/sauvegarde.sh, lancé par root à 2 h 30, modifiable par tous (777).
+Pour chaque constat : corrige, puis vérifie. Dans la vraie vie, le mot de passe de la base se renouvelle aussi.
+`,
+    "preparer.sh": `#!/bin/sh
+# Remet la copie de la cible dans l'état décrit par le rapport d'audit,
+# et crée un compte ordinaire, stagiaire, pour vérifier tes corrections.
+cd /mnt || exit 1
+chmod -R go-w cible
+chmod 440 cible/etc/sudoers.d/deploy
+chmod 4755 cible/usr/local/bin/archive-clients
+chmod 777 cible/opt/scripts/sauvegarde.sh
+adduser -D -H stagiaire 2>/dev/null
+echo "Copie de la cible remise dans l'état du rapport. Compte stagiaire prêt."
+`,
+    "cible/etc/ssh/sshd_config": `# Configuration du serveur SSH de app01
+Port 22
+#PermitRootLogin prohibit-password
+PermitRootLogin yes
+PubkeyAuthentication yes
+PasswordAuthentication yes
+PermitEmptyPasswords no
+MaxAuthTries 10
+UsePAM yes
+X11Forwarding yes
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+`,
+    "cible/etc/sudoers.d/deploy": `# Compte de déploiement de l'application
+deploy ALL=(ALL) NOPASSWD: ALL
+`,
+    "cible/etc/crontab": `SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+# m h dom mon dow user command
+30 2 * * * root /opt/scripts/sauvegarde.sh
+`,
+    "cible/opt/scripts/sauvegarde.sh": `#!/bin/sh
+# Sauvegarde nocturne de la base de l'application
+DEST=/var/backups/delmas
+DATE=$(date +%F)
+pg_dump delmas | gzip > "$DEST/delmas-$DATE.sql.gz"
+find "$DEST" -name '*.sql.gz' -mtime +14 -delete
+`,
+    "cible/srv/app/.env": `APP_ENV=production
+APP_PORT=8080
+DB_HOST=127.0.0.1
+DB_USER=delmas
+DB_PASSWORD=delmas2024
+`,
+    "cible/srv/app/DEPLOY.md": `# Déploiement de l'application
+Mise à jour : git pull, puis systemctl restart delmas-app.
+Le compte deploy ne fait rien d'autre en root que relancer ce service.
+Les journaux de l'application sont dans /var/log/delmas.
+`,
+    "cible/usr/local/bin/archive-clients": `Programme maison (dépôt interne delmas-tools) : exporte la table des clients vers /var/exports.
+Installé avec le bit setuid par le ticket 482, pour que le support le lance sans administrateur.
+`
+  }}
+  checks={[
+    {"label": "SSH : root ne peut plus ouvrir de session (PermitRootLogin no)", "path": "cible/etc/ssh/sshd_config", "expect": "file", "contains": "PermitRootLogin no"},
+    {"label": "Secret : .env n'est lisible que par son propriétaire (600)", "path": "cible/srv/app/.env", "expect": "file", "mode": "600"},
+    {"label": "sudo : deploy ne peut plus que relancer l'application (systemctl restart delmas-app)", "path": "cible/etc/sudoers.d/deploy", "expect": "file", "contains": "systemctl restart delmas-app"},
+    {"label": "setuid : archive-clients n'a plus le bit setuid (755)", "path": "cible/usr/local/bin/archive-clients", "expect": "file", "mode": "755"},
+    {"label": "cron : sauvegarde.sh n'est plus modifiable que par son propriétaire (750)", "path": "cible/opt/scripts/sauvegarde.sh", "expect": "file", "mode": "750"}
+  ]}
+  hints={[
+    "sh preparer.sh remet la copie dans l'état du rapport et crée le compte stagiaire. Relis le rapport (cat rapport-audit.txt) : cinq constats, cinq corrections.",
+    "Avant de toucher à quoi que ce soit, garde l'état d'avant : cp -r cible avant. À la fin, diff -r avant cible montre ce que tu as changé dans le contenu des fichiers.",
+    "SSH : sed -i 's/^PermitRootLogin yes/PermitRootLogin no/' cible/etc/ssh/sshd_config, puis grep PermitRootLogin cible/etc/ssh/sshd_config. Sur un vrai serveur, tu testerais avec sshd -t avant de recharger.",
+    "Secret : chmod 600 cible/srv/app/.env. Vérifie avec un compte ordinaire : su stagiaire -c 'cat /mnt/cible/srv/app/.env' doit être refusé. Essaie-le aussi avant la correction, pour voir la différence.",
+    "sudo : DEPLOY.md dit ce dont deploy a besoin. Remplace la règle : echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart delmas-app' > cible/etc/sudoers.d/deploy.",
+    "setuid : chmod u-s cible/usr/local/bin/archive-clients retire le bit et laisse le reste. Vérifie avec ls -l : le s a disparu.",
+    "cron : chmod 750 cible/opt/scripts/sauvegarde.sh. Le propriétaire lit, écrit et exécute, le groupe lit et exécute, les autres n'ont rien.",
+    "Refais les contrôles de l'audit : find cible -type f -perm -4000 ne doit plus lister archive-clients, et find cible -type f -perm -002 ne doit plus rien lister."
+  ]}
+/>
+
+Cinq corrections, cinq contrôles qui ne trouvent plus rien. C'est cela, la vérification : on ne croit pas que c'est corrigé, on rejoue ce qui avait trouvé la faiblesse. Il reste, dans la vraie vie, ce que la machine ne peut pas vérifier : le mot de passe de la base doit être renouvelé, l'historique purgé, la copie supprimée du rebond, et, si un autre compte doit lire les sauvegardes, un groupe dédié plutôt qu'un `777`.
+
+## les pièges
+
+- **Corriger pendant l'audit.** Tu détruis la preuve, tu casses peut-être un service que personne n'a prévenu, et tu ne sais plus ce qui était réglé avant toi. L'auditeur constate, l'administrateur corrige.
+- **Recopier le secret dans le rapport.** Le rapport circule bien plus largement que le fichier. On cite l'endroit, on masque la valeur.
+- **Fermer les droits sans renouveler le secret.** `chmod 600` protège contre les lectures à venir, pas contre celles qui ont déjà eu lieu. Un secret resté lisible se change.
+- **Couper les mots de passe SSH avant d'avoir testé sa clé.** Ou se déconnecter avant d'avoir essayé une nouvelle connexion depuis un second terminal : on se ferme la porte à soi-même.
+- **Traiter le symptôme.** Passer un `777` en `755` sans se demander pourquoi il était à 777, c'est revenir au prochain « Permission denied ». Cherche le besoin qui a poussé quelqu'un à ouvrir les droits, et réponds-y avec un groupe ou une règle précise.
+- **Croire que `NOPASSWD` est le défaut.** Pour un compte d'automatisation, il est normal. Le défaut, c'est une règle qui autorise `ALL` là où une commande suffit.
+- **Confondre le fichier et la machine vivante.** Auditer une copie ne dit que ce que la copie contient. L'état réel d'un serveur se lit avec `sshd -T`, `sudo -l` et `find` lancés dessus, avec l'autorisation de le faire.
+- **Dresser une liste sans jugement.** Tous les fichiers setuid ne sont pas des fautes : `passwd` en a besoin. Un constat compare à une référence et dit pourquoi l'écart compte.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="La référence de durcissement d'un système GNU/Linux, réglage par réglage, avec des niveaux de sécurité, en français">ANSSI : recommandations pour un système GNU/Linux</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/usage-securise-dopenssh" description="Les recommandations de l'ANSSI pour le serveur OpenSSH, directive par directive, en français">ANSSI : usage sécurisé d'(Open)SSH</ExternalLink>
+
+<ExternalLink href="https://www.sudo.ws/docs/man/sudoers.man/" description="La page de manuel de sudoers : la syntaxe des règles, les alias, et ce qu'une règle précise autorise vraiment, en anglais">Page de manuel de sudoers</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les quarante-deux mesures de base de l'ANSSI, dont la gestion des droits et des mots de passe, en français">ANSSI : guide d'hygiène informatique</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pendant un audit, tu lis PermitRootLogin yes dans le fichier sshd_config de la cible. Que fais-tu ?" options={["Tu corriges la ligne tout de suite, pour réparer le serveur", "Tu notes le constat avec sa preuve dans le rapport, et l'administrateur corrige ensuite", "Tu ignores la ligne : c'est la configuration par défaut de SSH", "Tu redémarres le service pour voir ce qui se passe"]} correct={1} explanation="L'auditeur constate et prouve sans modifier : une correction faite en cours d'audit détruit la preuve et peut casser un service que personne n'a prévenu. Et la valeur par défaut d'OpenSSH refuse les mots de passe pour root : ici, yes est un choix qui l'ouvre." />
+  <Quiz id="q-2" question="Un fichier .env contenant le mot de passe de la base est resté lisible par tous pendant des mois. Après chmod 600, que reste-t-il à faire ?" options={["Rien : le fichier est maintenant protégé", "Renouveler le mot de passe, car il a pu être lu pendant tout ce temps", "Supprimer le fichier sans le remplacer", "Repasser le fichier en 666 pour voir qui le lit"]} correct={1} explanation="Fermer les droits empêche les lectures à venir, pas celles qui ont déjà eu lieu. Un secret qui a été lisible est un secret à changer." />
+  <Quiz id="q-3" question="Le compte de déploiement a la règle sudo deploy ALL=(ALL) NOPASSWD: ALL, alors qu'il ne fait que relancer un service. Quelle correction applique le moindre privilège ?" options={["Retirer NOPASSWD mais laisser ALL", "Limiter la règle à la commande dont il a besoin, avec son chemin complet", "Supprimer le compte sans prévenir l'équipe", "Garder la règle et surveiller le journal"]} correct={1} explanation="On part du besoin réel (relancer un service) et on n'autorise que lui. NOPASSWD sur une commande unique est normal pour une automatisation ; le défaut, c'est ALL." />
+  <Quiz id="q-4" question="La recherche des fichiers setuid en liste plusieurs. Lequel mérite une question en priorité ?" options={["/usr/bin/passwd, qui vient de la distribution", "/usr/local/bin/archive-clients, un outil maison qu'aucun paquet n'a installé", "/usr/bin/su, qui vient de la distribution", "Les trois, car un fichier setuid est toujours une faute"]} correct={1} explanation="Un setuid légitime se rattache à un paquet de la distribution (dpkg -S ou rpm -qf). Un outil maison, jamais relu comme passwd, qui s'exécute en root pour tous, est un écart à justifier ou à retirer." />
+  <Quiz id="q-5" question="Un script lancé chaque nuit par root est en mode 777. Pourquoi est-ce grave ?" options={["Il consomme plus de mémoire", "N'importe quel compte peut le modifier, donc faire exécuter ce qu'il veut avec les droits de root", "Il ne peut plus être exécuté", "Il apparaît dans le journal SSH"]} correct={1} explanation="Ce que root exécute doit être modifiable par root seul. Sinon, le droit d'écrire dans le script est un droit de root à retardement." />
+  <Quiz id="q-6" question="Que doit contenir, dans un rapport d'audit, le constat d'un mot de passe écrit en clair ?" options={["Le mot de passe en entier, pour que l'administrateur le reconnaisse", "Le fichier, les droits et la commande qui l'a montré, avec la valeur masquée", "Seulement la mention « mot de passe faible », sans dire où", "Une capture du mot de passe envoyée par courriel"]} correct={1} explanation="Un rapport circule plus largement que le fichier : recopier le secret ferait une nouvelle fuite. On cite l'endroit et la preuve, on masque la valeur." />
+</QuizGroup>
+
+## à retenir
+
+- Un audit de configuration se fait dans un périmètre écrit et autorisé : l'auditeur constate et prouve sans rien modifier, l'administrateur corrige ensuite.
+- Un constat porte son fichier, sa preuve, son risque et sa correction ; un secret se cite, il ne se recopie jamais.
+- La méthode : inventaire, lecture contre une référence, constat, classement, rapport, correction, puis vérification en rejouant le contrôle qui avait trouvé la faiblesse.
+- SSH : `PermitRootLogin no`, clés plutôt que mots de passe une fois la clé testée, et `sshd -T` pour la configuration réellement appliquée.
+- Un secret lisible de tous se protège (`chmod 600`), se range hors du dépôt et des notes, et surtout se renouvelle.
+- Moindre privilège : une règle `sudo` pour la commande précise, jamais `ALL` ; le bit setuid se retire d'un programme maison, et un script de root n'est modifiable que par root.
