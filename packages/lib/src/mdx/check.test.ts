@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { storedHash } from "../crypto/cracking";
 import { checkLessonMdx } from "./check.js";
 
 /**
@@ -586,5 +587,37 @@ describe("IncidentStory", () => {
     expect(r.message).toBe(
       "Incident à choix : le choix « Isoler » de la scène « a » mène à « nulle-part », qui n'existe pas.",
     );
+  });
+});
+
+describe("PasswordLab", () => {
+  // A common password, a salted common one, and a random one: two of the three fall.
+  const accounts = JSON.stringify([
+    { user: "alice", hash: storedHash("123456") },
+    { user: "hugo", salt: "Xk3p9a", hash: storedHash("azerty", "Xk3p9a") },
+    { user: "farid", hash: storedHash("k9#Qz2vL") },
+  ]);
+  const lab = (props: string): string =>
+    `## La base volée\n\n<PasswordLab id="p" accounts={${accounts}} ${props} />`;
+
+  it("accepts a table whose goal is the number of accounts the dictionary breaks", async () => {
+    expect(await checkLessonMdx(lab("weak={2}"))).toEqual({ ok: true });
+  });
+
+  it("refuses a goal the dictionary does not reach, and says how many fall", async () => {
+    const r = await checkLessonMdx(lab("weak={3}"));
+    if (r.ok) throw new Error("accepted an unreachable goal");
+    expect(r.section).toBe("La base volée");
+    expect(r.message).toBe(
+      "Atelier mots de passe : weak vaut 3, mais le dictionnaire complet casse 2 comptes de cette table.",
+    );
+  });
+
+  it("refuses a hash that is not a SHA-256, and names the account", async () => {
+    const r = await checkLessonMdx(
+      '## La base volée\n\n<PasswordLab id="p" weak={1} accounts={[{ "user": "a", "hash": "abc" }, { "user": "b", "hash": "def" }]} />',
+    );
+    if (r.ok) throw new Error("accepted a short hash");
+    expect(r.message).toContain("Atelier mots de passe : accounts.0.hash : ");
   });
 });

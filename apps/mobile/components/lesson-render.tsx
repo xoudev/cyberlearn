@@ -12,6 +12,7 @@ import { IncidentStoryExercise } from "@/components/incident-story";
 import { LogHuntExercise } from "@/components/log-hunt";
 import { MatchPairsExercise } from "@/components/match-pairs";
 import { PacketDissectorExercise } from "@/components/packet-dissector";
+import { PasswordLabExercise } from "@/components/password-lab";
 import { PhishingEmailExercise } from "@/components/phishing-email";
 import { PutInOrderExercise } from "@/components/put-in-order";
 import { SubnetDrillExercise } from "@/components/subnet-drill";
@@ -320,6 +321,8 @@ export function BlockView({
       return <HexEditorExercise editor={block.editor} />;
     case "story":
       return <IncidentStoryExercise story={block.story} />;
+    case "password":
+      return <PasswordLabExercise lab={block.lab} />;
     case "animation":
       return (
         <View

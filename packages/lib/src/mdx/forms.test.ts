@@ -313,3 +313,46 @@ describe("the IncidentStory form", () => {
     expect(Object.keys(validateComponent(story, { id: "s-1" }, null))).toEqual(["scenes"]);
   });
 });
+
+describe("the PasswordLab form", () => {
+  const lab = form("PasswordLab");
+  const hash = "a".repeat(64);
+  const accounts = [
+    { user: "alice", hash },
+    { user: "hugo", hash: "b".repeat(64), salt: "Xk3p9a", note: "Salé." },
+  ];
+
+  it("asks for the table and the goal, and nothing else", () => {
+    expect(validateComponent(lab, {}, null)).toEqual({
+      id: "Obligatoire.",
+      accounts: "Obligatoire.",
+      weak: "Obligatoire.",
+    });
+    expect(validateComponent(lab, { id: "p-1", accounts, weak: 1 }, null)).toEqual({});
+  });
+
+  it("hands the table to the lab's parser, whose verdict is the block's", () => {
+    const base = { id: "p-1", accounts, weak: 1 };
+    expect(
+      validateComponent(
+        lab,
+        { ...base, accounts: [{ user: "alice", hash: "abc" }, accounts[1]] },
+        null,
+      ),
+    ).toEqual({ accounts: expect.stringContaining("0.hash : ") as string });
+    expect(validateComponent(lab, { ...base, weak: 3 }, null)).toEqual({
+      [FORM]: "weak vaut 3, mais la table n'a que 2 comptes.",
+    });
+  });
+
+  it("takes the closing question as a quiz is taken: options, and the right one checked", () => {
+    const base = { id: "p-1", accounts, weak: 1, question: "Q ?" };
+    expect(validateComponent(lab, { ...base, options: ["a"], correct: 0 }, null)).toEqual({
+      options: "Au moins 2 options.",
+    });
+    expect(validateComponent(lab, { ...base, options: ["a", "b"], correct: 1 }, null)).toEqual({});
+    expect(validateComponent(lab, base, null)).toEqual({
+      [FORM]: "une question demande ses options et la bonne (correct).",
+    });
+  });
+});

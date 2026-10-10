@@ -1,0 +1,124 @@
+---
+refCode: CL-LSN-14081-V01
+slug: crypto-atelier-casser-mots-de-passe
+title: "Atelier : pourquoi un mot de passe tombe"
+description: "Lancez une attaque par dictionnaire sur une table de comptes d'exemple, dans le navigateur, et voyez ce qui tombe, ce qui résiste, ce que change le sel et ce que valent la longueur et une fonction lente."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 450
+prerequisites: ["CL-LSN-105-V01"]
+---
+
+La leçon sur le stockage des mots de passe (CL-LSN-105) a posé le principe : une plateforme sérieuse ne garde jamais ton mot de passe, elle garde une empreinte, et un hachage rapide comme SHA-256 est un mauvais choix parce que la rapidité sert l'attaquant. Dit comme ça, c'est une règle à apprendre. Cet atelier te la fait vérifier de tes mains : tu vas jouer l'attaquant qui a volé une table de comptes, pour voir pourquoi certains mots de passe tombent en un essai, pourquoi d'autres tiennent, et ce qui fait la différence.
+
+Un cadre, avant de commencer. Tout ce que tu manipules ici est inventé : les comptes, les empreintes et le dictionnaire sont des données d'exemple de la plateforme, l'attaque tourne dans ton navigateur et rien n'est envoyé nulle part. Rien dans l'atelier ne sait s'attaquer à un vrai service, et ce n'est pas le but. Essayer de deviner le mot de passe d'un compte qui n'est pas le tien, ou de casser des empreintes volées, est un délit en France (articles 323-1 et suivants du code pénal). On comprend l'attaque pour mieux défendre, pas pour la rejouer ailleurs.
+
+## la base volée
+
+Imagine une plateforme dont la base de données a fuité. Pour chaque compte, l'attaquant dispose de trois choses : le nom du compte, un sel quand la plateforme en utilise un, et l'empreinte du mot de passe. L'empreinte est le SHA-256 du sel suivi du mot de passe, ou du mot de passe seul quand il n'y a pas de sel. Voilà à quoi ressemble le début de la table de l'atelier :
+
+```text
+compte   sel      empreinte SHA-256 (début)
+alice    aucun    8d969eef6ecad3c2...
+bob      aucun    8d969eef6ecad3c2...
+hugo     Xk3p9a   f98c39df280156cf...
+ines     7QmZ2d   723ea3f93818a586...
+```
+
+Regarde déjà ce que la table dit sans qu'on ait rien cassé : alice et bob ont exactement la même empreinte. L'attaquant ne connaît pas leur mot de passe, mais il sait qu'ils ont le même. Pour hugo et ines, on verra plus loin.
+
+On ne peut pas remonter d'une empreinte à son mot de passe : c'est le principe du hachage. Mais on peut deviner. On prend un mot de passe probable, on calcule son empreinte exactement comme la plateforme l'a fait, et on compare avec celles de la table. Si ça correspond, on a trouvé. C'est une attaque par dictionnaire : la liste des candidats est le dictionnaire, et le coût de l'attaque est le nombre de candidats multiplié par le prix d'un essai.
+
+Il y a deux façons de la mener, et l'atelier te laisse choisir. La **table pré-calculée** hache une fois chaque mot du dictionnaire, puis cherche chaque empreinte volée dans cette table : le même travail sert à tous les comptes. L'attaque **compte par compte** reprend le dictionnaire pour chaque compte, en collant le sel de ce compte devant chaque mot. Garde cette différence en tête pendant l'exercice.
+
+## l'atelier
+
+Commence par les dix mots de passe les plus courants avec la table pré-calculée, regarde ce qui tombe, puis élargis le dictionnaire et change de méthode. Chaque compte cassé montre son mot de passe et le nombre d'essais qu'il a fallu. Plus bas dans l'atelier, un calculateur te montre pourquoi la longueur et la lenteur comptent, et une dernière question conclut. L'exercice est réussi quand tu as retrouvé tous les comptes qui tombent et répondu juste.
+
+<PasswordLab
+  id="mdp-base-volee"
+  title="La base volée d'une plateforme d'exemple"
+  task="Lance des attaques par dictionnaire sur la table, retrouve les mots de passe qui tombent, et regarde ce qui résiste et pourquoi."
+  accounts={[
+    { "user": "alice", "hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "note": "Le mot de passe le plus courant au monde : un attaquant l'essaie en premier." },
+    { "user": "bob", "hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "note": "Le même mot de passe qu'alice, donc la même empreinte : sans sel, deux comptes qui partagent un secret se trahissent." },
+    { "user": "chloe", "hash": "e93e24c1b877a15df5e4a8cbb20f351b891b750779cf5e8fb99119a7142d89cf", "note": "Un mot du dictionnaire : plus il est courant, plus tôt il tombe." },
+    { "user": "dylan", "hash": "16b121658b1b5e8d581922da78cd09969cad47e961310415635d93dc1f937731", "note": "Un mot courant, une majuscule, une année : l'astuce que tout le monde connaît, donc que le dictionnaire connaît." },
+    { "user": "emma", "hash": "f3029a66c61b61b41b428963a2fc134154a5383096c776f3b4064733c5463d90", "note": "Une ligne du clavier suivie de 123 : ajouter trois chiffres ne protège presque de rien." },
+    { "user": "farid", "hash": "59f53d2303f5d6d4565830781758d18daf1217d6fedb059b06a7395fd6ff0ac0", "note": "Huit caractères tirés au hasard : aucun dictionnaire ne les a. Mais huit caractères, c'est court, et essayés un par un ils tiennent des jours, pas des siècles. Il lui manque de la longueur." },
+    { "user": "gaelle", "hash": "619a0a13107f96f2d3d45b64f7c0fb0e559266f691ceef4f42d40a5a09cb2096", "note": "Une phrase de trente-deux caractères faite de mots simples : hors dictionnaire, et bien trop longue pour être essayée caractère par caractère. La longueur la protège." },
+    { "user": "hugo", "salt": "Xk3p9a", "hash": "f98c39df280156cf61322f4ec6f722b1fb28304f0c425f587f890fc3c8d1599a", "note": "Le même mot de passe qu'ines, et pourtant une autre empreinte : c'est le sel. Il tombe quand même, mais seul, par une attaque qui n'a servi qu'à lui." },
+    { "user": "ines", "salt": "7QmZ2d", "hash": "723ea3f93818a58655f32183a9135b2ee12809971cb2487919afb290cf685975", "note": "Le même mot de passe que hugo. Sans sel, les deux auraient eu la même empreinte, et un seul calcul aurait suffi." },
+    { "user": "jules", "salt": "Pq8Wn1", "hash": "5a260664e0af7c4c0ab279211dc4a03d30eadbb5d5d58a35eb5c4de54a33e4f8", "note": "Une phrase longue et salée : l'attaque doit recommencer pour lui, et le dictionnaire n'a pas sa phrase." }
+  ]}
+  weak={7}
+  question="Une base de données fuit. Que faut-il avoir mis en place pour que les mots de passe de ses utilisateurs tiennent ?"
+  options={["Les hacher avec SHA-256, une fonction cryptographique solide", "Des mots de passe longs, un sel propre à chaque compte et une fonction lente comme bcrypt ou argon2id", "Obliger un chiffre et un symbole, sans autre précaution", "Cacher la liste des sels pour que l'attaquant ne la trouve pas"]}
+  correct={1}
+  explanation="La longueur multiplie le nombre de possibilités, le sel force à recommencer pour chaque compte et rend les tables pré-calculées inutiles, la fonction lente renchérit chaque essai. Aucune ne remplace les deux autres : le sel ne ralentit rien, et la lenteur ne sauve pas 123456."
+/>
+
+## ce que la table t'a montré
+
+Si tu as mené l'exercice jusqu'au bout, tu as vu quatre choses, et chacune a une conséquence pour qui conçoit une plateforme.
+
+**Les mots de passe courants tombent d'abord.** Les dix premiers du dictionnaire suffisent à casser des comptes, au premier essai pour les plus classiques. Le dictionnaire de deux cents mots n'est pas un exploit : ce sont des mots, des prénoms, des suites de chiffres et des lignes du clavier que des millions de gens choisissent encore. Un mot de passe qui figure dans une liste de fuites est cassé avant même que l'attaque commence.
+
+**Les « astuces » sont connues.** Une majuscule au début, un chiffre ou une année à la fin, un point d'exclamation : le troisième dictionnaire les essaie toutes, et `Dragon2024` ou `azerty123` tombent. Les remplacements de lettres par des chiffres, comme `passw0rd`, sont dans les listes depuis longtemps. Ajouter des règles de composition à un mot de passe faible ne le rend pas fort.
+
+**Le sel casse la mutualisation.** Avec la table pré-calculée, un seul passage sur le dictionnaire a cassé tous les comptes sans sel, alice et bob compris. Les comptes salés n'ont pas bougé : leur empreinte est celle du sel et du mot de passe, et aucune table n'avait été calculée pour ce sel. Pour hugo et ines, qui ont pourtant le même mot de passe, il a fallu attaquer chaque compte séparément, avec son sel, et refaire le travail autant de fois qu'il y a de comptes. Le sel ne ralentit pas un essai : il empêche de réutiliser un calcul d'un compte à l'autre. Il n'a d'ailleurs pas à rester secret, il est stocké à côté de l'empreinte.
+
+**Ce qui résiste, résiste pour de bonnes ou de mauvaises raisons.** Farid, gaelle et jules sont hors du dictionnaire. Mais farid n'a que huit caractères, et un mot de passe court tombe tôt ou tard par la force brute, sans dictionnaire du tout. C'est la différence entre « absent de la liste » et « solide ».
+
+## la longueur compte plus que la bizarrerie
+
+Quand le dictionnaire échoue, il reste à tout essayer. Le nombre de mots de passe possibles est le nombre de symboles disponibles à chaque position, élevé à la puissance de la longueur. Chaque caractère de plus multiplie donc le travail par 26 pour des minuscules, par 94 pour tout le clavier. C'est un mur qui monte vite. Voici ce que donnent quelques formes, pour une carte graphique grand public, avec des ordres de grandeur arrondis (le calculateur de l'atelier fait le même calcul) :
+
+| Mot de passe | Possibilités | SHA-256 seul (10 milliards d'essais par seconde) | bcrypt, coût 12 (1 000 essais par seconde) |
+|---|---|---|---|
+| 8 minuscules | 2,1 × 10¹¹ | 21 secondes | 7 ans |
+| 8 caractères du clavier | 6,1 × 10¹⁵ | 7 jours | 190 000 ans |
+| 12 caractères du clavier | 4,8 × 10²³ | 1,5 million d'années | plus que l'âge de l'univers |
+| 4 mots tirés au hasard dans une liste de 7 776 | 3,7 × 10¹⁵ | 4 jours | 120 000 ans |
+| 6 mots tirés au hasard dans une liste de 7 776 | 2,2 × 10²³ | 700 000 ans | plus que l'âge de l'univers |
+
+Deux lignes se lisent d'un coup d'œil. D'abord, huit caractères, même variés, ne tiennent qu'une semaine face à un hachage rapide : la longueur d'un mot de passe est son premier rempart. Ensuite, une phrase de passe faite de mots tirés au hasard est plus facile à retenir qu'une suite de symboles, et elle monte plus vite en puissance, parce que chaque mot compte pour presque treize bits. Le mot « au hasard » est essentiel : une phrase de film ou un proverbe est dans les listes, un tirage aléatoire n'y est pas.
+
+## la lenteur change tout
+
+La dernière colonne du tableau est l'argument décisif. La même forme de mot de passe, hachée avec bcrypt au lieu de SHA-256, demande à l'attaquant dix millions de fois plus de temps, parce que bcrypt est fait pour que chaque essai coûte cher, et que ce coût se règle. argon2id ajoute un coût en mémoire : chaque essai doit réserver, par exemple, 64 Mo, ce qui empêche une carte graphique d'en lancer des milliers à la fois. Dans l'atelier, regarde le prix d'un vrai dictionnaire de 14 millions de mots de passe issus de fuites : quelques millisecondes avec SHA-256 seul, quelques heures avec bcrypt, et des mois dès qu'on y ajoute les variantes. Pour l'utilisateur légitime qui se connecte, la différence se compte en fractions de seconde. Pour l'attaquant qui doit en faire des milliards, elle fait toute la différence.
+
+Ce que ça veut dire quand on construit une plateforme :
+
+- **Stocker avec argon2id, ou bcrypt**, par une bibliothèque éprouvée, jamais avec SHA-256, SHA-1 ou MD5 seuls, et jamais avec une fonction maison. Le sel est produit et rangé par la bibliothèque, un par compte.
+- **Accepter les longs mots de passe et les phrases de passe**, plutôt que d'imposer des symboles, et refuser ceux qui figurent dans une liste de mots de passe connus : c'est ce que recommande le NIST dans sa publication SP 800-63B.
+- **Ne pas compter sur le mot de passe seul** : un second facteur rend une base volée bien moins utile, et une limitation des tentatives protège le service en ligne, là où l'attaquant ne peut pas essayer des milliards de mots de passe par seconde.
+- **Faire monter le coût avec le temps**, parce que le matériel s'améliore, comme la leçon sur le stockage l'a détaillé.
+
+<Callout type="warning">
+Un piège à éviter : croire que le sel protège à lui seul. Il empêche les tables pré-calculées et masque les mots de passe partagés, mais un compte salé dont le mot de passe est `123456` tombe quand même, sans être ralenti d'une milliseconde. Le sel, la longueur et la lenteur sont trois protections qui se complètent, et aucune ne remplace les autres.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Dans l'atelier, alice et bob ont la même empreinte et hugo et ines n'en ont pas, alors que chaque paire partage un mot de passe. Pourquoi ?" options={["Parce que hugo et ines ont un mot de passe plus long", "Parce que les comptes de hugo et ines sont salés, avec un sel différent pour chacun", "Parce que SHA-256 donne parfois des résultats différents pour la même entrée", "Parce que la plateforme a chiffré les mots de passe de hugo et ines"]} correct={1} explanation="Le sel est ajouté devant le mot de passe avant le hachage. Deux sels différents donnent deux entrées différentes, donc deux empreintes différentes, même si le mot de passe est le même. SHA-256, lui, donne toujours la même sortie pour la même entrée." />
+
+<Quiz id="q-2" question="Pourquoi un mot de passe de 12 caractères tire-t-il un bien meilleur parti de la longueur qu'un mot de passe de 8 caractères plus bizarre ?" options={["Parce que les symboles spéciaux sont interdits dans les mots de passe longs", "Parce que chaque caractère de plus multiplie le nombre de possibilités, donc le travail de l'attaquant", "Parce qu'un mot de passe long n'est jamais dans un dictionnaire", "Parce que le sel est plus long pour un mot de passe plus long"]} correct={1} explanation="Le nombre de possibilités est la taille de l'alphabet élevée à la puissance de la longueur. Quatre caractères de plus, avec tout le clavier, multiplient le travail par près de 80 millions. La bizarrerie n'ajoute, elle, qu'un petit facteur." />
+
+<Quiz id="q-3" question="Une plateforme hache ses mots de passe avec SHA-256 et un sel propre à chaque compte. Que lui manque-t-il encore ?" options={["Rien : le sel suffit à rendre l'attaque impossible", "Une fonction lente comme bcrypt ou argon2id, car chaque essai de l'attaquant reste presque gratuit", "Un sel plus court, pour que la base reste légère", "Un dictionnaire de mots de passe interdits stocké dans la base"]} correct={1} explanation="Le sel force l'attaquant à recommencer pour chaque compte, mais ne renchérit pas un essai : avec SHA-256, des milliards d'essais par seconde restent possibles. C'est la fonction lente qui rend chaque essai coûteux." />
+
+## à retenir
+
+- Une base volée ne livre pas les mots de passe, mais l'attaquant devine : il hache des candidats et compare. Le coût de l'attaque est le nombre de candidats multiplié par le prix d'un essai.
+- Les mots de passe courants, et leurs variantes (majuscule, chiffre ou année derrière, symbole), tombent dans un dictionnaire en quelques essais. Les règles de composition ne rendent pas un mot de passe faible solide.
+- Sans sel, deux comptes au même mot de passe ont la même empreinte, et une seule table pré-calculée les casse tous. Avec un sel par compte, il faut attaquer chaque compte séparément. Le sel n'est pas secret et ne ralentit aucun essai.
+- La longueur est le premier rempart : chaque caractère de plus multiplie le travail par la taille de l'alphabet. Une phrase de passe de mots tirés au hasard est longue, mémorisable et solide.
+- Une fonction lente (bcrypt, argon2id) multiplie le prix de chaque essai sans gêner l'utilisateur légitime. SHA-256 seul est fait pour la vitesse et ne convient pas aux mots de passe.
+- Le sel, la longueur et la lenteur se complètent. On y ajoute un second facteur, une limitation des tentatives et le refus des mots de passe déjà connus.
+
+## pour aller plus loin
+
+- OWASP, « Password Storage Cheat Sheet » : les paramètres recommandés pour argon2id et bcrypt.
+- NIST, publication spéciale 800-63B : les exigences sur les mots de passe, la longueur et le refus des mots de passe courants.
+- ANSSI, « Recommandations relatives à l'authentification multifacteur et aux mots de passe ».

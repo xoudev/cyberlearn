@@ -387,7 +387,7 @@ Quatre exercices d'investigation : une photo dont on lit les métadonnées pour 
 
 ## crypto et animation
 
-Un établi de chiffrement avec un message à déchiffrer, et une animation que l'on fait avancer étape par étape.
+Un établi de chiffrement avec un message à déchiffrer, un atelier où l'on casse des mots de passe d'exemple, et une animation que l'on fait avancer étape par étape.
 
 <CryptoWorkshop
   id="atelier-vitrine-xor"
@@ -395,6 +395,22 @@ Un établi de chiffrement avec un message à déchiffrer, et une animation que l
   tools={["xor", "hex"]}
   input="BONJOUR"
   challenge={{ "ciphertext": "79 73 67 6f 7e 78 63 7b 7f 6f", "answer": "SYMETRIQUE", "hint": "La clé est 42 : déchiffrer, c'est appliquer la même clé une seconde fois." }}
+/>
+
+<PasswordLab
+  id="mdp-vitrine-base-volee"
+  title="La base volée d'un forum"
+  task="Lance le dictionnaire sur la table et retrouve les mots de passe qui tombent."
+  accounts={[
+    { "user": "alice", "hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "note": "Le mot de passe le plus courant du monde." },
+    { "user": "hugo", "salt": "Xk3p9a", "hash": "f98c39df280156cf61322f4ec6f722b1fb28304f0c425f587f890fc3c8d1599a", "note": "Salé, mais courant : il tombe, compte par compte." },
+    { "user": "farid", "hash": "59f53d2303f5d6d4565830781758d18daf1217d6fedb059b06a7395fd6ff0ac0", "note": "Huit caractères au hasard : hors dictionnaire, mais courts." }
+  ]}
+  weak={2}
+  question="Qu'est-ce qui protège le mieux un mot de passe volé ?"
+  options={["Un hachage rapide comme SHA-256", "Un mot de passe long, un sel et une fonction lente", "Un sel, sans plus"]}
+  correct={1}
+  explanation="La longueur multiplie les possibilités, le sel force à attaquer chaque compte, la lenteur renchérit chaque essai."
 />
 
 <StepAnimation id="anim-vitrine-tcp" scene="tcp-handshake" caption="Trois segments avant le moindre octet de données." />
@@ -460,4 +476,4 @@ $trouves = array_filter($articles, fn ($titre) => $q === '' || stripos($titre, $
 
 ## récapitulatif
 
-Vingt-huit composants, tous rendus par la même page que les apprenants voient. Si l'un d'eux s'affiche mal ici, il s'affiche mal partout : c'est le moment de le corriger, avant qu'une leçon publiée ne le montre.
+Trente composants, tous rendus par la même page que les apprenants voient. Si l'un d'eux s'affiche mal ici, il s'affiche mal partout : c'est le moment de le corriger, avant qu'une leçon publiée ne le montre.
