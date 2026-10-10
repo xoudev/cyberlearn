@@ -6,6 +6,7 @@ import {
   parseGitSandbox,
   parseHexEditor,
   parseIncidentStory,
+  parseJwtLab,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -195,6 +196,15 @@ const TOOLS: readonly SelectOption[] = [
   { value: "vigenere", label: "Vigenère" },
   { value: "xor", label: "XOR" },
   { value: "sha256", label: "SHA-256" },
+];
+
+/** JWT_LEVELS, in French. */
+const JWT_LEVEL_OPTIONS: readonly SelectOption[] = [
+  { value: "decode", label: "Lire un jeton" },
+  { value: "none", label: "alg: none" },
+  { value: "weak-secret", label: "Secret faible" },
+  { value: "confusion", label: "Confusion d'algorithme" },
+  { value: "fixed", label: "Services corrigés" },
 ];
 
 const FORMS: readonly ComponentForm[] = [
@@ -1032,6 +1042,21 @@ const FORMS: readonly ComponentForm[] = [
     ],
   },
   {
+    name: "JwtLab",
+    fields: [
+      idField(),
+      titleField,
+      taskField(false, "Au-dessus de l'atelier ; chaque étape donne la sienne."),
+      {
+        kind: "multiselect",
+        key: "levels",
+        label: "Étapes",
+        hint: "Dans cet ordre ; la première est ouverte. Toutes, si aucune n'est cochée. « Services corrigés » rejoue les attaques des étapes cochées : il en faut au moins une.",
+        options: JWT_LEVEL_OPTIONS,
+      },
+    ],
+  },
+  {
     name: "FirewallLab",
     fields: [
       idField(),
@@ -1247,6 +1272,7 @@ const PARSERS: ReadonlyMap<string, Parser> = new Map<string, Parser>([
   ["LogHunt", (attrs) => parseLogHunt(attrs)],
   ["HexEditor", (attrs) => parseHexEditor(attrs)],
   ["IncidentStory", (attrs) => parseIncidentStory(attrs)],
+  ["JwtLab", (attrs) => parseJwtLab(attrs)],
 ]);
 
 /**

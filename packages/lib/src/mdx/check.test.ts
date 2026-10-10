@@ -324,6 +324,32 @@ describe("CryptoWorkshop", () => {
   });
 });
 
+describe("JwtLab", () => {
+  it("accepts the whole lab, or the steps a lesson picks", async () => {
+    expect(await checkLessonMdx('## Les jetons\n\n<JwtLab id="j" />')).toEqual({ ok: true });
+    expect(
+      await checkLessonMdx(
+        '## Les jetons\n\n<JwtLab id="j" title="Sans signature" levels={["none", "fixed"]} />',
+      ),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a step it does not have, and says so", async () => {
+    const r = await checkLessonMdx('## Les jetons\n\n<JwtLab id="j" levels={["rsa"]} />');
+    if (r.ok) throw new Error("accepted an unknown step");
+    expect(r.section).toBe("Les jetons");
+    expect(r.message).toContain("Atelier JWT : levels.0 : ");
+  });
+
+  it("refuses the corrected services with no attack to replay", async () => {
+    const r = await checkLessonMdx(
+      '## Les jetons\n\n<JwtLab id="j" levels={["decode", "fixed"]} />',
+    );
+    if (r.ok) throw new Error("accepted a replay of nothing");
+    expect(r.message).toContain("Atelier JWT : levels demande « fixed » sans attaque à rejouer");
+  });
+});
+
 describe("FirewallLab", () => {
   const lab = (rules: string): string =>
     `## Le pare-feu\n\n<FirewallLab id="f" task="Ferme." rules={\`${rules}\`} probes={[{ "label": "Un visiteur ouvre le site", "proto": "tcp", "from": "203.0.113.5", "port": 443, "expect": "accept" }]} />`;

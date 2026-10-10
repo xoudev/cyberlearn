@@ -198,7 +198,7 @@ vérifications d'un terminal Linux…). Le « + » entre deux blocs en ajoute un
 depuis le guide ; les flèches le déplacent ; un champ que la page refuserait
 est signalé sous le champ, avant d'enregistrer. Le découpage et la réécriture
 vivent dans `packages/lib/src/mdx/blocks.ts`, les formulaires dans
-`packages/lib/src/mdx/forms.ts` : chacun des vingt-huit composants a le sien,
+`packages/lib/src/mdx/forms.ts` : chacun des trente composants a le sien,
 exercices et labos compris (lignes pour les cas de test, les sondes ou les
 vérifications ; groupes pour un lieu ou un message à déchiffrer ; JSON pour
 les quelques structures trop profondes, la trame d'un paquet, les appareils
@@ -1600,6 +1600,43 @@ Un choix : `text` (le bouton, 200 caractères au plus), `next` (l'id de la scèn
 
 Pour qu'une histoire apprenne quelque chose : faire converger les branches (deux choix peuvent mener à la même scène, la conséquence fait la différence), réserver les fins `failure` aux décisions que la leçon dit fatales (payer, rebrancher sans chercher la cause), et dire dans chaque `consequence` pourquoi, pas seulement quoi. Trois histoires dans les leçons : la réponse à incident des fondamentaux cyber (10), celle du parcours blue team (07) et la violation de données du RGPD (GRC 06).
 
+### 5.9t JwtLab - Atelier JWT
+
+Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés, puis rejoué contre les mêmes services corrigés. Tout se passe dans la page, sur des clés, des secrets et des jetons d'exemple de la plateforme et sur une horloge fixée (1er janvier 2026, 00 h 10 UTC) : rien n'est envoyé nulle part, et l'atelier ne sert qu'à ces services-là, pas à un jeton qu'on lui apporterait. Sur le site et dans l'app (`@cyberlearn/lib/crypto/jwt-lab`).
+
+```mdx
+<JwtLab
+  id="jwt-atelier"
+  title="Un jeton, trois façons de le vérifier de travers"
+  levels={["decode", "none", "weak-secret", "confusion", "fixed"]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre court (optionnel) |
+| `task` | string | Une consigne au-dessus de l'atelier (optionnel) ; chaque étape dit déjà la sienne |
+| `levels` | string[] | Les étapes proposées, dans cet ordre, la première ouverte : `decode`, `none`, `weak-secret`, `confusion`, `fixed` (défaut : les cinq) |
+
+**Les étapes :**
+
+| Étape | Ce que fait l'élève | Ce qu'il comprend |
+|---|---|---|
+| `decode` | Décode les trois parties d'un jeton et dit combien de temps il reste valable (une heure : `3600`, `1 h`, `une heure`, `60 minutes`) | Le base64url n'est pas un chiffrement : la charge utile se lit sans clé, la signature seule protège de la modification |
+| `none` | Forge un jeton `alg: none` sans signature que le service A accepte avec le rôle `admin` | Le jeton ne doit pas choisir comment on le vérifie : liste blanche d'algorithmes côté serveur |
+| `weak-secret` | Retrouve par dictionnaire (40 mots, un mot à essayer à la main) le secret HS256 du service B, puis resigne un jeton `admin` | Un secret HMAC est aléatoire et long (32 octets), jamais un mot |
+| `confusion` | Fait passer la clé publique du service C pour un secret HMAC (`alg` devient `HS256`), avec une clé RSA (RS256) puis une clé EC (ES256) | Qui vérifie ne doit pas pouvoir signer : l'algorithme est imposé, pas lu dans le jeton |
+| `fixed` | Rejoue ses jetons forgés (ou l'attaque type d'une étape non jouée) contre les trois services corrigés, puis le jeton légitime d'alice | Trois règles ensemble : liste blanche, bonne clé, revendications contrôlées (`exp`, `iss`, `aud`) |
+
+`fixed` rejoue les attaques des étapes listées : il en faut au moins une (`none`, `weak-secret` ou `confusion`), sans quoi la leçon est refusée à l'enregistrement. Une étape est réussie quand le service accepte un jeton `admin` que l'élève a fabriqué (`decode` : quand il donne la bonne durée ; `fixed` : quand chaque attaque est refusée et que le jeton d'alice passe). L'explication « pourquoi » ne s'affiche qu'une fois l'étape réussie.
+
+Les services, leurs clés et leurs mots sont écrits une fois pour les deux apps (`packages/lib/src/crypto/jwt-lab.ts`, signatures dans `jwt.ts` : HMAC et RSA écrits à la main sur le SHA-256 du projet, ECDSA par `@noble/curves`), parce que le moteur JavaScript de l'app n'a pas WebCrypto, dont `jose` a besoin. Les tests comparent tout à `jose` et à `node:crypto`, et `jwt-lab.test.ts` relit chaque atelier des leçons pour vérifier que l'attaque de chaque étape passe chez le service fragile et échoue chez le service corrigé.
+
+Ne mets jamais dans une leçon un vrai jeton ni un vrai secret : le scanner de secrets du dépôt les signalerait, et ce serait un mauvais exemple pour un cours de sécurité.
+
 ### 5.10 Pièges de syntaxe MDX
 
 Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
@@ -1635,7 +1672,7 @@ avant de pousser.
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<FindTheFlaw>`, `<PhishingEmail>`, `<SqlPlayground>`, `<SqlInjectionLab>`, `<GitSandbox>`, `<PhotoOsint>`, `<NetworkLab>`, `<PhpLab>`, `<SubnetDrill>`, `<PacketDissector>`, `<PutInOrder>`, `<MatchPairs>`, `<CryptoWorkshop>`, `<FirewallLab>`, `<LogHunt>`, `<HexEditor>`, `<IncidentStory>`, `<JwtLab>`, `<StepAnimation>`, `<SimulatedTerminal>`, `<LinuxTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

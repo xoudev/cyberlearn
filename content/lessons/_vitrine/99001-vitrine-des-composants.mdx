@@ -387,7 +387,7 @@ Quatre exercices d'investigation : une photo dont on lit les métadonnées pour 
 
 ## crypto et animation
 
-Un établi de chiffrement avec un message à déchiffrer, et une animation que l'on fait avancer étape par étape.
+Un établi de chiffrement avec un message à déchiffrer, un atelier où l'on forge des jetons JWT contre des services mal réglés, et une animation que l'on fait avancer étape par étape.
 
 <CryptoWorkshop
   id="atelier-vitrine-xor"
@@ -395,6 +395,13 @@ Un établi de chiffrement avec un message à déchiffrer, et une animation que l
   tools={["xor", "hex"]}
   input="BONJOUR"
   challenge={{ "ciphertext": "79 73 67 6f 7e 78 63 7b 7f 6f", "answer": "SYMETRIQUE", "hint": "La clé est 42 : déchiffrer, c'est appliquer la même clé une seconde fois." }}
+/>
+
+<JwtLab
+  id="jwt-vitrine"
+  title="Un jeton sans signature"
+  task="Fais accepter un jeton qui te donne le rôle admin, puis vois-le refusé."
+  levels={["none", "fixed"]}
 />
 
 <StepAnimation id="anim-vitrine-tcp" scene="tcp-handshake" caption="Trois segments avant le moindre octet de données." />

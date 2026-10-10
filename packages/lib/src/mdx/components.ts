@@ -3,7 +3,7 @@ import type { LessonComponentName } from "./names.js";
 /**
  * What each lesson component is, for the people who write lessons.
  *
- * The MDX pipeline knows twenty-eight component names (LESSON_COMPONENT_NAMES,
+ * The MDX pipeline knows thirty component names (LESSON_COMPONENT_NAMES,
  * in check.ts); the editor's guide used to describe five of them, the five
  * that existed when it was written. Each component added since got a section
  * in docs/LESSON_AUTHORING_GUIDE.md and an example in the showcase lesson, and
@@ -632,6 +632,29 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
         snippet:
           '<CryptoWorkshop id="crypto-2" title="Encoder, décoder" tools={["base64", "hex", "caesar"]} input="Bonjour" />\n',
         description: "sans challenge : les outils seuls, pour manipuler",
+      },
+    ],
+  },
+  {
+    name: "JwtLab",
+    label: "Atelier JWT",
+    family: "crypto",
+    description:
+      "Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés (alg: none, secret faible, confusion d'algorithme), et enfin rejoué contre les mêmes services corrigés. Des clés et des jetons d'exemple, rien n'est envoyé.",
+    guide: "5.9t JwtLab - Atelier JWT",
+    examples: [
+      {
+        label: "Parcours complet",
+        snippet:
+          '<JwtLab\n  id="jwt-1"\n  title="Un jeton, trois façons de le vérifier de travers"\n  levels={["decode", "none", "weak-secret", "confusion", "fixed"]}\n/>\n',
+        description:
+          "levels : decode, none, weak-secret, confusion, fixed · la première étape est ouverte",
+      },
+      {
+        label: "Une seule faille",
+        snippet:
+          '<JwtLab\n  id="jwt-2"\n  title="Le jeton sans signature"\n  task="Fais accepter un jeton qui te donne le rôle admin."\n  levels={["none", "fixed"]}\n/>\n',
+        description: "fixed rejoue les attaques des étapes listées : il en faut au moins une",
       },
     ],
   },

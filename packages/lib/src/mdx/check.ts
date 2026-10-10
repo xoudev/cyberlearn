@@ -11,6 +11,7 @@ import {
   parseGitSandbox,
   parseHexEditor,
   parseIncidentStory,
+  parseJwtLab,
   parseLogHunt,
   parseMatchPairs,
   parseNetworkLab,
@@ -207,6 +208,10 @@ function IncidentStoryStub(): null {
   return null;
 }
 STUBS.IncidentStory = IncidentStoryStub;
+function JwtLabStub(): null {
+  return null;
+}
+STUBS.JwtLab = JwtLabStub;
 
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
@@ -424,6 +429,10 @@ function firstChallengeProblem(node: ReactNode): string | null {
   if (node.type === IncidentStoryStub) {
     const parsed = parseIncidentStory(props);
     if (!parsed.ok) return `Incident à choix : ${parsed.problem}`;
+  }
+  if (node.type === JwtLabStub) {
+    const parsed = parseJwtLab(props);
+    if (!parsed.ok) return `Atelier JWT : ${parsed.problem}`;
   }
   return props.children === undefined ? null : firstChallengeProblem(props.children);
 }

@@ -56,6 +56,7 @@
     "@cyberlearn/tokens": "workspace:*",
     "@cyberlearn/types": "workspace:*",
     "@mdx-js/mdx": "catalog:",
+    "@noble/curves": "catalog:",
     "pino": "catalog:",
     "remark-gfm": "catalog:"
   },
@@ -71,6 +72,7 @@
     "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
+    "jose": "catalog:",
     "typescript-eslint": "catalog:",
     "react": "catalog:",
     "@types/react": "catalog:"

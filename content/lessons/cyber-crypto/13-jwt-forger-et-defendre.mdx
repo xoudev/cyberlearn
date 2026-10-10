@@ -1,0 +1,89 @@
+---
+refCode: CL-LSN-14082-V01
+slug: crypto-jwt
+title: "JWT : forger un jeton, puis le défendre"
+description: "Décomposez un jeton JWT, puis forgez-en un qui trompe trois services mal réglés (alg: none, secret HMAC faible, confusion entre RSA ou EC et HMAC), et voyez les mêmes jetons refusés par les services corrigés : liste blanche d'algorithmes, secret fort, vérification stricte."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 50
+xpReward: 560
+prerequisites: ["CL-LSN-101-V01", "CL-LSN-102-V01"]
+---
+
+Presque toutes les API modernes te remettent un jeton après la connexion, et tu le renvoies à chaque requête. C'est souvent un JWT, pour JSON Web Token. Le serveur n'a alors rien à retenir de toi : tout ce qu'il doit savoir (qui tu es, quel est ton rôle, jusqu'à quand le jeton vaut) est écrit dans le jeton lui-même, accompagné d'une signature qui prouve que personne n'y a touché.
+
+Cette idée est bonne. Elle repose pourtant sur un point fragile : le serveur doit vérifier cette signature, et la vérifier de la bonne manière. Dans cette leçon tu vas d'abord ouvrir un jeton, puis tromper trois services qui le vérifient de travers, puis constater que les mêmes jetons sont refusés une fois les services corrigés. Tout se passe dans la page, avec des clés et des jetons d'exemple de la plateforme : rien n'est envoyé nulle part, et ces services n'existent que dans l'atelier.
+
+## un jeton, trois parties
+
+Un JWT est un texte de trois parties séparées par des points : l'en-tête, la charge utile et la signature.
+
+L'en-tête est un petit objet JSON qui dit comment le jeton est signé, par exemple l'algorithme dans le champ `alg`. La charge utile est un autre objet JSON : les revendications, c'est-à-dire ce que le jeton affirme. On y trouve des champs standards, `sub` (le sujet, l'utilisateur), `iss` (l'émetteur), `aud` (le destinataire), `iat` (l'heure d'émission) et `exp` (l'heure d'expiration), ainsi que les champs propres au service, comme un rôle. La signature, enfin, est calculée sur les deux premières parties.
+
+Chaque partie est écrite en base64url, une variante de Base64 qui remplace `+` et `/` par `-` et `_` et supprime le `=` final, pour tenir dans une adresse web.
+
+<Callout type="warning">
+Le base64url n'est pas un chiffrement. N'importe qui décode l'en-tête et la charge utile d'un jeton, sans clé et sans secret. On n'y met jamais un mot de passe ni une donnée qui doit rester confidentielle. Ce que la signature garantit, c'est qu'on ne peut pas modifier le contenu sans que le service s'en aperçoive.
+</Callout>
+
+## ce que la signature promet
+
+Trois algorithmes reviennent partout. HS256 signe avec un HMAC-SHA256, donc avec un secret partagé : le service qui émet les jetons et celui qui les vérifie connaissent le même secret, et quiconque le connaît peut aussi signer. RS256 (RSA) et ES256 (courbe elliptique P-256) signent avec une clé privée et se vérifient avec la clé publique correspondante : qui vérifie ne peut pas signer.
+
+Cette séparation est la grande force de l'asymétrique, et c'est aussi ce que la dernière des trois attaques ci-dessous défait. Dans tous les cas, la promesse ne tient que si le service vérifie vraiment, avec l'algorithme et la clé qu'il a choisis lui-même : les trois attaques de l'atelier visent chacune ce point.
+
+## l'atelier
+
+Le parcours compte cinq étapes. La première te fait lire un jeton. Les trois suivantes te donnent chacune un service dont le code est écrit de travers, avec la ligne en cause marquée, et un jeton d'alice, rôle `user` : à toi de forger un jeton qui te donne le rôle `admin`. La dernière rejoue tes jetons contre les trois services une fois corrigés.
+
+<JwtLab
+  id="atelier-jwt"
+  title="Un jeton, trois façons de le vérifier de travers"
+  levels={["decode", "none", "weak-secret", "confusion", "fixed"]}
+/>
+
+## ce que l'atelier t'a montré
+
+Le premier service lisait l'algorithme dans l'en-tête et, devant `none`, ne vérifiait plus rien. La norme JWT prévoit bien un jeton non signé, pour les cas où un autre moyen protège déjà l'échange, mais un service qui authentifie des utilisateurs ne doit jamais l'accepter. Des variantes ont longtemps fonctionné : `None`, `NONE`, `nOnE`, parce que le filtre qui refusait `none` oubliait la casse.
+
+Le deuxième avait corrigé cela en n'acceptant que HS256, mais son secret était un mot choisi à la main. Un attaquant qui possède un jeton n'a pas besoin du service pour essayer des secrets : il calcule lui-même le HMAC avec chaque mot d'une liste et compare avec la signature. Rien n'est journalisé, rien n'est limité, et une carte graphique essaie des milliards de mots par seconde. La norme demande pour HS256 une clé d'au moins 256 bits, et elle parle de bits tirés au hasard, pas de lettres.
+
+Le troisième avait le bon schéma, une clé privée qui signe et une clé publique qui vérifie, mais sa vérification laissait le jeton choisir l'algorithme. En annonçant HS256, tu as obtenu que la clé publique, que tout le monde peut télécharger, soit utilisée comme secret HMAC. Que la clé soit RSA ou EC ne change rien à l'attaque.
+
+<Callout type="danger">
+Les trois défauts ont la même racine : le serveur a fait confiance à l'en-tête du jeton pour décider comment le vérifier, ou à un secret qu'on pouvait deviner. Une signature n'a de valeur que si l'algorithme, la clé et les règles de vérification sont fixés par le serveur.
+</Callout>
+
+## la défense
+
+Les corrections que l'atelier a rejouées tiennent en quatre gestes, que la norme sur les bonnes pratiques des JWT (RFC 8725) range parmi ses recommandations.
+
+1. Une liste blanche d'algorithmes, écrite côté serveur. Le jeton n'a pas son mot à dire, et `none` n'y figure jamais.
+2. Une clé adaptée à l'algorithme. En HS256, un secret d'au moins 32 octets tirés par un générateur cryptographique, différent d'un environnement à l'autre. Dès que plusieurs services vérifient les jetons, une paire de clés : ils reçoivent la clé publique, et seul l'émetteur garde la clé privée.
+3. Une vérification des revendications : `exp` pour l'expiration, `iss` et `aud` pour que le jeton soit bien celui que ce service attend.
+4. Une bibliothèque éprouvée et à jour, à qui l'on passe la liste blanche. On n'écrit pas soi-même la vérification d'une signature, et on lit la documentation de la bibliothèque sur ce qu'elle accepte par défaut.
+
+<Callout type="success">
+Un jeton de courte durée, renouvelé, limite les dégâts d'un jeton volé. Et si le jeton doit pouvoir être révoqué avant son expiration, le serveur garde une liste des jetons retirés : la signature seule ne sait pas dire qu'un jeton valide ne l'est plus.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Un JWT est signé en HS256. Qui peut lire sa charge utile ?" options={["Seulement le service qui détient le secret", "N'importe qui : elle est seulement encodée en base64url", "Seulement l'utilisateur à qui il est remis", "Personne, la signature la chiffre"]} correct={1} />
+
+<Quiz id="q-2" question="Un service lit alg dans l'en-tête et accepte le jeton sans signature quand il y trouve none. Quelle est la correction de fond ?" options={["Chiffrer la charge utile", "Fixer côté serveur la liste des algorithmes acceptés", "Raccourcir la durée de validité", "Mettre le rôle dans l'en-tête plutôt que dans la charge utile"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi un secret HS256 qui est un mot du dictionnaire se devine-t-il même si le service est bien protégé ?" options={["Parce que HS256 écrit le secret dans l'en-tête", "Parce que le service ne limite jamais le nombre de connexions", "Parce que l'attaquant essaie des mots hors ligne sur un jeton qu'il possède, sans jamais interroger le service", "Parce que le dictionnaire est chiffré avec le même algorithme"]} correct={2} />
+
+<Quiz id="q-4" question="Dans l'attaque par confusion d'algorithme, avec quoi le jeton forgé est-il signé ?" options={["La clé privée du service, volée", "La clé publique du service, prise pour un secret HMAC", "Un secret deviné par dictionnaire", "Rien : le jeton n'a pas de signature"]} correct={1} />
+
+<Quiz id="q-5" question="Quelle règle arrête à la fois alg: none et la confusion d'algorithme ?" options={["Une liste blanche d'algorithmes fixée par le serveur", "Un secret plus long", "Une expiration plus courte", "Un en-tête plus court"]} correct={0} />
+
+## à retenir
+
+- Un JWT se compose d'un en-tête, d'une charge utile et d'une signature, trois parties en base64url séparées par des points. Le base64url n'est pas un chiffrement : tout le monde lit le contenu, et la signature garantit seulement qu'il n'a pas été modifié.
+- Avec `alg: none`, un service qui laisse l'en-tête décider se vérifie lui-même à vide. La défense est une liste blanche d'algorithmes fixée par le serveur, où `none` ne figure pas.
+- Un secret HS256 doit être aléatoire et d'au moins 256 bits. Un mot, même rare, se retrouve hors ligne par dictionnaire, sans que le service voie rien.
+- La confusion d'algorithme transforme une clé publique (RSA ou EC) en secret HMAC quand le jeton choisit son algorithme. L'asymétrique ne protège que si le serveur impose RS256 ou ES256.
+- Vérifier une signature ne suffit pas : on contrôle aussi `exp`, `iss` et `aud`, avec une bibliothèque éprouvée à qui l'on passe la liste blanche.
+- Ne mets jamais de vrai secret ni de vrai jeton dans un dépôt, un cours ou un exemple : ceux de l'atelier sont faits pour lui seul.

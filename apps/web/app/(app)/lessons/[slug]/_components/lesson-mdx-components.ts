@@ -28,6 +28,7 @@ import { FirewallLab } from "./firewall-lab";
 import { LogHunt } from "./log-hunt";
 import { HexEditor } from "./hex-editor";
 import { IncidentStory } from "./incident-story";
+import { JwtLab } from "./jwt-lab";
 
 /**
  * What a lesson's MDX may name, bound to what draws it. One entry per name in
@@ -67,4 +68,5 @@ export const LESSON_MDX_COMPONENTS = {
   LogHunt,
   HexEditor,
   IncidentStory,
+  JwtLab,
 };
