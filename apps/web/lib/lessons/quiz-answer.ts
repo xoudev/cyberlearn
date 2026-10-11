@@ -1,5 +1,10 @@
-import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
-import { lessonQuizRepository, lessonRepository, prisma } from "@cyberlearn/db";
+import { extractLessonQuizzes, type LessonQuiz } from "@cyberlearn/lib/mdx-quizzes";
+import {
+  lessonQuizRepository,
+  lessonRepository,
+  prisma,
+  type RecordedQuizAnswer,
+} from "@cyberlearn/db";
 
 export type QuizAnswerResult =
   | {
@@ -52,6 +57,32 @@ export async function recordQuizAnswer(
   return { ok: true, selected: recorded.selected, correct: recorded.correct };
 }
 
+/** A lesson's quizzes as it has them now, and the learner's answers to them. */
+export interface LessonQuizRecord {
+  quizzes: LessonQuiz[];
+  /** Only answers to quizzes the lesson still has. */
+  answers: RecordedQuizAnswer[];
+}
+
+/**
+ * Reads a lesson's quizzes and the learner's answers once, for what a
+ * completion makes of them: its score, and its review cards. Nothing is
+ * asked of the database when the lesson has no quizzes.
+ */
+export async function readLessonQuizRecord(
+  userId: string,
+  lessonId: string,
+  contentMdx: string,
+): Promise<LessonQuizRecord> {
+  const quizzes = extractLessonQuizzes(contentMdx);
+  if (quizzes.length === 0) return { quizzes, answers: [] };
+  const ids = new Set(quizzes.map((q) => q.id));
+  const answers = (await lessonQuizRepository.findForLesson(userId, lessonId)).filter((a) =>
+    ids.has(a.quizId),
+  );
+  return { quizzes, answers };
+}
+
 /**
  * The score a lesson is completed with: right answers out of its quizzes.
  * A quiz left unanswered counts as not right.
@@ -61,18 +92,17 @@ export async function recordQuizAnswer(
  * (a mobile build from before this), and scoring it 0 out of 5 would blame
  * the learner for the app they had.
  */
+export function quizScoreOf(record: LessonQuizRecord): { correct: number; total: number } | null {
+  if (record.quizzes.length === 0 || record.answers.length === 0) return null;
+  const correct = record.answers.filter((a) => a.correct).length;
+  return { correct, total: record.quizzes.length };
+}
+
+/** The score a lesson is completed with (quizScoreOf), read from the lesson and the database. */
 export async function lessonQuizScore(
   userId: string,
   lessonId: string,
   contentMdx: string,
 ): Promise<{ correct: number; total: number } | null> {
-  const quizzes = extractLessonQuizzes(contentMdx);
-  if (quizzes.length === 0) return null;
-  const ids = new Set(quizzes.map((q) => q.id));
-  const answers = (await lessonQuizRepository.findForLesson(userId, lessonId)).filter((a) =>
-    ids.has(a.quizId),
-  );
-  if (answers.length === 0) return null;
-  const correct = answers.filter((a) => a.correct).length;
-  return { correct, total: quizzes.length };
+  return quizScoreOf(await readLessonQuizRecord(userId, lessonId, contentMdx));
 }

@@ -124,6 +124,27 @@ export interface ExportPayload {
     nextReviewAt: Date;
     lastReviewedAt: Date;
   }[];
+  /** The lesson questions to be asked again, each in its box, retired ones included. */
+  reviewCards: {
+    lessonTitle: string;
+    lessonSlug: string;
+    quizId: string;
+    box: number;
+    dueAt: Date;
+    lapses: number;
+    lastAnsweredAt: Date | null;
+    retiredAt: Date | null;
+    createdAt: Date;
+  }[];
+  /** The daily review sessions: the questions drawn and the answers given. */
+  reviewSessions: {
+    day: Date;
+    draw: unknown;
+    answers: unknown;
+    completedAt: Date | null;
+    xpCredited: boolean;
+    createdAt: Date;
+  }[];
   ratings: {
     contentTitle: string | null;
     contentType: "lesson" | "path";
@@ -289,6 +310,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     lessonQuizAnswers,
     quizReports,
     noteReports,
+    reviewCards,
+    reviewSessions,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -612,6 +635,32 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.reviewCard.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        box: true,
+        dueAt: true,
+        lapses: true,
+        lastAnsweredAt: true,
+        retiredAt: true,
+        createdAt: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.reviewSession.findMany({
+      where: { userId },
+      select: {
+        day: true,
+        draw: true,
+        answers: true,
+        completedAt: true,
+        xpCredited: true,
+        createdAt: true,
+      },
+      orderBy: { day: "asc" },
+    }),
   ]);
 
   return {
@@ -706,6 +755,18 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       nextReviewAt: rs.nextReviewAt,
       lastReviewedAt: rs.lastReviewedAt,
     })),
+    reviewCards: reviewCards.map((card) => ({
+      lessonTitle: card.lesson.title,
+      lessonSlug: card.lesson.slug,
+      quizId: card.quizId,
+      box: card.box,
+      dueAt: card.dueAt,
+      lapses: card.lapses,
+      lastAnsweredAt: card.lastAnsweredAt,
+      retiredAt: card.retiredAt,
+      createdAt: card.createdAt,
+    })),
+    reviewSessions,
     ratings: ratings.map((r) => ({
       contentTitle: r.lesson?.title ?? r.path?.title ?? null,
       contentType: r.lesson !== null ? ("lesson" as const) : ("path" as const),

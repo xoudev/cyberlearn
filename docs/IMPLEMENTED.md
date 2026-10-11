@@ -157,6 +157,7 @@
 - Page `/revisions` : la session du jour, cinq leçons au plus parmi celles dont `nextReviewAt ≤ now`, les plus en retard d'abord ; le reste attend son tour (`reviewRepository`, règles dans `@cyberlearn/lib/revisions/session`)
 - Seules les leçons encore publiées reviennent ; une leçon retenue assez de fois (prochain intervalle ≥ 60 jours) sort du cycle
 - Cron quotidien pour les rappels par notification, au compte de la session
+- En préparation, à côté de la file SM-2 qu'elles remplaceront : les cartes de révision, une question de quiz par carte (tables `review_cards` et `review_sessions`, lecture de ses propres lignes seulement, écriture par le serveur). Une leçon terminée, sur le site ou dans l'app, met en file les questions ratées (dues le lendemain) et la dernière réussie (due une semaine plus tard), sauf les bilans de module, les projets et les leçons de classe ; même interrupteur `spacedRepetition`. Boîtes de Leitner : une bonne réponse fait monter la carte (revue 1, 3, 7 puis 21 jours plus tard) puis la retire, une erreur la renvoie à la première boîte ; une carte en retard de plus de 30 jours après une bonne réponse, ou dont la question a quitté la leçon, sort d'elle-même. Une séance par jour, six cartes au plus, deux au plus par leçon, l'ordre des options tiré pour le jour. Règles dans `@cyberlearn/lib/revisions/cards`, lectures et écritures dans `reviewCardRepository` ; aucun écran ne les montre encore. Remises à zéro avec la progression et incluses dans l'export RGPD
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)

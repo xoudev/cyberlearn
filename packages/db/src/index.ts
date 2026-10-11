@@ -90,6 +90,11 @@ export {
   type ReviewReminder,
 } from "./repositories/review.repository.js";
 export {
+  reviewCardRepository,
+  type DueCardRow,
+  type ReviewSessionRow,
+} from "./repositories/review-card.repository.js";
+export {
   lessonQuizRepository,
   type RecordedQuizAnswer,
 } from "./repositories/lesson-quiz.repository.js";
@@ -186,6 +191,8 @@ export type {
   Certificate,
   Notification,
   ReviewSchedule,
+  ReviewCard,
+  ReviewSession,
   ContactTicket,
   AuditLog,
   PlacementQuestion,

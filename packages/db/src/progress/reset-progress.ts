@@ -18,7 +18,8 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *   the counters on the row itself - XP, level, both streaks, freezes
  *   lesson, path, challenge and quest progress, and skip waivers
  *   badges, quiz attempts, hint reveals
- *   the review schedule, so spaced repetition starts over
+ *   the review schedule and the review cards with their sessions, so
+ *   revision starts over
  *   the activity calendar the streak is drawn from
  *   the XP ledger and every league membership, so seasons start over
  *   cosmetics owned and equipped - they are unlocked by level, and a locker
@@ -54,6 +55,7 @@ export interface ResetProgressSummary {
   badgesCleared: number;
   certificatesCleared: number;
   reviewSchedulesCleared: number;
+  reviewCardsCleared: number;
   activityDaysCleared: number;
   cosmeticsCleared: number;
   /** False when the PDFs outlived their rows - a loose end worth naming. */
@@ -109,14 +111,19 @@ export async function resetProgress(
 
     // Path progress first: it holds the foreign key to a certificate, and the
     // certificate rows go next.
-    const [pathsCleared, badgesCleared, lessonsCleared, reviewSchedulesCleared] = await Promise.all(
-      [
-        tx.userPathProgress.deleteMany({ where: { userId } }),
-        tx.userBadge.deleteMany({ where: { userId } }),
-        tx.userLessonProgress.deleteMany({ where: { userId } }),
-        tx.reviewSchedule.deleteMany({ where: { userId } }),
-      ],
-    );
+    const [
+      pathsCleared,
+      badgesCleared,
+      lessonsCleared,
+      reviewSchedulesCleared,
+      reviewCardsCleared,
+    ] = await Promise.all([
+      tx.userPathProgress.deleteMany({ where: { userId } }),
+      tx.userBadge.deleteMany({ where: { userId } }),
+      tx.userLessonProgress.deleteMany({ where: { userId } }),
+      tx.reviewSchedule.deleteMany({ where: { userId } }),
+      tx.reviewCard.deleteMany({ where: { userId } }),
+    ]);
 
     const certificatesCleared = await tx.certificate.deleteMany({ where: { userId } });
 
@@ -133,6 +140,10 @@ export async function resetProgress(
       // A lesson's quiz answers go with its progress: starting it again from
       // nothing means being able to answer again.
       tx.lessonQuizAnswer.deleteMany({ where: { userId } }),
+      // The review sessions go with the cards: kept, today's would still
+      // draw cards just deleted, and its XP, gone from the ledger, would stay
+      // claimed.
+      tx.reviewSession.deleteMany({ where: { userId } }),
       tx.userQuestProgress.deleteMany({ where: { userId } }),
       tx.xpLedger.deleteMany({ where: { userId } }),
       tx.leagueMembership.deleteMany({ where: { userId } }),
@@ -179,6 +190,7 @@ export async function resetProgress(
       badgesCleared: badgesCleared.count,
       certificatesCleared: certificatesCleared.count,
       reviewSchedulesCleared: reviewSchedulesCleared.count,
+      reviewCardsCleared: reviewCardsCleared.count,
       activityDaysCleared: activityDaysCleared.count,
       cosmeticsCleared: cosmeticsCleared.count,
     };

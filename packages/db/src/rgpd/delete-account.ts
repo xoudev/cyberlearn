@@ -35,7 +35,8 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *
  * Hard-deleted by Prisma cascade: profile, preferences, placement test, lesson
  * and path and challenge progress, hint reveals, badges, review schedule,
- * notifications, skip waivers, deletion tokens, class memberships.
+ * review cards and sessions, notifications, skip waivers, deletion tokens,
+ * class memberships.
  */
 
 const CERTIFICATE_BUCKET = "certificates";

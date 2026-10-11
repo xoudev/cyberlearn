@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computeLevel } from "@cyberlearn/lib";
 
 const LESSON_ID = "11111111-1111-4111-8111-111111111111";
@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   findUserBadgeIds: vi.fn(),
   findCriterionFacts: vi.fn(),
   findQuizAnswers: vi.fn(),
+  enqueueCards: vi.fn<(...args: unknown[]) => Promise<number>>(() => Promise.resolve(0)),
   transaction: vi.fn(),
   tx: {
     userLessonProgress: { updateMany: vi.fn(), createMany: vi.fn() },
@@ -51,6 +52,7 @@ vi.mock("@cyberlearn/db", () => ({
   },
   userRepository: { findForGamification: m.findForGamification },
   lessonQuizRepository: { findForLesson: m.findQuizAnswers },
+  reviewCardRepository: { enqueueForLesson: m.enqueueCards },
 }));
 
 import { completeLesson } from "../track-progress";
@@ -323,5 +325,88 @@ describe("completeLesson - the quiz score", () => {
       quizCorrect: null,
       quizTotal: null,
     });
+  });
+});
+
+describe("completeLesson - the review cards", () => {
+  const QUIZZES = [
+    '<Quiz id="q-1" question="?" options={["a", "b"]} correct={0} />',
+    '<Quiz id="q-2" question="?" options={["a", "b"]} correct={1} />',
+    '<Quiz id="q-3" question="?" options={["a", "b"]} correct={1} />',
+    '<Quiz id="q-4" question="?" options={["a", "b"]} correct={1} />',
+  ].join("\n\n");
+  // 10:00 in Paris: the next day is the 12th, a week later the 18th.
+  const NOW = new Date("2026-10-11T08:00:00Z");
+
+  function lesson(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      xpReward: 20,
+      slug: "linux-permissions",
+      title: "Les permissions",
+      audience: "CATALOGUE",
+      category: "DEV",
+      contentMdx: `## Section\n\n${QUIZZES}`,
+      ...overrides,
+    };
+  }
+
+  /** The cards handed to the repository, over every call. */
+  function enqueued(): unknown[] {
+    return m.enqueueCards.mock.calls.flatMap((call) => call[2]);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    m.lessonFindUnique.mockResolvedValue(lesson());
+    m.findQuizAnswers.mockResolvedValue([
+      { quizId: "q-1", selected: 0, correct: true },
+      { quizId: "q-2", selected: 0, correct: false },
+      { quizId: "q-3", selected: 1, correct: true },
+      // q-4 was never answered, and q-old is gone from the lesson.
+      { quizId: "q-old", selected: 0, correct: false },
+    ]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("enqueues the questions missed and the last one right, in the completion's transaction", async () => {
+    await completeLesson(LESSON_ID);
+    expect(m.enqueueCards).toHaveBeenCalledTimes(1);
+    expect(m.enqueueCards).toHaveBeenCalledWith(
+      "u1",
+      LESSON_ID,
+      [
+        { quizId: "q-2", box: 1, dueAt: new Date("2026-10-12T00:00:00Z") },
+        { quizId: "q-3", box: 3, dueAt: new Date("2026-10-18T00:00:00Z") },
+      ],
+      m.tx,
+    );
+  });
+
+  it("enqueues nothing when the learner has switched revisions off", async () => {
+    m.preferencesFindUnique.mockResolvedValueOnce({ spacedRepetition: false });
+    await completeLesson(LESSON_ID);
+    expect(enqueued()).toEqual([]);
+  });
+
+  it("enqueues nothing for a lesson completed already", async () => {
+    m.findProgress.mockResolvedValue({ status: "COMPLETED" });
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 0 });
+    await completeLesson(LESSON_ID);
+    expect(m.enqueueCards).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a module review", { slug: "linux-bilan-module-1", title: "Bilan du module 1 : ton shell" }],
+    ["a project", { slug: "fondamentaux-le-rendu", title: "Projet final : le rendu" }],
+    ["a class lesson", { audience: "CLASS" }],
+  ])("enqueues nothing for %s", async (_label, overrides) => {
+    m.lessonFindUnique.mockResolvedValue(lesson(overrides));
+    await completeLesson(LESSON_ID);
+    expect(enqueued()).toEqual([]);
   });
 });
