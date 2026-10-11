@@ -145,10 +145,10 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                 color: "transparent",
               }}
             >
-              missions
+              {total > 1 ? "missions" : "mission"}
             </em>
             <br />
-            disponibles
+            {total > 1 ? "disponibles" : "disponible"}
           </h1>
           <p
             style={{
