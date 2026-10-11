@@ -6,7 +6,7 @@ const m = vi.hoisted(() => ({
   findTopUsers: vi.fn<(n: number, u: string) => Promise<unknown[]>>(),
   findTopUsersSince: vi.fn<(start: Date, n: number, u: string) => Promise<unknown>>(),
   countRanked: vi.fn<() => Promise<number>>(),
-  findUserRank: vi.fn<(u: string) => Promise<number>>(),
+  findCurrentUserPosition: vi.fn<(u: string) => Promise<{ rank: number | null } | null>>(),
   findFriendsBoard: vi.fn<(u: string, since: Date | null) => Promise<unknown>>(),
   getActiveSeason: vi.fn<() => Promise<unknown>>(),
   getUserMembership: vi.fn<(u: string, s: string) => Promise<unknown>>(),
@@ -19,7 +19,7 @@ vi.mock("@cyberlearn/db", () => ({
     findTopUsers: m.findTopUsers,
     findTopUsersSince: m.findTopUsersSince,
     countRanked: m.countRanked,
-    findUserRank: m.findUserRank,
+    findCurrentUserPosition: m.findCurrentUserPosition,
     findFriendsBoard: m.findFriendsBoard,
   },
   leagueRepository: {
@@ -47,7 +47,7 @@ beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
   m.userFromBearer.mockResolvedValue({ id: "user-1", email: null });
   m.findTopUsers.mockResolvedValue([]);
-  m.findUserRank.mockResolvedValue(7);
+  m.findCurrentUserPosition.mockResolvedValue({ rank: 7 });
   m.countRanked.mockResolvedValue(1234);
   m.findFriendsBoard.mockResolvedValue(board);
   m.getActiveSeason.mockResolvedValue(null);
@@ -79,6 +79,22 @@ describe("GET /api/mobile/leaderboard", () => {
       periodSince: null,
       totalPlayers: 1234,
     });
+  });
+
+  it("leaves a hidden reader out of the count they are told, never '341e sur 340'", async () => {
+    // findCurrentUserPosition's null rank: hidden, or not ranked at all. The
+    // count leaves them out, so their place on it has to as well.
+    m.findCurrentUserPosition.mockResolvedValue({ rank: null });
+    m.countRanked.mockResolvedValue(340);
+    const body = (await (await GET(request())).json()) as Record<string, unknown>;
+    expect(m.findCurrentUserPosition).toHaveBeenCalledWith("user-1");
+    expect(body).toMatchObject({ userRank: 0, totalPlayers: 340 });
+  });
+
+  it("reads 0 for a reader the repository does not find", async () => {
+    m.findCurrentUserPosition.mockResolvedValue(null);
+    const body = (await (await GET(request())).json()) as Record<string, unknown>;
+    expect(body).toMatchObject({ userRank: 0 });
   });
 
   it("serves the week from Monday, Paris time, in the same fields", async () => {

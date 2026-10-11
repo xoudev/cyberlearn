@@ -974,15 +974,22 @@ export function usePreferences(userId: string | undefined) {
   });
 }
 
+/** What a switch says when its write did not go through: the site's toast, word for word. */
+export const PREFERENCE_NOT_SAVED =
+  "Enregistrement impossible pour l'instant. Réessaie dans un moment.";
+
 export async function updatePreference(
   userId: string,
   key: PreferenceSwitch,
   value: boolean,
 ): Promise<void> {
-  // prefs_self_all RLS: upsert covers users without a row yet.
-  await supabase
+  // prefs_self_all RLS: upsert covers users without a row yet. A refused
+  // write throws, so a switch can say it was not saved instead of resolving
+  // as if it had been.
+  const { error } = await supabase
     .from("user_preferences")
     .upsert({ userId, [key]: value }, { onConflict: "userId" });
+  if (error) throw new Error(error.message);
 }
 
 /** The public board's visibility; the column is an enum, so the database refuses anything else. */

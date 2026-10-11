@@ -1,6 +1,7 @@
 import {
   LEADERBOARD_PERIODS,
   LEADERBOARD_PERIOD_LABEL,
+  isLeaderboardPeriod,
   type LeaderboardPeriod,
 } from "@cyberlearn/lib/gamification/leaderboard-period";
 
@@ -36,4 +37,34 @@ export function emptyBoardLabel(period: LeaderboardPeriod): string {
   return period === "all"
     ? "Aucun joueur dans le classement pour le moment."
     : "Personne n'a encore gagné d'XP sur cette période.";
+}
+
+/**
+ * The period an answer is for, as the server says it. A server older than the
+ * periods sends none, and it ignored the one asked for too: its answer is the
+ * all-time board.
+ */
+export function answeredPeriod(value: unknown): LeaderboardPeriod {
+  return isLeaderboardPeriod(value) ? value : "all";
+}
+
+/** The podium's places. */
+const PODIUM_PLACES = 3;
+/** Where the top list stops, counted from the first row. */
+const TOP_LIST_END = 25;
+
+/** A podium needs three players to stand on it. */
+export function hasPodium(entries: readonly unknown[]): boolean {
+  return entries.length >= PODIUM_PLACES;
+}
+
+/**
+ * The rows the top list draws: whatever the podium has not taken. With one or
+ * two players there is no podium, and the list is the only place they appear,
+ * which is a normal Monday on "Cette semaine" and a normal 1st on "Ce mois".
+ */
+export function topListRows<T>(entries: readonly T[]): T[] {
+  return hasPodium(entries)
+    ? entries.slice(PODIUM_PLACES, TOP_LIST_END)
+    : entries.slice(0, TOP_LIST_END);
 }

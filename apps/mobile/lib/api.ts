@@ -23,7 +23,7 @@ import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
-import { leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
+import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
 import type { QaQuestion } from "@/lib/lesson-qa";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
@@ -592,6 +592,12 @@ export interface LeaderboardData {
   periodSince: string | null;
   /** Everybody the board ranks, where `entries` stops at its first rows. */
   totalPlayers: number | null;
+  /**
+   * The period these rows are for, as the server answered it. The screen
+   * words the board from this rather than from the chip just tapped: while
+   * the next period loads, the rows on screen are still the previous one's.
+   */
+  period: LeaderboardPeriod;
 }
 
 export interface FriendsBoard {
@@ -605,8 +611,8 @@ export async function fetchLeaderboard(
 ): Promise<LeaderboardData> {
   const res = await authedFetch(leaderboardPath(period));
   const body = (await res.json()) as
-    | ({ ok: true } & Omit<LeaderboardData, "periodSince" | "totalPlayers"> &
-        Partial<Pick<LeaderboardData, "periodSince" | "totalPlayers">>)
+    | ({ ok: true } & Omit<LeaderboardData, "periodSince" | "totalPlayers" | "period"> &
+        Partial<Pick<LeaderboardData, "periodSince" | "totalPlayers">> & { period?: unknown })
     | { ok: false };
   if (!body.ok) throw new Error("Chargement impossible");
   return {
@@ -616,6 +622,7 @@ export async function fetchLeaderboard(
     friendsBoard: body.friendsBoard,
     periodSince: body.periodSince ?? null,
     totalPlayers: body.totalPlayers ?? null,
+    period: answeredPeriod(body.period),
   };
 }
 

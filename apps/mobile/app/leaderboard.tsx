@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Pressable, Switch, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Switch, View, type ViewStyle } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";
 import { FriendMark } from "@/components/friends";
@@ -18,10 +18,12 @@ import { boardName, friendsBoardNotice, friendsCountLabel, showsFriendMark } fro
 import {
   PERIOD_CHIPS,
   emptyBoardLabel,
+  hasPodium,
   topListEyebrow,
+  topListRows,
   type LeaderboardPeriod,
 } from "@/lib/leaderboard";
-import { updatePreference } from "@/lib/queries";
+import { PREFERENCE_NOT_SAVED, updatePreference } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const DIVISION_LABEL: Record<string, string> = {
@@ -61,6 +63,9 @@ const BOARDS = [
 ] as const;
 type Board = (typeof BOARDS)[number]["id"];
 
+/** The previous period's board, still on screen while the next one loads. */
+const STALE_STYLE: ViewStyle = { opacity: 0.45 };
+
 export default function Leaderboard(): React.JSX.Element {
   const queryClient = useQueryClient();
   const { session } = useSession();
@@ -69,10 +74,11 @@ export default function Leaderboard(): React.JSX.Element {
   // The site's periods, for both boards: the server reads them from the
   // ledger, Monday and the 1st in Paris time.
   const [period, setPeriod] = useState<LeaderboardPeriod>("all");
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isPlaceholderData, error, refetch } = useQuery({
     queryKey: ["leaderboard", period],
     queryFn: () => fetchLeaderboard(period),
-    // The board stays on screen while the next period loads.
+    // The board stays on screen while the next period loads, dimmed and
+    // worded by the period it really is (data.period) until the new one comes.
     placeholderData: keepPreviousData,
   });
   const [listing, setListing] = useState(false);
@@ -80,7 +86,9 @@ export default function Leaderboard(): React.JSX.Element {
   /**
    * "Visible par mes amis", from the friends tab: the same switch as in the
    * settings, written the same way (prefs_self_all RLS), where an empty
-   * friends board is the moment the question makes sense.
+   * friends board is the moment the question makes sense. A write that did
+   * not go through is said, in the site's words; the switch stays where the
+   * board says the reader is.
    */
   async function setListed(value: boolean): Promise<void> {
     if (!userId) return;
@@ -91,6 +99,8 @@ export default function Leaderboard(): React.JSX.Element {
         queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
         queryClient.invalidateQueries({ queryKey: ["preferences", userId] }),
       ]);
+    } catch {
+      Alert.alert(PREFERENCE_NOT_SAVED);
     } finally {
       setListing(false);
     }
@@ -100,6 +110,7 @@ export default function Leaderboard(): React.JSX.Element {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+  const topRows = data ? topListRows(data.entries) : [];
 
   return (
     <Screen>
@@ -114,93 +125,109 @@ export default function Leaderboard(): React.JSX.Element {
       ) : (
         <View style={{ gap: 24 }}>
           {/* My position */}
-          <MyRankCard data={data} period={period} />
+          <View style={isPlaceholderData ? STALE_STYLE : null}>
+            <MyRankCard data={data} />
+          </View>
 
           <BoardSwitch value={board} onChange={setBoard} />
-          <PeriodSwitch value={period} onChange={setPeriod} since={data.periodSince} />
+          <PeriodSwitch
+            value={period}
+            onChange={setPeriod}
+            since={data.periodSince}
+            loading={isPlaceholderData}
+          />
 
-          {board === "friends" ? (
-            <FriendsSection
-              board={data.friendsBoard}
-              listing={listing}
-              onSetListed={(value) => void setListed(value)}
-            />
-          ) : null}
-
-          {/* Podium top 3 */}
-          {board === "global" && data.entries.length >= 3 ? (
-            <Podium entries={data.entries.slice(0, 3)} />
-          ) : null}
-
-          {/* League pod */}
-          {board === "global" && data.league ? (
-            <View>
-              <SectionLabel
-                eyebrow="Saison en cours"
-                title={`Division ${DIVISION_LABEL[data.league.division] ?? data.league.division}`}
-                right={
-                  <Text variant="micro" style={{ color: colors.warning }}>
-                    Fin · {countdown(data.league.seasonEndsAt, now)}
-                  </Text>
-                }
+          {/* Everything under the switches belongs to data.period: while the
+              chip just tapped loads, it is the previous period's, dimmed. */}
+          <View
+            accessibilityState={{ busy: isPlaceholderData }}
+            style={[{ gap: 24 }, isPlaceholderData ? STALE_STYLE : null]}
+          >
+            {board === "friends" ? (
+              <FriendsSection
+                board={data.friendsBoard}
+                listing={listing}
+                onSetListed={(value) => void setListed(value)}
               />
-              <View
-                style={{
-                  borderTopWidth: 2,
-                  borderTopColor: divisionColor(data.league.division),
-                }}
-              >
-                <Card style={{ padding: 0 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.borderSubtle,
-                    }}
-                  >
-                    <Text variant="micro" style={{ color: divisionColor(data.league.division) }}>
-                      ◆ Poule de {data.league.ladder.length}
-                    </Text>
-                    <Text variant="micro">XP de saison</Text>
-                  </View>
-                  {data.league.ladder.map((m: PodEntry, i) => (
-                    <LadderRow
-                      key={`${String(m.rank)}-${m.username ?? String(i)}`}
-                      member={m}
-                      index={i}
-                    />
-                  ))}
-                </Card>
-              </View>
-              <View style={{ flexDirection: "row", gap: 14, marginTop: 8 }}>
-                <Text variant="micro" style={{ color: colors.promote }}>
-                  ▲ Zone de promotion
-                </Text>
-                <Text variant="micro" style={{ color: colors.relegate }}>
-                  ▼ Zone de relégation
-                </Text>
-              </View>
-            </View>
-          ) : null}
+            ) : null}
 
-          {/* Global top */}
-          {board === "global" ? (
-            <View>
-              <SectionLabel eyebrow={topListEyebrow(period)} title="Top classement" />
-              {data.entries.length === 0 ? (
-                <Text variant="bodySm">{emptyBoardLabel(period)}</Text>
-              ) : (
-                <Card style={{ padding: 0 }}>
-                  {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
-                    <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
-                  ))}
-                </Card>
-              )}
-            </View>
-          ) : null}
+            {/* Podium top 3 */}
+            {board === "global" && hasPodium(data.entries) ? (
+              <Podium entries={data.entries.slice(0, 3)} />
+            ) : null}
+
+            {/* League pod */}
+            {board === "global" && data.league ? (
+              <View>
+                <SectionLabel
+                  eyebrow="Saison en cours"
+                  title={`Division ${DIVISION_LABEL[data.league.division] ?? data.league.division}`}
+                  right={
+                    <Text variant="micro" style={{ color: colors.warning }}>
+                      Fin · {countdown(data.league.seasonEndsAt, now)}
+                    </Text>
+                  }
+                />
+                <View
+                  style={{
+                    borderTopWidth: 2,
+                    borderTopColor: divisionColor(data.league.division),
+                  }}
+                >
+                  <Card style={{ padding: 0 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.borderSubtle,
+                      }}
+                    >
+                      <Text variant="micro" style={{ color: divisionColor(data.league.division) }}>
+                        ◆ Poule de {data.league.ladder.length}
+                      </Text>
+                      <Text variant="micro">XP de saison</Text>
+                    </View>
+                    {data.league.ladder.map((m: PodEntry, i) => (
+                      <LadderRow
+                        key={`${String(m.rank)}-${m.username ?? String(i)}`}
+                        member={m}
+                        index={i}
+                      />
+                    ))}
+                  </Card>
+                </View>
+                <View style={{ flexDirection: "row", gap: 14, marginTop: 8 }}>
+                  <Text variant="micro" style={{ color: colors.promote }}>
+                    ▲ Zone de promotion
+                  </Text>
+                  <Text variant="micro" style={{ color: colors.relegate }}>
+                    ▼ Zone de relégation
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Global top: the rows the podium has not taken, all of them
+                when there is no podium. Exactly three players fill the podium
+                and leave the list nothing to say. */}
+            {board === "global" && (data.entries.length === 0 || topRows.length > 0) ? (
+              <View>
+                <SectionLabel eyebrow={topListEyebrow(data.period)} title="Top classement" />
+                {data.entries.length === 0 ? (
+                  <Text variant="bodySm">{emptyBoardLabel(data.period)}</Text>
+                ) : (
+                  <Card style={{ padding: 0 }}>
+                    {topRows.map((e: LeaderboardEntry, i) => (
+                      <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
+                    ))}
+                  </Card>
+                )}
+              </View>
+            ) : null}
+          </View>
         </View>
       )}
     </Screen>
@@ -218,15 +245,15 @@ const UNRANKED_DETAIL: Record<LeaderboardPeriod, string> = {
 
 function MyRankCard({
   data,
-  period,
 }: {
+  /** One answer, period included: the place and the words always agree. */
   data: {
     userRank: number;
     entries: LeaderboardEntry[];
     league: { division: string } | null;
     totalPlayers: number | null;
+    period: LeaderboardPeriod;
   };
-  period: LeaderboardPeriod;
 }): React.JSX.Element {
   const me = data.entries.find((e) => e.isCurrentUser) ?? null;
   // 0 is the server's "not ranked": the same words as the site's leaderboard
@@ -236,7 +263,7 @@ function MyRankCard({
       <Card style={{ gap: 4, paddingVertical: 18 }}>
         <Text variant="h3">Tu n&apos;apparais pas dans ce classement</Text>
         <Text variant="bodySm">
-          {UNRANKED_DETAIL[period]} Un compte de l&apos;équipe ou un profil masqué dans les
+          {UNRANKED_DETAIL[data.period]} Un compte de l&apos;équipe ou un profil masqué dans les
           paramètres n&apos;y figure pas.
         </Text>
       </Card>
@@ -527,16 +554,21 @@ function ProfileLink({
 
 /**
  * The period, under the board switch: all time, this month, this week. The
- * line under the chips says since when a period counts, in the server's words.
+ * line under the chips says since when a period counts, in the server's words;
+ * while the chip just tapped loads, it says that instead, since the "since"
+ * on hand is still the previous period's.
  */
 function PeriodSwitch({
   value,
   onChange,
   since,
+  loading,
 }: {
   value: LeaderboardPeriod;
   onChange: (period: LeaderboardPeriod) => void;
   since: string | null;
+  /** The board on screen is the previous period's: `value` is on its way. */
+  loading: boolean;
 }): React.JSX.Element {
   return (
     <View style={{ gap: 6, marginTop: -12 }}>
@@ -570,7 +602,17 @@ function PeriodSwitch({
           );
         })}
       </View>
-      {since !== null ? (
+      {loading ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+        >
+          <ActivityIndicator color={colors.accent} size="small" />
+          <Text variant="micro" style={{ color: colors.textMuted }}>
+            Chargement du classement…
+          </Text>
+        </View>
+      ) : since !== null ? (
         <Text variant="micro" style={{ color: colors.textMuted }}>
           {since}
         </Text>

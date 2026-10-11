@@ -94,20 +94,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * The public board for all time or since `start`. `userRank` keeps the
- * route's old meaning, 0 for "not on the board": findUserRank's on the
- * all-time board, the period's own place otherwise.
+ * route's old meaning, 0 for "not on the board", and is the reader's place on
+ * the board that `totalPlayers` counts.
+ *
+ * On the all-time board it comes from findCurrentUserPosition, as on the
+ * site, rather than from findUserRank: that one still ranks a hidden student
+ * (it feeds their private dashboard), while countRanked leaves them out, so
+ * the app printed "341e sur 340". A hidden reader now reads the same answer
+ * in all three periods, on the site and in every build: not on the board.
  */
 async function publicBoard(
   userId: string,
   start: Date | null,
 ): Promise<{ entries: LeaderboardEntry[]; userRank: number; totalPlayers: number }> {
   if (start === null) {
-    const [entries, userRank, totalPlayers] = await Promise.all([
+    const [entries, position, totalPlayers] = await Promise.all([
       leaderboardRepository.findTopUsers(APP_ROWS, userId),
-      leaderboardRepository.findUserRank(userId),
+      leaderboardRepository.findCurrentUserPosition(userId),
       leaderboardRepository.countRanked(),
     ]);
-    return { entries, userRank, totalPlayers };
+    return { entries, userRank: position?.rank ?? 0, totalPlayers };
   }
   const board = await leaderboardRepository.findTopUsersSince(start, APP_ROWS, userId);
   return {

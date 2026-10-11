@@ -137,7 +137,16 @@ describe("TournamentBoard", () => {
     );
     const players = screen.getByLabelText("Les joueurs");
     expect(within(players).getAllByRole("img", { name: "Ami" })).toHaveLength(1);
-    expect(within(players).getByText("Alex").parentElement?.textContent).toContain("Alex");
+    // The one mark is on Alex's row, and on neither the anonymous one nor the
+    // reader's own.
+    const rowOf = (name: string): HTMLElement => {
+      const row = within(players).getByText(name).closest("li");
+      if (row === null) throw new Error(`No row for ${name}`);
+      return row;
+    };
+    expect(within(rowOf("Alex")).getByRole("img", { name: "Ami" })).toBeTruthy();
+    expect(within(rowOf("Anonyme")).queryByRole("img", { name: "Ami" })).toBeNull();
+    expect(within(rowOf("Moi")).queryByRole("img", { name: "Ami" })).toBeNull();
   });
 
   it("keeps the teams' ranking in sight beside the challenges as the page scrolls", () => {

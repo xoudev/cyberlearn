@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import type { ForumAuthor, ForumTopicSummary } from "@cyberlearn/db";
 import { AvatarView } from "@/components/avatar-view";
+import { FriendMark } from "@/components/friend-mark";
 import { forumAuthorName } from "@/lib/forum/author-name";
 
 /** Shared pieces of the forum's chrome, so four pages cannot drift apart. */
@@ -82,6 +83,14 @@ export function authorName(author: ForumAuthor | null): string {
 }
 
 /**
+ * Whether the author is one of the reader's friends. A forum author is always
+ * signed, so the mark gives nothing away; an erased author is nobody's friend.
+ */
+export function authorIsFriend(author: ForumAuthor | null, friends: ReadonlySet<string>): boolean {
+  return author !== null && friends.has(author.id);
+}
+
+/**
  * The poster's avatar, or their initials.
  *
  * avatarUrl is a stored value, not a URL. This put it straight into an
@@ -123,10 +132,13 @@ export function formatDate(value: Date | string): string {
 export function TopicRow({
   topic,
   showCategory = true,
+  isFriend = false,
 }: {
   topic: ForumTopicSummary;
   /** Off inside a section, where naming it on every row says nothing. */
   showCategory?: boolean;
+  /** The topic's author is one of the reader's friends (authorIsFriend). */
+  isFriend?: boolean;
 }): React.JSX.Element {
   return (
     <li>
@@ -144,7 +156,8 @@ export function TopicRow({
           <p className="fo-topic-preview">{topic.preview}</p>
           <div className="fo-topic-meta">
             {showCategory && <>{topic.categoryName} · </>}
-            ouvert par {authorName(topic.author)} · dernier message {formatDate(topic.lastPostAt)}
+            ouvert par {authorName(topic.author)}
+            {isFriend && <FriendMark size={12} />} · dernier message {formatDate(topic.lastPostAt)}
           </div>
         </span>
         <span className="fo-topic-count">

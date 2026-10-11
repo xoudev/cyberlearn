@@ -142,7 +142,9 @@ export const leaderboardRepository = {
    * The sums are taken in SQL, one row per player active in the period, and
    * the whole list is read: the count and the reader's place are both
    * answered from it, where a cut list could answer neither. The people
-   * behind the rows are then read for the first `limit` only.
+   * behind the rows are then read for the first `limit` only. The range on
+   * createdAt, across every user, is what the ledger's (createdAt, userId)
+   * index is for; the (userId, createdAt) one cannot serve it.
    */
   async findTopUsersSince(start: Date, limit: number, currentUserId: string): Promise<PeriodBoard> {
     const [sums, friendIds] = await Promise.all([

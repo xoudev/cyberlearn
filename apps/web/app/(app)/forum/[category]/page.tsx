@@ -2,9 +2,9 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TOPICS_PER_PAGE, forumRepository } from "@cyberlearn/db";
+import { TOPICS_PER_PAGE, forumRepository, friendshipRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { Crumbs, ForumHeader, TopicRow } from "../_components/forum-bits";
+import { Crumbs, ForumHeader, TopicRow, authorIsFriend } from "../_components/forum-bits";
 import "../forum.css";
 import { EmptyState } from "@/components/empty-state";
 
@@ -31,7 +31,11 @@ export default async function ForumCategoryPage({
   const { page } = await searchParams;
   const current = Math.max(1, Number.parseInt(page ?? "1", 10) || 1);
 
-  const data = await forumRepository.listTopics(category, user.id, current);
+  const [data, friends] = await Promise.all([
+    forumRepository.listTopics(category, user.id, current),
+    // The reader's friends, for the mark beside a topic's author.
+    friendshipRepository.friendIds(user.id),
+  ]);
   if (!data) notFound();
 
   const pages = Math.max(1, Math.ceil(data.total / TOPICS_PER_PAGE));
@@ -56,7 +60,12 @@ export default async function ForumCategoryPage({
       ) : (
         <ul className="fo-list">
           {data.topics.map((t) => (
-            <TopicRow key={t.id} topic={t} showCategory={false} />
+            <TopicRow
+              key={t.id}
+              topic={t}
+              showCategory={false}
+              isFriend={authorIsFriend(t.author, friends)}
+            />
           ))}
         </ul>
       )}

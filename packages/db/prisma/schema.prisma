@@ -1791,6 +1791,10 @@ model XpLedger {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  // The week's and the month's boards read every player's rows since a date
+  // (leaderboardRepository.findTopUsersSince): a range on createdAt across all
+  // users, which the index above, led by userId, cannot serve.
+  @@index([createdAt, userId])
   @@map("xp_ledger")
 }
 
