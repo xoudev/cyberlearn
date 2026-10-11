@@ -1,11 +1,12 @@
 "use client";
 
 import { Pills } from "@/components/pills";
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import type { BadgeGroup } from "@/lib/badges/collection";
 import { Crumb } from "@/components/crumb";
 import { BadgeCard, rarityChrome } from "@/components/badge-card";
 import { ProgressBar } from "@/components/progress-bar";
+import { useSlashFocus } from "@/hooks/use-slash-focus";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 // BadgeGroup and SerializedBadge come from the service that builds the
@@ -102,6 +103,8 @@ export function BadgesCollection({
 }: Props): React.JSX.Element {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSlashFocus(searchRef);
 
   const pct = totalCount > 0 ? (earnedCount / totalCount) * 100 : 0;
 
@@ -307,12 +310,15 @@ export function BadgesCollection({
             <path d="M11 11 L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <input
+            ref={searchRef}
             type="text"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
             }}
             placeholder="/ chercher un badge..."
+            aria-label="Chercher un badge"
+            aria-keyshortcuts="/"
             style={{
               width: "100%",
               height: "100%",

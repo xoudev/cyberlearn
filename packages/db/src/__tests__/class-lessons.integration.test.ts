@@ -15,7 +15,11 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
 import { classRepository } from "../repositories/class.repository.js";
-import { CATALOGUE_LESSON, lessonRepository } from "../repositories/lesson.repository.js";
+import {
+  CATALOGUE_LESSON,
+  type CatalogueFilters,
+  lessonRepository,
+} from "../repositories/lesson.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 
@@ -204,6 +208,33 @@ describe("class lessons (integration, real DB)", () => {
       const forStudent = await lessonRepository.countByCategory(student);
       const forOutsider = await lessonRepository.countByCategory(outsider);
       expect((forStudent["CYBERSEC"] ?? 0) - (forOutsider["CYBERSEC"] ?? 0)).toBe(1);
+    });
+
+    it("stays out of a search from outside the class", async () => {
+      if (!configured) return;
+      // Both titles carry the suffix. The search and the visibility rule are
+      // both an OR; merged into one object, the search's replaced the other.
+      const { lessons } = await lessonRepository.findManyWithProgress(outsider, {
+        search: suffix,
+        paginate: false,
+      });
+      const slugs = lessons.map((l) => l.slug);
+      expect(slugs).toContain(`catalogue-${suffix}`);
+      expect(slugs).not.toContain(classLessonSlug);
+    });
+
+    it("counts under the same search as the list beside the badges", async () => {
+      if (!configured) return;
+      const filters = { search: suffix, difficulty: "BEGINNER" } satisfies CatalogueFilters;
+      const forStudent = await lessonRepository.countByCategory(student, filters);
+      const forOutsider = await lessonRepository.countByCategory(outsider, filters);
+      expect(forStudent["CYBERSEC"]).toBe(2);
+      expect(forOutsider["CYBERSEC"]).toBe(1);
+      const listed = await lessonRepository.findManyWithProgress(student, {
+        ...filters,
+        paginate: false,
+      });
+      expect(listed.total).toBe(2);
     });
 
     it("is excluded from the platform's own figures", async () => {

@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 import { LessonCard } from "@cyberlearn/ui";
-import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
+import type { Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements } from "@/lib/lessons/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { availableFirst } from "@/lib/lessons/catalog-order";
+import { catalogHref, parseCatalogFilters, type RawParams } from "@/lib/lessons/catalog-filters";
+import { CatalogFilterSelect } from "./_components/catalog-filter-select";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
 import { Crumb } from "@/components/crumb";
@@ -25,8 +27,9 @@ const CATEGORIES = [
   { value: "NETWORK" as const, label: "RÉSEAU", dot: "var(--color-brand-turquoise)" },
 ];
 
+// "ALL" is the option that clears the filter; the control reads it as "none".
 const DIFFICULTIES: { value: Difficulty | "ALL"; label: string }[] = [
-  { value: "ALL", label: "NIVEAU · TOUS" },
+  { value: "ALL", label: "TOUS" },
   { value: "BEGINNER", label: "DÉBUTANT" },
   { value: "INTERMEDIATE", label: "INTERMÉDIAIRE" },
   { value: "ADVANCED", label: "AVANCÉ" },
@@ -34,37 +37,13 @@ const DIFFICULTIES: { value: Difficulty | "ALL"; label: string }[] = [
 ];
 
 const STATUSES: { value: ProgressStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "STATUT · TOUS" },
-  { value: "NOT_STARTED", label: "NON COMMENCÉS" },
+  { value: "ALL", label: "TOUS" },
+  { value: "NOT_STARTED", label: "NON COMMENCÉES" },
   { value: "IN_PROGRESS", label: "EN COURS" },
-  { value: "COMPLETED", label: "TERMINÉS" },
+  { value: "COMPLETED", label: "TERMINÉES" },
 ];
 
 const PAGE_SIZE = 9;
-
-// ── URL helpers ────────────────────────────────────────────────────────────────
-
-type RawParams = Record<string, string | string[] | undefined>;
-
-function str(params: RawParams, key: string): string | undefined {
-  const v = params[key];
-  return Array.isArray(v) ? v[0] : v;
-}
-
-function buildUrl(params: RawParams, updates: Record<string, string | null>): string {
-  const next = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    const val = Array.isArray(v) ? v[0] : v;
-    if (val !== undefined) next.set(k, val);
-  }
-  for (const [k, v] of Object.entries(updates)) {
-    if (v === null) next.delete(k);
-    else next.set(k, v);
-    if (k !== "page") next.delete("page");
-  }
-  const qs = next.toString();
-  return `/lessons${qs ? `?${qs}` : ""}`;
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -88,29 +67,28 @@ export default async function LessonsPage({
 }
 
 async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement> {
-  const rawCategory = str(p, "category");
-  const rawDifficulty = str(p, "difficulty");
-  const rawStatus = str(p, "status");
-  const rawSearch = str(p, "q") ?? "";
-  const rawPage = parseInt(str(p, "page") ?? "1", 10);
-  const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
-
-  const activeCategory = rawCategory as Category | undefined;
-  const activeDifficulty = rawDifficulty as Difficulty | undefined;
-  const activeStatus = rawStatus as ProgressStatus | undefined;
+  const filters = parseCatalogFilters(p);
+  const { category: activeCategory, page } = filters;
+  // The filters every count shares. The category is not among them: each
+  // pill counts its own.
+  const shared = {
+    difficulty: filters.difficulty,
+    progressStatus: filters.status,
+    search: filters.q,
+  };
 
   const authUser = await requireRequestUser();
 
   const [{ total, lessons: matchingLessons }, categoryCounts] = await Promise.all([
     lessonRepository.findManyWithProgress(authUser.id, {
-      ...(activeCategory !== undefined ? { category: activeCategory } : {}),
-      ...(activeDifficulty !== undefined ? { difficulty: activeDifficulty } : {}),
-      ...(activeStatus !== undefined ? { progressStatus: activeStatus } : {}),
-      ...(rawSearch.length > 0 ? { search: rawSearch } : {}),
+      ...shared,
+      category: activeCategory,
       paginate: false,
     }),
-    lessonRepository.countByCategory(authUser.id),
+    lessonRepository.countByCategory(authUser.id, shared),
   ]);
+  // What "TOUS" would list: every category, under the same filters.
+  const allCount = Object.values(categoryCounts).reduce((sum, n) => sum + n, 0);
 
   // Resolve availability across the matching catalogue before paginating.
   // Sign cover URLs only for the cards on the resulting page.
@@ -213,18 +191,6 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               terminées
             </span>
           </div>
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              gap: 18,
-              color: "var(--color-text-muted)",
-            }}
-          >
-            <span>TRIER · ACCESSIBLES D’ABORD</span>
-            <span style={{ color: "var(--color-border-default)" }}>/</span>
-            <span>VUE · GRILLE</span>
-          </div>
         </div>
       </div>
 
@@ -244,11 +210,11 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
           {CATEGORIES.map((c) => {
             const isActive =
               c.value === "ALL" ? activeCategory === undefined : activeCategory === c.value;
-            const count = c.value !== "ALL" ? (categoryCounts[c.value] ?? 0) : total;
+            const count = c.value !== "ALL" ? (categoryCounts[c.value] ?? 0) : allCount;
             return (
               <CategoryPill
                 key={c.value}
-                href={buildUrl(p, { category: c.value === "ALL" ? null : c.value })}
+                href={catalogHref(filters, { category: c.value === "ALL" ? null : c.value })}
                 active={isActive}
                 dot={c.dot}
                 count={count}
@@ -259,14 +225,26 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
           })}
         </div>
 
-        {/* Difficulty select (link-based) */}
-        <DifficultySelect params={p} active={activeDifficulty} />
+        <CatalogFilterSelect
+          label="Niveau"
+          value={filters.difficulty ?? "ALL"}
+          options={DIFFICULTIES.map((d) => ({
+            ...d,
+            href: catalogHref(filters, { difficulty: d.value === "ALL" ? null : d.value }),
+          }))}
+        />
 
-        {/* Status select (link-based) */}
-        <StatusSelect params={p} active={activeStatus} />
+        <CatalogFilterSelect
+          label="Statut"
+          value={filters.status ?? "ALL"}
+          options={STATUSES.map((s) => ({
+            ...s,
+            href: catalogHref(filters, { status: s.value === "ALL" ? null : s.value }),
+          }))}
+        />
 
         {/* Search */}
-        <LessonsSearchBar initialQuery={rawSearch} />
+        <LessonsSearchBar />
       </div>
 
       {/* ── Grid ─────────────────────────────────────────────────────────── */}
@@ -365,7 +343,9 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             sur <b style={{ color: "var(--color-text-primary)" }}>{total}</b>
           </span>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {page > 1 && <PageBtn href={buildUrl(p, { page: String(page - 1) })}>← PRÉC</PageBtn>}
+            {page > 1 && (
+              <PageBtn href={catalogHref(filters, { page: String(page - 1) })}>← PRÉC</PageBtn>
+            )}
             {buildPageRange(page, totalPages).map((n, i) =>
               n === "…" ? (
                 <span
@@ -375,13 +355,17 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                   …
                 </span>
               ) : (
-                <PageBtn key={n} href={buildUrl(p, { page: String(n) })} active={n === page}>
+                <PageBtn
+                  key={n}
+                  href={catalogHref(filters, { page: String(n) })}
+                  active={n === page}
+                >
                   {String(n).padStart(2, "0")}
                 </PageBtn>
               ),
             )}
             {page < totalPages && (
-              <PageBtn href={buildUrl(p, { page: String(page + 1) })}>SUIV →</PageBtn>
+              <PageBtn href={catalogHref(filters, { page: String(page + 1) })}>SUIV →</PageBtn>
             )}
           </div>
         </div>
@@ -461,84 +445,6 @@ function CategoryPill({
         {count}
       </span>
     </Link>
-  );
-}
-
-function SelectPill({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}): React.ReactElement {
-  return (
-    <Link
-      className="mono-label"
-      href={href}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        height: 34,
-        padding: "0 14px",
-        background: active
-          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
-          : "var(--color-bg-sunken)",
-        border: active
-          ? "1px solid var(--cosmetic-accent)"
-          : "1px solid var(--color-border-default)",
-        color: active ? "var(--cosmetic-accent)" : "var(--color-text-secondary)",
-        fontWeight: 600,
-        textDecoration: "none",
-        whiteSpace: "nowrap",
-        transition: "all 180ms ease",
-      }}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function DifficultySelect({
-  params,
-  active,
-}: {
-  params: RawParams;
-  active: Difficulty | undefined;
-}): React.ReactElement {
-  return (
-    <div style={{ position: "relative" }}>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 0,
-          minWidth: 160,
-        }}
-      >
-        {/* Active label */}
-        <SelectPill href={buildUrl(params, { difficulty: null })} active={active === undefined}>
-          {DIFFICULTIES.find((d) => d.value === (active ?? "ALL"))?.label ?? "NIVEAU · TOUS"}
-        </SelectPill>
-      </div>
-    </div>
-  );
-}
-
-function StatusSelect({
-  params,
-  active,
-}: {
-  params: RawParams;
-  active: ProgressStatus | undefined;
-}): React.ReactElement {
-  return (
-    <div style={{ position: "relative" }}>
-      <SelectPill href={buildUrl(params, { status: null })} active={active === undefined}>
-        {STATUSES.find((s) => s.value === (active ?? "ALL"))?.label ?? "STATUT · TOUS"}
-      </SelectPill>
-    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@cyberlearn/ui";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Category } from "@cyberlearn/db";
@@ -38,6 +38,7 @@ import {
   type MenuEntry,
 } from "./context-menu";
 import styles from "./notes-library.module.css";
+import { useSlashFocus } from "@/hooks/use-slash-focus";
 import {
   downloadMarkdown,
   noteToMarkdown,
@@ -86,6 +87,8 @@ export function NotesLibrary({
   // the list at once rather than on the next visit.
   const [incoming, setIncoming] = useState<SerializedIncomingNote[]>(receivedNotes);
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSlashFocus(searchRef);
   const [filter, setFilter] = useState<"ALL" | Category>("ALL");
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
   const [focusedFolder, setFocusedFolder] = useState<string | null>(null);
@@ -777,6 +780,7 @@ export function NotesLibrary({
             <path d="M11 11l3 3" strokeLinecap="round" />
           </svg>
           <input
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(e) => {
@@ -784,6 +788,7 @@ export function NotesLibrary({
             }}
             placeholder="/ chercher dans mes notes..."
             aria-label="Chercher dans mes notes"
+            aria-keyshortcuts="/"
             style={{
               width: "100%",
               height: 44,

@@ -27,6 +27,7 @@ import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from
 import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
+import { inScope, scopeFitsUrl, statusScope, type StatusFilter } from "@/lib/lesson-status";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
@@ -404,37 +405,57 @@ export interface LessonFilters {
   search: string;
   category: Category | "ALL";
   difficulty: Difficulty | "ALL";
+  status: StatusFilter;
 }
 
 export function useLessons(userId: string | undefined, filters: LessonFilters) {
   return useQuery({
     queryKey: ["lessons", userId, filters],
     queryFn: async (): Promise<LessonCard[]> => {
-      let query = supabase
-        .from("lessons")
-        .select("id,slug,title,description,category,difficulty,estimatedMinutes,xpReward")
-        .eq("status", "PUBLISHED");
-      if (filters.category !== "ALL") query = query.eq("category", filters.category);
-      if (filters.difficulty !== "ALL") query = query.eq("difficulty", filters.difficulty);
-      const search = sanitizeSearch(filters.search);
-      if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
-      const lessonsRes = await query.order("publishedAt", { ascending: false }).limit(60);
-      const rows = (lessonsRes.data ?? []) as Omit<LessonCard, "status">[];
-
       type ProgressRow = {
         lessonId: string;
         status: ProgressStatus;
         quizCorrect: number | null;
         quizTotal: number | null;
       };
-      let progressByLesson = new Map<string, ProgressRow>();
+      // Read first: the status filter is built from it.
+      let progressRows: ProgressRow[] = [];
       if (userId) {
         const { data } = await supabase
           .from("user_lesson_progress")
           .select("lessonId,status,quizCorrect,quizTotal")
           .eq("userId", userId);
-        progressByLesson = new Map(((data ?? []) as ProgressRow[]).map((r) => [r.lessonId, r]));
+        // SAFETY: the columns selected above, in ProgressRow's shape.
+        progressRows = (data ?? []) as ProgressRow[];
       }
+      const progressByLesson = new Map(progressRows.map((r) => [r.lessonId, r]));
+
+      let query = supabase
+        .from("lessons")
+        .select("id,slug,title,description,category,difficulty,estimatedMinutes,xpReward")
+        .eq("status", "PUBLISHED");
+      if (filters.category !== "ALL") query = query.eq("category", filters.category);
+      if (filters.difficulty !== "ALL") query = query.eq("difficulty", filters.difficulty);
+      // On the server, like the other filters, so the 60 rows below are 60
+      // of the lessons asked for rather than 60 lessons filtered down after.
+      // A list of ids too long for a URL is applied to the whole catalogue
+      // once fetched instead.
+      const scope = statusScope(filters.status, progressRows);
+      if (scope.kind === "only" && scope.ids.length === 0) return [];
+      const inUrl = scopeFitsUrl(scope);
+      if (inUrl && scope.kind === "only") {
+        query = query.in("id", scope.ids);
+      } else if (inUrl && scope.kind === "except" && scope.ids.length > 0) {
+        query = query.not("id", "in", `(${scope.ids.join(",")})`);
+      }
+      const search = sanitizeSearch(filters.search);
+      if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      const ordered = query.order("publishedAt", { ascending: false });
+      const lessonsRes = await (inUrl ? ordered.limit(60) : ordered);
+      // SAFETY: the columns selected above, in LessonCard's shape less its status.
+      const fetched = (lessonsRes.data ?? []) as Omit<LessonCard, "status">[];
+      const rows = inUrl ? fetched : fetched.filter((l) => inScope(scope, l.id)).slice(0, 60);
+
       return rows.map((l) => {
         const progress = progressByLesson.get(l.id);
         return {
