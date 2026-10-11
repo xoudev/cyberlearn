@@ -6,15 +6,22 @@
 // that React tree back into a string, and any mismatch is a diagram that draws
 // wrong - or not at all - with no error anywhere.
 //
-// This check runs a diagram through the exact remark/rehype plugins the lesson
-// page uses, rebuilds the source the way the Diagram component does, and fails
-// when the round trip is not faithful. Indentation is normalised on both sides:
-// MDX dedents JSX children and mermaid does not care about leading spaces.
+// This check runs a diagram through the remark/rehype plugins the lesson page
+// uses, rebuilds the source the way the Diagram component does, and fails when
+// the round trip is not faithful. Indentation is normalised on both sides: MDX
+// dedents JSX children and mermaid does not care about leading spaces.
+//
+// It then hands that rebuilt source to mermaid's own parser. A faithful round
+// trip says nothing about whether mermaid can read the result: a label with a
+// parenthesis left unquoted, a keyword used as a node id, and the diagram
+// falls back to text on the page. The parser runs in jsdom, as in the browser;
+// drawing needs a real layout engine and stays out of reach here.
 //
 //   pnpm --filter @cyberlearn/web content:diagrams
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { JSDOM } from "jsdom";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { compile, run } from "@mdx-js/mdx";
@@ -25,6 +32,26 @@ import rehypeSlug from "rehype-slug";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../../content/lessons");
+
+// Mermaid reads window and document while it loads (its sanitiser does), so
+// they have to exist before the import, not after.
+const dom = new JSDOM("<!doctype html><html><body></body></html>");
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+const { default: mermaid } = await import("mermaid");
+mermaid.initialize({ startOnLoad: false });
+
+// Copies, not imports. The page's own pieces live in TypeScript sources: the
+// remark list in packages/lib (LESSON_REMARK_PLUGINS, whose modules import each
+// other as "./x.js" and "../y" for files that are x.ts and y.ts) and the
+// extractor below in apps/web. Plain node cannot load either without a
+// TypeScript loader, which the web app does not depend on. The two remark
+// plugins left out of REMARK_PLUGINS deal only with {…} expressions, the
+// values of component props and import/export lines; none of them changes the
+// text of a diagram. A brace inside one still fails here, either as code that
+// does not run or as a round trip that lost it. The glossary the page adds
+// last (rehypeGlossary) reads no component's children but a Callout's.
+const REMARK_PLUGINS = [remarkGfm];
 
 // Kept in sync with apps/web/lib/mdx/extract-diagram-source.ts.
 const BLOCK_TAGS = new Set([
@@ -120,7 +147,7 @@ for (const file of walk(ROOT)) {
       const compiled = await compile(block.snippet, {
         outputFormat: "function-body",
         development: false,
-        remarkPlugins: [remarkGfm],
+        remarkPlugins: REMARK_PLUGINS,
         rehypePlugins: [rehypeSlug, rehypeHighlight],
       });
       const mod = await run(compiled, { ...runtime, baseUrl: import.meta.url });
@@ -145,6 +172,17 @@ for (const file of walk(ROOT)) {
         expected,
         actual,
       });
+      continue;
+    }
+
+    try {
+      await mermaid.parse(piped);
+    } catch (error) {
+      failures.push({
+        file: rel,
+        line: block.line,
+        reason: `mermaid cannot read the diagram: ${error instanceof Error ? error.message : String(error)}`,
+      });
     }
   }
 }
@@ -160,11 +198,16 @@ if (failures.length > 0) {
     }
   }
   console.error(
-    `\n${String(failures.length)} diagram(s) out of ${String(checked)} do not survive the MDX pipeline.`,
+    `\n${String(failures.length)} diagram(s) out of ${String(checked)} would not draw on the lesson page.`,
   );
-  console.error("Markdown syntax inside a diagram is the usual cause: [label](x) becomes a link,");
-  console.error("*text* and _text_ become emphasis. Escape them or reword the label.");
+  console.error("Markdown syntax inside a diagram is the usual cause of a round trip that fails:");
+  console.error("[label](x) becomes a link, *text* and _text_ become emphasis. Escape them or");
+  console.error(
+    'reword the label. When mermaid cannot read a diagram, quote the label: A["x (y)"].',
+  );
   process.exit(1);
 }
 
-console.log(`✓ ${String(checked)} lesson diagrams survive the MDX pipeline unchanged`);
+console.log(
+  `✓ ${String(checked)} lesson diagrams survive the MDX pipeline unchanged, and mermaid reads them all`,
+);

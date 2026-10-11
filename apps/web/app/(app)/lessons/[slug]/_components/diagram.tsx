@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 import type mermaidLib from "mermaid";
+import type { MermaidConfig } from "mermaid";
+import { diagramOutline } from "@cyberlearn/lib/mdx-diagram-outline";
+import { BORDER, MONO, MUTED } from "@cyberlearn/ui";
 import { extractDiagramSource } from "@/lib/mdx/extract-diagram-source";
 type MermaidAPI = typeof mermaidLib;
 
@@ -9,34 +13,74 @@ type MermaidAPI = typeof mermaidLib;
 // during SSR: mermaid accesses browser globals (window, document) at module
 // initialization time and would throw in a Node.js environment.
 
-const MERMAID_THEME = {
+/*
+ * The colours mermaid draws with, as hex and nothing else.
+ *
+ * Mermaid works out every shade it is not given (a box's border from its fill,
+ * the tints of a git graph, the box behind an edge's label) with khroma, which
+ * reads hex, rgb() and hsl() and throws on anything else. In October 2026 these
+ * values became `var(--color-*)` like the rest of the site: initialize threw on
+ * the first one, the failed load stayed cached for the whole visit, and every
+ * lesson diagram showed its mermaid source instead of a drawing.
+ *
+ * The values are the dark theme's tokens (packages/ui/src/tokens.css), the one
+ * the site renders in. A test holds each of them to hex.
+ */
+const SURFACE = "#0A0826"; // --color-bg-elevated
+const BOX = "#1F1B47"; // --color-border-subtle
+const OVERLAY = "#110F33"; // --color-bg-overlay
+const TEXT = "#F5F5FA"; // --color-text-primary
+const TEXT_SECONDARY = "#B8B5D1"; // --color-text-secondary
+/** --cosmetic-accent when no accent is equipped: --color-brand-turquoise. */
+const DEFAULT_ACCENT = "#0AFFD4";
+
+const HEX_COLOUR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/** `#abc` written out as `#aabbcc`. */
+function longHex(hex: string): string {
+  return hex.length === 4 ? hex.replace(/[0-9a-f]/gi, (digit) => digit + digit) : hex;
+}
+
+/** `colour` laid over `under` at `amount` opacity, as the opaque hex it comes to. */
+function blend(colour: string, under: string, amount: number): string {
+  const channels = (hex: string): number[] =>
+    [1, 3, 5].map((at) => parseInt(longHex(hex).slice(at, at + 2), 16));
+  const bottom = channels(under);
+  const mixed = channels(colour).map((top, i) =>
+    Math.round(top * amount + (bottom[i] ?? 0) * (1 - amount)),
+  );
+  return `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
+
+export const MERMAID_THEME = {
   startOnLoad: false,
   theme: "base" as const,
   themeVariables: {
-    background: "var(--color-bg-elevated)",
-    mainBkg: "var(--color-border-subtle)",
-    nodeBorder: "var(--color-border-default)",
-    clusterBkg: "#110F33",
-    titleColor: "var(--color-text-primary)",
-    edgeLabelBackground: "var(--color-bg-elevated)",
-    lineColor: "var(--color-text-muted)",
-    textColor: "var(--color-text-secondary)",
-    primaryColor: "var(--color-border-subtle)",
-    primaryTextColor: "var(--color-text-primary)",
-    primaryBorderColor: "var(--color-border-default)",
-    secondaryColor: "#110F33",
-    tertiaryColor: "var(--color-bg-elevated)",
+    background: SURFACE,
+    mainBkg: BOX,
+    nodeBorder: BORDER,
+    clusterBkg: OVERLAY,
+    titleColor: TEXT,
+    edgeLabelBackground: SURFACE,
+    lineColor: MUTED,
+    textColor: TEXT_SECONDARY,
+    primaryColor: BOX,
+    primaryTextColor: TEXT,
+    primaryBorderColor: BORDER,
+    secondaryColor: OVERLAY,
+    tertiaryColor: SURFACE,
     fontFamily: "monospace",
     fontSize: "13px",
-    labelBackground: "var(--color-bg-elevated)",
-    actorBorder: "var(--color-border-default)",
-    actorBkg: "var(--color-border-subtle)",
-    actorTextColor: "var(--color-text-primary)",
-    activationBorderColor: "var(--cosmetic-accent)",
-    activationBkgColor: "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)",
-    sequenceNumberColor: "var(--cosmetic-accent)",
-    signalColor: "var(--color-text-muted)",
-    signalTextColor: "var(--color-text-secondary)",
+    labelBackground: SURFACE,
+    actorBorder: BORDER,
+    actorBkg: BOX,
+    actorTextColor: TEXT,
+    // The accent's three: see mermaidConfig for the learner's own.
+    activationBorderColor: DEFAULT_ACCENT,
+    activationBkgColor: blend(DEFAULT_ACCENT, SURFACE, 0.08),
+    sequenceNumberColor: DEFAULT_ACCENT,
+    signalColor: MUTED,
+    signalTextColor: TEXT_SECONDARY,
   },
   // HTML labels put a <div><p> inside a <foreignObject> - real HTML, sitting
   // inside the lesson article, so the page's own paragraph styles apply to it.
@@ -55,7 +99,36 @@ const MERMAID_THEME = {
   // whole catalogue re-lay itself out at once.
   layout: "dagre",
   look: "classic" as const,
-};
+} satisfies MermaidConfig;
+
+/**
+ * The learner's accent, as mermaid can read it. The figure inherits
+ * --cosmetic-accent from the cosmetic theme they equipped, and the browser
+ * hands back the colour that resolves to. Anything that is not a hex colour (a
+ * theme written another way, a page with no styles) gives the default accent.
+ */
+function accentOf(element: Element): string {
+  const value = getComputedStyle(element).getPropertyValue("--cosmetic-accent").trim();
+  return HEX_COLOUR.test(value) ? longHex(value) : DEFAULT_ACCENT;
+}
+
+/**
+ * The theme with the learner's accent where a drawing uses one: the
+ * activations and the numbers of a sequence diagram. Never a `var()`: mermaid
+ * reads the colour itself, not the page's stylesheet.
+ */
+export function mermaidConfig(accent: string): MermaidConfig {
+  const hex = HEX_COLOUR.test(accent) ? longHex(accent) : DEFAULT_ACCENT;
+  return {
+    ...MERMAID_THEME,
+    themeVariables: {
+      ...MERMAID_THEME.themeVariables,
+      activationBorderColor: hex,
+      activationBkgColor: blend(hex, SURFACE, 0.08),
+      sequenceNumberColor: hex,
+    },
+  };
+}
 
 /**
  * Mermaid lays a diagram out at the theme's 13px, and the viewBox it emits is
@@ -79,16 +152,47 @@ function naturalWidthOf(svg: SVGElement): number | null {
   return Number.isFinite(width) && width > 0 ? width : null;
 }
 
-// Module-level promise so mermaid is loaded and initialized only once.
+// Module-level promise so mermaid is loaded once, and initialized again only
+// when the accent changes.
 let mermaidPromise: Promise<MermaidAPI> | null = null;
+let mermaidAccent: string | null = null;
 
-function getMermaid(): Promise<MermaidAPI> {
-  mermaidPromise ??= import("mermaid").then((mod) => {
-    const m = mod.default;
-    m.initialize(MERMAID_THEME);
-    return m;
-  });
+function getMermaid(accent: string): Promise<MermaidAPI> {
+  if (mermaidPromise === null || mermaidAccent !== accent) {
+    const loading = import("mermaid").then((mod) => {
+      const m = mod.default;
+      m.initialize(mermaidConfig(accent));
+      return m;
+    });
+    mermaidPromise = loading;
+    mermaidAccent = accent;
+    // A load or an initialize that failed used to stay cached: one colour
+    // mermaid could not read, and every diagram of the visit fell back without
+    // mermaid being asked again. Forgotten instead, so the next one retries.
+    void loading.catch(() => {
+      if (mermaidPromise === loading) {
+        mermaidPromise = null;
+        mermaidAccent = null;
+      }
+    });
+  }
   return mermaidPromise;
+}
+
+/**
+ * Tells Sentry a diagram did not draw. The reader still gets the outline, so
+ * nothing on the page says anything went wrong: this is how an author learns
+ * that a diagram needs fixing, or the team that every diagram does.
+ */
+function reportFailure(error: unknown, source: string): void {
+  const message = error instanceof Error ? error.message : String(error);
+  Sentry.captureException(error, {
+    tags: { area: "lesson.diagram" },
+    extra: { source },
+    // One issue per cause, not one per diagram or per reader: a theme mermaid
+    // cannot read fails every diagram with the same message.
+    fingerprint: ["lesson-diagram", message],
+  });
 }
 
 interface DiagramProps {
@@ -99,6 +203,7 @@ interface DiagramProps {
 export function Diagram({ children, caption }: DiagramProps): React.JSX.Element {
   const rawId = useId();
   const diagramId = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const figureRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const [rendered, setRendered] = useState(false);
@@ -116,7 +221,8 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
 
     async function render(): Promise<void> {
       try {
-        const mermaid = await getMermaid();
+        const accent = figureRef.current ? accentOf(figureRef.current) : DEFAULT_ACCENT;
+        const mermaid = await getMermaid(accent);
         // Mermaid measures every label to size the box around it. Measuring
         // before the mono webfont has loaded sizes the boxes for the fallback
         // font, and the real glyphs then spill out of them.
@@ -146,12 +252,14 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
           }
         }
         setRendered(true);
-      } catch {
+      } catch (error) {
         // A failed render leaves mermaid's own detached probe element in the
         // document; without this it piles up and can stay visible.
         document.getElementById(diagramId)?.remove();
         document.getElementById(`d${diagramId}`)?.remove();
-        if (!cancelled) setFailed(true);
+        if (cancelled) return;
+        setFailed(true);
+        reportFailure(error, source);
       }
     }
 
@@ -164,6 +272,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
 
   return (
     <figure
+      ref={figureRef}
       style={{
         margin: "32px 0",
         background: "var(--color-bg-elevated)",
@@ -191,25 +300,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
           Chargement du diagramme…
         </div>
       )}
-      {/* A diagram that will not draw used to leave a bare red error line in the
-          middle of the lesson, which taught the reader nothing. Showing the
-          description it was built from at least keeps the content readable. */}
-      {failed && (
-        <pre
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 12,
-            lineHeight: 1.7,
-            color: "var(--color-text-secondary)",
-            margin: 0,
-            padding: 0,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {source}
-        </pre>
-      )}
+      {failed && <DiagramFallback source={source} />}
       <div
         ref={containerRef}
         style={{
@@ -238,5 +329,80 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         </figcaption>
       )}
     </figure>
+  );
+}
+
+/**
+ * What a diagram that would not draw leaves in the lesson. It used to be the
+ * mermaid source, which reads as code (`A["Périmètre"] --> B[...]`) to someone
+ * who came to learn what the drawing shows. The reader now gets the diagram
+ * told in words, one line per arrow, and the source stays a click away for
+ * whoever has to fix it.
+ */
+function DiagramFallback({ source }: { source: string }): React.JSX.Element {
+  const outline = diagramOutline(source);
+  return (
+    <div role="note">
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--color-warning)",
+          marginBottom: 8,
+        }}
+      >
+        Schéma indisponible
+      </div>
+      <div style={{ fontSize: 14, lineHeight: 1.55, color: "var(--color-text-secondary)" }}>
+        {outline.length > 0
+          ? "Le dessin n'a pas pu s'afficher. Voici ce qu'il montre :"
+          : "Le dessin n'a pas pu s'afficher."}
+      </div>
+      {outline.length > 0 && (
+        <ul
+          style={{
+            margin: "12px 0 0",
+            fontFamily: MONO,
+            fontSize: 13,
+            lineHeight: 1.7,
+            color: "var(--color-text-secondary)",
+          }}
+        >
+          {outline.map((line, i) => (
+            // A line can repeat (two arrows between the same boxes): the
+            // position keeps the keys apart.
+            <li key={`${String(i)}-${line}`}>{line}</li>
+          ))}
+        </ul>
+      )}
+      <details style={{ marginTop: 12 }}>
+        <summary
+          style={{
+            cursor: "pointer",
+            fontFamily: MONO,
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          Source du schéma
+        </summary>
+        <pre
+          style={{
+            fontFamily: MONO,
+            fontSize: 12,
+            lineHeight: 1.7,
+            color: "var(--color-text-secondary)",
+            margin: "8px 0 0",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          }}
+        >
+          {source}
+        </pre>
+      </details>
+    </div>
   );
 }

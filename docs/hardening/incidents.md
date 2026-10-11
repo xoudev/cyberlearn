@@ -55,6 +55,39 @@ composent en termes d'un `AND`.
 
 ---
 
+## 2026-10-06 - Les schémas des leçons s'affichaient en texte
+
+### Constat
+
+Du 6 au 11 octobre, aucun des 240 schémas des leçons ne s'est dessiné : chaque
+`<Diagram>` montrait sa source Mermaid à la place, sur le site comme dans
+l'aperçu de l'éditeur. Le passage des couleurs aux jetons (#425, `0b0c9d18`)
+avait aussi remplacé les couleurs du thème Mermaid par des `var(--color-*)`.
+Mermaid en dérive des nuances avec khroma, qui ne lit que des couleurs réelles :
+`initialize` levait « Unsupported color format », la promesse de chargement
+restait rejetée pour toute la visite, et chaque schéma tombait dans le repli.
+Rien ne l'a signalé : le repli ne remontait rien à Sentry, et la CI des schémas
+ne vérifiait que le passage par MDX.
+
+### Correctif
+
+`diagram.tsx` donne à Mermaid des couleurs hexadécimales, l'accent de
+l'apprenant compris (lu sur la page puis converti), et un test les y tient,
+avec `initialize` lancé pour de vrai sous jsdom. Un chargement raté n'est plus
+gardé en cache, chaque échec part à Sentry (`area: lesson.diagram`), et le
+repli montre le schéma en texte, une ligne par flèche
+(`@cyberlearn/lib/mdx-diagram-outline`), avec la source dépliable. Le job CI
+« Lesson diagrams » passe aussi chaque schéma au parseur de Mermaid.
+
+### Leçon
+
+Une bibliothèque qui calcule avec les couleurs qu'on lui donne ne lit pas la
+feuille de style : un jeton CSS n'est une couleur que pour le navigateur. Et un
+repli silencieux cache une panne aussi bien qu'il la rend supportable ; il doit
+toujours prévenir quelqu'un.
+
+---
+
 ## 2026-10-05 - L'aperçu de l'éditeur de leçons était refusé à la console
 
 ### Constat

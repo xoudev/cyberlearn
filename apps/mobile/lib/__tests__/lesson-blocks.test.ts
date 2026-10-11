@@ -67,17 +67,84 @@ const safe = true;
     expect(lesson.quizzes[0]?.explanation).toBe('HTTPS écoute sur le port 443, HTTP sur le "80".');
   });
 
-  it("keeps web-only media visible as labelled placeholders", () => {
+  it("keeps web-only media visible as cards that say what they are", () => {
     const lesson = parseLesson(`
 ## Observer
 
 <LessonVideo src="/demo.mp4" />
-<Diagram />
+<LessonImage src="/schema.png" alt="Un schéma" width={640} height={360} />
 `);
 
     expect(lesson.sections[0]?.blocks).toEqual([
-      { kind: "placeholder", label: "Vidéo" },
-      { kind: "placeholder", label: "Diagramme" },
+      { kind: "placeholder", label: "Vidéo", note: "Vidéo à regarder sur cyberlearn.fr" },
+      { kind: "placeholder", label: "Image", note: "Image à voir sur cyberlearn.fr" },
+    ]);
+  });
+
+  it("tells a diagram in words, with its caption", () => {
+    // cyber-blueteam/13-audit-configuration-durcissement.mdx
+    const lesson = parseLesson(`
+## La démarche
+
+<Diagram caption="De l'autorisation à la vérification">
+flowchart TD
+  A["Périmètre et autorisation"] --> B["Inventaire : ce qui existe"]
+  B --> C["Lecture : configurations, droits, comptes"]
+</Diagram>
+
+La suite.
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "diagram",
+        caption: "De l'autorisation à la vérification",
+        outline: [
+          "Périmètre et autorisation → Inventaire : ce qui existe",
+          "Inventaire : ce qui existe → Lecture : configurations, droits, comptes",
+        ],
+      },
+      { kind: "paragraph", text: "La suite." },
+    ]);
+  });
+
+  it("reads a sequence diagram message by message, without a caption", () => {
+    const lesson = parseLesson(`
+## L'échange
+
+<Diagram>
+sequenceDiagram
+  participant C as Client
+  participant S as Serveur
+  C->>S: SYN
+  S->>C: SYN-ACK
+</Diagram>
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "diagram",
+        caption: null,
+        outline: ["Client → Serveur : SYN", "Serveur → Client : SYN-ACK"],
+      },
+    ]);
+  });
+
+  it("does not let a diagram with no source swallow the next one", () => {
+    const lesson = parseLesson(`
+## Deux schémas
+
+<Diagram caption="Vide" />
+
+<Diagram caption="Plein">
+flowchart LR
+  A[Un] --> B[Deux]
+</Diagram>
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "diagram", caption: "Vide", outline: [] },
+      { kind: "diagram", caption: "Plein", outline: ["Un → Deux"] },
     ]);
   });
 
