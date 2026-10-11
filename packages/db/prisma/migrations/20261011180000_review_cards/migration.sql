@@ -18,6 +18,7 @@ CREATE TABLE "review_cards" (
     "box" SMALLINT NOT NULL DEFAULT 1,
     "dueAt" TIMESTAMP(3) NOT NULL,
     "lapses" SMALLINT NOT NULL DEFAULT 0,
+    "everCorrect" BOOLEAN NOT NULL DEFAULT false,
     "lastAnsweredAt" TIMESTAMP(3),
     "retiredAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

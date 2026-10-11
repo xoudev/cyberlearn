@@ -47,14 +47,28 @@ describe("enqueueForLesson", () => {
   it("inserts the cards, skipping any already there, retired or not", async () => {
     mockPrisma.reviewCard.createMany.mockResolvedValue({ count: 1 });
     const count = await reviewCardRepository.enqueueForLesson(USER, LESSON, [
-      { quizId: "q-2", box: 1, dueAt: day("2026-10-12") },
-      { quizId: "q-3", box: 3, dueAt: day("2026-10-18") },
+      { quizId: "q-2", box: 1, dueAt: day("2026-10-12"), everCorrect: false },
+      { quizId: "q-3", box: 3, dueAt: day("2026-10-18"), everCorrect: true },
     ]);
     expect(count).toBe(1);
     expect(mockPrisma.reviewCard.createMany).toHaveBeenCalledWith({
       data: [
-        { userId: USER, lessonId: LESSON, quizId: "q-2", box: 1, dueAt: day("2026-10-12") },
-        { userId: USER, lessonId: LESSON, quizId: "q-3", box: 3, dueAt: day("2026-10-18") },
+        {
+          userId: USER,
+          lessonId: LESSON,
+          quizId: "q-2",
+          box: 1,
+          dueAt: day("2026-10-12"),
+          everCorrect: false,
+        },
+        {
+          userId: USER,
+          lessonId: LESSON,
+          quizId: "q-3",
+          box: 3,
+          dueAt: day("2026-10-18"),
+          everCorrect: true,
+        },
       ],
       skipDuplicates: true,
     });
@@ -65,7 +79,7 @@ describe("enqueueForLesson", () => {
     await reviewCardRepository.enqueueForLesson(
       USER,
       LESSON,
-      [{ quizId: "q-1", box: 1, dueAt: day("2026-10-12") }],
+      [{ quizId: "q-1", box: 1, dueAt: day("2026-10-12"), everCorrect: false }],
       // SAFETY: the fake has the one model method enqueueForLesson calls.
       tx as unknown as Prisma.TransactionClient,
     );
@@ -90,6 +104,9 @@ describe("findDue", () => {
           retiredAt: null,
           // The start of today: a card due today is due from midnight.
           dueAt: { lte: day("2026-10-11") },
+          // Never a stale card, retired by retireStale yet or not: answered
+          // right once and due before 11 September, more than thirty days ago.
+          NOT: { everCorrect: true, dueAt: { lt: day("2026-09-11") } },
           lesson: { status: "PUBLISHED" },
         },
         orderBy: [{ dueAt: "asc" }, { box: "asc" }],
@@ -116,11 +133,16 @@ describe("retire", () => {
 });
 
 describe("retireStale", () => {
-  it("retires the cards above the first box more than thirty days overdue", async () => {
+  it("retires the cards answered right once and more than thirty days overdue", async () => {
     mockPrisma.reviewCard.updateMany.mockResolvedValue({ count: 3 });
     expect(await reviewCardRepository.retireStale(USER, NOW)).toBe(3);
     expect(mockPrisma.reviewCard.updateMany).toHaveBeenCalledWith({
-      where: { userId: USER, retiredAt: null, box: { gt: 1 }, dueAt: { lt: day("2026-09-11") } },
+      where: {
+        userId: USER,
+        retiredAt: null,
+        everCorrect: true,
+        dueAt: { lt: day("2026-09-11") },
+      },
       data: { retiredAt: NOW },
     });
   });
@@ -128,7 +150,14 @@ describe("retireStale", () => {
 
 describe("applyAnswer", () => {
   const question = { lessonId: LESSON, quizId: "q-1" };
-  const card = { id: "c1", box: 2, dueAt: day("2026-10-11"), lapses: 0, retiredAt: null };
+  const card = {
+    id: "c1",
+    box: 2,
+    dueAt: day("2026-10-11"),
+    lapses: 0,
+    everCorrect: false,
+    retiredAt: null,
+  };
 
   it("moves the card up a box, on the condition it was not moved meanwhile", async () => {
     mockPrisma.reviewCard.findUnique.mockResolvedValue(card);
@@ -138,6 +167,7 @@ describe("applyAnswer", () => {
       box: 3,
       dueAt: day("2026-10-18"),
       lapses: 0,
+      everCorrect: true,
       lastAnsweredAt: NOW,
       retiredAt: null,
     });

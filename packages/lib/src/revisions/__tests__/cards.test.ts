@@ -59,13 +59,14 @@ describe("daysForBox", () => {
 });
 
 describe("answerCard", () => {
-  const card = { box: 1, dueAt: day("2026-10-11"), lapses: 0 };
+  const card = { box: 1, dueAt: day("2026-10-11"), lapses: 0, everCorrect: false };
 
   it("moves a card up a box on a right answer, due again after that box's wait", () => {
     expect(answerCard(card, true, NOW)).toEqual({
       box: 2,
       dueAt: day("2026-10-14"),
       lapses: 0,
+      everCorrect: true,
       lastAnsweredAt: NOW,
       retiredAt: null,
     });
@@ -78,23 +79,28 @@ describe("answerCard", () => {
       box: 4,
       dueAt: day("2026-10-11"),
       lapses: 0,
+      everCorrect: true,
       lastAnsweredAt: NOW,
       retiredAt: NOW,
     });
   });
 
   it("sends a card back to the first box on a wrong answer, with one more lapse", () => {
-    expect(answerCard({ box: 3, dueAt: day("2026-10-11"), lapses: 2 }, false, NOW)).toEqual({
+    const right = { box: 3, dueAt: day("2026-10-11"), lapses: 2, everCorrect: true };
+    expect(answerCard(right, false, NOW)).toEqual({
       box: 1,
       dueAt: day("2026-10-12"),
       lapses: 3,
+      // Answered right once, it stays so: a miss does not undo it.
+      everCorrect: true,
       lastAnsweredAt: NOW,
       retiredAt: null,
     });
+    expect(answerCard(card, false, NOW).everCorrect).toBe(false);
   });
 
   it("takes four right answers from a missed question to its retirement", () => {
-    let state = { box: 1, dueAt: day("2026-10-12"), lapses: 0 };
+    let state = { box: 1, dueAt: day("2026-10-12"), lapses: 0, everCorrect: false };
     let at = new Date("2026-10-12T08:00:00Z");
     const waits: number[] = [];
     for (let i = 0; i < 4; i++) {
@@ -111,22 +117,39 @@ describe("answerCard", () => {
 });
 
 describe("isStale", () => {
-  it("retires a card more than thirty days overdue after a right answer", () => {
+  it("retires a card answered right once and more than thirty days overdue", () => {
     expect(staleBefore(NOW)).toEqual(day("2026-09-11"));
-    const overdue = { box: 2, dueAt: day("2026-09-10"), retiredAt: null };
+    const overdue = { everCorrect: true, dueAt: day("2026-09-10"), retiredAt: null };
     expect(isStale(overdue, NOW)).toBe(true);
   });
 
   it("keeps one exactly thirty days overdue", () => {
-    expect(isStale({ box: 2, dueAt: day("2026-09-11"), retiredAt: null }, NOW)).toBe(false);
+    expect(isStale({ everCorrect: true, dueAt: day("2026-09-11"), retiredAt: null }, NOW)).toBe(
+      false,
+    );
   });
 
-  it("keeps a question last answered wrong, however long it waited", () => {
-    expect(isStale({ box: 1, dueAt: day("2026-01-01"), retiredAt: null }, NOW)).toBe(false);
+  it("retires a card answered right once, then missed, as well", () => {
+    // Back in the first box after the miss, yet answered right before it.
+    const missedSince = answerCard(
+      { box: 2, dueAt: day("2026-08-01"), lapses: 0, everCorrect: true },
+      false,
+      new Date("2026-08-01T08:00:00Z"),
+    );
+    expect(missedSince.box).toBe(1);
+    expect(isStale(missedSince, NOW)).toBe(true);
+  });
+
+  it("keeps a question never answered right, however long it waited", () => {
+    expect(isStale({ everCorrect: false, dueAt: day("2026-01-01"), retiredAt: null }, NOW)).toBe(
+      false,
+    );
   });
 
   it("leaves a retired card alone", () => {
-    expect(isStale({ box: 4, dueAt: day("2026-01-01"), retiredAt: NOW }, NOW)).toBe(false);
+    expect(isStale({ everCorrect: true, dueAt: day("2026-01-01"), retiredAt: NOW }, NOW)).toBe(
+      false,
+    );
   });
 });
 
@@ -141,9 +164,9 @@ describe("orphanCards", () => {
     expect(orphanCards(cards, quizIds).map((card) => card.id)).toEqual(["b"]);
   });
 
-  it("retires every card of a lesson that has no quiz left", () => {
+  it("does not judge a lesson read with no quiz, as one that failed to parse reads", () => {
     const cards = [{ id: "a", lessonId: "l1", quizId: "q-1" }];
-    expect(orphanCards(cards, new Map([["l1", new Set<string>()]]))).toEqual(cards);
+    expect(orphanCards(cards, new Map([["l1", new Set<string>()]]))).toEqual([]);
   });
 });
 
@@ -200,9 +223,14 @@ describe("isReviewableLesson, over the catalogue", () => {
     title: string;
   }
 
-  function field(frontmatter: string, name: string): string {
-    const line = new RegExp(`^${name}:\\s*(.*)$`, "mu").exec(frontmatter)?.[1] ?? "";
-    return line.trim().replace(/^"(.*)"$/u, "$1");
+  /** A frontmatter's top-level fields, by name, their quotes taken off. */
+  function fieldsOf(frontmatter: string): Map<string, string> {
+    return new Map(
+      [...frontmatter.matchAll(/^(\w+):\s*(.*)$/gmu)].map(([, key = "", value = ""]) => [
+        key,
+        value.trim().replace(/^"(.*)"$/u, "$1"),
+      ]),
+    );
   }
 
   function writtenLessons(dir = path.join(CONTENT, "lessons")): WrittenLesson[] {
@@ -211,13 +239,13 @@ describe("isReviewableLesson, over the catalogue", () => {
       if (statSync(full).isDirectory()) return writtenLessons(full);
       if (!name.endsWith(".mdx")) return [];
       const raw = readFileSync(full, "utf8").replace(/\r\n/gu, "\n");
-      const frontmatter = /^---\n([\s\S]*?)\n---\n/u.exec(raw)?.[1] ?? "";
+      const fields = fieldsOf(/^---\n([\s\S]*?)\n---\n/u.exec(raw)?.[1] ?? "");
       return [
         {
           file: name,
-          refCode: field(frontmatter, "refCode"),
-          slug: field(frontmatter, "slug"),
-          title: field(frontmatter, "title"),
+          refCode: fields.get("refCode") ?? "",
+          slug: fields.get("slug") ?? "",
+          title: fields.get("title") ?? "",
         },
       ];
     });
@@ -278,16 +306,16 @@ describe("cardsForCompletion", () => {
       NOW,
     );
     expect(cards).toEqual([
-      { quizId: "q-2", box: 1, dueAt: day("2026-10-12") },
-      { quizId: "q-4", box: 1, dueAt: day("2026-10-12") },
-      { quizId: "q-3", box: 3, dueAt: day("2026-10-18") },
+      { quizId: "q-2", box: 1, dueAt: day("2026-10-12"), everCorrect: false },
+      { quizId: "q-4", box: 1, dueAt: day("2026-10-12"), everCorrect: false },
+      { quizId: "q-3", box: 3, dueAt: day("2026-10-18"), everCorrect: true },
     ]);
   });
 
   it("brings back one question of a lesson passed without a miss", () => {
     const answers = quizIds.map((quizId) => ({ quizId, correct: true }));
     expect(cardsForCompletion(quizIds, answers, NOW)).toEqual([
-      { quizId: "q-5", box: 3, dueAt: day("2026-10-18") },
+      { quizId: "q-5", box: 3, dueAt: day("2026-10-18"), everCorrect: true },
     ]);
   });
 
@@ -320,8 +348,8 @@ describe("cardsForCompletion", () => {
   });
 });
 
-function due(id: string, lessonId: string, dueKey: string, box = 1): DueCard {
-  return { id, lessonId, quizId: `q-${id}`, box, dueAt: day(dueKey) };
+function due(id: string, lessonId: string, dueKey: string, box = 1, everCorrect = false): DueCard {
+  return { id, lessonId, quizId: `q-${id}`, box, dueAt: day(dueKey), everCorrect };
 }
 
 describe("prioritizeCards", () => {
@@ -407,6 +435,25 @@ describe("drawReviewSession", () => {
     const withGone = [due("gone", "l3", "2026-09-01"), ...cards];
     const draw = drawReviewSession(withGone, sources, USER, "2026-10-11");
     expect(draw.map((ref) => ref.cardId)).toEqual(["1", "2", "3"]);
+  });
+
+  it("never draws a stale card, though its retirement was not written yet", () => {
+    // Box 2, answered right once, due 2 September: more than thirty days
+    // overdue on the 11th of October, so the most overdue of all, and out.
+    const stale = due("stale", "l2", "2026-09-02", 2, true);
+    const missedLong = due("missed", "l2", "2026-09-01", 1, false);
+    const allSources = sourcesOf(
+      ...sources.values(),
+      source("l2", "q-stale", ["A", "B"]),
+      source("l2", "q-missed", ["A", "B"]),
+    );
+    const draw = drawReviewSession([stale, missedLong, ...cards], allSources, USER, "2026-10-11");
+    expect(draw.map((ref) => ref.cardId)).toEqual(["missed", "1", "2", "3"]);
+    // Thirty days overdue exactly, it is still asked.
+    const lastDay = due("stale", "l2", "2026-09-11", 2, true);
+    expect(
+      drawReviewSession([lastDay], allSources, USER, "2026-10-11").map((ref) => ref.cardId),
+    ).toEqual(["stale"]);
   });
 
   it("draws the same order twice on a day, and shuffles again another day", () => {

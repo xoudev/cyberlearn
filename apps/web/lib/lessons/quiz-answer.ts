@@ -97,12 +97,3 @@ export function quizScoreOf(record: LessonQuizRecord): { correct: number; total:
   const correct = record.answers.filter((a) => a.correct).length;
   return { correct, total: record.quizzes.length };
 }
-
-/** The score a lesson is completed with (quizScoreOf), read from the lesson and the database. */
-export async function lessonQuizScore(
-  userId: string,
-  lessonId: string,
-  contentMdx: string,
-): Promise<{ correct: number; total: number } | null> {
-  return quizScoreOf(await readLessonQuizRecord(userId, lessonId, contentMdx));
-}

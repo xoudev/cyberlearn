@@ -379,8 +379,8 @@ describe("completeLesson - the review cards", () => {
       "u1",
       LESSON_ID,
       [
-        { quizId: "q-2", box: 1, dueAt: new Date("2026-10-12T00:00:00Z") },
-        { quizId: "q-3", box: 3, dueAt: new Date("2026-10-18T00:00:00Z") },
+        { quizId: "q-2", box: 1, dueAt: new Date("2026-10-12T00:00:00Z"), everCorrect: false },
+        { quizId: "q-3", box: 3, dueAt: new Date("2026-10-18T00:00:00Z"), everCorrect: true },
       ],
       m.tx,
     );

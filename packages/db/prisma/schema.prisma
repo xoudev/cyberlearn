@@ -1634,9 +1634,12 @@ model ReviewCard {
   dueAt          DateTime
   /// Wrong answers since the card was enqueued.
   lapses         Int       @default(0) @db.SmallInt
+  /// Whether the question was ever answered right, in its lesson or as a card:
+  /// only such a card retires on its own when long overdue.
+  everCorrect    Boolean   @default(false)
   lastAnsweredAt DateTime?
   /// When the card left the cycle: past its last box, its question gone from
-  /// the lesson, or long overdue after a right answer. Kept rather than
+  /// the lesson, or long overdue after a right answer once. Kept rather than
   /// deleted: enqueueing the same question again leaves it retired.
   retiredAt      DateTime?
   createdAt      DateTime  @default(now())

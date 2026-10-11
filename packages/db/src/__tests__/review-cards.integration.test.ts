@@ -243,8 +243,8 @@ describe("reviewCardRepository (integration, real DB)", () => {
     if (!configured) return;
     const now = new Date("2026-10-11T08:00:00Z");
     const cards = [
-      { quizId: "q-1", box: 1, dueAt: new Date("2026-10-12T00:00:00Z") },
-      { quizId: "q-2", box: 3, dueAt: new Date("2026-10-18T00:00:00Z") },
+      { quizId: "q-1", box: 1, dueAt: new Date("2026-10-12T00:00:00Z"), everCorrect: false },
+      { quizId: "q-2", box: 3, dueAt: new Date("2026-10-18T00:00:00Z"), everCorrect: true },
     ];
     expect(await reviewCardRepository.enqueueForLesson(learner, lessonId, cards)).toBe(2);
     expect(await reviewCardRepository.enqueueForLesson(learner, lessonId, cards)).toBe(0);
@@ -255,13 +255,22 @@ describe("reviewCardRepository (integration, real DB)", () => {
     expect(await reviewCardRepository.findDue(learner, now)).toEqual([]);
   });
 
+  it("never reads a stale card as due, before retireStale has retired it", async () => {
+    if (!configured) return;
+    // On 30 November both are more than thirty days overdue. q-2, answered
+    // right in its lesson, is stale; q-1, never answered right, still waits.
+    const due = await reviewCardRepository.findDue(learner, new Date("2026-11-30T08:00:00Z"));
+    expect(due.map((card) => card.quizId)).toEqual(["q-1"]);
+    expect(await prisma.reviewCard.count({ where: { userId: learner, retiredAt: null } })).toBe(2);
+  });
+
   it("moves a card up a box on a right answer and back to the first on a wrong one", async () => {
     if (!configured) return;
     const question = { lessonId, quizId: "q-1" };
     const read = () =>
       prisma.reviewCard.findUnique({
         where: { userId_lessonId_quizId: { userId: learner, ...question } },
-        select: { box: true, dueAt: true, lapses: true, retiredAt: true },
+        select: { box: true, dueAt: true, lapses: true, everCorrect: true, retiredAt: true },
       });
 
     await reviewCardRepository.applyAnswer(
@@ -274,6 +283,7 @@ describe("reviewCardRepository (integration, real DB)", () => {
       box: 2,
       dueAt: new Date("2026-10-15T00:00:00Z"),
       lapses: 0,
+      everCorrect: true,
       retiredAt: null,
     });
 
@@ -287,6 +297,8 @@ describe("reviewCardRepository (integration, real DB)", () => {
       box: 1,
       dueAt: new Date("2026-10-16T00:00:00Z"),
       lapses: 1,
+      // Answered right once: the miss does not undo it.
+      everCorrect: true,
       retiredAt: null,
     });
   });
@@ -301,6 +313,15 @@ describe("reviewCardRepository (integration, real DB)", () => {
     expect(await reviewCardRepository.retire(learner, [card.id], at)).toBe(1);
     expect(await reviewCardRepository.retire(learner, [card.id], at)).toBe(0);
     expect(await prisma.reviewCard.count({ where: { userId: learner, retiredAt: null } })).toBe(1);
+  });
+
+  it("retires a card answered right once and long overdue, back in the first box or not", async () => {
+    if (!configured) return;
+    // q-1, right then missed, due 16 October: stale on 20 November.
+    const at = new Date("2026-11-20T08:00:00Z");
+    expect(await reviewCardRepository.retireStale(learner, at)).toBe(1);
+    expect(await reviewCardRepository.retireStale(learner, at)).toBe(0);
+    expect(await prisma.reviewCard.count({ where: { userId: learner, retiredAt: null } })).toBe(0);
   });
 
   it("stores one session a day, hands it in once and credits its XP once", async () => {
@@ -334,7 +355,7 @@ describe("reviewCardRepository (integration, real DB)", () => {
       data: { id: gone, email: `rc-gone-${suffix}@t.internal`, displayName: "Partie" },
     });
     await reviewCardRepository.enqueueForLesson(gone, lessonId, [
-      { quizId: "q-1", box: 1, dueAt: new Date() },
+      { quizId: "q-1", box: 1, dueAt: new Date(), everCorrect: false },
     ]);
     await reviewCardRepository.createSession(gone, "2026-10-12", []);
     await prisma.user.delete({ where: { id: gone } });

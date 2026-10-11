@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import {
   answerCard,
-  CARD_FIRST_BOX,
   dayStart,
   dueCutoff,
   readDraw,
@@ -39,6 +38,7 @@ const DUE_CARD = {
   box: true,
   dueAt: true,
   lapses: true,
+  everCorrect: true,
   lesson: { select: { slug: true, title: true } },
 } as const;
 
@@ -49,7 +49,16 @@ export interface DueCardRow {
   box: number;
   dueAt: Date;
   lapses: number;
+  everCorrect: boolean;
   lesson: { slug: string; title: string };
+}
+
+/**
+ * The cards the thirty-day rule retires on the day of `now` (isStale):
+ * answered right at least once and more than CARD_STALE_DAYS overdue.
+ */
+function staleWhere(now: Date): Prisma.ReviewCardWhereInput {
+  return { everCorrect: true, dueAt: { lt: staleBefore(now) } };
 }
 
 const SESSION = {
@@ -114,6 +123,7 @@ export const reviewCardRepository = {
         quizId: card.quizId,
         box: card.box,
         dueAt: card.dueAt,
+        everCorrect: card.everCorrect,
       })),
       skipDuplicates: true,
     });
@@ -123,6 +133,8 @@ export const reviewCardRepository = {
   /**
    * The cards due on the day of `now`, of the lessons still published, the
    * most overdue first and the lowest box next, as a session takes them.
+   * Never a stale card (isStale), whether retireStale has retired it yet or
+   * not: being the most overdue, it would otherwise come first.
    */
   async findDue(userId: string, now: Date, take: number = DUE_WINDOW): Promise<DueCardRow[]> {
     return prisma.reviewCard.findMany({
@@ -130,6 +142,7 @@ export const reviewCardRepository = {
         userId,
         retiredAt: null,
         dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
         ...LIVE_REVIEW_FILTER,
       },
       orderBy: [{ dueAt: "asc" }, { box: "asc" }],
@@ -148,15 +161,14 @@ export const reviewCardRepository = {
     return count;
   },
 
-  /** Retires the learner's cards long overdue after a right answer (isStale). Returns how many. */
+  /**
+   * Retires the learner's cards long overdue and answered right at least
+   * once (isStale). Returns how many. The reads leave them out already
+   * (findDue); this writes it down.
+   */
   async retireStale(userId: string, now: Date): Promise<number> {
     const { count } = await prisma.reviewCard.updateMany({
-      where: {
-        userId,
-        retiredAt: null,
-        box: { gt: CARD_FIRST_BOX },
-        dueAt: { lt: staleBefore(now) },
-      },
+      where: { userId, retiredAt: null, ...staleWhere(now) },
       data: { retiredAt: now },
     });
     return count;
@@ -180,7 +192,14 @@ export const reviewCardRepository = {
       where: {
         userId_lessonId_quizId: { userId, lessonId: question.lessonId, quizId: question.quizId },
       },
-      select: { id: true, box: true, dueAt: true, lapses: true, retiredAt: true },
+      select: {
+        id: true,
+        box: true,
+        dueAt: true,
+        lapses: true,
+        everCorrect: true,
+        retiredAt: true,
+      },
     });
     // Not there (undefined) or retired (a date): either way, nothing to move.
     if (card?.retiredAt !== null) return null;

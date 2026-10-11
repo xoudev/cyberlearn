@@ -1,4 +1,5 @@
 import { prisma } from "@cyberlearn/db";
+import { readDraw, readSessionAnswers } from "@cyberlearn/lib/revisions/cards";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 
@@ -132,15 +133,22 @@ export interface ExportPayload {
     box: number;
     dueAt: Date;
     lapses: number;
+    everCorrect: boolean;
     lastAnsweredAt: Date | null;
     retiredAt: Date | null;
     createdAt: Date;
   }[];
-  /** The daily review sessions: the questions drawn and the answers given. */
+  /** The daily review sessions: the questions drawn, in the order asked, and the answers given. */
   reviewSessions: {
     day: Date;
-    draw: unknown;
-    answers: unknown;
+    questions: {
+      lessonTitle: string;
+      quizId: string;
+      /** The options in the order shown: `optionOrder[k]` is the lesson's index of the k-th one. */
+      optionOrder: number[];
+      /** The shown option picked, null when left unanswered. */
+      selected: number | null;
+    }[];
     completedAt: Date | null;
     xpCredited: boolean;
     createdAt: Date;
@@ -642,6 +650,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         box: true,
         dueAt: true,
         lapses: true,
+        everCorrect: true,
         lastAnsweredAt: true,
         retiredAt: true,
         createdAt: true,
@@ -762,11 +771,29 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       box: card.box,
       dueAt: card.dueAt,
       lapses: card.lapses,
+      everCorrect: card.everCorrect,
       lastAnsweredAt: card.lastAnsweredAt,
       retiredAt: card.retiredAt,
       createdAt: card.createdAt,
     })),
-    reviewSessions,
+    // A draw refers to its cards and lessons by internal id: the export names
+    // the lesson as the session showed it instead, and pairs each question
+    // with the option picked.
+    reviewSessions: reviewSessions.map((session) => {
+      const answers = readSessionAnswers(session.answers);
+      return {
+        day: session.day,
+        questions: readDraw(session.draw).map((ref, index) => ({
+          lessonTitle: ref.domain,
+          quizId: ref.quizId,
+          optionOrder: ref.order,
+          selected: answers[String(index)] ?? null,
+        })),
+        completedAt: session.completedAt,
+        xpCredited: session.xpCredited,
+        createdAt: session.createdAt,
+      };
+    }),
     ratings: ratings.map((r) => ({
       contentTitle: r.lesson?.title ?? r.path?.title ?? null,
       contentType: r.lesson !== null ? ("lesson" as const) : ("path" as const),

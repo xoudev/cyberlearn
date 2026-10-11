@@ -19,7 +19,7 @@ import { checkDuelAnswer } from "../social/duel.js";
  * - A right answer moves a card up a box, due again 1, 3, 7, then 21 days
  *   later; past the last box it retires. A wrong answer sends it back to the
  *   first box (answerCard).
- * - A card long overdue that was last answered right retires on its own
+ * - A card answered right at least once and long overdue retires on its own
  *   (isStale), and so does a card whose question is gone from its lesson
  *   (orphanCards).
  * - A day's session is six cards at most, the most overdue first, two at most
@@ -50,7 +50,7 @@ export const CARD_LAST_BOX: number = CARD_BOX_DAYS.length;
  */
 export const CARD_KEPT_RIGHT_BOX = 3;
 
-/** Overdue by more than this, a card last answered right retires rather than wait. */
+/** Overdue by more than this, a card answered right at least once retires rather than wait. */
 export const CARD_STALE_DAYS = 30;
 
 /** Cards in a day's session, at most. */
@@ -79,9 +79,14 @@ export function dueCutoff(now: Date): Date {
   return dayStart(dayKey(now));
 }
 
+/** On `day` (a day key), a card due before this is more than CARD_STALE_DAYS overdue. */
+function staleCutoff(day: string): Date {
+  return new Date(dayStart(day).getTime() - CARD_STALE_DAYS * DAY_MS);
+}
+
 /** On the day of `now`, a card due before this is more than CARD_STALE_DAYS overdue. */
 export function staleBefore(now: Date): Date {
-  return dueAfter(now, -CARD_STALE_DAYS);
+  return staleCutoff(dayKey(now));
 }
 
 function clampBox(box: number): number {
@@ -98,16 +103,19 @@ export interface CardSchedule {
   box: number;
   dueAt: Date;
   lapses: number;
+  /** Whether the question was ever answered right: in its lesson, or as a card. */
+  everCorrect: boolean;
   lastAnsweredAt: Date | null;
   retiredAt: Date | null;
 }
 
 /**
  * Where a card goes once answered: up a box when right, retired when right
- * in the last box, back to the first box when wrong, with one more lapse.
+ * in the last box, back to the first box when wrong, with one more lapse. A
+ * right answer marks it answered right once, for good.
  */
 export function answerCard(
-  card: Pick<CardSchedule, "box" | "dueAt" | "lapses">,
+  card: Pick<CardSchedule, "box" | "dueAt" | "lapses" | "everCorrect">,
   correct: boolean,
   now: Date,
 ): CardSchedule {
@@ -117,44 +125,63 @@ export function answerCard(
       box: CARD_FIRST_BOX,
       dueAt: dueAfter(now, daysForBox(CARD_FIRST_BOX)),
       lapses: Math.min(card.lapses + 1, MAX_LAPSES),
+      everCorrect: card.everCorrect,
       lastAnsweredAt: now,
       retiredAt: null,
     };
   }
   if (box >= CARD_LAST_BOX) {
-    return { box, dueAt: card.dueAt, lapses: card.lapses, lastAnsweredAt: now, retiredAt: now };
+    return {
+      box,
+      dueAt: card.dueAt,
+      lapses: card.lapses,
+      everCorrect: true,
+      lastAnsweredAt: now,
+      retiredAt: now,
+    };
   }
   const next = box + 1;
   return {
     box: next,
     dueAt: dueAfter(now, daysForBox(next)),
     lapses: card.lapses,
+    everCorrect: true,
     lastAnsweredAt: now,
     retiredAt: null,
   };
 }
 
+/** Answered right at least once and due before `cutoff` (staleCutoff): the thirty-day rule. */
+function isPastStale(card: Pick<CardSchedule, "everCorrect" | "dueAt">, cutoff: Date): boolean {
+  return card.everCorrect && card.dueAt.getTime() < cutoff.getTime();
+}
+
 /**
- * Whether a card retires on its own, being more than CARD_STALE_DAYS overdue
- * after a right answer. A card above the first box was last answered right
- * (a miss sends it back to the first), and somebody away for a month should
- * come back to what they got wrong, not to a backlog of what they knew.
+ * Whether a card retires on its own: answered right at least once, and more
+ * than CARD_STALE_DAYS overdue. Somebody away for a month comes back to the
+ * questions they never got right, not to a backlog of those they did once.
+ * A question never answered right waits however long it takes.
+ *
+ * A session never draws such a card (drawReviewSession, and findDue in the
+ * repository), whether retireStale has written its retirement yet or not.
  */
 export function isStale(
-  card: Pick<CardSchedule, "box" | "dueAt" | "retiredAt">,
+  card: Pick<CardSchedule, "everCorrect" | "dueAt" | "retiredAt">,
   now: Date,
 ): boolean {
-  return (
-    card.retiredAt === null &&
-    card.box > CARD_FIRST_BOX &&
-    card.dueAt.getTime() < staleBefore(now).getTime()
-  );
+  return card.retiredAt === null && isPastStale(card, staleBefore(now));
 }
 
 /**
  * The cards whose question is gone from their lesson, to retire. `quizIds`
- * holds, by lesson id, the quiz ids each lesson has now; a card whose lesson
- * is not in it is not judged.
+ * holds, by lesson id, the quiz ids each lesson has now.
+ *
+ * A card whose lesson is not in it is not judged, and neither is one whose
+ * lesson has no quiz in it: a lesson whose MDX fails to parse reads as having
+ * none (extractLessonQuizzes), and one bad edit must not retire every
+ * learner's cards for that lesson for good (enqueueing again leaves a retired
+ * card retired). A card whose question is really gone is never drawn anyway
+ * (drawReviewSession).
  */
 export function orphanCards<T extends { lessonId: string; quizId: string }>(
   cards: readonly T[],
@@ -162,7 +189,7 @@ export function orphanCards<T extends { lessonId: string; quizId: string }>(
 ): T[] {
   return cards.filter((card) => {
     const ids = quizIds.get(card.lessonId);
-    return ids !== undefined && !ids.has(card.quizId);
+    return ids !== undefined && ids.size > 0 && !ids.has(card.quizId);
   });
 }
 
@@ -211,6 +238,8 @@ export interface NewCard {
   quizId: string;
   box: number;
   dueAt: Date;
+  /** True for the question answered right in the lesson. */
+  everCorrect: boolean;
 }
 
 /**
@@ -237,6 +266,7 @@ export function cardsForCompletion(
       quizId,
       box: CARD_FIRST_BOX,
       dueAt: dueAfter(now, daysForBox(CARD_FIRST_BOX)),
+      everCorrect: false,
     }));
   const lastRight = quizIds.filter((id) => verdict.get(id) === true).at(-1);
   if (lastRight !== undefined) {
@@ -244,6 +274,7 @@ export function cardsForCompletion(
       quizId: lastRight,
       box: CARD_KEPT_RIGHT_BOX,
       dueAt: dueAfter(now, daysForBox(CARD_KEPT_RIGHT_BOX)),
+      everCorrect: true,
     });
   }
   return cards;
@@ -256,6 +287,7 @@ export interface DueCard {
   quizId: string;
   box: number;
   dueAt: Date;
+  everCorrect: boolean;
 }
 
 /** Most overdue first, the lowest box next: the shakiest of those waiting longest. */
@@ -295,7 +327,9 @@ export interface ReviewDrawRef extends MockRef {
 /**
  * A day's session out of the cards due, among those whose question the
  * lesson still has (`sources`, keyed by sourceKey, the domain being the
- * lesson's title).
+ * lesson's title) and that are not stale that day (isStale): a card the
+ * thirty-day rule retires is never asked, whether its retirement was written
+ * yet or not.
  *
  * Each card's options come in the lesson's own shuffle (quiz/option-order.ts)
  * seeded with the day as well: a new order each time the card comes back, so
@@ -309,7 +343,10 @@ export function drawReviewSession(
   userId: string,
   day: string,
 ): ReviewDrawRef[] {
-  const askable = due.filter((card) => sources.has(sourceKey(card.lessonId, card.quizId)));
+  const cutoff = staleCutoff(day);
+  const askable = due.filter(
+    (card) => !isPastStale(card, cutoff) && sources.has(sourceKey(card.lessonId, card.quizId)),
+  );
   return pickSessionCards(askable).flatMap((card): ReviewDrawRef[] => {
     const source = sources.get(sourceKey(card.lessonId, card.quizId));
     if (source === undefined) return [];
