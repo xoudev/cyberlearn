@@ -2,6 +2,59 @@
 
 ---
 
+## 2026-10-11 - Une recherche dans le catalogue listait les leçons des classes des autres
+
+### Constat
+
+Relevé en refaisant les filtres du catalogue (`/lessons`). Dans
+`lessonRepository.findManyWithProgress`, le `where` était un seul objet où
+s'étalaient `...lessonsVisibleTo(userId)` puis, quand une recherche était
+tapée, un `OR` sur le titre et la description. La règle de visibilité est
+elle-même un `OR` (leçon du catalogue, ou leçon d'une classe dont le lecteur
+est membre ou enseignant) : la clé `OR` de la recherche, étalée après,
+remplaçait celle de l'audience, sans erreur ni avertissement. Seul
+`status: "PUBLISHED"` restait. Le trou date de l'arrivée des leçons de classe
+(#213, 2026-09-17).
+
+### Conséquence
+
+Tout lecteur connecté qui tapait une recherche sur `/lessons` recevait aussi
+les leçons publiées des classes des autres dont le titre ou la description
+contenait le terme : titre, description, `refCode` et couverture
+s'affichaient dans la grille, et comptaient dans le total « N missions ». Un
+clic sur la carte passait par `findBySlug`, qui garde la règle, et aboutissait
+à une 404 : les métadonnées ont fui, pas le contenu. Les brouillons n'étaient
+pas concernés. Seule la page `/lessons` lisait cette requête ; la recherche de
+la barre de navigation (`searchRepository`) n'était pas touchée.
+
+### Correctif
+
+`catalogueWhere(userId, filters)`
+(`packages/db/src/repositories/lesson.repository.ts`) compose la requête en un
+`AND` : la règle de visibilité est un terme, et chaque filtre (domaine, niveau,
+statut, recherche) en ajoute un. La liste (`findManyWithProgress`) et les
+compteurs des domaines (`countByCategory`) lisent la même fonction et ne
+peuvent plus diverger. Les autres étalements de `lessonsVisibleTo`,
+`pathsVisibleTo` et `visibleTopics` ont été relus : chacun est posé à côté
+d'un identifiant (`id`, `slug`, `categoryId`), sans second `OR`.
+
+### Tests
+
+- `class-lessons.integration.test.ts`, « stays out of a search from outside
+  the class » : sur une vraie base, un lecteur hors de la classe cherche un
+  terme que portent une leçon du catalogue et une leçon de classe, et ne
+  reçoit que la première.
+- `lesson-catalogue.test.ts` : la règle de visibilité reste à côté d'une
+  recherche, et chaque filtre est un terme de l'`AND`.
+
+### Règle
+
+Ne jamais étaler dans un même objet deux fragments de `where` qui peuvent
+chacun porter `OR`, `AND` ou `NOT` : la seconde clé écrase la première. Ils se
+composent en termes d'un `AND`.
+
+---
+
 ## 2026-10-05 - L'aperçu de l'éditeur de leçons était refusé à la console
 
 ### Constat
