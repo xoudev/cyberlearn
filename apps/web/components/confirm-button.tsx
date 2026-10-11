@@ -2,7 +2,7 @@
 
 // "use client" justified: the button swaps for its question in place and moves the focus.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 
 /**
  * A button for something that cannot be taken back, which asks first, in
@@ -22,6 +22,7 @@ export function ConfirmButton({
   children,
   className,
   question,
+  detail,
   confirmLabel,
   onConfirm,
   ask = true,
@@ -34,6 +35,12 @@ export function ConfirmButton({
   className: string;
   /** Read out as the group's name; shown too unless `showQuestion` is false. */
   question: string;
+  /**
+   * What answering yes does, on a line under the question. Always the group's
+   * description, so a screen reader hears it; out of sight with the question
+   * where `showQuestion` is false, since the row has no room for it either.
+   */
+  detail?: string;
   confirmLabel: string;
   onConfirm: () => void;
   ask?: boolean;
@@ -43,10 +50,13 @@ export function ConfirmButton({
   onAskingChange?: (asking: boolean) => void;
 }): React.JSX.Element {
   const [asking, setAsking] = useState(false);
+  const detailId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  // Where the focus goes once the question is answered: back to the button on
-  // "Annuler", left alone after a confirm (the row usually goes with it).
+  // Whether the focus goes back to the button once the question is answered.
+  // It does on "Annuler", and after a confirm too: the button is back while
+  // the call runs, and stays after a refusal, or with its next label on a
+  // profile. Where the row goes with it, there is no button left to take it.
   const restore = useRef(false);
 
   useEffect(() => {
@@ -59,13 +69,9 @@ export function ConfirmButton({
   }, [asking]);
 
   const settle = (next: boolean): void => {
+    restore.current = !next;
     setAsking(next);
     onAskingChange?.(next);
-  };
-
-  const cancel = (): void => {
-    restore.current = true;
-    settle(false);
   };
 
   if (!asking) {
@@ -74,8 +80,11 @@ export function ConfirmButton({
         ref={triggerRef}
         type="button"
         className={className}
-        disabled={pending}
+        // aria-disabled rather than disabled: the focus is on this button
+        // while the call runs, and a disabled button drops it on the page.
+        aria-disabled={pending || undefined}
         onClick={() => {
+          if (pending) return;
           if (ask) settle(true);
           else onConfirm();
         }}
@@ -89,12 +98,13 @@ export function ConfirmButton({
     <span
       role="group"
       aria-label={question}
+      aria-describedby={detail !== undefined ? detailId : undefined}
       className="confirm-step"
       onKeyDown={(event) => {
         if (event.key !== "Escape") return;
         // Escape answers the question, not whatever panel holds it.
         event.stopPropagation();
-        cancel();
+        settle(false);
       }}
     >
       {showQuestion && <span className="confirm-step__question">{question}</span>}
@@ -108,9 +118,22 @@ export function ConfirmButton({
       >
         {confirmLabel}
       </button>
-      <button ref={cancelRef} type="button" className="btn btn--ghost btn--sm" onClick={cancel}>
+      <button
+        ref={cancelRef}
+        type="button"
+        className="btn btn--ghost btn--sm"
+        onClick={() => {
+          settle(false);
+        }}
+      >
         Annuler
       </button>
+      {detail !== undefined && (
+        // Still read out when hidden: a description points at it by id.
+        <span id={detailId} className="confirm-step__detail" hidden={!showQuestion}>
+          {detail}
+        </span>
+      )}
     </span>
   );
 }

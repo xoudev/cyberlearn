@@ -966,6 +966,14 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   letter-spacing: 0.04em;
   color: #ff6b7a;
 }
+/* What answering yes does: a line of its own, under the question and its
+   answers. */
+.confirm-step__detail {
+  flex-basis: 100%;
+  font: 11px var(--font-mono);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition: none;
@@ -2271,10 +2279,13 @@ button.notif-row:hover {
 }
 
 /* A challenge's hints, each a button (hints-panel.tsx). */
-.hint-row:hover:not(:disabled) {
+.hint-row:hover:not(:disabled):not([aria-disabled="true"]) {
   border-color: var(--color-border-default);
 }
-.hint-row:focus-visible {
+/* A revealed hint takes the focus from its button by script: ringed after a
+   key press, left plain after a click, as :focus-visible decides. */
+.hint-row:focus-visible,
+.hint-revealed:focus-visible {
   outline: 2px solid var(--cosmetic-accent);
   outline-offset: 2px;
 }

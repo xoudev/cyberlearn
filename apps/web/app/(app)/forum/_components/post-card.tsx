@@ -46,11 +46,15 @@ export function PostCard({
   const [held, setHeld] = useState(false);
   const [pending, start] = useTransition();
 
+  // Awaited inside the transition, so `pending` covers the call itself and the
+  // buttons stay held until it answers; a call that throws is said like a
+  // refusal rather than lost as an unhandled rejection.
   const save = (): void => {
     setError(null);
     setHeld(false);
-    start(() => {
-      void editPostAction({ postId: post.id, content: draft, path }).then((res) => {
+    start(async () => {
+      try {
+        const res = await editPostAction({ postId: post.id, content: draft, path });
         if (res.ok) {
           setEditing(false);
           // The edit was saved and the post went down with it, so say so here:
@@ -59,16 +63,21 @@ export function PostCard({
           return;
         }
         setError(res.error ?? "Modification impossible.");
-      });
+      } catch {
+        setError("Modification impossible pour l'instant. Réessaie dans un moment.");
+      }
     });
   };
 
   const remove = (): void => {
     setError(null);
-    start(() => {
-      void hidePostAction({ postId: post.id, path }).then((res) => {
+    start(async () => {
+      try {
+        const res = await hidePostAction({ postId: post.id, path });
         if (!res.ok) setError(res.error ?? "Suppression impossible.");
-      });
+      } catch {
+        setError("Suppression impossible pour l'instant. Réessaie dans un moment.");
+      }
     });
   };
 

@@ -23,7 +23,8 @@ vi.mock("@cyberlearn/db/supabase/client", () => {
     }),
   };
 });
-// Only what an anchor takes: Link's own props (prefetch) stay behind.
+// Only what an anchor takes: Link's own props (prefetch) stay behind. Marked,
+// so a test can tell the router's link from a plain one.
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -38,7 +39,7 @@ vi.mock("next/link", () => ({
     style?: React.CSSProperties;
     onClick?: React.MouseEventHandler<HTMLAnchorElement>;
   }) => (
-    <a href={href} className={className} style={style} onClick={onClick}>
+    <a href={href} className={className} style={style} onClick={onClick} data-router-link="">
       {children}
     </a>
   ),
@@ -106,6 +107,37 @@ describe("NotificationPanel rows", () => {
     await openPanel();
     const link = screen.getByRole("link", { name: /Révision recommandée/ });
     expect(link.getAttribute("href")).toBe("/revisions");
+    expect(link.hasAttribute("data-router-link")).toBe(true);
+  });
+
+  it("keeps a link to a route handler off the router, and still follows it", async () => {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      notifications: [
+        notice({
+          id: "44444444-4444-4444-8444-444444444444",
+          type: "CERTIFICATE_ISSUED",
+          title: "Certificat émis",
+          body: 'Ton certificat pour "Réseau" est disponible.',
+          actionUrl: "/api/certificates/55555555-5555-4555-8555-555555555555/download",
+        }),
+      ],
+    });
+    render(<NotificationPanel initialUnreadCount={1} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "1 notifications non lues" }));
+    const link = await screen.findByRole("link", { name: /Certificat émis/ });
+
+    expect(link.getAttribute("href")).toBe(
+      "/api/certificates/55555555-5555-4555-8555-555555555555/download",
+    );
+    expect(link.hasAttribute("data-router-link")).toBe(false);
+
+    fireEvent.click(link);
+    expect(m.markNotificationReadAction).toHaveBeenCalledWith(
+      "44444444-4444-4444-8444-444444444444",
+    );
+    expect(screen.queryByText("Certificat émis")).toBeNull();
   });
 
   it("marks the notice read and closes the panel when it is followed", async () => {

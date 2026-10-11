@@ -3,6 +3,7 @@ import React from "react";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FriendActionResult, FriendEntry } from "@/app/(app)/_actions/friend-actions";
+import { UNFRIEND_DETAIL } from "@cyberlearn/lib/social/friendship";
 
 const m = vi.hoisted(() => ({
   getFriendsAction: vi.fn(),
@@ -87,7 +88,10 @@ describe("FriendsPanel rows", () => {
     fireEvent.click(within(row).getByRole("button", { name: "Retirer" }));
     expect(m.removeFriendAction).not.toHaveBeenCalled();
     expect(within(row).getByText("Retirer de tes amis ?")).toBeTruthy();
-    expect(within(row).getByRole("group", { name: "Retirer Alex de tes amis ?" })).toBeTruthy();
+    const group = within(row).getByRole("group", { name: "Retirer Alex de tes amis ?" });
+    // What it does, as on the profile and in the app: read out, not drawn.
+    const describedBy = group.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(describedBy)?.textContent).toBe(UNFRIEND_DETAIL);
 
     fireEvent.click(within(row).getByRole("button", { name: "Retirer" }));
     expect(m.removeFriendAction).toHaveBeenCalledWith(ALEX);
@@ -123,6 +127,26 @@ describe("FriendsPanel rows", () => {
       "Cette demande n'est plus en attente.",
     );
     expect(screen.getByText("Sam")).toBeTruthy();
+  });
+
+  it("asks again after a failed removal, instead of keeping the old failure", async () => {
+    m.removeFriendAction.mockRejectedValue(new Error("network"));
+    await openPanel();
+    const row = rowOf("Alex");
+    fireEvent.click(within(row).getByRole("button", { name: "Retirer" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Retirer" }));
+    expect((await within(row).findByRole("alert")).textContent).toMatch(
+      /Impossible pour l'instant/,
+    );
+    await vi.waitFor(() => {
+      expect(
+        within(row).getByRole("button", { name: "Retirer" }).hasAttribute("aria-disabled"),
+      ).toBe(false);
+    });
+
+    fireEvent.click(within(row).getByRole("button", { name: "Retirer" }));
+    expect(within(row).queryByRole("alert")).toBeNull();
+    expect(within(row).getByText("Retirer de tes amis ?")).toBeTruthy();
   });
 
   it("says so when the call itself fails", async () => {

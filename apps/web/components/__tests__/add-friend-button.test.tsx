@@ -3,6 +3,7 @@ import React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FriendActionResult } from "@/app/(app)/_actions/friend-actions";
+import { UNFRIEND_DETAIL } from "@cyberlearn/lib/social/friendship";
 
 const m = vi.hoisted(() => ({
   sendFriendRequestAction: vi.fn<(id: string) => Promise<FriendActionResult>>(),
@@ -42,10 +43,14 @@ describe("AddFriendButton", () => {
 
     expect(m.removeFriendAction).not.toHaveBeenCalled();
     expect(screen.getByText("Retirer Alex de tes amis ?")).toBeTruthy();
+    // The same words as the app's dialog: what ending it does, and does not.
+    expect(screen.getByText(UNFRIEND_DETAIL)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Retirer" }));
     expect(m.removeFriendAction).toHaveBeenCalledWith(TARGET);
-    expect(await screen.findByRole("button", { name: "Ajouter en ami" })).toBeTruthy();
+    const next = await screen.findByRole("button", { name: "Ajouter en ami" });
+    // The button stays, with its next label, and the keyboard is still on it.
+    expect(document.activeElement).toBe(next);
   });
 
   it("says why ending it failed, instead of staying silent", async () => {

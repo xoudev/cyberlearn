@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
@@ -15,13 +15,11 @@ import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
 import { fetchFriendsApi, fetchMyAvatarUrl } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
+import { PROFILE_SUB_TABS, profileSubFrom, type ProfileSub } from "@/lib/profile-tabs";
 import { useProfile } from "@/lib/queries";
 import { CHANGELOG_COPY } from "@/lib/changelog";
 import { useSession } from "@/lib/session";
 import { useChangelogSeen } from "@/lib/use-changelog-seen";
-
-const SUB_TABS = ["Badges", "Certificats", "Stats", "Collection"] as const;
-type Sub = (typeof SUB_TABS)[number];
 
 // In-app screens first, then sections that still live on the web.
 const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
@@ -59,7 +57,20 @@ export default function Profil(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = useProfile(session?.user.id);
   const { unseen: changelogUnseen } = useChangelogSeen();
-  const [sub, setSub] = useState<Sub>("Badges");
+  // A notice about a certificate or a badge names its sub-tab (?tab=).
+  const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
+  const [sub, setSub] = useState<ProfileSub>(() => profileSubFrom(tab) ?? "Badges");
+
+  // The tab screen stays mounted, so a later notice changes the param under
+  // it rather than opening it afresh. Once applied, the param is cleared: the
+  // reader's own choice of sub-tab then stands, and the next notice that
+  // names one is a change again, even if it names the same.
+  useEffect(() => {
+    const wanted = profileSubFrom(tab);
+    if (wanted === null) return;
+    setSub(wanted);
+    router.setParams({ tab: undefined });
+  }, [tab, router]);
   // An uploaded avatar lives in a private bucket, so the row the app read
   // itself holds a marker rather than a URL and only the server can sign it.
   // Everything else - a glyph, a preset, nothing at all - Avatar draws from
@@ -150,7 +161,7 @@ export default function Profil(): React.JSX.Element {
 
       {/* Sub-tabs */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-        {SUB_TABS.map((s) => (
+        {PROFILE_SUB_TABS.map((s) => (
           <PressableScale
             key={s}
             onPress={() => setSub(s)}

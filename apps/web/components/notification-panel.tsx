@@ -344,6 +344,11 @@ export function NotificationPanel({
   );
 }
 
+/** Whether a notice's link is one of the site's route handlers, not a page. */
+function isRouteHandler(href: string): boolean {
+  return href === "/api" || href.startsWith("/api/");
+}
+
 /**
  * One notice. A notice that leads somewhere is a link, one that only needs
  * reading is a button that marks it read, and a read one with nowhere to go
@@ -482,6 +487,24 @@ function NotificationRow({
   );
 
   if (item.actionUrl) {
+    const follow = (event: React.MouseEvent<HTMLAnchorElement>): void => {
+      if (isUnread) onRead(item.id);
+      // A new tab leaves this one where it was, panel included.
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      onFollow();
+    };
+    // A route handler is not a page the router can open: it would fetch it as
+    // one, fail, and fall back to loading it anyway. A plain link loads it
+    // once. Certificate notices used to point at the PDF route; the stored
+    // ones were rewritten (migration 20261011120000_certificate_notice_links),
+    // and this keeps any other route handler off the router.
+    if (isRouteHandler(item.actionUrl)) {
+      return (
+        <a href={item.actionUrl} className="notif-row" style={style} onClick={follow}>
+          {content}
+        </a>
+      );
+    }
     return (
       <Link
         href={item.actionUrl}
@@ -490,12 +513,7 @@ function NotificationRow({
         prefetch={false}
         className="notif-row"
         style={style}
-        onClick={(event) => {
-          if (isUnread) onRead(item.id);
-          // A new tab leaves this one where it was, panel included.
-          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-          onFollow();
-        }}
+        onClick={follow}
       >
         {content}
       </Link>

@@ -2,7 +2,7 @@
 
 // "use client" justified: reveal interactions, pending state per hint, local revealed content
 
-import React, { useState } from "react";
+import React, { useId, useRef, useState } from "react";
 import { revealHintAction } from "../../_actions/challenge-actions";
 
 interface Hint {
@@ -21,25 +21,48 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
   const [revealed, setRevealed] = useState<Record<string, string>>(initialRevealed);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set<string>());
+  const baseId = useId();
+  // The hint just revealed by a press here, which takes the focus once it is
+  // drawn: the button that had it is gone, and the text has to be heard.
+  // Hints revealed on an earlier visit are left alone.
+  const focusNext = useRef<string | null>(null);
 
   if (hints.length === 0) return null;
 
+  function settle(hintId: string): void {
+    setPendingIds((s) => {
+      const next = new Set(s);
+      next.delete(hintId);
+      return next;
+    });
+  }
+
   function handleReveal(hintId: string): void {
     setPendingIds((s) => new Set([...s, hintId]));
-    void revealHintAction(hintId).then((result) => {
-      setPendingIds((s) => {
-        const next = new Set(s);
-        next.delete(hintId);
-        return next;
-      });
-      const { error, content } = result;
-      if (error !== undefined) {
-        setErrors((prev) => ({ ...prev, [hintId]: error }));
-      } else if (content !== undefined) {
-        setRevealed((prev) => ({ ...prev, [hintId]: content }));
-        setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== hintId)));
-      }
-    });
+    revealHintAction(hintId).then(
+      (result) => {
+        settle(hintId);
+        const { error, content } = result;
+        if (error !== undefined) {
+          setErrors((prev) => ({ ...prev, [hintId]: error }));
+        } else if (content !== undefined) {
+          focusNext.current = hintId;
+          setRevealed((prev) => ({ ...prev, [hintId]: content }));
+          setErrors((prev) =>
+            Object.fromEntries(Object.entries(prev).filter(([k]) => k !== hintId)),
+          );
+        }
+      },
+      () => {
+        // A call that throws used to leave the row on "Révélation..." for
+        // good, with nothing said.
+        settle(hintId);
+        setErrors((prev) => ({
+          ...prev,
+          [hintId]: "Action impossible pour l'instant. Réessaie dans un moment.",
+        }));
+      },
+    );
   }
 
   return (
@@ -83,9 +106,23 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           const num = String(idx + 1).padStart(2, "0");
 
           if (isRevealed) {
+            const contentId = `${baseId}-${hint.id}`;
             return (
               <div
                 key={hint.id}
+                ref={(node) => {
+                  if (node !== null && focusNext.current === hint.id) {
+                    focusNext.current = null;
+                    node.focus();
+                  }
+                }}
+                // Focusable by script only, so a screen reader announces the
+                // hint where the button was rather than leaving it unsaid.
+                tabIndex={-1}
+                role="group"
+                aria-label={`Indice ${num} révélé`}
+                aria-describedby={contentId}
+                className="hint-revealed"
                 style={{
                   display: "block",
                   borderLeft: "3px solid var(--cosmetic-accent)",
@@ -113,6 +150,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   </span>
                 </div>
                 <div
+                  id={contentId}
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 13,
@@ -129,15 +167,19 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
 
           // A real button: the row used to be a clickable <div>, out of the
           // tab order and deaf to Enter. Disabled when the XP is not there,
-          // so the keyboard skips what the mouse could not do either.
+          // so the keyboard skips what the mouse could not do either. While
+          // the call runs it is only aria-disabled: the focus is on it, and a
+          // disabled button would drop it on the page.
           return (
             <div key={hint.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <button
                 type="button"
                 className="card card--sunken hint-row"
-                disabled={!canAfford || isPending}
+                disabled={!canAfford}
+                aria-disabled={isPending || undefined}
                 aria-busy={isPending}
                 onClick={() => {
+                  if (isPending) return;
                   handleReveal(hint.id);
                 }}
                 style={{

@@ -99,6 +99,22 @@ describe("PostCard", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("Message introuvable.");
   });
 
+  it("says so when the take-down call itself fails, and lets it be tried again", async () => {
+    m.hidePostAction.mockRejectedValue(new Error("network"));
+    renderCard(null);
+    fireEvent.click(screen.getByRole("button", { name: "Retirer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retirer" }));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(
+      /Suppression impossible pour l'instant/,
+    );
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Retirer" }).hasAttribute("aria-disabled")).toBe(
+        false,
+      );
+    });
+  });
+
   it("links the author's name to a profile the reader may open", () => {
     renderCard("/u/sam");
     expect(screen.getByRole("link", { name: "Sam" }).getAttribute("href")).toBe("/u/sam");

@@ -6,6 +6,7 @@ import {
   friendshipAfter,
   friendshipMove,
   friendshipMoveAsksFirst,
+  UNFRIEND_DETAIL,
   unfriendQuestion,
   type FriendshipView,
 } from "@cyberlearn/lib";
@@ -24,9 +25,10 @@ import { ConfirmButton } from "@/components/confirm-button";
  * asked you turns into being friends, and the label has to be able to say that.
  * The labels and the moves are the app's too (@cyberlearn/lib/social/friendship).
  *
- * "Retirer des amis" asks first, in place: nobody is told, and undoing it
- * takes a new request the other person has to accept. Whatever the move, a
- * refusal is said under the button rather than leaving it as it was.
+ * "Retirer des amis" asks first, in place, and says what it does in the
+ * app's words: nobody is told, and undoing it takes a new request the other
+ * person has to accept. Whatever the move, a refusal is said under the button
+ * rather than leaving it as it was.
  */
 export function AddFriendButton({
   targetId,
@@ -66,6 +68,7 @@ export function AddFriendButton({
         ask={friendshipMoveAsksFirst(state)}
         pending={pending}
         question={unfriendQuestion(name)}
+        detail={UNFRIEND_DETAIL}
         confirmLabel="Retirer"
         onConfirm={run}
       >

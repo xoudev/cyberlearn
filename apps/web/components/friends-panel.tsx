@@ -14,7 +14,11 @@ import { AvatarView } from "@/components/avatar-view";
 import { ConfirmButton } from "@/components/confirm-button";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
-import { UNFRIEND_PROMPT, unfriendQuestion } from "@cyberlearn/lib/social/friendship";
+import {
+  UNFRIEND_DETAIL,
+  UNFRIEND_PROMPT,
+  unfriendQuestion,
+} from "@cyberlearn/lib/social/friendship";
 
 /**
  * Friends, in the navbar rather than on a page of their own.
@@ -137,15 +141,23 @@ function Row({
             outcome from accepting - which is why the row says which it was
             rather than the panel guessing from the list it sat in. Only
             unfriending asks first: nobody is told, and only the other person
-            can undo it. A request costs one tap to send again. */}
+            can undo it. A request costs one tap to send again. The row has
+            no room for the detail the profile shows under the question, so
+            it is the group's description only, read out but not drawn. */}
         <ConfirmButton
           className="btn btn--ghost btn--sm"
           ask={kind === "friends"}
           pending={pending}
           question={unfriendQuestion(name)}
+          detail={UNFRIEND_DETAIL}
           confirmLabel="Retirer"
           showQuestion={false}
-          onAskingChange={setAsking}
+          onAskingChange={(next) => {
+            setAsking(next);
+            // A failure from the last try would hold the line the question
+            // takes, and the answers would sit under an unrelated message.
+            if (next) setError(null);
+          }}
           onConfirm={() => {
             act(() => removeFriendAction(person.id), "removed");
           }}
