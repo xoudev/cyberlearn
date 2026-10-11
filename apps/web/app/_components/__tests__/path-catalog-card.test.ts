@@ -35,6 +35,15 @@ describe("the rating in a card's stats line", () => {
     expect(html).toContain("· 3 avis");
   });
 
+  it("groups a large count like the path's own page, in the line and the tooltip", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(RatingStat, { rating: { avg: 4.5, count: 1250 }, withCount: true }),
+    );
+    expect(html).toContain("· 1 250 avis");
+    expect(html).toContain("4,5 sur 5, 1 250 avis");
+    expect(html).not.toContain("1250");
+  });
+
   it("draws nothing before anybody has rated", () => {
     expect(
       renderToStaticMarkup(React.createElement(RatingStat, { rating: { avg: 0, count: 0 } })),

@@ -63,14 +63,16 @@ export function RatingStat({
 }): React.JSX.Element | null {
   if (rating.count <= 0) return null;
   const avg = formatAverage(rating.avg);
-  const title = `Note moyenne des apprenants : ${avg} sur 5, ${String(rating.count)} avis`;
+  // Grouped like averageLine on the path's own page: "1 250 avis", not "1250 avis".
+  const count = formatNumberFr(rating.count);
+  const title = `Note moyenne des apprenants : ${avg} sur 5, ${count} avis`;
   return (
     <span className="rating" title={title}>
       <span aria-hidden="true" className="rating__star">
         ★
       </span>{" "}
       <b>{avg}</b>
-      {withCount && <> · {rating.count} avis</>}
+      {withCount && <> · {count} avis</>}
     </span>
   );
 }

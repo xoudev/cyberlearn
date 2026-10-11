@@ -103,7 +103,9 @@ export function RatingCard({
         </Text>
       ) : null}
       {/* Wraps on a narrow screen: the label goes under the stars rather than
-          past the card's edge, React Native not shrinking a row's children. */}
+          past the card's edge, React Native not shrinking a row's children.
+          The gap alone spaces the label, so it lines up with the first star
+          once it wraps. */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
         {[1, 2, 3, 4, 5].map((n) => (
           <Pressable
@@ -124,11 +126,7 @@ export function RatingCard({
             </Text>
           </Pressable>
         ))}
-        {score > 0 ? (
-          <Text variant="bodySm" style={{ marginLeft: 6 }}>
-            {ratingLabel(score)}
-          </Text>
-        ) : null}
+        {score > 0 ? <Text variant="bodySm">{ratingLabel(score)}</Text> : null}
       </View>
       {score > 0 && !saved ? (
         <>

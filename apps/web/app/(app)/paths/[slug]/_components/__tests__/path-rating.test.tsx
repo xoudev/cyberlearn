@@ -82,6 +82,18 @@ describe("PathRating", () => {
     );
   });
 
+  it("lets the stars wrap in the narrow column, the score's word on a line of its own", () => {
+    renderRating(true);
+    fireEvent.click(screen.getByRole("button", { name: "4 étoiles" }));
+    // The five stars plus "Excellent" on one unbreakable line overflowed the
+    // 320px column: the row must wrap and shrink, and leave the word out.
+    const row = screen.getByRole("button", { name: "1 étoile" }).parentElement;
+    expect(row).not.toBeNull();
+    expect(row?.style.flexWrap).toBe("wrap");
+    expect(row?.style.minWidth).toMatch(/^0(px)?$/);
+    expect(row?.contains(screen.getByText("Bien"))).toBe(false);
+  });
+
   it("sends the note and the comment to the path, not to a lesson", async () => {
     renderRating(true);
     expect(screen.getByRole("heading", { name: "Note ce parcours" })).toBeTruthy();
