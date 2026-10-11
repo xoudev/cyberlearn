@@ -40,6 +40,7 @@ import {
 } from "./mdx-guide-sections";
 import { parseLessonBlocks } from "@cyberlearn/lib/mdx-blocks";
 import { BlockEditor } from "./block-editor/block-editor";
+import { MDX_EDITOR_THEME, mdxEditorTheme } from "./mdx-editor-theme";
 import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
 import { inlineTokens, innerText, parseStringProps, stripImportDeclarations } from "./mdx-source";
 
@@ -68,15 +69,6 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
     </div>
   ),
 });
-
-// ── Tokens ─────────────────────────────────────────────────────────────────────
-/* The editor chrome follows the accent the reader has equipped, like the rest
- * of the app. Monaco's own theme is the exception below: its colours go through a
- * JavaScript API that paints to a canvas, where a CSS custom property means
- * nothing, so the cursor keeps a literal. Outside the app - in the admin
- * console - tokens.css defines the accent as the brand turquoise, which is what
- * this colour already was. */
-const TURQ = "var(--color-brand-turquoise)";
 
 // ── Preview - inline markdown renderer ────────────────────────────────────────
 
@@ -975,49 +967,6 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
   );
 }
 
-// ── Monaco theme (defined once) ────────────────────────────────────────────────
-
-const THEME_DEFINED = { current: false };
-
-function defineTheme(monaco: Parameters<BeforeMount>[0]) {
-  if (THEME_DEFINED.current) return;
-  THEME_DEFINED.current = true;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  monaco.editor.defineTheme("cyberlearn", {
-    base: "vs-dark",
-    inherit: true,
-    rules: [
-      { token: "keyword", foreground: "6E8BFF" },
-      { token: "string", foreground: "0AFFD4" },
-      { token: "comment", foreground: "44406B", fontStyle: "italic" },
-      { token: "number", foreground: "FFB020" },
-      { token: "tag", foreground: "FF6B9D" },
-      { token: "attribute.name", foreground: "FFB020" },
-      { token: "attribute.value", foreground: "0AFFD4" },
-      { token: "markup.heading", foreground: "F5F5FA", fontStyle: "bold" },
-      { token: "markup.bold", foreground: "F5F5FA", fontStyle: "bold" },
-      { token: "markup.italic", foreground: "D0CDEC", fontStyle: "italic" },
-    ],
-    colors: {
-      "editor.background": "#07051E",
-      "editor.foreground": "var(--color-text-secondary)",
-      "editor.lineHighlightBackground": "var(--color-bg-elevated)",
-      "editor.selectionBackground": "#2A256088",
-      "editorLineNumber.foreground": "var(--color-text-disabled)",
-      "editorLineNumber.activeForeground": "var(--color-text-muted)",
-      "editorCursor.foreground": TURQ,
-      "editorIndentGuide.background1": "var(--color-border-subtle)",
-      "scrollbarSlider.background": "#2A256066",
-      "scrollbarSlider.hoverBackground": "#44406B88",
-      "editorWidget.background": "var(--color-bg-elevated)",
-      "editorWidget.border": BORDER,
-      "editorSuggestWidget.background": "var(--color-bg-elevated)",
-      "input.background": "#07051E",
-      "input.border": BORDER,
-    },
-  });
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export interface MdxEditorPanelProps {
@@ -1033,6 +982,7 @@ export function MdxEditorPanel({
   preview,
 }: MdxEditorPanelProps): React.ReactElement {
   const editorRef = useRef<EditorInstance | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
@@ -1063,8 +1013,11 @@ export function MdxEditorPanel({
   const handleMount = useCallback<OnMount>((editor) => {
     editorRef.current = editor;
   }, []);
+  // Defined at each mount, not once per page: the cursor is the accent equipped
+  // now, read under the panel (mdx-editor-theme.ts).
   const handleBefore = useCallback<BeforeMount>((monaco) => {
-    defineTheme(monaco);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    monaco.editor.defineTheme(MDX_EDITOR_THEME, mdxEditorTheme(panelRef.current));
   }, []);
 
   // Insert raw text at cursor; in the block view, as blocks at the end.
@@ -1123,7 +1076,10 @@ export function MdxEditorPanel({
   }, []);
 
   return (
-    <div style={{ border: `1px solid ${BORDER}`, overflow: "hidden", background: "#07051E" }}>
+    <div
+      ref={panelRef}
+      style={{ border: `1px solid ${BORDER}`, overflow: "hidden", background: "#07051E" }}
+    >
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
       <div
         style={{
@@ -1703,7 +1659,7 @@ export function MdxEditorPanel({
               onChange={(v) => {
                 onChange(v ?? "");
               }}
-              theme="cyberlearn"
+              theme={MDX_EDITOR_THEME}
               onMount={handleMount}
               beforeMount={handleBefore}
               options={{

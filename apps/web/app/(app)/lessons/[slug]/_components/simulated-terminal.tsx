@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
 import { CommandExplanation } from "./command-explanation";
+import { simulatedTerminalTheme } from "./terminal-themes";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import { getTerminalScenario } from "@cyberlearn/lib";
 
@@ -594,49 +595,10 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       const { Terminal } = await import("@xterm/xterm");
       const { FitAddon } = await import("@xterm/addon-fit");
 
-      // Resolve the equipped terminal-theme cosmetic to concrete hex. xterm paints
-      // to a canvas with JS colors, so we read the cascaded var(--cosmetic-terminal-*)
-      // off a probe element (custom props with nested var() do not resolve directly).
-      const resolveColor = (name: string, fallback: string): string => {
-        const host = containerRef.current;
-        if (!host) return fallback;
-        const probe = document.createElement("span");
-        probe.style.cssText = `display:none;color:var(${name})`;
-        host.appendChild(probe);
-        const rgb = getComputedStyle(probe).color;
-        host.removeChild(probe);
-        const m = /(\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
-        if (!m) return fallback;
-        const [, r = "0", g = "0", bl = "0"] = m;
-        const hex = (v: string): string => Number(v).toString(16).padStart(2, "0");
-        return `#${hex(r)}${hex(g)}${hex(bl)}`;
-      };
-      const termBg = resolveColor("--cosmetic-terminal-bg", "var(--color-bg-base)");
-      const termFg = resolveColor("--cosmetic-terminal-fg", "var(--color-text-secondary)");
-
       term = new Terminal({
-        theme: {
-          background: termBg,
-          foreground: termFg,
-          cursor: isPs ? "#FFFF54" : "var(--cosmetic-accent)",
-          cursorAccent: termBg,
-          black: termBg,
-          green: "var(--cosmetic-accent)",
-          cyan: "var(--color-info)",
-          red: "var(--color-category-cybersec)",
-          yellow: "var(--color-warning)",
-          white: "var(--color-text-primary)",
-          brightBlack: "var(--color-text-disabled)",
-          brightGreen: "var(--cosmetic-accent)",
-          brightCyan: "var(--color-info)",
-          brightWhite: "var(--color-text-primary)",
-          brightRed: "var(--color-category-cybersec)",
-          brightYellow: "var(--color-rarity-legendary)",
-          blue: "var(--color-brand-blue)",
-          magenta: "#B14DFF",
-          brightBlue: "var(--color-rarity-rare)",
-          brightMagenta: "#D580FF",
-        },
+        // Concrete colours, read under the container: xterm cannot read a
+        // CSS variable (terminal-themes.ts).
+        theme: simulatedTerminalTheme(isPs ? "powershell" : "bash", containerRef.current),
         fontFamily: "JetBrains Mono, Menlo, monospace",
         fontSize: 13,
         lineHeight: 1.5,

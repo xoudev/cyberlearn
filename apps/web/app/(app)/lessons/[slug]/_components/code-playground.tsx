@@ -5,6 +5,7 @@ import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/re
 import { getPythonRuntime } from "@/lib/python/runtime";
 import { useCodeDraft } from "@/lib/lessons/code-draft";
 import { useLessonCompletion } from "./lesson-completion-context";
+import { defineLessonEditorTheme, LESSON_EDITOR_THEME } from "./lesson-editor-theme";
 import {
   DraftControls,
   ErrorHint,
@@ -144,6 +145,7 @@ export function CodePlayground({
   const [running, setRunning] = useState(false);
   const [editorLoaded, setEditorLoaded] = useState(false);
   const EditorRef = useRef<typeof MonacoEditorComp | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
 
   const completion = useLessonCompletion();
   const completionRef = useRef(completion);
@@ -166,35 +168,9 @@ export function CodePlayground({
     });
   }, []);
 
-  // Define the custom CyberLearn Monaco theme before mount
+  // The lesson editors' theme, its accent read under this card (lesson-editor-theme.ts)
   const handleBeforeMount: BeforeMount = (monaco) => {
-    // SAFETY: BeforeMount provides the full Monaco namespace; defineTheme is a standard API
-    (
-      monaco as { editor: { defineTheme: (name: string, data: unknown) => void } }
-    ).editor.defineTheme("cyberlearn-dark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [
-        { token: "comment", foreground: "7F7BA9", fontStyle: "italic" },
-        { token: "keyword", foreground: "4D8BFF" },
-        { token: "string", foreground: "0AFFD4" },
-        { token: "number", foreground: "FFB020" },
-        { token: "type", foreground: "B14DFF" },
-        { token: "identifier", foreground: "E0DDFF" },
-      ],
-      colors: {
-        "editor.background": "var(--color-bg-elevated)",
-        "editor.foreground": "#E0DDFF",
-        "editor.lineHighlightBackground": "#1A1838",
-        "editorLineNumber.foreground": "var(--color-text-disabled)",
-        "editorLineNumber.activeForeground": "var(--cosmetic-accent)",
-        "editor.selectionBackground": "var(--color-border-default)",
-        "editorCursor.foreground": "var(--cosmetic-accent)",
-        "editor.inactiveSelectionBackground": "var(--color-border-subtle)",
-        "editorIndentGuide.background1": "var(--color-border-subtle)",
-        "editorWhitespace.foreground": "var(--color-border-default)",
-      },
-    });
+    defineLessonEditorTheme(monaco, frameRef.current);
   };
 
   const isValidated =
@@ -275,6 +251,7 @@ export function CodePlayground({
 
   return (
     <div
+      ref={frameRef}
       className="card card--sunken"
       style={{
         margin: "32px 0",
@@ -354,7 +331,7 @@ export function CodePlayground({
           onChange={(v) => {
             setCode(v ?? "");
           }}
-          theme="cyberlearn-dark"
+          theme={LESSON_EDITOR_THEME}
           beforeMount={handleBeforeMount}
           options={{
             fontSize: 13,
