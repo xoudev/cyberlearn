@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId, useLayoutEffect, useRef } from "react";
+import React, { useId, useInsertionEffect, useLayoutEffect, useRef } from "react";
 import { cn } from "../lib/utils.js";
 import { ModalShell } from "./modal-shell.js";
 
@@ -24,7 +24,7 @@ import { ModalShell } from "./modal-shell.js";
  *
  * Either way the focus moves into it when it opens and goes back to what
  * opened it when it closes, unless the reader has since put it somewhere else
- * in the page.
+ * in the page, or the caller says not to (`returnFocus={false}`).
  */
 export interface SideDrawerProps {
   open: boolean;
@@ -39,6 +39,13 @@ export interface SideDrawerProps {
   footer?: React.ReactNode;
   /** Over the page (the default), or docked beside it. */
   modal?: boolean;
+  /**
+   * Whether closing it gives the focus back to what opened it: read when it
+   * closes, from the render that closes it. False when it closes because the
+   * page changed under it: the opener may still be there (the navbar's gear),
+   * but a new page is read from its start.
+   */
+  returnFocus?: boolean;
   /** The panel's width in pixels, the window's at most. Defaults to the settings'. */
   width?: number;
   /** A class on the panel, for a stylesheet scoped to the content. */
@@ -54,12 +61,20 @@ export function SideDrawer({
   closeLabel = "Fermer",
   footer,
   modal = true,
+  returnFocus = true,
   width = 680,
   className,
   children,
 }: SideDrawerProps): React.ReactElement | null {
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
+
+  // An insertion effect runs before the layout effects' cleanups of the same
+  // commit, so the cleanup below reads the value of the render that closed it.
+  const returnFocusRef = useRef(returnFocus);
+  useInsertionEffect(() => {
+    returnFocusRef.current = returnFocus;
+  });
 
   // A layout effect: it runs before ModalShell's own effect moves the focus,
   // while the focus is still on what opened the drawer.
@@ -71,6 +86,7 @@ export function SideDrawer({
     const frame = modal ? (panel?.parentElement ?? null) : panel;
     if (!modal) panel?.focus({ preventScroll: true });
     return () => {
+      if (!returnFocusRef.current) return;
       const active = document.activeElement;
       const lost = active === null || active === document.body;
       const ours = frame !== null && active !== null && frame.contains(active);

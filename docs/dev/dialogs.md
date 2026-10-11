@@ -38,8 +38,10 @@ of the site goes.
 
 A `SideDrawer` moves the focus into it when it opens and gives it back to what
 opened it when it closes, unless the reader has put it elsewhere in the page
-in the meantime. A `ModalShell` focuses itself on open; giving the focus back
-is its caller's.
+in the meantime. Pass `returnFocus={false}` in the render that closes it when
+the page changed under it (the settings drawer does, on a navigation): the
+opener may still be on screen, but a new page is read from its start. A
+`ModalShell` focuses itself on open; giving the focus back is its caller's.
 
 Their classes live in `packages/ui/src/dialogs.css`, which both apps import
 after the tokens. The console can use them as they are.
@@ -56,9 +58,14 @@ open has its open state in the address: `?news=1` open, no `news` closed.
   parameter's `value` (null when closed), `open(value = "1")` and `close()`.
   `open` adds a step to the history, so Back closes the window and Forward
   opens it again. `close` steps back over that step, or takes the parameter
-  off an address the window came with. Both go through the History API, which
-  Next follows in `useSearchParams` without asking the server for anything:
-  the page under the window does not move.
+  off an address the window came with (a link, a redirect, a reload). Both go
+  through the History API, which Next follows in `useSearchParams` without
+  asking the server for anything: the page under the window does not move.
+  The hook only steps back from a step it knows this page load added: the
+  mark `open` leaves on the entry is dropped by Next at the next refresh or
+  revalidating server action, so the hook keeps its own record of the step as
+  well, and a mark from before a reload never sends the reader back into the
+  page that reload threw away.
 - `QueryDialogHost` (`apps/web/components/query-dialog-host.tsx`) is mounted
   once in `apps/web/app/(app)/layout.tsx`. It draws the registered window the
   address names, over any page of the signed-in site.

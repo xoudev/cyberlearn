@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React, { lazy } from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 
 /**
@@ -123,6 +123,8 @@ async function traverse(step: () => void): Promise<void> {
   });
 }
 
+let replaceState: MockInstance<History["replaceState"]>;
+
 beforeEach(() => {
   window.history.replaceState(null, "", "/dashboard");
   const push = window.history.pushState.bind(window.history);
@@ -131,10 +133,12 @@ beforeEach(() => {
     push(data, unused, url);
     address.notify();
   });
-  vi.spyOn(window.history, "replaceState").mockImplementation((data, unused, url) => {
-    replace(data, unused, url);
-    address.notify();
-  });
+  replaceState = vi
+    .spyOn(window.history, "replaceState")
+    .mockImplementation((data, unused, url) => {
+      replace(data, unused, url);
+      address.notify();
+    });
 });
 
 afterEach(() => {
@@ -218,6 +222,65 @@ describe("the windows of the address", () => {
       fireEvent.click(screen.getByText("fermer les nouveautés deux fois"));
     });
     expect(back).toHaveBeenCalledTimes(1);
+    expect(here()).toBe("/dashboard");
+  });
+
+  it("still steps back over its step after Next has rewritten the entry, as a refresh does", async () => {
+    renderSite();
+    fireEvent.click(screen.getByText("ouvrir les nouveautés"));
+    await screen.findByText("nouveautés 1");
+    // router.refresh(), or a server action that revalidates: Next writes its
+    // own state over the entry, and the mark open() left on it is gone.
+    act(() => {
+      window.history.replaceState({ __NA: true }, "");
+    });
+    const back = vi.spyOn(window.history, "back");
+
+    await traverse(() => {
+      fireEvent.click(screen.getByText("fermer"));
+    });
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(here()).toBe("/dashboard");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("takes the parameter off a step left by an earlier load of the page, never steps back", async () => {
+    // The reader reloaded the entry open() had added: the mark came through
+    // the reload, the page before it did not.
+    window.history.replaceState(
+      { queryDialog: { key: "news", doc: "an-earlier-load" } },
+      "",
+      "/dashboard?news=1",
+    );
+    renderSite();
+    const back = vi.spyOn(window.history, "back");
+    const before = window.history.length;
+
+    fireEvent.click(await screen.findByText("fermer"));
+    expect(back).not.toHaveBeenCalled();
+    expect(replaceState).toHaveBeenLastCalledWith(null, "", "/dashboard");
+    expect(here()).toBe("/dashboard");
+    expect(window.history.length).toBe(before);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("does not take a later visit of the same address for its step", async () => {
+    renderSite();
+    fireEvent.click(screen.getByText("ouvrir les nouveautés"));
+    await screen.findByText("nouveautés 1");
+    await traverse(() => {
+      window.history.back();
+    });
+    // Elsewhere, then a link back to the address the window had: Next's
+    // entries, which carry no mark.
+    act(() => {
+      window.history.pushState({ __NA: true }, "", "/lessons");
+      window.history.pushState({ __NA: true }, "", "/dashboard?news=1");
+    });
+    const back = vi.spyOn(window.history, "back");
+
+    fireEvent.click(await screen.findByText("fermer"));
+    expect(back).not.toHaveBeenCalled();
     expect(here()).toBe("/dashboard");
   });
 

@@ -11,6 +11,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -116,10 +117,14 @@ export function SettingsDrawerProvider({
   const [failed, setFailed] = useState(false);
 
   // A navigation closes it for good: coming back to the page with the
-  // browser's back button does not bring it back.
-  if (opened !== null && opened.pathname !== pathname) {
-    setOpened(null);
-  }
+  // browser's back button does not bring it back. The commit that brings the
+  // new page draws it closed, without giving the focus back to its opener:
+  // the navbar's gear is still there, but the new page is read from its
+  // start, skip link first. Then it goes, before anything is painted.
+  const navigatedAway = opened !== null && opened.pathname !== pathname;
+  useLayoutEffect(() => {
+    if (navigatedAway) setOpened(null);
+  }, [navigatedAway]);
   const isOpen = useRef(false);
   useEffect(() => {
     isOpen.current = opened !== null;
@@ -180,7 +185,8 @@ export function SettingsDrawerProvider({
     [open],
   );
 
-  // SideDrawer gives the focus back to what opened it.
+  // SideDrawer gives the focus back to what opened it: Escape, the backdrop
+  // and the close button all end here.
   const close = useCallback((): void => {
     isOpen.current = false;
     active.current = null;
@@ -244,27 +250,26 @@ export function SettingsDrawerProvider({
     [open, openHref, prefetch],
   );
 
-  const visible = opened !== null && opened.pathname === pathname ? opened : null;
-
   return (
     <SettingsDrawerContext value={controls}>
       {children}
-      {visible && (
+      {opened && (
         <SettingsReloadContext value={reload}>
           <SettingsDrawerFrame
-            section={visible.section}
+            open={!navigatedAway}
+            section={opened.section}
             username={data?.profile.username ?? null}
             onSelect={select}
             onClose={close}
           >
             {data !== null ? (
-              <Suspense fallback={<SettingsSkeleton section={visible.section} />}>
-                <SettingsPanels data={data} section={visible.section} />
+              <Suspense fallback={<SettingsSkeleton section={opened.section} />}>
+                <SettingsPanels data={data} section={opened.section} />
               </Suspense>
             ) : failed ? (
               <SettingsLoadError onRetry={retry} />
             ) : (
-              <SettingsSkeleton section={visible.section} />
+              <SettingsSkeleton section={opened.section} />
             )}
           </SettingsDrawerFrame>
         </SettingsReloadContext>
@@ -292,12 +297,15 @@ export function SettingsFromAddress({ value, onClose }: QueryDialogProps): null 
 }
 
 function SettingsDrawerFrame({
+  open,
   section,
   username,
   onSelect,
   onClose,
   children,
 }: {
+  /** False once a navigation has closed it: it then hands the focus to no one. */
+  open: boolean;
   section: SettingsSectionKey;
   username: string | null;
   onSelect: (section: SettingsSectionKey) => void;
@@ -308,7 +316,8 @@ function SettingsDrawerFrame({
 
   return (
     <SideDrawer
-      open
+      open={open}
+      returnFocus={open}
       onClose={onClose}
       title="Paramètres"
       meta={username !== null && username !== "" ? `@${username}` : undefined}

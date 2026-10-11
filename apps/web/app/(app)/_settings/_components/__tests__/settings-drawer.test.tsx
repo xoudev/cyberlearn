@@ -297,24 +297,34 @@ describe("the settings drawer", () => {
   });
 
   it("is closed for good by a navigation, even back to the page it opened over", async () => {
-    const view = renderSite();
-    fireEvent.click(screen.getByText("vers la confidentialité"));
-    await screen.findByText("section:privacy nom:Ada");
+    // The navbar's gear stays on screen from one page to the next, in the
+    // layout; the page under it changes.
+    function Site({ page }: { page: React.ReactNode }): React.JSX.Element {
+      return (
+        <SettingsDrawerProvider>
+          <a href="/settings/data">rouage</a>
+          {page}
+        </SettingsDrawerProvider>
+      );
+    }
+    const view = render(<Site page={<p>tableau de bord</p>} />);
+    const gear = screen.getByText("rouage");
+    gear.focus();
+    fireEvent.click(gear);
+    await screen.findByText("section:data nom:Ada");
+    expect(document.activeElement).not.toBe(gear);
 
-    nav.pathname = "/lessons";
-    view.rerender(
-      <SettingsDrawerProvider>
-        <p>leçons</p>
-      </SettingsDrawerProvider>,
-    );
+    // A link inside it (the certificates, from the deletion of the account).
+    nav.pathname = "/certificates";
+    view.rerender(<Site page={<p>certificats</p>} />);
     expect(screen.queryByRole("dialog")).toBeNull();
+    // The new page is read from its start: the focus is not handed back to
+    // the gear, as it is when the reader closes the drawer.
+    expect(document.activeElement).not.toBe(gear);
+    expect(document.activeElement).toBe(document.body);
 
     nav.pathname = "/dashboard";
-    view.rerender(
-      <SettingsDrawerProvider>
-        <p>tableau de bord</p>
-      </SettingsDrawerProvider>,
-    );
+    view.rerender(<Site page={<p>tableau de bord</p>} />);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

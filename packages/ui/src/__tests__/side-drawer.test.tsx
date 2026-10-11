@@ -207,6 +207,41 @@ describe("SideDrawer", () => {
       expect(document.activeElement).toBe(field);
     });
 
+    it("gives the focus to no one when the render that closes it says so", () => {
+      // The page changed under it: the opener is still there, the new page
+      // is read from its start.
+      function Docked({
+        open,
+        returnFocus,
+      }: {
+        open: boolean;
+        returnFocus: boolean;
+      }): React.JSX.Element {
+        return (
+          <>
+            <button type="button">ouvrir</button>
+            <SideDrawer
+              open={open}
+              modal={false}
+              returnFocus={returnFocus}
+              onClose={vi.fn()}
+              title="Notes"
+            >
+              <p>contenu</p>
+            </SideDrawer>
+          </>
+        );
+      }
+      const { rerender } = render(<Docked open={false} returnFocus />);
+      const trigger = screen.getByText("ouvrir");
+      trigger.focus();
+      rerender(<Docked open returnFocus />);
+      expect(document.activeElement).toBe(screen.getByRole("dialog", { name: "Notes" }));
+      rerender(<Docked open={false} returnFocus={false} />);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(document.activeElement).not.toBe(trigger);
+    });
+
     it("leaves Escape to a dialog opened from inside it", () => {
       const closeDrawer = vi.fn();
       const closeDialog = vi.fn();
