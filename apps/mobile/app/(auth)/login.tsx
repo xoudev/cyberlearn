@@ -1,3 +1,7 @@
+import {
+  EMAIL_NOT_CONFIRMED_MESSAGE,
+  isEmailNotConfirmedError,
+} from "@cyberlearn/lib/auth/email-confirmation";
 import { passwordSignInSchema } from "@cyberlearn/types";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -6,6 +10,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
+import { ResendConfirmation } from "@/components/resend-confirmation";
 import { Text } from "@/components/ui";
 import { MOBILE_AUTH_CALLBACK_URL, parseMobileOAuthCallback } from "@/lib/oauth";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +23,9 @@ export default function Login(): React.JSX.Element {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<"password" | "github" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The address whose password matched but which was never confirmed: the
+  // screen says so, and offers the mail again, instead of "wrong password".
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
   async function signIn(): Promise<void> {
     const result = passwordSignInSchema.safeParse({ email, password, redirectTo: "/home" });
@@ -28,6 +36,7 @@ export default function Login(): React.JSX.Element {
 
     setBusy("password");
     setError(null);
+    setUnconfirmedEmail(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: result.data.email,
       password: result.data.password,
@@ -35,6 +44,11 @@ export default function Login(): React.JSX.Element {
     setBusy(null);
 
     if (signInError) {
+      if (isEmailNotConfirmedError(signInError)) {
+        setUnconfirmedEmail(result.data.email);
+        setError(EMAIL_NOT_CONFIRMED_MESSAGE);
+        return;
+      }
       setError("Adresse e-mail ou mot de passe incorrect.");
     }
   }
@@ -112,6 +126,7 @@ export default function Login(): React.JSX.Element {
       </View>
 
       <AuthError message={error} />
+      {unconfirmedEmail !== null ? <ResendConfirmation email={unconfirmedEmail} /> : null}
       <GradientButton
         label="Se connecter"
         onPress={() => void signIn()}

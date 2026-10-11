@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
+import { OtpCodeInput, useOtpAutoSubmit } from "@cyberlearn/ui";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import styles from "../_components/auth-shell.module.css";
 
@@ -12,53 +13,50 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The code that was last sent for verification. Guards the auto-submit below
-  // against firing twice on the same six digits - which would otherwise loop
-  // the moment a code is refused, since the input still holds it.
-  const lastSubmitted = useRef<string | null>(null);
+  const verify = useCallback(
+    async (value: string): Promise<void> => {
+      const parsed = mfaCodeSchema.safeParse(value);
+      if (!parsed.success) {
+        setError("Entre le code à six chiffres affiché dans ton application.");
+        return;
+      }
 
-  const verify = useCallback(async (): Promise<void> => {
-    const parsed = mfaCodeSchema.safeParse(code);
-    if (!parsed.success) {
-      setError("Entre le code à six chiffres affiché dans ton application.");
-      return;
-    }
+      setPending(true);
+      setError(null);
+      const supabase = createSupabaseBrowserClient();
+      const factors = await supabase.auth.mfa.listFactors();
+      const factor = factors.data?.totp[0];
+      if (factors.error || !factor) {
+        setError("Aucun facteur TOTP actif n’a été trouvé.");
+        setPending(false);
+        return;
+      }
 
-    setPending(true);
-    setError(null);
-    const supabase = createSupabaseBrowserClient();
-    const factors = await supabase.auth.mfa.listFactors();
-    const factor = factors.data?.totp[0];
-    if (factors.error || !factor) {
-      setError("Aucun facteur TOTP actif n’a été trouvé.");
-      setPending(false);
-      return;
-    }
+      const result = await supabase.auth.mfa.challengeAndVerify({
+        factorId: factor.id,
+        code: parsed.data,
+      });
+      if (result.error) {
+        setError("Code invalide ou expiré.");
+        setPending(false);
+        return;
+      }
 
-    const result = await supabase.auth.mfa.challengeAndVerify({
-      factorId: factor.id,
-      code: parsed.data,
-    });
-    if (result.error) {
-      setError("Code invalide ou expiré.");
-      setPending(false);
-      return;
-    }
+      router.replace(next);
+      router.refresh();
+    },
+    [next, router],
+  );
 
-    router.replace(next);
-    router.refresh();
-  }, [code, next, router]);
-
-  // A TOTP code is always six digits, so asking for a click afterwards is a
-  // step that carries no decision. It matters most where autocomplete fills the
-  // whole field at once from a text message or a password manager, and the
-  // button that was the only way in is suddenly the only thing left to do.
-  useEffect(() => {
-    if (code.length !== 6 || pending) return;
-    if (lastSubmitted.current === code) return;
-    lastSubmitted.current = code;
-    void verify();
-  }, [code, pending, verify]);
+  // Sent on the sixth digit, once (@cyberlearn/lib/auth/otp-code). The submit
+  // button and Enter stay the way to insist on a code that was refused.
+  const submit = useOtpAutoSubmit({
+    code,
+    pending,
+    onSubmit: (value) => {
+      void verify(value);
+    },
+  });
 
   async function cancel(): Promise<void> {
     const supabase = createSupabaseBrowserClient();
@@ -68,33 +66,23 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
   }
 
   return (
-    <div className={styles.form}>
-      <label className={styles.field}>
-        <span className={styles.label}>Code temporaire</span>
-        <input
-          className={[styles.input, styles.codeInput].join(" ")}
-          value={code}
-          onChange={(event) => {
-            setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
-          }}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          autoFocus
-        />
-      </label>
+    <form
+      className={styles.form}
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit(code);
+      }}
+    >
+      <OtpCodeInput
+        label="Code temporaire"
+        value={code}
+        onValueChange={setCode}
+        className={styles.field}
+        labelClassName={styles.label}
+        inputClassName={[styles.input, styles.codeInput].join(" ")}
+      />
       {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
-      <button
-        className={styles.submit}
-        type="button"
-        disabled={pending}
-        onClick={() => {
-          // Retyping the same refused code will not auto-submit; the button
-          // stays the way to insist on it.
-          lastSubmitted.current = code;
-          void verify();
-        }}
-      >
+      <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Valider le code"}
       </button>
       <button
@@ -106,6 +94,6 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
       >
         Annuler et se déconnecter
       </button>
-    </div>
+    </form>
   );
 }

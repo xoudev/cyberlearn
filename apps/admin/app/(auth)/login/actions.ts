@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { headers } from "next/headers";
 import { passwordSignInSchema } from "@cyberlearn/types";
 import { userRepository } from "@cyberlearn/db";
+import { safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminAuthState } from "./auth-state";
@@ -15,7 +16,9 @@ export async function signInAdminWithPassword(
   const parsed = passwordSignInSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
-    redirectTo: "/dashboard",
+    // Checked on its own first: a destination the console refuses becomes the
+    // dashboard, rather than failing a sign-in whose credentials are right.
+    redirectTo: safeAdminRedirect(formData.get("redirectTo")),
   });
   if (!parsed.success) {
     return { status: "error", message: "Identifiants invalides.", redirectTo: null };
@@ -54,14 +57,24 @@ export async function signInAdminWithPassword(
       return { status: "error", message: "Identifiants invalides.", redirectTo: null };
     }
 
+    // The page the admin was going to. It rides along to the TOTP screen as
+    // `next`, which hands it on once the code is accepted.
+    const destination = parsed.data.redirectTo;
+
     const factors = await supabase.auth.mfa.listFactors();
     if (factors.error || factors.data.totp.length === 0) {
-      return { status: "success", message: null, redirectTo: "/mfa/setup" };
+      return {
+        status: "success",
+        message: null,
+        redirectTo: withReturnPath("/mfa/setup", "next", destination),
+      };
     }
 
     const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     const redirectTo =
-      !assurance.error && assurance.data.currentLevel === "aal2" ? "/dashboard" : "/mfa";
+      !assurance.error && assurance.data.currentLevel === "aal2"
+        ? destination
+        : withReturnPath("/mfa", "next", destination);
     return { status: "success", message: null, redirectTo };
   } catch (signInError) {
     Sentry.captureException(signInError, { tags: { area: "admin.auth.sign-in" } });

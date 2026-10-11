@@ -1,3 +1,8 @@
+import {
+  createOtpAutoSubmit,
+  groupOtpSecret,
+  sanitizeOtpCode,
+} from "@cyberlearn/lib/auth/otp-code";
 import { mfaCodeSchema, passwordUpdateSchema } from "@cyberlearn/types";
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -25,6 +30,8 @@ export default function Security(): React.JSX.Element {
   const [mfaBusy, setMfaBusy] = useState(false);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [mfaNotice, setMfaNotice] = useState<string | null>(null);
+  // The confirmation code goes on its sixth digit, once, as at sign-in.
+  const [gate] = useState(createOtpAutoSubmit);
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -87,33 +94,47 @@ export default function Security(): React.JSX.Element {
       setMfaError("Le QR code de double authentification est invalide.");
       return;
     }
+    // A new factor: a code refused for the last one may be right for this one.
+    gate.reset();
     setPendingTotp({ factorId: data.id, qrSvg, secret: data.totp.secret });
   }
 
-  async function verifyEnrollment(): Promise<void> {
-    const result = mfaCodeSchema.safeParse(code);
-    if (!result.success || !pendingTotp) {
-      setMfaError("Entre le code à 6 chiffres affiché dans ton application.");
-      return;
-    }
+  const verifyEnrollment = useCallback(
+    async (value: string): Promise<void> => {
+      const result = mfaCodeSchema.safeParse(value);
+      if (!result.success || !pendingTotp) {
+        setMfaError("Entre le code à 6 chiffres affiché dans ton application.");
+        return;
+      }
 
-    setMfaBusy(true);
-    setMfaError(null);
-    const { error } = await supabase.auth.mfa.challengeAndVerify({
-      factorId: pendingTotp.factorId,
-      code: result.data,
-    });
-    setMfaBusy(false);
+      setMfaBusy(true);
+      setMfaError(null);
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: pendingTotp.factorId,
+        code: result.data,
+      });
+      setMfaBusy(false);
 
-    if (error) {
-      setMfaError("Code incorrect ou expiré.");
-      return;
-    }
+      if (error) {
+        setMfaError("Code incorrect ou expiré.");
+        return;
+      }
 
-    setCode("");
-    setPendingTotp(null);
-    setMfaNotice("Double authentification activée sur ton compte.");
-    await loadFactor();
+      setCode("");
+      setPendingTotp(null);
+      setMfaNotice("Double authentification activée sur ton compte.");
+      await loadFactor();
+    },
+    [loadFactor, pendingTotp],
+  );
+
+  useEffect(() => {
+    if (gate.shouldSubmit(code, mfaBusy || pendingTotp === null)) void verifyEnrollment(code);
+  }, [code, gate, mfaBusy, pendingTotp, verifyEnrollment]);
+
+  function submitEnrollmentByHand(): void {
+    gate.markSubmitted(code);
+    void verifyEnrollment(code);
   }
 
   async function disableMfa(): Promise<void> {
@@ -195,22 +216,27 @@ export default function Security(): React.JSX.Element {
             <View style={styles.secretBox}>
               <Text variant="micro">Clé manuelle</Text>
               <Text selectable style={styles.secret}>
-                {pendingTotp.secret}
+                {groupOtpSecret(pendingTotp.secret)}
               </Text>
             </View>
             <AuthField
               label="Code de confirmation"
               value={code}
-              onChangeText={(value) => setCode(value.replace(/\D/g, "").slice(0, 6))}
+              // No maxLength: it would cut a pasted "123 456" before the
+              // separators are dropped.
+              onChangeText={(value) => setCode(sanitizeOtpCode(value))}
               placeholder="000000"
               keyboardType="number-pad"
               autoComplete="one-time-code"
-              maxLength={6}
-              onSubmitEditing={() => void verifyEnrollment()}
+              textContentType="oneTimeCode"
+              // No autoFocus: the QR code cannot be scanned from its own
+              // screen, and a keyboard opening at once would cover the
+              // manual key just above, which has to be read or copied first.
+              onSubmitEditing={submitEnrollmentByHand}
             />
             <GradientButton
               label="Activer le MFA"
-              onPress={() => void verifyEnrollment()}
+              onPress={submitEnrollmentByHand}
               loading={mfaBusy}
             />
             <Pressable

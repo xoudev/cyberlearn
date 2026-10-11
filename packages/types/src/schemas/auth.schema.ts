@@ -71,6 +71,11 @@ export const passwordResetRequestSchema = z.object({
   email: authEmailSchema,
 });
 
+/** A new copy of the sign-up confirmation mail, for an address not confirmed yet. */
+export const confirmationResendSchema = z.object({
+  email: authEmailSchema,
+});
+
 export const passwordUpdateSchema = z
   .object({
     password: newPasswordSchema,

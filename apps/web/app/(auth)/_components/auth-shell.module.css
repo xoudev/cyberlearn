@@ -293,6 +293,14 @@
   color: #ff8aa0;
 }
 
+/* Something to do rather than something that failed: an address waiting for
+   its confirmation. */
+.warning {
+  border-left-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+  color: var(--color-text-primary);
+}
+
 .actions {
   display: flex;
   align-items: center;

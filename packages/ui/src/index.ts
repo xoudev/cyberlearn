@@ -21,6 +21,11 @@ export {
   type LessonDifficulty,
   type LessonStatus,
 } from "./components/lesson-card.js";
+export {
+  OtpCodeInput,
+  useOtpAutoSubmit,
+  type OtpCodeInputProps,
+} from "./components/otp-code-input.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { cn } from "./lib/utils.js";
 export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";

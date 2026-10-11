@@ -10,6 +10,13 @@ portal, and the native mobile application.
 - GitHub OAuth remains available as an alternative sign-in method on the public
   website and the native mobile application.
 - The email address must be verified before the first authenticated session.
+  A sign-in with the right password on an unconfirmed address says so, instead
+  of "wrong credentials", and offers **Renvoyer l'e-mail de confirmation**; the
+  site's "check your inbox" step after registration offers it too, and so do
+  the app's sign-in and registration screens. Supabase only reports
+  `email_not_confirmed` once the password has matched, and the resend answers
+  the same sentence whether or not an account waits at that address. On the
+  site the action is rate-limited like the other auth actions.
 - Password recovery sends one e-mail carrying both a link and a code. The link
   opens `cyberlearn.fr/auth/confirm`, which verifies it and drops a 15-minute
   recovery cookie before `/reset-password`. The code is for the native app: it
@@ -23,6 +30,14 @@ portal, and the native mobile application.
   enabled, both require AAL2 first.
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
   and mobile route gates require AAL2 before mounting protected application UI.
+  `/mfa` sends a session with no verified factor (`nextLevel !== "aal2"`) on to
+  its destination rather than showing a code it cannot satisfy.
+- Every screen that asks for a TOTP code (site challenge and enrolment, console
+  challenge and enrolment, app challenge and enrolment) sends it on the sixth
+  digit, once: a refused code is not sent again on its own, and Enter or the
+  button insists on it. The rule is `@cyberlearn/lib/auth/otp-code`; the web
+  field is `OtpCodeInput` in `@cyberlearn/ui`. A pasted "123 456" keeps its six
+  digits.
 - Password and TOTP settings are available on the website and in the native app.
 
 ## Admin flow
@@ -33,12 +48,40 @@ portal, and the native mobile application.
 - A verified TOTP factor and an AAL2 session are mandatory for every admin page
   and every privileged server action.
 - There is no GitHub, magic-link, or MFA bypass on the admin portal.
+- The page that was asked for survives sign-in: the middleware sends a
+  turned-away request to `/login?redirectTo=…`, then `/mfa?next=…` or
+  `/mfa/setup?next=…`, and the last step lands there. Every hop validates the
+  value with `authRedirectSchema` and refuses the sign-in steps themselves
+  (`apps/admin/lib/auth-redirect.ts`). A session already at AAL2 that opens
+  `/login` is sent on to that page.
+- `/login?error=` explains why the middleware turned a request away:
+  `session_expired`, or `auth_unavailable` when Supabase times out, cannot be
+  reached or answers with a 5xx. The page checks the value against that list
+  (`loginErrorSchema`); any other value gets a generic line.
+- Both TOTP screens offer **Annuler et se déconnecter**. The enrolment starts
+  from a button, so it runs once even under React's development double effects.
 
-### Break-glass: an administrator who lost every factor
+### Lost authenticator
 
-If an administrator loses every TOTP factor, recovery must be performed by an
-authorized operator in the Supabase dashboard. Do not add an application-level
-backdoor. Record the factor removal in the operational incident log.
+Supabase TOTP has no backup codes. If an administrator loses every TOTP factor,
+an operator holding the service role key removes them from a terminal:
+
+```sh
+pnpm --filter @cyberlearn/db db:reset-mfa admin@example.com
+```
+
+The script (`packages/db/prisma/reset-mfa.ts`) needs `DATABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. It prints the
+account's UUID, role and number of TOTP factors, asks for the address to be
+typed again, deletes the factors with `auth.admin.mfa.deleteFactor`, and writes
+a `user.mfa.reset` row to `audit_logs` (no actor, `metadata.source = "cli"`).
+If that row cannot be written once the factors are gone, the script says so,
+prints the account UUID and time to record by hand, and exits non-zero: the
+reset happened, do not run it again.
+Deleting a verified factor ends every session of the account; the next sign-in
+asks for a new enrolment. Check the person's identity out of band before
+running it, and record it in the operational incident log. Do not add an
+application-level backdoor.
 
 The console refuses this on purpose (see below): one administrator removing
 another's second factor is exactly what a single stolen admin session would

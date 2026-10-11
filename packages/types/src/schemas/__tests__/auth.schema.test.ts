@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   authRedirectSchema,
+  confirmationResendSchema,
   mfaCodeSchema,
   passwordSignInSchema,
   passwordSignUpSchema,
@@ -90,5 +91,18 @@ describe("mfaCodeSchema", () => {
 
   it("rejects malformed codes", () => {
     expect(mfaCodeSchema.safeParse("12345a").success).toBe(false);
+  });
+});
+
+describe("confirmationResendSchema", () => {
+  it("normalizes the address the mail goes back to", () => {
+    const result = confirmationResendSchema.safeParse({ email: " Student@Example.COM " });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.email).toBe("student@example.com");
+  });
+
+  it("refuses something that is not an address", () => {
+    expect(confirmationResendSchema.safeParse({ email: "student" }).success).toBe(false);
+    expect(confirmationResendSchema.safeParse({}).success).toBe(false);
   });
 });

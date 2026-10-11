@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { groupOtpSecret } from "@cyberlearn/lib/auth/otp-code";
 import { mfaCodeSchema } from "@cyberlearn/types";
+import { OtpCodeInput, useOtpAutoSubmit } from "@cyberlearn/ui";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { initialAuthActionState } from "@/app/(auth)/_actions/auth-action-state";
 import { updatePassword } from "@/app/(auth)/_actions/password-auth";
@@ -96,6 +98,7 @@ export function SecurityPanel(): React.JSX.Element {
       return;
     }
 
+    setCode("");
     setEnrollment({
       factorId: result.data.id,
       qrCode: result.data.totp.qr_code,
@@ -103,9 +106,9 @@ export function SecurityPanel(): React.JSX.Element {
     });
   }
 
-  async function verifyEnrollment(): Promise<void> {
+  async function verifyEnrollment(value: string): Promise<void> {
     if (!enrollment) return;
-    const parsed = mfaCodeSchema.safeParse(code);
+    const parsed = mfaCodeSchema.safeParse(value);
     if (!parsed.success) {
       setMessage("Entre le code à six chiffres affiché par ton application.");
       return;
@@ -130,6 +133,16 @@ export function SecurityPanel(): React.JSX.Element {
     setMessage("Double authentification activée.");
     router.refresh();
   }
+
+  // The confirmation code goes on its sixth digit, as it does at sign-in.
+  // Nothing to send before the QR code is on screen: `busy` covers the wait.
+  const submitEnrollmentCode = useOtpAutoSubmit({
+    code,
+    pending: busy || enrollment === null,
+    onSubmit: (value) => {
+      void verifyEnrollment(value);
+    },
+  });
 
   async function disableMfa(): Promise<void> {
     if (!factor) return;
@@ -258,7 +271,11 @@ export function SecurityPanel(): React.JSX.Element {
           </div>
 
           {enrollment ? (
-            <div
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitEnrollmentCode(code);
+              }}
               style={{
                 display: "grid",
                 gap: 14,
@@ -285,29 +302,27 @@ export function SecurityPanel(): React.JSX.Element {
                 <code
                   style={{ color: S.fg, fontFamily: MONO, fontSize: 12, overflowWrap: "anywhere" }}
                 >
-                  {enrollment.secret}
+                  {groupOtpSecret(enrollment.secret)}
                 </code>
               </div>
-              <input
-                style={{ ...inputStyle, textAlign: "center", fontSize: 20, letterSpacing: "0.3em" }}
+              <OtpCodeInput
+                label="CODE DE CONFIRMATION"
                 value={code}
-                onChange={(event) => {
-                  setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
-                }}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
+                onValueChange={setCode}
                 placeholder="000000"
+                style={{ display: "grid", gap: 7 }}
+                labelStyle={{ fontFamily: MONO, fontSize: 10, color: S.muted }}
+                inputStyle={{
+                  ...inputStyle,
+                  textAlign: "center",
+                  fontSize: 20,
+                  letterSpacing: "0.3em",
+                }}
               />
-              <button
-                style={buttonStyle}
-                type="button"
-                disabled={busy}
-                onClick={() => void verifyEnrollment()}
-              >
+              <button style={buttonStyle} type="submit" disabled={busy}>
                 Vérifier et activer
               </button>
-            </div>
+            </form>
           ) : null}
 
           {factor ? (

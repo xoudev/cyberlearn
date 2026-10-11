@@ -3,11 +3,17 @@
 import * as Sentry from "@sentry/nextjs";
 import { cookies, headers } from "next/headers";
 import {
+  confirmationResendSchema,
   passwordResetRequestSchema,
   passwordSignInSchema,
   passwordSignUpSchema,
   passwordUpdateSchema,
 } from "@cyberlearn/types";
+import {
+  CONFIRMATION_RESENT_MESSAGE,
+  EMAIL_NOT_CONFIRMED_MESSAGE,
+  isEmailNotConfirmedError,
+} from "@cyberlearn/lib/auth/email-confirmation";
 import { env } from "@/lib/env";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { classifySignUpError, type SignUpFailure } from "@/lib/auth/sign-up-error";
@@ -61,9 +67,19 @@ export async function signInWithPassword(
   });
 
   if (error) {
+    // Supabase says "not confirmed" only once the password has matched, so
+    // this tells nothing to somebody who does not hold it.
+    if (isEmailNotConfirmedError(error)) {
+      return {
+        status: "unconfirmed",
+        message: EMAIL_NOT_CONFIRMED_MESSAGE,
+        redirectTo: null,
+        email: parsed.data.email,
+      };
+    }
     return {
       status: "error",
-      message: "Identifiants incorrects ou adresse e-mail non vérifiée.",
+      message: "Adresse e-mail ou mot de passe incorrect.",
       redirectTo: null,
     };
   }
@@ -128,6 +144,7 @@ export async function signUpWithPassword(
         status: "check_email",
         message: "Un e-mail de vérification vient de partir. Ouvre-le pour activer ton compte.",
         redirectTo: null,
+        email: parsed.data.email,
       };
     }
 
@@ -172,15 +189,91 @@ export async function requestPasswordReset(
     };
   }
 
-  const supabase = await getSupabaseServerClient();
-  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
-  });
+  // A refusal Supabase returns (no such account, an address it will not mail)
+  // keeps the neutral answer below, so the form does not say which addresses
+  // exist. A throw is the service itself being unreachable, which says nothing
+  // about the address, and used to replace the page with the error screen.
+  try {
+    const supabase = await getSupabaseServerClient();
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+    });
+  } catch (resetError) {
+    Sentry.captureException(resetError, { tags: { area: "auth.password-reset" } });
+    return {
+      status: "error",
+      message: "Le service d’e-mail est indisponible. Réessaie dans quelques minutes.",
+      redirectTo: null,
+    };
+  }
 
   return {
     status: "check_email",
     message: "Si ce compte existe, un lien sécurisé a été envoyé à cette adresse.",
     redirectTo: null,
+  };
+}
+
+/**
+ * Sends the sign-up confirmation mail again.
+ *
+ * Offered where an unconfirmed address shows up: the sign-in of an account
+ * that never opened its first mail, and the "check your inbox" step of the
+ * sign-up. Rate-limited like the other auth actions, since each call sends a
+ * mail to an address the caller typed.
+ */
+export async function resendConfirmationEmail(
+  _previousState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = confirmationResendSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { status: "error", message: "Adresse e-mail invalide.", redirectTo: null };
+  }
+  if (await isRateLimited()) {
+    return {
+      status: "error",
+      message: "Trop de demandes. Réessaie dans 15 minutes.",
+      redirectTo: null,
+      email: parsed.data.email,
+    };
+  }
+
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: parsed.data.email,
+      options: {
+        emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/onboarding`,
+      },
+    });
+    if (error && classifySignUpError(error) === "email_rate_limit") {
+      return {
+        status: "error",
+        message: SIGN_UP_ERROR_MESSAGES.email_rate_limit,
+        redirectTo: null,
+        email: parsed.data.email,
+      };
+    }
+    // Any other refusal (an address already confirmed, or unknown) gets the
+    // neutral answer below: which addresses wait for a confirmation is not
+    // something to tell whoever asks.
+  } catch (resendError) {
+    Sentry.captureException(resendError, { tags: { area: "auth.resend-confirmation" } });
+    return {
+      status: "error",
+      message: "Le service d’e-mail est indisponible. Réessaie dans quelques minutes.",
+      redirectTo: null,
+      email: parsed.data.email,
+    };
+  }
+
+  return {
+    status: "check_email",
+    message: CONFIRMATION_RESENT_MESSAGE,
+    redirectTo: null,
+    email: parsed.data.email,
   };
 }
 
