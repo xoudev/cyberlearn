@@ -315,25 +315,30 @@ function CodeBlock({
       tabIndex={0}
       style={{ ...field, margin: 0, overflowX: "auto", lineHeight: 1.5 }}
     >
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          style={{
-            whiteSpace: "pre",
-            background:
-              line.mark === "flaw"
-                ? `color-mix(in srgb, ${AMBER} 20%, transparent)`
-                : line.mark === "fix"
-                  ? `color-mix(in srgb, ${ACCENT} 18%, transparent)`
-                  : "transparent",
-          }}
-        >
-          <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
-            {line.mark === "flaw" ? "! " : line.mark === "fix" ? "+ " : "  "}
-          </span>
-          {line.text === "" ? " " : line.text}
-        </div>
-      ))}
+      {/* As wide as the longest line, and at least as the box: a line is only
+          as wide as the box it sits in, so without it a marked line's band
+          would stop at the visible edge and leave the scrolled-to rest bare. */}
+      <div style={{ width: "max-content", minWidth: "100%" }}>
+        {lines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              whiteSpace: "pre",
+              background:
+                line.mark === "flaw"
+                  ? `color-mix(in srgb, ${AMBER} 20%, transparent)`
+                  : line.mark === "fix"
+                    ? `color-mix(in srgb, ${ACCENT} 18%, transparent)`
+                    : "transparent",
+            }}
+          >
+            <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
+              {line.mark === "flaw" ? "! " : line.mark === "fix" ? "+ " : "  "}
+            </span>
+            {line.text === "" ? " " : line.text}
+          </div>
+        ))}
+      </div>
     </pre>
   );
 }

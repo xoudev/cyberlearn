@@ -249,7 +249,19 @@ export function PasswordLab(props: Record<string, unknown>): React.ReactElement 
                       )}
                     </td>
                     <td style={{ ...cell, fontFamily: MONO, color: "var(--color-text-secondary)" }}>
-                      <code title={account.hash}>{shortHash(account.hash)}</code>
+                      {/* The cell's look. Left bare, it takes Typography's
+                          `.prose code`: bold, smaller, turquoise. */}
+                      <code
+                        title={account.hash}
+                        style={{
+                          fontFamily: "inherit",
+                          fontSize: "inherit",
+                          fontWeight: 400,
+                          color: "inherit",
+                        }}
+                      >
+                        {shortHash(account.hash)}
+                      </code>
                     </td>
                     <td style={cell}>
                       {hit !== undefined ? (
