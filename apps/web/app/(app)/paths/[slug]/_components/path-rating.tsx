@@ -18,6 +18,10 @@ const PATH_COPY: RatingCopy = {
  * Open once one lesson of the path is completed rather than at its end: a
  * path is long, and the learners who stop halfway are the opinion most worth
  * having. The note can be changed as the path goes on.
+ *
+ * It sits in a block of the page's side column, which already has a frame and
+ * an eyebrow: the widget comes without its own, and its heading takes the
+ * block's title style.
  */
 export function PathRating({
   pathId,
@@ -42,6 +46,8 @@ export function PathRating({
       initialFeedback={initialFeedback}
       avgRating={avgRating}
       ratingsCount={ratingsCount}
+      variant="rail"
+      titleClassName="ablock__title"
       copy={PATH_COPY}
       submit={async (score, feedback) => {
         const result = await ratePathAction(pathId, score, feedback);

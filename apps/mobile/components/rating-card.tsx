@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { averageLine, ratingLabel } from "@cyberlearn/lib/content/rating";
 import { GradientButton } from "@/components/buttons";
 import { Card, Text } from "@/components/ui";
-import { averageLine, ratingLabel } from "@/lib/rating";
 
 export interface RatingCopy {
   /** Before any rating: "Note ce parcours", "Note cette leçon". */
@@ -102,7 +102,9 @@ export function RatingCard({
           <Text style={{ color: colors.warning }}>★</Text> {average}
         </Text>
       ) : null}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      {/* Wraps on a narrow screen: the label goes under the stars rather than
+          past the card's edge, React Native not shrinking a row's children. */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
         {[1, 2, 3, 4, 5].map((n) => (
           <Pressable
             key={n}

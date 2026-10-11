@@ -15,6 +15,7 @@ import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { averageLine, formatAverage } from "@cyberlearn/lib/content/rating";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
@@ -318,12 +319,12 @@ export default async function PathDetailPage({
             {path.avgRating !== null && path.ratingsCount > 0 && (
               <span
                 className="pd2-tag"
-                title={`Note moyenne des apprenants : ${path.avgRating.toFixed(1).replace(".", ",")} sur 5`}
+                title={`Note moyenne des apprenants : ${formatAverage(path.avgRating)} sur 5`}
               >
                 <span aria-hidden="true" style={{ color: "var(--color-warning)" }}>
                   ★
                 </span>{" "}
-                {path.avgRating.toFixed(1).replace(".", ",")} · {path.ratingsCount} avis
+                {averageLine(path.avgRating, path.ratingsCount)}
               </span>
             )}
             <span className="pd2-tag pd2-tag--diff">
