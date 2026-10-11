@@ -106,9 +106,17 @@ function clean(raw: string): string {
   let text = raw.trim();
   if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) text = text.slice(1, -1);
   if (text.length >= 2 && text.startsWith("`") && text.endsWith("`")) text = text.slice(1, -1);
+  text = text.replace(/<br\s*\/?>/gi, " ");
+  // Until nothing changes: one pass over `<<b>i>` drops the <b> and leaves an
+  // <i> behind (CodeQL js/incomplete-multi-character-sanitization). The text
+  // only ever reaches React and React Native text nodes, but a tag left in it
+  // would still show as one.
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<\/?[a-z][^>]*>/gi, "");
+  } while (text !== previous);
   return text
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<\/?[a-z][^>]*>/gi, "")
     .replace(/#(\d+);/g, (match, code: string) => {
       const point = Number(code);
       return point <= 0x10ffff ? String.fromCodePoint(point) : match;
@@ -447,18 +455,21 @@ function gitOutline(body: string[]): string[] {
 
 // ── Any other kind ───────────────────────────────────────────────────────────
 
-const ANY_ARROW = /\s*(?:<<-->>|<<->>|-->>|->>|-\.->|==>|-->|->)\s*/g;
+/**
+ * Mermaid's arrows, longest first, so that `-->>` is not read as `-->` and a
+ * stray `>`. Plain strings rather than a regex: CodeQL reads an unanchored
+ * pattern holding `-->` as a filter for HTML comments (js/bad-tag-filter).
+ */
+const ANY_ARROW = ["<<-->>", "<<->>", "-->>", "->>", "-.->", "==>", "-->", "->"];
 
 function genericOutline(body: string[]): string[] {
   return body
     .filter((statement) => !STYLING.test(statement) && statement !== "end")
-    .map((statement) =>
-      clean(
-        statement
-          .replace(/^title\s+/i, "")
-          .replace(ANY_ARROW, ` ${ARROW} `)
-          .replace(/"/g, ""),
-      ),
-    )
+    .map((statement) => {
+      let text = statement.replace(/^title\s+/i, "");
+      // clean() folds the spaces this leaves around each arrow.
+      for (const arrow of ANY_ARROW) text = text.split(arrow).join(` ${ARROW} `);
+      return clean(text.replace(/"/g, ""));
+    })
     .filter((line) => line !== "");
 }

@@ -107,6 +107,12 @@ describe("a flowchart", () => {
       "Une boîte sans flèche",
     ]);
   });
+
+  it("leaves no tag behind, even one that appears once another is gone", () => {
+    // One pass over `<<b>i>` drops the <b> and leaves an <i>.
+    expect(diagramOutline('flowchart LR\n  A["x<<b>i>y"] --> B')).toEqual(["xy → B"]);
+    expect(diagramOutline('flowchart LR\n  A["x<b<i>>y"] --> B')).toEqual(["x>y → B"]);
+  });
 });
 
 describe("a sequence diagram", () => {
@@ -251,7 +257,10 @@ describe("every diagram in content/lessons", () => {
   it("each give an outline with no mermaid arrow left in it", () => {
     const unread = diagrams.filter(({ source }) => {
       const lines = diagramOutline(source);
-      return lines.length === 0 || lines.some((line) => /-->|->>|-\.->|==>/.test(line));
+      return (
+        lines.length === 0 ||
+        lines.some((line) => ["-->", "->>", "-.->", "==>"].some((arrow) => line.includes(arrow)))
+      );
     });
     expect(unread.map((d) => d.file)).toEqual([]);
   });
