@@ -37,10 +37,14 @@ const STICKY_GAP = 24;
 export const STICKY_TOP = NAVBAR_HEIGHT + STICKY_GAP;
 
 /**
- * Whether a rail this tall can be read whole while it is stuck. One that
- * cannot would keep its bottom out of sight until the end of its column pushed
- * it up, so it is better left in the flow, where scrolling reaches all of it.
+ * The `top` a rail this tall sticks at. One that can be read whole below the
+ * navbar rests there, at STICKY_TOP. A taller one rests by its bottom instead,
+ * the same air above the bottom of the window: its `top` comes out under
+ * STICKY_TOP, below zero for a rail about as tall as the window or taller, so
+ * it scrolls with the page until its last line is in sight and stays there.
+ * Left in the flow, it would scroll away as soon as it had been read, however
+ * long the column beside it went on.
  */
-export function railFitsBelowNavbar(railHeight: number, viewportHeight: number): boolean {
-  return STICKY_TOP + railHeight + STICKY_GAP <= viewportHeight;
+export function railStickyTop(railHeight: number, viewportHeight: number): number {
+  return Math.min(STICKY_TOP, viewportHeight - railHeight - STICKY_GAP);
 }

@@ -903,9 +903,7 @@
 /* ── The board: the challenges, the players, the teams ──────────────────── */
 
 /* The challenges with the players under them, the teams' ranking in a
-   column beside both. The column is not sticky: with forty teams it is often
-   taller than the screen, and a stuck rail that does not fit keeps its
-   bottom out of sight (see railFitsBelowNavbar in lib/chrome.ts).
+   column beside both, which follows the page down past them.
    The players sit under the challenges, not under the teams: fifty of them
    in the side column would run far below a short grid of challenges and
    leave the main column empty. The second row takes whatever the teams'
@@ -923,15 +921,19 @@
 .trn-main__challenges {
   grid-area: challenges;
 }
+/* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
 .trn-main__teams {
   grid-area: teams;
+  position: sticky;
 }
 .trn-main__players {
   grid-area: players;
 }
 
-/* A challenge's rail: the rules and the way back to the board. */
+/* A challenge's rail: the rules and the way back to the board. Its top comes
+   from StickyRail, as the teams' column's does. */
 .trn-rail {
+  position: sticky;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 44px;
@@ -1541,6 +1543,12 @@ a.trn-ch[data-state="team"]:hover {
       "teams"
       "players";
     grid-template-rows: none;
+  }
+  /* In one column a rail has nothing beside it to follow, and the teams,
+     stuck, would slide over the players below them. */
+  .trn-main__teams,
+  .trn-rail {
+    position: static;
   }
   .trn-live {
     grid-template-columns: minmax(0, 1fr);

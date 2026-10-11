@@ -982,6 +982,11 @@
 .mkx-block {
   min-width: 0;
 }
+/* The scores follow the reader down the correction. Its top comes from
+   StickyRail: below the navbar, or by its bottom when too tall to fit. */
+.mkx-detail__scores {
+  position: sticky;
+}
 
 .mkx-legend {
   display: flex;
@@ -1246,6 +1251,10 @@
   }
   .mkx-detail {
     grid-template-columns: 1fr;
+  }
+  /* Above the correction, stuck, they would slide over it. */
+  .mkx-detail__scores {
+    position: static;
   }
 }
 @media (max-width: 900px) {

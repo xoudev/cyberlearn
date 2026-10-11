@@ -3746,7 +3746,7 @@ span.profile-avatar {
   display: none;
 }
 @media (min-width: 1280px) {
-  /* Its top comes from StickyRail, while the outline fits below the navbar. */
+  /* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
   .lesson-stepper-rail {
     display: block;
     position: sticky;
@@ -3870,7 +3870,7 @@ a:hover > .lesson-author-card {
     grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
     gap: 48px;
   }
-  /* Its top comes from StickyRail, while the rail fits below the navbar. */
+  /* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
   .chx-rail {
     position: sticky;
   }

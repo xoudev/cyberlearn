@@ -30,6 +30,7 @@ import {
 } from "@cyberlearn/lib/exam/mock";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
+import { StickyRail } from "@/components/sticky-rail";
 import type { MockOverview } from "@/lib/exam/mock-exam";
 import { startMockExamAction, submitMockExamAction } from "../_actions/mock-exam-actions";
 import "./mock-exam.css";
@@ -697,7 +698,7 @@ function ResultActions({
 /**
  * The copy handed in: the score in the gauge, its verdict and what to go back
  * to first, the answers right, wrong and blank; then the score of each module
- * beside the correction, question by question.
+ * beside the correction, question by question, following the reader down it.
  */
 function Result({
   result,
@@ -787,7 +788,11 @@ function Result({
       </div>
 
       <div className="mkx-detail">
-        <section className="mkx-block" aria-labelledby="mkx-domains-title">
+        <StickyRail
+          as="section"
+          className="mkx-block mkx-detail__scores"
+          aria-labelledby="mkx-domains-title"
+        >
           <div className="mkx-head">
             <h2 id="mkx-domains-title">
               <span aria-hidden="true">{"// "}</span>
@@ -817,7 +822,7 @@ function Result({
               </li>
             ))}
           </ul>
-        </section>
+        </StickyRail>
 
         <section className="mkx-block" aria-label="Correction">
           <div className="mkx-head">

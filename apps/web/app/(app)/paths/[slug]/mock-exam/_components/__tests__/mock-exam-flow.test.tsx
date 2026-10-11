@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STICKY_TOP } from "@/lib/chrome";
 import type { MockOverview } from "@/lib/exam/mock-exam";
 
 const m = vi.hoisted(() => ({
@@ -146,6 +147,9 @@ describe("MockExamFlow", () => {
     );
     expect(scores[0]?.textContent).toContain("1 / 1 · acquis");
     expect(scores[1]?.textContent).toContain("0 / 1 · à revoir");
+    // The scores follow the reader down the correction, under the navbar.
+    const scoreColumn = screen.getByRole("list", { name: "Score par module" }).closest("section");
+    expect(scoreColumn?.style.top).toBe(`${String(STICKY_TOP)}px`);
     const correction = screen.getByRole("region", { name: "Correction" });
     expect(within(correction).getByText("Droits").closest("li")?.textContent).toContain(
       "Bonne réponse",

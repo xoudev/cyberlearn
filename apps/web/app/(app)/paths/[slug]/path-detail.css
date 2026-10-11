@@ -1017,7 +1017,7 @@
 /* ==========================================================================
    ASIDE
    ========================================================================== */
-/* Its top comes from StickyRail, while the aside fits below the navbar. */
+/* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
 .pd2 .pd2-aside {
   position: sticky;
   display: flex;
