@@ -18,7 +18,16 @@ export default async function MfaPage({
   const params = await searchParams;
   const next = authRedirectSchema.safeParse(params.next ?? "/dashboard").data ?? "/dashboard";
   const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (!assurance.error && assurance.data.currentLevel === "aal2") redirect(next);
+  // Nothing to type: the session is already verified, or the account has no
+  // verified factor to verify against. The second case is reached when the
+  // middleware could not read the assurance level in time and sent everybody
+  // here; a code form nobody can satisfy is a dead end, not a safeguard.
+  if (
+    !assurance.error &&
+    (assurance.data.currentLevel === "aal2" || assurance.data.nextLevel !== "aal2")
+  ) {
+    redirect(next);
+  }
 
   return (
     <AuthShell

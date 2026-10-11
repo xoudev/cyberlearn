@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { initialAuthActionState } from "../_actions/auth-action-state";
 import { signInWithPassword } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
+import { ResendConfirmation } from "../_components/resend-confirmation";
 
 function GitHubIcon(): React.JSX.Element {
   return (
@@ -62,74 +63,88 @@ export function LoginForm({
     }
   }
 
+  // The password was right and the address is the problem: say so, and offer
+  // the mail again, above the form so it is what the reader sees first.
+  const unconfirmedEmail = state.status === "unconfirmed" ? (state.email ?? null) : null;
+
   return (
-    <form className={styles.form} action={action}>
-      <input type="hidden" name="redirectTo" value={redirectTo} />
-      <label className={styles.field}>
-        <span className={styles.label}>Adresse e-mail</span>
-        <input
-          className={styles.input}
-          type="email"
-          name="email"
-          autoComplete="email"
-          inputMode="email"
-          required
-          placeholder="toi@exemple.fr"
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span className={styles.label}>Mot de passe</span>
-        <span className={styles.inputWrap}>
+    <div className={styles.form}>
+      {unconfirmedEmail !== null ? (
+        <div className={styles.form}>
+          <p className={[styles.message, styles.warning].join(" ")} role="alert">
+            {state.message}
+          </p>
+          <ResendConfirmation email={unconfirmedEmail} />
+        </div>
+      ) : null}
+      <form className={styles.form} action={action}>
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+        <label className={styles.field}>
+          <span className={styles.label}>Adresse e-mail</span>
           <input
-            className={[styles.input, styles.passwordInput].join(" ")}
-            type={showPassword ? "text" : "password"}
-            name="password"
-            autoComplete="current-password"
+            className={styles.input}
+            type="email"
+            name="email"
+            autoComplete="email"
+            inputMode="email"
             required
+            placeholder="toi@exemple.fr"
           />
-          <button
-            className={styles.reveal}
-            type="button"
-            onClick={() => {
-              setShowPassword((value) => !value);
-            }}
-          >
-            {showPassword ? "Masquer" : "Afficher"}
-          </button>
-        </span>
-      </label>
+        </label>
 
-      {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
+        <label className={styles.field}>
+          <span className={styles.label}>Mot de passe</span>
+          <span className={styles.inputWrap}>
+            <input
+              className={[styles.input, styles.passwordInput].join(" ")}
+              type={showPassword ? "text" : "password"}
+              name="password"
+              autoComplete="current-password"
+              required
+            />
+            <button
+              className={styles.reveal}
+              type="button"
+              onClick={() => {
+                setShowPassword((value) => !value);
+              }}
+            >
+              {showPassword ? "Masquer" : "Afficher"}
+            </button>
+          </span>
+        </label>
 
-      <button className={styles.submit} type="submit" disabled={pending || oauthPending}>
-        {pending ? "Vérification…" : "Se connecter"}
-      </button>
+        {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
 
-      <div className={styles.divider} aria-hidden="true">
-        <span />
-        <b>ou</b>
-        <span />
-      </div>
+        <button className={styles.submit} type="submit" disabled={pending || oauthPending}>
+          {pending ? "Vérification…" : "Se connecter"}
+        </button>
 
-      <button
-        className={styles.oauthButton}
-        type="button"
-        disabled={pending || oauthPending}
-        onClick={() => void signInWithGitHub()}
-      >
-        <GitHubIcon />
-        {oauthPending ? "Redirection…" : "Continuer avec GitHub"}
-      </button>
+        <div className={styles.divider} aria-hidden="true">
+          <span />
+          <b>ou</b>
+          <span />
+        </div>
 
-      <div className={styles.actions}>
-        <Link className={styles.link} href="/forgot-password">
-          Mot de passe oublié
-        </Link>
-        <Link className={styles.link} href="/register">
-          Créer un compte
-        </Link>
-      </div>
-    </form>
+        <button
+          className={styles.oauthButton}
+          type="button"
+          disabled={pending || oauthPending}
+          onClick={() => void signInWithGitHub()}
+        >
+          <GitHubIcon />
+          {oauthPending ? "Redirection…" : "Continuer avec GitHub"}
+        </button>
+
+        <div className={styles.actions}>
+          <Link className={styles.link} href="/forgot-password">
+            Mot de passe oublié
+          </Link>
+          <Link className={styles.link} href="/register">
+            Créer un compte
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }

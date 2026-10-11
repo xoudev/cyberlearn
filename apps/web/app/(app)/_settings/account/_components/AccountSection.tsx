@@ -6,6 +6,9 @@ import { SecurityPanel } from "./security-panel";
 
 /** The account section, in the settings drawer. */
 export function AccountSection({ data }: { data: AccountSectionData }): React.JSX.Element {
+  // A pending address is something to act on; it used to wear the same
+  // turquoise as a verified one, which read as "all good" either way.
+  const badgeColor = data.emailConfirmed ? S.turq : S.warning;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <SectionHead label="COMPTE" hint="identité & sécurité" />
@@ -20,8 +23,8 @@ export function AccountSection({ data }: { data: AccountSectionData }): React.JS
               width: "fit-content",
               marginTop: 5,
               padding: "3px 7px",
-              border: `1px solid ${S.turq}`,
-              color: S.turq,
+              border: `1px solid ${badgeColor}`,
+              color: badgeColor,
               fontFamily: MONO,
               fontSize: 9,
             }}

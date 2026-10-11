@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { initialAuthActionState } from "../_actions/auth-action-state";
 import { signUpWithPassword } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
+import { ResendConfirmation } from "../_components/resend-confirmation";
 
 export function RegisterForm(): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,6 +15,9 @@ export function RegisterForm(): React.JSX.Element {
     return (
       <div className={styles.form}>
         <p className={styles.message}>{state.message}</p>
+        {/* The mail can land in spam or never arrive; asking again here saves
+            a trip through the sign-in form to find out. */}
+        {state.email ? <ResendConfirmation email={state.email} /> : null}
         <Link className={styles.link} href="/login">
           Retour à la connexion
         </Link>

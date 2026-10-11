@@ -12,6 +12,7 @@
     "./dashboard/*": "./src/dashboard/*.ts",
     "./pseudonymize": "./src/pseudonymize.ts",
     "./logger": "./src/logger.ts",
+    "./auth/*": "./src/auth/*.ts",
     "./notes/*": "./src/notes/*.ts",
     "./gamification/*": "./src/gamification/*.ts",
     "./content/*": "./src/content/*.ts",

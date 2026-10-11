@@ -26,6 +26,7 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
     "db:reset-user": "tsx --env-file-if-exists=.env prisma/reset-user.ts",
+    "db:reset-mfa": "tsx --env-file-if-exists=.env prisma/reset-mfa.ts",
     "db:reset-users": "tsx --env-file-if-exists=.env prisma/reset-users.ts",
     "db:reset-content": "tsx --env-file-if-exists=.env prisma/reset-content.ts",
     "db:seed-paths": "tsx --env-file-if-exists=.env prisma/seed-paths.ts",

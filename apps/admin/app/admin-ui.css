@@ -964,6 +964,56 @@
   letter-spacing: 0.35em;
   padding-left: calc(13px + 0.35em);
 }
+
+/* A password field with its "Afficher" toggle inside the right edge, as on
+   the learner site's sign-in. */
+.a-input-wrap {
+  position: relative;
+  display: block;
+}
+.a-input--reveal {
+  padding-right: 84px;
+}
+.a-input-reveal {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  color: var(--a-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 140ms ease;
+}
+.a-input-reveal:hover,
+.a-input-reveal:focus-visible {
+  color: var(--a-accent);
+}
+
+/* The way out of a sign-in step: quieter than its submit button. */
+.a-auth-cancel {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+  transition: color 140ms ease;
+}
+.a-auth-cancel:hover,
+.a-auth-cancel:focus-visible {
+  color: var(--a-accent);
+}
 .a-form-error {
   margin: 0;
   padding: 11px 13px;
@@ -1001,6 +1051,18 @@
   font-family: var(--font-mono);
   font-size: 11px;
   overflow-wrap: anywhere;
+}
+/* The manual key, in groups of four, with its copy button beside it. */
+.a-qr-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.a-qr-key .a-qr-secret {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  word-spacing: 0.2em;
 }
 
 /* ─── Stacks ───────────────────────────────────────────────── */

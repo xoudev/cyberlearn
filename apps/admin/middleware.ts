@@ -1,5 +1,8 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { isMfaPath, isPublicPath, returnPathOf, withReturnPath } from "@/lib/auth-redirect";
+
+export { isMfaPath, isPublicPath };
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -81,16 +84,6 @@ function withSecurityHeaders(response: NextResponse, nonce: string): NextRespons
   return response;
 }
 
-/** Reachable without a session: the sign-in page and what crawlers read. */
-export function isPublicPath(pathname: string): boolean {
-  return pathname === "/login" || pathname === "/robots.txt";
-}
-
-/** Reachable with a session that has not passed the TOTP step yet. */
-export function isMfaPath(pathname: string): boolean {
-  return pathname === "/mfa" || pathname.startsWith("/mfa/");
-}
-
 // A stalled Supabase must not hold the console open, nor hang it: past this
 // the request is treated as unauthenticated.
 const AUTH_TIMEOUT_MS = 4000;
@@ -111,6 +104,20 @@ async function withTimeout<T>(promise: Promise<T>): Promise<T | null> {
   }
 }
 
+/** The codes /login turns into a sentence (see app/(auth)/login/page.tsx). */
+type LoginError = "auth_unavailable" | "session_expired";
+
+/**
+ * True when the request carries a Supabase session cookie, split in chunks
+ * (`sb-<ref>-auth-token.0`, `.1`) or not. Only decides whether a check is worth
+ * a round trip; the session itself is still verified by Supabase.
+ */
+function hasSessionCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+}
+
 /**
  * The console's front door. Until now it only set headers and left every
  * check to the (admin) layout - which a crafted client-navigation request can
@@ -128,15 +135,33 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   requestHeaders.set("x-nonce", nonce);
   let response = NextResponse.next({ request: { headers: requestHeaders } });
 
-  if (isPublicPath(pathname)) return withSecurityHeaders(response, nonce);
+  if (pathname === "/robots.txt") return withSecurityHeaders(response, nonce);
 
   const redirectTo = (path: string): NextResponse =>
     withSecurityHeaders(NextResponse.redirect(new URL(path, request.url)), nonce);
 
+  // The page that was asked for rides along to /login and /mfa, so that
+  // signing in ends where the admin was going rather than on the dashboard.
+  const returnPath = returnPathOf(request.nextUrl);
+  const toLogin = (error?: LoginError): NextResponse => {
+    const target = withReturnPath("/login", "redirectTo", returnPath);
+    if (error === undefined) return redirectTo(target);
+    return redirectTo(`${target}${target.includes("?") ? "&" : "?"}error=${error}`);
+  };
+  const toMfa = (path: "/mfa" | "/mfa/setup"): NextResponse =>
+    redirectTo(withReturnPath(path, "next", returnPath));
+
+  const isLogin = pathname === "/login";
+  // Nobody signed in has a session to look at: the sign-in page renders
+  // without a call to Supabase, and a stalled Supabase cannot slow it down.
+  if (isLogin && !hasSessionCookie(request)) return withSecurityHeaders(response, nonce);
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   // No configuration means no way to verify anyone: closed, not open.
-  if (!supabaseUrl || !supabaseAnonKey) return redirectTo("/login");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return isLogin ? withSecurityHeaders(response, nonce) : toLogin("auth_unavailable");
+  }
 
   const cookieMethods: CookieMethodsServer = {
     getAll: () => request.cookies.getAll(),
@@ -162,14 +187,33 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // cookie is something the requester writes.
   const userResult = await withTimeout(supabase.auth.getUser());
   const user = userResult?.data.user ?? null;
-  if (!user) return redirectTo("/login");
+
+  if (isLogin) {
+    // A session that has passed the TOTP step has nothing to do on the
+    // sign-in form: it goes where it was going. Anything short of that
+    // (no session, a password without the code) still sees the form.
+    if (user) {
+      const assurance = await withTimeout(supabase.auth.mfa.getAuthenticatorAssuranceLevel());
+      if (assurance && !assurance.error && assurance.data.currentLevel === "aal2") {
+        return redirectTo(returnPath);
+      }
+    }
+    return withSecurityHeaders(response, nonce);
+  }
+
+  if (!user) {
+    // Say why, when it can be told: Supabase not answering is not the same
+    // as a session that ran out, and both differ from a first visit.
+    if (userResult === null) return toLogin("auth_unavailable");
+    return toLogin(hasSessionCookie(request) ? "session_expired" : undefined);
+  }
 
   if (!isMfaPath(pathname)) {
     const assurance = await withTimeout(supabase.auth.mfa.getAuthenticatorAssuranceLevel());
-    if (!assurance || assurance.error) return redirectTo("/mfa");
+    if (!assurance || assurance.error) return toMfa("/mfa");
     if (assurance.data.currentLevel !== "aal2") {
       // No verified factor yet: the console requires one, so enrol first.
-      return redirectTo(assurance.data.nextLevel === "aal2" ? "/mfa" : "/mfa/setup");
+      return toMfa(assurance.data.nextLevel === "aal2" ? "/mfa" : "/mfa/setup");
     }
   }
 

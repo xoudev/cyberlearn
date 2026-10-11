@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
+import { ResendConfirmation } from "@/components/resend-confirmation";
 import { Text } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 
@@ -17,7 +18,8 @@ export default function Register(): React.JSX.Element {
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
+  /** The address the confirmation mail went to, once it has gone. */
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   async function signUp(): Promise<void> {
     const result = passwordSignUpSchema.safeParse({ email, password, passwordConfirmation });
@@ -41,10 +43,10 @@ export default function Register(): React.JSX.Element {
       setError("Impossible de créer ce compte pour le moment.");
       return;
     }
-    setSent(true);
+    setSentTo(result.data.email);
   }
 
-  if (sent) {
+  if (sentTo !== null) {
     return (
       <AuthFormScreen
         eyebrow="E-mail envoyé"
@@ -52,6 +54,8 @@ export default function Register(): React.JSX.Element {
         description="Ouvre le lien reçu par e-mail pour activer ton compte et terminer ton profil sur cyberlearn.fr."
       >
         <Text variant="bodySm">Tu pourras ensuite revenir dans l’app et te connecter.</Text>
+        {/* The mail can land in spam or never arrive. */}
+        <ResendConfirmation email={sentTo} />
         <GradientButton label="Retour à la connexion" onPress={() => router.replace("/login")} />
       </AuthFormScreen>
     );
