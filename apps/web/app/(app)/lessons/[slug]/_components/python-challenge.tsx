@@ -503,7 +503,11 @@ function PythonChallengeBody({
                 key={i}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "20px 1fr auto",
+                  // The test's line takes what the row leaves, even less than
+                  // its longest word, and the expected value at most 40%: past
+                  // that both wrap, rather than push the row out of the panel
+                  // or leave the test's line no room at all.
+                  gridTemplateColumns: "20px minmax(0, 1fr) fit-content(40%)",
                   alignItems: "start",
                   gap: 12,
                   padding: "10px 18px",
@@ -535,6 +539,7 @@ function PythonChallengeBody({
                       fontFamily: "var(--font-mono, monospace)",
                       fontSize: 11,
                       marginBottom: !result.passed ? 4 : 0,
+                      overflowWrap: "anywhere",
                     }}
                   >
                     <span style={{ color: "var(--color-text-faint)" }}>{label} · </span>
@@ -579,7 +584,7 @@ function PythonChallengeBody({
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
                     textAlign: "right",
-                    whiteSpace: "nowrap",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   {result.passed ? (

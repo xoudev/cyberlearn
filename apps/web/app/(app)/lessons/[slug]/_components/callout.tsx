@@ -66,9 +66,9 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
         margin: "1.5rem 0",
         padding: "14px 18px",
         background: v.bg,
-        borderLeft: `3px solid ${v.border}`,
+        // The shorthand first: written after, it took the accent back to 1px.
         border: `1px solid color-mix(in srgb, ${v.border} 13%, transparent)`,
-        borderLeftColor: v.border,
+        borderLeft: `3px solid ${v.border}`,
       }}
     >
       <div
@@ -106,7 +106,11 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
             {title}
           </div>
         )}
+        {/* What the author wrote: paragraphs, lists, inline code. The class
+            gives its links, bold, code and lists the lesson's look, at the
+            callout's size (globals.css). */}
         <div
+          className="lesson-callout__body"
           style={{
             fontSize: "14px",
             color: "var(--color-text-secondary)",

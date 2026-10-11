@@ -31,7 +31,6 @@ export function SqlResultTable({ result }: { result: SqlResult }): React.ReactEl
                   borderBottom: "1px solid var(--color-border-default)",
                   color: "var(--color-text-muted)",
                   fontWeight: 500,
-                  whiteSpace: "nowrap",
                 }}
               >
                 {column}

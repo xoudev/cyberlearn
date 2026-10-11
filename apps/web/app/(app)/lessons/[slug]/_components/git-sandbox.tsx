@@ -6,6 +6,7 @@ import { checkHolds } from "@cyberlearn/lib/git/checks";
 import { DEFAULT_GEOMETRY, layoutGraph } from "@cyberlearn/lib/git/graph";
 import { type GitState, promptOf, run, runSetup, statusOf } from "@cyberlearn/lib/git/sandbox";
 import { parseGitSandbox } from "@cyberlearn/types";
+import { labStack } from "./lab-stack";
 
 /**
  * <GitSandbox>: a Git repository simulated in the page, a terminal to drive
@@ -326,7 +327,10 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
                 fontFamily: MONO,
                 fontSize: 12.5,
                 color: "var(--color-text-muted)",
-                whiteSpace: "nowrap",
+                // A long branch name wraps the prompt; the command keeps 40%.
+                minWidth: 0,
+                maxWidth: "60%",
+                overflowWrap: "anywhere",
               }}
             >
               {promptOf(state)}
@@ -355,7 +359,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
             />
           </form>
         </div>
-        <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
+        <div style={{ ...labStack(10), alignContent: "start" }}>
           <div style={{ maxHeight: 300, overflow: "auto", padding: "4px 0" }}>
             <GitGraph state={state} />
           </div>
@@ -376,7 +380,8 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
                     fontFamily: MONO,
                     fontSize: 12,
                     color: "var(--color-text-secondary)",
-                    whiteSpace: "pre",
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   <span
@@ -400,7 +405,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
       </div>
       {checks.length > 0 ? (
         <div style={{ borderTop: "1px solid var(--color-border-subtle)", padding: "12px 16px" }}>
-          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", ...labStack(4) }}>
             {checks.map((check, i) => (
               <li
                 key={check.label}
@@ -436,7 +441,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
           >
             Indices ({String(exercise.hints.length)})
           </summary>
-          <ol style={{ margin: "10px 0 0", paddingLeft: 22, display: "grid", gap: 6 }}>
+          <ol style={{ margin: "10px 0 0", paddingLeft: 22, ...labStack(6) }}>
             {exercise.hints.map((hint) => (
               <li
                 key={hint}
