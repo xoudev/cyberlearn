@@ -3,7 +3,7 @@
 import { ProgressBar } from "@/components/progress-bar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import "../exam.css";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
@@ -43,6 +43,24 @@ function fmtClock(totalSeconds: number): string {
 }
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
+}
+
+// Once in the browser the value below never changes: nothing to subscribe to.
+function subscribeNever(): () => void {
+  return () => undefined;
+}
+
+/**
+ * False on the server and while hydrating, true after. A date on the reader's
+ * clock is written once this is true: the server knows neither their zone nor
+ * when the page will be read.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
 }
 
 // ── Inline icons (reproduced from the mockups) ──────────────────────────────────
@@ -350,6 +368,7 @@ function IntroScreen(props: {
     onStart,
   } = props;
 
+  const hydrated = useHydrated();
   const passNeeded = Math.ceil((questionCount * passThreshold) / 100);
   const startDisabled =
     busy || !hasQuiz || !lessonsComplete || pathCompleted || cooldownUntilMs !== null;
@@ -359,8 +378,12 @@ function IntroScreen(props: {
   else if (pathCompleted) statusNote = null;
   else if (!lessonsComplete)
     statusNote = "Termine toutes les leçons du parcours pour débloquer l'examen.";
+  // When the wait ends, as the result screen says it. The date is on the
+  // reader's clock, so the server writes the fixed line and the browser the date.
   else if (cooldownUntilMs !== null)
-    statusNote = "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
+    statusNote = hydrated
+      ? `Examen déjà passé récemment : nouvelle tentative possible le ${unlockDateLabel(cooldownUntilMs)}.`
+      : "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
 
   return (
     <div className="exam-root">
@@ -1038,7 +1061,7 @@ function ResultsScreen(props: {
  * the time. Rendered only after a copy is handed in, never on the server, so
  * reading the clock here cannot upset hydration.
  */
-function RetryAfterWait(props: {
+export function RetryAfterWait(props: {
   /** From the server's answer to the copy. Null when it gave none: nothing to wait for here. */
   untilMs: number | null;
   pathSlug: string;

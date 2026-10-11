@@ -879,6 +879,7 @@
   margin: 0 0 14px;
   max-width: 80%;
   text-wrap: balance;
+  transition: color var(--dur-base);
 }
 .pc2-root .trophy-card__done {
   display: flex;
@@ -931,7 +932,15 @@
   position: relative;
   z-index: 1;
 }
-.pc2-root .trophy-card:hover .btn {
+/* The card holds two links: the body opens the path, the button the
+   certificate. Each lights up on its own, so the pointer on the body never
+   points at the certificate. */
+.pc2-root .trophy-card__body:hover .trophy-card__title,
+.pc2-root .trophy-card__body:focus-visible .trophy-card__title {
+  color: #ffd27a;
+}
+.pc2-root .trophy-card__foot .btn:hover,
+.pc2-root .trophy-card__foot .btn:focus-visible {
   background: rgba(255, 181, 71, 0.14);
   border-color: var(--amber);
   box-shadow: 0 0 22px -6px rgba(255, 181, 71, 0.6);

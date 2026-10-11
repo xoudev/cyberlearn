@@ -33,6 +33,9 @@ export default async function PathsPage(): Promise<React.ReactElement> {
             },
           },
         },
+        // Whether a final exam waits once every mission is done: the hero's
+        // button leads there rather than to the path a second time.
+        quiz: { select: { isActive: true } },
       },
       orderBy: { publishedAt: "desc" },
     }),
@@ -115,6 +118,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       xpTotal,
       lessonCount,
       hasCert: path.certificateTemplate !== null,
+      hasQuiz: path.quiz?.isActive === true,
       coverSrc: covers[index] ?? null,
       status,
       progressDone,

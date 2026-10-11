@@ -6,8 +6,9 @@ import { PathsCollection, type SerializedPath } from "../paths-collection";
 
 /**
  * The paths catalogue: every button leads where it says. "Continuer" picks the
- * path up at its next mission, "Voir le certificat" opens the certificate, and
- * an empty result can be cleared from where it is shown.
+ * path up at its next mission, or its exam once they are done, "Voir le
+ * certificat" opens the certificate, and a filtered empty result can be
+ * cleared from where it is shown.
  */
 
 function path(over: Partial<SerializedPath>): SerializedPath {
@@ -24,6 +25,7 @@ function path(over: Partial<SerializedPath>): SerializedPath {
     xpTotal: 1200,
     lessonCount: 10,
     hasCert: true,
+    hasQuiz: true,
     status: "idle",
     progressDone: 0,
     progressTotal: 10,
@@ -75,6 +77,24 @@ describe("PathsCollection", () => {
     expect(hrefOf("Aperçu")).toBe("/paths/python");
   });
 
+  it("leads to the final exam once every mission is done", () => {
+    renderCollection([path({ status: "inprog", progressDone: 10, nextLesson: null })]);
+    expect(hrefOf(/Passer l'examen final/)).toBe("/paths/python/exam");
+    expect(hrefOf("Aperçu")).toBe("/paths/python");
+    expect(screen.queryByRole("link", { name: /Continuer le parcours/ })).toBeNull();
+  });
+
+  it.each([
+    ["no exam", path({ status: "inprog", progressDone: 10, nextLesson: null, hasQuiz: false })],
+    ["no mission", path({ status: "inprog", lessonCount: 0, progressTotal: 0, nextLesson: null })],
+  ])("opens a path with no next mission and %s from a single button", (_, inProgress) => {
+    renderCollection([inProgress]);
+    // "Aperçu" would open the same page: two buttons, one place.
+    expect(hrefOf(/Voir le parcours/)).toBe("/paths/python");
+    expect(screen.queryByRole("link", { name: "Aperçu" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Continuer le parcours/ })).toBeNull();
+  });
+
   it("opens the certificate of a certified path, and the path from the card", () => {
     renderCollection([
       path({ status: "done", progressDone: 10, certPublicId: "cert-1" }),
@@ -100,5 +120,12 @@ describe("PathsCollection", () => {
     expect(screen.queryByText("Aucun parcours trouvé")).toBeNull();
     expect(screen.getByText("Python")).toBeTruthy();
     expect(screen.getByPlaceholderText(/chercher un parcours/)).toHaveProperty("value", "");
+  });
+
+  it("offers no reset when nothing is filtered, as there is nothing to clear", () => {
+    renderCollection([]);
+    expect(screen.getByText("Aucun parcours trouvé")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Voir tous les parcours" })).toBeNull();
+    expect(document.querySelector(".empty-state__action")).toBeNull();
   });
 });

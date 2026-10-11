@@ -42,6 +42,8 @@ export interface SerializedPath {
   xpTotal: number;
   lessonCount: number;
   hasCert: boolean;
+  /** An active final exam: a path whose missions are all done waits on it. */
+  hasQuiz: boolean;
   status: "idle" | "inprog" | "done";
   progressDone: number;
   progressTotal: number;
@@ -149,11 +151,34 @@ function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX
 
 // ── Tier cards ──────────────────────────────────────────────────────────────────
 
+/**
+ * Where the hero's main button leads: the next mission while one is left, as
+ * "Prochaine mission" does; the final exam once every mission is done, which
+ * is what such a path is waiting on (for 48 h after a failed attempt too). A
+ * path with neither is opened from one button, since "Aperçu" would open the
+ * same page: two buttons to one place is what this replaced.
+ */
+function heroCta(path: SerializedPath): { href: string; label: string; withPreview: boolean } {
+  if (path.nextLesson !== null) {
+    return {
+      href: `/lessons/${path.nextLesson.slug}`,
+      label: "Continuer le parcours",
+      withPreview: true,
+    };
+  }
+  // No next mission on a path that has missions: they are all done.
+  if (path.hasQuiz && path.lessonCount > 0) {
+    return { href: `/paths/${path.slug}/exam`, label: "Passer l'examen final", withPreview: true };
+  }
+  return { href: `/paths/${path.slug}`, label: "Voir le parcours", withPreview: false };
+}
+
 function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   const cat = categoryMeta(path.category);
   const kind = CATEGORY_KIND[path.category] ?? "cyber";
   const diff = difficultyMeta(path.difficulty);
   const pct = pctOf(path);
+  const cta = heroCta(path);
   return (
     <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
@@ -214,17 +239,14 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
           <div className="hero-path__cta-row">
-            {/* Picks the path up where it was left, as "Prochaine mission" does.
-                Both used to open the path page, the same place as "Aperçu". */}
-            <Link
-              href={path.nextLesson ? `/lessons/${path.nextLesson.slug}` : `/paths/${path.slug}`}
-              className="btn btn--lg"
-            >
-              Continuer le parcours {ARROW}
+            <Link href={cta.href} className="btn btn--lg">
+              {cta.label} {ARROW}
             </Link>
-            <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
-              Aperçu
-            </Link>
+            {cta.withPreview && (
+              <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
+                Aperçu
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -426,9 +448,12 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
 
 function PathsEmpty({
   filterLabel,
+  canReset,
   onReset,
 }: {
   filterLabel: string;
+  /** Something is filtered. With nothing to clear, the button would change nothing. */
+  canReset: boolean;
   onReset: () => void;
 }): React.JSX.Element {
   return (
@@ -452,9 +477,12 @@ function PathsEmpty({
         </svg>
       }
     >
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onReset}>
-        Voir tous les parcours
-      </button>
+      {/* Undefined rather than false, so no empty action row is drawn. */}
+      {canReset ? (
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onReset}>
+          Voir tous les parcours
+        </button>
+      ) : undefined}
     </EmptyState>
   );
 }
@@ -572,6 +600,7 @@ export function PathsCollection({
         {filtered.length === 0 && (
           <PathsEmpty
             filterLabel={filterLabel}
+            canReset={filter !== "all" || trackFilter !== "all" || search !== ""}
             onReset={() => {
               setFilter("all");
               setTrackFilter("all");
