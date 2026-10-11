@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
@@ -10,7 +11,6 @@ import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
-import { useSettingsDrawer } from "@/app/(app)/_settings/_components/SettingsDrawer";
 
 // Keyed on the enum rather than on string: a new NotificationType now fails to
 // compile until it has an icon, instead of reaching the panel with a blank
@@ -102,19 +102,14 @@ export function NotificationPanel({
 
   useClickOutside(open, panelRef, buttonRef, setOpen);
 
-  // A notice that points at the settings (a moderation decision points at
-  // the record) opens them over the page, like every other link to them.
-  const settings = useSettingsDrawer();
-  const follow = useCallback(
-    (url: string): void => {
-      if (settings?.openHref(url)) {
-        setOpen(false);
-        return;
-      }
-      window.location.href = url;
-    },
-    [settings],
-  );
+  // A row is a link now, so following it is the router's job: a click moves
+  // to the page without reloading the site, and one that points at the
+  // settings (a moderation decision points at the record) is caught by the
+  // drawer like every other link to them. All that is left here is to get
+  // the panel out of the way.
+  const close = useCallback((): void => {
+    setOpen(false);
+  }, []);
 
   // Load notifications when panel opens
   useEffect(() => {
@@ -338,8 +333,7 @@ export function NotificationPanel({
                   key={item.id}
                   item={item}
                   onRead={handleMarkRead}
-                  onFollow={follow}
-                  isPending={isPending}
+                  onFollow={close}
                 />
               ))}
             </div>
@@ -350,6 +344,19 @@ export function NotificationPanel({
   );
 }
 
+/** Whether a notice's link is one of the site's route handlers, not a page. */
+function isRouteHandler(href: string): boolean {
+  return href === "/api" || href.startsWith("/api/");
+}
+
+/**
+ * One notice. A notice that leads somewhere is a link, one that only needs
+ * reading is a button that marks it read, and a read one with nowhere to go
+ * is plain text: a row is a control only when there is something to do.
+ *
+ * It used to be a clickable <div>: no role, out of the tab order, deaf to
+ * Enter, and following it reloaded the whole site.
+ */
 function NotificationRow({
   item,
   onRead,
@@ -357,36 +364,26 @@ function NotificationRow({
 }: {
   item: NotificationItem;
   onRead: (id: string) => void;
-  onFollow: (url: string) => void;
-  isPending: boolean;
-}) {
+  onFollow: () => void;
+}): React.JSX.Element {
   const isUnread = !item.readAt;
   // No fallback: the record is exhaustive over the enum, so there is no type
   // that can arrive here without an icon.
   const icon = TYPE_ICON[item.type];
+  // new Date() rather than the field: a row pushed by Realtime carries the
+  // date as a string, not as the Date the server action hands over.
   const dateStr = new Intl.RelativeTimeFormat("fr", { numeric: "auto" }).format(
-    Math.round((item.createdAt.getTime() - Date.now()) / (1000 * 60)),
+    Math.round((new Date(item.createdAt).getTime() - Date.now()) / (1000 * 60)),
     "minutes",
   );
+  const style: React.CSSProperties = {
+    background: isUnread
+      ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
+      : "transparent",
+  };
 
-  return (
-    <div
-      className="notif-row"
-      style={{
-        display: "flex",
-        gap: 12,
-        padding: "14px 18px",
-        borderBottom: "1px solid #1A1640",
-        background: isUnread
-          ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
-          : "transparent",
-        cursor: item.actionUrl ? "pointer" : "default",
-      }}
-      onClick={() => {
-        if (isUnread) onRead(item.id);
-        if (item.actionUrl) onFollow(item.actionUrl);
-      }}
-    >
+  const content = (
+    <>
       {/* Icon */}
       {item.type === "BADGE_EARNED" ? (
         <BadgeMedallion rarity={badgeRarityFromMeta(item)} size="xs" style={{ flexShrink: 0 }} />
@@ -409,6 +406,7 @@ function NotificationRow({
         </span>
       ) : (
         <span
+          aria-hidden="true"
           style={{
             width: 32,
             height: 32,
@@ -427,10 +425,11 @@ function NotificationRow({
         </span>
       )}
 
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
+      {/* Content: spans, so the row stays valid inside a button. */}
+      <span style={{ display: "block", flex: 1, minWidth: 0 }}>
+        <span
           style={{
+            display: "block",
             fontFamily: "var(--font-sans)",
             fontSize: 13,
             fontWeight: isUnread ? 600 : 400,
@@ -440,8 +439,8 @@ function NotificationRow({
           }}
         >
           {item.title}
-        </div>
-        <div
+        </span>
+        <span
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
@@ -455,9 +454,10 @@ function NotificationRow({
           }}
         >
           {item.body}
-        </div>
-        <div
+        </span>
+        <span
           style={{
+            display: "block",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             color: "var(--color-text-faint)",
@@ -465,8 +465,8 @@ function NotificationRow({
           }}
         >
           {dateStr}
-        </div>
-      </div>
+        </span>
+      </span>
 
       {/* Unread dot */}
       {isUnread && (
@@ -483,6 +483,61 @@ function NotificationRow({
           }}
         />
       )}
+    </>
+  );
+
+  if (item.actionUrl) {
+    const follow = (event: React.MouseEvent<HTMLAnchorElement>): void => {
+      if (isUnread) onRead(item.id);
+      // A new tab leaves this one where it was, panel included.
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      onFollow();
+    };
+    // A route handler is not a page the router can open: it would fetch it as
+    // one, fail, and fall back to loading it anyway. A plain link loads it
+    // once. Certificate notices used to point at the PDF route; the stored
+    // ones were rewritten (migration 20261011120000_certificate_notice_links),
+    // and this keeps any other route handler off the router.
+    if (isRouteHandler(item.actionUrl)) {
+      return (
+        <a href={item.actionUrl} className="notif-row" style={style} onClick={follow}>
+          {content}
+        </a>
+      );
+    }
+    return (
+      <Link
+        href={item.actionUrl}
+        // Twenty rows open at once: fetching every page they point at, on
+        // the chance one is clicked, is twenty requests for one click.
+        prefetch={false}
+        className="notif-row"
+        style={style}
+        onClick={follow}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  if (isUnread) {
+    return (
+      <button
+        type="button"
+        className="notif-row"
+        style={style}
+        onClick={() => {
+          onRead(item.id);
+        }}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="notif-row" style={style}>
+      {content}
     </div>
   );
 }

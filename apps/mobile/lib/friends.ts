@@ -1,4 +1,8 @@
-import type { FriendshipView } from "@cyberlearn/lib/social/friendship";
+import {
+  UNFRIEND_DETAIL,
+  unfriendQuestion,
+  type FriendshipView,
+} from "@cyberlearn/lib/social/friendship";
 import type { Category, Rarity } from "./db";
 
 /**
@@ -102,6 +106,33 @@ export function removeLabel(kind: FriendListKind): string {
   if (kind === "friends") return "Retirer";
   if (kind === "incoming") return "Refuser";
   return "Annuler";
+}
+
+/** One answer of the phone's own dialog (react-native's Alert). */
+export interface AlertChoice {
+  text: string;
+  style: "cancel" | "destructive";
+  onPress?: () => void;
+}
+
+/**
+ * The question before a friendship ends, in the site's words
+ * (@cyberlearn/lib/social/friendship): "Annuler" first, the answer that ends
+ * it marked destructive. Only unfriending asks; a request costs one tap to
+ * send again.
+ */
+export function unfriendAlert(
+  name: string,
+  onConfirm: () => void,
+): { title: string; message: string; buttons: AlertChoice[] } {
+  return {
+    title: unfriendQuestion(name),
+    message: UNFRIEND_DETAIL,
+    buttons: [
+      { text: "Annuler", style: "cancel" },
+      { text: "Retirer", style: "destructive", onPress: onConfirm },
+    ],
+  };
 }
 
 /** The count next to "Tes amis" on the friends board. */

@@ -66,7 +66,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         type: "REVIEW_REMINDER",
         title: count === 1 ? "Révision recommandée" : `${String(count)} révisions à faire`,
         body,
-        actionUrl: "/lessons",
+        // The reviews themselves, not the catalogue they were taken from.
+        actionUrl: "/revisions",
         metadata: { count },
       });
       sent++;

@@ -1,8 +1,9 @@
 /**
  * The notification settings, in the words the site uses, for the site's
  * settings drawer and the app's settings screen alike. Each says what
- * actually happens: a switch for something that is not sent yet is shown, and
- * shown as not available, rather than promising it.
+ * actually happens: a switch for something that nothing sends yet is not
+ * shown at all, rather than shown disabled. A greyed-out switch that never
+ * comes alive is a control that does nothing, and people try it anyway.
  */
 
 export type NotificationSettingKey =
@@ -17,7 +18,7 @@ export interface NotificationSetting {
   desc: string;
   /** The longer explanation behind the (i). */
   info: string | null;
-  /** False while nothing sends it: the switch is shown, and disabled. */
+  /** False while nothing sends it: the switch is left out until it is. */
   available: boolean;
 }
 
@@ -25,8 +26,8 @@ export const NOTIFICATION_SETTINGS: readonly NotificationSetting[] = [
   {
     key: "reviewReminders",
     name: "Rappels de révision",
-    desc: "Email quand une mission attend une révision.",
-    info: "On t'envoie un email quand une leçon doit être révisée (répétition espacée) pour ancrer ce que tu as appris.",
+    desc: "Une notification quand des leçons attendent une révision.",
+    info: "Une fois par jour au plus, dans la cloche, quand la répétition espacée te ramène des leçons à revoir. Aucun email ne part pour ça.",
     available: true,
   },
   {
@@ -40,7 +41,8 @@ export const NOTIFICATION_SETTINGS: readonly NotificationSetting[] = [
     key: "streakReminder",
     name: "Alerte de série",
     desc: "Préviens-moi avant de perdre ma série quotidienne.",
-    info: "Prochainement - l'envoi de cette alerte est en cours de préparation.",
+    info: null,
+    // No cron sends it yet.
     available: false,
   },
   {
@@ -48,9 +50,14 @@ export const NOTIFICATION_SETTINGS: readonly NotificationSetting[] = [
     name: "Nouveautés produit",
     desc: "Nouveaux parcours, fonctionnalités, événements CTF.",
     info: null,
-    available: true,
+    // Stored, but nothing reads it: there is no digest and no sender.
+    available: false,
   },
 ];
+
+/** The switches both apps show: the ones something actually sends. */
+export const SHOWN_NOTIFICATION_SETTINGS: readonly NotificationSetting[] =
+  NOTIFICATION_SETTINGS.filter((setting) => setting.available);
 
 /** The spaced-repetition switch, which lives with the preferences on the site. */
 export const SPACED_REPETITION_SETTING = {

@@ -275,6 +275,15 @@
   color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
+/* The name opens the author's profile when the reader may see it. */
+a.fo-post-name {
+  text-decoration: none;
+}
+a.fo-post-name:hover,
+a.fo-post-name:focus-visible {
+  color: var(--cosmetic-accent);
+  text-decoration: underline;
+}
 .fo-post-role {
   font: 700 9px var(--font-mono);
   letter-spacing: 0.14em;

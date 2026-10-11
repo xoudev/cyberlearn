@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NOTIFICATION_SETTINGS } from "./notifications.js";
+import { NOTIFICATION_SETTINGS, SHOWN_NOTIFICATION_SETTINGS } from "./notifications.js";
 
 describe("NOTIFICATION_SETTINGS", () => {
   it("lists each stored switch once", () => {
@@ -13,10 +13,25 @@ describe("NOTIFICATION_SETTINGS", () => {
     ]);
   });
 
-  it("marks the streak alert as not sent yet, and only it", () => {
-    // Nothing sends a streak e-mail: a switch that looks live would be a promise.
+  it("marks the streak alert and the product news as not sent yet", () => {
+    // Nothing sends a streak alert, and nothing reads weeklyDigest: a switch
+    // that looks live would be a promise.
     expect(NOTIFICATION_SETTINGS.filter((s) => !s.available).map((s) => s.key)).toEqual([
       "streakReminder",
+      "weeklyDigest",
     ]);
+  });
+
+  it("shows only the switches something sends", () => {
+    expect(SHOWN_NOTIFICATION_SETTINGS.map((s) => s.key)).toEqual([
+      "reviewReminders",
+      "emailNotifications",
+    ]);
+  });
+
+  it("does not promise an email for the review reminders, which stay in the bell", () => {
+    const reminders = NOTIFICATION_SETTINGS.find((s) => s.key === "reviewReminders");
+    expect(reminders?.desc).not.toMatch(/email/i);
+    expect(reminders?.info).toMatch(/cloche/);
   });
 });

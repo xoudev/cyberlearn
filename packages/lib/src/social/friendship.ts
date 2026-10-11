@@ -86,3 +86,24 @@ export function friendshipAfter(
   if (move === "remove") return "none";
   return becameFriends ? "friends" : "outgoing";
 }
+
+/**
+ * Whether pressing the button asks first. Ending a friendship is one call and
+ * nobody is told, so a slipped tap would undo something only the other person
+ * can redo. A request, or taking one back, costs one tap to send again.
+ */
+export function friendshipMoveAsksFirst(view: FriendshipView): boolean {
+  return view === "friends";
+}
+
+/** The question before a friendship ends, the same on the site and in the app. */
+export function unfriendQuestion(name: string): string {
+  return `Retirer ${name} de tes amis ?`;
+}
+
+/** The same question where the name already sits right above it, in a list row. */
+export const UNFRIEND_PROMPT = "Retirer de tes amis ?";
+
+/** What follows the question: what ending it does, and what it does not. */
+export const UNFRIEND_DETAIL =
+  "Aucune notification ne part. Pour redevenir amis, il faudra une nouvelle demande, acceptée.";

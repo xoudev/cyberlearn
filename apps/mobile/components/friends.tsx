@@ -1,19 +1,21 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip } from "@/components/buttons";
 import { Avatar } from "@/components/media";
 import { Text } from "@/components/ui";
 import { acceptFriendApi, removeFriendApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
-import { removeLabel, type Friend, type FriendListKind } from "@/lib/friends";
+import { removeLabel, unfriendAlert, type Friend, type FriendListKind } from "@/lib/friends";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
  * One person in a friends list, with what the site's panel offers on the
  * same row: accept or refuse a request, take one back, or end a friendship.
- * The name opens their profile when they have a handle to point at.
+ * The name opens their profile when they have a handle to point at. Ending a
+ * friendship asks first, as on the site: nobody is told, and undoing it takes
+ * a new request the other person has to accept.
  */
 export function FriendRow({
   friend,
@@ -40,6 +42,15 @@ export function FriendRow({
       setError(reply.error ?? "Impossible pour l'instant.");
     }
     await onChanged();
+  };
+
+  const remove = (): void => {
+    if (kind !== "friends") {
+      void act(removeFriendApi);
+      return;
+    }
+    const alert = unfriendAlert(friend.name, () => void act(removeFriendApi));
+    Alert.alert(alert.title, alert.message, alert.buttons);
   };
 
   const username = friend.username;
@@ -83,7 +94,7 @@ export function FriendRow({
             label={removeLabel(kind)}
             tone="neutral"
             disabled={pending}
-            onPress={() => void act(removeFriendApi)}
+            onPress={remove}
           />
         </View>
       </View>

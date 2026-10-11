@@ -270,4 +270,44 @@ export const userRepository = {
       lessonsByCategory: counted.map((row) => ({ category: row.category, count: row._count._all })),
     };
   },
+
+  /**
+   * Which of these people's profiles the viewer would be let into: the rule
+   * of findPublicProfile (public, their own, or an accepted friend's), for a
+   * page that names many people at once and links only the names that open.
+   * A link that lands on a 404 is worse than a name that is not a link.
+   *
+   * Two reads at most, whatever the number of people: the preferences, then
+   * the friendships of the private ones only.
+   */
+  async profilesOpenTo(viewerId: string, userIds: readonly string[]): Promise<Set<string>> {
+    const open = new Set<string>();
+    const ids = [...new Set(userIds)];
+    if (ids.length === 0) return open;
+
+    const people = await prisma.user.findMany({
+      where: { id: { in: ids }, username: { not: null } },
+      select: { id: true, preferences: { select: { publicProfile: true } } },
+    });
+    const closed: string[] = [];
+    for (const person of people) {
+      if (person.id === viewerId || person.preferences?.publicProfile !== false)
+        open.add(person.id);
+      else closed.push(person.id);
+    }
+    if (closed.length === 0) return open;
+
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { userAId: viewerId, userBId: { in: closed } },
+          { userBId: viewerId, userAId: { in: closed } },
+        ],
+      },
+      select: { userAId: true, userBId: true },
+    });
+    for (const row of friendships) open.add(row.userAId === viewerId ? row.userBId : row.userAId);
+    return open;
+  },
 };

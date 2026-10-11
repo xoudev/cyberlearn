@@ -45,6 +45,7 @@ describe("toMobileTopicSummary", () => {
 });
 
 describe("toMobilePost", () => {
+  const NONE_OPEN: ReadonlySet<string> = new Set();
   const post: ForumPostView = {
     id: "post-1",
     content: "Réponse",
@@ -55,9 +56,18 @@ describe("toMobilePost", () => {
   };
 
   it("marks the reader's own post, and only theirs", () => {
-    expect(toMobilePost(post, "user-2", null).mine).toBe(true);
-    expect(toMobilePost(post, "user-1", null).mine).toBe(false);
-    expect(toMobilePost({ ...post, author: null }, "user-1", null).mine).toBe(false);
+    expect(toMobilePost(post, "user-2", null, NONE_OPEN).mine).toBe(true);
+    expect(toMobilePost(post, "user-1", null, NONE_OPEN).mine).toBe(false);
+    expect(toMobilePost({ ...post, author: null }, "user-1", null, NONE_OPEN).mine).toBe(false);
+  });
+
+  it("hands over the author's handle only when the reader may open the profile", () => {
+    expect(toMobilePost(post, "user-1", null, new Set(["user-2"])).authorHandle).toBe("sam");
+    // A private profile the reader is not let into: the name stays a name.
+    expect(toMobilePost(post, "user-1", null, NONE_OPEN).authorHandle).toBeNull();
+    expect(
+      toMobilePost({ ...post, author: null }, "user-1", null, new Set(["user-2"])).authorHandle,
+    ).toBeNull();
   });
 
   it("carries the signed avatar it was given, and the edit date", () => {
@@ -65,6 +75,7 @@ describe("toMobilePost", () => {
       { ...post, editedAt: new Date("2026-09-24T10:00:00.000Z"), isHidden: true },
       "user-2",
       "https://storage.example/signed",
+      NONE_OPEN,
     );
     expect(out).toMatchObject({
       avatar: "https://storage.example/signed",

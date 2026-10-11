@@ -11,12 +11,11 @@ export function NotificationsSection({
 }): React.JSX.Element {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-      <SectionHead label="NOTIFICATIONS" hint="par email" />
+      <SectionHead label="NOTIFICATIONS" hint="dans la cloche & par email" />
       <NotificationsForm
         initialReviewReminders={data.reviewReminders}
         initialWeeklyDigest={data.weeklyDigest}
         initialEmailNotifications={data.emailNotifications}
-        streakReminder={data.streakReminder}
       />
     </div>
   );

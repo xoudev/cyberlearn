@@ -3,9 +3,12 @@ import {
   FRIENDSHIP_ACTION_LABEL,
   friendshipAfter,
   friendshipMove,
+  friendshipMoveAsksFirst,
   friendshipView,
   orderPair,
   otherSide,
+  UNFRIEND_PROMPT,
+  unfriendQuestion,
 } from "./friendship.js";
 
 const ALICE = "11111111-1111-4111-8111-111111111111";
@@ -82,5 +85,14 @@ describe("the button on a profile", () => {
     expect(friendshipAfter("request", false)).toBe("outgoing");
     expect(friendshipAfter("request", true)).toBe("friends");
     expect(friendshipAfter("remove", false)).toBe("none");
+  });
+
+  it("asks before ending a friendship, and only then", () => {
+    expect(friendshipMoveAsksFirst("friends")).toBe(true);
+    expect(friendshipMoveAsksFirst("outgoing")).toBe(false);
+    expect(friendshipMoveAsksFirst("incoming")).toBe(false);
+    expect(friendshipMoveAsksFirst("none")).toBe(false);
+    expect(unfriendQuestion("Alex")).toBe("Retirer Alex de tes amis ?");
+    expect(UNFRIEND_PROMPT).toBe("Retirer de tes amis ?");
   });
 });

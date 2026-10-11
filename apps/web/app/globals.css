@@ -953,6 +953,27 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   width: 100%;
   justify-self: stretch;
 }
+/* A final action's question, asked in place of its button
+   (components/confirm-button.tsx). */
+.confirm-step {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.confirm-step__question {
+  font: 11px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: #ff6b7a;
+}
+/* What answering yes does: a line of its own, under the question and its
+   answers. */
+.confirm-step__detail {
+  flex-basis: 100%;
+  font: 11px var(--font-mono);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition: none;
@@ -2229,12 +2250,44 @@ span.profile-avatar {
   color: var(--color-text-secondary) !important;
 }
 
-/* Notification rows */
+/* Notification rows: a link, a button or plain text, drawn the same way. */
 .notif-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 1px solid #1a1640;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
   transition: background-color 150ms ease;
 }
-.notif-row:hover {
+a.notif-row,
+button.notif-row {
+  cursor: pointer;
+}
+a.notif-row:hover,
+button.notif-row:hover {
   background-color: rgba(42, 37, 96, 0.2) !important;
+}
+/* Inset: the panel scrolls, and an outside ring would be clipped by it. */
+.notif-row:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: -2px;
+}
+
+/* A challenge's hints, each a button (hints-panel.tsx). */
+.hint-row:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--color-border-default);
+}
+/* A revealed hint takes the focus from its button by script: ringed after a
+   key press, left plain after a click, as :focus-visible decides. */
+.hint-row:focus-visible,
+.hint-revealed:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
 }
 
 /* Link with bottom-border underline (legal, etc.) - same effect as link-cta */

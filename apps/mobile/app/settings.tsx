@@ -5,7 +5,7 @@ import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
 import {
-  NOTIFICATION_SETTINGS,
+  SHOWN_NOTIFICATION_SETTINGS,
   SPACED_REPETITION_SETTING,
 } from "@cyberlearn/lib/settings/notifications";
 import { colors } from "@cyberlearn/tokens";
@@ -14,6 +14,7 @@ import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { useTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
+import { SITE_URL } from "@/lib/api";
 import {
   deviceNotificationsSupported,
   isDeviceNotificationsEnabled,
@@ -34,20 +35,18 @@ import { supabase } from "@/lib/supabase";
 
 // The site's words: spaced repetition (with the preferences on the site),
 // then the switches of /settings/notifications. A switch for something that
-// nothing sends yet is shown, and disabled, as on the site: a live-looking
-// switch would be a promise.
-const PREF_ROWS: { key: PreferenceSwitch; label: string; hint: string; available: boolean }[] = [
+// nothing sends yet is left out, as on the site: a greyed-out switch that
+// never comes alive is a control that does nothing.
+const PREF_ROWS: { key: PreferenceSwitch; label: string; hint: string }[] = [
   {
     key: "spacedRepetition",
     label: SPACED_REPETITION_SETTING.name,
     hint: SPACED_REPETITION_SETTING.descOn,
-    available: true,
   },
-  ...NOTIFICATION_SETTINGS.map((setting) => ({
+  ...SHOWN_NOTIFICATION_SETTINGS.map((setting) => ({
     key: setting.key,
     label: setting.name,
     hint: setting.desc,
-    available: setting.available,
   })),
 ];
 
@@ -191,24 +190,16 @@ export default function Reglages(): React.JSX.Element {
                 {i > 0 ? <Divider style={{ marginVertical: 6 }} /> : null}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                   <View style={{ flex: 1 }}>
-                    <Text variant="h3">
-                      {row.label}
-                      {row.available ? null : (
-                        <Text variant="micro" style={{ color: colors.warning }}>
-                          {"  ·  bientôt"}
-                        </Text>
-                      )}
-                    </Text>
+                    <Text variant="h3">{row.label}</Text>
                     <Text variant="micro" style={{ color: colors.textMuted }}>
                       {hint}
                     </Text>
                   </View>
                   <Switch
                     value={value}
-                    disabled={!row.available}
                     onValueChange={(v) => void toggle(row.key, v)}
                     trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
-                    thumbColor={value && row.available ? colors.accent : colors.textMuted}
+                    thumbColor={value ? colors.accent : colors.textMuted}
                     accessibilityLabel={row.label}
                   />
                 </View>
@@ -310,13 +301,16 @@ export default function Reglages(): React.JSX.Element {
             </Text>
           </PressableScale>
           <Divider />
+          {/* The site the app is pointed at (SITE_URL), not the production
+              address written in: a build aimed at a local or staging site
+              used to send these to production. */}
           {[
             { label: "Modifier mon profil", route: "/profile-edit" },
-            { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },
-            { label: "CGU", url: "https://cyberlearn.fr/legal/terms" },
+            { label: "Confidentialité", url: `${SITE_URL}/privacy` },
+            { label: "CGU", url: `${SITE_URL}/legal/terms` },
             {
               label: "Exporter / supprimer mes données (RGPD)",
-              url: "https://cyberlearn.fr/settings/data",
+              url: `${SITE_URL}/settings/data`,
             },
           ].map((l: { label: string; url?: string; route?: string }, i) => (
             <View key={l.label}>

@@ -2,7 +2,7 @@
 
 // "use client" justified: reveal interactions, pending state per hint, local revealed content
 
-import React, { useState } from "react";
+import React, { useId, useRef, useState } from "react";
 import { revealHintAction } from "../../_actions/challenge-actions";
 
 interface Hint {
@@ -21,25 +21,48 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
   const [revealed, setRevealed] = useState<Record<string, string>>(initialRevealed);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set<string>());
+  const baseId = useId();
+  // The hint just revealed by a press here, which takes the focus once it is
+  // drawn: the button that had it is gone, and the text has to be heard.
+  // Hints revealed on an earlier visit are left alone.
+  const focusNext = useRef<string | null>(null);
 
   if (hints.length === 0) return null;
 
+  function settle(hintId: string): void {
+    setPendingIds((s) => {
+      const next = new Set(s);
+      next.delete(hintId);
+      return next;
+    });
+  }
+
   function handleReveal(hintId: string): void {
     setPendingIds((s) => new Set([...s, hintId]));
-    void revealHintAction(hintId).then((result) => {
-      setPendingIds((s) => {
-        const next = new Set(s);
-        next.delete(hintId);
-        return next;
-      });
-      const { error, content } = result;
-      if (error !== undefined) {
-        setErrors((prev) => ({ ...prev, [hintId]: error }));
-      } else if (content !== undefined) {
-        setRevealed((prev) => ({ ...prev, [hintId]: content }));
-        setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== hintId)));
-      }
-    });
+    revealHintAction(hintId).then(
+      (result) => {
+        settle(hintId);
+        const { error, content } = result;
+        if (error !== undefined) {
+          setErrors((prev) => ({ ...prev, [hintId]: error }));
+        } else if (content !== undefined) {
+          focusNext.current = hintId;
+          setRevealed((prev) => ({ ...prev, [hintId]: content }));
+          setErrors((prev) =>
+            Object.fromEntries(Object.entries(prev).filter(([k]) => k !== hintId)),
+          );
+        }
+      },
+      () => {
+        // A call that throws used to leave the row on "Révélation..." for
+        // good, with nothing said.
+        settle(hintId);
+        setErrors((prev) => ({
+          ...prev,
+          [hintId]: "Action impossible pour l'instant. Réessaie dans un moment.",
+        }));
+      },
+    );
   }
 
   return (
@@ -83,9 +106,23 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           const num = String(idx + 1).padStart(2, "0");
 
           if (isRevealed) {
+            const contentId = `${baseId}-${hint.id}`;
             return (
               <div
                 key={hint.id}
+                ref={(node) => {
+                  if (node !== null && focusNext.current === hint.id) {
+                    focusNext.current = null;
+                    node.focus();
+                  }
+                }}
+                // Focusable by script only, so a screen reader announces the
+                // hint where the button was rather than leaving it unsaid.
+                tabIndex={-1}
+                role="group"
+                aria-label={`Indice ${num} révélé`}
+                aria-describedby={contentId}
+                className="hint-revealed"
                 style={{
                   display: "block",
                   borderLeft: "3px solid var(--cosmetic-accent)",
@@ -113,6 +150,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   </span>
                 </div>
                 <div
+                  id={contentId}
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 13,
@@ -127,94 +165,112 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
             );
           }
 
+          // A real button: the row used to be a clickable <div>, out of the
+          // tab order and deaf to Enter. Disabled when the XP is not there,
+          // so the keyboard skips what the mouse could not do either. While
+          // the call runs it is only aria-disabled: the focus is on it, and a
+          // disabled button would drop it on the page.
           return (
-            <div
-              className="card card--sunken"
-              key={hint.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "36px 1fr auto",
-                alignItems: "center",
-                gap: 14,
-                padding: "14px 16px",
-                cursor: canAfford && !isPending ? "pointer" : "default",
-                transition: "border-color 200ms ease, background 200ms ease",
-              }}
-              onClick={() => {
-                if (!isPending && canAfford) handleReveal(hint.id);
-              }}
-            >
-              {/* Number box */}
-              <span
+            <div key={hint.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <button
+                type="button"
+                className="card card--sunken hint-row"
+                disabled={!canAfford}
+                aria-disabled={isPending || undefined}
+                aria-busy={isPending}
+                onClick={() => {
+                  if (isPending) return;
+                  handleReveal(hint.id);
+                }}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.1em",
-                  color: "var(--color-text-muted)",
                   display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  height: 36,
-                  border: "1px dashed var(--color-border-default)",
+                  gridTemplateColumns: "36px 1fr auto",
+                  alignItems: "center",
+                  gap: 14,
+                  width: "100%",
+                  padding: "14px 16px",
+                  font: "inherit",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: canAfford && !isPending ? "pointer" : "not-allowed",
+                  transition: "border-color 200ms ease, background 200ms ease",
                 }}
               >
-                {num}
-              </span>
+                {/* Number box */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    letterSpacing: "0.1em",
+                    color: "var(--color-text-muted)",
+                    display: "grid",
+                    placeItems: "center",
+                    width: 36,
+                    height: 36,
+                    border: "1px dashed var(--color-border-default)",
+                  }}
+                >
+                  {num}
+                </span>
 
-              {/* Body */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span
-                  className="mono-label"
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
-                </span>
-                <span
-                  className="mono-label"
-                  style={{
-                    color:
-                      hint.xpCost === 0
-                        ? "var(--cosmetic-accent)"
-                        : canAfford
-                          ? "var(--color-warning)"
-                          : "var(--color-danger)",
-                  }}
-                >
-                  {hint.xpCost === 0
-                    ? "Gratuit"
-                    : canAfford
-                      ? `−${String(hint.xpCost)} XP`
-                      : `XP insuffisants (${String(hint.xpCost)} requis)`}
-                </span>
-                {errorMsg !== undefined && (
+                {/* Body: spans, so the row stays valid inside a button. */}
+                <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <span
+                    className="mono-label"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      color: "var(--color-danger)",
+                      fontWeight: 600,
+                      color: "var(--color-text-primary)",
                     }}
                   >
-                    {errorMsg}
+                    {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
                   </span>
-                )}
-              </div>
+                  <span
+                    className="mono-label"
+                    style={{
+                      color:
+                        hint.xpCost === 0
+                          ? "var(--cosmetic-accent)"
+                          : canAfford
+                            ? "var(--color-warning)"
+                            : "var(--color-danger)",
+                    }}
+                  >
+                    {hint.xpCost === 0
+                      ? "Gratuit"
+                      : canAfford
+                        ? `−${String(hint.xpCost)} XP`
+                        : `XP insuffisants (${String(hint.xpCost)} requis)`}
+                  </span>
+                </span>
 
-              {/* Chevron */}
-              <span
-                style={{
-                  color: "var(--color-text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 16,
-                  transition: "transform 200ms ease, color 200ms ease",
-                  opacity: isPending ? 0.3 : 1,
-                }}
-              >
-                ›
-              </span>
+                {/* Chevron */}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color: "var(--color-text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 16,
+                    transition: "transform 200ms ease, color 200ms ease",
+                    opacity: isPending ? 0.3 : 1,
+                  }}
+                >
+                  ›
+                </span>
+              </button>
+              {/* Outside the button, so a screen reader hears it when it lands. */}
+              {errorMsg !== undefined && (
+                <span
+                  role="alert"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--color-danger)",
+                  }}
+                >
+                  {errorMsg}
+                </span>
+              )}
             </div>
           );
         })}

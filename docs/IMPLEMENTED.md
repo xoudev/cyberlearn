@@ -162,7 +162,7 @@
 - Page de profil publique ou privée (toggle)
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
-- Préférences : thème (dark/light/system), locale, e-mails de notification, rappels de révision
+- Préférences : répétition espacée ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans `(app)/layout.tsx`, les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse
 
 #### Notifications

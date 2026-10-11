@@ -21,6 +21,7 @@ function post(overrides: Partial<ForumPost> = {}): ForumPost {
     mine: false,
     author: null,
     avatar: null,
+    authorHandle: null,
     ...overrides,
   };
 }

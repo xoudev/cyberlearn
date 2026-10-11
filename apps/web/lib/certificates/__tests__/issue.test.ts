@@ -141,6 +141,22 @@ describe("issueCertificate - gate + idempotence guards", () => {
     expect(m.upsertProgress).not.toHaveBeenCalled();
   });
 
+  it("points the certificate notice at the certificates page, not at the raw PDF", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1", { score: 85 });
+
+    // A click in the bell used to download the file itself, and the app had
+    // no screen to open for an API address.
+    expect(m.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "CERTIFICATE_ISSUED", actionUrl: "/certificates" }),
+    );
+    expect(m.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "PATH_COMPLETED", actionUrl: "/paths/path" }),
+    );
+  });
+
   it("writes the real hash and storage key on the very first insert", async () => {
     m.areLessonsComplete.mockResolvedValue(true);
     m.findProgress.mockResolvedValue(null);

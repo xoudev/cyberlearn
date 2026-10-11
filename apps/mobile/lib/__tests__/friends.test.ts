@@ -11,7 +11,26 @@ import {
   profileRarity,
   removeLabel,
   shortDay,
+  unfriendAlert,
 } from "../friends";
+
+describe("ending a friendship", () => {
+  it("asks first, in the site's words, with the way out first", () => {
+    let removed = 0;
+    const alert = unfriendAlert("Alex", () => {
+      removed++;
+    });
+    expect(alert.title).toBe("Retirer Alex de tes amis ?");
+    expect(alert.message).toMatch(/Aucune notification/);
+    expect(alert.buttons.map((b) => [b.text, b.style])).toEqual([
+      ["Annuler", "cancel"],
+      ["Retirer", "destructive"],
+    ]);
+    expect(alert.buttons[0]?.onPress).toBeUndefined();
+    alert.buttons[1]?.onPress?.();
+    expect(removed).toBe(1);
+  });
+});
 
 describe("the friends lists", () => {
   it("words the one undo call the way the site's panel does, per list", () => {
