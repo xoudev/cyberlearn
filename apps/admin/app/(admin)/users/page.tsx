@@ -94,7 +94,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         <span key="e" className="mono" style={{ color: UI.muted }}>
           {u.email}
         </span>,
-        <RoleSelect key="r" userId={u.id} currentRole={u.role} />,
+        <RoleSelect key="r" userId={u.id} handle={handle} currentRole={u.role} />,
         <span key="l">
           <span style={{ color: UI.muted }}>LVL·</span>
           <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
@@ -123,7 +123,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
       <PageHeader
         eyebrow="Comptes"
         title="Utilisateurs"
-        description="Recherche, tri et gestion des rôles. La promotion d'un compte au rôle ADMIN est tracée dans l'audit log."
+        description="Recherche, tri et gestion des rôles. Un changement de rôle se confirme et est tracé dans l'audit log ; personne ne peut retirer son propre rôle Admin ni celui du dernier administrateur."
       />
 
       <div className="a-kpi-grid">

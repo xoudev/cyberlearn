@@ -23,4 +23,5 @@ export {
   ModerationNoticeEmail,
   sendModerationNoticeEmail,
 } from "./templates/moderation-notice";
+export { MfaResetEmail, mfaResetSubject, sendMfaResetEmail } from "./templates/mfa-reset";
 export { EMAIL_SAMPLES, renderEmailSample, type EmailSample } from "./preview";

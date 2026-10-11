@@ -1,0 +1,319 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const m = vi.hoisted(() => ({
+  requireAdminAction: vi.fn(),
+  findUnique: vi.fn(),
+  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  revalidatePath: vi.fn(),
+  getUserById: vi.fn(),
+  updateUserById: vi.fn(),
+  listFactors: vi.fn(),
+  deleteFactor: vi.fn(),
+  resetPasswordForEmail: vi.fn(),
+  resend: vi.fn(),
+  sendMfaResetEmail: vi.fn(),
+  heldAdminRoleSince: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
+vi.mock("@cyberlearn/db", () => ({
+  prisma: { user: { findUnique: m.findUnique }, auditLog: { create: m.auditCreate } },
+  userRepository: { heldAdminRoleSince: m.heldAdminRoleSince },
+}));
+vi.mock("@cyberlearn/db/supabase/admin", () => ({
+  createSupabaseAdminClient: () => ({
+    auth: {
+      admin: {
+        getUserById: m.getUserById,
+        updateUserById: m.updateUserById,
+        mfa: { listFactors: m.listFactors, deleteFactor: m.deleteFactor },
+      },
+      resetPasswordForEmail: m.resetPasswordForEmail,
+      resend: m.resend,
+    },
+  }),
+}));
+vi.mock("@cyberlearn/email", () => ({ sendMfaResetEmail: m.sendMfaResetEmail }));
+vi.mock("@cyberlearn/lib/logger", () => ({
+  logger: { error: vi.fn() },
+  errorMessage: (error: unknown) => String(error),
+}));
+vi.mock("@/lib/env", () => ({
+  env: { RESEND_API_KEY: "re_test", RESEND_FROM_EMAIL: "contact@cyberlearn.fr" },
+}));
+vi.mock("@/lib/learner-url", () => ({
+  learnerUrl: (path: string) => `https://cyberlearn.fr${path}`,
+  learnerSiteUrl: () => "https://cyberlearn.fr",
+}));
+vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+
+const { ADMIN_MFA_REFUSAL, RECENT_ADMIN_MFA_REFUSAL } = await import("@/lib/account-guards");
+const { confirmEmailAction, resendConfirmationAction, resetMfaAction, sendPasswordResetAction } =
+  await import("../access-actions");
+
+/**
+ * The gestures that unblock an account from the console: what they refuse,
+ * what they change in Supabase Auth, what they write to the audit log, and
+ * that the learner hears about a removed second factor.
+ */
+
+const ADMIN = "11111111-1111-4111-8111-111111111111";
+const LEARNER = "22222222-2222-4222-8222-222222222222";
+const OTHER_ADMIN = "33333333-3333-4333-8333-333333333333";
+
+function form(fields: Record<string, string>): FormData {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(fields)) data.append(key, value);
+  return data;
+}
+
+/** What the action wrote to the audit log, from its only write there. */
+function audited(): Record<string, unknown> | undefined {
+  return m.auditCreate.mock.calls[0]?.[0].data;
+}
+
+function account(id: string, role: "STUDENT" | "TEACHER" | "ADMIN") {
+  return {
+    id,
+    email: `${id.slice(0, 4)}@exemple.fr`,
+    displayName: "Amélie",
+    username: "amelie",
+    role,
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.requireAdminAction.mockResolvedValue({ id: ADMIN, email: "admin@x.fr", role: "ADMIN" });
+  m.findUnique.mockImplementation(({ where }: { where: { id: string } }) =>
+    Promise.resolve(
+      where.id === LEARNER
+        ? account(LEARNER, "STUDENT")
+        : where.id === OTHER_ADMIN
+          ? account(OTHER_ADMIN, "ADMIN")
+          : where.id === ADMIN
+            ? account(ADMIN, "ADMIN")
+            : null,
+    ),
+  );
+  m.auditCreate.mockResolvedValue({});
+  m.heldAdminRoleSince.mockResolvedValue(false);
+  m.listFactors.mockResolvedValue({
+    data: {
+      factors: [
+        { id: "f-1", factor_type: "totp", status: "verified" },
+        { id: "f-2", factor_type: "totp", status: "unverified" },
+        { id: "f-3", factor_type: "phone", status: "verified" },
+      ],
+    },
+    error: null,
+  });
+  m.deleteFactor.mockResolvedValue({ data: {}, error: null });
+  m.sendMfaResetEmail.mockResolvedValue(undefined);
+  m.getUserById.mockResolvedValue({
+    data: { user: { email: "2222@exemple.fr", email_confirmed_at: null } },
+    error: null,
+  });
+  m.resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
+  m.resend.mockResolvedValue({ data: {}, error: null });
+  m.updateUserById.mockResolvedValue({ data: {}, error: null });
+});
+
+describe("resetMfaAction", () => {
+  const typed = (id: string) => form({ userId: id, confirmEmail: account(id, "STUDENT").email });
+
+  it("checks the caller is an admin before anything else", async () => {
+    m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(resetMfaAction({}, typed(LEARNER))).rejects.toThrow("NEXT_REDIRECT");
+    expect(m.listFactors).not.toHaveBeenCalled();
+  });
+
+  it("refuses on oneself, without asking Supabase anything", async () => {
+    const result = await resetMfaAction({}, typed(ADMIN));
+    expect(result.error).toMatch(/ta propre double authentification/u);
+    expect(m.listFactors).not.toHaveBeenCalled();
+    expect(m.deleteFactor).not.toHaveBeenCalled();
+    expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses on another administrator and points to the break-glass procedure", async () => {
+    const result = await resetMfaAction({}, typed(OTHER_ADMIN));
+    expect(result.error).toBe(ADMIN_MFA_REFUSAL);
+    expect(m.listFactors).not.toHaveBeenCalled();
+    expect(m.deleteFactor).not.toHaveBeenCalled();
+  });
+
+  it("refuses on a learner who was an administrator in the last weeks", async () => {
+    // Demote, reset, promote back: the log shows the demotion, and the reset
+    // stays refused.
+    m.heldAdminRoleSince.mockResolvedValue(true);
+    const result = await resetMfaAction({}, typed(LEARNER));
+    expect(result.error).toBe(RECENT_ADMIN_MFA_REFUSAL);
+    expect(m.heldAdminRoleSince).toHaveBeenCalledWith(LEARNER, expect.any(Date));
+    expect(m.listFactors).not.toHaveBeenCalled();
+    expect(m.deleteFactor).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the role history cannot be read, rather than guessing", async () => {
+    m.heldAdminRoleSince.mockRejectedValue(new Error("connection reset"));
+    const result = await resetMfaAction({}, typed(LEARNER));
+    expect(result.error).toMatch(/historique des rôles/u);
+    expect(m.deleteFactor).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the typed address is not the account's", async () => {
+    const result = await resetMfaAction(
+      {},
+      form({ userId: LEARNER, confirmEmail: "quelquun@exemple.fr" }),
+    );
+    expect(result.error).toMatch(/ne correspond pas/u);
+    expect(m.deleteFactor).not.toHaveBeenCalled();
+  });
+
+  it("removes every TOTP factor, logs it, and tells the learner", async () => {
+    const result = await resetMfaAction({}, typed(LEARNER));
+
+    expect(m.deleteFactor).toHaveBeenCalledTimes(2);
+    expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-1", userId: LEARNER });
+    expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-2", userId: LEARNER });
+    expect(m.auditCreate).toHaveBeenCalledWith({
+      data: {
+        actorId: ADMIN,
+        action: "admin.user.mfa_reset",
+        targetType: "User",
+        targetId: LEARNER,
+        metadata: { factorsFound: 2, factorsRemoved: 2, complete: true },
+      },
+    });
+    expect(m.sendMfaResetEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: account(LEARNER, "STUDENT").email,
+        securityUrl: "https://cyberlearn.fr/settings/account",
+        sessionsClosed: true,
+      }),
+    );
+    expect(result).toMatchObject({ ok: true, emailFailed: false, auditFailed: false });
+    // Whatever the sign-in method: a GitHub account has no password.
+    expect(result.notice).toMatch(/comme d'habitude, sans code/u);
+    expect(result.notice).not.toMatch(/mot de passe/u);
+  });
+
+  it("reports the reset done when only the audit write fails, and still tells the learner", async () => {
+    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    const result = await resetMfaAction({}, typed(LEARNER));
+    expect(result).toMatchObject({ ok: true, auditFailed: true });
+    expect(m.sendMfaResetEmail).toHaveBeenCalled();
+  });
+
+  it("reports a reset that stopped halfway, logs it, and sends no mail", async () => {
+    m.deleteFactor
+      .mockResolvedValueOnce({ data: {}, error: null })
+      .mockResolvedValueOnce({ data: null, error: new Error("boom") });
+
+    const result = await resetMfaAction({}, typed(LEARNER));
+
+    expect(result.error).toMatch(/1 facteur sur 2/u);
+    expect(audited()).toMatchObject({
+      metadata: { factorsFound: 2, factorsRemoved: 1, complete: false },
+    });
+    expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+  });
+
+  it("says so when there is nothing to remove, and writes nothing", async () => {
+    m.listFactors.mockResolvedValue({ data: { factors: [] }, error: null });
+    const result = await resetMfaAction({}, typed(LEARNER));
+    expect(result.error).toMatch(/pas de double authentification/u);
+    expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("still succeeds when the mail does not go out, and says it did not", async () => {
+    m.sendMfaResetEmail.mockRejectedValue(new Error("resend down"));
+    const result = await resetMfaAction({}, typed(LEARNER));
+    expect(result).toMatchObject({ ok: true, emailFailed: true });
+  });
+});
+
+describe("sendPasswordResetAction", () => {
+  it("sends the self-service recovery mail to the auth address, and logs it", async () => {
+    const result = await sendPasswordResetAction({}, form({ userId: LEARNER }));
+    expect(m.resetPasswordForEmail).toHaveBeenCalledWith("2222@exemple.fr", {
+      redirectTo: "https://cyberlearn.fr/auth/callback?next=/reset-password",
+    });
+    expect(audited()).toMatchObject({ action: "admin.user.password_reset_sent" });
+    expect(result.ok).toBe(true);
+  });
+
+  it("reports the link sent when only the audit write fails", async () => {
+    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    const result = await sendPasswordResetAction({}, form({ userId: LEARNER }));
+    expect(result).toMatchObject({ ok: true, auditFailed: true });
+    expect(result.notice).toMatch(/envoyé à 2222@exemple\.fr/u);
+  });
+
+  it("asks to wait when Supabase rate-limits the address, and logs nothing", async () => {
+    m.resetPasswordForEmail.mockResolvedValue({ data: null, error: { status: 429 } });
+    const result = await sendPasswordResetAction({}, form({ userId: LEARNER }));
+    expect(result.error).toMatch(/moins d'une minute/u);
+    expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses an id that is not a uuid", async () => {
+    const result = await sendPasswordResetAction({}, form({ userId: "nope" }));
+    expect(result.error).toBe("Paramètres invalides.");
+    expect(m.resetPasswordForEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe("address confirmation", () => {
+  it("resends the sign-up mail to an address not yet confirmed", async () => {
+    const result = await resendConfirmationAction({}, form({ userId: LEARNER }));
+    expect(m.resend).toHaveBeenCalledWith({
+      type: "signup",
+      email: "2222@exemple.fr",
+      options: { emailRedirectTo: "https://cyberlearn.fr/auth/callback?next=/onboarding" },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("reports the mail resent when only the audit write fails", async () => {
+    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    const result = await resendConfirmationAction({}, form({ userId: LEARNER }));
+    expect(result).toMatchObject({ ok: true, auditFailed: true });
+  });
+
+  it("does nothing for an address already confirmed", async () => {
+    m.getUserById.mockResolvedValue({
+      data: { user: { email: "2222@exemple.fr", email_confirmed_at: "2026-09-01T08:00:00Z" } },
+      error: null,
+    });
+    expect((await resendConfirmationAction({}, form({ userId: LEARNER }))).error).toMatch(
+      /déjà confirmée/u,
+    );
+    expect((await confirmEmailAction({}, form({ userId: LEARNER }))).error).toMatch(
+      /déjà confirmée/u,
+    );
+    expect(m.resend).not.toHaveBeenCalled();
+    expect(m.updateUserById).not.toHaveBeenCalled();
+  });
+
+  it("confirms the address without the mail, and logs who decided", async () => {
+    const result = await confirmEmailAction({}, form({ userId: LEARNER }));
+    expect(m.updateUserById).toHaveBeenCalledWith(LEARNER, { email_confirm: true });
+    expect(audited()).toMatchObject({ actorId: ADMIN, action: "admin.user.email_confirmed" });
+    expect(result.ok).toBe(true);
+  });
+
+  it("reports the address confirmed when only the audit write fails", async () => {
+    m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
+    const result = await confirmEmailAction({}, form({ userId: LEARNER }));
+    expect(result).toMatchObject({ ok: true, auditFailed: true });
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
+  });
+
+  it("says when no auth identity stands behind the profile", async () => {
+    m.getUserById.mockResolvedValue({ data: { user: null }, error: { status: 404 } });
+    expect((await confirmEmailAction({}, form({ userId: LEARNER }))).error).toMatch(
+      /Aucun identifiant/u,
+    );
+  });
+});

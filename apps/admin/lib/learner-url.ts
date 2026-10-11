@@ -59,3 +59,16 @@ export function learnerUrl(path: string): string {
 export function learnerSiteUrl(): string {
   return learnerUrl("");
 }
+
+/**
+ * Where a lesson lives on the learner site, up to its slug, for the hint under
+ * the slug field. A misconfigured deployment shows the bare path instead of
+ * failing the editor: unlike a mail, a hint nobody clicks harms nobody.
+ */
+export function learnerLessonUrlPrefix(): string {
+  try {
+    return learnerUrl("/lessons/");
+  } catch {
+    return "/lessons/";
+  }
+}

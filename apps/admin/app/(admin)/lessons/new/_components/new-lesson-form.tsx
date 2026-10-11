@@ -11,8 +11,7 @@ import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import { refreshLessonPreviewAction } from "../../_actions/preview-actions";
 import { CoverUploadField } from "../../_components/cover-upload-field";
 import { Select } from "@cyberlearn/ui";
-
-export const dynamic = "force-dynamic";
+import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -128,7 +127,12 @@ function FieldErr({ msg }: { msg?: string | undefined }) {
 
 const initialState: CreateLessonState = {};
 
-export function NewLessonForm(): React.ReactElement {
+export function NewLessonForm({
+  lessonUrlPrefix,
+}: {
+  /** The lesson's address on the learner site, up to the slug. */
+  lessonUrlPrefix: string;
+}): React.ReactElement {
   const [state, action, isPending] = useActionState(createLessonAction, initialState);
   const [mdx, setMdx] = useState(MDX_STARTER);
   const [refCode, setRefCode] = useState("");
@@ -236,10 +240,6 @@ export function NewLessonForm(): React.ReactElement {
               />
               Brouillon · non publié
             </span>
-            <span>·</span>
-            <span>
-              Auto-save toutes les <b style={{ color: "#B8B5D1" }}>10 s</b>
-            </span>
           </div>
         </div>
 
@@ -325,13 +325,18 @@ export function NewLessonForm(): React.ReactElement {
                   name="slug"
                   type="text"
                   required
+                  minLength={LESSON_LIMITS.slugMin}
+                  maxLength={LESSON_LIMITS.slugMax}
+                  pattern={LESSON_SLUG_PATTERN}
+                  title={LESSON_SLUG_HINT}
                   placeholder="introduction-au-sujet"
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
                 />
               </div>
               <Help>
-                cyberlearn.app/leçons/<b style={{ color: TURQ }}>votre-slug</b>
+                {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
+                <b style={{ color: TURQ }}>votre-slug</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
@@ -339,14 +344,18 @@ export function NewLessonForm(): React.ReactElement {
 
           {/* Title */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 3–200 caractères">
+            <Label
+              req
+              hint={`// ${String(LESSON_LIMITS.titleMin)}–${String(LESSON_LIMITS.titleMax)} caractères`}
+            >
               Titre
             </Label>
             <input
               name="title"
               type="text"
               required
-              maxLength={200}
+              minLength={LESSON_LIMITS.titleMin}
+              maxLength={LESSON_LIMITS.titleMax}
               placeholder="Titre de la leçon"
               className="le-input"
               style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
@@ -356,14 +365,17 @@ export function NewLessonForm(): React.ReactElement {
 
           {/* Description */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 10–1000 caractères · affichée dans le catalogue">
+            <Label
+              req
+              hint={`// ${String(LESSON_LIMITS.descriptionMin)}–${String(LESSON_LIMITS.descriptionMax)} caractères · affichée dans le catalogue`}
+            >
               Description
             </Label>
             <textarea
               name="description"
               required
-              minLength={10}
-              maxLength={1000}
+              minLength={LESSON_LIMITS.descriptionMin}
+              maxLength={LESSON_LIMITS.descriptionMax}
               rows={3}
               placeholder="Description complète de la leçon…"
               className="le-textarea"
@@ -431,7 +443,7 @@ export function NewLessonForm(): React.ReactElement {
                   type="number"
                   required
                   min={1}
-                  max={480}
+                  max={LESSON_LIMITS.minutesMax}
                   defaultValue="20"
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
@@ -476,7 +488,7 @@ export function NewLessonForm(): React.ReactElement {
                   type="number"
                   required
                   min={0}
-                  max={5000}
+                  max={LESSON_LIMITS.xpMax}
                   step={10}
                   defaultValue="100"
                   className="le-input"
@@ -602,59 +614,9 @@ export function NewLessonForm(): React.ReactElement {
               paddingTop: 24,
               borderTop: `1px solid ${BORDER}`,
               flexWrap: "wrap",
+              justifyContent: "flex-end",
             }}
           >
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 10.5,
-                color: "#7F7BA9",
-                letterSpacing: "0.06em",
-                marginRight: "auto",
-              }}
-            >
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                ⌘
-              </kbd>
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                S
-              </kbd>{" "}
-              sauvegarder ·{" "}
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                esc
-              </kbd>{" "}
-              annuler
-            </span>
             <Link
               href="/lessons"
               className="adm-btn-ghost"

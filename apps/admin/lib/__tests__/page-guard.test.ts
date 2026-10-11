@@ -36,9 +36,10 @@ describe("console pages", () => {
       const source = readFileSync(file, "utf8");
       expect(source).not.toMatch(/^["']use client["']/);
       expect(source).toContain('import { requireAdminPage } from "@/lib/auth";');
-      // First statement of the page: before any query, before params.
+      // First statement of the page: before any query, before params. A page
+      // that needs to know who is looking may keep what the check returns.
       expect(source).toMatch(
-        /export default async function[\s\S]*?\{\r?\n\s*await requireAdminPage\(\);/,
+        /export default async function[\s\S]*?\{\r?\n\s*(?:const \w+ = )?await requireAdminPage\(\);/,
       );
     },
   );

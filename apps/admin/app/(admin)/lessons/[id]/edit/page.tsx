@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { EditLessonClient } from "./_components/edit-lesson-client";
+import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -39,5 +40,11 @@ export default async function EditLessonPage({
 
   const coverPreview = await resolveLessonCoverSrc(lesson.coverImageUrl);
 
-  return <EditLessonClient lesson={lesson} coverPreview={coverPreview} />;
+  return (
+    <EditLessonClient
+      lesson={lesson}
+      coverPreview={coverPreview}
+      lessonUrlPrefix={learnerLessonUrlPrefix()}
+    />
+  );
 }
