@@ -111,3 +111,6 @@ ds-bundle/
 /CyberLearn_Patch_ImportLessons.md
 /.agents/
 /skills-lock.json
+
+# Supabase CLI local state (supabase start)
+supabase/.branches/
