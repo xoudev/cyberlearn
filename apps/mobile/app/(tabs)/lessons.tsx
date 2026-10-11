@@ -16,6 +16,7 @@ import {
   type Category,
   type Difficulty,
 } from "@/lib/db";
+import { STATUS_FILTER_LABEL, STATUS_FILTER_ORDER, type StatusFilter } from "@/lib/lesson-status";
 import { useLessons } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { searchStyle } from "@/app/(tabs)/paths";
@@ -24,16 +25,18 @@ export default function Lecons(): React.JSX.Element {
   const { session } = useSession();
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
+  const [status, setStatus] = useState<StatusFilter>("ALL");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const filtersAnchor = useTourAnchor("lessons-filters");
 
-  // Category / difficulty go to the server (stable query key); free-text search
-  // filters the fetched page client-side so typing does not refetch every key.
+  // Category / difficulty / status go to the server (stable query key); free-text
+  // search filters the fetched page client-side so typing does not refetch every key.
   const { data, isLoading, error, refetch } = useLessons(session?.user.id, {
     search: "",
     category,
     difficulty,
+    status,
   });
 
   const filtered = useMemo(() => {
@@ -48,6 +51,7 @@ export default function Lecons(): React.JSX.Element {
   function reset(): void {
     setCategory("ALL");
     setDifficulty("ALL");
+    setStatus("ALL");
     setQuery("");
   }
 
@@ -114,6 +118,33 @@ export default function Lecons(): React.JSX.Element {
               label={DIFFICULTY_LABEL[d]}
               color={colors.textSecondary}
               active={difficulty === d}
+            />
+          </PressableScale>
+        ))}
+      </ScrollView>
+
+      {/* Status filters: the site's STATUT */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+      >
+        <PressableScale
+          onPress={() => setStatus("ALL")}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <Pill label="Tous statuts" color={colors.textSecondary} active={status === "ALL"} />
+        </PressableScale>
+        {STATUS_FILTER_ORDER.map((s) => (
+          <PressableScale
+            key={s}
+            onPress={() => setStatus(s)}
+            style={{ minHeight: 44, justifyContent: "center" }}
+          >
+            <Pill
+              label={STATUS_FILTER_LABEL[s]}
+              color={colors.textSecondary}
+              active={status === s}
             />
           </PressableScale>
         ))}

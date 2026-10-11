@@ -46,16 +46,58 @@ export function lessonsVisibleTo(userId: string): Prisma.LessonWhereInput {
   };
 }
 
-export interface LessonFilters {
-  category?: Category;
-  difficulty?: Difficulty;
+/** What the catalogue can be narrowed by: the facets beside the list, and its search box. */
+export interface CatalogueFilters {
+  category?: Category | undefined;
+  difficulty?: Difficulty | undefined;
   /** Filter by user's progress status. Requires userId to be meaningful. */
-  progressStatus?: ProgressStatus;
-  search?: string;
+  progressStatus?: ProgressStatus | undefined;
+  search?: string | undefined;
+}
+
+export interface LessonFilters extends CatalogueFilters {
   page?: number;
   pageSize?: number;
   /** Fetch the matching catalogue before applying user-specific availability ordering. */
   paginate?: boolean;
+}
+
+/**
+ * The catalogue one reader sees, narrowed by the filters they chose.
+ *
+ * Each condition is its own term of an AND, never spread into one object: the
+ * visibility rule and the search both say OR, and spread together the search's
+ * OR replaced the audience one, so a search listed every class's own lessons.
+ * The list and the counts beside it both read this, so they cannot disagree.
+ */
+export function catalogueWhere(
+  userId: string,
+  filters: CatalogueFilters = {},
+): Prisma.LessonWhereInput {
+  const { category, difficulty, progressStatus, search } = filters;
+  const terms: Prisma.LessonWhereInput[] = [
+    // Their class's own lessons sit in the catalogue beside the platform's,
+    // for them alone. A separate list would mean a second place to look, a
+    // second search box, and a lesson that is real work being filed as an
+    // annexe.
+    lessonsVisibleTo(userId),
+  ];
+  if (category !== undefined) terms.push({ category });
+  if (difficulty !== undefined) terms.push({ difficulty });
+  if (progressStatus === "COMPLETED" || progressStatus === "IN_PROGRESS") {
+    terms.push({ progress: { some: { userId, status: progressStatus } } });
+  } else if (progressStatus === "NOT_STARTED") {
+    terms.push({ progress: { none: { userId } } });
+  }
+  if (search !== undefined && search.length > 0) {
+    terms.push({
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ],
+    });
+  }
+  return { AND: terms };
 }
 
 /**
@@ -146,34 +188,8 @@ export const lessonRepository = {
 
   /** List published lessons with the user's progress joined. Used for the catalog page. */
   async findManyWithProgress(userId: string, filters: LessonFilters = {}) {
-    const { category, difficulty, progressStatus, search, page = 1, pageSize = 9 } = filters;
-
-    const progressCondition =
-      progressStatus === "COMPLETED"
-        ? { progress: { some: { userId, status: "COMPLETED" as const } } }
-        : progressStatus === "IN_PROGRESS"
-          ? { progress: { some: { userId, status: "IN_PROGRESS" as const } } }
-          : progressStatus === "NOT_STARTED"
-            ? { progress: { none: { userId } } }
-            : {};
-
-    const where: Prisma.LessonWhereInput = {
-      // Their class's own lessons sit in the catalogue beside the platform's,
-      // for them alone. A separate list would mean a second place to look, a
-      // second search box, and a lesson that is real work being filed as an
-      // annexe.
-      ...lessonsVisibleTo(userId),
-      ...(category !== undefined && { category }),
-      ...(difficulty !== undefined && { difficulty }),
-      ...progressCondition,
-      ...(search !== undefined &&
-        search.length > 0 && {
-          OR: [
-            { title: { contains: search, mode: "insensitive" as const } },
-            { description: { contains: search, mode: "insensitive" as const } },
-          ],
-        }),
-    };
+    const { page = 1, pageSize = 9 } = filters;
+    const where = catalogueWhere(userId, filters);
 
     const [total, rows] = await Promise.all([
       prisma.lesson.count({ where }),
@@ -223,12 +239,17 @@ export const lessonRepository = {
    * Lessons per category, for the filter badges.
    *
    * Counted for the reader, because the list is: a badge saying 40 over a list
-   * of 41 is the kind of wrongness nobody reports and everybody notices.
+   * of 41 is the kind of wrongness nobody reports and everybody notices. And
+   * under the reader's other filters, for the same reason: each badge says
+   * how many lessons a click on it would list. The category itself is left
+   * out, or every badge but the chosen one would read 0.
    */
-  async countByCategory(viewerId: string) {
+  async countByCategory(viewerId: string, filters: Omit<CatalogueFilters, "category"> = {}) {
     const rows = await prisma.lesson.groupBy({
       by: ["category"],
-      where: lessonsVisibleTo(viewerId),
+      // Dropped at run time too: the type keeps a literal out, not an object
+      // that happens to carry one.
+      where: catalogueWhere(viewerId, { ...filters, category: undefined }),
       _count: { id: true },
     });
     return Object.fromEntries(rows.map((r) => [r.category, r._count.id]));

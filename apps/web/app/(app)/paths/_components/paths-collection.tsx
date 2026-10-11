@@ -1,7 +1,7 @@
 "use client";
 
 import { type PillItem, Pills } from "@/components/pills";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   barsOf,
@@ -24,6 +24,7 @@ import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { ProgressBar } from "@/components/progress-bar";
+import { useSlashFocus } from "@/hooks/use-slash-focus";
 import type { LearningAnswers, SuggestedPath } from "@/lib/paths/guide-answers";
 import { PathGuideDialog } from "./path-guide-dialog";
 
@@ -446,6 +447,8 @@ export function PathsCollection({
   const [filter, setFilter] = useState<Filter>("all");
   const [trackFilter, setTrackFilter] = useState<TrackFilter>("all");
   const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSlashFocus(searchRef);
 
   const filtered = useMemo(
     () => filterPaths(paths, { domain: filter, track: trackFilter, search }),
@@ -533,8 +536,11 @@ export function PathsCollection({
               />
             </svg>
             <input
+              ref={searchRef}
               type="text"
               placeholder="/ chercher un parcours..."
+              aria-label="Chercher un parcours"
+              aria-keyshortcuts="/"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);

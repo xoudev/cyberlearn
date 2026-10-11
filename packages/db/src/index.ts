@@ -30,7 +30,7 @@ export type {
   FeaturedPath,
   PublicCatalogPath,
 } from "./repositories/stats.repository.js";
-export type { LessonFilters } from "./repositories/lesson.repository.js";
+export type { CatalogueFilters, LessonFilters } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export { userRepository } from "./repositories/user.repository.js";
 export { classRepository, LIVE_CLASS_FILTER } from "./repositories/class.repository.js";
