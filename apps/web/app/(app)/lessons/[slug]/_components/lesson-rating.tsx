@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { averageLine, ratingLabel } from "@cyberlearn/lib/content/rating";
 import { rateLessonAction, type RateLessonResult } from "../_actions/rate-lesson";
 
 /** The words that change between rating a lesson and rating a path. */
@@ -26,7 +27,14 @@ interface LessonRatingProps {
   initialFeedback: string | null;
   avgRating: number | null;
   ratingsCount: number;
+  /**
+   * `full` is a card of its own. `rail` has no frame and no eyebrow: it sits
+   * in a block of a side column that already has both, and that block is too
+   * narrow for a card inside it.
+   */
   variant?: "full" | "rail";
+  /** In the rail, the class of the surrounding block's title, so the heading reads as that block's own. */
+  titleClassName?: string;
   /** Where the rating goes. Defaults to the lesson's own action. */
   submit?: (score: number, feedback: string | undefined) => Promise<RateLessonResult>;
   copy?: RatingCopy;
@@ -40,10 +48,10 @@ export function LessonRating({
   avgRating,
   ratingsCount,
   variant = "full",
+  titleClassName,
   submit = (score, feedback) => rateLessonAction(lessonId, score, feedback),
   copy = LESSON_COPY,
 }: LessonRatingProps): React.ReactElement {
-  const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number>(initialScore ?? 0);
   const [feedback, setFeedback] = useState(initialFeedback ?? "");
   const [avg, setAvg] = useState(avgRating);
@@ -52,7 +60,8 @@ export function LessonRating({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const displayScore = hovered ?? selected;
+  const rail = variant === "rail";
+  const average = averageLine(avg, count);
 
   function handleSubmit() {
     if (!selected || !isCompleted) return;
@@ -69,200 +78,237 @@ export function LessonRating({
     });
   }
 
-  const LABELS: Record<number, string> = {
-    1: "Difficile à suivre",
-    2: "Peut mieux faire",
-    3: "Correct",
-    4: "Bien",
-    5: "Excellent",
-  };
-
-  // ── Rail variant: compact teaser/locked state for right rail ──────────────────
-  if (variant === "rail") {
-    const railHeadStyle: React.CSSProperties = {
-      fontFamily: "var(--font-mono)",
-      fontSize: 10,
-      fontWeight: 700,
-      letterSpacing: "0.18em",
-      textTransform: "uppercase",
-      color: "var(--color-text-muted)",
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 14,
-      paddingBottom: 10,
-      borderBottom: "1px solid var(--color-border-subtle)",
-    };
-
-    if (!isCompleted) {
-      return (
-        <div>
-          <div style={railHeadStyle}>Évaluer · verrouillé</div>
-          <div
+  const heading = (
+    <div style={{ marginBottom: rail ? 16 : 20 }}>
+      {!rail && (
+        <div
+          className="mono-label"
+          style={{
+            color: "var(--color-text-muted)",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 6,
+          }}
+        >
+          <span
             style={{
-              padding: 18,
-              border: "1px dashed var(--color-border-subtle)",
-              background: "rgba(5,4,26,0.5)",
-              textAlign: "center",
+              width: 16,
+              height: 1,
+              background: "var(--cosmetic-accent)",
+              display: "inline-block",
             }}
-          >
-            {/* Lock icon + label */}
-            <div
-              className="mono-label"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                color: "var(--color-text-faint)",
-                marginBottom: 14,
-              }}
-            >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 11 11"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-              >
-                <rect x="2" y="5" width="7" height="5" rx="0.5" />
-                <path d="M3.5 5 V3.5 C3.5 2.4 4.4 1.5 5.5 1.5 C6.6 1.5 7.5 2.4 7.5 3.5 V5" />
-              </svg>
-              locked
-            </div>
-
-            {/* Empty stars */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 10 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <svg
-                  key={i}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  stroke="var(--color-border-default)"
-                  strokeWidth="1.3"
-                  aria-hidden="true"
-                >
-                  <path d="M9 2 L11.2 6.5 L16 7.3 L12.5 10.8 L13.4 15.5 L9 13.3 L4.6 15.5 L5.5 10.8 L2 7.3 L6.8 6.5 Z" />
-                </svg>
-              ))}
-            </div>
-
-            <p
-              style={{
-                fontFamily: "var(--font-body, sans-serif)",
-                fontSize: 12,
-                color: "var(--color-text-faint)",
+          />
+          Évaluation
+        </div>
+      )}
+      <h3
+        className={rail ? titleClassName : undefined}
+        style={
+          rail
+            ? { margin: 0 }
+            : {
+                fontFamily: "var(--font-sans)",
+                fontWeight: 700,
+                fontSize: 16,
+                color: "var(--color-text-primary)",
                 margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
-              {copy.railLocked}
-            </p>
-          </div>
-        </div>
-      );
-    }
+                letterSpacing: "-0.01em",
+              }
+        }
+      >
+        {submitted ? "Ta note a été enregistrée" : copy.title}
+      </h3>
+      {average !== null && (
+        <p
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            margin: "6px 0 0",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.04em",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          <StarFilled size={12} color="var(--color-warning)" />
+          {average}
+        </p>
+      )}
+    </div>
+  );
 
-    // Completed: compact interactive star rating
-    return (
+  let body: React.ReactElement;
+  if (!isCompleted && rail) {
+    // A line of muted text: a box here would be a frame inside the block around it.
+    body = (
+      <p
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 8,
+          margin: 0,
+          fontFamily: "var(--font-body, sans-serif)",
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "var(--color-text-muted)",
+        }}
+      >
+        <LockIcon style={{ flexShrink: 0, marginTop: 3 }} />
+        <span>{copy.railLocked}</span>
+      </p>
+    );
+  } else if (!isCompleted) {
+    body = (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "14px 16px",
+          background: "rgba(42,37,96,0.4)",
+          border: "1px solid var(--color-border-default)",
+        }}
+      >
+        <LockIcon />
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--color-text-muted)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {copy.locked}
+        </span>
+      </div>
+    );
+  } else {
+    body = (
       <div>
-        <div style={railHeadStyle}>{submitted ? "Évaluer · noté" : "Évaluer"}</div>
-        <div style={{ padding: "12px 16px" }}>
-          {/* Stars row */}
-          <div
-            style={{ display: "flex", gap: 6, marginBottom: 10 }}
-            onMouseLeave={() => {
-              setHovered(null);
+        <StarPicker
+          value={selected}
+          size={rail ? 24 : 28}
+          disabled={isPending}
+          onPick={(n) => {
+            setSelected(n);
+            // A new score is a new rating to send, with its comment.
+            setSubmitted(false);
+          }}
+        />
+
+        {/* Feedback textarea */}
+        {!submitted && selected > 0 && (
+          <textarea
+            value={feedback}
+            onChange={(e) => {
+              setFeedback(e.target.value);
+            }}
+            maxLength={500}
+            placeholder={copy.placeholder}
+            rows={3}
+            style={{
+              display: "block",
+              width: "100%",
+              marginBottom: 14,
+              padding: "10px 14px",
+              background: "var(--color-bg-sunken)",
+              border: "1px solid var(--color-border-default)",
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              lineHeight: 1.6,
+              resize: "vertical",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        )}
+
+        {submitted && feedback && (
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              lineHeight: 1.6,
+              color: "var(--color-text-secondary)",
+              margin: "0 0 14px",
+              paddingLeft: 10,
+              borderLeft: "2px solid var(--color-border-default)",
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
             }}
           >
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                disabled={isPending}
-                onClick={() => {
-                  setSelected(n);
-                }}
-                onMouseEnter={() => {
-                  setHovered(n);
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: isPending ? "default" : "pointer",
-                  transition: "transform 120ms ease",
-                  transform: hovered !== null && n <= hovered ? "scale(1.15)" : "scale(1)",
-                }}
-                aria-label={`${String(n)} étoile${n > 1 ? "s" : ""}`}
-              >
-                {n <= displayScore ? (
-                  <StarFilled size={20} color="var(--color-warning)" />
-                ) : (
-                  <StarEmpty size={20} />
-                )}
-              </button>
-            ))}
-          </div>
+            {feedback}
+          </p>
+        )}
 
-          {!submitted && selected > 0 && (
-            <button
-              className="btn btn--sm btn--block"
-              type="button"
-              disabled={isPending}
-              onClick={handleSubmit}
-            >
-              {isPending ? "Envoi…" : "Envoyer →"}
-            </button>
-          )}
+        {error && (
+          <p
+            role="alert"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--color-category-cybersec)",
+              margin: "0 0 12px",
+            }}
+          >
+            {error}
+          </p>
+        )}
 
-          {submitted && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--cosmetic-accent)",
-                letterSpacing: "0.08em",
-              }}
-            >
-              <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
-                <path
-                  d="M2 6 L5 9 L10 3"
-                  stroke="var(--cosmetic-accent)"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Note enregistrée
-            </div>
-          )}
-
-          {error && (
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--color-category-cybersec)",
-                margin: "8px 0 0",
-              }}
-            >
-              {error}
-            </p>
-          )}
-        </div>
+        {submitted ? (
+          <button
+            className="btn btn--ghost btn--sm"
+            type="button"
+            onClick={() => {
+              setSubmitted(false);
+            }}
+          >
+            Modifier
+          </button>
+        ) : rail ? (
+          <button
+            className="btn btn--sm btn--block"
+            type="button"
+            disabled={!selected || isPending}
+            onClick={handleSubmit}
+          >
+            {isPending ? "Envoi…" : "Envoyer la note"}
+          </button>
+        ) : (
+          <button
+            className="mono-label"
+            type="button"
+            disabled={!selected || isPending}
+            onClick={handleSubmit}
+            style={{
+              padding: "10px 22px",
+              fontWeight: 700,
+              background: selected ? "var(--color-brand-blue)" : "transparent",
+              border: `1px solid ${selected ? "var(--color-brand-blue)" : "var(--color-border-default)"}`,
+              color: selected ? "#fff" : "var(--color-text-muted)",
+              cursor: selected && !isPending ? "pointer" : "default",
+              transition: "all 180ms ease",
+            }}
+          >
+            {isPending ? "Envoi…" : "Envoyer la note"}
+          </button>
+        )}
       </div>
     );
   }
 
-  // ── Full variant (default) ────────────────────────────────────────────────────
+  if (rail) {
+    return (
+      <div style={{ minWidth: 0 }}>
+        {heading}
+        {body}
+      </div>
+    );
+  }
+
   return (
     <div
       className="card card--sunken"
@@ -271,257 +317,103 @@ export function LessonRating({
         position: "relative",
       }}
     >
-      {/* Header */}
+      {heading}
+      {body}
+    </div>
+  );
+}
+
+/**
+ * Five stars, then the word for the score on its own line. The row wraps
+ * rather than overflow a narrow column, and the word's line keeps its height
+ * while empty, so hovering the first star does not push the rest down.
+ */
+function StarPicker({
+  value,
+  size,
+  disabled,
+  onPick,
+}: {
+  value: number;
+  size: number;
+  disabled: boolean;
+  onPick: (score: number) => void;
+}): React.ReactElement {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const shown = hovered ?? value;
+
+  return (
+    <div style={{ marginBottom: 14 }}>
       <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          marginBottom: 20,
+        style={{ display: "flex", flexWrap: "wrap", gap: size / 4, minWidth: 0 }}
+        onMouseLeave={() => {
+          setHovered(null);
         }}
       >
-        <div>
-          <div
-            className="mono-label"
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              onPick(n);
+            }}
+            onMouseEnter={() => {
+              setHovered(n);
+            }}
             style={{
-              color: "var(--color-text-muted)",
               display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 6,
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: disabled ? "default" : "pointer",
+              transition: "transform 120ms ease",
+              transform: hovered !== null && n <= hovered ? "scale(1.15)" : "scale(1)",
             }}
+            aria-label={`${String(n)} étoile${n > 1 ? "s" : ""}`}
+            aria-pressed={n === value}
           >
-            <span
-              style={{
-                width: 16,
-                height: 1,
-                background: "var(--cosmetic-accent)",
-                display: "inline-block",
-              }}
-            />
-            Évaluation
-          </div>
-          <h3
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 700,
-              fontSize: 16,
-              color: "var(--color-text-primary)",
-              margin: 0,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {submitted ? "Ta note a été enregistrée" : copy.title}
-          </h3>
-        </div>
-
-        {avg !== null && count > 0 && (
-          <div style={{ textAlign: "right" }}>
-            <div
-              style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}
-            >
-              <StarFilled size={14} color="var(--color-warning)" />
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: "var(--color-text-primary)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {avg.toFixed(1)}
-              </span>
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {count} note{count > 1 ? "s" : ""}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {!isCompleted ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "14px 16px",
-            background: "rgba(42,37,96,0.4)",
-            border: "1px solid var(--color-border-default)",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="var(--color-text-muted)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          >
-            <rect x="3" y="7" width="10" height="7" rx="1" />
-            <path d="M5 7V5C5 3.3 6.3 2 8 2C9.7 2 11 3.3 11 5V7" />
-          </svg>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-text-muted)",
-              letterSpacing: "0.04em",
-            }}
-          >
-            {copy.locked}
-          </span>
-        </div>
-      ) : (
-        <div>
-          {/* Stars */}
-          <div
-            style={{ display: "flex", gap: 8, marginBottom: 14 }}
-            onMouseLeave={() => {
-              setHovered(null);
-            }}
-          >
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                disabled={isPending}
-                onClick={() => {
-                  setSelected(n);
-                }}
-                onMouseEnter={() => {
-                  setHovered(n);
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: isPending ? "default" : "pointer",
-                  transition: "transform 120ms ease",
-                  transform: hovered !== null && n <= hovered ? "scale(1.2)" : "scale(1)",
-                }}
-                aria-label={`${String(n)} étoile${n > 1 ? "s" : ""}`}
-              >
-                {n <= displayScore ? (
-                  <StarFilled size={28} color="var(--color-warning)" />
-                ) : (
-                  <StarEmpty size={28} />
-                )}
-              </button>
-            ))}
-            {displayScore > 0 && (
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--color-text-secondary)",
-                  letterSpacing: "0.04em",
-                  alignSelf: "center",
-                  marginLeft: 8,
-                }}
-              >
-                {LABELS[displayScore]}
-              </span>
+            {n <= shown ? (
+              <StarFilled size={size} color="var(--color-warning)" />
+            ) : (
+              <StarEmpty size={size} />
             )}
-          </div>
-
-          {/* Feedback textarea */}
-          {!submitted && selected > 0 && (
-            <textarea
-              value={feedback}
-              onChange={(e) => {
-                setFeedback(e.target.value);
-              }}
-              maxLength={500}
-              placeholder={copy.placeholder}
-              rows={3}
-              style={{
-                width: "100%",
-                marginBottom: 14,
-                padding: "10px 14px",
-                background: "var(--color-bg-sunken)",
-                border: "1px solid var(--color-border-default)",
-                color: "var(--color-text-primary)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                lineHeight: 1.6,
-                resize: "vertical",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          )}
-
-          {submitted && feedback && (
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                color: "var(--color-text-secondary)",
-                margin: "0 0 14px",
-                padding: "10px 14px",
-                background: "rgba(10,8,38,0.5)",
-                border: "1px solid var(--color-border-subtle)",
-              }}
-            >
-              {feedback}
-            </p>
-          )}
-
-          {error && (
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-category-cybersec)",
-                margin: "0 0 12px",
-              }}
-            >
-              {error}
-            </p>
-          )}
-
-          {!submitted ? (
-            <button
-              className="mono-label"
-              type="button"
-              disabled={!selected || isPending}
-              onClick={handleSubmit}
-              style={{
-                padding: "10px 22px",
-                fontWeight: 700,
-                background: selected ? "var(--color-brand-blue)" : "transparent",
-                border: `1px solid ${selected ? "var(--color-brand-blue)" : "var(--color-border-default)"}`,
-                color: selected ? "#fff" : "var(--color-text-muted)",
-                cursor: selected && !isPending ? "pointer" : "default",
-                transition: "all 180ms ease",
-              }}
-            >
-              {isPending ? "Envoi…" : "Envoyer la note"}
-            </button>
-          ) : (
-            <button
-              className="btn btn--ghost btn--sm"
-              type="button"
-              onClick={() => {
-                setSubmitted(false);
-              }}
-            >
-              Modifier
-            </button>
-          )}
-        </div>
-      )}
+          </button>
+        ))}
+      </div>
+      <div
+        style={{
+          minHeight: 16,
+          marginTop: 6,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          lineHeight: "16px",
+          letterSpacing: "0.04em",
+          color: "var(--color-text-secondary)",
+        }}
+      >
+        {ratingLabel(shown)}
+      </div>
     </div>
+  );
+}
+
+function LockIcon({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="var(--color-text-muted)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+      style={style}
+    >
+      <rect x="3" y="7" width="10" height="7" rx="1" />
+      <path d="M5 7V5C5 3.3 6.3 2 8 2C9.7 2 11 3.3 11 5V7" />
+    </svg>
   );
 }
 

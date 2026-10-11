@@ -180,16 +180,16 @@ export default function PathDetailLoading(): React.ReactElement {
             <div className="ablock__eyebrow">
               <Skeleton w={96} h={10} />
             </div>
-            <div className="card card--sunken" style={{ padding: "28px 32px" }}>
-              <Skeleton w={90} h={10} style={{ marginBottom: 8 }} />
-              <Skeleton w={150} h={15} style={{ marginBottom: 20 }} />
-              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} w={28} h={28} />
-                ))}
-              </div>
-              <Skeleton w={150} h={34} />
+            {/* No frame of its own, as PathRating draws it: the title, the
+                average, the stars, the line their word takes, the button. */}
+            <Skeleton w={150} h={15} style={{ marginBottom: 8 }} />
+            <Skeleton w={90} h={10} style={{ marginBottom: 16 }} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 36 }}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} w={24} h={24} />
+              ))}
             </div>
+            <Skeleton h={34} />
           </div>
         </aside>
       </div>

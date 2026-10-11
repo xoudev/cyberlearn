@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { formatAverage } from "@cyberlearn/lib/content/rating";
 import { Brackets } from "./corner-brackets";
 
 export interface PathCatalogCardData {
@@ -61,15 +62,17 @@ export function RatingStat({
   withCount?: boolean;
 }): React.JSX.Element | null {
   if (rating.count <= 0) return null;
-  const avg = rating.avg.toFixed(1).replace(".", ",");
-  const title = `Note moyenne des apprenants : ${avg} sur 5, ${String(rating.count)} avis`;
+  const avg = formatAverage(rating.avg);
+  // Grouped like averageLine on the path's own page: "1 250 avis", not "1250 avis".
+  const count = formatNumberFr(rating.count);
+  const title = `Note moyenne des apprenants : ${avg} sur 5, ${count} avis`;
   return (
     <span className="rating" title={title}>
       <span aria-hidden="true" className="rating__star">
         ★
       </span>{" "}
       <b>{avg}</b>
-      {withCount && <> · {rating.count} avis</>}
+      {withCount && <> · {count} avis</>}
     </span>
   );
 }

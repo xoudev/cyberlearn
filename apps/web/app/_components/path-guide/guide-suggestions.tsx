@@ -1,4 +1,5 @@
 import React from "react";
+import { formatAverage } from "@cyberlearn/lib/content/rating";
 import type { PathSuggestion } from "@cyberlearn/lib/paths/suggest";
 import type { SuggestedPath } from "@/lib/paths/guide-answers";
 import "./path-guide.css";
@@ -45,7 +46,7 @@ export function GuideSuggestions({
             {DOMAIN[path.category] ?? path.category} · {LEVEL[path.difficulty] ?? path.difficulty}
             {path.track === "CAREER" ? " · Métier" : ""} · {path.lessonCount} missions · ~
             {path.estimatedHours} h
-            {path.avgRating !== null ? ` · ★ ${path.avgRating.toFixed(1).replace(".", ",")}` : ""}
+            {path.avgRating !== null ? ` · ★ ${formatAverage(path.avgRating)}` : ""}
           </div>
           <h3 className="pg-suggestion__title">{path.title}</h3>
           <p className="pg-suggestion__why">

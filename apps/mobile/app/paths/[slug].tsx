@@ -15,7 +15,7 @@ import { PathCover } from "@/components/path-cover";
 import { OfflineToggle } from "@/components/offline-toggle";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
-import { averageLine } from "@/lib/rating";
+import { averageLine } from "@cyberlearn/lib/content/rating";
 import { useSession } from "@/lib/session";
 import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
 
