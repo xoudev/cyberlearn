@@ -39,6 +39,15 @@
   line-height: 1.65;
 }
 
+/* The error page's reference, for a report. */
+.digest {
+  margin: 18px 0 0;
+  color: var(--fg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -46,7 +55,13 @@
   margin-top: 36px;
 }
 
-.actions a {
+/* A button on the error page ("Réessayer"), a link everywhere else. */
+.actions button {
+  cursor: pointer;
+}
+
+.actions a,
+.actions button {
   display: inline-flex;
   align-items: center;
   min-height: 46px;

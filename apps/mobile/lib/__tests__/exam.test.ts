@@ -5,6 +5,7 @@ import {
   formatClock,
   optionVerdict,
   deadlineOf,
+  retryNote,
   secondsUntil,
   secondsUsed,
   thresholdGap,
@@ -128,6 +129,24 @@ describe("waitLabel", () => {
     expect(waitLabel(START, startMs - 12 * 60_000)).toBe("dans 12 min");
     expect(waitLabel(START, startMs - 20_000)).toBe("dans moins d'une minute");
     expect(waitLabel(START, startMs + 5_000)).toBe("dans moins d'une minute");
+  });
+});
+
+describe("retryNote", () => {
+  it("says when the next attempt opens, from the end the server sent", () => {
+    expect(retryNote("2026-09-26T10:00:00.000Z", startMs)).toBe(
+      "Une seule tentative à la fois : la prochaine est possible dans 48 h. Révise les missions avant de réessayer.",
+    );
+  });
+
+  it("falls back on the rule when the server sent no end", () => {
+    expect(retryNote(null, startMs)).toContain("après un délai d'attente de 48 h");
+  });
+
+  it("says the wait is over once it is", () => {
+    expect(retryNote(START, startMs + 1)).toBe(
+      "Le délai d'attente est passé : tu peux retenter l'examen.",
+    );
   });
 });
 

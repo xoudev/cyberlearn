@@ -59,6 +59,7 @@ const PATHS: SerializedPath[] = [
       xpReward: 150,
       estimatedMinutes: 25,
     },
+    certPublicId: null,
   },
   {
     id: "p2",
@@ -85,6 +86,7 @@ const PATHS: SerializedPath[] = [
       xpReward: 120,
       estimatedMinutes: 20,
     },
+    certPublicId: null,
   },
   {
     id: "p3",
@@ -105,6 +107,7 @@ const PATHS: SerializedPath[] = [
     progressTotal: 14,
     rating: null,
     nextLesson: null,
+    certPublicId: null,
   },
   {
     id: "p4",
@@ -125,6 +128,7 @@ const PATHS: SerializedPath[] = [
     progressTotal: 15,
     rating: null,
     nextLesson: null,
+    certPublicId: null,
   },
 ];
 

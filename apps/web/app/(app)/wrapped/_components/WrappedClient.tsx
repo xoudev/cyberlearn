@@ -4,7 +4,6 @@ import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { StatTile } from "@/components/stat-tile";
-import { useCopyToClipboard } from "@/components/copy-button";
 import {
   WRAPPED_CARD_SIZE,
   fmtCompact,
@@ -276,6 +275,11 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
   return canvas;
 }
 
+/**
+ * The card, as an image to keep or share. There is no "copy the link": /wrapped
+ * needs an account, so the link showed whoever opened it their own recap, or
+ * the login page. The image is the thing that travels.
+ */
 function ExportPanel({
   payload,
   handle,
@@ -283,14 +287,8 @@ function ExportPanel({
   payload: WrappedPayload;
   handle: string;
 }): React.JSX.Element {
-  const { copied, copy } = useCopyToClipboard(1800);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-
-  const copyLink = (): void => {
-    if (typeof window === "undefined") return;
-    copy(window.location.href);
-  };
 
   const toBlob = async (): Promise<Blob | null> =>
     new Promise((resolve) => {
@@ -403,7 +401,6 @@ function ExportPanel({
       </span>
       {btn(busy ? "⤓ Génération…" : "⤓ Télécharger l'image", busy ? null : download, true)}
       {canShare && btn("⇆ Partager l'image", busy ? null : share, false)}
-      {btn(copied ? "✓ Lien copié" : "⧉ Copier le lien", copyLink, false)}
       {failed !== null ? (
         <p style={{ ...MONO, fontSize: 10.5, color: "#FF4D6D", marginTop: 4 }}>{failed}</p>
       ) : (

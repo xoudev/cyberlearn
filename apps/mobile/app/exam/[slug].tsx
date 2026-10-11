@@ -19,6 +19,7 @@ import {
   formatClock,
   optionVerdict,
   pad2,
+  retryNote,
   secondsUntil,
   secondsUsed,
   thresholdGap,
@@ -50,6 +51,8 @@ type Phase =
       passed: boolean;
       results: ExamReviewItem[];
       timeUsed: number;
+      /** After a fail: the end of the wait, from the server's answer. */
+      cooldownUntil: string | null;
     };
 
 /** Below this, the clock turns red. */
@@ -167,6 +170,7 @@ function ExamFlow({
       passed: reply.passed,
       results: reply.results,
       timeUsed: secondsUsed(taking.deadlineMs, Date.now(), limit),
+      cooldownUntil: reply.cooldownUntil ?? null,
     });
     // The path, the profile's certificates, the XP: every cached read moves.
     void queryClient.invalidateQueries();
@@ -899,10 +903,7 @@ function ResultsView({
           </View>
         ) : (
           <View style={{ gap: 10 }}>
-            <Note tone={colors.warning}>
-              Une seule tentative à la fois : la prochaine est possible après un délai
-              d&apos;attente de 48 h. Révise les missions avant de réessayer.
-            </Note>
+            <Note tone={colors.warning}>{retryNote(result.cooldownUntil, Date.now())}</Note>
             <View style={{ alignSelf: "flex-start" }}>
               <ActionChip label="Revoir le parcours" tone="neutral" onPress={onBack} />
             </View>

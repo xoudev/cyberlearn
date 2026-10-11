@@ -966,7 +966,9 @@ export function LandingClient({
                   { label: "Mentions légales", href: "/legal" },
                 ] as { label: string; href: string }[]
               ).map(({ label, href }) => (
-                <a
+                // Every one of them is a page of the site: the router's link,
+                // not a full reload of the landing's scripts.
+                <Link
                   key={label}
                   href={href}
                   className="footer-link mono-label"
@@ -976,7 +978,7 @@ export function LandingClient({
                   }}
                 >
                   {label}
-                </a>
+                </Link>
               ))}
             </div>
             <span

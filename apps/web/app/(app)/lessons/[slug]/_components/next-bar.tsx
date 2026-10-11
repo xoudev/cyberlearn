@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CompleteButton } from "./complete-button";
 import { LessonCompleteModal } from "./lesson-complete-modal";
 import type { CompleteLessonResult } from "../_actions/track-progress";
+import { nextBarTarget } from "./next-bar-target";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
 interface NextBarProps {
@@ -37,6 +38,7 @@ export function NextBar({
   const catColor = next ? categoryMeta(next.category).color : "var(--cosmetic-accent)";
   const diffLabel = next ? difficultyMeta(next.difficulty).label : "";
   const diffColor = next ? difficultyMeta(next.difficulty).color : "var(--color-rarity-rare)";
+  const target = nextBarTarget(next, placement);
 
   // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
@@ -97,7 +99,7 @@ export function NextBar({
             }}
           >
             <span style={{ fontWeight: 700 }}>›</span>
-            {next ? "Prochaine leçon" : "Dernière leçon du parcours"}
+            {target.eyebrow}
           </span>
 
           {/* Which path this is, and how far along - the reader is walking a
@@ -172,7 +174,7 @@ export function NextBar({
               lineHeight: 1.2,
             }}
           >
-            {next ? next.title : (placement?.path.title ?? "Parcours terminé")}
+            {target.title}
           </h3>
         </div>
 
@@ -199,7 +201,7 @@ export function NextBar({
 
           <Link
             className="btn btn--sm"
-            href={next ? `/lessons/${next.slug}` : `/paths/${placement?.path.slug ?? ""}`}
+            href={target.href}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "#1F3BFF";
             }}
@@ -207,7 +209,7 @@ export function NextBar({
               e.currentTarget.style.background = "var(--color-brand-blue)";
             }}
           >
-            {next ? "Leçon suivante" : "Retour au parcours"}
+            {target.action}
             <svg viewBox="0 0 14 14" width={12} height={12} fill="none">
               <path
                 d="M3 7 H11 M8 4 L11 7 L8 10"

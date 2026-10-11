@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
+import { certificateVerifyUrl, linkedInCertificateUrl } from "@cyberlearn/lib/social/portfolio";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { getRequestUser } from "@/lib/auth";
+import { ShareCertificateButton } from "./_components/share-certificate-button";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -80,10 +83,16 @@ export default async function CertVerifyPage({
   const hashGrouped = (cert.sha256Hash.match(/.{1,16}/g) ?? []).join(" · ");
   const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
   // Canonical issuer host: same source as the verify URL (no hardcoded .app).
-  const issuerHost = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
-    /^https?:\/\//,
-    "",
-  );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
+  const issuerHost = siteUrl.replace(/^https?:\/\//, "");
+  const verifyUrl = certificateVerifyUrl(siteUrl, cert.publicId);
+
+  // The page is public, but two of its actions belong to the holder: the PDF,
+  // whose route answers only its owner (anyone else got a 404), and adding the
+  // certificate to a LinkedIn profile, which only makes sense on their own.
+  // Sharing the page's link is for everyone.
+  const viewer = await getRequestUser();
+  const isHolder = viewer !== null && cert.userId !== null && viewer.id === cert.userId;
 
   return (
     <div
@@ -670,46 +679,47 @@ export default async function CertVerifyPage({
 
         {/* Actions */}
         {!isRevoked && (
-          <div style={{ display: "flex", gap: 12 }}>
-            <a
-              className="btn btn--lg"
-              href={`/api/certificates/${cert.id}/download`}
-              style={{
-                flex: "0 0 auto",
-              }}
-            >
-              Télécharger le PDF
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {isHolder && (
+              <a
+                className="btn btn--lg"
+                href={`/api/certificates/${cert.id}/download`}
+                download
+                style={{
+                  flex: "0 0 auto",
+                }}
               >
-                <path d="M8 2 V11 M4 7 L8 11 L12 7 M3 14 H13" />
-              </svg>
-            </a>
-            <button className="btn btn--ghost btn--lg" type="button" onClick={undefined}>
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                Télécharger le PDF
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 2 V11 M4 7 L8 11 L12 7 M3 14 H13" />
+                </svg>
+              </a>
+            )}
+            <ShareCertificateButton url={verifyUrl} />
+            {isHolder && (
+              <a
+                className="btn btn--accent btn--ghost btn--lg"
+                href={linkedInCertificateUrl({
+                  name: cert.path.title,
+                  issuedAt: cert.issuedAt,
+                  publicId: cert.publicId,
+                  verifyUrl,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <circle cx="4" cy="8" r="2" />
-                <circle cx="12" cy="4" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <path d="M5.7 7 L10.3 4.6 M5.7 9 L10.3 11.4" />
-              </svg>
-              Partager
-            </button>
+                Ajouter à LinkedIn
+              </a>
+            )}
           </div>
         )}
 

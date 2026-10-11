@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { indexPlacements, isReadable, type PathWithLessons } from "@/lib/lessons/unlock";
+import {
+  indexPlacements,
+  isReadable,
+  type PathWithLessons,
+  resumeLesson,
+} from "@/lib/lessons/unlock";
 
 function lesson(id: string) {
   return {
@@ -115,5 +120,35 @@ describe("isReadable", () => {
     expect(isReadable(placements.get("a"))).toBe(true); // completed
     expect(isReadable(placements.get("b"))).toBe(true); // unlocked
     expect(isReadable(placements.get("c"))).toBe(false); // locked
+  });
+});
+
+describe("resumeLesson", () => {
+  const ids = ["a", "b", "c", "d"];
+  const statesAfter = (completed: string[], unlockAll = false) =>
+    ids.map((id) => indexPlacements([PYTHON], completed, { unlockAll }).get(id)?.state ?? "locked");
+
+  it("opens the first lesson of a path nobody has started", () => {
+    expect(resumeLesson(ids, statesAfter([]))).toBe("a");
+  });
+
+  it("opens the lesson after the last one completed, not the first", () => {
+    expect(resumeLesson(ids, statesAfter(["a", "b"]))).toBe("c");
+  });
+
+  it("goes back to the first lesson left behind by an out-of-order completion", () => {
+    expect(resumeLesson(ids, statesAfter(["c"]))).toBe("a");
+  });
+
+  it("opens the first unfinished lesson for an administrator too", () => {
+    expect(resumeLesson(ids, statesAfter(["a"], true))).toBe("b");
+  });
+
+  it("goes back to the first lesson once the path is finished", () => {
+    expect(resumeLesson(ids, statesAfter(ids))).toBe("a");
+  });
+
+  it("has nothing to open on a path with no lesson", () => {
+    expect(resumeLesson([], [])).toBeNull();
   });
 });

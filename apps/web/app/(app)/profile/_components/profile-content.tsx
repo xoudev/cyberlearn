@@ -209,14 +209,15 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
           Dernier certificat délivré
         </h3>
         {certs.length > 1 && (
-          <span
+          <Link
+            href="/certificates"
             className="mono-label"
             style={{
               color: "var(--color-text-secondary)",
             }}
           >
-            +{certs.length - 1} autre{certs.length > 2 ? "s" : ""}
-          </span>
+            +{certs.length - 1} autre{certs.length > 2 ? "s" : ""} →
+          </Link>
         )}
       </div>
 
@@ -404,7 +405,13 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               minWidth: 200,
             }}
           >
-            <Link className="btn btn--accent" href={`/api/certificates/${latest.id}/download`}>
+            {/* A file from a route handler, not a page: a plain link, so the
+                router does not try to render it. */}
+            <a
+              className="btn btn--accent"
+              href={`/api/certificates/${latest.id}/download`}
+              download
+            >
               <svg
                 width="13"
                 height="13"
@@ -418,7 +425,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 <path d="M8 2 V11 M4 7 L8 11 L12 7 M2 14 H14" />
               </svg>
               Télécharger PDF
-            </Link>
+            </a>
             <Link
               className="mono-label card card--ghost"
               href={`/verify/${latest.publicId}`}
@@ -460,15 +467,6 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
         items={tabs.map((tab) => ({ key: tab.id, label: tab.label, count: tab.count }))}
         value={active}
         onChange={setActive}
-        trailing={
-          <>
-            <span>TRIER · RÉCENTS</span>
-            <span style={{ color: "var(--color-border-subtle)" }}>/</span>
-            <span>
-              VUE · <b style={{ color: "var(--color-text-primary)" }}>GRILLE</b>
-            </span>
-          </>
-        }
       />
 
       {/* Tab panels */}

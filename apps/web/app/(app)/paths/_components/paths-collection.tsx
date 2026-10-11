@@ -56,6 +56,8 @@ export interface SerializedPath {
     xpReward: number;
     estimatedMinutes: number;
   } | null;
+  /** The certificate of a certified path, for its public page. Null when none was issued. */
+  certPublicId: string | null;
 }
 
 interface Props {
@@ -212,7 +214,12 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
           <div className="hero-path__cta-row">
-            <Link href={`/paths/${path.slug}`} className="btn btn--lg">
+            {/* Picks the path up where it was left, as "Prochaine mission" does.
+                Both used to open the path page, the same place as "Aperçu". */}
+            <Link
+              href={path.nextLesson ? `/lessons/${path.nextLesson.slug}` : `/paths/${path.slug}`}
+              className="btn btn--lg"
+            >
               Continuer le parcours {ARROW}
             </Link>
             <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
@@ -320,9 +327,19 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
+/** Where "Voir le certificat" leads: its public page, or the list when none is on record. */
+function certificateHref(certPublicId: string | null): string {
+  return certPublicId === null ? "/certificates" : `/verify/${certPublicId}`;
+}
+
+/**
+ * A certified path. The card used to be one link to the path, so "Voir le
+ * certificat" opened the path again; the body still does, and the button
+ * opens the certificate.
+ */
 function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
   return (
-    <Link href={`/paths/${path.slug}`} className="trophy-card">
+    <article className="trophy-card">
       <Brackets />
       <span className="trophy-card__seal">
         <svg
@@ -339,7 +356,7 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
           <path d="M8 12.5 L6.5 21 L12 18 L17.5 21 L16 12.5" />
         </svg>
       </span>
-      <div className="trophy-card__body">
+      <Link href={`/paths/${path.slug}`} className="trophy-card__body">
         <div className="trophy-card__eyebrow">Certifié</div>
         <div className="trophy-card__refcode">
           {"// "}
@@ -380,9 +397,12 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
             </>
           )}
         </div>
-      </div>
+      </Link>
       <div className="trophy-card__foot">
-        <span className="btn btn--gold btn--ghost btn--block">
+        <Link
+          href={certificateHref(path.certPublicId)}
+          className="btn btn--gold btn--ghost btn--block"
+        >
           <svg
             width="13"
             height="13"
@@ -398,13 +418,19 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
             <circle cx="8" cy="8" r="1.6" />
           </svg>
           Voir le certificat
-        </span>
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }
 
-function PathsEmpty({ filterLabel }: { filterLabel: string }): React.JSX.Element {
+function PathsEmpty({
+  filterLabel,
+  onReset,
+}: {
+  filterLabel: string;
+  onReset: () => void;
+}): React.JSX.Element {
   return (
     <EmptyState
       title="Aucun parcours trouvé"
@@ -426,9 +452,9 @@ function PathsEmpty({ filterLabel }: { filterLabel: string }): React.JSX.Element
         </svg>
       }
     >
-      <span className="pc2-empty__cmd">
-        <span className="p">$</span> reset --filter=all
-      </span>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={onReset}>
+        Voir tous les parcours
+      </button>
     </EmptyState>
   );
 }
@@ -543,7 +569,16 @@ export function PathsCollection({
           </label>
         </div>
 
-        {filtered.length === 0 && <PathsEmpty filterLabel={filterLabel} />}
+        {filtered.length === 0 && (
+          <PathsEmpty
+            filterLabel={filterLabel}
+            onReset={() => {
+              setFilter("all");
+              setTrackFilter("all");
+              setSearch("");
+            }}
+          />
+        )}
 
         {hero && (
           <>

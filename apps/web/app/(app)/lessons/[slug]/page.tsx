@@ -345,45 +345,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               </span>
             </BriefingRow>
 
-            {sections.length > 0 && (
-              <div style={{ gridColumn: "1 / -1" }}>
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
-                    color: "var(--color-text-muted)",
-                    letterSpacing: "0.16em",
-                    textTransform: "uppercase",
-                    marginBottom: 8,
-                  }}
-                >
-                  <span style={{ color: "var(--cosmetic-accent)" }}>›</span>
-                  Progression · {isCompleted ? sections.length : 0}/{sections.length} sections
-                </span>
-                <div
-                  className="card"
-                  style={{
-                    height: 3,
-                    position: "relative",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      width: isCompleted ? "100%" : "0%",
-                      background:
-                        "linear-gradient(90deg, var(--color-brand-blue), var(--cosmetic-accent))",
-                      boxShadow:
-                        "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-                    }}
-                  />
-                </div>
-              </div>
-            )}
+            {/* No "Progression · 0/N sections" here: the count lives in the
+                stepper below, which is what the reader moves through. This one
+                was not wired to it and read 0 until the lesson was done. */}
           </div>
         </div>
       </div>
