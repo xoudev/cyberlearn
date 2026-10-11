@@ -47,6 +47,21 @@ export function roleTone(role: string): Tone {
 }
 
 /**
+ * The question asked before a role changes, naming the account and what the
+ * change means for it. Granting or losing the console is said out loud: those
+ * are the two the select must not make by accident.
+ */
+export function roleChangeQuestion(handle: string, from: string, to: UserRole): string {
+  if (to === "ADMIN") {
+    return `Donner le rôle Admin à ${handle} ? Ce compte aura accès à toute la console.`;
+  }
+  if (from === "ADMIN") {
+    return `Retirer le rôle Admin de ${handle} ? Ce compte passera ${ROLE_LABEL[to]} et perdra l'accès à la console.`;
+  }
+  return `Passer ${handle} au rôle ${ROLE_LABEL[to]} ?`;
+}
+
+/**
  * Sort key for a role column: most privileged first, not alphabetical.
  *
  * Sorting on the raw enum gives ADMIN, STUDENT, TEACHER - which is neither the

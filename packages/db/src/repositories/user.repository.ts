@@ -1,10 +1,45 @@
+import type { UserRole } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { classRepository } from "./class.repository.js";
 import { friendshipRepository } from "./friendship.repository.js";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
+/** What a role change did, or the reason it did nothing. */
+export type ChangeRoleResult =
+  | { ok: true; previousRole: UserRole }
+  | { ok: false; reason: "NOT_FOUND" | "LAST_ADMIN" };
+
 export const userRepository = {
+  /**
+   * Changes an account's role, and never leaves the console without an
+   * administrator.
+   *
+   * The gate is here, in the transaction that writes the role, rather than in
+   * the action that calls it. Counting the administrators and then updating
+   * leaves a gap: two administrators demoting each other at the same moment
+   * would each count two, each succeed, and nobody could open the console
+   * again. Every ADMIN row is locked first, so the second demotion waits for
+   * the first and then counts what the first one left.
+   *
+   * Setting the role an account already has is not an error, and writes
+   * nothing.
+   */
+  async changeRole(userId: string, role: UserRole): Promise<ChangeRoleResult> {
+    return prisma.$transaction(async (tx): Promise<ChangeRoleResult> => {
+      const admins = await tx.$queryRaw<{ id: string }[]>`
+        SELECT "id" FROM "users" WHERE "role" = 'ADMIN' FOR UPDATE`;
+      const target = await tx.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (target === null) return { ok: false, reason: "NOT_FOUND" };
+      if (target.role === role) return { ok: true, previousRole: target.role };
+      if (target.role === "ADMIN" && admins.length <= 1) {
+        return { ok: false, reason: "LAST_ADMIN" };
+      }
+      await tx.user.update({ where: { id: userId }, data: { role } });
+      return { ok: true, previousRole: target.role };
+    });
+  },
+
   /**
    * Creates or refreshes the application profile associated with a Supabase
    * identity, and takes up any class invitation waiting on the address.

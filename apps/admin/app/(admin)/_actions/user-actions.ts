@@ -3,9 +3,18 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { banRepository, deleteAccount, prisma, resetProgress, UserRole } from "@cyberlearn/db";
+import {
+  banRepository,
+  deleteAccount,
+  prisma,
+  resetProgress,
+  userRepository,
+  UserRole,
+  type ChangeRoleResult,
+} from "@cyberlearn/db";
 import { banExpiryFor, banTimeLeft, isBanDurationKey } from "@cyberlearn/lib";
 import { sendAccountDeletedEmail, sendBanNoticeEmail } from "@cyberlearn/email";
+import { LAST_ADMIN_REFUSAL, roleChangeRefusal } from "@/lib/account-guards";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
@@ -21,6 +30,17 @@ const updateRoleSchema = z.object({
   newRole: z.enum(UserRole),
 });
 
+/**
+ * Changes somebody's role, from the select on the users list.
+ *
+ * Two refusals, in two places. Demoting oneself is refused here, against the
+ * session; demoting the last administrator is refused by the repository, in
+ * the transaction that writes the role, because that rule depends on every
+ * other account and a count read before the write can be stale by the time it
+ * lands. Every outcome comes back as a sentence the list shows next to the
+ * control, rather than as a thrown error that left the select where it was
+ * with no word of why.
+ */
 export async function updateUserRoleAction(
   userId: string,
   newRole: UserRole,
@@ -32,10 +52,27 @@ export async function updateUserRoleAction(
     return { ok: false, error: "Paramètres invalides." };
   }
 
-  await prisma.user.update({
-    where: { id: input.data.userId },
-    data: { role: input.data.newRole },
+  const refusal = roleChangeRefusal({
+    actorId: admin.id,
+    targetId: input.data.userId,
+    newRole: input.data.newRole,
   });
+  if (refusal !== null) return { ok: false, error: refusal };
+
+  let result: ChangeRoleResult;
+  try {
+    result = await userRepository.changeRole(input.data.userId, input.data.newRole);
+  } catch (error) {
+    logger.error({ scope: "admin", err: errorMessage(error) }, "updateUserRoleAction failed");
+    return { ok: false, error: "Le changement de rôle a échoué. Rien n'a été modifié." };
+  }
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.reason === "LAST_ADMIN" ? LAST_ADMIN_REFUSAL : "Ce compte n'existe plus.",
+    };
+  }
+  if (result.previousRole === input.data.newRole) return { ok: true };
 
   await prisma.auditLog.create({
     data: {
@@ -43,11 +80,12 @@ export async function updateUserRoleAction(
       action: "user.role.update",
       targetType: "User",
       targetId: input.data.userId,
-      metadata: { newRole: input.data.newRole },
+      metadata: { newRole: input.data.newRole, previousRole: result.previousRole },
     },
   });
 
   revalidatePath("/users");
+  revalidatePath(`/users/${input.data.userId}`);
   return { ok: true };
 }
 

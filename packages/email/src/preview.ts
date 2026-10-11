@@ -6,6 +6,7 @@ import { ClassEnrolledEmail } from "./templates/class-enrolled.js";
 import { ClassInvitationEmail } from "./templates/class-invitation.js";
 import { InactivityNoticeEmail } from "./templates/inactivity-notice.js";
 import { MagicLinkEmail } from "./templates/magic-link.js";
+import { MfaResetEmail } from "./templates/mfa-reset.js";
 import { ModerationNoticeEmail } from "./templates/moderation-notice.js";
 import { TicketReplyEmail } from "./templates/ticket-reply.js";
 import { WorkAssignedEmail } from "./templates/work-assigned.js";
@@ -54,6 +55,11 @@ export const EMAIL_SAMPLES: EmailSample[] = [
     when: "demande de l'utilisateur",
   },
   { key: "account-deleted", label: "Compte supprimé", when: "suppression par un administrateur" },
+  {
+    key: "mfa-reset",
+    label: "Double authentification réinitialisée",
+    when: "remise à zéro par un administrateur",
+  },
   {
     key: "inactivity-notice",
     label: "Préavis d'inactivité",
@@ -158,6 +164,17 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           deletedAt: "21 septembre 2026",
           contactEmail: "contact@cyberlearn.fr",
           reason: "Demande de l'utilisateur, après vérification de son identité.",
+        }),
+      );
+    case "mfa-reset":
+      return render(
+        MfaResetEmail({
+          displayName: "Amélie",
+          resetAt: "12 octobre 2026 à 10:42",
+          securityUrl: `${SITE}/settings/account`,
+          sessionsClosed: true,
+          contactEmail: "contact@cyberlearn.fr",
+          siteUrl: SITE,
         }),
       );
     case "inactivity-notice":

@@ -15,9 +15,13 @@ import {
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import { banRepository } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
+import { mfaResetRefusal } from "@/lib/account-guards";
+import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
+import { MfaResetForm } from "./_components/mfa-reset-form";
 import { ResetProgressForm } from "./_components/reset-progress-form";
+import { SignInActions } from "./_components/sign-in-actions";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -28,8 +32,18 @@ function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(d);
 }
 
+/** How Supabase names a sign-in method, and how support says it. */
+const PROVIDER_LABEL: Record<string, string> = {
+  email: "Mot de passe",
+  github: "GitHub",
+};
+
 /**
- * One account, and the two things you can do to it.
+ * One account, what stops it from signing in, and what you can do to it.
+ *
+ * The gestures that unblock somebody come first: a lost phone or a mail that
+ * never arrived is the usual reason to open this page, and before them the
+ * console's only answer to either was deleting the account.
  *
  * Deletion lives here rather than on the list. A destructive action belongs
  * behind a navigation: a misclick in a sorted table is cheap and this one is
@@ -41,7 +55,7 @@ export default async function AdminUserPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
-  await requireAdminPage();
+  const viewer = await requireAdminPage();
   const { id } = await params;
 
   const user = await prisma.user.findUnique({
@@ -97,9 +111,10 @@ export default async function AdminUserPage({
   // The ban in force and the ones before it. The history is the point as much
   // as the state: the second ban on an account is not the first one, and
   // whoever is deciding what to do needs to see both.
-  const [active, history] = await Promise.all([
+  const [active, history, signIn] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
+    readSignInState(user.id),
   ]);
 
   const stamp = (date: Date): string =>
@@ -186,6 +201,25 @@ export default async function AdminUserPage({
         </div>
       </Card>
 
+      <SignInCard userId={user.id} email={user.email} state={signIn} />
+
+      {/* Mounted whenever the factors could be read, even when there are
+          none: after a reset the page re-renders with zero factors, and the
+          form has to stay to say what it did. */}
+      {signIn.status === "ok" && (
+        <MfaResetForm
+          userId={user.id}
+          email={user.email}
+          displayName={user.displayName || handle}
+          factorCount={signIn.verifiedTotp + signIn.pendingTotp}
+          refusal={mfaResetRefusal({
+            actorId: viewer.id,
+            targetId: user.id,
+            targetRole: user.role,
+          })}
+        />
+      )}
+
       <Card title={`Classes · ${String(user.classMemberships.length + user.taughtClasses.length)}`}>
         {user.classMemberships.length + user.taughtClasses.length === 0 ? (
           <div className="a-card-pad">
@@ -247,5 +281,92 @@ export default async function AdminUserPage({
         displayName={user.displayName || handle}
       />
     </main>
+  );
+}
+
+/**
+ * Why somebody may be stuck at the door: an address never confirmed, a second
+ * factor on a lost phone, a sign-in method they forgot they used. All of it is
+ * in Supabase Auth, not in the users table, so it is read there, and the
+ * gestures that answer it sit underneath.
+ */
+function SignInCard({
+  userId,
+  email,
+  state,
+}: {
+  userId: string;
+  email: string;
+  state: SignInState;
+}): React.ReactElement {
+  if (state.status === "missing") {
+    return (
+      <Card title="Connexion" pad>
+        <p className="a-form-notice">
+          Aucun identifiant de connexion n&apos;est rattaché à ce compte : il n&apos;a pas été créé
+          par l&apos;inscription. Il ne peut pas se connecter, et aucun e-mail ne peut l&apos;y
+          aider.
+        </p>
+      </Card>
+    );
+  }
+  if (state.status === "unavailable") {
+    return (
+      <Card title="Connexion" pad>
+        <p className="a-form-error">
+          Supabase n&apos;a pas répondu : l&apos;état de connexion de ce compte n&apos;a pas pu être
+          lu. Recharge la page dans un instant.
+        </p>
+      </Card>
+    );
+  }
+
+  const confirmed = state.emailConfirmedAt !== null;
+  return (
+    <Card title="Connexion" pad>
+      <div className="a-defrow">
+        <span className="a-defrow-label">Adresse e-mail</span>
+        {state.emailConfirmedAt !== null ? (
+          <span className="mono a-field-hint">
+            Confirmée le {formatDate(state.emailConfirmedAt)}
+          </span>
+        ) : (
+          <Tag tone="warning">Non confirmée</Tag>
+        )}
+      </div>
+      <div className="a-defrow">
+        <span className="a-defrow-label">Méthodes de connexion</span>
+        <span className="mono a-field-hint">
+          {state.providers.length > 0
+            ? state.providers.map((provider) => PROVIDER_LABEL[provider] ?? provider).join(" · ")
+            : "Aucune"}
+        </span>
+      </div>
+      <div className="a-defrow">
+        <span className="a-defrow-label">Double authentification</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {state.verifiedTotp > 0 ? (
+            <Tag tone="accent">Active</Tag>
+          ) : (
+            <span className="mono a-field-hint">Inactive</span>
+          )}
+          {state.pendingTotp > 0 && (
+            <span className="mono a-field-hint">
+              {state.pendingTotp > 1
+                ? `${String(state.pendingTotp)} activations commencées, jamais terminées`
+                : "1 activation commencée, jamais terminée"}
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="a-defrow">
+        <span className="a-defrow-label">Dernière connexion</span>
+        <span className="mono a-field-hint">
+          {state.lastSignInAt !== null ? formatDate(state.lastSignInAt) : "Jamais"}
+        </span>
+      </div>
+
+      <SignInActions userId={userId} email={email} confirmed={confirmed} />
+    </Card>
   );
 }

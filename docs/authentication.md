@@ -34,9 +34,39 @@ portal, and the native mobile application.
   and every privileged server action.
 - There is no GitHub, magic-link, or MFA bypass on the admin portal.
 
+### Break-glass: an administrator who lost every factor
+
 If an administrator loses every TOTP factor, recovery must be performed by an
 authorized operator in the Supabase dashboard. Do not add an application-level
 backdoor. Record the factor removal in the operational incident log.
+
+The console refuses this on purpose (see below): one administrator removing
+another's second factor is exactly what a single stolen admin session would
+do. A two-person flow inside the console may replace this procedure later.
+
+## Unblocking a learner from the console
+
+The account page (`admin.cyberlearn.fr/users/<id>`) reads the sign-in state
+from Supabase Auth through the service role: whether the address is
+confirmed, the sign-in methods, the TOTP factors (finished or abandoned) and
+the last sign-in. Under it, four gestures, each gated by `requireAdminAction`
+and written to the audit log:
+
+| Gesture | What it does | Audit action |
+| --- | --- | --- |
+| Reset the second factor | Deletes every TOTP factor (`auth.admin.mfa.deleteFactor`), which also signs the account out everywhere when a factor was verified. The administrator types the account's address to confirm. Refused on oneself and on any `ADMIN` (break-glass above). The learner receives the `mfa-reset` mail, which carries no code and no sign-in link and says what to do if they asked for nothing | `admin.user.mfa_reset` (factors found, removed, complete) |
+| Send a password reset link | The same recovery mail as **Forgot password** (`resetPasswordForEmail`, redirect to `/auth/callback?next=/reset-password`). The link goes to the mailbox only: the console never sees it, which is why it does not use `generateLink` | `admin.user.password_reset_sent` |
+| Resend the confirmation mail | Only for an address not yet confirmed (`auth.resend({ type: "signup" })`) | `admin.user.confirmation_resent` |
+| Confirm the address | Marks it confirmed without the mail (`email_confirm: true`), after a browser confirmation: for a mail that never arrives | `admin.user.email_confirmed` |
+
+Supabase answers 429 when a mail went to the same address under a minute
+ago; the console says so instead of failing.
+
+Role changes, on the users list, ask for confirmation first. An administrator
+cannot demote themselves, and the last `ADMIN` cannot be demoted: the
+repository locks every `ADMIN` row in the transaction that writes the role
+(`userRepository.changeRole`), so two administrators demoting each other at
+the same moment cannot both succeed.
 
 ## Existing account migration
 

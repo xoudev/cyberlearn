@@ -1197,53 +1197,9 @@ export function EditPathClient({
               paddingTop: 24,
               borderTop: `1px solid ${BORDER}`,
               flexWrap: "wrap",
+              justifyContent: "flex-end",
             }}
           >
-            <span
-              style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9", marginRight: "auto" }}
-            >
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                ⌘
-              </kbd>
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                S
-              </kbd>{" "}
-              sauvegarder ·{" "}
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                esc
-              </kbd>{" "}
-              annuler
-            </span>
             <Link
               href="/paths"
               className="adm-btn-ghost"

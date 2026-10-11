@@ -6,6 +6,7 @@ import { BanNoticeEmail } from "../templates/ban-notice";
 import { ClassEnrolledEmail } from "../templates/class-enrolled";
 import { ClassInvitationEmail } from "../templates/class-invitation";
 import { MagicLinkEmail } from "../templates/magic-link";
+import { MfaResetEmail } from "../templates/mfa-reset";
 import { ModerationNoticeEmail } from "../templates/moderation-notice";
 import { TicketReplyEmail } from "../templates/ticket-reply";
 import { WorkAssignedEmail } from "../templates/work-assigned";
@@ -107,6 +108,17 @@ const RENDERED: [string, React.ReactElement][] = [
     AccountDeletionConfirmEmail({
       displayName: "Amélie",
       confirmUrl: "https://cyberlearn.fr/account/delete/confirm",
+    }),
+  ],
+  [
+    "mfa-reset",
+    MfaResetEmail({
+      displayName: "Amélie",
+      resetAt: "12 octobre",
+      securityUrl: "https://cyberlearn.fr/settings/account",
+      sessionsClosed: true,
+      contactEmail: "contact@cyberlearn.fr",
+      siteUrl: "https://cyberlearn.fr",
     }),
   ],
 ];

@@ -7,21 +7,27 @@ import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
+import { nextLessonRefCode } from "@/lib/next-ref-code";
 import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 
 const createLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
   slug: z
     .string()
-    .regex(/^[a-z0-9-]+$/)
-    .min(3)
-    .max(100),
-  title: z.string().trim().min(3).max(200),
-  description: z.string().trim().min(10).max(500),
+    .regex(LESSON_SLUG, LESSON_SLUG_HINT)
+    .min(LESSON_LIMITS.slugMin)
+    .max(LESSON_LIMITS.slugMax),
+  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  description: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.descriptionMin)
+    .max(LESSON_LIMITS.descriptionMax),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
-  estimatedMinutes: z.coerce.number().int().positive().max(600),
-  xpReward: z.coerce.number().int().nonnegative().max(10000),
+  estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
+  xpReward: z.coerce.number().int().nonnegative().max(LESSON_LIMITS.xpMax),
   contentMdx: z.string().trim().min(10),
   coverImageUrl: z
     .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
@@ -99,21 +105,18 @@ export async function createLessonAction(
 
 // ── Next refCode ──────────────────────────────────────────────────────────────
 
+/**
+ * Proposes a refCode for the new-lesson form. Every lesson code is read, not
+ * just the last one in string order: see nextLessonRefCode for why.
+ */
 export async function getNextRefCodeAction(): Promise<{ nextRefCode: string }> {
   await requireAdminAction();
 
-  const last = await prisma.lesson.findFirst({
-    orderBy: { refCode: "desc" },
+  const lessons = await prisma.lesson.findMany({
+    where: { refCode: { startsWith: "CL-LSN-" } },
     select: { refCode: true },
   });
-
-  if (!last) return { nextRefCode: "CL-LSN-001-V01" };
-
-  const match = /^CL-LSN-(\d{3})-V\d{2}$/.exec(last.refCode);
-  if (!match?.[1]) return { nextRefCode: "CL-LSN-001-V01" };
-
-  const next = parseInt(match[1], 10) + 1;
-  return { nextRefCode: `CL-LSN-${String(next).padStart(3, "0")}-V01` };
+  return { nextRefCode: nextLessonRefCode(lessons.map((lesson) => lesson.refCode)) };
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────

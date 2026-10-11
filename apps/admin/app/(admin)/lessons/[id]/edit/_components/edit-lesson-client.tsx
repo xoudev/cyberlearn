@@ -7,6 +7,7 @@ import { refreshLessonPreviewAction } from "../../../_actions/preview-actions";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 import { Select } from "@cyberlearn/ui";
+import { LESSON_LIMITS, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
@@ -112,9 +113,12 @@ const initialState: UpdateLessonState = {};
 export function EditLessonClient({
   lesson,
   coverPreview,
+  lessonUrlPrefix,
 }: {
   lesson: LessonData;
   coverPreview: string | null;
+  /** The lesson's address on the learner site, up to the slug. */
+  lessonUrlPrefix: string;
 }): React.ReactElement {
   const boundAction = updateLessonAction.bind(null, lesson.id);
   const [state, action, isPending] = useActionState(boundAction, initialState);
@@ -272,7 +276,7 @@ export function EditLessonClient({
               <Help>
                 Format :{" "}
                 <b style={{ color: TURQ }}>
-                  CL-LSN-{"{NNN}"}-V{"{NN}"}
+                  CL-LSN-{"{NNN}"}-V{"{NN}"} ou CL-LSN-{"{PPNNN}"}-V{"{NN}"}
                 </b>
               </Help>
               <FieldErr msg={state.fieldErrors?.refCode} />
@@ -310,26 +314,38 @@ export function EditLessonClient({
                   name="slug"
                   type="text"
                   required
+                  minLength={LESSON_LIMITS.slugMin}
+                  maxLength={LESSON_LIMITS.slugMax}
+                  pattern="[a-z0-9\-]+"
+                  title={LESSON_SLUG_HINT}
                   defaultValue={lesson.slug}
                   placeholder="mon-slug"
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
                 />
               </div>
+              <Help>
+                {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
+                <b style={{ color: TURQ }}>{lesson.slug}</b>
+              </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
           </div>
 
           {/* Title */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 3–200 caractères">
+            <Label
+              req
+              hint={`// ${String(LESSON_LIMITS.titleMin)}–${String(LESSON_LIMITS.titleMax)} caractères`}
+            >
               Titre
             </Label>
             <input
               name="title"
               type="text"
               required
-              maxLength={200}
+              minLength={LESSON_LIMITS.titleMin}
+              maxLength={LESSON_LIMITS.titleMax}
               defaultValue={lesson.title}
               className="le-input"
               style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
@@ -339,14 +355,17 @@ export function EditLessonClient({
 
           {/* Description */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 10–500 caractères">
+            <Label
+              req
+              hint={`// ${String(LESSON_LIMITS.descriptionMin)}–${String(LESSON_LIMITS.descriptionMax)} caractères`}
+            >
               Description
             </Label>
             <textarea
               name="description"
               required
-              minLength={10}
-              maxLength={500}
+              minLength={LESSON_LIMITS.descriptionMin}
+              maxLength={LESSON_LIMITS.descriptionMax}
               rows={3}
               defaultValue={lesson.description}
               className="le-textarea"
@@ -412,7 +431,7 @@ export function EditLessonClient({
                   type="number"
                   required
                   min={1}
-                  max={480}
+                  max={LESSON_LIMITS.minutesMax}
                   defaultValue={lesson.estimatedMinutes}
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
@@ -454,7 +473,7 @@ export function EditLessonClient({
                   type="number"
                   required
                   min={0}
-                  max={5000}
+                  max={LESSON_LIMITS.xpMax}
                   step={10}
                   defaultValue={lesson.xpReward}
                   className="le-input"
@@ -526,45 +545,9 @@ export function EditLessonClient({
               paddingTop: 24,
               borderTop: `1px solid ${BORDER}`,
               flexWrap: "wrap",
+              justifyContent: "flex-end",
             }}
           >
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 10.5,
-                color: "#7F7BA9",
-                letterSpacing: "0.06em",
-                marginRight: "auto",
-              }}
-            >
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                ⌘
-              </kbd>
-              <kbd
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10,
-                  padding: "1px 6px",
-                  border: `1px solid ${BORDER}`,
-                  background: "#0A0826",
-                  color: "#7F7BA9",
-                  margin: "0 1px",
-                }}
-              >
-                S
-              </kbd>{" "}
-              sauvegarder
-            </span>
             <Link
               href="/lessons"
               className="adm-btn-ghost"
