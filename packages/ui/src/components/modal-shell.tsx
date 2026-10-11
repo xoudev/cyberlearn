@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { cn } from "@cyberlearn/ui";
+import { cn } from "../lib/utils.js";
 
 /**
  * The overlay every pop-up on the site is made of.
@@ -10,7 +10,8 @@ import { cn } from "@cyberlearn/ui";
  * behaviour a dialog needs - close on Escape, close on the backdrop, lock the
  * page behind it, put focus somewhere sensible on open, keep Tab inside -
  * written inline. Eight other pop-ups had each written their own copy of it,
- * none complete. This is the one copy.
+ * none complete. This is the one copy, shared with the console; its classes
+ * live in dialogs.css, which both apps import.
  *
  * It owns the overlay, the frame and the behaviour; what goes inside is the
  * caller's. Three amounts of chrome: the framed panel with its header and

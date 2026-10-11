@@ -6,11 +6,11 @@ import {
   BadgeMedallion,
   BADGE_RARITY_LABELS,
   BADGE_RARITY_VAR,
+  ModalShell,
   toBadgeRarity,
 } from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
-import { ModalShell } from "@/components/modal-shell";
 import { LevelReached } from "@/components/level-reached";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 

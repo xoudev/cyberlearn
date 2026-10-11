@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 
 interface VideoModalProps {
   open: boolean;

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { getWrappedAction } from "@/app/(app)/_actions/wrapped-actions";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 
 /**
  * Fetched on the click, like the payload it renders.

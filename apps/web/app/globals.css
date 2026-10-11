@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@cyberlearn/ui/tokens.css";
+@import "@cyberlearn/ui/dialogs.css";
 
 /* The page vocabulary: the names the page stylesheets and the CSS modules
    use (--fg-primary, --border, --brand-turquoise, --font-body, --dur-base),
@@ -329,128 +330,6 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   51%,
   100% {
     opacity: 0;
-  }
-}
-
-/* The dialog every pop-up is made of (components/modal-shell.tsx): the
-   overlay, the frame, its header and action row. The width and the accent
-   edge are the caller's, inline. */
-.modal-shell {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(3, 2, 25, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: modal-shell-fade 180ms ease;
-}
-.modal-shell--bare {
-  padding: 0;
-  outline: none;
-}
-.modal-shell__frame {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-height: calc(100vh - 48px);
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default);
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
-  outline: none;
-  animation: modal-shell-rise 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.modal-shell__head {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-.modal-shell__eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cosmetic-accent);
-}
-.modal-shell__eyebrow + .modal-shell__title {
-  margin-top: 6px;
-}
-.modal-shell__title {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--color-text-primary);
-}
-.modal-shell__meta {
-  margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--color-text-muted);
-}
-.modal-shell__close {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 1px solid var(--color-border-default);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-.modal-shell__close:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text-primary);
-}
-.modal-shell__body {
-  min-height: 0;
-  overflow-y: auto;
-}
-.modal-shell__actions {
-  flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 16px 20px;
-  border-top: 1px solid var(--color-border-subtle);
-}
-@keyframes modal-shell-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes modal-shell-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .modal-shell,
-  .modal-shell__frame {
-    animation: none;
   }
 }
 
@@ -1809,99 +1688,10 @@ aside[data-state="collapsed"] .sidebar-account {
   }
 }
 
-/* The settings drawer: over the page, from the right, the sections down one
-   side and the section's own forms beside them. Full width on a phone, where
-   the sections become a row to scroll. */
-/* The drawer is a ModalShell without chrome (Escape, focus kept inside, the
-   page locked behind, nested dialogs on top of it): the overlay is its own,
-   lighter than a centred dialog's, with the panel against the right edge. */
-.modal-shell.settings-drawer-root {
-  display: block;
-  padding: 0;
-  background: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  animation: none;
-}
-.settings-drawer-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 2, 25, 0.6);
-  backdrop-filter: blur(2px);
-  animation: modal-shell-fade 180ms ease;
-}
-.settings-drawer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(680px, 100%);
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-elevated);
-  border-left: 1px solid var(--color-border-default);
-  box-shadow: -24px 0 60px rgba(3, 2, 25, 0.6);
-  animation: settings-drawer-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes settings-drawer-in {
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .settings-drawer,
-  .settings-drawer-backdrop {
-    animation: none;
-  }
-}
-.settings-drawer-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--color-border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-.settings-drawer-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--cosmetic-accent);
-  box-shadow: 0 0 6px var(--cosmetic-accent);
-}
-.settings-drawer-user {
-  margin-left: auto;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.08em;
-  text-transform: none;
-}
-.settings-drawer-close {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--color-border-default);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    color 150ms ease,
-    border-color 150ms ease;
-}
-.settings-drawer-close:hover {
-  color: var(--color-text-primary);
-  border-color: #3d3785;
-}
+/* The settings drawer's own layout inside the SideDrawer (dialogs.css of
+   @cyberlearn/ui): the sections down one side and the section's forms beside
+   them. On a phone, where the drawer is full width, the sections become a row
+   to scroll. */
 .settings-drawer-body {
   display: flex;
   flex: 1;
@@ -1919,19 +1709,6 @@ aside[data-state="collapsed"] .sidebar-account {
   min-width: 0;
   overflow-y: auto;
   padding: 20px;
-}
-.settings-drawer-foot {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--color-border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
 }
 @media (max-width: 720px) {
   .settings-drawer-body {

@@ -6,7 +6,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { suggestPaths } from "@cyberlearn/lib/paths/suggest";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 import { AnswerRecap } from "@/app/_components/path-guide/guide-answers";
 import { GuideQuestions } from "@/app/_components/path-guide/guide-questions";
 import { GuideSuggestions } from "@/app/_components/path-guide/guide-suggestions";

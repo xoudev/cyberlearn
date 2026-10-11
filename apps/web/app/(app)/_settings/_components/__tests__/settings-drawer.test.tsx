@@ -35,6 +35,7 @@ vi.mock("../SettingsPanels", async () => {
   return { default: Panels };
 });
 
+import { QueryDialogHost } from "@/components/query-dialog-host";
 import { SETTINGS_SECTIONS, settingsSection, settingsSectionFromHref } from "../sections";
 import { SettingsDrawerProvider, useSettingsDrawer } from "../SettingsDrawer";
 
@@ -102,9 +103,11 @@ function clickFollows(element: Element, init?: MouseEventInit): boolean {
   return !prevented;
 }
 
+/** The provider and the host of the windows of the address, as the (app) layout mounts them. */
 function renderSite(): ReturnType<typeof render> {
   return render(
     <SettingsDrawerProvider>
+      <QueryDialogHost />
       <a href="/settings/privacy">vers la confidentialité</a>
       <a href="/settings">vers les paramètres</a>
       <a href="/settings/privacy" target="_blank" rel="noreferrer">

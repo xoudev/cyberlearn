@@ -15,18 +15,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ModalShell } from "@/components/modal-shell";
+import { usePathname } from "next/navigation";
+import { SideDrawer } from "@cyberlearn/ui";
+import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import { settingsDataSchema, type SettingsData } from "../_lib/settings-data";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./SettingsSkeleton";
 import { SettingsReloadContext } from "./settings-reload";
-import {
-  SETTINGS_QUERY,
-  isSettingsSectionKey,
-  settingsSectionFromHref,
-  type SettingsSectionKey,
-} from "./sections";
+import { isSettingsSectionKey, settingsSectionFromHref, type SettingsSectionKey } from "./sections";
 
 /**
  * The settings as a drawer over the page, opened from the navbar's gear or
@@ -41,7 +37,8 @@ import {
  *
  * There are no settings pages. An address from outside the site (an e-mail,
  * a bookmark, a notification) is redirected to /dashboard?settings=<section>
- * by next.config, and the drawer opens there (SettingsDeepLink).
+ * by next.config, and the drawer opens there (SettingsFromAddress, drawn by
+ * the layout's QueryDialogHost).
  */
 
 export interface SettingsDrawerControls {
@@ -132,8 +129,6 @@ export function SettingsDrawerProvider({
   const prefetched = useRef<SettingsRequest | null>(null);
   /** The request the open drawer listens to; an older one's answer is dropped. */
   const active = useRef<SettingsRequest | null>(null);
-  /** Where focus goes back to when the drawer is closed. */
-  const returnFocus = useRef<HTMLElement | null>(null);
 
   const listen = useCallback((request: SettingsRequest, onFailure: () => void): void => {
     active.current = request;
@@ -158,8 +153,6 @@ export function SettingsDrawerProvider({
         return;
       }
       isOpen.current = true;
-      const focused = document.activeElement;
-      returnFocus.current = focused instanceof HTMLElement ? focused : null;
 
       // A hover's request is used once, by the opening it anticipated: a
       // later opening asks again, so a form never starts from stale values.
@@ -187,14 +180,12 @@ export function SettingsDrawerProvider({
     [open],
   );
 
+  // SideDrawer gives the focus back to what opened it.
   const close = useCallback((): void => {
     isOpen.current = false;
     active.current = null;
     setOpened(null);
     setData(null);
-    const target = returnFocus.current;
-    returnFocus.current = null;
-    if (target?.isConnected) target.focus();
   }, []);
 
   /** After a change only the server can reflect: the same sections, asked again. */
@@ -258,10 +249,6 @@ export function SettingsDrawerProvider({
   return (
     <SettingsDrawerContext value={controls}>
       {children}
-      {/* Its own boundary: reading the address must not hold the page back. */}
-      <Suspense fallback={null}>
-        <SettingsDeepLink onOpen={open} />
-      </Suspense>
       {visible && (
         <SettingsReloadContext value={reload}>
           <SettingsDrawerFrame
@@ -288,23 +275,19 @@ export function SettingsDrawerProvider({
 
 /**
  * Opens the drawer when the address asks for it (?settings=<section>, where
- * the redirect of /settings/<section> lands), then takes the parameter off
- * the address: a reload or a copied link must not open it again, and closing
- * it must not leave the parameter behind.
+ * the redirect of /settings/<section> lands). It is the settings' entry among
+ * the windows the address opens (components/query-dialogs.ts), with a
+ * difference: the drawer keeps its own state, not the address's. The request
+ * is handed over and the parameter taken off at once: a reload or a copied
+ * link must not open it again, and closing it must not leave the parameter
+ * behind.
  */
-function SettingsDeepLink({ onOpen }: { onOpen: (section: SettingsSectionKey) => void }): null {
-  const requested = useSearchParams().get(SETTINGS_QUERY);
+export function SettingsFromAddress({ value, onClose }: QueryDialogProps): null {
+  const drawer = useSettingsDrawer();
   useEffect(() => {
-    if (requested === null) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete(SETTINGS_QUERY);
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${url.pathname}${url.search}${url.hash}`,
-    );
-    if (isSettingsSectionKey(requested)) onOpen(requested);
-  }, [requested, onOpen]);
+    onClose();
+    if (drawer !== null && isSettingsSectionKey(value)) drawer.open(value);
+  }, [value, onClose, drawer]);
   return null;
 }
 
@@ -324,61 +307,28 @@ function SettingsDrawerFrame({
   const content = useRef<HTMLDivElement>(null);
 
   return (
-    <ModalShell
+    <SideDrawer
       open
       onClose={onClose}
-      chrome="none"
-      labelledBy="settings-drawer-title"
-      className="settings-drawer-root"
+      title="Paramètres"
+      meta={username !== null && username !== "" ? `@${username}` : undefined}
+      closeLabel="Fermer les paramètres"
     >
-      <div className="settings-drawer-backdrop" aria-hidden="true" onClick={onClose} />
-      <aside className="settings-drawer">
-        <header className="settings-drawer-head">
-          <span className="settings-drawer-dot" aria-hidden="true" />
-          <span id="settings-drawer-title">Paramètres</span>
-          {username !== null && username !== "" && (
-            <span className="settings-drawer-user">@{username}</span>
-          )}
-          <button
-            type="button"
-            className="settings-drawer-close"
-            onClick={onClose}
-            aria-label="Fermer les paramètres"
-            title="Fermer (Échap)"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.6}
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M3 3l10 10M13 3L3 13" />
-            </svg>
-          </button>
-        </header>
-        <div className="settings-drawer-body">
-          <div className="settings-drawer-nav">
-            <SettingsNav
-              current={section}
-              onSelect={(next) => {
-                if (content.current) content.current.scrollTop = 0;
-                onSelect(next);
-              }}
-            />
-          </div>
-          <div ref={content} className="settings-drawer-content">
-            {children}
-          </div>
+      <div className="settings-drawer-body">
+        <div className="settings-drawer-nav">
+          <SettingsNav
+            current={section}
+            onSelect={(next) => {
+              if (content.current) content.current.scrollTop = 0;
+              onSelect(next);
+            }}
+          />
         </div>
-        <footer className="settings-drawer-foot">
-          <span>Échap pour fermer</span>
-        </footer>
-      </aside>
-    </ModalShell>
+        <div ref={content} className="settings-drawer-content">
+          {children}
+        </div>
+      </div>
+    </SideDrawer>
   );
 }
 

@@ -10,6 +10,7 @@ import { CosmeticsProvider } from "@/components/cosmetics-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { QueryDialogHost } from "@/components/query-dialog-host";
 import { SettingsDrawerProvider } from "./_settings/_components/SettingsDrawer";
 
 async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmeticAttrs>> {
@@ -45,6 +46,9 @@ export default async function AppLayout({
     // (correct first paint) and lets the casier equip them live, app-wide.
     // SettingsDrawerProvider opens the settings over whatever page is shown,
     // from the navbar's gear or any link to them, without a navigation.
+    // QueryDialogHost opens the windows an address asks for (?settings=,
+    // components/query-dialogs.ts), inside the provider the settings' entry
+    // hands its request to.
     <CosmeticsProvider initial={cosmetics}>
       <SettingsDrawerProvider>
         <SidebarProvider defaultOpen={defaultOpen}>
@@ -95,6 +99,7 @@ export default async function AppLayout({
             <Footer />
           </div>
         </SidebarProvider>
+        <QueryDialogHost />
       </SettingsDrawerProvider>
     </CosmeticsProvider>
   );

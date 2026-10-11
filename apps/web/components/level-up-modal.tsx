@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 import { LevelReached } from "@/components/level-reached";
 
 /**

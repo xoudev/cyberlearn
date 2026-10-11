@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AVATAR_EXPORT_PX } from "@cyberlearn/types";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 
 const VIEWPORT = 280; // on-screen crop square (px)
 const OUTPUT = AVATAR_EXPORT_PX; // exported avatar size (px), the app's too
