@@ -710,7 +710,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           )}
         </div>
 
-        {/* ── Right rail (sticky while it fits below the navbar) ──────────────── */}
+        {/* ── Right rail (sticky, by its bottom once taller than the window) ──── */}
         <StickyRail className="chx-rail">
           {/* Hints panel */}
           {challenge.hints.length > 0 && (

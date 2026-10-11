@@ -21,6 +21,7 @@ import {
 } from "@cyberlearn/lib/challenges/tournament";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { StickyRail } from "@/components/sticky-rail";
 import type {
   TournamentChallengeRow,
   TournamentPlayerRow,
@@ -450,13 +451,15 @@ function LockedCard({ n }: { n: number }): React.JSX.Element {
 
 /**
  * The teams in order, each with its place, its points and a bar of them
- * against the leader's; the reader's own team said so.
+ * against the leader's; the reader's own team said so. A column beside the
+ * challenges and the players on a wide screen, which follows the page down
+ * past them.
  */
 function Teams({ view }: { view: TournamentView }): React.JSX.Element {
   const scored = view.teams.some((team) => team.points > 0);
   const leader = Math.max(0, ...view.teams.map((team) => team.points));
   return (
-    <section aria-label="Les équipes" className="trn-section trn-main__teams">
+    <StickyRail as="section" aria-label="Les équipes" className="trn-section trn-main__teams">
       <SectionHead
         title={view.teamScope === "CLASS" ? "Classement des classes" : "Classement des écoles"}
         meta={view.phase === "RUNNING" ? <LiveTag /> : undefined}
@@ -471,7 +474,7 @@ function Teams({ view }: { view: TournamentView }): React.JSX.Element {
           />
         ))}
       </ol>
-    </section>
+    </StickyRail>
   );
 }
 

@@ -15,6 +15,7 @@ import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
 import { CopyButton } from "@/components/copy-button";
 import { Crumb } from "@/components/crumb";
+import { StickyRail } from "@/components/sticky-rail";
 import type { TournamentChallengeView } from "@/lib/tournaments/tournaments";
 import {
   IconCheck,
@@ -241,7 +242,7 @@ export function TournamentChallenge({
           </section>
         </div>
 
-        <aside className="trn-rail" aria-label="Règles du tournoi">
+        <StickyRail className="trn-rail" aria-label="Règles du tournoi">
           <section className="trn-section">
             <SectionHead title="Règles du tournoi" />
             <ol className="trn-rules">
@@ -285,7 +286,7 @@ export function TournamentChallenge({
             </span>
             <span aria-hidden="true">→</span>
           </Link>
-        </aside>
+        </StickyRail>
       </div>
     </div>
   );

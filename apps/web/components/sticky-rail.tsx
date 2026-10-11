@@ -1,15 +1,15 @@
 "use client";
 
-// "use client" justification: whether a rail fits below the navbar is only
-// known by measuring it against the window, and it changes as the rail grows
-// (a hint revealed) or the window is resized.
+// "use client" justification: where a rail comes to rest depends on its height
+// against the window's, only known by measuring both, and it changes as the
+// rail grows (a hint revealed) or the window is resized.
 
 import React, { useEffect, useState } from "react";
-import { STICKY_TOP, railFitsBelowNavbar } from "@/lib/chrome";
+import { railStickyTop } from "@/lib/chrome";
 
 type StickyRailProps = React.HTMLAttributes<HTMLElement> & {
   /** A rail is an aside, unless the page already drew it as something else. */
-  as?: "aside" | "div";
+  as?: "aside" | "div" | "section";
 };
 
 /**
@@ -19,10 +19,9 @@ type StickyRailProps = React.HTMLAttributes<HTMLElement> & {
  * The page's stylesheet says where the rail may stick, with `position: sticky`
  * under its own breakpoints: only it knows when the rail stands beside the
  * content rather than below it. This component says how far down the rail
- * comes to rest, and whether it does at all: it gives the rail its `top` only
- * while the rail fits in the window below the navbar. A sticky box without a
- * `top` stays in the flow, which is where a rail too tall to be read whole
- * belongs.
+ * comes to rest, with its `top`: below the navbar while the rail fits in the
+ * window, by its bottom once it is taller (see railStickyTop). A tall rail
+ * thus scrolls with the page until its last line is in sight, then stays.
  *
  * The server draws it without a `top`. Nothing is scrolled on the first paint,
  * so sticky or not the rail stands in the same place, and arming it once it
@@ -34,12 +33,12 @@ export function StickyRail({
   ...props
 }: StickyRailProps): React.JSX.Element {
   const [node, setNode] = useState<HTMLElement | null>(null);
-  const [fits, setFits] = useState(false);
+  const [top, setTop] = useState<number | null>(null);
 
   useEffect(() => {
     if (node === null) return;
     const measure = (): void => {
-      setFits(railFitsBelowNavbar(node.offsetHeight, window.innerHeight));
+      setTop(railStickyTop(node.offsetHeight, window.innerHeight));
     };
     measure();
     // Absent from jsdom: there, the rail is measured when it mounts and when
@@ -53,5 +52,5 @@ export function StickyRail({
     };
   }, [node]);
 
-  return <Tag ref={setNode} {...props} style={fits ? { ...style, top: STICKY_TOP } : style} />;
+  return <Tag ref={setNode} {...props} style={top === null ? style : { ...style, top }} />;
 }

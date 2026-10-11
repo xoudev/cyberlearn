@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STICKY_TOP } from "@/lib/chrome";
 import type { TournamentView } from "@/lib/tournaments/tournaments";
 
 const m = vi.hoisted(() => ({
@@ -104,6 +105,15 @@ describe("TournamentBoard", () => {
     expect(within(teams).getByText("Ton équipe")).toBeTruthy();
     expect(screen.getByLabelText("Les joueurs").textContent).toContain("Toi");
     expect(screen.getByRole("timer").textContent).toBe("Fin dans 1 h 00 min");
+  });
+
+  it("keeps the teams' ranking in sight beside the challenges as the page scrolls", () => {
+    render(<TournamentBoard initial={BASE} />);
+    const teams = screen.getByLabelText("Les équipes");
+    // Still a section of the board, given its resting place under the navbar
+    // (tournaments.css makes it sticky beside the challenges).
+    expect(teams.tagName).toBe("SECTION");
+    expect(teams.style.top).toBe(`${String(STICKY_TOP)}px`);
   });
 
   it("turns the countdown to its warning tone in the last five minutes", () => {
