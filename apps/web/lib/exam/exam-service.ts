@@ -47,6 +47,8 @@ export interface SubmitQuizResult {
   score?: number;
   passed?: boolean;
   results?: AttemptResultItem[];
+  /** After a fail: when the next attempt opens, so the result can say so. */
+  cooldownUntil?: Date;
 }
 
 export interface ExamStatus {
@@ -61,6 +63,11 @@ export interface ExamStatus {
   resumeStartedAt: Date | null;
   /** The end of the wait after a finished attempt, when it is not over. */
   cooldownUntil: Date | null;
+}
+
+/** The end of the wait after an attempt handed in (or closed) at `submittedAt`. */
+function cooldownEnd(submittedAt: Date): Date {
+  return new Date(submittedAt.getTime() + QUIZ_COOLDOWN_MINUTES * 60_000);
 }
 
 /** Reads the server-authoritative drawn question ids stored on an attempt. */
@@ -93,8 +100,8 @@ export async function examStatus(userId: string, pathId: string): Promise<ExamSt
       if (elapsedMs <= EXAM_TIME_LIMIT_MINUTES * 60_000) resumeStartedAt = latest.startedAt;
       // else expired → finalized on the next start (no resume offered)
     } else if (latest?.submittedAt) {
-      const until = latest.submittedAt.getTime() + QUIZ_COOLDOWN_MINUTES * 60_000;
-      if (until > now) cooldownUntil = new Date(until);
+      const until = cooldownEnd(latest.submittedAt);
+      if (until.getTime() > now) cooldownUntil = until;
     }
   }
 
@@ -219,12 +226,13 @@ export async function submitExam(
   // lands within the grace and is scored normally.
   const elapsedSeconds = (Date.now() - attempt.startedAt.getTime()) / 1000;
   if (elapsedSeconds > EXAM_TIME_LIMIT_MINUTES * 60 + 60) {
+    const closedAt = new Date();
     await quizRepository.updateAttemptResult(attempt.id, {
       score: 0,
       passed: false,
       answers: { drawnQuestionIds: readDrawnIds(attempt.answers), expired: true },
     });
-    return { ok: true, score: 0, passed: false, results: [] };
+    return { ok: true, score: 0, passed: false, results: [], cooldownUntil: cooldownEnd(closedAt) };
   }
 
   const drawnIds = readDrawnIds(attempt.answers);
@@ -250,6 +258,7 @@ export async function submitExam(
     selected: r.selected,
     correct: r.correct,
   }));
+  const submittedAt = new Date();
   await quizRepository.updateAttemptResult(attempt.id, {
     score,
     passed,
@@ -272,6 +281,10 @@ export async function submitExam(
     await issueCertificate(userId, quiz.pathId, { score, passThreshold: threshold });
   }
 
-  // Return explanations for the review UI.
-  return { ok: true, score, passed, results };
+  // Return explanations for the review UI, and on a fail when the wait ends:
+  // the result screen counts down to it rather than show a button that never
+  // comes back to life.
+  return passed
+    ? { ok: true, score, passed, results }
+    : { ok: true, score, passed, results, cooldownUntil: cooldownEnd(submittedAt) };
 }

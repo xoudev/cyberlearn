@@ -113,6 +113,20 @@ function rankOf(state: LockState): number {
 }
 
 /**
+ * The lesson a path's "Continuer" opens: the first one the reader can open and
+ * has not finished, in the path's order. That is also the first lesson not
+ * completed, since everything before it is done and so opens it. Once every
+ * lesson is completed there is nothing left to resume, and it is the first
+ * lesson again, to go back over. Null for a path with no lesson.
+ *
+ * `states` runs parallel to `lessons`, as the path page builds them.
+ */
+export function resumeLesson<L>(lessons: readonly L[], states: readonly LockState[]): L | null {
+  const open = states.indexOf("unlocked");
+  return lessons[open >= 0 ? open : 0] ?? null;
+}
+
+/**
  * A lesson outside every published path has no gate to apply. Treating that as
  * readable is deliberate: a lesson nothing sequences cannot have a predecessor
  * to wait for, and locking it would strand it with no way to ever open it.

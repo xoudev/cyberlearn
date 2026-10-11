@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { FileDown } from "lucide-react";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
+import { indexPlacements, type LockState, resumeLesson } from "@/lib/lessons/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
@@ -289,12 +289,16 @@ export default async function PathDetailPage({
   const cardState = (s: NodeState): CardState =>
     s === "completed" ? "done" : s === "unlocked" ? "active" : "locked";
 
-  const firstLessonSlug = path.lessons[0]?.lesson.slug;
+  // The lesson to pick up from, by the same rule that draws the map below. It
+  // used to be the first lesson whatever the progress, so "Continuer" sent a
+  // reader at mission 15 back to mission 1. A path with no lesson has nothing
+  // to open, and shows no button rather than one that goes nowhere.
+  const resumeSlug = resumeLesson(path.lessons, nodeStates)?.lesson.slug ?? null;
   const heroCtaLabel =
-    pathStatus === "IN_PROGRESS"
-      ? "Continuer le parcours"
-      : pathStatus === "COMPLETED"
-        ? "Revoir le parcours"
+    pathCompleted || lessonsComplete
+      ? "Revoir le parcours"
+      : doneLessons > 0
+        ? "Continuer le parcours"
         : "Commencer le parcours";
 
   // The final boss (certificate gate) shows whenever any current affordance would:
@@ -395,9 +399,11 @@ export default async function PathDetailPage({
               </span>
             </div>
           </div>
-          <Link href={firstLessonSlug ? `/lessons/${firstLessonSlug}` : "#"} className="brief__cta">
-            {heroCtaLabel} {ARROW}
-          </Link>
+          {resumeSlug !== null && (
+            <Link href={`/lessons/${resumeSlug}`} className="brief__cta">
+              {heroCtaLabel} {ARROW}
+            </Link>
+          )}
           <Link
             href={`/paths/${slug}/mock-exam`}
             className="btn btn--ghost btn--sm"

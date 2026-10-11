@@ -42,6 +42,8 @@ export interface SerializedPath {
   xpTotal: number;
   lessonCount: number;
   hasCert: boolean;
+  /** An active final exam: a path whose missions are all done waits on it. */
+  hasQuiz: boolean;
   status: "idle" | "inprog" | "done";
   progressDone: number;
   progressTotal: number;
@@ -56,6 +58,8 @@ export interface SerializedPath {
     xpReward: number;
     estimatedMinutes: number;
   } | null;
+  /** The certificate of a certified path, for its public page. Null when none was issued. */
+  certPublicId: string | null;
 }
 
 interface Props {
@@ -147,11 +151,34 @@ function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX
 
 // ── Tier cards ──────────────────────────────────────────────────────────────────
 
+/**
+ * Where the hero's main button leads: the next mission while one is left, as
+ * "Prochaine mission" does; the final exam once every mission is done, which
+ * is what such a path is waiting on (for 48 h after a failed attempt too). A
+ * path with neither is opened from one button, since "Aperçu" would open the
+ * same page: two buttons to one place is what this replaced.
+ */
+function heroCta(path: SerializedPath): { href: string; label: string; withPreview: boolean } {
+  if (path.nextLesson !== null) {
+    return {
+      href: `/lessons/${path.nextLesson.slug}`,
+      label: "Continuer le parcours",
+      withPreview: true,
+    };
+  }
+  // No next mission on a path that has missions: they are all done.
+  if (path.hasQuiz && path.lessonCount > 0) {
+    return { href: `/paths/${path.slug}/exam`, label: "Passer l'examen final", withPreview: true };
+  }
+  return { href: `/paths/${path.slug}`, label: "Voir le parcours", withPreview: false };
+}
+
 function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   const cat = categoryMeta(path.category);
   const kind = CATEGORY_KIND[path.category] ?? "cyber";
   const diff = difficultyMeta(path.difficulty);
   const pct = pctOf(path);
+  const cta = heroCta(path);
   return (
     <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
@@ -212,12 +239,14 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
           <div className="hero-path__cta-row">
-            <Link href={`/paths/${path.slug}`} className="btn btn--lg">
-              Continuer le parcours {ARROW}
+            <Link href={cta.href} className="btn btn--lg">
+              {cta.label} {ARROW}
             </Link>
-            <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
-              Aperçu
-            </Link>
+            {cta.withPreview && (
+              <Link href={`/paths/${path.slug}`} className="btn btn--ghost btn--lg">
+                Aperçu
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -320,9 +349,19 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
+/** Where "Voir le certificat" leads: its public page, or the list when none is on record. */
+function certificateHref(certPublicId: string | null): string {
+  return certPublicId === null ? "/certificates" : `/verify/${certPublicId}`;
+}
+
+/**
+ * A certified path. The card used to be one link to the path, so "Voir le
+ * certificat" opened the path again; the body still does, and the button
+ * opens the certificate.
+ */
 function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
   return (
-    <Link href={`/paths/${path.slug}`} className="trophy-card">
+    <article className="trophy-card">
       <Brackets />
       <span className="trophy-card__seal">
         <svg
@@ -339,7 +378,7 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
           <path d="M8 12.5 L6.5 21 L12 18 L17.5 21 L16 12.5" />
         </svg>
       </span>
-      <div className="trophy-card__body">
+      <Link href={`/paths/${path.slug}`} className="trophy-card__body">
         <div className="trophy-card__eyebrow">Certifié</div>
         <div className="trophy-card__refcode">
           {"// "}
@@ -380,9 +419,12 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
             </>
           )}
         </div>
-      </div>
+      </Link>
       <div className="trophy-card__foot">
-        <span className="btn btn--gold btn--ghost btn--block">
+        <Link
+          href={certificateHref(path.certPublicId)}
+          className="btn btn--gold btn--ghost btn--block"
+        >
           <svg
             width="13"
             height="13"
@@ -398,13 +440,22 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
             <circle cx="8" cy="8" r="1.6" />
           </svg>
           Voir le certificat
-        </span>
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }
 
-function PathsEmpty({ filterLabel }: { filterLabel: string }): React.JSX.Element {
+function PathsEmpty({
+  filterLabel,
+  canReset,
+  onReset,
+}: {
+  filterLabel: string;
+  /** Something is filtered. With nothing to clear, the button would change nothing. */
+  canReset: boolean;
+  onReset: () => void;
+}): React.JSX.Element {
   return (
     <EmptyState
       title="Aucun parcours trouvé"
@@ -426,9 +477,12 @@ function PathsEmpty({ filterLabel }: { filterLabel: string }): React.JSX.Element
         </svg>
       }
     >
-      <span className="pc2-empty__cmd">
-        <span className="p">$</span> reset --filter=all
-      </span>
+      {/* Undefined rather than false, so no empty action row is drawn. */}
+      {canReset ? (
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onReset}>
+          Voir tous les parcours
+        </button>
+      ) : undefined}
     </EmptyState>
   );
 }
@@ -543,7 +597,17 @@ export function PathsCollection({
           </label>
         </div>
 
-        {filtered.length === 0 && <PathsEmpty filterLabel={filterLabel} />}
+        {filtered.length === 0 && (
+          <PathsEmpty
+            filterLabel={filterLabel}
+            canReset={filter !== "all" || trackFilter !== "all" || search !== ""}
+            onReset={() => {
+              setFilter("all");
+              setTrackFilter("all");
+              setSearch("");
+            }}
+          />
+        )}
 
         {hero && (
           <>

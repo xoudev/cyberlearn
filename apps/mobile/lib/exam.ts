@@ -115,6 +115,22 @@ export function waitLabel(untilIso: string, nowMs: number): string {
   return `dans ${String(Math.ceil(ms / 3_600_000))} h`;
 }
 
+/**
+ * The line under a failed exam: when the next attempt opens, from the end of
+ * the wait the server sent with the result, as the site's result screen does.
+ * Without it, the rule alone.
+ */
+export function retryNote(cooldownUntil: string | null, nowMs: number): string {
+  const advice = " Révise les missions avant de réessayer.";
+  if (cooldownUntil === null) {
+    return `Une seule tentative à la fois : la prochaine est possible après un délai d'attente de 48 h.${advice}`;
+  }
+  if (new Date(cooldownUntil).getTime() <= nowMs) {
+    return "Le délai d'attente est passé : tu peux retenter l'examen.";
+  }
+  return `Une seule tentative à la fois : la prochaine est possible ${waitLabel(cooldownUntil, nowMs)}.${advice}`;
+}
+
 /** The score against the threshold, in points: "+12 pts au-dessus du seuil". */
 export function thresholdGap(score: number, passThreshold: number): string {
   const delta = score - passThreshold;

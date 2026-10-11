@@ -898,7 +898,14 @@ export async function startExamApi(pathId: string): Promise<StartExamReply> {
 }
 
 export type SubmitExamReply =
-  | { ok: true; score: number; passed: boolean; results: ExamReviewItem[] }
+  | {
+      ok: true;
+      score: number;
+      passed: boolean;
+      results: ExamReviewItem[];
+      /** After a fail: when the next attempt opens, as an ISO string. */
+      cooldownUntil?: string;
+    }
   | { ok: false; error: string };
 
 /** Hands the copy in; the server scores it and issues the certificate on a pass. */

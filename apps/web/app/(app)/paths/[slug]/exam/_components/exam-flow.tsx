@@ -3,10 +3,11 @@
 import { ProgressBar } from "@/components/progress-bar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import "../exam.css";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
+import { unlockDateLabel, waitLeftLabel } from "@/lib/exam/cooldown-label";
 import {
   type StartQuizResult,
   type SubmitQuizResult,
@@ -42,6 +43,24 @@ function fmtClock(totalSeconds: number): string {
 }
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
+}
+
+// Once in the browser the value below never changes: nothing to subscribe to.
+function subscribeNever(): () => void {
+  return () => undefined;
+}
+
+/**
+ * False on the server and while hydrating, true after. A date on the reader's
+ * clock is written once this is true: the server knows neither their zone nor
+ * when the page will be read.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
 }
 
 // ── Inline icons (reproduced from the mockups) ──────────────────────────────────
@@ -213,6 +232,8 @@ export function ExamFlow(props: Props): React.JSX.Element {
     (anchorMs: number) => {
       setBusy(true);
       setError(null);
+      // A copy handed in leaves the guard up; the next attempt starts without it.
+      submittingRef.current = false;
       void (async () => {
         const res = await startQuizAttempt(pathId);
         setBusy(false);
@@ -280,6 +301,13 @@ export function ExamFlow(props: Props): React.JSX.Element {
         timeUsed={timeUsed}
         passThreshold={passThreshold}
         certPublicId={certPublicId}
+        onRetry={() => {
+          // Back to the rules, read again from the server: the page's own
+          // cooldown dates from when it loaded, before this attempt.
+          setResult(null);
+          setPhase("intro");
+          router.refresh();
+        }}
       />
     );
   }
@@ -340,6 +368,7 @@ function IntroScreen(props: {
     onStart,
   } = props;
 
+  const hydrated = useHydrated();
   const passNeeded = Math.ceil((questionCount * passThreshold) / 100);
   const startDisabled =
     busy || !hasQuiz || !lessonsComplete || pathCompleted || cooldownUntilMs !== null;
@@ -349,8 +378,12 @@ function IntroScreen(props: {
   else if (pathCompleted) statusNote = null;
   else if (!lessonsComplete)
     statusNote = "Termine toutes les leçons du parcours pour débloquer l'examen.";
+  // When the wait ends, as the result screen says it. The date is on the
+  // reader's clock, so the server writes the fixed line and the browser the date.
   else if (cooldownUntilMs !== null)
-    statusNote = "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
+    statusNote = hydrated
+      ? `Examen déjà passé récemment : nouvelle tentative possible le ${unlockDateLabel(cooldownUntilMs)}.`
+      : "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
 
   return (
     <div className="exam-root">
@@ -786,8 +819,10 @@ function ResultsScreen(props: {
   timeUsed: number;
   passThreshold: number;
   certPublicId: string | null;
+  onRetry: () => void;
 }): React.JSX.Element {
-  const { pathSlug, pathTitle, result, questions, timeUsed, passThreshold, certPublicId } = props;
+  const { pathSlug, pathTitle, result, questions, timeUsed, passThreshold, certPublicId, onRetry } =
+    props;
   const passed = result.passed === true;
   const score = result.score ?? 0;
   const review = result.results ?? [];
@@ -951,39 +986,11 @@ function ResultsScreen(props: {
                   </Link>
                 </div>
               ) : (
-                <>
-                  <div className="r-action">
-                    <button type="button" className="r-btn r-btn--retry" disabled>
-                      <span className="lock">
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3.5" y="7" width="9" height="6.5" rx="1" />
-                          <path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7" />
-                        </svg>
-                      </span>
-                      Réessayer après le cooldown
-                    </button>
-                    <Link className="r-btn r-btn--ghost" href={`/paths/${pathSlug}`}>
-                      Revoir le parcours
-                    </Link>
-                  </div>
-                  <div className="r-cooldown">
-                    {IcoClock}
-                    <span>
-                      {"Une seule tentative par session. Nouvelle tentative possible après le "}
-                      <b>{"délai d'attente de 48 h"}</b>
-                      {" : révise les modules avant de réessayer."}
-                    </span>
-                  </div>
-                </>
+                <RetryAfterWait
+                  untilMs={result.cooldownUntil?.getTime() ?? null}
+                  pathSlug={pathSlug}
+                  onRetry={onRetry}
+                />
               )}
             </div>
           </section>
@@ -1045,6 +1052,77 @@ function ResultsScreen(props: {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * After a fail: the next attempt, locked until the wait is over and counting
+ * down to it, then open. It used to be a button disabled for good, whatever
+ * the time. Rendered only after a copy is handed in, never on the server, so
+ * reading the clock here cannot upset hydration.
+ */
+export function RetryAfterWait(props: {
+  /** From the server's answer to the copy. Null when it gave none: nothing to wait for here. */
+  untilMs: number | null;
+  pathSlug: string;
+  onRetry: () => void;
+}): React.JSX.Element {
+  const { untilMs, pathSlug, onRetry } = props;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const waiting = untilMs !== null && untilMs > nowMs;
+
+  useEffect(() => {
+    if (!waiting) return;
+    const id = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => {
+      clearInterval(id);
+    };
+  }, [waiting]);
+
+  return (
+    <>
+      <div className="r-action">
+        {waiting ? (
+          <button type="button" className="r-btn r-btn--retry" disabled>
+            <span className="lock">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3.5" y="7" width="9" height="6.5" rx="1" />
+                <path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7" />
+              </svg>
+            </span>
+            Réessayer dans {waitLeftLabel(untilMs - nowMs)}
+          </button>
+        ) : (
+          <button type="button" className="r-btn r-btn--cert" onClick={onRetry}>
+            Réessayer l&apos;examen
+          </button>
+        )}
+        <Link className="r-btn r-btn--ghost" href={`/paths/${pathSlug}`}>
+          Revoir le parcours
+        </Link>
+      </div>
+      {waiting && (
+        <div className="r-cooldown">
+          {IcoClock}
+          <span>
+            {"Une seule tentative à la fois. Nouvelle tentative possible le "}
+            <b>{unlockDateLabel(untilMs)}</b>
+            {" : révise les modules avant de réessayer."}
+          </span>
+        </div>
+      )}
+    </>
   );
 }
 

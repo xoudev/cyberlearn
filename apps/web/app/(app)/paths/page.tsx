@@ -33,12 +33,17 @@ export default async function PathsPage(): Promise<React.ReactElement> {
             },
           },
         },
+        // Whether a final exam waits once every mission is done: the hero's
+        // button leads there rather than to the path a second time.
+        quiz: { select: { isActive: true } },
       },
       orderBy: { publishedAt: "desc" },
     }),
     prisma.userPathProgress.findMany({
       where: { userId: authUser.id },
-      select: { pathId: true, status: true },
+      // The certificate's public id, so a certified path's card opens the
+      // certificate itself rather than the path again.
+      select: { pathId: true, status: true, certificate: { select: { publicId: true } } },
     }),
     savedLearningAnswers(authUser.id),
   ]);
@@ -51,6 +56,10 @@ export default async function PathsPage(): Promise<React.ReactElement> {
 
   // Build progress lookup
   const progressMap = new Map(userProgress.map((up) => [up.pathId, up.status]));
+  const certByPath = new Map<string, string>();
+  for (const up of userProgress) {
+    if (up.certificate !== null) certByPath.set(up.pathId, up.certificate.publicId);
+  }
 
   // Count completed lessons per path for progress
   const completedLessonsByPath = await prisma.userLessonProgress.groupBy({
@@ -109,6 +118,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       xpTotal,
       lessonCount,
       hasCert: path.certificateTemplate !== null,
+      hasQuiz: path.quiz?.isActive === true,
       coverSrc: covers[index] ?? null,
       status,
       progressDone,
@@ -118,6 +128,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
           ? { avg: path.avgRating, count: path.ratingsCount }
           : null,
       nextLesson,
+      certPublicId: certByPath.get(path.id) ?? null,
     } satisfies SerializedPath;
   });
 

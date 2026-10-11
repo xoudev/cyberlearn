@@ -229,10 +229,28 @@ describe("submitExam", () => {
     expect(m.issueCertificate).not.toHaveBeenCalled();
   });
 
+  it("says when the 48-hour wait ends after a fail, and gives no wait on a pass", async () => {
+    const before = Date.now();
+    const failed = await submitExam("user-1", ATTEMPT_ID, { q1: "q1-b", q2: "q2-a" });
+    const after = Date.now();
+    const until = failed.cooldownUntil?.getTime() ?? 0;
+    expect(until).toBeGreaterThanOrEqual(before + 48 * 60 * MIN);
+    expect(until).toBeLessThanOrEqual(after + 48 * 60 * MIN);
+
+    const passed = await submitExam("user-1", ATTEMPT_ID, { q1: "q1-a", q2: "q2-b" });
+    expect(passed.cooldownUntil).toBeUndefined();
+  });
+
   it("fails a submission that arrives past the limit, whatever the answers", async () => {
     m.findAttemptById.mockResolvedValue(attempt({ startedAt: new Date(Date.now() - 32 * MIN) }));
     const result = await submitExam("user-1", ATTEMPT_ID, { q1: "q1-a", q2: "q2-b" });
-    expect(result).toEqual({ ok: true, score: 0, passed: false, results: [] });
+    expect(result).toEqual({
+      ok: true,
+      score: 0,
+      passed: false,
+      results: [],
+      cooldownUntil: expect.any(Date) as Date,
+    });
     expect(m.issueCertificate).not.toHaveBeenCalled();
   });
 
