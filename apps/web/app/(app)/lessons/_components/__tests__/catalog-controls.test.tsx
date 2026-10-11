@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CATALOG_SEARCH_MAX } from "@/lib/lessons/catalog-filters";
 
 /** The catalogue's NIVEAU and STATUT pickers, and its search box. */
 
@@ -31,12 +32,14 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("CatalogFilterSelect", () => {
   it("offers every level, and goes to the one chosen", () => {
     render(<CatalogFilterSelect label="Niveau" value="ALL" options={LEVELS} />);
-    const trigger = screen.getByRole("combobox", { name: "› Niveau" });
+    // Named by its label, without the decorative "›" a reader would hear.
+    const trigger = screen.getByRole("combobox", { name: "Niveau" });
     expect(trigger.textContent).toContain("TOUS");
 
     fireEvent.click(trigger);
@@ -97,6 +100,12 @@ describe("LessonsSearchBar", () => {
     expect(box().value).toBe("");
   });
 
+  it("shows a longer search as the part of it the list applies", () => {
+    params = new URLSearchParams({ q: `${"a".repeat(CATALOG_SEARCH_MAX)}bcd` });
+    render(<LessonsSearchBar />);
+    expect(box().value).toBe("a".repeat(CATALOG_SEARCH_MAX));
+  });
+
   it("puts what is typed in the URL after a pause, back on the first page", () => {
     vi.useFakeTimers();
     render(<LessonsSearchBar />);
@@ -106,6 +115,30 @@ describe("LessonsSearchBar", () => {
       vi.advanceTimersByTime(300);
     });
     expect(replace).toHaveBeenCalledWith("/lessons?q=git");
+  });
+
+  it("keeps the valid filters already in the URL, and drops the page and anything else", () => {
+    vi.useFakeTimers();
+    render(<LessonsSearchBar />);
+    fireEvent.change(box(), { target: { value: "git" } });
+    // Chosen while the search waited: read when it fires, not when typed.
+    window.history.replaceState(null, "", "/lessons?difficulty=BEGINNER&page=3&status=nope&utm=x");
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(replace).toHaveBeenCalledWith("/lessons?difficulty=BEGINNER&q=git");
+  });
+
+  it("takes its search out of the URL once the box is emptied", () => {
+    vi.useFakeTimers();
+    params = new URLSearchParams("category=DEV&q=sql");
+    window.history.replaceState(null, "", "/lessons?category=DEV&q=sql");
+    render(<LessonsSearchBar />);
+    fireEvent.change(box(), { target: { value: "" } });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(replace).toHaveBeenCalledWith("/lessons?category=DEV");
   });
 
   it("keeps what the reader typed on while their own search travelled", () => {

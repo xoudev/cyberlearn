@@ -59,9 +59,10 @@ describe("parseCatalogFilters", () => {
     }
   });
 
-  it("trims the search, and ignores one longer than the box allows", () => {
+  it("trims the search, and cuts one longer than the box allows", () => {
     expect(parseCatalogFilters({ q: "  injection  " }).q).toBe("injection");
-    expect(parseCatalogFilters({ q: "a".repeat(CATALOG_SEARCH_MAX + 1) }).q).toBe("");
+    const long = `${"a".repeat(CATALOG_SEARCH_MAX)}bcd`;
+    expect(parseCatalogFilters({ q: long }).q).toBe("a".repeat(CATALOG_SEARCH_MAX));
   });
 });
 

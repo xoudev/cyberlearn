@@ -45,8 +45,10 @@ export function CatalogFilterSelect({
 
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      {/* The control's name: the glyph is decoration, kept out of it. */}
       <span id={labelId} className="mono-label" style={{ color: "var(--color-text-muted)" }}>
-        › {label}
+        <span aria-hidden="true">› </span>
+        {label}
       </span>
       <Select
         aria-labelledby={labelId}

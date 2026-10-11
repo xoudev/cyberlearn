@@ -3,12 +3,19 @@
 import React, { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
-import { CATALOG_SEARCH_MAX } from "@/lib/lessons/catalog-filters";
+import {
+  CATALOG_SEARCH_MAX,
+  catalogHref,
+  parseCatalogFilters,
+  type RawParams,
+} from "@/lib/lessons/catalog-filters";
 
 export function LessonsSearchBar(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
+  // Cut where the list cuts it, so a longer term from the navbar shows as the
+  // part of it that filters.
+  const urlQuery = (searchParams.get("q") ?? "").slice(0, CATALOG_SEARCH_MAX);
   const [, startTransition] = useTransition();
   const [value, setValue] = useState(urlQuery);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -41,18 +48,17 @@ export function LessonsSearchBar(): React.ReactElement {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       // Read when it fires, not when typed: a filter chosen in between is
-      // in the URL now and has to stay there.
-      const params = new URLSearchParams(window.location.search);
-      if (next) {
-        params.set("q", next);
-      } else {
-        params.delete("q");
+      // in the URL now and has to stay there. Through the page's own parser
+      // and builder, so only valid filters travel on and the page is the first.
+      const current: RawParams = {};
+      for (const [key, param] of new URLSearchParams(window.location.search)) {
+        // The first of a repeated param, as the server reads it.
+        current[key] ??= param;
       }
-      params.delete("page");
       sentRef.current = next;
-      const qs = params.toString();
+      const href = catalogHref(parseCatalogFilters(current), { q: next.length > 0 ? next : null });
       startTransition(() => {
-        router.replace(`/lessons${qs ? `?${qs}` : ""}`);
+        router.replace(href);
       });
     }, 300);
   }

@@ -27,7 +27,10 @@ const statusSchema = z.enum([
 ]) satisfies z.ZodType<ProgressStatus>;
 /** As long as the search box lets anyone type. */
 export const CATALOG_SEARCH_MAX = 100;
-const searchSchema = z.string().trim().max(CATALOG_SEARCH_MAX);
+// Cut, not refused: the navbar hands its term over uncapped, and a longer
+// one dropped whole left the box showing a search the list ignored. Cut as
+// lib/search/run.ts cuts its own.
+const searchSchema = z.string().transform((s) => s.slice(0, CATALOG_SEARCH_MAX).trim());
 const pageSchema = z.coerce.number().int().min(1);
 
 export interface CatalogFilters {
