@@ -127,94 +127,108 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
             );
           }
 
+          // A real button: the row used to be a clickable <div>, out of the
+          // tab order and deaf to Enter. Disabled when the XP is not there,
+          // so the keyboard skips what the mouse could not do either.
           return (
-            <div
-              className="card card--sunken"
-              key={hint.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "36px 1fr auto",
-                alignItems: "center",
-                gap: 14,
-                padding: "14px 16px",
-                cursor: canAfford && !isPending ? "pointer" : "default",
-                transition: "border-color 200ms ease, background 200ms ease",
-              }}
-              onClick={() => {
-                if (!isPending && canAfford) handleReveal(hint.id);
-              }}
-            >
-              {/* Number box */}
-              <span
+            <div key={hint.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <button
+                type="button"
+                className="card card--sunken hint-row"
+                disabled={!canAfford || isPending}
+                aria-busy={isPending}
+                onClick={() => {
+                  handleReveal(hint.id);
+                }}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.1em",
-                  color: "var(--color-text-muted)",
                   display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  height: 36,
-                  border: "1px dashed var(--color-border-default)",
+                  gridTemplateColumns: "36px 1fr auto",
+                  alignItems: "center",
+                  gap: 14,
+                  width: "100%",
+                  padding: "14px 16px",
+                  font: "inherit",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: canAfford && !isPending ? "pointer" : "not-allowed",
+                  transition: "border-color 200ms ease, background 200ms ease",
                 }}
               >
-                {num}
-              </span>
+                {/* Number box */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    letterSpacing: "0.1em",
+                    color: "var(--color-text-muted)",
+                    display: "grid",
+                    placeItems: "center",
+                    width: 36,
+                    height: 36,
+                    border: "1px dashed var(--color-border-default)",
+                  }}
+                >
+                  {num}
+                </span>
 
-              {/* Body */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span
-                  className="mono-label"
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
-                </span>
-                <span
-                  className="mono-label"
-                  style={{
-                    color:
-                      hint.xpCost === 0
-                        ? "var(--cosmetic-accent)"
-                        : canAfford
-                          ? "var(--color-warning)"
-                          : "var(--color-danger)",
-                  }}
-                >
-                  {hint.xpCost === 0
-                    ? "Gratuit"
-                    : canAfford
-                      ? `−${String(hint.xpCost)} XP`
-                      : `XP insuffisants (${String(hint.xpCost)} requis)`}
-                </span>
-                {errorMsg !== undefined && (
+                {/* Body: spans, so the row stays valid inside a button. */}
+                <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <span
+                    className="mono-label"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      color: "var(--color-danger)",
+                      fontWeight: 600,
+                      color: "var(--color-text-primary)",
                     }}
                   >
-                    {errorMsg}
+                    {isPending ? "Révélation..." : `Révéler l'indice ${num}`}
                   </span>
-                )}
-              </div>
+                  <span
+                    className="mono-label"
+                    style={{
+                      color:
+                        hint.xpCost === 0
+                          ? "var(--cosmetic-accent)"
+                          : canAfford
+                            ? "var(--color-warning)"
+                            : "var(--color-danger)",
+                    }}
+                  >
+                    {hint.xpCost === 0
+                      ? "Gratuit"
+                      : canAfford
+                        ? `−${String(hint.xpCost)} XP`
+                        : `XP insuffisants (${String(hint.xpCost)} requis)`}
+                  </span>
+                </span>
 
-              {/* Chevron */}
-              <span
-                style={{
-                  color: "var(--color-text-muted)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 16,
-                  transition: "transform 200ms ease, color 200ms ease",
-                  opacity: isPending ? 0.3 : 1,
-                }}
-              >
-                ›
-              </span>
+                {/* Chevron */}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color: "var(--color-text-muted)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 16,
+                    transition: "transform 200ms ease, color 200ms ease",
+                    opacity: isPending ? 0.3 : 1,
+                  }}
+                >
+                  ›
+                </span>
+              </button>
+              {/* Outside the button, so a screen reader hears it when it lands. */}
+              {errorMsg !== undefined && (
+                <span
+                  role="alert"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--color-danger)",
+                  }}
+                >
+                  {errorMsg}
+                </span>
+              )}
             </div>
           );
         })}

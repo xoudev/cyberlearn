@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
   findTopic:
     vi.fn<(category: string, slug: string, viewerId: string, page: number) => Promise<unknown>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, ids: readonly string[]) => Promise<Set<string>>>(),
   isForumAdmin: vi.fn<(userId: string) => Promise<boolean>>(),
   createForumTopic: vi.fn<(userId: string, input: unknown) => Promise<unknown>>(),
   replyInForum: vi.fn<(userId: string, input: unknown) => Promise<unknown>>(),
@@ -26,6 +27,7 @@ vi.mock("@cyberlearn/db", () => ({
     listTopics: m.listTopics,
     findTopic: m.findTopic,
   },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/forum/forum-service", () => ({
@@ -80,6 +82,7 @@ beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
   m.userFromBearer.mockResolvedValue(ME);
   m.isForumAdmin.mockResolvedValue(false);
+  m.profilesOpenTo.mockResolvedValue(new Set());
 });
 
 describe("every forum route", () => {
@@ -218,6 +221,17 @@ describe("GET /api/mobile/forum/topic", () => {
       [false, false, "https://storage.example/signed"],
       [true, true, "__glyph:skull"],
     ]);
+  });
+
+  it("links an author's name only where the reader may open the profile", async () => {
+    m.findTopic.mockResolvedValue(VIEW);
+    m.resolveAvatarSrcMany.mockResolvedValue([null, null]);
+    m.profilesOpenTo.mockResolvedValue(new Set(["user-2"]));
+    const body = (await (await THREAD(get("/topic?category=reseau&slug=subnetting"))).json()) as {
+      posts: { authorHandle: string | null }[];
+    };
+    expect(m.profilesOpenTo).toHaveBeenCalledWith("user-1", ["user-2", "user-1"]);
+    expect(body.posts.map((p) => p.authorHandle)).toEqual(["sam", null]);
   });
 
   it("tells an administrator they may take posts down", async () => {

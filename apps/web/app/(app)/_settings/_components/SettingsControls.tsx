@@ -56,61 +56,6 @@ export function Switch({
   );
 }
 
-/** Segmented exclusive control for short option sets (settings.css `.seg`). */
-export function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-  disabled = false,
-}: {
-  value: T;
-  options: readonly { id: T; label: string }[];
-  onChange?: (id: T) => void;
-  disabled?: boolean;
-}): React.JSX.Element {
-  return (
-    <div
-      role="radiogroup"
-      style={{
-        display: "inline-flex",
-        border: `1px solid ${S.border}`,
-        background: S.base,
-        opacity: disabled ? 0.5 : 1,
-      }}
-    >
-      {options.map((o, i) => {
-        const active = value === o.id;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange?.(o.id)}
-            style={{
-              fontFamily: MONO,
-              fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: active ? S.base : S.fg2,
-              background: active ? S.turq : "transparent",
-              padding: "9px 16px",
-              border: 0,
-              borderRight: i < options.length - 1 ? `1px solid ${S.border}` : 0,
-              cursor: disabled ? "not-allowed" : "pointer",
-              transition: "all 200ms ease",
-            }}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 /** A label + description row with a right-aligned control (settings.css `.toggle-row`). */
 export function ToggleRow({
   name,

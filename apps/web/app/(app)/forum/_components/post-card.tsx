@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import Link from "next/link";
 // The notes renderer: a dependency-free markdown pass that builds React
 // elements rather than HTML, so a forum post cannot carry markup. Shared with
 // the notes rather than copied, since both render the same kind of text.
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { editPostAction, hidePostAction } from "../_actions/forum-actions";
 import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
+import { ConfirmButton } from "@/components/confirm-button";
 import { Monogram, authorName, formatDate } from "./forum-bits";
 import type { ForumPostView } from "@cyberlearn/db";
 
@@ -16,10 +18,13 @@ import type { ForumPostView } from "@cyberlearn/db";
  * A removed message is shown to its author, struck through and labelled,
  * instead of disappearing: a post that silently vanishes reads as a bug, and
  * the author is the one person entitled to know it was theirs that went.
+ * Removing asks first, in place, as the app does: it cannot be taken back
+ * from here.
  */
 export function PostCard({
   post,
   avatarSrc,
+  profileHref,
   canEdit,
   canRemove,
   path,
@@ -28,6 +33,8 @@ export function PostCard({
   post: ForumPostView;
   /** Resolved on the server: an uploaded avatar's URL is signed and expires. */
   avatarSrc: string | null;
+  /** The author's profile, or null when the reader would not be let in. */
+  profileHref: string | null;
   canEdit: boolean;
   canRemove: boolean;
   path: string;
@@ -69,7 +76,13 @@ export function PostCard({
     <article className="fo-post" data-hidden={hidden}>
       <div className="fo-post-author">
         <Monogram author={post.author} src={avatarSrc} />
-        <span className="fo-post-name">{authorName(post.author)}</span>
+        {profileHref !== null ? (
+          <Link href={profileHref} className="fo-post-name">
+            {authorName(post.author)}
+          </Link>
+        ) : (
+          <span className="fo-post-name">{authorName(post.author)}</span>
+        )}
         {post.author?.role === "TEACHER" && <span className="fo-post-role">Professeur</span>}
         {post.author?.role === "ADMIN" && <span className="fo-post-role">Équipe</span>}
         {post.author && <span className="fo-post-level">niveau {post.author.level}</span>}
@@ -98,14 +111,15 @@ export function PostCard({
                 </button>
               )}
               {canRemove && (
-                <button
-                  type="button"
+                <ConfirmButton
                   className="btn btn--danger btn--ghost btn--sm"
-                  disabled={pending}
-                  onClick={remove}
+                  pending={pending}
+                  question="Retirer ce message ?"
+                  confirmLabel="Retirer"
+                  onConfirm={remove}
                 >
                   Retirer
-                </button>
+                </ConfirmButton>
               )}
             </span>
           )}

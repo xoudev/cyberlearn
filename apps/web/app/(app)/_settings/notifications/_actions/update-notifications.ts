@@ -22,10 +22,11 @@ function optionalBoolean(value: FormDataEntryValue | null): unknown {
 }
 
 /**
- * Updates the wired email-notification toggles (review reminders, the
- * moderation and class-work notices, product news). streakReminder is
- * intentionally not accepted here - its delivery is not built yet, so the UI
- * keeps it disabled.
+ * Updates the notification toggles: review reminders (in the bell), the
+ * moderation and class-work notices (by email). weeklyDigest has no row while
+ * nothing sends product news, so the form hands it back as it was stored.
+ * streakReminder is intentionally not accepted here - its delivery is not
+ * built yet, so the UI does not show it.
  */
 export async function updateNotificationsAction(
   _prev: UpdateNotificationsState,

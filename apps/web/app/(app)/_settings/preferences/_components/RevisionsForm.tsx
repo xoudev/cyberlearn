@@ -9,9 +9,8 @@ import { updateRevisionsAction } from "../_actions/update-revisions";
 /**
  * The switch that turns spaced repetition off, feature and all.
  *
- * Its own card rather than a row under "Apparence & langue": this one changes
- * what the app does, not how it looks, and burying a feature toggle among
- * cosmetic ones is how it stays unfound.
+ * Its own card, titled after what it changes: what the app does, not how it
+ * looks.
  *
  * It saves on flip rather than behind a Save button. The rest of this page has
  * nothing to save yet, and a lone toggle that needs confirming is a toggle

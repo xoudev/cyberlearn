@@ -2,11 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import {
   FRIENDSHIP_ACTION_LABEL,
   friendshipAfter,
   friendshipMove,
+  friendshipMoveAsksFirst,
 } from "@cyberlearn/lib/social/friendship";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { lessonsFinishedLabel } from "@cyberlearn/lib/social/portfolio";
@@ -24,6 +25,7 @@ import {
   profileEyebrow,
   profileRarity,
   shortDay,
+  unfriendAlert,
   type FriendshipView,
   type PublicProfile,
 } from "@/lib/friends";
@@ -109,7 +111,11 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
         {/* Absent on the reader's own page: a button that cannot work is worse
             than no button. */}
         {profile.isSelf ? null : (
-          <FriendButton targetId={profile.id} initial={profile.friendship} />
+          <FriendButton
+            targetId={profile.id}
+            name={profile.displayName || profile.username}
+            initial={profile.friendship}
+          />
         )}
         {profile.friendship === "friends" ? (
           <View style={{ alignSelf: "flex-start" }}>
@@ -322,12 +328,15 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
  * The friend button, as on the site (AddFriendButton): the label and the
  * move come from the same module, and the state afterwards is what the server
  * answered, not a guess: asking somebody who already asked lands on friends.
+ * Ending a friendship asks first, and a refusal is said, whatever the move.
  */
 function FriendButton({
   targetId,
+  name,
   initial,
 }: {
   targetId: string;
+  name: string;
   initial: FriendshipView;
 }): React.JSX.Element {
   const queryClient = useQueryClient();
@@ -350,9 +359,18 @@ function FriendButton({
       // The next visit reads it fresh.
       await queryClient.invalidateQueries({ queryKey: ["friends"] });
       await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-    } else if (move === "request") {
+    } else {
       setError(reply.error ?? "Impossible pour l'instant.");
     }
+  };
+
+  const onPress = (): void => {
+    if (!friendshipMoveAsksFirst(state)) {
+      void press();
+      return;
+    }
+    const alert = unfriendAlert(name, () => void press());
+    Alert.alert(alert.title, alert.message, alert.buttons);
   };
 
   return (
@@ -361,7 +379,7 @@ function FriendButton({
         <GradientButton
           label={FRIENDSHIP_ACTION_LABEL[state]}
           loading={pending}
-          onPress={() => void press()}
+          onPress={onPress}
         />
       ) : (
         <View style={{ alignSelf: "flex-start" }}>
@@ -369,7 +387,7 @@ function FriendButton({
             label={FRIENDSHIP_ACTION_LABEL[state]}
             tone="neutral"
             disabled={pending}
-            onPress={() => void press()}
+            onPress={onPress}
           />
         </View>
       )}

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { POSTS_PER_PAGE, forumRepository } from "@cyberlearn/db";
+import { POSTS_PER_PAGE, forumRepository, userRepository } from "@cyberlearn/db";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { createForumTopic, isForumAdmin } from "@/lib/forum/forum-service";
 import { pageParam, toMobilePost, toMobileTopicSummary } from "@/lib/forum/mobile-view";
@@ -12,7 +12,8 @@ const slugSchema = z.string().min(1).max(80);
  * One thread, a page of its posts at a time. The authors' avatars on that
  * page are signed here, as the site's thread page does: an uploaded one lives
  * in a private bucket and signing needs the service_role key. Only the authors
- * on the page, so this is no way to list the bucket.
+ * on the page, so this is no way to list the bucket. Whose profile the reader
+ * may open is read the same way, so a name is a link where it is on the site.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);
@@ -36,13 +37,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Sujet introuvable." }, { status: 404 });
   }
 
-  const avatars = await resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null));
+  const [avatars, openProfiles] = await Promise.all([
+    resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null)),
+    userRepository.profilesOpenTo(
+      user.id,
+      view.posts.flatMap((p) => (p.author ? [p.author.id] : [])),
+    ),
+  ]);
   return NextResponse.json({
     ok: true,
     // An administrator may take down anybody's post, as on the site.
     viewer: { isAdmin },
     topic: toMobileTopicSummary(view),
-    posts: view.posts.map((post, i) => toMobilePost(post, user.id, avatars[i] ?? null)),
+    posts: view.posts.map((post, i) =>
+      toMobilePost(post, user.id, avatars[i] ?? null, openProfiles),
+    ),
     page,
     pages: Math.max(1, Math.ceil(view.postCount / POSTS_PER_PAGE)),
   });

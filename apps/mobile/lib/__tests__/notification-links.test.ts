@@ -53,12 +53,21 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/my-class")).toEqual({ pathname: "/my-class" });
     expect(inAppRouteFor("/badges")).toEqual({ pathname: "/profile" });
     expect(inAppRouteFor("/settings/moderation")).toEqual({ pathname: "/moderation" });
+    expect(inAppRouteFor("/challenges")).toEqual({ pathname: "/challenges" });
+  });
+
+  it("opens the certificates under the profile, for new notices and old ones", () => {
+    expect(inAppRouteFor("/certificates")).toEqual({ pathname: "/profile" });
+    // Before the notice pointed at the list, it pointed at the PDF itself.
+    expect(
+      inAppRouteFor("/api/certificates/11111111-1111-4111-8111-111111111111/download"),
+    ).toEqual({ pathname: "/profile" });
+    expect(inAppRouteFor("/api/certificates/abc/download/extra")).toBeNull();
   });
 
   it("leads nowhere for what has no screen, or for no link at all", () => {
     expect(inAppRouteFor(null)).toBeNull();
-    expect(inAppRouteFor("/challenges")).toBeNull();
-    expect(inAppRouteFor("/api/certificates/abc/download")).toBeNull();
+    expect(inAppRouteFor("/api/me/export")).toBeNull();
     expect(inAppRouteFor("https://evil.example/lessons/x")).toBeNull();
   });
 });

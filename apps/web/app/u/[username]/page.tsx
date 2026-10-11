@@ -332,9 +332,19 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               {viewerId !== null && viewerId !== user.id && (
                 <div
                   className="pub-friend-action"
-                  style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 10,
+                    marginTop: 16,
+                  }}
                 >
-                  <AddFriendButton targetId={user.id} initialState={friendState} />
+                  <AddFriendButton
+                    targetId={user.id}
+                    name={user.displayName || (user.username ?? "")}
+                    initialState={friendState}
+                  />
                   {friendState === "friends" ? (
                     <Link href={`/duels?ami=${user.id}`} className="btn btn--ghost btn--sm">
                       Défier en duel

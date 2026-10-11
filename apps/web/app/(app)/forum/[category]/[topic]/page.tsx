@@ -2,9 +2,10 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { POSTS_PER_PAGE, forumRepository } from "@cyberlearn/db";
+import { POSTS_PER_PAGE, forumRepository, userRepository } from "@cyberlearn/db";
 import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
+import { forumAuthorHandle } from "@/lib/forum/author-name";
 import { Crumbs, ForumHeader, authorName, formatDate } from "../../_components/forum-bits";
 import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
@@ -45,8 +46,15 @@ export default async function ForumTopicPage({
   // Every author on the page in one round-trip. The post card is a Client
   // Component and signing an uploaded avatar needs the service_role key, so
   // the value has to be resolved before it crosses the boundary - and one
-  // call per post would be one network round-trip per post.
-  const avatars = await resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null));
+  // call per post would be one network round-trip per post. The same goes for
+  // whose profile the reader may open: a name links only where it leads.
+  const [avatars, openProfiles] = await Promise.all([
+    resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null)),
+    userRepository.profilesOpenTo(
+      user.id,
+      view.posts.flatMap((p) => (p.author ? [p.author.id] : [])),
+    ),
+  ]);
 
   const isAdmin = profile?.role === "ADMIN";
   const path = `/forum/${category}/${topic}`;
@@ -84,17 +92,21 @@ export default async function ForumTopicPage({
         }
       />
 
-      {view.posts.map((post, i) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          avatarSrc={avatars[i] ?? null}
-          path={path}
-          hidden={post.isHidden}
-          canEdit={post.author?.id === user.id}
-          canRemove={post.author?.id === user.id || isAdmin}
-        />
-      ))}
+      {view.posts.map((post, i) => {
+        const handle = forumAuthorHandle(post.author, openProfiles);
+        return (
+          <PostCard
+            key={post.id}
+            post={post}
+            avatarSrc={avatars[i] ?? null}
+            profileHref={handle !== null ? `/u/${handle}` : null}
+            path={path}
+            hidden={post.isHidden}
+            canEdit={post.author?.id === user.id}
+            canRemove={post.author?.id === user.id || isAdmin}
+          />
+        );
+      })}
 
       {pages > 1 && (
         <nav className="fo-pager" aria-label="Pagination">

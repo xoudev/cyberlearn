@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
@@ -154,6 +154,7 @@ function PostCard({
   onChanged: () => void;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
   const [pending, setPending] = useState(false);
@@ -162,6 +163,14 @@ function PostCard({
   const [confirmRemove, setConfirmRemove] = useState(false);
   const role = post.author ? roleLabel(post.author.role) : null;
   const name = post.author?.name ?? "Compte supprimé";
+  // The name opens the author's profile where the site links it: only when
+  // the reader would be let in, so a tap never lands on a closed page. A
+  // server older than the field sends nothing, which reads as no link.
+  const handle = typeof post.authorHandle === "string" ? post.authorHandle : null;
+  const openProfile =
+    handle !== null
+      ? () => router.push({ pathname: "/u/[username]", params: { username: handle } })
+      : undefined;
 
   const save = async (): Promise<void> => {
     const problem = postDraftProblem(draft);
@@ -203,7 +212,20 @@ function PostCard({
         <Avatar avatarUrl={post.avatar} displayName={name} size={38} />
         <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-            <Text variant="h3">{name}</Text>
+            {openProfile ? (
+              <Pressable
+                onPress={openProfile}
+                accessibilityRole="link"
+                accessibilityLabel={`Profil de ${name}`}
+                hitSlop={8}
+              >
+                <Text variant="h3" style={{ color: theme.accent }}>
+                  {name}
+                </Text>
+              </Pressable>
+            ) : (
+              <Text variant="h3">{name}</Text>
+            )}
             {role !== null ? (
               <Text variant="micro" style={{ color: theme.accent, fontSize: 9 }}>
                 {role}

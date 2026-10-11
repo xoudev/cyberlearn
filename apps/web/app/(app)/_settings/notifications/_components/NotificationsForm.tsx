@@ -2,7 +2,10 @@
 
 import React, { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { NOTIFICATION_SETTINGS } from "@cyberlearn/lib/settings/notifications";
+import {
+  SHOWN_NOTIFICATION_SETTINGS,
+  type NotificationSettingKey,
+} from "@cyberlearn/lib/settings/notifications";
 import { InfoTip } from "@/components/info-tip";
 import { SaveBar, Switch, ToggleRow } from "../../_components/SettingsControls";
 import { SettingsCard } from "../../_components/SettingsPrimitives";
@@ -12,26 +15,30 @@ interface NotificationsFormProps {
   initialReviewReminders: boolean;
   initialWeeklyDigest: boolean;
   initialEmailNotifications: boolean;
-  /** Display-only: the toggle is disabled until streak emails ship. */
-  streakReminder: boolean;
 }
 
-/** The switches this form saves; the streak alert is shown but not sent yet. */
+/**
+ * The switches this form saves. Product news has no row (nothing sends it
+ * yet) and goes back exactly as it was stored, since the action expects it.
+ */
 interface Editable {
   reviewReminders: boolean;
   weeklyDigest: boolean;
   emailNotifications: boolean;
 }
 
+function isEditable(key: NotificationSettingKey): key is keyof Editable {
+  return key === "reviewReminders" || key === "weeklyDigest" || key === "emailNotifications";
+}
+
 /**
- * The rows, their words and which ones are live come from
+ * The rows, their words and which ones are shown come from
  * @cyberlearn/lib/settings/notifications, which the app reads too.
  */
 export function NotificationsForm({
   initialReviewReminders,
   initialWeeklyDigest,
   initialEmailNotifications,
-  streakReminder,
 }: NotificationsFormProps): React.JSX.Element {
   const [pending, startTransition] = useTransition();
   const initial: Editable = {
@@ -72,26 +79,14 @@ export function NotificationsForm({
   return (
     <form onSubmit={handleSubmit}>
       <SettingsCard title="Rappels & emails">
-        {NOTIFICATION_SETTINGS.map((setting, i) => {
-          const last = i === NOTIFICATION_SETTINGS.length - 1;
+        {SHOWN_NOTIFICATION_SETTINGS.map((setting, i) => {
+          const key = setting.key;
+          if (!isEditable(key)) return null;
+          const last = i === SHOWN_NOTIFICATION_SETTINGS.length - 1;
           const info =
             setting.info !== null ? (
               <InfoTip title={setting.name}>{setting.info}</InfoTip>
             ) : undefined;
-          if (setting.key === "streakReminder") {
-            return (
-              <ToggleRow
-                key={setting.key}
-                name={setting.name}
-                desc={setting.desc}
-                info={info}
-                last={last}
-              >
-                <Switch on={streakReminder} label={setting.name} disabled />
-              </ToggleRow>
-            );
-          }
-          const key = setting.key;
           return (
             <ToggleRow key={key} name={setting.name} desc={setting.desc} info={info} last={last}>
               <Switch

@@ -6,12 +6,15 @@ import {
   acceptFriendRequestAction,
   getFriendsAction,
   removeFriendAction,
+  type FriendActionResult,
   type FriendEntry,
   type FriendLists,
 } from "@/app/(app)/_actions/friend-actions";
 import { AvatarView } from "@/components/avatar-view";
+import { ConfirmButton } from "@/components/confirm-button";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { UNFRIEND_PROMPT, unfriendQuestion } from "@cyberlearn/lib/social/friendship";
 
 /**
  * Friends, in the navbar rather than on a page of their own.
@@ -67,13 +70,24 @@ function Row({
   onClose: () => void;
 }): React.JSX.Element {
   const [pending, start] = useTransition();
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const person = edge.person;
   const name = person.displayName || (person.username ?? "?");
 
-  const act = (run: () => Promise<{ ok: boolean }>, outcome: RowOutcome): void => {
+  // A refusal used to leave the row as it was, with nothing said: the button
+  // looked broken. The server's reason, or a plain one when the call itself
+  // failed, now takes the line under the name.
+  const act = (run: () => Promise<FriendActionResult>, outcome: RowOutcome): void => {
+    setError(null);
     start(async () => {
-      const result = await run();
-      if (result.ok) onDone(person.id, outcome);
+      try {
+        const result = await run();
+        if (result.ok) onDone(person.id, outcome);
+        else setError(result.error ?? "Impossible pour l'instant.");
+      } catch {
+        setError("Impossible pour l'instant. Réessaie dans un moment.");
+      }
     });
   };
 
@@ -91,7 +105,19 @@ function Row({
         ) : (
           <span className="fp-name">{name}</span>
         )}
-        <span className="fp-meta">{levelLabel(person.level)}</span>
+        {error !== null ? (
+          <span className="fp-error" role="alert">
+            {error}
+          </span>
+        ) : asking ? (
+          // The row is too narrow for the question beside its answers, so it
+          // takes the line under the name, where the level was.
+          <span className="fp-error" aria-hidden="true">
+            {UNFRIEND_PROMPT}
+          </span>
+        ) : (
+          <span className="fp-meta">{levelLabel(person.level)}</span>
+        )}
       </span>
 
       <span className="fp-actions">
@@ -107,19 +133,25 @@ function Row({
             Accepter
           </button>
         )}
-        <button
-          type="button"
+        {/* Refusing and unfriending are the same call and the opposite
+            outcome from accepting - which is why the row says which it was
+            rather than the panel guessing from the list it sat in. Only
+            unfriending asks first: nobody is told, and only the other person
+            can undo it. A request costs one tap to send again. */}
+        <ConfirmButton
           className="btn btn--ghost btn--sm"
-          disabled={pending}
-          onClick={() => {
-            // Refusing and unfriending are the same call and the opposite
-            // outcome from accepting - which is why the row says which it was
-            // rather than the panel guessing from the list it sat in.
+          ask={kind === "friends"}
+          pending={pending}
+          question={unfriendQuestion(name)}
+          confirmLabel="Retirer"
+          showQuestion={false}
+          onAskingChange={setAsking}
+          onConfirm={() => {
             act(() => removeFriendAction(person.id), "removed");
           }}
         >
           {kind === "friends" ? "Retirer" : kind === "incoming" ? "Refuser" : "Annuler"}
-        </button>
+        </ConfirmButton>
       </span>
     </li>
   );

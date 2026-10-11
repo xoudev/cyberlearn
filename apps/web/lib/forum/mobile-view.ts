@@ -4,7 +4,7 @@ import type {
   ForumPostView,
   ForumTopicSummary,
 } from "@cyberlearn/db";
-import { forumAuthorName } from "@/lib/forum/author-name";
+import { forumAuthorHandle, forumAuthorName } from "@/lib/forum/author-name";
 
 /**
  * The forum as the app receives it (/api/mobile/forum/*): the repository's
@@ -50,6 +50,11 @@ export interface MobileForumPost {
   author: MobileForumAuthor | null;
   /** Ready to draw: a glyph, a preset path, a signed URL, or null. */
   avatar: string | null;
+  /**
+   * The handle the author's name opens a profile with, or null when the
+   * reader would not be let in: the same names are links as on the site.
+   */
+  authorHandle: string | null;
 }
 
 function toMobileAuthor(author: ForumAuthor | null): MobileForumAuthor | null {
@@ -102,6 +107,8 @@ export function toMobilePost(
   post: ForumPostView,
   viewerId: string,
   avatar: string | null,
+  /** Whose profile the reader may open (userRepository.profilesOpenTo). */
+  openProfiles: ReadonlySet<string>,
 ): MobileForumPost {
   return {
     id: post.id,
@@ -112,6 +119,7 @@ export function toMobilePost(
     mine: post.author?.id === viewerId,
     author: toMobileAuthor(post.author),
     avatar,
+    authorHandle: forumAuthorHandle(post.author, openProfiles),
   };
 }
 

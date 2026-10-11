@@ -24,7 +24,8 @@ export type InAppRoute =
         | "/revisions"
         | "/friends"
         | "/duels"
-        | "/tournaments";
+        | "/tournaments"
+        | "/challenges";
     };
 
 const SLUG = "([a-z0-9-]+)";
@@ -54,6 +55,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // A tournament announced to the reader's class opens the tournament.
   const tournament = /^\/tournaments\/([0-9a-f-]{36})$/u.exec(path)?.[1];
   if (tournament) return { pathname: "/tournaments/[id]", params: { id: tournament } };
+  // Older certificate notices pointed at the site's PDF route, which no
+  // screen here can open: they land on the list, with the new ones.
+  if (/^\/api\/certificates\/[^/]+\/download$/u.test(path)) return { pathname: "/profile" };
   switch (path) {
     case "/lessons":
     case "/notes":
@@ -63,7 +67,12 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/friends":
     case "/duels":
     case "/tournaments":
+    // A completed challenge points at the challenges.
+    case "/challenges":
       return { pathname: path };
+    // The certificates, like the badges, live under the profile tab.
+    case "/certificates":
+      return { pathname: "/profile" };
     // The badges live under the profile tab in the app.
     case "/badges":
       return { pathname: "/profile" };

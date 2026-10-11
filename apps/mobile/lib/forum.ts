@@ -49,6 +49,8 @@ export interface ForumPost {
   author: ForumAuthor | null;
   /** Ready to draw: a glyph, a preset path, a signed URL, or null. */
   avatar: string | null;
+  /** The handle the name opens a profile with; null when the reader is not let in. */
+  authorHandle: string | null;
 }
 
 /** The server's limits (lib/forum/forum-service.ts). */

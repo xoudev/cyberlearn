@@ -153,7 +153,10 @@ export async function issueCertificate(
         type: "CERTIFICATE_ISSUED",
         title: "Certificat émis",
         body: `Ton certificat pour "${path.title}" est disponible.`,
-        actionUrl: `/api/certificates/${certId}/download`,
+        // The page that lists it, with its download and its verification
+        // link. The PDF route itself made a click in the bell download a raw
+        // file, and the app has no screen for an API address.
+        actionUrl: "/certificates",
         metadata: { certId, pathTitle: path.title },
       }),
     ]);
