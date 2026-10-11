@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { LeaderboardVisibility, tournamentRepository, userRepository } from "@cyberlearn/db";
+import {
+  LeaderboardVisibility,
+  friendshipRepository,
+  tournamentRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import {
   firstSolves,
   playerStandings,
@@ -66,6 +71,11 @@ export interface TournamentPlayerRow {
   points: number;
   solved: number;
   isMe: boolean;
+  /**
+   * One of the reader's friends, on a row that shows their name. Never on an
+   * "Anonyme" row: the mark would say who it is.
+   */
+  isFriend: boolean;
 }
 
 export interface TournamentChallengeRow {
@@ -220,15 +230,20 @@ async function accessTo(tournament: TournamentRow, userId: string): Promise<Acce
   return null;
 }
 
-/** The name a scoreboard may show for a player, or null when it may not show them. */
-function playerName(solve: SolveRow, readerId: string): string | null {
+/**
+ * The name a scoreboard may show for a player, and whether it is their own
+ * name rather than "Anonyme"; null when it may not show them.
+ */
+function playerName(solve: SolveRow, readerId: string): { name: string; named: boolean } | null {
   const { user } = solve;
   if (user === null) return null;
   const name = user.displayName || (user.username ?? "Sans nom");
-  if (solve.userId === readerId) return name;
+  if (solve.userId === readerId) return { name, named: true };
   const visibility = user.preferences?.leaderboardVisibility ?? LeaderboardVisibility.ANONYMOUS;
   if (visibility === LeaderboardVisibility.HIDDEN) return null;
-  return visibility === LeaderboardVisibility.PUBLIC ? name : "Anonyme";
+  return visibility === LeaderboardVisibility.PUBLIC
+    ? { name, named: true }
+    : { name: "Anonyme", named: false };
 }
 
 /** The tournaments the reader is part of, the latest first. */
@@ -261,7 +276,13 @@ export async function tournamentViewFor(
   const teamName = new Map(teams.map((t) => [t.id, t.name]));
   const myTeamId =
     access.teamClassId === null ? null : (teamOfClass.get(access.teamClassId) ?? null);
-  const solves = phase === "UPCOMING" ? [] : await tournamentRepository.listSolves(tournament.id);
+  const [solves, friends] =
+    phase === "UPCOMING"
+      ? [[], new Set<string>()]
+      : await Promise.all([
+          tournamentRepository.listSolves(tournament.id),
+          friendshipRepository.friendIds(userId),
+        ]);
 
   const rows: TournamentSolveRow[] = solves.flatMap((solve) => {
     const teamId = teamOfClass.get(solve.classId);
@@ -294,10 +315,14 @@ export async function tournamentViewFor(
   // The players the board may name: the hidden ones are left out before the
   // ranks are counted, so they leave no gap in them.
   const nameOf = new Map<string, string>();
+  // Named under their own name: the only rows a friend mark may go on.
+  const named = new Set<string>();
   for (const solve of solves) {
     if (solve.userId === null || nameOf.has(solve.userId)) continue;
-    const name = playerName(solve, userId);
-    if (name !== null) nameOf.set(solve.userId, name);
+    const shown = playerName(solve, userId);
+    if (shown === null) continue;
+    nameOf.set(solve.userId, shown.name);
+    if (shown.named) named.add(solve.userId);
   }
   const ranked = playerStandings(rows.filter((r) => r.userId !== null && nameOf.has(r.userId)));
   const players: TournamentPlayerRow[] = ranked.slice(0, PLAYER_ROWS).map((p) => ({
@@ -307,6 +332,7 @@ export async function tournamentViewFor(
     points: p.points,
     solved: p.solved,
     isMe: p.userId === userId,
+    isFriend: p.userId !== userId && named.has(p.userId) && friends.has(p.userId),
   }));
 
   const mine = rows.filter((r) => r.userId === userId);

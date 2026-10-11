@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Pressable, View, type ViewStyle } from "react-native";
+import { Pressable, Switch, View, type ViewStyle } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";
+import { FriendMark } from "@/components/friends";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -13,7 +14,15 @@ import {
   type LeaderboardEntry,
   type PodEntry,
 } from "@/lib/api";
-import { boardName, friendsBoardNotice, friendsCountLabel } from "@/lib/friends";
+import { boardName, friendsBoardNotice, friendsCountLabel, showsFriendMark } from "@/lib/friends";
+import {
+  PERIOD_CHIPS,
+  emptyBoardLabel,
+  topListEyebrow,
+  type LeaderboardPeriod,
+} from "@/lib/leaderboard";
+import { updatePreference } from "@/lib/queries";
+import { useSession } from "@/lib/session";
 
 const DIVISION_LABEL: Record<string, string> = {
   BRONZE: "Bronze",
@@ -53,12 +62,39 @@ const BOARDS = [
 type Board = (typeof BOARDS)[number]["id"];
 
 export default function Leaderboard(): React.JSX.Element {
-  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  const userId = session?.user.id;
   const [board, setBoard] = useState<Board>("global");
+  // The site's periods, for both boards: the server reads them from the
+  // ledger, Monday and the 1st in Paris time.
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all");
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: fetchLeaderboard,
+    queryKey: ["leaderboard", period],
+    queryFn: () => fetchLeaderboard(period),
+    // The board stays on screen while the next period loads.
+    placeholderData: keepPreviousData,
   });
+  const [listing, setListing] = useState(false);
+
+  /**
+   * "Visible par mes amis", from the friends tab: the same switch as in the
+   * settings, written the same way (prefs_self_all RLS), where an empty
+   * friends board is the moment the question makes sense.
+   */
+  async function setListed(value: boolean): Promise<void> {
+    if (!userId) return;
+    setListing(true);
+    try {
+      await updatePreference(userId, "friendsLeaderboard", value);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["preferences", userId] }),
+      ]);
+    } finally {
+      setListing(false);
+    }
+  }
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
@@ -78,14 +114,16 @@ export default function Leaderboard(): React.JSX.Element {
       ) : (
         <View style={{ gap: 24 }}>
           {/* My position */}
-          <MyRankCard data={data} />
+          <MyRankCard data={data} period={period} />
 
           <BoardSwitch value={board} onChange={setBoard} />
+          <PeriodSwitch value={period} onChange={setPeriod} since={data.periodSince} />
 
           {board === "friends" ? (
             <FriendsSection
               board={data.friendsBoard}
-              onOpenSettings={() => router.push("/settings")}
+              listing={listing}
+              onSetListed={(value) => void setListed(value)}
             />
           ) : null}
 
@@ -151,12 +189,16 @@ export default function Leaderboard(): React.JSX.Element {
           {/* Global top */}
           {board === "global" ? (
             <View>
-              <SectionLabel eyebrow="Général" title="Top classement" />
-              <Card style={{ padding: 0 }}>
-                {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
-                  <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
-                ))}
-              </Card>
+              <SectionLabel eyebrow={topListEyebrow(period)} title="Top classement" />
+              {data.entries.length === 0 ? (
+                <Text variant="bodySm">{emptyBoardLabel(period)}</Text>
+              ) : (
+                <Card style={{ padding: 0 }}>
+                  {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
+                    <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
+                  ))}
+                </Card>
+              )}
             </View>
           ) : null}
         </View>
@@ -167,10 +209,24 @@ export default function Leaderboard(): React.JSX.Element {
 
 // ── My position card ──────────────────────────────────────────────────────────
 
+/** Who a board leaves out, as the site says it under "Tu n'apparais pas…". */
+const UNRANKED_DETAIL: Record<LeaderboardPeriod, string> = {
+  all: "Il compte les apprenants à partir de leur premier XP.",
+  month: "Il compte les apprenants qui ont gagné de l'XP depuis le début du mois.",
+  week: "Il compte les apprenants qui ont gagné de l'XP depuis lundi.",
+};
+
 function MyRankCard({
   data,
+  period,
 }: {
-  data: { userRank: number; entries: LeaderboardEntry[]; league: { division: string } | null };
+  data: {
+    userRank: number;
+    entries: LeaderboardEntry[];
+    league: { division: string } | null;
+    totalPlayers: number | null;
+  };
+  period: LeaderboardPeriod;
 }): React.JSX.Element {
   const me = data.entries.find((e) => e.isCurrentUser) ?? null;
   // 0 is the server's "not ranked": the same words as the site's leaderboard
@@ -180,8 +236,8 @@ function MyRankCard({
       <Card style={{ gap: 4, paddingVertical: 18 }}>
         <Text variant="h3">Tu n&apos;apparais pas dans ce classement</Text>
         <Text variant="bodySm">
-          Il compte les apprenants à partir de leur premier XP. Un compte de l&apos;équipe ou un
-          profil masqué dans les paramètres n&apos;y figure pas.
+          {UNRANKED_DETAIL[period]} Un compte de l&apos;équipe ou un profil masqué dans les
+          paramètres n&apos;y figure pas.
         </Text>
       </Card>
     );
@@ -203,7 +259,9 @@ function MyRankCard({
           {data.userRank}
           <Text style={{ fontSize: 16, color: colors.accent }}>e</Text>
         </Text>
-        <Text variant="micro">place</Text>
+        <Text variant="micro">
+          {data.totalPlayers !== null ? `sur ${String(data.totalPlayers)}` : "place"}
+        </Text>
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         <Text variant="h3">Ta position</Text>
@@ -254,13 +312,19 @@ function PodiumStep({
           {place}
         </Text>
       </View>
-      <Text
-        variant="micro"
-        numberOfLines={1}
-        style={{ color: entry.isCurrentUser ? colors.accent : colors.textSecondary, maxWidth: 100 }}
-      >
-        {displayName(entry)}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", maxWidth: 110 }}>
+        <Text
+          variant="micro"
+          numberOfLines={1}
+          style={{
+            color: entry.isCurrentUser ? colors.accent : colors.textSecondary,
+            flexShrink: 1,
+          }}
+        >
+          {displayName(entry)}
+        </Text>
+        {showsFriendMark(entry) ? <FriendMark size={11} /> : null}
+      </View>
       <View
         style={{
           alignSelf: "stretch",
@@ -332,17 +396,20 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
         {member.promotion ? "▲" : member.relegation ? "▼" : ""}
         {member.rank}
       </Text>
-      <Text
-        variant="h3"
-        numberOfLines={1}
-        style={{
-          flex: 1,
-          color: member.isCurrentUser ? colors.accent : colors.textPrimary,
-          fontSize: 13.5,
-        }}
-      >
-        {member.isCurrentUser ? `› ${displayName(member)}` : displayName(member)}
-      </Text>
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
+        <Text
+          variant="h3"
+          numberOfLines={1}
+          style={{
+            flexShrink: 1,
+            color: member.isCurrentUser ? colors.accent : colors.textPrimary,
+            fontSize: 13.5,
+          }}
+        >
+          {member.isCurrentUser ? `› ${displayName(member)}` : displayName(member)}
+        </Text>
+        {showsFriendMark(member) ? <FriendMark /> : null}
+      </View>
       <Text variant="micro" style={{ color: colors.textMuted }}>
         NV.{member.level}
       </Text>
@@ -364,10 +431,13 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
 function GlobalRow({
   entry,
   name = displayName(entry),
+  markFriends = true,
 }: {
   entry: LeaderboardEntry;
   /** The friends board names everybody; the public board may not. */
   name?: string;
+  /** Off on the friends board, where every row but the reader's is a friend. */
+  markFriends?: boolean;
 }): React.JSX.Element {
   const top3 = entry.rank <= 3;
   return (
@@ -393,17 +463,20 @@ function GlobalRow({
       >
         {entry.rank}
       </Text>
-      <Text
-        variant="h3"
-        numberOfLines={1}
-        style={{
-          flex: 1,
-          fontSize: 13.5,
-          color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
-        }}
-      >
-        {entry.isCurrentUser ? `› ${name}` : name}
-      </Text>
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
+        <Text
+          variant="h3"
+          numberOfLines={1}
+          style={{
+            flexShrink: 1,
+            fontSize: 13.5,
+            color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
+          }}
+        >
+          {entry.isCurrentUser ? `› ${name}` : name}
+        </Text>
+        {markFriends && showsFriendMark(entry) ? <FriendMark /> : null}
+      </View>
       <Text variant="micro" style={{ color: colors.textMuted }}>
         NV.{entry.level}
       </Text>
@@ -452,6 +525,60 @@ function ProfileLink({
   );
 }
 
+/**
+ * The period, under the board switch: all time, this month, this week. The
+ * line under the chips says since when a period counts, in the server's words.
+ */
+function PeriodSwitch({
+  value,
+  onChange,
+  since,
+}: {
+  value: LeaderboardPeriod;
+  onChange: (period: LeaderboardPeriod) => void;
+  since: string | null;
+}): React.JSX.Element {
+  return (
+    <View style={{ gap: 6, marginTop: -12 }}>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 6 }}>
+        {PERIOD_CHIPS.map((chip) => {
+          const active = chip.id === value;
+          return (
+            <Pressable
+              key={chip.id}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+              onPress={() => onChange(chip.id)}
+              style={{
+                flex: 1,
+                minHeight: 36,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: active ? colors.accent : colors.borderSubtle,
+                backgroundColor: active ? "rgba(10,255,212,0.08)" : "transparent",
+              }}
+            >
+              <Text
+                variant="micro"
+                style={{ color: active ? colors.accent : colors.textMuted }}
+                numberOfLines={1}
+              >
+                {chip.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {since !== null ? (
+        <Text variant="micro" style={{ color: colors.textMuted }}>
+          {since}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 function BoardSwitch({
   value,
   onChange,
@@ -497,13 +624,15 @@ function BoardSwitch({
  */
 function FriendsSection({
   board,
-  onOpenSettings,
+  listing,
+  onSetListed,
 }: {
   board: FriendsBoard;
-  onOpenSettings: () => void;
+  /** The switch is being saved. */
+  listing: boolean;
+  onSetListed: (value: boolean) => void;
 }): React.JSX.Element {
   const others = board.entries.filter((e) => !e.isCurrentUser);
-  const notice = friendsBoardNotice(board.listedForFriends);
   return (
     <View>
       <SectionLabel
@@ -522,7 +651,7 @@ function FriendsSection({
       ) : (
         <Card style={{ padding: 0 }}>
           {board.entries.map((e) => (
-            <GlobalRow key={String(e.rank)} entry={e} name={boardName(e)} />
+            <GlobalRow key={String(e.rank)} entry={e} name={boardName(e)} markFriends={false} />
           ))}
         </Card>
       )}
@@ -533,22 +662,25 @@ function FriendsSection({
           borderColor: colors.borderDefault,
           backgroundColor: "rgba(5,4,26,0.5)",
           padding: 14,
-          gap: 8,
+          gap: 10,
         }}
       >
         <Text variant="mono" style={{ fontSize: 11.5, lineHeight: 18, color: colors.textMuted }}>
-          {notice.text}
+          {friendsBoardNotice(board.listedForFriends)}
         </Text>
-        <Pressable
-          accessibilityRole="link"
-          onPress={onOpenSettings}
-          hitSlop={8}
-          style={{ alignSelf: "flex-start", minHeight: 32, justifyContent: "center" }}
-        >
-          <Text variant="micro" style={{ color: colors.accent }}>
-            {`${notice.link} →`}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Text variant="h3" style={{ flex: 1, fontSize: 13.5 }}>
+            Visible par mes amis
           </Text>
-        </Pressable>
+          <Switch
+            accessibilityLabel="Apparaître dans le classement de mes amis"
+            value={board.listedForFriends}
+            disabled={listing}
+            onValueChange={onSetListed}
+            trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
+            thumbColor={board.listedForFriends ? colors.accent : colors.textMuted}
+          />
+        </View>
       </View>
     </View>
   );

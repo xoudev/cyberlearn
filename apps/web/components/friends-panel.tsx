@@ -12,6 +12,7 @@ import {
 } from "@/app/(app)/_actions/friend-actions";
 import { AvatarView } from "@/components/avatar-view";
 import { ConfirmButton } from "@/components/confirm-button";
+import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 import {
@@ -35,27 +36,6 @@ import {
  */
 
 const EMPTY: FriendLists = { incoming: [], friends: [], outgoing: [] };
-
-function FriendsGlyph(): React.JSX.Element {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="7.5" cy="6.5" r="3" />
-      <path d="M2 16.5c0-3 2.5-4.6 5.5-4.6s5.5 1.6 5.5 4.6" />
-      <circle cx="14.5" cy="7.5" r="2.4" />
-      <path d="M13 12.2c3 0 5 1.5 5 4.3" />
-    </svg>
-  );
-}
 
 type RowKind = "incoming" | "friends" | "outgoing";
 

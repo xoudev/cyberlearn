@@ -186,6 +186,20 @@ export const friendshipRepository = {
     return rows.map((row) => asEdge(row, userId));
   },
 
+  /**
+   * The ids of somebody's friends, and nothing else: what a page needs to put
+   * a mark beside the names it already shows. The lists above read a whole
+   * person per row; a page that only asks "is this one a friend" would pay for
+   * avatars and levels it never draws.
+   */
+  async friendIds(userId: string): Promise<Set<string>> {
+    const rows = await prisma.friendship.findMany({
+      where: { status: "ACCEPTED", OR: [{ userAId: userId }, { userBId: userId }] },
+      select: { userAId: true, userBId: true },
+    });
+    return new Set(rows.map((row) => (row.userAId === userId ? row.userBId : row.userAId)));
+  },
+
   /** Requests waiting on this person's answer, oldest first. */
   async listIncoming(userId: string, limit = 100): Promise<FriendEdge[]> {
     const rows = await prisma.friendship.findMany({

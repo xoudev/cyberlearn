@@ -16,6 +16,7 @@ const m = vi.hoisted(() => ({
   attachContent: vi.fn<(eventId: string, id: string) => Promise<void>>(),
   announceModeration: vi.fn<(input: unknown) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
+  friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -23,6 +24,7 @@ vi.mock("@cyberlearn/db", () => ({
   MODERATION_SURFACE: { challengeWriteup: "challenge.writeup" },
   prisma: { challenge: { findFirst: m.findChallenge } },
   moderationRepository: { screen: m.screen, attachContent: m.attachContent },
+  friendshipRepository: { friendIds: m.friendIds },
   writeupRepository: {
     hasSolved: m.hasSolved,
     countVisible: m.countVisible,
@@ -53,6 +55,7 @@ beforeEach(() => {
   m.countVisible.mockResolvedValue(3);
   m.screen.mockResolvedValue({ flagged: false, throttled: false, eventId: null });
   m.upsert.mockResolvedValue({ id: "w-1" });
+  m.friendIds.mockResolvedValue(new Set());
 });
 
 describe("writeupBoardFor", () => {
@@ -71,7 +74,7 @@ describe("writeupBoardFor", () => {
         id: "w-2",
         content: "Avec awk.",
         updatedAt: at,
-        user: { displayName: "", username: "alex" },
+        user: { id: "u2", displayName: "", username: "alex" },
       },
       { id: "w-3", content: "Avec cut.", updatedAt: at, user: null },
     ]);
@@ -83,13 +86,38 @@ describe("writeupBoardFor", () => {
         {
           id: "w-2",
           content: "Avec awk.",
-          author: { name: "alex", username: "alex" },
+          author: { name: "alex", username: "alex", isFriend: false },
           updatedAt: "2026-10-01T10:00:00.000Z",
         },
         { id: "w-3", content: "Avec cut.", author: null, updatedAt: "2026-10-01T10:00:00.000Z" },
       ],
     });
     expect(m.listOthers).toHaveBeenCalledWith(CHALLENGE, "u1");
+  });
+
+  it("marks a solution whose author is the reader's friend", async () => {
+    const at = new Date("2026-10-01T10:00:00Z");
+    m.findOwn.mockResolvedValue(null);
+    m.friendIds.mockResolvedValue(new Set(["u2"]));
+    m.listOthers.mockResolvedValue([
+      {
+        id: "w-2",
+        content: "Avec awk.",
+        updatedAt: at,
+        user: { id: "u2", displayName: "Alex", username: "alex" },
+      },
+      {
+        id: "w-4",
+        content: "Avec sed.",
+        updatedAt: at,
+        user: { id: "u3", displayName: "Sam", username: "sam" },
+      },
+    ]);
+    const board = await writeupBoardFor("u1", CHALLENGE);
+    expect(board?.solved && board.others.map((w) => w.author?.isFriend)).toEqual([true, false]);
+    expect(m.friendIds).toHaveBeenCalledWith("u1");
+    // The ids never leave the server.
+    expect(JSON.stringify(board)).not.toContain("u2");
   });
 
   it("is null for a challenge that is not there", async () => {

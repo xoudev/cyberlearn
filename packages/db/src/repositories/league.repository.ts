@@ -1,5 +1,6 @@
 import type { LeagueDivision } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { friendshipRepository } from "./friendship.repository.js";
 import { buildPodLadder, type PodLadderEntry, type RawPodMember } from "./league.visibility.js";
 
 export const leagueRepository = {
@@ -74,23 +75,27 @@ export const leagueRepository = {
     pod: number,
     currentUserId: string,
   ): Promise<PodLadderEntry[]> {
-    const rows = await prisma.leagueMembership.findMany({
-      where: { seasonId, division, pod },
-      orderBy: [{ seasonXp: "desc" }, { joinedAt: "asc" }],
-      select: {
-        userId: true,
-        seasonXp: true,
-        user: {
-          select: {
-            displayName: true,
-            username: true,
-            avatarUrl: true,
-            level: true,
-            preferences: { select: { leaderboardVisibility: true, publicProfile: true } },
+    const [rows, friendIds] = await Promise.all([
+      prisma.leagueMembership.findMany({
+        where: { seasonId, division, pod },
+        orderBy: [{ seasonXp: "desc" }, { joinedAt: "asc" }],
+        select: {
+          userId: true,
+          seasonXp: true,
+          user: {
+            select: {
+              displayName: true,
+              username: true,
+              avatarUrl: true,
+              level: true,
+              preferences: { select: { leaderboardVisibility: true, publicProfile: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      // For the friend mark, which buildPodLadder sets on public rows only.
+      friendshipRepository.friendIds(currentUserId),
+    ]);
 
     const members: RawPodMember[] = rows.map((row) => ({
       id: row.userId,
@@ -101,6 +106,6 @@ export const leagueRepository = {
       seasonXp: row.seasonXp,
       preferences: row.user.preferences,
     }));
-    return buildPodLadder(members, currentUserId);
+    return buildPodLadder(members, currentUserId, friendIds);
   },
 };

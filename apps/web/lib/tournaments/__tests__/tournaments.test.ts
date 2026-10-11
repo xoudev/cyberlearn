@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
     vi.fn<(tournamentId: string, challengeId: string, userId: string) => Promise<boolean>>(),
   recordSolve: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
   findRoleById: vi.fn<(userId: string) => Promise<{ role: string } | null>>(),
+  friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
   checkFlagSubmission: vi.fn<(userId: string) => Promise<{ success: boolean }>>(),
   expectedFlag:
     vi.fn<
@@ -34,6 +35,7 @@ vi.mock("@cyberlearn/db", () => ({
     recordSolve: m.recordSolve,
   },
   userRepository: { findRoleById: m.findRoleById },
+  friendshipRepository: { friendIds: m.friendIds },
 }));
 vi.mock("@/lib/challenges/play", () => ({ expectedFlag: m.expectedFlag }));
 vi.mock("@/lib/rate-limit", () => ({ checkFlagSubmission: m.checkFlagSubmission }));
@@ -158,6 +160,7 @@ beforeEach(() => {
   m.accessOf.mockResolvedValue(player(CLASS_A));
   m.findRoleById.mockResolvedValue({ role: "STUDENT" });
   m.listSolves.mockResolvedValue(SOLVES);
+  m.friendIds.mockResolvedValue(new Set());
   m.checkFlagSubmission.mockResolvedValue({ success: true });
   m.expectedFlag.mockReturnValue({ ok: true, flag: "CL{bon-flag}" });
   m.hasSolved.mockResolvedValue(false);
@@ -221,6 +224,23 @@ describe("tournamentViewFor", () => {
       [3, "Joueur 2", "SIO1-A", false],
     ]);
     expect(view?.me).toEqual({ points: 100, solved: 1, rank: 2 });
+  });
+
+  it("marks a friend named on the board, never an anonymous one", async () => {
+    // RIVAL plays anonymously, MATE under their name: both are friends.
+    m.friendIds.mockResolvedValue(new Set([RIVAL, MATE, SHY]));
+    const view = await tournamentViewFor(ME, T, DURING);
+    expect(view?.players.map((p) => [p.name, p.isFriend])).toEqual([
+      ["Anonyme", false],
+      ["Joueur 1", false],
+      ["Joueur 2", true],
+    ]);
+    expect(m.friendIds).toHaveBeenCalledWith(ME);
+  });
+
+  it("reads no friends before the start, when there is nobody to mark", async () => {
+    await tournamentViewFor(ME, T, BEFORE);
+    expect(m.friendIds).not.toHaveBeenCalled();
   });
 
   it("says which challenges the reader and their team found, and who found each first", async () => {

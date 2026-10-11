@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
+import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
   getNotificationsAction,
@@ -41,7 +42,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
 const FRIEND_TYPES = new Set<NotificationType>(["FRIEND_REQUEST", "FRIEND_ACCEPTED"]);
 
 /**
- * The friends mark.
+ * The friends mark (components/friend-mark.tsx).
  *
  * An emoji would have done, and the rest of this list uses them - but the two
  * friend types are the ones that arrive in a burst (a request, then the answer,
@@ -52,24 +53,7 @@ const FRIEND_TYPES = new Set<NotificationType>(["FRIEND_REQUEST", "FRIEND_ACCEPT
  * saying which of the two it is, without a second glyph to learn.
  */
 function FriendGlyph({ accepted }: { accepted: boolean }): React.JSX.Element {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="var(--cosmetic-accent)"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="7.5" cy="6.5" r="3" />
-      <path d="M2 16.5c0-3 2.5-4.6 5.5-4.6s5.5 1.6 5.5 4.6" />
-      <circle cx="14.5" cy="7.5" r="2.4" fill={accepted ? "var(--cosmetic-accent)" : "none"} />
-      <path d="M13 12.2c3 0 5 1.5 5 4.3" />
-    </svg>
-  );
+  return <FriendsGlyph color="var(--cosmetic-accent)" strokeWidth={1.4} filled={accepted} />;
 }
 
 // BADGE_EARNED notifications carry the badge rarity in their metadata JSON.

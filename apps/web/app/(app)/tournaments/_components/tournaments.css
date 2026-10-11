@@ -1265,6 +1265,11 @@ a.trn-ch[data-state="team"]:hover {
 .trn-player__who .trn-you {
   align-self: center;
 }
+/* The friend mark beside the name: the row's gap spaces it already. */
+.trn-player__who .friend-mark {
+  align-self: center;
+  margin-left: 0;
+}
 .trn-player__team {
   flex: 1 1 0;
   min-width: 0;

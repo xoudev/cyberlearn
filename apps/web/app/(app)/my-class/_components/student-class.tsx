@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { FriendMark } from "@/components/friend-mark";
 import { ProgressBar } from "@/components/progress-bar";
 
 /**
@@ -30,6 +31,11 @@ export interface StudentClassMember {
   name: string;
   username: string | null;
   visible: boolean;
+  /**
+   * A friend of the reader's whose name the row shows. Never set on an
+   * "Anonyme" row: the mark would say which classmate it is.
+   */
+  isFriend: boolean;
   level: number;
   xpTotal: number;
   completed: number;
@@ -151,6 +157,7 @@ export function StudentClass({
                 ) : (
                   p.name
                 )}
+                {p.visible && p.isFriend && p.id !== userId && <FriendMark size={12} />}
                 {p.id === userId && <b className="cls-person__you">toi</b>}
               </span>
               <ProgressBar

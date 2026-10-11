@@ -11,6 +11,7 @@ import {
   profileRarity,
   removeLabel,
   shortDay,
+  showsFriendMark,
   unfriendAlert,
 } from "../friends";
 
@@ -54,12 +55,20 @@ describe("the friends board", () => {
     expect(friendsCountLabel(3)).toBe("3 amis");
   });
 
-  it("says whether the reader is on their friends' boards, and offers the switch", () => {
-    expect(friendsBoardNotice(true)).toEqual({
-      text: "Tes amis te voient dans leur propre classement.",
-      link: "Changer",
-    });
-    expect(friendsBoardNotice(false).link).toBe("S'y ajouter");
+  it("says whether the reader is on their friends' boards, in the site's words", () => {
+    expect(friendsBoardNotice(true)).toBe("Tes amis te voient dans leur propre classement.");
+    expect(friendsBoardNotice(false)).toMatch(/^Tu n'apparais pas dans le classement de tes amis/);
+  });
+
+  it("marks a named friend only, never an anonymous row nor the reader", () => {
+    const named = { isCurrentUser: false, displayName: "Alex", username: "alex" };
+    const anonymous = { isCurrentUser: false, displayName: null, username: null };
+    expect(showsFriendMark({ ...named, isFriend: true })).toBe(true);
+    expect(showsFriendMark({ ...named, isFriend: false })).toBe(false);
+    expect(showsFriendMark({ ...anonymous, isFriend: true })).toBe(false);
+    expect(showsFriendMark({ ...named, isFriend: true, isCurrentUser: true })).toBe(false);
+    // A server from before the marks sends no flag.
+    expect(showsFriendMark(named)).toBe(false);
   });
 
   it("names everybody: nobody on it is anonymous", () => {

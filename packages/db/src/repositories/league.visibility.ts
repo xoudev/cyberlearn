@@ -49,6 +49,11 @@ export interface PodLadderEntry {
   seasonXp: number;
   /** Only ever true for a PUBLIC member whose profile page is also public. */
   hasPublicProfile: boolean;
+  /**
+   * The reader's accepted friend, on a PUBLIC member's row only: on an
+   * anonymised one it would say who the row is (leaderboard.visibility.ts).
+   */
+  isFriend: boolean;
   /** In the promotion zone (top N of the pod) - advances a division at rollover. */
   promotion: boolean;
   /** In the relegation zone (bottom N) - drops a division at rollover. */
@@ -70,6 +75,8 @@ export interface PodLadderEntry {
 export function buildPodLadder(
   rawMembers: RawPodMember[],
   currentUserId: string,
+  // The reader's accepted friends, from friendshipRepository.friendIds.
+  friendIds: ReadonlySet<string> = new Set(),
 ): PodLadderEntry[] {
   const memberCount = rawMembers.length;
   const { promote, relegate } = podOutcome(memberCount);
@@ -92,6 +99,7 @@ export function buildPodLadder(
       level: member.level,
       seasonXp: member.seasonXp,
       hasPublicProfile: isPublic && (member.preferences?.publicProfile ?? false),
+      isFriend: isPublic && !isCurrentUser && friendIds.has(member.id),
       promotion: rank <= promote,
       relegation: rank > memberCount - relegate,
     };

@@ -23,7 +23,7 @@ vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 
 // ── Import after mocks (real Zod schema from @cyberlearn/types runs) ──────────
 
-const { updatePrivacyAction } = await import("../update-privacy");
+const { setFriendsLeaderboardAction, updatePrivacyAction } = await import("../update-privacy");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -144,5 +144,46 @@ describe("updatePrivacyAction - happy path", () => {
       }),
     );
     expect(mockRequireRequestUser).toHaveBeenCalledOnce();
+  });
+});
+
+describe("setFriendsLeaderboardAction - the switch on the friends tab", () => {
+  it("writes the friends-board flag and nothing else", async () => {
+    const result = await setFriendsLeaderboardAction(
+      {},
+      makeFormData({ friendsLeaderboard: "true" }),
+    );
+    expect(result).toEqual({ success: true });
+    // No visibility, no public profile: a value read when the page loaded
+    // must not overwrite one changed since.
+    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
+      where: { userId: MOCK_USER.id },
+      create: { userId: MOCK_USER.id, friendsLeaderboard: true },
+      update: { friendsLeaderboard: true },
+    });
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/leaderboard");
+  });
+
+  it("turns it off the same way", async () => {
+    await setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "false" }));
+    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: { friendsLeaderboard: false } }),
+    );
+  });
+
+  it("refuses a missing or malformed flag and writes nothing", async () => {
+    expect((await setFriendsLeaderboardAction({}, makeFormData({}))).error).toBeDefined();
+    expect(
+      (await setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "oui" }))).error,
+    ).toBeDefined();
+    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+  });
+
+  it("is auth-first", async () => {
+    mockRequireRequestUser.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(
+      setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "true" })),
+    ).rejects.toThrow();
+    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
   });
 });

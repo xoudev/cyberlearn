@@ -53,7 +53,7 @@
 | `/revisions` · `/review` | Révisions espacées SM-2 |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
 | `/badges` · `/certificates` | Collection de badges, attestations obtenues |
-| `/leaderboard` | Classement global, et entre amis sur option |
+| `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
 | `/forum` · `/forum/[category]` | Forum par catégories |
 | `/forum/[category]/[topic]` · `/nouveau` | Sujet et ouverture d'un sujet |
@@ -83,7 +83,7 @@
 | `/api/me/export` | Export des données personnelles (RGPD Art. 20) |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
-| `/api/mobile/leaderboard` | Classement et échelle de pod |
+| `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |
 | `/api/mobile/my-class` | Travail donné à l'élève |
 | `/api/mobile/loadout` | Cosmétiques équipés |
 | `/api/mobile/password` | Changement de mot de passe |
@@ -149,7 +149,11 @@
     badge obtenu, custom
   - Raretés : COMMON, RARE, EPIC, LEGENDARY
   - Évaluaton automatique à chaque leçon / challenge complété
-- **Leaderboard** : Top 100 utilisateurs par XP total
+- **Leaderboard** : Top 100 utilisateurs par XP total, ou par XP gagné cette
+  semaine ou ce mois (`XpLedger`, depuis lundi ou le 1er à minuit, heure de
+  Paris : `leaderboardPeriodStart`), avec les mêmes règles de visibilité ; le
+  nombre réel de joueurs classés et la place du lecteur, même au-delà des
+  cent lignes ; un nom public mène au profil, avec son avatar
 
 #### Révisions (Spaced Repetition SM-2)
 - Algorithme SuperMemo-2 : `easeFactor`, `intervalDays`, `repetitions`, `nextReviewAt`
@@ -191,7 +195,10 @@
 - Forum par catégories, sujets épinglés ou fermés, modération intégrée
 - Bloc-notes par leçon, dossiers, et partage entre comptes passé par la modération
 - Amis : demandes, acceptation, droits accordés (notes partagées, profil privé
-  ouvert aux amis), classement entre amis sur activation explicite
+  ouvert aux amis), classement entre amis sur activation explicite, activable
+  depuis son onglet ; la marque « Ami » à côté du nom d'un ami (classement,
+  ligue, forum, questions-réponses, solutions, classe, tournois), seulement
+  sur une ligne qui montre déjà qui elle est
 
 #### Modération et sanctions
 - Filtrage à la publication : un contenu signalé est masqué avant relecture

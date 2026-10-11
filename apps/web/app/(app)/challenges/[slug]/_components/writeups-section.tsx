@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import type { WriteupBoard } from "@/lib/challenges/writeups";
+import { FriendMark } from "@/components/friend-mark";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { WriteupEditor } from "./writeup-editor";
 
@@ -87,6 +88,7 @@ export function WriteupsSection({
                       ) : (
                         writeup.author.name
                       )}
+                      {writeup.author?.isFriend === true && <FriendMark size={12} />}
                     </span>
                     <span>{dayFormat.format(new Date(writeup.updatedAt))}</span>
                   </div>

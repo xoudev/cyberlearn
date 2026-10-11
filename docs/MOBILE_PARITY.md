@@ -90,7 +90,7 @@ RLS — jamais réécrites côté app.
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (fenêtre « Guide » du catalogue sur le site, `app/paths/guide.tsx` dans l'app, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |
 | Recherche globale : parcours d'abord, puis leçons, puis ses propres notes, au fil de la frappe à partir de deux lettres, limitée à ce que l'appelant peut ouvrir (même service `apps/web/lib/search/run.ts`, même classement `buildGroups`) ; une note s'ouvre sur sa leçon | ✅ (barre du site) | ✅ (loupe de l'Accueil, `app/search.tsx`) |
 | Profil, progression, XP, niveau ; le rang affiché sur l'accueil vient du serveur (`findUserRank`, route `rank`), « Hors classement » pour un compte qui n'y figure pas | ✅ | ✅ |
-| Classement + ligue ; le classement compte les apprenants à partir de leur premier XP, non masqués, et le dit à qui n'y figure pas (même filtre `RANKED_USER_FILTER`) | ✅ | ✅ |
+| Classement + ligue ; le classement compte les apprenants à partir de leur premier XP, non masqués, et le dit à qui n'y figure pas (même filtre `RANKED_USER_FILTER`) ; « Depuis toujours », « Ce mois », « Cette semaine », pour le classement public comme pour celui des amis : l'XP gagné depuis le 1er ou depuis lundi à minuit, heure de Paris, lu dans `XpLedger` (mêmes bornes et mêmes mots, `@cyberlearn/lib/gamification/leaderboard-period` ; `leaderboardRepository.findTopUsersSince`, route `leaderboard?period=`, sans paramètre la réponse d'avant) ; le vrai nombre de joueurs classés et sa propre place même au-delà des lignes envoyées ; un nom public mène au profil ; la marque « Ami » à côté d'un ami, sur une ligne nommée seulement, jamais sur une ligne anonyme (décidé sur le serveur, `buildLeaderboard`, `buildPodLadder` ; vérifié de nouveau par la ligne, `showsFriendMark`) ; « Visible par mes amis » activable depuis l'onglet Amis (même réglage que la Confidentialité). Le site montre l'avatar des joueurs publics ; les lignes de l'app restent sans avatar, comme avant | ✅ | ✅ |
 | Amis : demandes reçues et envoyées, liste, accepter, refuser, annuler, retirer, personne prévenu d'un refus (même service, `apps/web/lib/friends/friends-service.ts`) ; retirer un ami, depuis la liste comme depuis son profil, demande confirmation avec les mêmes mots (`unfriendQuestion`, `UNFRIEND_DETAIL`) : la question et ce qu'elle fait sous la question sur le profil du site et dans la boîte de dialogue de l'app, la question courte (`UNFRIEND_PROMPT`) dans la rangée du panneau des amis, trop étroite, qui donne le détail en description lue par les lecteurs d'écran ; un refus du serveur est dit au lieu d'être tu ; le profil de quelqu'un et son bouton d'ami (mêmes libellés et mêmes transitions, `@cyberlearn/lib/social/friendship`), fermé à un inconnu quand il est privé, comme `/u/[username]` ; classement entre amis, sans ligne anonyme | ✅ | ✅ (`app/friends.tsx`, `app/u/[username].tsx`, onglet « Amis » du classement) |
 | Profil public (`/u/[username]`) : badges, compétences (leçons terminées par catégorie, parcours terminés), certificats avec leur page de vérification et, sur sa propre page, le lien « Ajouter à LinkedIn », défis résolus, activité récente ; même vue des deux côtés (`apps/web/lib/profile/mobile-profile.ts`, `@cyberlearn/lib/social/portfolio`) | ✅ (`/u/[username]`) | ✅ (écran `u/[username]`, vérification et LinkedIn ouverts dans le navigateur intégré) |
 | Confidentialité : visibilité dans le classement public (masqué, anonyme, public), visible par mes amis, profil public | ✅ (volet des paramètres, Confidentialité) | ✅ (Réglages) |
@@ -120,10 +120,14 @@ RLS — jamais réécrites côté app.
 
 ### Encore dû
 
-Rien pour l'instant. La dernière comparaison, page par page, du site et des
-écrans de l'app a trouvé cinq surfaces manquantes (quêtes, série, nouveau mot
-de passe, recherche globale, nouveautés), portées depuis. Une surface ajoutée
-au site sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
+La dernière comparaison, page par page, du site et des écrans de l'app a
+trouvé cinq surfaces manquantes (quêtes, série, nouveau mot de passe,
+recherche globale, nouveautés), portées depuis. Une surface ajoutée au site
+sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
+
+| Surface | Ce qui manque à l'app, et ce qui le bloque |
+| --- | --- |
+| **La marque « Ami » hors du classement** : à côté de l'auteur d'un message du forum, d'une question ou d'une réponse sous une leçon, d'une solution de défi, d'un camarade de classe, d'un joueur de tournoi | L'app la montre dans le classement et la ligue (`components/friends.tsx`, `FriendMark`). Ailleurs, la donnée n'arrive pas encore partout : les solutions et les tournois l'envoient déjà (`isFriend`, ajouté sans rien retirer à `challenges/writeups` et `tournaments`), il reste à la dessiner ; le forum, les questions-réponses et la classe se lisent par des routes ou sous RLS qui ne la calculent pas, et une ligne anonyme ne doit jamais la recevoir. Rien ne bloque d'autre que le travail |
 
 ### Volontairement web-only
 

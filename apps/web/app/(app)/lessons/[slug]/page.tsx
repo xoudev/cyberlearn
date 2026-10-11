@@ -8,6 +8,7 @@ import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import {
+  friendshipRepository,
   lessonQuizRepository,
   quizReportRepository,
   lessonRepository,
@@ -78,6 +79,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     quizAnswers,
     reportedQuizIds,
     unlockAll,
+    friendIds,
   ] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
     // "Next" used to mean the next lesson published anywhere in the catalogue,
@@ -101,6 +103,8 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     quizReportRepository.openQuizIdsFor(authUser.id, lesson.id).catch(() => []),
     // Administrators review the catalogue: no path lock stands in their way.
     unlocksEveryLesson(authUser.id),
+    // The reader's friends, marked beside their names in the questions.
+    friendshipRepository.friendIds(authUser.id),
   ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
@@ -428,6 +432,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
             lessonSlug={lesson.slug}
             currentUserId={authUser.id}
             questions={questions}
+            friendIds={friendIds}
           />
         </div>
       )}

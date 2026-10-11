@@ -58,7 +58,7 @@ beforeEach(() => {
   m.hidePostAction.mockResolvedValue({ ok: true });
 });
 
-function renderCard(profileHref: string | null): void {
+function renderCard(profileHref: string | null, isFriend = false): void {
   render(
     <PostCard
       post={POST}
@@ -67,6 +67,7 @@ function renderCard(profileHref: string | null): void {
       canEdit={false}
       canRemove
       path={PATH}
+      isFriend={isFriend}
     />,
   );
 }
@@ -124,5 +125,17 @@ describe("PostCard", () => {
     renderCard(null);
     expect(screen.queryByRole("link", { name: "Sam" })).toBeNull();
     expect(screen.getByText("Sam")).toBeTruthy();
+  });
+
+  it("marks an author who is the reader's friend, beside the name and outside the link", () => {
+    renderCard("/u/sam", true);
+    expect(screen.getByRole("img", { name: "Ami" })).toBeTruthy();
+    // The link still says only the name.
+    expect(screen.getByRole("link", { name: "Sam" })).toBeTruthy();
+  });
+
+  it("puts no mark beside anybody else", () => {
+    renderCard("/u/sam");
+    expect(screen.queryByRole("img", { name: "Ami" })).toBeNull();
   });
 });

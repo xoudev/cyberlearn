@@ -2,7 +2,12 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { POSTS_PER_PAGE, forumRepository, userRepository } from "@cyberlearn/db";
+import {
+  POSTS_PER_PAGE,
+  forumRepository,
+  friendshipRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { forumAuthorHandle } from "@/lib/forum/author-name";
@@ -48,12 +53,14 @@ export default async function ForumTopicPage({
   // the value has to be resolved before it crosses the boundary - and one
   // call per post would be one network round-trip per post. The same goes for
   // whose profile the reader may open: a name links only where it leads.
-  const [avatars, openProfiles] = await Promise.all([
+  const [avatars, openProfiles, friends] = await Promise.all([
     resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null)),
     userRepository.profilesOpenTo(
       user.id,
       view.posts.flatMap((p) => (p.author ? [p.author.id] : [])),
     ),
+    // The reader's friends, for the mark beside their names.
+    friendshipRepository.friendIds(user.id),
   ]);
 
   const isAdmin = profile?.role === "ADMIN";
@@ -102,6 +109,7 @@ export default async function ForumTopicPage({
             profileHref={handle !== null ? `/u/${handle}` : null}
             path={path}
             hidden={post.isHidden}
+            isFriend={post.author !== null && friends.has(post.author.id)}
             canEdit={post.author?.id === user.id}
             canRemove={post.author?.id === user.id || isAdmin}
           />

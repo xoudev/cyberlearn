@@ -21,6 +21,7 @@ import {
 } from "@cyberlearn/lib/challenges/tournament";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { FriendMark } from "@/components/friend-mark";
 import { StickyRail } from "@/components/sticky-rail";
 import type {
   TournamentChallengeRow,
@@ -541,6 +542,8 @@ function Players({
               <Place rank={player.rank} scored className="trn-player__place" />
               <span className="trn-player__who">
                 <span className="trn-player__name">{player.name}</span>
+                {/* Only on a named row: the service never flags an "Anonyme" one. */}
+                {player.isFriend && !player.isMe ? <FriendMark size={12} /> : null}
                 {player.isMe ? <span className="trn-you">Toi</span> : null}
                 <span className="trn-player__team">{player.team}</span>
               </span>

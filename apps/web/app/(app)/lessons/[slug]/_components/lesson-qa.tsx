@@ -1,6 +1,7 @@
 import React from "react";
 import { PostQuestionForm, PostAnswerForm, AcceptAnswerButton, UpvoteButton } from "./qa-forms";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { FriendMark } from "@/components/friend-mark";
 
 interface Answer {
   id: string;
@@ -27,13 +28,18 @@ interface LessonQAProps {
   lessonSlug: string;
   currentUserId: string;
   questions: Question[];
+  /** The reader's friends (friendshipRepository.friendIds), marked beside their names. */
+  friendIds?: ReadonlySet<string>;
 }
+
+const NO_FRIENDS: ReadonlySet<string> = new Set();
 
 export function LessonQA({
   lessonId,
   lessonSlug,
   currentUserId,
   questions,
+  friendIds = NO_FRIENDS,
 }: LessonQAProps): React.JSX.Element {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -89,6 +95,7 @@ export function LessonQA({
               question={q}
               lessonSlug={lessonSlug}
               currentUserId={currentUserId}
+              friendIds={friendIds}
             />
           ))}
         </div>
@@ -140,10 +147,12 @@ function QuestionCard({
   question,
   lessonSlug,
   currentUserId,
+  friendIds,
 }: {
   question: Question;
   lessonSlug: string;
   currentUserId: string;
+  friendIds: ReadonlySet<string>;
 }) {
   const isAuthor = question.user?.id === currentUserId;
   const dateStr = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
@@ -229,7 +238,7 @@ function QuestionCard({
             color: "var(--color-text-muted)",
           }}
         >
-          <UserPill user={question.user} />
+          <UserPill user={question.user} friendIds={friendIds} />
           <span style={{ color: "var(--color-text-faint)" }}>·</span>
           <span>{dateStr}</span>
           <span style={{ color: "var(--color-text-faint)" }}>·</span>
@@ -249,6 +258,7 @@ function QuestionCard({
               lessonSlug={lessonSlug}
               isQuestionAuthor={isAuthor}
               isLast={i === question.answers.length - 1}
+              friendIds={friendIds}
             />
           ))}
         </div>
@@ -272,11 +282,13 @@ function AnswerRow({
   lessonSlug,
   isQuestionAuthor,
   isLast,
+  friendIds,
 }: {
   answer: Answer;
   lessonSlug: string;
   isQuestionAuthor: boolean;
   isLast: boolean;
+  friendIds: ReadonlySet<string>;
 }) {
   const dateStr = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
     answer.createdAt,
@@ -322,7 +334,7 @@ function AnswerRow({
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <UserPill user={answer.user} />
+        <UserPill user={answer.user} friendIds={friendIds} />
         <span
           style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-faint)" }}
         >
@@ -348,12 +360,21 @@ function AnswerRow({
   );
 }
 
-function UserPill({
+export function UserPill({
   user,
+  friendIds,
 }: {
-  user: { displayName: string | null; username: string | null; level: number } | null;
-}) {
+  user: {
+    id?: string;
+    displayName: string | null;
+    username: string | null;
+    level: number;
+  } | null;
+  friendIds: ReadonlySet<string>;
+}): React.JSX.Element {
   const name = user?.displayName ?? user?.username ?? "Utilisateur supprimé";
+  // A question or an answer is always signed: the mark only needs the id.
+  const isFriend = user?.id !== undefined && friendIds.has(user.id);
   return (
     <span
       style={{
@@ -392,6 +413,7 @@ function UserPill({
       >
         {name}
       </span>
+      {isFriend && <FriendMark size={12} />}
       {user && (
         <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>
           {levelLabel(user.level)}

@@ -16,6 +16,7 @@ export * from "./gamification/tier.js";
 export * from "./gamification/league.js";
 export * from "./gamification/wrapped.js";
 export * from "./gamification/wrapped-window.js";
+export * from "./gamification/leaderboard-period.js";
 export * from "./moderation/ban.js";
 export * from "./moderation/notice.js";
 export * from "./moderation/moderate.js";

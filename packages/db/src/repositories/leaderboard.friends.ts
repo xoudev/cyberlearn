@@ -67,6 +67,9 @@ export function buildFriendsBoard(
       // A friend can open a friend's profile whatever its setting, so the name
       // is a link whenever there is a handle to point at.
       hasPublicProfile: user.username !== null,
+      // Everybody but the reader is an accepted friend: the query reads
+      // nobody else.
+      isFriend: !isCurrentUser,
     });
   }
   return entries;

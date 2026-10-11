@@ -14,6 +14,11 @@
 // A user with no preferences row (e.g. signed up but never finished onboarding)
 // is treated as ANONYMOUS - privacy-first fallback.
 //
+// The "friend" mark follows the identity and never leads it: it is set only on
+// a row that already shows who it is. On an anonymised row it would name the
+// person to the one reader who knows which of their friends is that close in
+// XP, so the rule is applied here rather than left to each screen.
+//
 // The output rows carry NO user id: a stable per-user identifier on an
 // anonymized row is a re-identification primitive (and a cross-session tracking
 // handle), so self-detection is exposed only via the isCurrentUser flag and the
@@ -59,6 +64,11 @@ export interface LeaderboardEntry {
    * unless they are genuinely PUBLIC, so we never expose a private profile link.
    */
   hasPublicProfile: boolean;
+  /**
+   * The reader's accepted friend, on a row whose identity is PUBLIC. Never set
+   * on an anonymised row, nor on the reader's own.
+   */
+  isFriend: boolean;
 }
 
 /** The signed-in user's own standing. Always their real data - it is their own. */
@@ -94,11 +104,13 @@ export function resolveVisibility(
  *
  * Identity is revealed for PUBLIC users and for the current user's own row
  * (their own data); every OTHER non-PUBLIC row is stripped of name, username,
- * and avatar before leaving the server.
+ * and avatar before leaving the server, and carries no friend mark.
  */
 export function buildLeaderboard(
   rawUsers: RawLeaderboardUser[],
   currentUserId: string,
+  // The reader's accepted friends, from friendshipRepository.friendIds.
+  friendIds: ReadonlySet<string> = new Set(),
 ): LeaderboardEntry[] {
   const entries: LeaderboardEntry[] = [];
   for (const user of rawUsers) {
@@ -121,6 +133,7 @@ export function buildLeaderboard(
       // A profile link is only offered for genuinely PUBLIC + public-profile
       // users - never for the current user's own anonymized row.
       hasPublicProfile: isPublic && (user.preferences?.publicProfile ?? false),
+      isFriend: isPublic && !isCurrentUser && friendIds.has(user.id),
     });
   }
   return entries;
