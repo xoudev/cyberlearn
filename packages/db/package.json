@@ -32,6 +32,7 @@
     "db:seed-quizzes": "tsx --env-file-if-exists=.env prisma/seed-quizzes.ts",
     "db:seed-cosmetics": "tsx --env-file-if-exists=.env prisma/seed-cosmetics.ts",
     "db:seed-season": "tsx --env-file-if-exists=.env prisma/seed-season.ts",
+    "db:seed-local-accounts": "tsx --env-file-if-exists=.env prisma/seed-local-accounts.ts",
     "db:backfill-badge-xp": "tsx --env-file-if-exists=.env prisma/backfill-badge-xp.ts",
     "db:backfill-daily-streaks": "tsx --env-file-if-exists=.env prisma/backfill-daily-streaks.ts",
     "db:studio": "prisma studio",
