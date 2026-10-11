@@ -14,6 +14,7 @@ import {
 import { previewDocument } from "@/lib/php/preview";
 import { type PhpOutcome, PhpSandbox } from "@/lib/php/sandbox";
 import type { WorkerLike } from "@/lib/sql/sandbox";
+import { labStack } from "./lab-stack";
 
 /**
  * <PhpLab>: a small web page in real PHP that the learner attacks with a
@@ -189,10 +190,10 @@ export function PhpLab(
         </button>
       </header>
 
-      <div style={{ padding: "12px 16px", display: "grid", gap: 14 }}>
+      <div style={{ padding: "12px 16px", ...labStack(14) }}>
         <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.task}</p>
 
-        <div style={{ display: "grid", gap: 6 }}>
+        <div style={labStack(6)}>
           {pages.length > 1 ? (
             <div
               role="group"
@@ -243,7 +244,7 @@ export function PhpLab(
           )}
         </div>
 
-        <div style={{ display: "grid", gap: 8 }}>
+        <div style={labStack(8)}>
           {lab.requests !== undefined && lab.requests.length > 0 ? (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
@@ -278,7 +279,7 @@ export function PhpLab(
               event.preventDefault();
               void send(typed());
             }}
-            style={{ display: "grid", gap: 8 }}
+            style={labStack(8)}
           >
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <select
@@ -336,7 +337,7 @@ export function PhpLab(
           </form>
         </div>
 
-        <div aria-live="polite" style={{ display: "grid", gap: 8 }}>
+        <div aria-live="polite" style={labStack(8)}>
           {outcome?.ok === false ? (
             <p role="alert" style={{ margin: 0, color: RED, fontSize: 14 }}>
               {outcome.error}
@@ -357,11 +358,20 @@ export function PhpLab(
                     → {headerValue(response, "location")}
                   </span>
                 ) : null}
-                <details style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                <details
+                  style={{ fontSize: 12, color: "var(--color-text-secondary)", minWidth: 0 }}
+                >
                   <summary style={{ cursor: "pointer" }}>
                     En-têtes ({String(response.headers.length)})
                   </summary>
-                  <pre style={{ margin: "6px 0 0", fontFamily: MONO, whiteSpace: "pre-wrap" }}>
+                  <pre
+                    style={{
+                      margin: "6px 0 0",
+                      fontFamily: MONO,
+                      whiteSpace: "pre-wrap",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
                     {response.headers.join("\n") || "(aucun)"}
                   </pre>
                 </details>
@@ -439,11 +449,10 @@ export function PhpLab(
             style={{
               borderTop: "1px solid var(--color-border-subtle)",
               paddingTop: 10,
-              display: "grid",
-              gap: 8,
+              ...labStack(8),
             }}
           >
-            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 4 }}>
+            <ul style={{ margin: 0, padding: 0, listStyle: "none", ...labStack(4) }}>
               {checks.map((check) => {
                 const verdict = verdictOf(check.label, check.kind);
                 return (
@@ -503,7 +512,7 @@ export function PhpLab(
             >
               INDICES ({String(lab.hints.length)})
             </summary>
-            <ol style={{ margin: "10px 0 0", paddingLeft: 22, display: "grid", gap: 6 }}>
+            <ol style={{ margin: "10px 0 0", paddingLeft: 22, ...labStack(6) }}>
               {lab.hints.map((hint) => (
                 <li
                   key={hint}

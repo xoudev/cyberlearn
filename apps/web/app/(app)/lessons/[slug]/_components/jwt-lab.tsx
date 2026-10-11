@@ -32,6 +32,7 @@ import {
   WORDLIST,
 } from "@cyberlearn/lib/crypto/jwt-lab";
 import { type JwtLab as JwtLabProps, type JwtLevel, parseJwtLab } from "@cyberlearn/types";
+import { labStack } from "./lab-stack";
 
 /**
  * <JwtLab>: a JWT taken apart, then forged to fool three services that are set
@@ -163,7 +164,7 @@ function Lab({ lab }: { lab: JwtLabProps }): React.ReactElement {
         </span>
       </header>
 
-      <div style={{ padding: "12px 16px 16px", display: "grid", gap: 12 }}>
+      <div style={{ padding: "12px 16px 16px", ...labStack(12) }}>
         {lab.task ? <p style={paragraph}>{lab.task}</p> : null}
         <p style={{ ...paragraph, fontSize: 13, color: "var(--color-text-muted)" }}>
           Bac à sable : des clés, des secrets et des jetons d&apos;exemple de la plateforme, une
@@ -194,7 +195,7 @@ function Lab({ lab }: { lab: JwtLabProps }): React.ReactElement {
           </div>
         ) : null}
 
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={labStack(10)}>
           <h3 style={{ margin: 0, fontSize: 16, color: "var(--color-text-primary)" }}>
             {text.title}
           </h3>
@@ -250,8 +251,7 @@ function Lab({ lab }: { lab: JwtLabProps }): React.ReactElement {
             style={{
               borderTop: "1px solid var(--color-border-subtle)",
               paddingTop: 10,
-              display: "grid",
-              gap: 8,
+              ...labStack(8),
             }}
           >
             <span style={{ ...label, color: ACCENT }}>POURQUOI</span>
@@ -315,32 +315,37 @@ function CodeBlock({
       tabIndex={0}
       style={{ ...field, margin: 0, overflowX: "auto", lineHeight: 1.5 }}
     >
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          style={{
-            whiteSpace: "pre",
-            background:
-              line.mark === "flaw"
-                ? `color-mix(in srgb, ${AMBER} 20%, transparent)`
-                : line.mark === "fix"
-                  ? `color-mix(in srgb, ${ACCENT} 18%, transparent)`
-                  : "transparent",
-          }}
-        >
-          <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
-            {line.mark === "flaw" ? "! " : line.mark === "fix" ? "+ " : "  "}
-          </span>
-          {line.text === "" ? " " : line.text}
-        </div>
-      ))}
+      {/* As wide as the longest line, and at least as the box: a line is only
+          as wide as the box it sits in, so without it a marked line's band
+          would stop at the visible edge and leave the scrolled-to rest bare. */}
+      <div style={{ width: "max-content", minWidth: "100%" }}>
+        {lines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              whiteSpace: "pre",
+              background:
+                line.mark === "flaw"
+                  ? `color-mix(in srgb, ${AMBER} 20%, transparent)`
+                  : line.mark === "fix"
+                    ? `color-mix(in srgb, ${ACCENT} 18%, transparent)`
+                    : "transparent",
+            }}
+          >
+            <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
+              {line.mark === "flaw" ? "! " : line.mark === "fix" ? "+ " : "  "}
+            </span>
+            {line.text === "" ? " " : line.text}
+          </div>
+        ))}
+      </div>
     </pre>
   );
 }
 
 function VerdictView({ verdict }: { verdict: Verdict }): React.ReactElement {
   return (
-    <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
+    <div aria-live="polite" style={labStack(6)}>
       <p
         style={{
           margin: 0,
@@ -351,7 +356,7 @@ function VerdictView({ verdict }: { verdict: Verdict }): React.ReactElement {
       >
         {verdict.accepted ? "✓ Jeton accepté" : "✗ Jeton refusé"}
       </p>
-      <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
+      <ul style={{ margin: 0, paddingLeft: 18, ...labStack(4) }}>
         {verdict.steps.map((step) => (
           <li
             key={step.text}
@@ -393,14 +398,14 @@ function DecodeStep({
   const names = ["l'en-tête", "la charge utile", "la signature"] as const;
 
   return (
-    <div style={{ display: "grid", gap: 10 }}>
+    <div style={labStack(10)}>
       <span style={label}>LE JETON D&apos;ALICE</span>
       <TokenText token={token} name="Jeton d'alice" />
       <Legend />
       {view !== null ? (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div style={labStack(8)}>
           {view.map((part, i) => (
-            <div key={part.label} style={{ display: "grid", gap: 6 }}>
+            <div key={part.label} style={labStack(6)}>
               <button
                 type="button"
                 aria-pressed={shown[i] === true}
@@ -414,7 +419,7 @@ function DecodeStep({
               {shown[i] === true ? (
                 <pre
                   aria-label={`${part.label} décodé`}
-                  style={{ ...field, margin: 0, color: PART_COLORS[i] }}
+                  style={{ ...field, margin: 0, overflowX: "auto", color: PART_COLORS[i] }}
                 >
                   {part.decoded}
                 </pre>
@@ -508,7 +513,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
   const payloadProblem = jsonProblem(draft.payload);
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div style={labStack(12)}>
       {services.length > 1 ? (
         <div
           role="group"
@@ -532,7 +537,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gap: 6 }}>
+      <div style={labStack(6)}>
         <span style={label}>
           LE JETON QUE {name.toUpperCase()} T&apos;A REMIS (alice, rôle user)
         </span>
@@ -540,7 +545,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
         <Legend />
       </div>
 
-      <details open>
+      <details open style={{ minWidth: 0 }}>
         <summary style={{ ...label, cursor: "pointer" }}>Le code du {inSentence(name)}</summary>
         <div style={{ marginTop: 6 }}>
           <CodeBlock
@@ -559,9 +564,9 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
       ) : null}
 
       {asymmetric ? (
-        <details open>
+        <details open style={{ minWidth: 0 }}>
           <summary style={{ ...label, cursor: "pointer" }}>{publicKeyFacts(service).title}</summary>
-          <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+          <div style={{ ...labStack(6), marginTop: 6 }}>
             <ul
               style={{
                 margin: 0,
@@ -585,9 +590,9 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
         </details>
       ) : null}
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div style={labStack(8)}>
         <span style={label}>TON JETON</span>
-        <label style={{ display: "grid", gap: 4 }}>
+        <label style={labStack(4)}>
           <span style={label}>En-tête (JSON)</span>
           <textarea
             value={draft.header}
@@ -603,7 +608,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
         {headerProblem !== null ? (
           <p style={{ margin: 0, color: RED, fontSize: 13 }}>{headerProblem}</p>
         ) : null}
-        <label style={{ display: "grid", gap: 4 }}>
+        <label style={labStack(4)}>
           <span style={label}>Charge utile (JSON)</span>
           <textarea
             value={draft.payload}
@@ -620,7 +625,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
           <p style={{ margin: 0, color: RED, fontSize: 13 }}>{payloadProblem}</p>
         ) : null}
 
-        <fieldset style={{ border: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+        <fieldset style={{ border: "none", margin: 0, padding: 0, ...labStack(6) }}>
           <legend style={label}>Signature</legend>
           {SIGNATURE_CHOICES.map((choice) => (
             <label
@@ -676,7 +681,7 @@ function ForgeStep(props: ForgeProps): React.ReactElement {
       </div>
 
       {attempt !== undefined ? (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div style={labStack(8)}>
           <VerdictView verdict={attempt.verdict} />
           {isForgery(attempt.verdict) ? (
             <p style={{ margin: 0, fontFamily: MONO, fontSize: 12, color: ACCENT }}>
@@ -699,8 +704,8 @@ function Dictionary({ onFound }: { onFound: (word: string) => void }): React.Rea
   const [word, setWord] = useState("");
   const tested = word === "" ? null : guessSecret(token, [word]).found;
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <details>
+    <div style={labStack(8)}>
+      <details style={{ minWidth: 0 }}>
         <summary style={{ ...label, cursor: "pointer" }}>
           Le dictionnaire ({String(WORDLIST.length)} mots)
         </summary>
@@ -730,7 +735,7 @@ function Dictionary({ onFound }: { onFound: (word: string) => void }): React.Rea
           style={{ ...field, flex: "1 1 200px", width: "auto" }}
         />
       </div>
-      <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
+      <div aria-live="polite" style={labStack(6)}>
         {run !== null ? (
           run.found !== null ? (
             <>
@@ -801,8 +806,8 @@ function FixedStep({
   };
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gap: 8 }}>
+    <div style={labStack(12)}>
+      <div style={labStack(8)}>
         {replays.map((entry) => {
           const result = played[entry.key];
           const current = result?.token === entry.token ? result : undefined;
@@ -812,8 +817,7 @@ function FixedStep({
               style={{
                 border: "1px solid var(--color-border-subtle)",
                 padding: "10px 12px",
-                display: "grid",
-                gap: 8,
+                ...labStack(8),
               }}
             >
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
@@ -834,14 +838,14 @@ function FixedStep({
                   {entry.legit ? "Envoyer" : "Rejouer"}
                 </button>
               </div>
-              <details>
+              <details style={{ minWidth: 0 }}>
                 <summary style={{ ...label, cursor: "pointer" }}>Le jeton envoyé</summary>
                 <div style={{ marginTop: 6 }}>
                   <TokenText token={entry.token} name={`Jeton : ${entry.label}`} />
                 </div>
               </details>
               {current !== undefined ? (
-                <div style={{ display: "grid", gap: 6 }}>
+                <div style={labStack(6)}>
                   <VerdictView verdict={current.verdict} />
                   <p
                     style={{
@@ -867,7 +871,7 @@ function FixedStep({
       </div>
 
       {services.map((service) => (
-        <details key={service}>
+        <details key={service} style={{ minWidth: 0 }}>
           <summary style={{ ...label, cursor: "pointer" }}>
             Le code corrigé du {inSentence(SERVICE_NAMES[service])}
           </summary>

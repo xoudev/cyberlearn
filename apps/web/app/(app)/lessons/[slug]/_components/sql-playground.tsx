@@ -10,6 +10,7 @@ import {
   type SqlOutcome,
   type WorkerLike,
 } from "@/lib/sql/sandbox";
+import { labStack } from "./lab-stack";
 import { SqlResultTable, tablesOf } from "./sql-result-table";
 
 /**
@@ -108,7 +109,7 @@ export function SqlPlayground(
         ) : null}
       </header>
 
-      <div style={{ padding: "12px 16px", display: "grid", gap: 10 }}>
+      <div style={{ padding: "12px 16px", ...labStack(10) }}>
         {exercise.task ? (
           <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
             {exercise.task}
@@ -174,7 +175,7 @@ export function SqlPlayground(
           <span style={{ fontSize: 12, color: "#5A5680" }}>Ctrl + Entrée pour exécuter</span>
         </div>
 
-        <div aria-live="polite" style={{ display: "grid", gap: 8 }}>
+        <div aria-live="polite" style={labStack(8)}>
           {outcome?.ok === false ? (
             <p
               style={{

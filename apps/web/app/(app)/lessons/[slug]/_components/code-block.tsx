@@ -128,7 +128,9 @@ export function CodeBlock({
         </button>
       </div>
 
-      {/* Code block */}
+      {/* Code block: its whole look is here. The lesson's stylesheet once
+          forced the padding and the background on every <pre> with
+          !important, which hid the terminal-theme cosmetic below. */}
       <pre
         ref={ref}
         {...rest}
@@ -138,7 +140,13 @@ export function CodeBlock({
           background: "var(--cosmetic-terminal-bg)",
           border: "1px solid var(--color-border-default)",
           borderLeft: "3px solid var(--cosmetic-accent)",
+          borderRadius: 0,
           padding: "16px 20px",
+          overflowX: "auto",
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 13,
+          lineHeight: 1.7,
+          color: "var(--color-text-secondary)",
         }}
       >
         {children}
