@@ -99,8 +99,21 @@ export function SignInActions({
   );
 }
 
+/**
+ * Shown when a gesture went through but its audit row did not: the gesture is
+ * not undone and must not be repeated, but the log is missing a line someone
+ * will look for.
+ */
+export const AUDIT_FAILED =
+  "Ce geste n'a pas pu être inscrit au journal d'audit. Il n'est pas annulé pour autant : ne le refais pas, et garde-en une trace ailleurs.";
+
 function Outcome({ state }: { state: AccessActionState }): React.ReactElement | null {
   if (state.error !== undefined) return <p className="a-form-error">{state.error}</p>;
-  if (state.notice !== undefined) return <p className="a-form-notice">{state.notice}</p>;
-  return null;
+  if (state.notice === undefined) return null;
+  return (
+    <>
+      <p className="a-form-notice">{state.notice}</p>
+      {state.auditFailed === true && <p className="a-form-error">{AUDIT_FAILED}</p>}
+    </>
+  );
 }

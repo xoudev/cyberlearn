@@ -75,34 +75,29 @@ describe("updateUserRoleAction", () => {
     });
   });
 
-  it("turns a database failure into a sentence, and logs nothing to the audit", async () => {
+  it("turns a database failure into a sentence rather than a thrown error", async () => {
+    // The audit row is written in the repository's transaction, so a failed
+    // audit write lands here too, with the role rolled back.
     m.changeRole.mockRejectedValue(new Error("connection reset"));
     const result = await updateUserRoleAction(TARGET, "ADMIN");
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/a échoué/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("writes the change to the audit log with the role it replaced", async () => {
+  it("hands the acting administrator to the repository, which writes the audit row", async () => {
     m.changeRole.mockResolvedValue({ ok: true, previousRole: "STUDENT" });
     expect(await updateUserRoleAction(TARGET, "ADMIN")).toEqual({ ok: true });
-    expect(m.changeRole).toHaveBeenCalledWith(TARGET, "ADMIN");
-    expect(m.auditCreate).toHaveBeenCalledWith({
-      data: {
-        actorId: ADMIN,
-        action: "user.role.update",
-        targetType: "User",
-        targetId: TARGET,
-        metadata: { newRole: "ADMIN", previousRole: "STUDENT" },
-      },
-    });
+    expect(m.changeRole).toHaveBeenCalledWith(TARGET, "ADMIN", { actorId: ADMIN });
+    // Never a second write outside the transaction.
+    expect(m.auditCreate).not.toHaveBeenCalled();
     expect(m.revalidatePath).toHaveBeenCalledWith("/users");
   });
 
-  it("logs nothing when the role did not change", async () => {
+  it("revalidates nothing when the role did not change", async () => {
     m.changeRole.mockResolvedValue({ ok: true, previousRole: "TEACHER" });
     expect(await updateUserRoleAction(TARGET, "TEACHER")).toEqual({ ok: true });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("refuses parameters that are not an id and a role", async () => {

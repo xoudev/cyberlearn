@@ -31,6 +31,13 @@ describe("MfaResetEmail - rendered HTML", () => {
     expect(html).toContain("équipe CyberLearn a retiré la double authentification");
   });
 
+  it("does not assume a password, which a GitHub account does not have", async () => {
+    const html = await render(MfaResetEmail(BASE));
+    expect(html).toContain("habitude, sans code");
+    expect(html).not.toContain("ton adresse et ton mot de passe");
+    expect(html).toContain("compte GitHub");
+  });
+
   it("puts the lock back in one click, on the site's security settings", async () => {
     const html = await render(MfaResetEmail(BASE));
     expect(html).toContain('href="https://cyberlearn.fr/settings/account"');

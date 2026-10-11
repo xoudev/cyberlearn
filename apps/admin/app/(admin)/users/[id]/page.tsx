@@ -13,9 +13,9 @@ import {
   UI,
 } from "../../_components/admin-ui";
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
-import { banRepository } from "@cyberlearn/db";
+import { banRepository, userRepository } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
-import { mfaResetRefusal } from "@/lib/account-guards";
+import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
@@ -110,11 +110,13 @@ export default async function AdminUserPage({
 
   // The ban in force and the ones before it. The history is the point as much
   // as the state: the second ban on an account is not the first one, and
-  // whoever is deciding what to do needs to see both.
-  const [active, history, signIn] = await Promise.all([
+  // whoever is deciding what to do needs to see both. The role history decides
+  // whether the second factor may be reset here, as the action decides it.
+  const [active, history, signIn, wasRecentlyAdmin] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
     readSignInState(user.id),
+    userRepository.heldAdminRoleSince(user.id, recentAdminSince(new Date())),
   ]);
 
   const stamp = (date: Date): string =>
@@ -216,6 +218,7 @@ export default async function AdminUserPage({
             actorId: viewer.id,
             targetId: user.id,
             targetRole: user.role,
+            wasRecentlyAdmin,
           })}
         />
       )}

@@ -40,6 +40,10 @@ const updateRoleSchema = z.object({
  * lands. Every outcome comes back as a sentence the list shows next to the
  * control, rather than as a thrown error that left the select where it was
  * with no word of why.
+ *
+ * The audit row is written by the repository, in the same transaction as the
+ * role: a privilege change and its trace land together or not at all, and a
+ * failed audit write is a failed change, reported like any other.
  */
 export async function updateUserRoleAction(
   userId: string,
@@ -61,7 +65,9 @@ export async function updateUserRoleAction(
 
   let result: ChangeRoleResult;
   try {
-    result = await userRepository.changeRole(input.data.userId, input.data.newRole);
+    result = await userRepository.changeRole(input.data.userId, input.data.newRole, {
+      actorId: admin.id,
+    });
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "updateUserRoleAction failed");
     return { ok: false, error: "Le changement de rôle a échoué. Rien n'a été modifié." };
@@ -73,16 +79,6 @@ export async function updateUserRoleAction(
     };
   }
   if (result.previousRole === input.data.newRole) return { ok: true };
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "user.role.update",
-      targetType: "User",
-      targetId: input.data.userId,
-      metadata: { newRole: input.data.newRole, previousRole: result.previousRole },
-    },
-  });
 
   revalidatePath("/users");
   revalidatePath(`/users/${input.data.userId}`);

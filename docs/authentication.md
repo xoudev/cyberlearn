@@ -44,6 +44,15 @@ The console refuses this on purpose (see below): one administrator removing
 another's second factor is exactly what a single stolen admin session would
 do. A two-person flow inside the console may replace this procedure later.
 
+The refusal also covers an account that held the `ADMIN` role in the last 30
+days, read from the `user.role.update` rows of the audit log (`previousRole`
+or `newRole` equal to `ADMIN`). Without it, one stolen session would demote
+the administrator, reset the factor of what is now a learner, promote them
+back, and let the attacker enrol a new factor with the phished password
+alone. Such an account goes through this procedure too. Role changes made
+before the audit row carried `previousRole` only show up through their
+`newRole`.
+
 ## Unblocking a learner from the console
 
 The account page (`admin.cyberlearn.fr/users/<id>`) reads the sign-in state
@@ -54,7 +63,7 @@ and written to the audit log:
 
 | Gesture | What it does | Audit action |
 | --- | --- | --- |
-| Reset the second factor | Deletes every TOTP factor (`auth.admin.mfa.deleteFactor`), which also signs the account out everywhere when a factor was verified. The administrator types the account's address to confirm. Refused on oneself and on any `ADMIN` (break-glass above). The learner receives the `mfa-reset` mail, which carries no code and no sign-in link and says what to do if they asked for nothing | `admin.user.mfa_reset` (factors found, removed, complete) |
+| Reset the second factor | Deletes every TOTP factor (`auth.admin.mfa.deleteFactor`), which also signs the account out everywhere when a factor was verified. The administrator types the account's address to confirm. Refused on oneself, on any `ADMIN`, and on an account that was one in the last 30 days (break-glass above). The learner receives the `mfa-reset` mail, which carries no code and no sign-in link and says what to do if they asked for nothing | `admin.user.mfa_reset` (factors found, removed, complete) |
 | Send a password reset link | The same recovery mail as **Forgot password** (`resetPasswordForEmail`, redirect to `/auth/callback?next=/reset-password`). The link goes to the mailbox only: the console never sees it, which is why it does not use `generateLink` | `admin.user.password_reset_sent` |
 | Resend the confirmation mail | Only for an address not yet confirmed (`auth.resend({ type: "signup" })`) | `admin.user.confirmation_resent` |
 | Confirm the address | Marks it confirmed without the mail (`email_confirm: true`), after a browser confirmation: for a mail that never arrives | `admin.user.email_confirmed` |
@@ -62,11 +71,17 @@ and written to the audit log:
 Supabase answers 429 when a mail went to the same address under a minute
 ago; the console says so instead of failing.
 
+The audit row is written once the gesture is done. If that write fails, the
+gesture is still reported as done, since the account has changed or the mail
+has left, and the page says the trace is missing; the failure is logged.
+
 Role changes, on the users list, ask for confirmation first. An administrator
 cannot demote themselves, and the last `ADMIN` cannot be demoted: the
 repository locks every `ADMIN` row in the transaction that writes the role
 (`userRepository.changeRole`), so two administrators demoting each other at
-the same moment cannot both succeed.
+the same moment cannot both succeed. The `user.role.update` audit row, with
+the previous role, is written in that same transaction: a role never changes
+without its trace.
 
 ## Existing account migration
 

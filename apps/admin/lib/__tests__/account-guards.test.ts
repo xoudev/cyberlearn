@@ -8,7 +8,10 @@ import { describe, expect, it } from "vitest";
 import {
   ADMIN_MFA_REFUSAL,
   LAST_ADMIN_REFUSAL,
+  RECENT_ADMIN_DAYS,
+  RECENT_ADMIN_MFA_REFUSAL,
   mfaResetRefusal,
+  recentAdminSince,
   roleChangeRefusal,
 } from "../account-guards";
 
@@ -38,19 +41,47 @@ describe("roleChangeRefusal", () => {
 
 describe("mfaResetRefusal", () => {
   it("refuses a reset on oneself", () => {
-    expect(mfaResetRefusal({ actorId: ME, targetId: ME, targetRole: "ADMIN" })).toMatch(
-      /ta propre double authentification/u,
-    );
+    expect(
+      mfaResetRefusal({ actorId: ME, targetId: ME, targetRole: "ADMIN", wasRecentlyAdmin: true }),
+    ).toMatch(/ta propre double authentification/u);
   });
 
   it("refuses a reset on another administrator and points to the break-glass procedure", () => {
-    expect(mfaResetRefusal({ actorId: ME, targetId: SOMEONE, targetRole: "ADMIN" })).toBe(
-      ADMIN_MFA_REFUSAL,
-    );
+    expect(
+      mfaResetRefusal({
+        actorId: ME,
+        targetId: SOMEONE,
+        targetRole: "ADMIN",
+        wasRecentlyAdmin: false,
+      }),
+    ).toBe(ADMIN_MFA_REFUSAL);
     expect(ADMIN_MFA_REFUSAL).toContain("docs/authentication.md");
   });
 
+  it.each(["STUDENT", "TEACHER"] as const)(
+    "refuses a reset on a %s who was an administrator in the window",
+    (targetRole) => {
+      // Demote, reset, promote back: three gestures from one stolen session
+      // would otherwise get round the refusal above.
+      expect(
+        mfaResetRefusal({ actorId: ME, targetId: SOMEONE, targetRole, wasRecentlyAdmin: true }),
+      ).toBe(RECENT_ADMIN_MFA_REFUSAL);
+      expect(RECENT_ADMIN_MFA_REFUSAL).toContain("docs/authentication.md");
+      expect(RECENT_ADMIN_MFA_REFUSAL).toContain(`${String(RECENT_ADMIN_DAYS)} jours`);
+    },
+  );
+
   it.each(["STUDENT", "TEACHER"] as const)("allows a reset on a %s", (targetRole) => {
-    expect(mfaResetRefusal({ actorId: ME, targetId: SOMEONE, targetRole })).toBeNull();
+    expect(
+      mfaResetRefusal({ actorId: ME, targetId: SOMEONE, targetRole, wasRecentlyAdmin: false }),
+    ).toBeNull();
+  });
+});
+
+describe("recentAdminSince", () => {
+  it("counts the window back from now", () => {
+    expect(recentAdminSince(new Date("2026-10-11T12:00:00Z"))).toEqual(
+      new Date("2026-09-11T12:00:00Z"),
+    );
   });
 });

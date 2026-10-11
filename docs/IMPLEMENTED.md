@@ -283,8 +283,9 @@
 - État de connexion d'un compte (adresse confirmée, méthodes, double
   authentification, dernière connexion), lu dans Supabase Auth
 - Débloquer un compte : remise à zéro de la double authentification d'un
-  apprenant (adresse saisie pour confirmer, e-mail à la clé ; jamais sur soi ni
-  sur un administrateur), lien de réinitialisation du mot de passe, renvoi ou
+  apprenant (adresse saisie pour confirmer, e-mail à la clé ; jamais sur soi, ni
+  sur un administrateur, ni sur un compte qui l'était il y a moins de 30 jours),
+  lien de réinitialisation du mot de passe, renvoi ou
   forçage de la confirmation d'adresse ; tout est tracé dans l'audit log
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte

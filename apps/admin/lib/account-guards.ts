@@ -48,6 +48,20 @@ export const LAST_ADMIN_REFUSAL =
   "C'est le dernier administrateur. Donne d'abord le rôle Admin à un autre compte.";
 
 /**
+ * How long an account that held the ADMIN role keeps an administrator's
+ * protection, once the role is gone.
+ */
+export const RECENT_ADMIN_DAYS = 30;
+
+/** The start of that span, counted back from `now`. */
+export function recentAdminSince(now: Date): Date {
+  return new Date(now.getTime() - RECENT_ADMIN_DAYS * 24 * 60 * 60 * 1000);
+}
+
+/** Why the second factor of a recently demoted administrator is not reset here. */
+export const RECENT_ADMIN_MFA_REFUSAL = `Ce compte était administrateur il y a moins de ${String(RECENT_ADMIN_DAYS)} jours : sa double authentification ne se réinitialise pas depuis la console. Suis la procédure de secours décrite dans docs/authentication.md.`;
+
+/**
  * Refuses a second-factor reset the console must not perform.
  *
  * On oneself: an administrator who can reach this page has just passed their
@@ -59,15 +73,23 @@ export const LAST_ADMIN_REFUSAL =
  * another's is exactly the move an attacker holding one admin session would
  * make. Until a two-person flow exists, it goes through the break-glass
  * procedure, run by an operator outside the console.
+ *
+ * On an account that held the role in the last RECENT_ADMIN_DAYS days, for
+ * the same reason: otherwise that one session would demote the administrator,
+ * reset the factor of what is now a learner, promote them back, and enrol a
+ * new factor with the phished password alone. `wasRecentlyAdmin` is read from
+ * the audit log by the caller, which keeps this function pure.
  */
 export function mfaResetRefusal(input: {
   actorId: string;
   targetId: string;
   targetRole: UserRole;
+  wasRecentlyAdmin: boolean;
 }): string | null {
   if (input.actorId === input.targetId) {
     return "Tu ne peux pas réinitialiser ta propre double authentification depuis la console.";
   }
   if (input.targetRole === "ADMIN") return ADMIN_MFA_REFUSAL;
+  if (input.wasRecentlyAdmin) return RECENT_ADMIN_MFA_REFUSAL;
   return null;
 }

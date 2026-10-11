@@ -27,6 +27,9 @@ import { stampedSubject } from "../subject.js";
  *
  * It carries no code and no sign-in link. Nothing in it would help whoever
  * might be reading the mailbox instead of its owner.
+ *
+ * It does not assume a password: an account created through GitHub has none,
+ * so the mail says the person signs in as usual, without a code.
  */
 
 interface MfaResetEmailProps {
@@ -66,8 +69,8 @@ export function MfaResetEmail({
             <Text style={styles.paragraph}>Bonjour {displayName},</Text>
             <Text style={styles.paragraph}>
               L&apos;équipe CyberLearn a retiré la double authentification de ton compte le{" "}
-              {resetAt}. Ton application d&apos;authentification ne te demandera plus de code pour
-              CyberLearn : tu te connectes avec ton adresse et ton mot de passe.
+              {resetAt}. Tu te connectes comme d&apos;habitude, sans code : ton application
+              d&apos;authentification ne sert plus pour CyberLearn.
               {sessionsClosed &&
                 " Par sécurité, tes appareils connectés ont été déconnectés : reconnecte-toi."}
             </Text>
@@ -93,7 +96,8 @@ export function MfaResetEmail({
             <Hr style={styles.hr} />
 
             <Text style={styles.muted}>
-              Tu n&apos;as rien demandé ? Change ton mot de passe tout de suite et écris-nous à{" "}
+              Tu n&apos;as rien demandé ? Change ton mot de passe tout de suite (ou celui de ton
+              compte GitHub, si tu te connectes avec lui) et écris-nous à{" "}
               <a href={`mailto:${contactEmail}`} style={styles.footerLink}>
                 {contactEmail}
               </a>{" "}

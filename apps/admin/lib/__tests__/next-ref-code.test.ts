@@ -53,6 +53,19 @@ describe("nextLessonRefCode", () => {
     expect(nextLessonRefCode(full)).toBe("CL-LSN-01001-V01");
   });
 
+  it("continues the catalogue, not the showcase path, once the showcase is synced", () => {
+    // CL-LSN-99001-V01 is the showcase lesson the sync imports as a draft.
+    expect(nextLessonRefCode(["CL-LSN-17091-V01", "CL-LSN-99001-V01"])).toBe("CL-LSN-17092-V01");
+  });
+
+  it("keeps the three-digit series when the showcase is the only five-digit code", () => {
+    expect(nextLessonRefCode(["CL-LSN-041-V01", "CL-LSN-99001-V01"])).toBe("CL-LSN-042-V01");
+  });
+
+  it("never proposes a number in the showcase path, even when the catalogue ends below it", () => {
+    expect(nextLessonRefCode(["CL-LSN-98999-V01", "CL-LSN-99001-V01"])).toBe("CL-LSN-01001-V01");
+  });
+
   it("never returns a code that exists, at the top of the range either", () => {
     const taken = ["CL-LSN-01001-V01", "CL-LSN-99999-V01"];
     const next = nextLessonRefCode(taken);

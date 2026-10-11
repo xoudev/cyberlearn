@@ -11,7 +11,7 @@ import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import { refreshLessonPreviewAction } from "../../_actions/preview-actions";
 import { CoverUploadField } from "../../_components/cover-upload-field";
 import { Select } from "@cyberlearn/ui";
-import { LESSON_LIMITS, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
+import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -327,7 +327,7 @@ export function NewLessonForm({
                   required
                   minLength={LESSON_LIMITS.slugMin}
                   maxLength={LESSON_LIMITS.slugMax}
-                  pattern="[a-z0-9\-]+"
+                  pattern={LESSON_SLUG_PATTERN}
                   title={LESSON_SLUG_HINT}
                   placeholder="introduction-au-sujet"
                   className="le-input"

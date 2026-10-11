@@ -3,15 +3,19 @@
 import React, { useActionState, useState } from "react";
 import { resetMfaAction, type AccessActionState } from "../../../_actions/access-actions";
 import { Card } from "../../../_components/admin-ui";
+import { AUDIT_FAILED } from "./sign-in-actions";
 
 /**
  * Removing the second factor of somebody who lost the phone it lived on.
  *
  * Supabase keeps no backup codes, so without this the console's only answer to
  * a lost phone was deleting the account. It asks for the account's address,
- * typed: the request it answers came by mail, and copying the address it came
- * from only matches when that mail was sent by this account. The server checks
- * it again, and refuses the reset on oneself and on any administrator.
+ * typed, as the deletion form does: a confirmation that the administrator is
+ * on the account they meant, not a check of who asked. The address is on the
+ * page for anybody to copy; making sure the request came from the account's
+ * holder is the administrator's work before the click, which the card says.
+ * The server checks the address again, and refuses the reset on oneself, on
+ * any administrator, and on an account that was one recently.
  *
  * When the console must not do it, the card says why instead of showing a form
  * the server would refuse.
@@ -47,6 +51,7 @@ export function MfaResetForm({
             ? " L'e-mail d'information n'a pas pu être envoyé : préviens la personne autrement, pour qu'elle réactive sa double authentification."
             : ` Un e-mail a prévenu ${displayName} et lui demande de la réactiver.`}
         </p>
+        {state.auditFailed === true && <p className="a-form-error">{AUDIT_FAILED}</p>}
       </Card>
     );
   }
@@ -67,9 +72,9 @@ export function MfaResetForm({
       <p className="a-form-notice">
         Retire {factorCount > 1 ? `les ${String(factorCount)} facteurs` : "le facteur"} TOTP de ce
         compte, pour une personne qui a perdu le téléphone qui générait ses codes. Elle se connecte
-        ensuite avec son seul mot de passe, ses sessions ouvertes sont fermées, et un e-mail lui
-        demande de réactiver la double authentification. À faire seulement après avoir vérifié que
-        la demande vient bien d&apos;elle.
+        ensuite comme d&apos;habitude, sans code, ses sessions ouvertes sont fermées, et un e-mail
+        lui demande de réactiver la double authentification. À faire seulement après avoir vérifié
+        que la demande vient bien d&apos;elle.
       </p>
 
       <form action={formAction} className="a-form" style={{ marginTop: 16 }}>
@@ -102,6 +107,7 @@ export function MfaResetForm({
         </button>
 
         {state.error !== undefined && <p className="a-form-error">{state.error}</p>}
+        {state.auditFailed === true && <p className="a-form-error">{AUDIT_FAILED}</p>}
       </form>
     </Card>
   );

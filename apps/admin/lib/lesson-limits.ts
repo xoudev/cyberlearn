@@ -20,6 +20,18 @@ export const LESSON_LIMITS = {
   xpMax: 10_000,
 } as const;
 
-/** What a slug may contain, as a pattern and as the sentence that explains it. */
-export const LESSON_SLUG = /^[a-z0-9-]+$/;
+/**
+ * What a slug may contain, as the source of a `pattern` attribute.
+ *
+ * The browser compiles a `pattern` with the `v` flag, where a bare `-` inside
+ * a class is a syntax error and the whole attribute is dropped without a word,
+ * so the dash is escaped. The forms put this string in the attribute, and
+ * LESSON_SLUG is built from it, so the two checks cannot drift apart.
+ */
+export const LESSON_SLUG_PATTERN = String.raw`[a-z0-9\-]+`;
+
+/** The same rule as a RegExp, for the actions' schemas. */
+export const LESSON_SLUG = new RegExp(`^(?:${LESSON_SLUG_PATTERN})$`, "u");
+
+/** The sentence that explains it. */
 export const LESSON_SLUG_HINT = "Lettres minuscules sans accent, chiffres et tirets uniquement.";

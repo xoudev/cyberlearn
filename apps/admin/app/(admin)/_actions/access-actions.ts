@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { prisma, userRepository } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { sendMfaResetEmail } from "@cyberlearn/email";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
-import { mfaResetRefusal } from "@/lib/account-guards";
+import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
@@ -20,6 +20,12 @@ import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
  * written to the audit log. The password and confirmation links go out in the
  * same mails the learner would get on their own, so support never sees a link
  * that opens somebody's account: the link goes to the mailbox, and only there.
+ *
+ * The audit row is written after the gesture, outside the try that covers the
+ * call to Supabase, and its own failure never turns the gesture into an
+ * error: by then the account has changed or the mail has left, and saying
+ * otherwise would invite the administrator to do it again. The page says the
+ * trace is missing instead.
  */
 
 export interface AccessActionState {
@@ -29,6 +35,8 @@ export interface AccessActionState {
   notice?: string;
   /** True when the action ran but its notice could not be delivered. */
   emailFailed?: boolean;
+  /** True when the action ran but its audit log row could not be written. */
+  auditFailed?: boolean;
 }
 
 const targetSchema = z.object({ userId: z.guid() });
@@ -65,21 +73,32 @@ async function authAccount(
   return { email: data.user.email, confirmed: Boolean(data.user.email_confirmed_at) };
 }
 
+/**
+ * Writes a gesture that already happened to the audit log. Returns whether the
+ * row was written; a failure is logged here and never thrown, so the caller
+ * can still report what it did.
+ */
 async function audit(
   actorId: string,
   action: string,
   targetId: string,
   metadata?: Record<string, number | boolean>,
-): Promise<void> {
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action,
-      targetType: "User",
-      targetId,
-      ...(metadata !== undefined ? { metadata } : {}),
-    },
-  });
+): Promise<boolean> {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action,
+        targetType: "User",
+        targetId,
+        ...(metadata !== undefined ? { metadata } : {}),
+      },
+    });
+    return true;
+  } catch (error) {
+    logger.error({ scope: "admin", action, err: errorMessage(error) }, "audit write failed");
+    return false;
+  }
 }
 
 // ─── Second factor ──────────────────────────────────────────────────────────
@@ -88,9 +107,11 @@ const mfaResetSchema = targetSchema.extend({
   /**
    * The account's address, typed back.
    *
-   * It is the identity check as much as the confirmation: a reset follows a
-   * request, and pasting the address the request came from only matches when
-   * that request came from this account's own mailbox.
+   * A confirmation against the wrong click, as on the deletion form: it shows
+   * the administrator is acting on the account they meant, not who asked. The
+   * page displays the address, so anybody can type it. Checking that the
+   * request came from the account's holder stays the administrator's job,
+   * before the click, and the card says so.
    */
   confirmEmail: z.string().trim().toLowerCase().pipe(z.email()),
 });
@@ -99,9 +120,10 @@ const mfaResetSchema = targetSchema.extend({
  * Removes every TOTP factor of a learner who can no longer produce a code.
  *
  * Supabase keeps no backup codes, so a lost phone used to leave somebody at
- * /mfa for good. Never on oneself and never on another administrator: see
- * mfaResetRefusal. Removing a verified factor also signs the account out
- * everywhere, which the notice says.
+ * /mfa for good. Never on oneself, never on another administrator, and never
+ * on an account that was one in the last few weeks: see mfaResetRefusal.
+ * Removing a verified factor also signs the account out everywhere, which the
+ * notice says.
  *
  * Remove first, then write to them, as the ban does: the notice is then always
  * true, and a mail that does not go out is a missing notice rather than a false
@@ -121,10 +143,29 @@ export async function resetMfaAction(
     return { error: "L'adresse saisie ne correspond pas à ce compte." };
   }
 
+  // Read before the guard, and fail closed: a reset this check could not rule
+  // out is the one it exists to stop.
+  let wasRecentlyAdmin: boolean;
+  try {
+    wasRecentlyAdmin = await userRepository.heldAdminRoleSince(
+      target.id,
+      recentAdminSince(new Date()),
+    );
+  } catch (error) {
+    logger.error(
+      { scope: "admin", err: errorMessage(error) },
+      "resetMfaAction: role history read failed",
+    );
+    return {
+      error: "L'historique des rôles de ce compte n'a pas pu être lu. Rien n'a été retiré.",
+    };
+  }
+
   const refusal = mfaResetRefusal({
     actorId: admin.id,
     targetId: target.id,
     targetRole: target.role,
+    wasRecentlyAdmin,
   });
   if (refusal !== null) return { error: refusal };
 
@@ -167,7 +208,7 @@ export async function resetMfaAction(
 
   // Written whatever happened, a half-finished reset included: it changed the
   // account, and the log is where the next person looks to find out how.
-  await audit(admin.id, "admin.user.mfa_reset", target.id, {
+  const logged = await audit(admin.id, "admin.user.mfa_reset", target.id, {
     factorsFound: found.length,
     factorsRemoved: removed.length,
     complete: removed.length === found.length,
@@ -178,6 +219,7 @@ export async function resetMfaAction(
   if (removed.length < found.length) {
     return {
       error: `La réinitialisation s'est arrêtée en route : ${String(removed.length)} facteur sur ${String(found.length)} retiré. Réessaie.`,
+      auditFailed: !logged,
     };
   }
 
@@ -205,8 +247,11 @@ export async function resetMfaAction(
 
   return {
     ok: true,
-    notice: `Double authentification retirée (${String(removed.length)} facteur${removed.length > 1 ? "s" : ""}). La personne peut se connecter avec son mot de passe et la réactiver.`,
+    // Whatever the sign-in method: an account created through GitHub has no
+    // password to sign in with.
+    notice: `Double authentification retirée (${String(removed.length)} facteur${removed.length > 1 ? "s" : ""}). La personne peut se connecter comme d'habitude, sans code, puis la réactiver.`,
     emailFailed,
+    auditFailed: !logged,
   };
 }
 
@@ -231,6 +276,7 @@ export async function sendPasswordResetAction(
   const target = await findTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
+  let sentTo: string;
   try {
     const supabase = createSupabaseAdminClient();
     const account = await authAccount(supabase, target.id);
@@ -241,13 +287,18 @@ export async function sendPasswordResetAction(
     });
     if (error?.status === 429) return { error: TOO_SOON };
     if (error !== null) throw error;
-
-    await audit(admin.id, "admin.user.password_reset_sent", target.id);
-    return { ok: true, notice: `Lien de réinitialisation envoyé à ${account.email}.` };
+    sentTo = account.email;
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "sendPasswordResetAction failed");
     return { error: "L'envoi du lien a échoué." };
   }
+
+  const logged = await audit(admin.id, "admin.user.password_reset_sent", target.id);
+  return {
+    ok: true,
+    notice: `Lien de réinitialisation envoyé à ${sentTo}.`,
+    auditFailed: !logged,
+  };
 }
 
 // ─── Address confirmation ───────────────────────────────────────────────────
@@ -264,6 +315,7 @@ export async function resendConfirmationAction(
   const target = await findTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
+  let sentTo: string;
   try {
     const supabase = createSupabaseAdminClient();
     const account = await authAccount(supabase, target.id);
@@ -277,13 +329,18 @@ export async function resendConfirmationAction(
     });
     if (error?.status === 429) return { error: TOO_SOON };
     if (error !== null) throw error;
-
-    await audit(admin.id, "admin.user.confirmation_resent", target.id);
-    return { ok: true, notice: `E-mail de confirmation renvoyé à ${account.email}.` };
+    sentTo = account.email;
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "resendConfirmationAction failed");
     return { error: "Le renvoi a échoué." };
   }
+
+  const logged = await audit(admin.id, "admin.user.confirmation_resent", target.id);
+  return {
+    ok: true,
+    notice: `E-mail de confirmation renvoyé à ${sentTo}.`,
+    auditFailed: !logged,
+  };
 }
 
 /**
@@ -304,6 +361,7 @@ export async function confirmEmailAction(
   const target = await findTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
+  let confirmed: string;
   try {
     const supabase = createSupabaseAdminClient();
     const account = await authAccount(supabase, target.id);
@@ -312,12 +370,13 @@ export async function confirmEmailAction(
 
     const { error } = await supabase.auth.admin.updateUserById(target.id, { email_confirm: true });
     if (error !== null) throw error;
-
-    await audit(admin.id, "admin.user.email_confirmed", target.id);
-    revalidatePath(`/users/${target.id}`);
-    return { ok: true, notice: `Adresse ${account.email} confirmée.` };
+    confirmed = account.email;
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "confirmEmailAction failed");
     return { error: "La confirmation a échoué." };
   }
+
+  const logged = await audit(admin.id, "admin.user.email_confirmed", target.id);
+  revalidatePath(`/users/${target.id}`);
+  return { ok: true, notice: `Adresse ${confirmed} confirmée.`, auditFailed: !logged };
 }

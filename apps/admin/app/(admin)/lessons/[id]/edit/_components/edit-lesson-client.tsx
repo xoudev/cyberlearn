@@ -7,7 +7,7 @@ import { refreshLessonPreviewAction } from "../../../_actions/preview-actions";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 import { Select } from "@cyberlearn/ui";
-import { LESSON_LIMITS, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
+import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
@@ -123,6 +123,9 @@ export function EditLessonClient({
   const boundAction = updateLessonAction.bind(null, lesson.id);
   const [state, action, isPending] = useActionState(boundAction, initialState);
   const [mdx, setMdx] = useState(lesson.contentMdx);
+  // Controlled, so the address under the field follows what is typed rather
+  // than the slug the lesson had when the page loaded.
+  const [slug, setSlug] = useState(lesson.slug);
   const preview = useLessonPreview(refreshLessonPreviewAction);
 
   const statusColor: Record<string, string> = {
@@ -316,9 +319,12 @@ export function EditLessonClient({
                   required
                   minLength={LESSON_LIMITS.slugMin}
                   maxLength={LESSON_LIMITS.slugMax}
-                  pattern="[a-z0-9\-]+"
+                  pattern={LESSON_SLUG_PATTERN}
                   title={LESSON_SLUG_HINT}
-                  defaultValue={lesson.slug}
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value);
+                  }}
                   placeholder="mon-slug"
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
@@ -326,7 +332,7 @@ export function EditLessonClient({
               </div>
               <Help>
                 {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
-                <b style={{ color: TURQ }}>{lesson.slug}</b>
+                <b style={{ color: TURQ }}>{slug}</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
