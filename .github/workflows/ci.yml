@@ -204,8 +204,12 @@ jobs:
   # The children of <Diagram> are parsed as markdown before mermaid ever sees
   # them, so a label written [x](y) arrives as a link and *mot* as an <em>. The
   # diagram then draws wrong, or not at all, with nothing in the logs. This
-  # replays the lesson page's own remark/rehype chain over every diagram in
-  # content/lessons and fails on any that does not round-trip.
+  # replays the lesson page's remark/rehype chain (a copy: the script says why)
+  # over every diagram in content/lessons and fails on any that does not
+  # round-trip, then on any that mermaid's parser refuses. The theme is covered
+  # by a unit test of apps/web (diagram.test.tsx): a colour mermaid cannot read
+  # broke every diagram at once in October 2026, and no syntax check would have
+  # seen it.
   lesson-diagrams:
     name: Lesson diagrams
     runs-on: ubuntu-latest

@@ -366,6 +366,51 @@ export function BlockView({
           </View>
         </View>
       );
+    case "diagram":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: colors.borderSubtle,
+            borderLeftWidth: 3,
+            borderLeftColor: theme.accent,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 2,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: theme.accent }}>
+              SCHÉMA · EN TEXTE
+            </Text>
+            {block.caption !== null ? (
+              <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+                {block.caption}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ padding: 12, gap: 6 }}>
+            {block.outline.map((line, i) => (
+              // A line can repeat (two arrows between the same boxes): the
+              // position keeps the keys apart.
+              <Text key={`${String(i)}-${line}`} variant="mono" style={{ lineHeight: 19 }}>
+                {line}
+              </Text>
+            ))}
+            <Text variant="bodySm" style={{ color: colors.textDisabled }}>
+              {block.outline.length > 0
+                ? "Le schéma se dessine sur le site : en voici le contenu, en texte."
+                : "Le schéma se dessine sur le site."}
+            </Text>
+          </View>
+        </View>
+      );
     case "network":
       return (
         <View
@@ -642,7 +687,7 @@ export function BlockView({
             {block.label}
           </Text>
           <Text variant="bodySm" style={{ textAlign: "center" }}>
-            Exercice interactif · disponible sur cyberlearn.fr
+            {block.note ?? "Exercice interactif · disponible sur cyberlearn.fr"}
           </Text>
         </View>
       );

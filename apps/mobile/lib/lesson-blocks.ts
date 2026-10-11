@@ -9,6 +9,7 @@
 // natively at the end of the lesson.
 
 import { sceneById } from "@cyberlearn/lib/animations/scenes";
+import { diagramOutline } from "@cyberlearn/lib/mdx-diagram-outline";
 import {
   type CryptoWorkshop,
   type FindTheFlaw,
@@ -194,7 +195,22 @@ export type Block =
       title: string;
       steps: { title: string; text: string }[];
     }
-  | { kind: "placeholder"; label: string }
+  | {
+      /**
+       * A Diagram: mermaid draws it on the site only; the app tells it in
+       * words, one line per arrow, as the site does when it cannot draw
+       * (@cyberlearn/lib/mdx-diagram-outline).
+       */
+      kind: "diagram";
+      caption: string | null;
+      outline: string[];
+    }
+  | {
+      kind: "placeholder";
+      label: string;
+      /** What the card says waits on the site; an interactive exercise when absent. */
+      note?: string;
+    }
   | QuizBlock;
 
 export interface ChallengeTest {
@@ -983,13 +999,32 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
   // docs/MOBILE_PARITY.md). Here it reads as the same card, the commands and
   // hints the lesson asks for, so the lesson still says what to practise.
   text = text.replace(/<LinuxTerminal[\s\S]*?\/>/g, terminalToBlock);
-  // Remaining web-only components (Diagram, media) → labelled placeholder.
-  for (const name of ["Diagram", "LessonVideo", "LessonImage"]) {
+  // Diagram → its caption and the diagram told in words: the drawing is the
+  // site's (docs/MOBILE_PARITY.md). Self-closing first: it has no source, and
+  // the paired pattern would otherwise run on to the next </Diagram>.
+  text = replaceSelfClosing(text, "Diagram", (tag) =>
+    put({ kind: "diagram", caption: stringProp(tag, "caption", 0), outline: [] }),
+  );
+  text = text.replace(
+    /<Diagram\b((?:"[^"]*"|[^">])*)>([\s\S]*?)<\/Diagram>/g,
+    (_m, attrs: string, body: string) =>
+      put({
+        kind: "diagram",
+        caption: stringProp(attrs, "caption", 0),
+        outline: diagramOutline(body),
+      }),
+  );
+  // Media are files the site plays and shows: a card that says so, rather
+  // than the one for an interactive exercise.
+  const media = [
+    { name: "LessonVideo", label: "Vidéo", note: "Vidéo à regarder sur cyberlearn.fr" },
+    { name: "LessonImage", label: "Image", note: "Image à voir sur cyberlearn.fr" },
+  ];
+  for (const { name, label, note } of media) {
     const paired = new RegExp(`<${name}[\\s\\S]*?<\\/${name}>`, "g");
     const selfClosing = new RegExp(`<${name}[\\s\\S]*?\\/>`, "g");
-    const label = name === "Diagram" ? "Diagramme" : name === "LessonVideo" ? "Vidéo" : "Image";
-    text = text.replace(paired, () => put({ kind: "placeholder", label }));
-    text = text.replace(selfClosing, () => put({ kind: "placeholder", label }));
+    text = text.replace(paired, () => put({ kind: "placeholder", label, note }));
+    text = text.replace(selfClosing, () => put({ kind: "placeholder", label, note }));
   }
   // Any leftover JSX tag lines: drop them defensively.
   text = text.replace(/^\s*<\/?[A-Z][\s\S]*?>\s*$/gm, "");

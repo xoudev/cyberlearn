@@ -23,6 +23,7 @@
     "./mdx-blocks": "./src/mdx/blocks.ts",
     "./mdx-forms": "./src/mdx/forms.ts",
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
+    "./mdx-diagram-outline": "./src/mdx/diagram-outline.ts",
     "./onboarding/*": "./src/onboarding/*.ts",
     "./markdown/*": "./src/markdown/*.ts",
     "./paths/*": "./src/paths/*.ts",

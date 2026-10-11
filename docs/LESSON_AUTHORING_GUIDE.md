@@ -854,6 +854,8 @@ gitGraph
 - Types sûrs : `flowchart`, `graph`, `sequenceDiagram`, `gitGraph`. À éviter (cassent la compilation à cause des accolades) : `classDiagram`, `stateDiagram` à états composites, et tout nœud losange `{ }`.
 - Référence complète des syntaxes : [mermaid.js.org/syntax](https://mermaid.js.org/syntax/flowchart.html)
 
+**Le schéma en texte.** L'app mobile ne dessine pas les schémas : elle affiche la légende puis le schéma en texte, une ligne par flèche (« Client (HTTPS) → Serveur Web »), message par message pour un `sequenceDiagram`, commit par commit pour un `gitGraph`. Le site montre ce même texte quand Mermaid ne peut pas dessiner, avec la mention « Schéma indisponible » et la source dépliable, et l'équipe en est prévenue. Des libellés qui se lisent seuls servent donc deux fois.
+
 **Checklist avant de committer un diagramme :**
 - [ ] Chaque nœud a un identifiant et un libellé entre guillemets doubles : `A["..."]`
 - [ ] Le `flowchart` a une direction (`TD`, `LR`, `BT` ou `RL`)
@@ -1684,8 +1686,8 @@ compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
 | Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
 
 Le test `packages/lib/src/mdx/content.test.ts` compile chaque leçon, et
-`pnpm --filter @cyberlearn/web content:diagrams` vérifie les schémas : lance-les
-avant de pousser.
+`pnpm --filter @cyberlearn/web content:diagrams` vérifie que chaque schéma
+traverse MDX intact et que Mermaid sait le lire : lance-les avant de pousser.
 
 ## 6. Règles de contenu
 
