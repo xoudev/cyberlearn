@@ -2,19 +2,21 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
-import { PageHeader, PrimaryLink, Tag, type Tone } from "../_components/admin-ui";
+import { PageHeader, PrimaryLink, Tag, toneColor } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
 import { requireAdminPage } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Badges" };
 
-const RARITY_META: Record<string, { tone: Tone; label: string }> = {
-  COMMON: { tone: "neutral", label: "Commun" },
-  UNCOMMON: { tone: "accent", label: "Peu commun" },
-  RARE: { tone: "info", label: "Rare" },
-  EPIC: { tone: "purple", label: "Épique" },
-  LEGENDARY: { tone: "warning", label: "Légendaire" },
+// The site's rarity ramp, not the tone scale: on the tones, Rare was the info
+// blue and Legendary the warning amber, neither the colour a learner sees on
+// the badge. BadgeRarity has these four values; there is no "uncommon".
+const RARITY_META: Record<string, { color: string; label: string }> = {
+  COMMON: { color: "var(--a-rarity-common)", label: "Commun" },
+  RARE: { color: "var(--a-rarity-rare)", label: "Rare" },
+  EPIC: { color: "var(--a-rarity-epic)", label: "Épique" },
+  LEGENDARY: { color: "var(--a-rarity-legendary)", label: "Légendaire" },
 };
 
 const CRITERION_LABEL: Record<string, string> = {
@@ -49,7 +51,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
   const activeCount = badges.filter((b) => b.isActive).length;
 
   const rows: GridRow[] = badges.map((b) => {
-    const rarity = RARITY_META[b.rarity] ?? { tone: "neutral" as Tone, label: b.rarity };
+    const rarity = RARITY_META[b.rarity] ?? { color: toneColor("neutral"), label: b.rarity };
     const criterion = CRITERION_LABEL[b.criterionType] ?? b.criterionType;
 
     return {
@@ -87,7 +89,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
             {b.description}
           </span>
         </span>,
-        <Tag key="ra" tone={rarity.tone}>
+        <Tag key="ra" color={rarity.color}>
           {rarity.label}
         </Tag>,
         <span key="c" style={{ fontSize: 11.5, color: "var(--a-muted)" }}>

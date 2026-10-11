@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import * as adminUi from "../admin-ui";
 import { PageHeader, toneColor, type Tone } from "../admin-ui";
+import { CONTENT_STATUS_OPTIONS } from "../content-status";
 
 /**
  * The console's foundations: one palette, one page header, one width.
@@ -38,6 +39,10 @@ const SOURCES = filesUnder(APP, (path) => /\.(tsx?|css)$/u.test(path));
 const PAGES = filesUnder(ADMIN, (path) => path.endsWith("page.tsx"));
 const css = readFileSync(join(APP, "admin-ui.css"), "utf8");
 const globals = readFileSync(join(APP, "globals.css"), "utf8");
+
+/** The red, blue and amber that had drifted from the tokens, as hex or rgb(). */
+const DRIFTED =
+  /#(?:ff4757|4d8bff|ffb547)\b|rgba?\(\s*(?:255,\s*71,\s*87|77,\s*139,\s*255|255,\s*181,\s*71)\b/iu;
 
 /** The --a-* declarations of admin-ui.css, name to value. */
 function consolePalette(): Map<string, string> {
@@ -94,7 +99,35 @@ describe("the console palette", () => {
     // #FFB547 were copies of the info blue and of an amber the tokens give to
     // something else. The console reaches danger, info and warning by name.
     for (const path of SOURCES) {
-      expect(readFileSync(path, "utf8"), where(path)).not.toMatch(/#(?:ff4757|4d8bff|ffb547)\b/iu);
+      expect(readFileSync(path, "utf8"), where(path)).not.toMatch(DRIFTED);
+    }
+  });
+
+  it("knows a drifted colour as a tint too", () => {
+    // Most of the copies were rgba() tints rather than hex.
+    expect("rgba(255,71,87,0.3)").toMatch(DRIFTED);
+    expect("rgba(77, 139, 255, 0.08)").toMatch(DRIFTED);
+    expect("rgba(255, 181, 71, 0.12)").toMatch(DRIFTED);
+    expect("color-mix(in srgb, var(--a-danger) 30%, transparent)").not.toMatch(DRIFTED);
+  });
+
+  it("colours a badge's rarity from the site's rarity ramp", () => {
+    const palette = consolePalette();
+    for (const rarity of ["common", "rare", "epic", "legendary"]) {
+      expect(palette.get(`--a-rarity-${rarity}`)).toBe(`var(--color-rarity-${rarity})`);
+    }
+    const badges = readFileSync(join(ADMIN, "badges", "page.tsx"), "utf8");
+    expect(badges).toContain('RARE: { color: "var(--a-rarity-rare)"');
+    expect(badges).not.toMatch(/tone: "info", label: "Rare"/u);
+  });
+
+  it("resolves the tokens against the dark theme on every root element", () => {
+    // globals.css reads var(--a-bg) and var(--a-fg) on html and body, and
+    // those are the dark values only under the "dark" class.
+    const roots = SOURCES.filter((path) => readFileSync(path, "utf8").includes("<html"));
+    expect(roots.map(where).sort()).toEqual(["global-error.tsx", "layout.tsx"]);
+    for (const path of roots) {
+      expect(readFileSync(path, "utf8"), where(path)).toMatch(/<html[^>]*className=[^>]*\bdark\b/u);
     }
   });
 });
@@ -132,6 +165,22 @@ describe("the console layout", () => {
   });
 });
 
+describe("the content status", () => {
+  it("gives the edit forms' status field the labels and colours of the list badge", () => {
+    expect(CONTENT_STATUS_OPTIONS).toEqual([
+      { value: "DRAFT", label: "Brouillon", tone: "var(--a-muted)" },
+      { value: "PUBLISHED", label: "Publié", tone: "var(--a-accent)" },
+      { value: "ARCHIVED", label: "Archivé", tone: "var(--a-danger)" },
+    ]);
+    for (const form of [
+      join(ADMIN, "lessons", "[id]", "edit", "_components", "edit-lesson-client.tsx"),
+      join(ADMIN, "paths", "[id]", "edit", "_components", "EditPathClient.tsx"),
+    ]) {
+      expect(readFileSync(form, "utf8"), where(form)).toContain("options={CONTENT_STATUS_OPTIONS}");
+    }
+  });
+});
+
 describe("PageHeader", () => {
   function render(props: React.ComponentProps<typeof PageHeader>): string {
     return renderToStaticMarkup(React.createElement(PageHeader, props));
@@ -146,6 +195,21 @@ describe("PageHeader", () => {
     expect(html).toContain("<li>Contenu</li>");
     expect(html).toContain('<li><a href="/paths">Parcours</a></li>');
     expect(html).toContain('<h1 class="a-h1">Quiz final</h1>');
+  });
+
+  it("is no navigation landmark when nothing in the trail is a link", () => {
+    // A top-level page: the trail is its section's name and goes nowhere.
+    const html = render({ crumbs: [{ label: "Système" }], title: "Audit" });
+    expect(html).not.toContain("<nav");
+    expect(html).not.toContain("Fil d&#x27;Ariane");
+    expect(html).toContain(
+      '<div class="a-eyebrow"><ol class="a-crumbs"><li>Système</li></ol></div>',
+    );
+  });
+
+  it("mutes the steps you cannot click, so the links read as the live ones", () => {
+    expect(css).toMatch(/\.a-crumbs li \{[^}]*color: var\(--a-muted\);/u);
+    expect(css).toMatch(/\.a-crumbs a \{[^}]*color: var\(--a-fg-2\);/u);
   });
 
   it("does not repeat the page itself in the trail", () => {

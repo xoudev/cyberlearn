@@ -5,6 +5,7 @@ import Link from "next/link";
 import { updatePathAction, type UpdatePathState } from "../actions";
 import { Select } from "@cyberlearn/ui";
 import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
+import { CONTENT_STATUS_OPTIONS } from "@/app/(admin)/_components/content-status";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -608,12 +609,6 @@ export function EditPathClient({
       ).toFixed(1)
     : "-";
 
-  const STATUS_OPTS = [
-    { value: "DRAFT", label: "◌  Brouillon", color: "#7F7BA9" },
-    { value: "PUBLISHED", label: "●  Publié", color: TURQ },
-    { value: "ARCHIVED", label: "✕  Archivé", color: "var(--a-danger)" },
-  ];
-
   return (
     <>
       <style>{`
@@ -871,7 +866,12 @@ export function EditPathClient({
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <Label req>Statut</Label>
             <div style={{ position: "relative" }}>
-              <Select name="status" required defaultValue={path.status} options={STATUS_OPTS} />
+              <Select
+                name="status"
+                required
+                defaultValue={path.status}
+                options={CONTENT_STATUS_OPTIONS}
+              />
             </div>
             <Help>
               <span style={{ color: TURQ }}>Publié</span> → visible par les apprenants ·{" "}

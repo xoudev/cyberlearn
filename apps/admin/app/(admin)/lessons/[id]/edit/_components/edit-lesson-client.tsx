@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import { refreshLessonPreviewAction } from "../../../_actions/preview-actions";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
+import { CONTENT_STATUS_OPTIONS } from "../../../../_components/content-status";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 import { Select } from "@cyberlearn/ui";
 import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
@@ -426,11 +427,7 @@ export function EditLessonClient({
               name="status"
               required
               defaultValue={lesson.status}
-              options={[
-                { value: "DRAFT", label: "Brouillon" },
-                { value: "PUBLISHED", label: "Publié" },
-                { value: "ARCHIVED", label: "Archivé" },
-              ]}
+              options={CONTENT_STATUS_OPTIONS}
             />
           </div>
           <Help>

@@ -45,7 +45,8 @@ export interface Crumb {
 /**
  * The head of every console page: where it sits, what it is, what you can do
  * from it. The trail starts with the section and lists the parents; the page
- * itself is the title, not a last crumb.
+ * itself is the title, not a last crumb. It is a navigation landmark only when
+ * it has somewhere to go: on a top-level page it is the section's name alone.
  */
 export function PageHeader({
   crumbs,
@@ -58,24 +59,27 @@ export function PageHeader({
   description?: React.ReactNode;
   actions?: React.ReactNode;
 }): React.ReactElement {
+  const trail = (
+    <ol className="a-crumbs">
+      {crumbs.map((crumb, index) => (
+        // A school and its year can share a name, so the place in the trail
+        // is part of the key.
+        <li key={`${String(index)}:${crumb.label}`}>
+          {crumb.href !== undefined ? <Link href={crumb.href}>{crumb.label}</Link> : crumb.label}
+        </li>
+      ))}
+    </ol>
+  );
   return (
     <header className="a-page-head">
       <div>
-        <nav className="a-eyebrow" aria-label="Fil d'Ariane">
-          <ol className="a-crumbs">
-            {crumbs.map((crumb, index) => (
-              // A school and its year can share a name, so the place in the
-              // trail is part of the key.
-              <li key={`${String(index)}:${crumb.label}`}>
-                {crumb.href !== undefined ? (
-                  <Link href={crumb.href}>{crumb.label}</Link>
-                ) : (
-                  crumb.label
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+        {crumbs.some((crumb) => crumb.href !== undefined) ? (
+          <nav className="a-eyebrow" aria-label="Fil d'Ariane">
+            {trail}
+          </nav>
+        ) : (
+          <div className="a-eyebrow">{trail}</div>
+        )}
         <h1 className="a-h1">{title}</h1>
         {description ? <p className="a-sub">{description}</p> : null}
       </div>
@@ -226,15 +230,23 @@ export function KpiCard({
 
 // ── Badges & identity ─────────────────────────────────────────────────────────
 
+/**
+ * A value with its colour. Most take a tone of the scale; a value that has a
+ * colour of its own on the site passes it instead, as a badge's rarity does
+ * with "var(--a-rarity-rare)", so the console shows it the way the site does.
+ */
 export function Tag({
   tone = "neutral",
+  color,
   children,
 }: {
   tone?: Tone;
+  color?: string;
   children: React.ReactNode;
 }): React.ReactElement {
+  const tagStyle: CssWithVars | undefined = color === undefined ? undefined : { "--tag": color };
   return (
-    <span className="a-tag" data-tone={tone}>
+    <span className="a-tag" data-tone={tone} style={tagStyle}>
       {children}
     </span>
   );

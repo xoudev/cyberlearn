@@ -28,6 +28,12 @@
   --a-danger: var(--color-danger);
   --a-warning: var(--color-warning);
   --a-purple: var(--color-rarity-epic);
+  /* A badge's rarity wears the site's own ramp, not a tone: Rare is the site's
+     blue, which the info tone is not. */
+  --a-rarity-common: var(--color-rarity-common);
+  --a-rarity-rare: var(--color-rarity-rare);
+  --a-rarity-epic: var(--color-rarity-epic);
+  --a-rarity-legendary: var(--color-rarity-legendary);
 
   /* The shared <Select>: its defaults are the web app's palette, so the two
      values that differ here are named rather than the whole scale restated.
@@ -232,7 +238,9 @@
 }
 
 /* The trail in the eyebrow: the section, then each parent page as a link.
-   The page itself is the title underneath, so it is not repeated here. */
+   The page itself is the title underneath, so it is not repeated here. A step
+   you cannot click is muted and a link is brighter, so the accent stays on the
+   dash and never marks a label that goes nowhere. */
 .a-crumbs {
   display: flex;
   flex-wrap: wrap;
@@ -248,6 +256,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  color: var(--a-muted);
 }
 .a-crumbs li + li::before {
   content: "/";
