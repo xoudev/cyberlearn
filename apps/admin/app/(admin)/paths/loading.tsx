@@ -6,9 +6,9 @@ const ROW_COUNT = 6;
 
 export default function AdminPathsLoading(): React.ReactElement {
   return (
-    <div className="admin-page-content">
+    <div className="a-page">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="a-page-head">
         <div>
           <Skeleton width={140} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={220} height={14} />

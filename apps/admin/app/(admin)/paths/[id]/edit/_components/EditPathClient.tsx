@@ -611,14 +611,12 @@ export function EditPathClient({
   const STATUS_OPTS = [
     { value: "DRAFT", label: "◌  Brouillon", color: "#7F7BA9" },
     { value: "PUBLISHED", label: "●  Publié", color: TURQ },
-    { value: "ARCHIVED", label: "✕  Archivé", color: "#FF4757" },
+    { value: "ARCHIVED", label: "✕  Archivé", color: "var(--a-danger)" },
   ];
 
   return (
     <>
       <style>{`
-        @keyframes adm-blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
-        @media(prefers-reduced-motion:reduce){.adm-caret{animation:none!important}}
         .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:rgba(255,255,255,0.18)!important}
         .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
         .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
@@ -638,642 +636,517 @@ export function EditPathClient({
         />
       )}
 
-      <div className="admin-page-content" style={{ maxWidth: 1100 }}>
-        {/* Breadcrumb */}
+      {state.error && (
         <div
           style={{
+            padding: "13px 16px",
+            background: "rgba(255,77,109,0.08)",
+            border: "1px solid rgba(255,77,109,0.35)",
+            borderLeft: `3px solid ${DANGER}`,
             fontFamily: MONO,
-            fontSize: 12,
-            letterSpacing: "0.04em",
-            color: "#7F7BA9",
-            marginBottom: 28,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
+            fontSize: 11,
+            color: DANGER,
+            marginBottom: 24,
           }}
         >
-          <span style={{ color: TURQ }}>$</span>
-          <b style={{ color: "#B8B5D1", fontWeight: 500 }}>~/admin</b>
-          <span style={{ color: "#7F7BA9" }}>/</span>
-          <Link href="/paths" style={{ color: "#7F7BA9", textDecoration: "none" }}>
-            parcours
-          </Link>
-          <span style={{ color: "#7F7BA9" }}>/</span>
-          <span
-            style={{
-              color: "#B8B5D1",
-              maxWidth: 200,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {path.refCode}
-          </span>
-          <span style={{ color: "#7F7BA9" }}>/</span>
-          <span
-            style={{ color: DANGER, fontWeight: 700, textShadow: "0 0 8px rgba(255,77,109,0.4)" }}
-          >
-            éditer
-          </span>
-          <span
-            className="adm-caret"
-            style={{
-              display: "inline-block",
-              width: 7,
-              height: 13,
-              background: TURQ,
-              boxShadow: `0 0 8px ${TURQ}`,
-              marginLeft: 4,
-              verticalAlign: -2,
-              animation: "adm-blink 1s step-end infinite",
-            }}
-          />
+          {state.error}
         </div>
+      )}
 
-        {/* Head */}
-        <div style={{ marginBottom: 28 }}>
-          <h1
-            style={{
-              fontFamily: BODY_F,
-              fontSize: 28,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: "0 0 8px",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Éditer{" "}
-            <em style={{ fontStyle: "normal", color: TURQ, fontFamily: MONO, fontSize: 22 }}>
-              {path.refCode}
-            </em>
-          </h1>
-          <p
-            style={{
-              fontFamily: BODY_F,
-              fontSize: 14,
-              color: "#7F7BA9",
-              margin: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: 600,
-            }}
-          >
-            {path.title}
-          </p>
-        </div>
+      <form action={action} style={{ display: "grid", gap: 22 }}>
+        {/* Hidden ordered lesson IDs */}
+        <input type="hidden" name="lessonIds" value={JSON.stringify(lessons.map((l) => l.id))} />
 
-        {/* Quiz management - the path exists, so this is an active link. */}
-        <div style={{ marginBottom: 28 }}>
-          <Link
-            href={`/paths/${path.id}/quiz`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "9px 16px",
-              fontFamily: MONO,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: TURQ,
-              background: "rgba(10,255,212,0.06)",
-              border: "1px solid rgba(10,255,212,0.35)",
-              textDecoration: "none",
-            }}
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3.5" y="7" width="9" height="6.5" rx="1" />
-              <path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7" />
-            </svg>
-            Gérer le quiz final →
-          </Link>
-        </div>
-
-        {state.error && (
-          <div
-            style={{
-              padding: "13px 16px",
-              background: "rgba(255,77,109,0.08)",
-              border: "1px solid rgba(255,77,109,0.35)",
-              borderLeft: `3px solid ${DANGER}`,
-              fontFamily: MONO,
-              fontSize: 11,
-              color: DANGER,
-              marginBottom: 24,
-            }}
-          >
-            {state.error}
-          </div>
-        )}
-
-        <form action={action} style={{ display: "grid", gap: 22 }}>
-          {/* Hidden ordered lesson IDs */}
-          <input type="hidden" name="lessonIds" value={JSON.stringify(lessons.map((l) => l.id))} />
-
-          {/* refCode + slug */}
-          <div className="admin-form-grid-2">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req hint="// doit être unique">
-                Ref code
-              </Label>
-              <input
-                name="refCode"
-                type="text"
-                required
-                defaultValue={path.refCode}
-                placeholder="CL-PATH-001-V01"
-                className="le-input"
-                style={BASE_INPUT}
-              />
-              <Help>
-                Format :{" "}
-                <b style={{ color: TURQ }}>
-                  CL-PATH-{"{NNN}"}-V{"{NN}"}
-                </b>{" "}
-                · doit être unique
-              </Help>
-              <FieldErr msg={state.fieldErrors?.refCode} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req hint="// utilisé dans l'URL">
-                Slug
-              </Label>
-              <div
-                className="le-prefix"
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "stretch",
-                  background: "#0A0826",
-                  border: `1px solid ${BORDER}`,
-                  transition: "all 150ms ease",
-                }}
-              >
-                <span
-                  style={{
-                    display: "grid",
-                    placeItems: "center",
-                    width: 36,
-                    fontFamily: MONO,
-                    fontSize: 13,
-                    color: "#7F7BA9",
-                    borderRight: `1px solid ${BORDER}`,
-                    background: "rgba(0,0,0,0.25)",
-                  }}
-                >
-                  /
-                </span>
-                <input
-                  name="slug"
-                  type="text"
-                  required
-                  defaultValue={path.slug}
-                  placeholder="nom-du-parcours"
-                  className="le-input"
-                  style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
-                />
-              </div>
-              <Help>
-                cyberlearn.fr/paths/<b style={{ color: TURQ }}>votre-slug</b>
-              </Help>
-              <FieldErr msg={state.fieldErrors?.slug} />
-            </div>
-          </div>
-
-          {/* Title */}
+        {/* refCode + slug */}
+        <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 3–200 caractères">
-              Titre
+            <Label req hint="// doit être unique">
+              Ref code
             </Label>
             <input
-              name="title"
+              name="refCode"
               type="text"
               required
-              maxLength={200}
-              defaultValue={path.title}
-              placeholder="Titre du parcours"
+              defaultValue={path.refCode}
+              placeholder="CL-PATH-001-V01"
               className="le-input"
-              style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
-            />
-            <FieldErr msg={state.fieldErrors?.title} />
-          </div>
-
-          {/* Description */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// 10–1000 caractères · affichée sur la page parcours">
-              Description
-            </Label>
-            <textarea
-              name="description"
-              required
-              minLength={10}
-              maxLength={1000}
-              rows={5}
-              defaultValue={path.description}
-              placeholder="Description complète du parcours…"
-              className="le-textarea"
-              style={{ ...BASE_INPUT, resize: "vertical", minHeight: 120, lineHeight: 1.55 }}
-            />
-            <FieldErr msg={state.fieldErrors?.description} />
-          </div>
-
-          {/* Track: what the path is for, orthogonal to the domain it covers. */}
-          <div className="admin-form-grid-2">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req>Type de parcours</Label>
-              <div style={{ position: "relative" }}>
-                <Select
-                  name="track"
-                  required
-                  defaultValue={path.track}
-                  options={[
-                    { value: "SKILL", label: "Compétence : un langage, un outil, un socle" },
-                    { value: "CAREER", label: "Métier : un rôle complet" },
-                  ]}
-                />
-              </div>
-              <FieldErr msg={state.fieldErrors?.track} />
-            </div>
-          </div>
-
-          {/* Category + Difficulty */}
-          <div className="admin-form-grid-2">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req>Catégorie</Label>
-              <div style={{ position: "relative" }}>
-                <Select
-                  name="category"
-                  required
-                  defaultValue={path.category}
-                  options={[
-                    { value: "DEV", label: "Développement" },
-                    { value: "CYBERSEC", label: "Cybersécurité" },
-                    { value: "NETWORK", label: "Réseau" },
-                  ]}
-                />
-              </div>
-              <FieldErr msg={state.fieldErrors?.category} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req>Difficulté</Label>
-              <div style={{ position: "relative" }}>
-                <Select
-                  name="difficulty"
-                  required
-                  defaultValue={path.difficulty}
-                  options={[
-                    { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
-                    { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
-                    { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
-                    { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
-                  ]}
-                />
-              </div>
-              <FieldErr msg={state.fieldErrors?.difficulty} />
-            </div>
-          </div>
-
-          {/* Duration + Status */}
-          <div className="admin-form-grid-2">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req>Durée estimée (heures)</Label>
-              <div
-                className="le-num"
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "stretch",
-                  background: "#0A0826",
-                  border: `1px solid ${BORDER}`,
-                  transition: "all 150ms ease",
-                }}
-              >
-                <input
-                  name="estimatedHours"
-                  type="number"
-                  required
-                  min={1}
-                  max={500}
-                  defaultValue={path.estimatedHours}
-                  className="le-input"
-                  style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
-                />
-                <span
-                  style={{
-                    display: "grid",
-                    placeItems: "center",
-                    padding: "0 14px",
-                    fontFamily: MONO,
-                    fontSize: 10.5,
-                    letterSpacing: "0.18em",
-                    color: "#7F7BA9",
-                    borderLeft: `1px solid ${BORDER}`,
-                    background: "rgba(0,0,0,0.25)",
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  H
-                </span>
-              </div>
-              <Help>
-                Calculée auto depuis les leçons :{" "}
-                <b style={{ color: TURQ }}>{(totals.dur / 60).toFixed(1)} h</b>
-              </Help>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Label req>Statut</Label>
-              <div style={{ position: "relative" }}>
-                <Select name="status" required defaultValue={path.status} options={STATUS_OPTS} />
-              </div>
-              <Help>
-                <span style={{ color: TURQ }}>Publié</span> → visible par les apprenants ·{" "}
-                <span style={{ color: "#FF4757" }}>Archivé</span> → caché, supprimable
-              </Help>
-              <FieldErr msg={state.fieldErrors?.status} />
-            </div>
-          </div>
-
-          {/* Cover image: uploaded to the private bucket, like a lesson's. */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// 1280×720 · bucket privé">Image de couverture</Label>
-            <CoverUploadField
-              initialMarker={path.coverImageUrl === "" ? null : path.coverImageUrl}
-              initialPreview={coverPreview}
+              style={BASE_INPUT}
             />
             <Help>
-              Sans image envoyée, le site montre l&apos;illustration du parcours, ou celle de sa
-              catégorie.
+              Format :{" "}
+              <b style={{ color: TURQ }}>
+                CL-PATH-{"{NNN}"}-V{"{NN}"}
+              </b>{" "}
+              · doit être unique
             </Help>
+            <FieldErr msg={state.fieldErrors?.refCode} />
           </div>
-
-          {/* Lessons section */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
-            <div style={{ border: `1px solid ${BORDER}`, background: "#0A0826" }}>
-              <div
+            <Label req hint="// utilisé dans l'URL">
+              Slug
+            </Label>
+            <div
+              className="le-prefix"
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "stretch",
+                background: "#0A0826",
+                border: `1px solid ${BORDER}`,
+                transition: "all 150ms ease",
+              }}
+            >
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "14px 18px",
-                  borderBottom: `1px solid ${BORDER}`,
-                  background: "#050416",
+                  display: "grid",
+                  placeItems: "center",
+                  width: 36,
+                  fontFamily: MONO,
+                  fontSize: 13,
+                  color: "#7F7BA9",
+                  borderRight: `1px solid ${BORDER}`,
+                  background: "rgba(0,0,0,0.25)",
                 }}
               >
-                <h3
-                  style={{
-                    fontFamily: MONO,
-                    fontWeight: 700,
-                    fontSize: 11,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "#B8B5D1",
-                    margin: 0,
-                  }}
-                >
-                  <span style={{ color: "#7F7BA9" }}>{"// "}</span>
-                  <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
-                </h3>
-                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>
-                  <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
-                  <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
-                </span>
-              </div>
+                /
+              </span>
+              <input
+                name="slug"
+                type="text"
+                required
+                defaultValue={path.slug}
+                placeholder="nom-du-parcours"
+                className="le-input"
+                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
+              />
+            </div>
+            <Help>
+              cyberlearn.fr/paths/<b style={{ color: TURQ }}>votre-slug</b>
+            </Help>
+            <FieldErr msg={state.fieldErrors?.slug} />
+          </div>
+        </div>
 
-              {lessons.length === 0 ? (
-                <div
-                  style={{
-                    padding: "24px",
-                    textAlign: "center",
-                    fontFamily: MONO,
-                    fontSize: 11,
-                    color: "#7F7BA9",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  Aucune leçon ajoutée · clique sur &quot;Ajouter une leçon&quot; pour commencer
-                </div>
-              ) : (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {lessons.map((l, i) => (
-                    <LessonRow
-                      key={l.id}
-                      lesson={l}
-                      idx={i}
-                      dragState={dragState}
-                      onDragStart={onDragStart}
-                      onDragOver={onDragOver}
-                      onDrop={onDrop}
-                      onDragEnd={onDragEnd}
-                      onRemove={onRemove}
-                    />
-                  ))}
-                </ul>
-              )}
+        {/* Title */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Label req hint="// 3–200 caractères">
+            Titre
+          </Label>
+          <input
+            name="title"
+            type="text"
+            required
+            maxLength={200}
+            defaultValue={path.title}
+            placeholder="Titre du parcours"
+            className="le-input"
+            style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
+          />
+          <FieldErr msg={state.fieldErrors?.title} />
+        </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setPickerOpen(true);
-                }}
-                className="pe-add"
+        {/* Description */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Label req hint="// 10–1000 caractères · affichée sur la page parcours">
+            Description
+          </Label>
+          <textarea
+            name="description"
+            required
+            minLength={10}
+            maxLength={1000}
+            rows={5}
+            defaultValue={path.description}
+            placeholder="Description complète du parcours…"
+            className="le-textarea"
+            style={{ ...BASE_INPUT, resize: "vertical", minHeight: 120, lineHeight: 1.55 }}
+          />
+          <FieldErr msg={state.fieldErrors?.description} />
+        </div>
+
+        {/* Track: what the path is for, orthogonal to the domain it covers. */}
+        <div className="admin-form-grid-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Label req>Type de parcours</Label>
+            <div style={{ position: "relative" }}>
+              <Select
+                name="track"
+                required
+                defaultValue={path.track}
+                options={[
+                  { value: "SKILL", label: "Compétence : un langage, un outil, un socle" },
+                  { value: "CAREER", label: "Métier : un rôle complet" },
+                ]}
+              />
+            </div>
+            <FieldErr msg={state.fieldErrors?.track} />
+          </div>
+        </div>
+
+        {/* Category + Difficulty */}
+        <div className="admin-form-grid-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Label req>Catégorie</Label>
+            <div style={{ position: "relative" }}>
+              <Select
+                name="category"
+                required
+                defaultValue={path.category}
+                options={[
+                  { value: "DEV", label: "Développement" },
+                  { value: "CYBERSEC", label: "Cybersécurité" },
+                  { value: "NETWORK", label: "Réseau" },
+                ]}
+              />
+            </div>
+            <FieldErr msg={state.fieldErrors?.category} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Label req>Difficulté</Label>
+            <div style={{ position: "relative" }}>
+              <Select
+                name="difficulty"
+                required
+                defaultValue={path.difficulty}
+                options={[
+                  { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
+                  { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
+                  { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
+                  { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
+                ]}
+              />
+            </div>
+            <FieldErr msg={state.fieldErrors?.difficulty} />
+          </div>
+        </div>
+
+        {/* Duration + Status */}
+        <div className="admin-form-grid-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Label req>Durée estimée (heures)</Label>
+            <div
+              className="le-num"
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "stretch",
+                background: "#0A0826",
+                border: `1px solid ${BORDER}`,
+                transition: "all 150ms ease",
+              }}
+            >
+              <input
+                name="estimatedHours"
+                type="number"
+                required
+                min={1}
+                max={500}
+                defaultValue={path.estimatedHours}
+                className="le-input"
+                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
+              />
+              <span
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  padding: 14,
-                  background: "transparent",
-                  border: 0,
-                  borderTop: "1px dashed rgba(255,255,255,0.08)",
+                  display: "grid",
+                  placeItems: "center",
+                  padding: "0 14px",
+                  fontFamily: MONO,
+                  fontSize: 10.5,
+                  letterSpacing: "0.18em",
+                  color: "#7F7BA9",
+                  borderLeft: `1px solid ${BORDER}`,
+                  background: "rgba(0,0,0,0.25)",
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                H
+              </span>
+            </div>
+            <Help>
+              Calculée auto depuis les leçons :{" "}
+              <b style={{ color: TURQ }}>{(totals.dur / 60).toFixed(1)} h</b>
+            </Help>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Label req>Statut</Label>
+            <div style={{ position: "relative" }}>
+              <Select name="status" required defaultValue={path.status} options={STATUS_OPTS} />
+            </div>
+            <Help>
+              <span style={{ color: TURQ }}>Publié</span> → visible par les apprenants ·{" "}
+              <span style={{ color: "var(--a-danger)" }}>Archivé</span> → caché, supprimable
+            </Help>
+            <FieldErr msg={state.fieldErrors?.status} />
+          </div>
+        </div>
+
+        {/* Cover image: uploaded to the private bucket, like a lesson's. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Label hint="// 1280×720 · bucket privé">Image de couverture</Label>
+          <CoverUploadField
+            initialMarker={path.coverImageUrl === "" ? null : path.coverImageUrl}
+            initialPreview={coverPreview}
+          />
+          <Help>
+            Sans image envoyée, le site montre l&apos;illustration du parcours, ou celle de sa
+            catégorie.
+          </Help>
+        </div>
+
+        {/* Lessons section */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
+          <div style={{ border: `1px solid ${BORDER}`, background: "#0A0826" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 18px",
+                borderBottom: `1px solid ${BORDER}`,
+                background: "#050416",
+              }}
+            >
+              <h3
+                style={{
                   fontFamily: MONO,
                   fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#7F7BA9",
-                  cursor: "pointer",
-                  transition: "all 150ms ease",
+                  color: "#B8B5D1",
+                  margin: 0,
                 }}
               >
-                <span
-                  style={{
-                    display: "grid",
-                    placeItems: "center",
-                    width: 18,
-                    height: 18,
-                    border: "1px solid currentColor",
-                  }}
-                >
-                  <svg
-                    width={10}
-                    height={10}
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                    strokeLinecap="round"
-                  >
-                    <path d="M7 2V12M2 7H12" />
-                  </svg>
-                </span>
-                Ajouter une leçon
-              </button>
+                <span style={{ color: "#7F7BA9" }}>{"// "}</span>
+                <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
+              </h3>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>
+                <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
+                <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
+              </span>
+            </div>
 
-              {/* Totals strip */}
+            {lessons.length === 0 ? (
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  background: "#050416",
-                  borderTop: `1px solid ${BORDER}`,
+                  padding: "24px",
+                  textAlign: "center",
                   fontFamily: MONO,
                   fontSize: 11,
+                  color: "#7F7BA9",
+                  letterSpacing: "0.06em",
                 }}
               >
-                {[
-                  { lbl: "Leçons", val: String(totals.count).padStart(2, "0"), brand: true },
-                  { lbl: "Durée totale", val: `${(totals.dur / 60).toFixed(1)} h`, brand: false },
-                  { lbl: "XP cumulés", val: `+${String(totals.xp)}`, brand: true },
-                  { lbl: "Difficulté moy.", val: `${avgDiff} / 4`, brand: false },
-                ].map((cell, i) => (
-                  <div
-                    key={cell.lbl}
+                Aucune leçon ajoutée · clique sur &quot;Ajouter une leçon&quot; pour commencer
+              </div>
+            ) : (
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {lessons.map((l, i) => (
+                  <LessonRow
+                    key={l.id}
+                    lesson={l}
+                    idx={i}
+                    dragState={dragState}
+                    onDragStart={onDragStart}
+                    onDragOver={onDragOver}
+                    onDrop={onDrop}
+                    onDragEnd={onDragEnd}
+                    onRemove={onRemove}
+                  />
+                ))}
+              </ul>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setPickerOpen(true);
+              }}
+              className="pe-add"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                padding: 14,
+                background: "transparent",
+                border: 0,
+                borderTop: "1px dashed rgba(255,255,255,0.08)",
+                fontFamily: MONO,
+                fontWeight: 700,
+                fontSize: 11,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "#7F7BA9",
+                cursor: "pointer",
+                transition: "all 150ms ease",
+              }}
+            >
+              <span
+                style={{
+                  display: "grid",
+                  placeItems: "center",
+                  width: 18,
+                  height: 18,
+                  border: "1px solid currentColor",
+                }}
+              >
+                <svg
+                  width={10}
+                  height={10}
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                >
+                  <path d="M7 2V12M2 7H12" />
+                </svg>
+              </span>
+              Ajouter une leçon
+            </button>
+
+            {/* Totals strip */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                background: "#050416",
+                borderTop: `1px solid ${BORDER}`,
+                fontFamily: MONO,
+                fontSize: 11,
+              }}
+            >
+              {[
+                { lbl: "Leçons", val: String(totals.count).padStart(2, "0"), brand: true },
+                { lbl: "Durée totale", val: `${(totals.dur / 60).toFixed(1)} h`, brand: false },
+                { lbl: "XP cumulés", val: `+${String(totals.xp)}`, brand: true },
+                { lbl: "Difficulté moy.", val: `${avgDiff} / 4`, brand: false },
+              ].map((cell, i) => (
+                <div
+                  key={cell.lbl}
+                  style={{
+                    padding: "11px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                    borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
+                  }}
+                >
+                  <span
                     style={{
-                      padding: "11px 16px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 3,
-                      borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
+                      fontSize: 9.5,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      color: "#7F7BA9",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 9.5,
-                        letterSpacing: "0.18em",
-                        textTransform: "uppercase",
-                        color: "#7F7BA9",
-                      }}
-                    >
-                      {cell.lbl}
-                    </span>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 14,
-                        color: cell.brand ? TURQ : "#F5F5FA",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {cell.val}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                    {cell.lbl}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: cell.brand ? TURQ : "#F5F5FA",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {cell.val}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div
+        {/* Actions */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            paddingTop: 24,
+            borderTop: `1px solid ${BORDER}`,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Link
+            href="/paths"
+            className="adm-btn-ghost"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              paddingTop: 24,
-              borderTop: `1px solid ${BORDER}`,
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
+              fontFamily: MONO,
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              padding: "13px 22px",
+              background: "transparent",
+              color: "#7F7BA9",
+              border: `1px solid ${BORDER}`,
+              transition: "all 150ms ease",
+              textDecoration: "none",
+              display: "inline-flex",
             }}
           >
-            <Link
-              href="/paths"
-              className="adm-btn-ghost"
+            Annuler
+          </Link>
+          <button
+            type="submit"
+            disabled={isPending}
+            style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              fontFamily: MONO,
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              padding: "13px 22px",
+              background: "linear-gradient(135deg, #2848FF, #0024FF)",
+              color: "#fff",
+              border: 0,
+              cursor: isPending ? "not-allowed" : "pointer",
+              opacity: isPending ? 0.6 : 1,
+              boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+            }}
+          >
+            <span
               style={{
-                fontFamily: MONO,
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                padding: "13px 22px",
-                background: "transparent",
-                color: "#7F7BA9",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-                textDecoration: "none",
-                display: "inline-flex",
+                position: "absolute",
+                top: -3,
+                left: -3,
+                width: 10,
+                height: 10,
+                border: "1.5px solid #fff",
+                borderRight: 0,
+                borderBottom: 0,
+                opacity: 0.7,
               }}
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isPending}
+            />
+            {isPending ? "Sauvegarde…" : "Sauvegarder les modifications"}
+            <span style={{ fontWeight: 400 }}>→</span>
+            <span
               style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                fontFamily: MONO,
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                padding: "13px 22px",
-                background: "linear-gradient(135deg, #2848FF, #0024FF)",
-                color: "#fff",
-                border: 0,
-                cursor: isPending ? "not-allowed" : "pointer",
-                opacity: isPending ? 0.6 : 1,
-                boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+                position: "absolute",
+                bottom: -3,
+                right: -3,
+                width: 10,
+                height: 10,
+                border: "1.5px solid #fff",
+                borderTop: 0,
+                borderLeft: 0,
+                opacity: 0.7,
               }}
-            >
-              <span
-                style={{
-                  position: "absolute",
-                  top: -3,
-                  left: -3,
-                  width: 10,
-                  height: 10,
-                  border: "1.5px solid #fff",
-                  borderRight: 0,
-                  borderBottom: 0,
-                  opacity: 0.7,
-                }}
-              />
-              {isPending ? "Sauvegarde…" : "Sauvegarder les modifications"}
-              <span style={{ fontWeight: 400 }}>→</span>
-              <span
-                style={{
-                  position: "absolute",
-                  bottom: -3,
-                  right: -3,
-                  width: 10,
-                  height: 10,
-                  border: "1.5px solid #fff",
-                  borderTop: 0,
-                  borderLeft: 0,
-                  opacity: 0.7,
-                }}
-              />
-            </button>
-          </div>
-        </form>
-      </div>
+            />
+          </button>
+        </div>
+      </form>
     </>
   );
 }

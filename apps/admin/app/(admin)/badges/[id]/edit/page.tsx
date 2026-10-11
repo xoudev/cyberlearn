@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
+import { GhostLink, PageHeader } from "../../../_components/admin-ui";
+import { toggleBadgeActiveAction } from "../../_actions/badge-actions";
 import { EditBadgeForm } from "./_components/edit-badge-form";
 import type { LessonOption, PathOption } from "../../new/_components/new-badge-form";
 
@@ -49,5 +51,33 @@ export default async function EditBadgePage({
 
   if (!badge) notFound();
 
-  return <EditBadgeForm badge={badge} lessons={lessons} paths={paths} />;
+  return (
+    <main className="a-page">
+      <PageHeader
+        crumbs={[{ label: "Gamification" }, { label: "Badges", href: "/badges" }]}
+        title={badge.name}
+        description={
+          <>
+            <span className="a-mono">{badge.refCode}</span> · {String(badge._count.userBadges)}{" "}
+            utilisateur(s) ont ce badge
+          </>
+        }
+        actions={
+          <>
+            <form action={toggleBadgeActiveAction}>
+              <input type="hidden" name="id" value={badge.id} />
+              <button
+                type="submit"
+                className={badge.isActive ? "a-btn a-btn--danger" : "a-btn a-btn--ghost"}
+              >
+                {badge.isActive ? "Désactiver" : "Activer"}
+              </button>
+            </form>
+            <GhostLink href="/badges">Retour aux badges</GhostLink>
+          </>
+        }
+      />
+      <EditBadgeForm badge={badge} lessons={lessons} paths={paths} />
+    </main>
+  );
 }

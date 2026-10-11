@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
-import { KpiCard, Monogram, PageHeader, UI } from "../_components/admin-ui";
+import { KpiCard, Monogram, PageHeader } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { ROLE_LABEL, ROLES, roleRank } from "@/lib/roles";
 import { RoleSelect } from "./_components/role-select";
@@ -91,26 +91,29 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
             {handle}
           </span>
         </Link>,
-        <span key="e" className="mono" style={{ color: UI.muted }}>
+        <span key="e" className="mono" style={{ color: "var(--a-muted)" }}>
           {u.email}
         </span>,
         <RoleSelect key="r" userId={u.id} handle={handle} currentRole={u.role} />,
         <span key="l">
-          <span style={{ color: UI.muted }}>LVL·</span>
-          <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
+          <span style={{ color: "var(--a-muted)" }}>LVL·</span>
+          <b style={{ color: "var(--a-accent)" }}>{String(u.level).padStart(2, "0")}</b>
         </span>,
         u.xpTotal.toLocaleString("fr-FR"),
-        <span key="s" style={{ color: u.streakDays > 0 ? UI.warning : UI.faint }}>
+        <span key="s" style={{ color: u.streakDays > 0 ? "var(--a-warning)" : "var(--a-faint)" }}>
           {String(u.streakDays)} j
         </span>,
         String(u._count.badges),
         String(u._count.certificates),
-        <span key="c" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
+        <span key="c" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
           {formatDate(u.createdAt)}
         </span>,
         <span
           key="a"
-          style={{ color: recentlyActive ? UI.turquoise : UI.faint, whiteSpace: "nowrap" }}
+          style={{
+            color: recentlyActive ? "var(--a-accent)" : "var(--a-faint)",
+            whiteSpace: "nowrap",
+          }}
         >
           {relativeDate(u.lastActiveAt)}
         </span>,
@@ -121,7 +124,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Comptes"
+        crumbs={[{ label: "Comptes" }]}
         title="Utilisateurs"
         description="Recherche, tri et gestion des rôles. Un changement de rôle se confirme et est tracé dans l'audit log ; personne ne peut retirer son propre rôle Admin ni celui du dernier administrateur."
       />

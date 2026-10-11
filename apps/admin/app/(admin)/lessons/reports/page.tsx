@@ -112,9 +112,9 @@ export default async function QuizReportsPage(): Promise<React.ReactElement> {
   const total = groups.reduce((n, g) => n + g.reports.length, 0);
 
   return (
-    <main className="admin-page-content">
+    <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
         title="Questions signalées"
         description={
           groups.length === 0

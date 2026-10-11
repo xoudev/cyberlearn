@@ -101,9 +101,9 @@ export default async function NoteReportsPage(): Promise<React.ReactElement> {
   const total = notes.reduce((n, g) => n + g.reports.length, 0);
 
   return (
-    <main className="admin-page-content">
+    <main className="a-page">
       <PageHeader
-        eyebrow="Sécurité"
+        crumbs={[{ label: "Sécurité" }, { label: "Modération", href: "/moderation" }]}
         title="Notes signalées"
         description={
           notes.length === 0

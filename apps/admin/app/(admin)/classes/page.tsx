@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { classRepository } from "@cyberlearn/db";
-import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag, UI } from "../_components/admin-ui";
+import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -57,17 +57,17 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         <Link key="n" href={`/classes/${c.id}`} className="a-row-link">
           <span className="a-row-link-title">{c.name}</span>
         </Link>,
-        <span key="e" style={{ color: UI.fg2 }}>
+        <span key="e" style={{ color: "var(--a-fg-2)" }}>
           {establishment}
         </span>,
-        <span key="p" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
+        <span key="p" className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
           {promotion}
           {c.promotion.startYear !== null && (
-            <span style={{ color: UI.muted }}> · {c.promotion.startYear}</span>
+            <span style={{ color: "var(--a-muted)" }}> · {c.promotion.startYear}</span>
           )}
         </span>,
         String(c._count.members),
-        <span key="t" style={{ color: teachers.length === 0 ? UI.faint : UI.fg2 }}>
+        <span key="t" style={{ color: teachers.length === 0 ? "var(--a-faint)" : "var(--a-fg-2)" }}>
           {teachers.length === 0 ? "Aucun professeur" : teachers.join(", ")}
         </span>,
         <Tag key="s" tone={isArchived ? "neutral" : "accent"}>
@@ -80,7 +80,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Structure"
+        crumbs={[{ label: "Structure" }]}
         title="Classes"
         description="Une classe appartient à une promo, qui appartient à un établissement. Ouvre une classe pour gérer ses élèves et ses professeurs."
         actions={

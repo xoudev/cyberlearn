@@ -29,7 +29,7 @@ export default async function NewClassPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Structure"
+        crumbs={[{ label: "Structure" }, { label: "Classes", href: "/classes" }]}
         title="Créer"
         description="Un établissement contient des promos, une promo contient des classes. Crée-les dans cet ordre - chaque niveau a besoin du précédent."
         actions={<GhostLink href="/classes">Retour aux classes</GhostLink>}

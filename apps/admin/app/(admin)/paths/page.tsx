@@ -20,7 +20,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }]}
         title="Parcours"
         description={`${String(counts.published)} publié${counts.published !== 1 ? "s" : ""} · ${String(counts.draft)} brouillon${counts.draft !== 1 ? "s" : ""}. Les parcours archivés sont rangés à part ; un parcours publié doit être archivé avant suppression.`}
         actions={

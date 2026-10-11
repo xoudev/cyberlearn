@@ -1,5 +1,4 @@
 import React from "react";
-import { UI } from "./admin-ui";
 import type { SentryIssuesResult } from "@/lib/sentry-issues";
 
 /**
@@ -12,11 +11,11 @@ import type { SentryIssuesResult } from "@/lib/sentry-issues";
  */
 
 const LEVEL_COLOR: Record<string, string> = {
-  fatal: UI.danger,
-  error: UI.danger,
-  warning: UI.warning,
-  info: UI.blueSoft,
-  debug: UI.muted,
+  fatal: "var(--a-danger)",
+  error: "var(--a-danger)",
+  warning: "var(--a-warning)",
+  info: "var(--a-info)",
+  debug: "var(--a-muted)",
 };
 
 function relative(iso: string): string {
@@ -38,10 +37,10 @@ function Note({ children }: { children: React.ReactNode }): React.JSX.Element {
         margin: 0,
         padding: "34px 18px",
         textAlign: "center",
-        fontFamily: UI.mono,
+        fontFamily: "var(--font-mono)",
         fontSize: 11.5,
         lineHeight: 1.7,
-        color: UI.muted,
+        color: "var(--a-muted)",
       }}
     >
       {children}
@@ -55,9 +54,9 @@ export function SentryCard({ result }: { result: SentryIssuesResult }): React.JS
       <Note>
         Sentry n&apos;est pas configuré pour cette console.
         <br />
-        Renseigne <b style={{ color: UI.fg2 }}>SENTRY_ORG</b>,{" "}
-        <b style={{ color: UI.fg2 }}>SENTRY_PROJECT</b> et{" "}
-        <b style={{ color: UI.fg2 }}>SENTRY_AUTH_TOKEN</b>.
+        Renseigne <b style={{ color: "var(--a-fg-2)" }}>SENTRY_ORG</b>,{" "}
+        <b style={{ color: "var(--a-fg-2)" }}>SENTRY_PROJECT</b> et{" "}
+        <b style={{ color: "var(--a-fg-2)" }}>SENTRY_AUTH_TOKEN</b>.
       </Note>
     );
   }
@@ -65,7 +64,7 @@ export function SentryCard({ result }: { result: SentryIssuesResult }): React.JS
   if (result.state === "error") {
     return (
       <Note>
-        <span style={{ color: UI.warning }}>{result.reason}</span>
+        <span style={{ color: "var(--a-warning)" }}>{result.reason}</span>
         <br />
         Les erreurs continuent d&apos;être remontées à Sentry ; c&apos;est leur affichage ici qui
         manque.
@@ -76,7 +75,7 @@ export function SentryCard({ result }: { result: SentryIssuesResult }): React.JS
   if (result.issues.length === 0) {
     return (
       <Note>
-        <span style={{ color: UI.turquoise }}>Aucune erreur non résolue sur 24 h.</span>
+        <span style={{ color: "var(--a-accent)" }}>Aucune erreur non résolue sur 24 h.</span>
       </Note>
     );
   }
@@ -92,20 +91,22 @@ export function SentryCard({ result }: { result: SentryIssuesResult }): React.JS
           className="a-feed-item"
           style={{
             textDecoration: "none",
-            borderLeft: `2px solid ${LEVEL_COLOR[issue.level] ?? UI.muted}`,
+            borderLeft: `2px solid ${LEVEL_COLOR[issue.level] ?? "var(--a-muted)"}`,
             paddingLeft: 12,
           }}
         >
           <div className="a-feed-body">
-            <b style={{ color: UI.fg }}>{issue.title}</b>
+            <b style={{ color: "var(--a-fg)" }}>{issue.title}</b>
             <div className="a-feed-meta">
               {issue.culprit !== "" ? (
-                <span style={{ fontFamily: UI.mono, fontSize: 11 }}>{issue.culprit}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                  {issue.culprit}
+                </span>
               ) : null}
               {/* Events and people affected, in that order: a thousand events
                   from one person is a loop, a hundred from a hundred people is
                   an outage, and the pair is what tells them apart. */}
-              <span style={{ marginLeft: issue.culprit !== "" ? 8 : 0, color: UI.muted }}>
+              <span style={{ marginLeft: issue.culprit !== "" ? 8 : 0, color: "var(--a-muted)" }}>
                 {issue.count} évén. · {issue.userCount} pers.
               </span>
             </div>

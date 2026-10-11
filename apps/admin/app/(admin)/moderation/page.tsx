@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { isActionableEvent, moderationRepository, noteReportRepository } from "@cyberlearn/db";
-import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag, UI } from "../_components/admin-ui";
+import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -79,7 +79,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Sécurité"
+        crumbs={[{ label: "Sécurité" }]}
         title="Modération"
         description="Ce que le filtre automatique a refusé ou signalé. Confirmer ou infirmer ne republie rien : ça dit si la règle est bonne."
         actions={
@@ -115,10 +115,10 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                     <Tag tone={event.verdict === "BLOCK" ? "danger" : "warning"}>
                       {event.verdict === "BLOCK" ? "Refusé" : "Signalé"}
                     </Tag>
-                    <span className="mono" style={{ fontSize: 11, color: UI.muted }}>
+                    <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
                       {SURFACE_LABEL[event.surface] ?? event.surface}
                     </span>
-                    <span className="mono" style={{ fontSize: 11, color: UI.muted }}>
+                    <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
                       {event.user?.displayName ?? "compte supprimé"}
                       {event.user?.username !== null &&
                         event.user?.username !== undefined &&
@@ -168,7 +168,11 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                         {event.outcome === "OVERTURNED" ? "Faux positif" : "Confirmé"}
                       </Tag>
                     </td>
-                    <td align="right" className="mono" style={{ color: UI.muted, fontSize: 11 }}>
+                    <td
+                      align="right"
+                      className="mono"
+                      style={{ color: "var(--a-muted)", fontSize: 11 }}
+                    >
                       {event.reviewedBy?.displayName ?? "Compte supprimé"}
                     </td>
                   </tr>

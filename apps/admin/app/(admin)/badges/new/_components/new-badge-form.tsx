@@ -301,53 +301,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
   const [criterionType, setCriterionType] = useState("");
 
   return (
-    <div className="admin-page-content" style={{ maxWidth: 780 }}>
-      <div className="admin-page-header">
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#7F7BA9",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ width: 14, height: 1, background: DANGER, display: "inline-block" }} />
-            Admin / Badges / Nouveau
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Créer un badge
-          </h1>
-        </div>
-        <Link
-          href="/badges"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "#7F7BA9",
-            border: `1px solid ${BORDER}`,
-            padding: "9px 16px",
-          }}
-        >
-          ← Retour
-        </Link>
-      </div>
-
+    <>
       {state.error && (
         <div
           style={{
@@ -530,6 +484,6 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
           </Link>
         </div>
       </form>
-    </div>
+    </>
   );
 }

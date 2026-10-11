@@ -282,7 +282,7 @@ export function ImportClient(): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#4D8BFF",
+              color: "var(--a-info)",
               border: "1px solid #2A2560",
               padding: "6px 12px",
               cursor: "pointer",
@@ -363,11 +363,11 @@ export function ImportClient(): React.ReactElement {
           <div
             style={{
               padding: "12px 14px",
-              background: "rgba(77,139,255,0.06)",
-              border: "1px solid rgba(77,139,255,0.2)",
+              background: "color-mix(in srgb, var(--a-info) 6%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--a-info) 20%, transparent)",
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#4D8BFF",
+              color: "var(--a-info)",
             }}
           >
             Validation du lot en cours…
@@ -403,7 +403,7 @@ export function ImportClient(): React.ReactElement {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#FFB020",
+                  color: "var(--a-warning)",
                   marginTop: 4,
                 }}
               >
@@ -528,7 +528,7 @@ export function ImportClient(): React.ReactElement {
                   fontFamily: "var(--font-mono)",
                   fontSize: 9,
                   letterSpacing: "0.1em",
-                  color: "#4D8BFF",
+                  color: "var(--a-info)",
                   background: "none",
                   border: "1px solid #2A2560",
                   padding: "3px 8px",
@@ -546,7 +546,7 @@ export function ImportClient(): React.ReactElement {
                   fontFamily: "var(--font-mono)",
                   fontSize: 9,
                   letterSpacing: "0.1em",
-                  color: "#4D8BFF",
+                  color: "var(--a-info)",
                   background: "none",
                   border: "1px solid #2A2560",
                   padding: "3px 8px",
@@ -666,7 +666,7 @@ function FileRow({
                 : "valide",
           }
         : {
-            color: "#FF4757",
+            color: "var(--a-danger)",
             label: `${String(file.validation.errors.length)} erreur${file.validation.errors.length > 1 ? "s" : ""}`,
           };
 
@@ -677,7 +677,7 @@ function FileRow({
         alignItems: "center",
         gap: 4,
         borderBottom: "1px solid rgba(26,22,64,0.7)",
-        background: active ? "rgba(77,139,255,0.07)" : "transparent",
+        background: active ? "color-mix(in srgb, var(--a-info) 7%, transparent)" : "transparent",
       }}
     >
       <button
@@ -777,11 +777,11 @@ function ErrorBanner({ message }: { message: string }) {
     <div
       style={{
         padding: "12px 14px",
-        background: "rgba(255,71,87,0.06)",
-        border: "1px solid rgba(255,71,87,0.3)",
+        background: "color-mix(in srgb, var(--a-danger) 6%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--a-danger) 30%, transparent)",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
-        color: "#FF4757",
+        color: "var(--a-danger)",
       }}
     >
       {message}
@@ -794,7 +794,7 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
     <div
       style={{
         background: "rgba(5,4,26,0.6)",
-        border: `1px solid ${result.valid ? "rgba(10,255,212,0.25)" : "rgba(255,71,87,0.3)"}`,
+        border: `1px solid ${result.valid ? "rgba(10,255,212,0.25)" : "color-mix(in srgb, var(--a-danger) 30%, transparent)"}`,
       }}
     >
       {/* Status */}
@@ -812,11 +812,11 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
             width: 8,
             height: 8,
             borderRadius: 999,
-            background: result.valid ? "#0AFFD4" : "#FF4757",
+            background: result.valid ? "#0AFFD4" : "var(--a-danger)",
             display: "inline-block",
             boxShadow: result.valid
               ? "0 0 6px rgba(10,255,212,0.6)"
-              : "0 0 6px rgba(255,71,87,0.6)",
+              : "0 0 6px color-mix(in srgb, var(--a-danger) 60%, transparent)",
           }}
         />
         <span
@@ -825,7 +825,7 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
             fontSize: 10,
             letterSpacing: "0.1em",
             fontWeight: 700,
-            color: result.valid ? "#0AFFD4" : "#FF4757",
+            color: result.valid ? "#0AFFD4" : "var(--a-danger)",
           }}
         >
           {result.valid
@@ -853,7 +853,7 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
                 padding: "5px 14px",
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#FFB020",
+                color: "var(--a-warning)",
                 display: "flex",
                 gap: 6,
               }}
@@ -872,7 +872,12 @@ function ErrorItem({ error }: { error: ImportValidationError }) {
   return (
     <div style={{ padding: "6px 14px", display: "flex", gap: 8, alignItems: "flex-start" }}>
       <span
-        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#FF4757", marginTop: 1 }}
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--a-danger)",
+          marginTop: 1,
+        }}
       >
         ✕
       </span>

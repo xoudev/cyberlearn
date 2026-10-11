@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma, quizRepository } from "@cyberlearn/db";
+import { GhostLink, PageHeader } from "../../../_components/admin-ui";
 import { QuizManager } from "./_components/quiz-manager";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -44,20 +45,32 @@ export default async function PathQuizPage({
   }));
 
   return (
-    <QuizManager
-      path={path}
-      quiz={
-        quiz
-          ? {
-              id: quiz.id,
-              passThreshold: quiz.passThreshold,
-              questionsToDraw: quiz.questionsToDraw,
-              isActive: quiz.isActive,
-              activeQuestionCount: quiz.activeQuestionCount,
-            }
-          : null
-      }
-      questions={questions}
-    />
+    <main className="a-page">
+      <PageHeader
+        crumbs={[
+          { label: "Contenu" },
+          { label: "Parcours", href: "/paths" },
+          { label: path.title, href: `/paths/${path.id}/edit` },
+        ]}
+        title="Quiz final"
+        description="Il conditionne l'émission du certificat de ce parcours."
+        actions={<GhostLink href={`/paths/${path.id}/edit`}>Retour au parcours</GhostLink>}
+      />
+      <QuizManager
+        path={path}
+        quiz={
+          quiz
+            ? {
+                id: quiz.id,
+                passThreshold: quiz.passThreshold,
+                questionsToDraw: quiz.questionsToDraw,
+                isActive: quiz.isActive,
+                activeQuestionCount: quiz.activeQuestionCount,
+              }
+            : null
+        }
+        questions={questions}
+      />
+    </main>
   );
 }

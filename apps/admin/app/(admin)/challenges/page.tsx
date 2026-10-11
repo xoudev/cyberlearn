@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
-import { PageHeader, PrimaryLink, Tag, UI, type Tone } from "../_components/admin-ui";
+import { PageHeader, PrimaryLink, Tag, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { ActiveToggle } from "./_components/active-toggle";
 
@@ -69,7 +69,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
         0,
       ],
       cells: [
-        <span key="r" className="mono" style={{ color: UI.muted }}>
+        <span key="r" className="mono" style={{ color: "var(--a-muted)" }}>
           {c.refCode}
         </span>,
         <span key="t" style={{ display: "block", maxWidth: 280 }}>
@@ -77,7 +77,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
             style={{
               display: "block",
               fontWeight: 600,
-              color: UI.fg,
+              color: "var(--a-fg)",
               fontSize: 13,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -86,7 +86,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
           >
             {c.title}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: UI.muted }}>
+          <span className="mono" style={{ fontSize: 10, color: "var(--a-muted)" }}>
             {c.slug}
           </span>
         </span>,
@@ -97,7 +97,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
             fontSize: 10.5,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: UI.muted,
+            color: "var(--a-muted)",
           }}
         >
           {CAT_LABEL[c.category] ?? c.category}
@@ -108,7 +108,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
         <Tag key="ty" tone={TYPE_TONE[c.type] ?? "neutral"}>
           {c.type}
         </Tag>,
-        <b key="x" style={{ color: UI.turquoise }}>
+        <b key="x" style={{ color: "var(--a-accent)" }}>
           +{String(c.xpReward)}
         </b>,
         String(c._count.progress),
@@ -123,7 +123,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Gamification"
+        crumbs={[{ label: "Gamification" }]}
         title="Challenges"
         description={`${String(challenges.length)} challenge${challenges.length !== 1 ? "s" : ""} · ${String(activeCount)} actif${activeCount !== 1 ? "s" : ""}. CTF, puzzles et labs proposés dans la section Défis.`}
         actions={<PrimaryLink href="/challenges/new">Nouveau challenge</PrimaryLink>}

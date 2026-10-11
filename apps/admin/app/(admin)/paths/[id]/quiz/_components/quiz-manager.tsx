@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
 import {
@@ -186,64 +185,7 @@ function Field({
 
 export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element {
   return (
-    <div className="admin-page-content" style={{ maxWidth: 820 }}>
-      <div className="admin-page-header">
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#7F7BA9",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ width: 14, height: 1, background: DANGER, display: "inline-block" }} />
-            Admin / Parcours / Quiz
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Quiz · {path.title}
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#7F7BA9",
-              margin: "8px 0 0",
-            }}
-          >
-            {"Quiz final qui conditionne l'émission du certificat de ce parcours."}
-          </p>
-        </div>
-        <Link
-          href={`/paths/${path.id}/edit`}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "#7F7BA9",
-            border: `1px solid ${BORDER}`,
-            padding: "9px 16px",
-            whiteSpace: "nowrap",
-          }}
-        >
-          ← Parcours
-        </Link>
-      </div>
-
+    <>
       <SettingsForm path={path} quiz={quiz} />
 
       {quiz ? (
@@ -253,7 +195,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
           {"Enregistre d'abord les réglages pour créer le quiz, puis ajoute des questions."}
         </p>
       )}
-    </div>
+    </>
   );
 }
 

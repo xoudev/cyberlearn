@@ -5,37 +5,22 @@ import Link from "next/link";
  * Server-safe presentation primitives for the admin console. All visual
  * rules live in admin-ui.css; these components only compose class names so
  * pages stay declarative and the system remains responsive by default.
+ *
+ * There is no palette here. A colour an inline style still needs is the CSS
+ * variable itself, "var(--a-muted)", which admin-ui.css points at the shared
+ * token: a copy in hex is how the console's reds and blues drifted from the
+ * site's.
  */
-
-export const UI = {
-  bg: "#030219",
-  surface: "#0A0826",
-  surfaceDeep: "#05041A",
-  border: "#1F1B47",
-  borderStrong: "#2A2560",
-  fg: "#F5F5FA",
-  fg2: "#B8B5D1",
-  muted: "#7F7BA9",
-  faint: "#3F3D5C",
-  turquoise: "#0AFFD4",
-  blue: "#0024FF",
-  blueSoft: "#6E8BFF",
-  danger: "#FF4D6D",
-  warning: "#FFB020",
-  purple: "#B14DFF",
-  mono: "var(--font-mono)",
-  sans: "var(--font-sans)",
-} as const;
 
 export type Tone = "neutral" | "accent" | "info" | "warning" | "danger" | "purple";
 
 const TONE_COLOR: Record<Tone, string> = {
-  neutral: UI.muted,
-  accent: UI.turquoise,
-  info: UI.blueSoft,
-  warning: UI.warning,
-  danger: UI.danger,
-  purple: UI.purple,
+  neutral: "var(--a-muted)",
+  accent: "var(--a-accent)",
+  info: "var(--a-info)",
+  warning: "var(--a-warning)",
+  danger: "var(--a-danger)",
+  purple: "var(--a-purple)",
 };
 
 export function toneColor(tone: Tone): string {
@@ -47,13 +32,28 @@ export type CssWithVars = React.CSSProperties & Record<`--${string}`, string>;
 
 // ── Page scaffolding ──────────────────────────────────────────────────────────
 
+/**
+ * One step of the trail above a page title. A step with an href is a page you
+ * can go back to; one without is the section the page belongs to, or a place
+ * that has no page of its own (the school a class is in).
+ */
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+
+/**
+ * The head of every console page: where it sits, what it is, what you can do
+ * from it. The trail starts with the section and lists the parents; the page
+ * itself is the title, not a last crumb.
+ */
 export function PageHeader({
-  eyebrow,
+  crumbs,
   title,
   description,
   actions,
 }: {
-  eyebrow: string;
+  crumbs: readonly [Crumb, ...Crumb[]];
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
@@ -61,7 +61,21 @@ export function PageHeader({
   return (
     <header className="a-page-head">
       <div>
-        <div className="a-eyebrow">{eyebrow}</div>
+        <nav className="a-eyebrow" aria-label="Fil d'Ariane">
+          <ol className="a-crumbs">
+            {crumbs.map((crumb, index) => (
+              // A school and its year can share a name, so the place in the
+              // trail is part of the key.
+              <li key={`${String(index)}:${crumb.label}`}>
+                {crumb.href !== undefined ? (
+                  <Link href={crumb.href}>{crumb.label}</Link>
+                ) : (
+                  crumb.label
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
         <h1 className="a-h1">{title}</h1>
         {description ? <p className="a-sub">{description}</p> : null}
       </div>
@@ -235,7 +249,7 @@ export function Monogram({
   size?: number;
   tone?: Tone;
 }): React.ReactElement {
-  const accent = tone === "neutral" ? UI.borderStrong : TONE_COLOR[tone];
+  const accent = tone === "neutral" ? "var(--a-border-2)" : TONE_COLOR[tone];
   return (
     <span
       style={{
@@ -244,12 +258,12 @@ export function Monogram({
         display: "grid",
         placeItems: "center",
         flexShrink: 0,
-        background: `color-mix(in srgb, ${accent} 22%, ${UI.surfaceDeep})`,
+        background: `color-mix(in srgb, ${accent} 22%, var(--a-surface-2))`,
         border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
-        fontFamily: UI.mono,
+        fontFamily: "var(--font-mono)",
         fontWeight: 700,
         fontSize: Math.round(size * 0.38),
-        color: UI.fg2,
+        color: "var(--a-fg-2)",
         textTransform: "uppercase",
       }}
     >

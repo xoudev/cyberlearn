@@ -60,10 +60,15 @@ export default async function AdminClassPage({
   return (
     <main className="a-page">
       <PageHeader
-        // Where the class sits is the eyebrow's job - it is the line above the
-        // name on every other page of the console, and it answers "which
-        // SIO1-A?" without a separate breadcrumb row.
-        eyebrow={`${klass.promotion.establishment.name} · ${klass.promotion.name}`}
+        // Where the class sits is the trail's job - it is the line above the
+        // name on every page of the console, and the school and the year
+        // answer "which SIO1-A?". Neither has a page of its own to link to.
+        crumbs={[
+          { label: "Structure" },
+          { label: "Classes", href: "/classes" },
+          { label: klass.promotion.establishment.name },
+          { label: klass.promotion.name },
+        ]}
         title={
           <>
             {klass.name}

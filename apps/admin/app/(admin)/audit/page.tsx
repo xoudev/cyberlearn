@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
-import { Monogram, PageHeader, Tag, UI, type Tone } from "../_components/admin-ui";
+import { Monogram, PageHeader, Tag, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -74,8 +74,10 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
           <span className="mono">{actor}</span>
         </span>,
         <span key="t" className="mono">
-          <span style={{ color: UI.turquoise }}>{log.targetType}</span>
-          {log.targetId && <span style={{ color: UI.muted }}> · {log.targetId.slice(0, 8)}</span>}
+          <span style={{ color: "var(--a-accent)" }}>{log.targetType}</span>
+          {log.targetId && (
+            <span style={{ color: "var(--a-muted)" }}> · {log.targetId.slice(0, 8)}</span>
+          )}
         </span>,
         metaStr ? (
           <span
@@ -89,18 +91,18 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               fontSize: 10.5,
-              color: UI.muted,
+              color: "var(--a-muted)",
               verticalAlign: "middle",
             }}
           >
             {metaStr}
           </span>
         ) : (
-          <span key="m" style={{ color: UI.muted }}>
+          <span key="m" style={{ color: "var(--a-muted)" }}>
             Aucun détail
           </span>
         ),
-        <span key="d" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
+        <span key="d" className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
           {formatTs(log.createdAt)}
         </span>,
       ],
@@ -110,7 +112,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Système"
+        crumbs={[{ label: "Système" }]}
         title="Audit log"
         description={`${String(logs.length)} entrées récentes · rétention 1 an. Chaque action d'administration est journalisée avec son acteur et sa cible.`}
       />

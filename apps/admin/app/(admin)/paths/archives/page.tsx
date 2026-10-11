@@ -15,7 +15,7 @@ export default async function ArchivedPathsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }, { label: "Parcours", href: "/paths" }]}
         title={`Parcours archivés (${String(rows.length)})`}
         description="Invisibles sur le site et dans l'app. Les progressions et les certificats déjà délivrés sont conservés. Change le statut d'un parcours pour le remettre en brouillon : il retourne dans la liste des parcours."
         actions={<GhostLink href="/paths">Retour aux parcours</GhostLink>}

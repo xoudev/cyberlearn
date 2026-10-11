@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   updateBadgeAction,
   deleteBadgeAction,
-  toggleBadgeActiveAction,
   type BadgeFormState,
 } from "../../../_actions/badge-actions";
 import type { LessonOption, PathOption } from "../../../new/_components/new-badge-form";
@@ -331,88 +330,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
   const canDelete = badge._count.userBadges === 0;
 
   return (
-    <div className="admin-page-content" style={{ maxWidth: 780 }}>
-      {/* Header */}
-      <div className="admin-page-header">
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#7F7BA9",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ width: 14, height: 1, background: DANGER, display: "inline-block" }} />
-            Admin / Badges / {badge.refCode}
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Éditer le badge
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#7F7BA9",
-              margin: "4px 0 0",
-            }}
-          >
-            {String(badge._count.userBadges)} utilisateur(s) ont ce badge
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          {/* Toggle active */}
-          <form action={toggleBadgeActiveAction}>
-            <input type="hidden" name="id" value={badge.id} />
-            <button
-              type="submit"
-              style={{
-                padding: "9px 16px",
-                background: "transparent",
-                border: `1px solid ${badge.isActive ? "#FF4D6D" : "#0AFFD4"}`,
-                color: badge.isActive ? "#FF4D6D" : "#0AFFD4",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              {badge.isActive ? "Désactiver" : "Activer"}
-            </button>
-          </form>
-          <Link
-            href="/badges"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "#7F7BA9",
-              border: `1px solid ${BORDER}`,
-              padding: "9px 16px",
-              textDecoration: "none",
-            }}
-          >
-            ← Retour
-          </Link>
-        </div>
-      </div>
-
+    <>
       {state.error && (
         <div
           style={{
@@ -701,6 +619,6 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
           </p>
         )}
       </div>
-    </div>
+    </>
   );
 }

@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from "react";
 import { moderate, moderationNotice, RULE_LABEL } from "@cyberlearn/lib";
-import { UI } from "../../_components/admin-ui";
 
 /**
  * The filter, with a box to type into.
@@ -20,9 +19,9 @@ import { UI } from "../../_components/admin-ui";
  */
 
 const VERDICT_TONE: Record<string, string> = {
-  ALLOW: UI.turquoise,
-  REVIEW: UI.warning,
-  BLOCK: UI.danger,
+  ALLOW: "var(--a-accent)",
+  REVIEW: "var(--a-warning)",
+  BLOCK: "var(--a-danger)",
 };
 
 const VERDICT_SAYS: Record<string, string> = {
@@ -102,19 +101,21 @@ export function ModerationProbe(): React.JSX.Element {
           alignItems: "baseline",
           gap: 12,
           padding: "10px 12px",
-          background: UI.surfaceDeep,
-          border: `1px solid ${UI.border}`,
+          background: "var(--a-surface-2)",
+          border: "1px solid var(--a-border)",
         }}
       >
         <strong
           style={{
-            font: `700 18px ${UI.mono}`,
-            color: VERDICT_TONE[result.verdict] ?? UI.fg,
+            font: "700 18px var(--font-mono)",
+            color: VERDICT_TONE[result.verdict] ?? "var(--a-fg)",
           }}
         >
           {result.verdict}
         </strong>
-        <span style={{ font: `600 14px ${UI.mono}`, color: UI.fg2 }}>{result.score} pts</span>
+        <span style={{ font: "600 14px var(--font-mono)", color: "var(--a-fg-2)" }}>
+          {result.score} pts
+        </span>
         <span className="a-field-hint">{VERDICT_SAYS[result.verdict]}</span>
       </div>
 
@@ -131,8 +132,10 @@ export function ModerationProbe(): React.JSX.Element {
             {result.findings.map((f, i) => (
               <tr key={`${f.rule}-${String(i)}`}>
                 <td>{RULE_LABEL[f.rule]}</td>
-                <td style={{ font: `600 13px ${UI.mono}` }}>{f.severity}</td>
-                <td style={{ font: `400 13px ${UI.mono}`, color: UI.fg2 }}>{f.match}</td>
+                <td style={{ font: "600 13px var(--font-mono)" }}>{f.severity}</td>
+                <td style={{ font: "400 13px var(--font-mono)", color: "var(--a-fg-2)" }}>
+                  {f.match}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -141,14 +144,16 @@ export function ModerationProbe(): React.JSX.Element {
         <p className="a-field-hint">Aucun motif. Le texte passe sans laisser de trace.</p>
       )}
 
-      <div style={{ borderTop: `1px solid ${UI.border}`, paddingTop: 12 }}>
+      <div style={{ borderTop: "1px solid var(--a-border)", paddingTop: 12 }}>
         <p className="a-field-hint" style={{ marginBottom: 6 }}>
           Ce que lit l&apos;auteur d&apos;une note refusée :
         </p>
-        <p style={{ font: `700 14px ${UI.sans}`, color: UI.fg, margin: "0 0 4px" }}>
+        <p style={{ font: "700 14px var(--font-sans)", color: "var(--a-fg)", margin: "0 0 4px" }}>
           {notice.title}
         </p>
-        <p style={{ font: `400 13px ${UI.sans}`, color: UI.fg2, margin: 0 }}>{notice.body}</p>
+        <p style={{ font: "400 13px var(--font-sans)", color: "var(--a-fg-2)", margin: 0 }}>
+          {notice.body}
+        </p>
       </div>
     </div>
   );

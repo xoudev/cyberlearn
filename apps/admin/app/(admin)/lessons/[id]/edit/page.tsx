@@ -2,6 +2,8 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
+import { PageHeader, Tag } from "../../../_components/admin-ui";
+import { CONTENT_STATUS } from "../../../_components/content-status";
 import { EditLessonClient } from "./_components/edit-lesson-client";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
@@ -40,11 +42,25 @@ export default async function EditLessonPage({
 
   const coverPreview = await resolveLessonCoverSrc(lesson.coverImageUrl);
 
+  const status = CONTENT_STATUS[lesson.status];
+
   return (
-    <EditLessonClient
-      lesson={lesson}
-      coverPreview={coverPreview}
-      lessonUrlPrefix={learnerLessonUrlPrefix()}
-    />
+    <main className="a-page">
+      <PageHeader
+        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
+        title={lesson.title}
+        description={
+          <>
+            <span className="a-mono">{lesson.refCode}</span> ·{" "}
+            <Tag tone={status.tone}>{status.label}</Tag>
+          </>
+        }
+      />
+      <EditLessonClient
+        lesson={lesson}
+        coverPreview={coverPreview}
+        lessonUrlPrefix={learnerLessonUrlPrefix()}
+      />
+    </main>
   );
 }

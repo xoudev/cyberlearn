@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState, useOptimistic, useTransition } from "react";
+import { toneColor } from "./admin-ui";
+import { CONTENT_STATUS, type ContentStatus } from "./content-status";
 
-type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-
-const META: Record<ContentStatus, { color: string; label: string }> = {
-  DRAFT: { color: "#7F7BA9", label: "Brouillon" },
-  PUBLISHED: { color: "#0AFFD4", label: "Publié" },
-  ARCHIVED: { color: "#FF4757", label: "Archivé" },
-};
+function statusMeta(status: ContentStatus): { color: string; label: string } {
+  const { label, tone } = CONTENT_STATUS[status];
+  return { color: toneColor(tone), label };
+}
 
 const ALL: ContentStatus[] = ["DRAFT", "PUBLISHED", "ARCHIVED"];
 
@@ -27,7 +26,7 @@ export function StatusBadge({
   const [confirmed, setConfirmed] = useState<ContentStatus>(currentStatus);
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(confirmed);
 
-  const meta = META[optimisticStatus];
+  const meta = statusMeta(optimisticStatus);
   const options = ALL.filter((s) => s !== optimisticStatus);
 
   function pick(next: ContentStatus) {
@@ -155,7 +154,7 @@ export function StatusBadge({
                   fontWeight: 700,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: META[s].color,
+                  color: statusMeta(s).color,
                   textAlign: "left",
                 }}
               >
@@ -164,11 +163,11 @@ export function StatusBadge({
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: META[s].color,
+                    background: statusMeta(s).color,
                     flexShrink: 0,
                   }}
                 />
-                {META[s].label}
+                {statusMeta(s).label}
               </button>
             ))}
           </div>
@@ -183,11 +182,11 @@ export function StatusBadge({
             right: 0,
             zIndex: 50,
             background: "#0A0826",
-            border: "1px solid rgba(255,71,87,0.4)",
+            border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
             padding: "6px 10px",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#FF4757",
+            color: "var(--a-danger)",
             whiteSpace: "nowrap",
             display: "flex",
             alignItems: "center",

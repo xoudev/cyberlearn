@@ -380,9 +380,9 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="admin-page-content">
+    <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
         title="Synchroniser avec le dépôt"
         description="Les leçons de content/lessons, les parcours de content/paths et leurs examens de content/quizzes, comparés à la base. Rien n'est écrit sans confirmation, et rien n'est publié : les nouvelles leçons et les nouveaux parcours arrivent en brouillon. Le slug, le statut et l'image de couverture d'une leçon existante ne changent jamais."
         actions={<GhostLink href="/lessons">Retour aux leçons</GhostLink>}

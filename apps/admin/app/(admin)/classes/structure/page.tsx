@@ -33,7 +33,7 @@ export default async function AdminStructurePage(): Promise<React.ReactElement> 
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Structure"
+        crumbs={[{ label: "Structure" }, { label: "Classes", href: "/classes" }]}
         title="Établissements et promos"
         description="Renommer, corriger un slug, archiver une année. Archiver un établissement retire aussi ses promos et ses classes, sans toucher à leur propre état."
         actions={
