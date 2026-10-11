@@ -1,3 +1,8 @@
+# Every text file is checked out with LF, Windows included. Biome formats
+# with LF and the MDX tests compare LF text, so a CRLF working copy (what
+# core.autocrlf=true gives) fails both locally while CI, on Linux, passes.
+* text=auto eol=lf
+
 # Bundled runtimes are verified byte for byte by scripts/verify-runtimes.sh:
 # no line-ending conversion may touch them, on any platform.
 apps/web/public/runtimes/** -text
