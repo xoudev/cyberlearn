@@ -1,19 +1,24 @@
+import { AuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** What the mocked Supabase client reports. Set per test. */
 interface MockAuth {
   user: { id: string } | null;
   assurance: { currentLevel: string; nextLevel: string };
-  /** getUser rejects, the way an unreachable Supabase does. */
-  unreachable: boolean;
+  /**
+   * How Supabase fails to answer. `unreachable` is what supabase-js resolves
+   * a network failure or a 5xx to (it does not reject); `stalled` never
+   * answers at all.
+   */
+  failure: "none" | "unreachable" | "stalled";
   getUserCalls: number;
 }
 const auth = vi.hoisted(
   (): MockAuth => ({
     user: null,
     assurance: { currentLevel: "aal1", nextLevel: "aal1" },
-    unreachable: false,
+    failure: "none",
     getUserCalls: 0,
   }),
 );
@@ -23,9 +28,14 @@ vi.mock("@supabase/ssr", () => ({
     auth: {
       getUser: () => {
         auth.getUserCalls += 1;
-        return auth.unreachable
-          ? Promise.reject(new Error("fetch failed"))
-          : Promise.resolve({ data: { user: auth.user }, error: null });
+        if (auth.failure === "stalled") return new Promise(() => undefined);
+        if (auth.failure === "unreachable") {
+          return Promise.resolve({
+            data: { user: null },
+            error: new AuthRetryableFetchError("fetch failed", 0),
+          });
+        }
+        return Promise.resolve({ data: { user: auth.user }, error: null });
       },
       mfa: {
         getAuthenticatorAssuranceLevel: () =>
@@ -57,8 +67,12 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
   auth.user = null;
   auth.assurance = { currentLevel: "aal1", nextLevel: "aal1" };
-  auth.unreachable = false;
+  auth.failure = "none";
   auth.getUserCalls = 0;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("the console's front door", () => {
@@ -233,9 +247,19 @@ describe("why /login was reached", () => {
   });
 
   it("says the auth service is unreachable when it is", async () => {
-    auth.unreachable = true;
-    const response = await middleware(request("/dashboard", SESSION_COOKIE));
-    expect(target(response)).toBe("/login?error=auth_unavailable");
+    auth.failure = "unreachable";
+    const response = await middleware(request("/users", SESSION_COOKIE));
+    expect(target(response)).toBe(
+      `/login?redirectTo=${encodeURIComponent("/users")}&error=auth_unavailable`,
+    );
+  });
+
+  it("says so too when the auth service does not answer in time", async () => {
+    vi.useFakeTimers();
+    auth.failure = "stalled";
+    const pending = middleware(request("/dashboard", SESSION_COOKIE));
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(target(await pending)).toBe("/login?error=auth_unavailable");
   });
 
   it("says nothing on a first visit", async () => {

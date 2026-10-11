@@ -2,12 +2,12 @@
  * The six digits of a TOTP code, typed or pasted, and the rule that sends them
  * without a click.
  *
- * Five screens ask for that code: the site's sign-in challenge and its
+ * Six screens ask for that code: the site's sign-in challenge and its
  * enrolment, the console's challenge and its enrolment, and the app's
- * challenge. Only the first one sent it on its own; on the others the button
- * stayed the only way in, and on the console Enter did nothing at all. The
- * rule lives here, pure, because the app does not depend on @cyberlearn/ui and
- * has to share it all the same.
+ * challenge and its enrolment. Only the first one sent it on its own; on the
+ * others the button stayed the only way in, and on the console Enter did
+ * nothing at all. The rule lives here, pure, because the app does not depend
+ * on @cyberlearn/ui and has to share it all the same.
  */
 
 /** A TOTP code is always this long (RFC 6238 with Supabase's defaults). */

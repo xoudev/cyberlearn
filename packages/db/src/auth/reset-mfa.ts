@@ -83,3 +83,31 @@ export function mfaResetAuditData(
     },
   };
 }
+
+/**
+ * What the operator reads when the audit row could not be written after the
+ * deletions ran. The factors that went are gone whatever the database says, so
+ * a failure at this last step must not read as "nothing changed": the operator
+ * might run the reset again, or leave it unrecorded, which is the one thing the
+ * audit row is there to prevent. Names what to write down by hand instead.
+ */
+export function unrecordedResetNotice(
+  userId: string,
+  result: MfaResetResult,
+  at: Date,
+  reason: string,
+): string {
+  const removed = String(result.removed.length);
+  const failed = String(result.failed.length);
+  const outcome =
+    result.removed.length > 0
+      ? `${removed} factor(s) were removed, but the audit_logs row could not be written: ${reason}`
+      : `No factor was removed, and the attempt could not be written to audit_logs: ${reason}`;
+  return [
+    `❌ ${outcome}`,
+    result.removed.length > 0
+      ? "   The reset did happen: do not run it again. Record it by hand in the operational incident log:"
+      : "   Record the attempt by hand in the operational incident log:",
+    `   account ${userId}, ${at.toISOString()}, ${MFA_RESET_AUDIT_ACTION}, ${removed} removed, ${failed} not removed.`,
+  ].join("\n");
+}

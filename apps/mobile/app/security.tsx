@@ -229,7 +229,9 @@ export default function Security(): React.JSX.Element {
               keyboardType="number-pad"
               autoComplete="one-time-code"
               textContentType="oneTimeCode"
-              autoFocus
+              // No autoFocus: the QR code cannot be scanned from its own
+              // screen, and a keyboard opening at once would cover the
+              // manual key just above, which has to be read or copied first.
               onSubmitEditing={submitEnrollmentByHand}
             />
             <GradientButton

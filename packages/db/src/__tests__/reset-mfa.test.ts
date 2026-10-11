@@ -12,6 +12,7 @@ import {
   mfaResetAuditData,
   removeFactors,
   type MfaAdminApi,
+  unrecordedResetNotice,
 } from "../auth/reset-mfa.js";
 
 const USER_ID = "8b0d5c1e-2f4a-4c1b-9b7e-1f2a3b4c5d6e";
@@ -95,5 +96,36 @@ describe("mfaResetAuditData", () => {
       targetId: USER_ID,
       metadata: { source: "cli", removedFactors: 1, failedFactors: 1 },
     });
+  });
+});
+
+describe("unrecordedResetNotice", () => {
+  const at = new Date("2026-10-11T09:30:00Z");
+
+  it("says the factors are gone and what to record by hand", () => {
+    const notice = unrecordedResetNotice(
+      USER_ID,
+      { removed: ["a", "b"], failed: [] },
+      at,
+      "connection refused",
+    );
+    expect(notice).toContain("2 factor(s) were removed");
+    expect(notice).toContain("audit_logs row could not be written: connection refused");
+    expect(notice).toContain("do not run it again");
+    expect(notice).toContain(USER_ID);
+    expect(notice).toContain("2026-10-11T09:30:00.000Z");
+    expect(notice).toContain(MFA_RESET_AUDIT_ACTION);
+  });
+
+  it("does not claim a reset when every deletion was refused", () => {
+    const notice = unrecordedResetNotice(
+      USER_ID,
+      { removed: [], failed: [{ id: "a", message: "factor locked" }] },
+      at,
+      "connection refused",
+    );
+    expect(notice).toContain("No factor was removed");
+    expect(notice).not.toContain("do not run it again");
+    expect(notice).toContain("0 removed, 1 not removed");
   });
 });

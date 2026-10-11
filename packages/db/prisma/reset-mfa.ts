@@ -13,7 +13,13 @@
 
 import { createInterface } from "node:readline/promises";
 import { authEmailSchema } from "@cyberlearn/types";
-import { listTotpFactors, mfaResetAuditData, removeFactors } from "../src/auth/reset-mfa.js";
+import {
+  listTotpFactors,
+  type MfaResetResult,
+  mfaResetAuditData,
+  removeFactors,
+  unrecordedResetNotice,
+} from "../src/auth/reset-mfa.js";
 import { createPrismaClient } from "../src/prisma.js";
 import { createSupabaseAdminClient } from "../src/supabase/admin.js";
 
@@ -29,6 +35,20 @@ async function confirm(email: string): Promise<boolean> {
   }
 }
 
+/**
+ * Writes the audit row of a reset that has already run. Returns why it could
+ * not, or null: by now the factors are deleted, so a database failure is
+ * reported as such instead of surfacing as "Reset failed".
+ */
+async function recordReset(userId: string, result: MfaResetResult): Promise<string | null> {
+  try {
+    await prisma.auditLog.create({ data: mfaResetAuditData(userId, result) });
+    return null;
+  } catch (e: unknown) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
 async function main() {
   const parsed = authEmailSchema.safeParse(process.argv[2]);
   if (!parsed.success) {
@@ -41,6 +61,8 @@ async function main() {
     process.exit(1);
   }
 
+  // Also proves the database answers before anything is deleted: a wrong
+  // DATABASE_URL stops here, not after the factors are gone.
   const user = await prisma.user.findUnique({
     where: { email },
     select: { id: true, role: true },
@@ -71,11 +93,16 @@ async function main() {
     user.id,
     factors.map((factor) => factor.id),
   );
-  await prisma.auditLog.create({ data: mfaResetAuditData(user.id, result) });
+  const resetAt = new Date();
+  const auditFailure = await recordReset(user.id, result);
 
   console.log(`✅ ${String(result.removed.length)} factor(s) removed`);
   for (const failure of result.failed) {
     console.error(`   - ${failure.id} was not removed: ${failure.message}`);
+  }
+  if (auditFailure !== null) {
+    console.error(unrecordedResetNotice(user.id, result, resetAt, auditFailure));
+    process.exit(1);
   }
   if (result.failed.length > 0) process.exit(1);
 }

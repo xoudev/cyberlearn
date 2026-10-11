@@ -1,4 +1,5 @@
 import { authRedirectSchema } from "@cyberlearn/types";
+import { z } from "zod";
 
 /**
  * Where an admin lands after signing in, and how that place survives the trip
@@ -15,6 +16,14 @@ import { authRedirectSchema } from "@cyberlearn/types";
  */
 
 export const ADMIN_HOME = "/dashboard";
+
+/**
+ * Why the middleware sent a request to /login, as `?error=` carries it. One
+ * list for the middleware that writes the code and the page that reads it: the
+ * page checks the query value against it rather than looking it up as it comes.
+ */
+export const loginErrorSchema = z.enum(["session_expired", "auth_unavailable"]);
+export type LoginError = z.infer<typeof loginErrorSchema>;
 
 /** Reachable without a session: the sign-in page and what crawlers read. */
 export function isPublicPath(pathname: string): boolean {

@@ -1,6 +1,13 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
-import { isMfaPath, isPublicPath, returnPathOf, withReturnPath } from "@/lib/auth-redirect";
+import {
+  isMfaPath,
+  isPublicPath,
+  type LoginError,
+  returnPathOf,
+  withReturnPath,
+} from "@/lib/auth-redirect";
 
 export { isMfaPath, isPublicPath };
 
@@ -104,9 +111,6 @@ async function withTimeout<T>(promise: Promise<T>): Promise<T | null> {
   }
 }
 
-/** The codes /login turns into a sentence (see app/(auth)/login/page.tsx). */
-type LoginError = "auth_unavailable" | "session_expired";
-
 /**
  * True when the request carries a Supabase session cookie, split in chunks
  * (`sb-<ref>-auth-token.0`, `.1`) or not. Only decides whether a check is worth
@@ -203,8 +207,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (!user) {
     // Say why, when it can be told: Supabase not answering is not the same
-    // as a session that ran out, and both differ from a first visit.
-    if (userResult === null) return toLogin("auth_unavailable");
+    // as a session that ran out, and both differ from a first visit. Not
+    // answering is a timeout, or what supabase-js resolves a network failure
+    // or a 5xx to: no user, with a retryable fetch error, rather than a throw.
+    if (userResult === null || isAuthRetryableFetchError(userResult.error)) {
+      return toLogin("auth_unavailable");
+    }
     return toLogin(hasSessionCookie(request) ? "session_expired" : undefined);
   }
 

@@ -33,10 +33,11 @@ portal, and the native mobile application.
   `/mfa` sends a session with no verified factor (`nextLevel !== "aal2"`) on to
   its destination rather than showing a code it cannot satisfy.
 - Every screen that asks for a TOTP code (site challenge and enrolment, console
-  challenge and enrolment, app challenge) sends it on the sixth digit, once:
-  a refused code is not sent again on its own, and Enter or the button insists
-  on it. The rule is `@cyberlearn/lib/auth/otp-code`; the web field is
-  `OtpCodeInput` in `@cyberlearn/ui`. A pasted "123 456" keeps its six digits.
+  challenge and enrolment, app challenge and enrolment) sends it on the sixth
+  digit, once: a refused code is not sent again on its own, and Enter or the
+  button insists on it. The rule is `@cyberlearn/lib/auth/otp-code`; the web
+  field is `OtpCodeInput` in `@cyberlearn/ui`. A pasted "123 456" keeps its six
+  digits.
 - Password and TOTP settings are available on the website and in the native app.
 
 ## Admin flow
@@ -53,8 +54,10 @@ portal, and the native mobile application.
   value with `authRedirectSchema` and refuses the sign-in steps themselves
   (`apps/admin/lib/auth-redirect.ts`). A session already at AAL2 that opens
   `/login` is sent on to that page.
-- `/login?error=` explains why the middleware turned a request away
-  (`session_expired`, `auth_unavailable`).
+- `/login?error=` explains why the middleware turned a request away:
+  `session_expired`, or `auth_unavailable` when Supabase times out, cannot be
+  reached or answers with a 5xx. The page checks the value against that list
+  (`loginErrorSchema`); any other value gets a generic line.
 - Both TOTP screens offer **Annuler et se déconnecter**. The enrolment starts
   from a button, so it runs once even under React's development double effects.
 
@@ -72,6 +75,9 @@ The script (`packages/db/prisma/reset-mfa.ts`) needs `DATABASE_URL`,
 account's UUID, role and number of TOTP factors, asks for the address to be
 typed again, deletes the factors with `auth.admin.mfa.deleteFactor`, and writes
 a `user.mfa.reset` row to `audit_logs` (no actor, `metadata.source = "cli"`).
+If that row cannot be written once the factors are gone, the script says so,
+prints the account UUID and time to record by hand, and exits non-zero: the
+reset happened, do not run it again.
 Deleting a verified factor ends every session of the account; the next sign-in
 asks for a new enrolment. Check the person's identity out of band before
 running it, and record it in the operational incident log. Do not add an
