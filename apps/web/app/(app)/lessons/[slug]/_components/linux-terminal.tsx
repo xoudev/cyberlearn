@@ -27,7 +27,9 @@ import {
 } from "@/lib/linux-terminal/session";
 import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-terminal/timer";
 import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
+import { cssToken } from "@cyberlearn/ui";
 import { CommandExplanation } from "./command-explanation";
+import { linuxTerminalTheme } from "./terminal-themes";
 import { useExerciseRecord } from "./use-exercise-record";
 
 /**
@@ -248,18 +250,6 @@ function loadDevtools(): Promise<Uint8Array | null> {
   return file;
 }
 
-/**
- * Loads libv86.js once per page. A script added by the page's own code: the
- * CSP's 'strict-dynamic' trusts it, and 'wasm-unsafe-eval' (already there for
- * Pyodide) lets it compile its WebAssembly.
- */
-/** A site token's value, for a library that cannot read CSS variables. */
-export function cssToken(name: string, fallback: string): string {
-  if (typeof document === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value === "" ? fallback : value;
-}
-
 /** Waits for a font to be ready to measure, without ever blocking the machine. */
 async function waitForFont(font: string): Promise<void> {
   try {
@@ -272,6 +262,11 @@ async function waitForFont(font: string): Promise<void> {
   }
 }
 
+/**
+ * Loads libv86.js once per page. A script added by the page's own code: the
+ * CSP's 'strict-dynamic' trusts it, and 'wasm-unsafe-eval' (already there for
+ * Pyodide) lets it compile its WebAssembly.
+ */
 function loadV86(): Promise<V86Constructor> {
   runtime ??= new Promise<V86Constructor>((resolve, reject) => {
     const loaded = readV86();
@@ -522,34 +517,15 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       ]);
       // xterm paints with the colours it is given, not with CSS: it cannot
       // read var(--…), and fell back to black when it was handed tokens. The
-      // site's tokens are read here, their old values kept as fallbacks.
+      // site's tokens are read here (terminal-themes.ts), their old values
+      // kept as fallbacks, and so is the font.
       const monoFont = cssToken("--font-mono", "");
       const fontFamily = monoFont === "" ? "Menlo, monospace" : `${monoFont}, Menlo, monospace`;
       // Measured before the site's font is there, a cell is too small and the
       // screen outgrows its frame: wait for the font first.
       await waitForFont(`13px ${fontFamily}`);
       const term = new Terminal({
-        theme: {
-          background: cssToken("--color-bg-base", "#030219"),
-          foreground: cssToken("--color-text-secondary", "#B8B5D1"),
-          cursor: cssToken("--color-brand-turquoise", "#0AFFD4"),
-          black: cssToken("--color-bg-base", "#030219"),
-          blue: cssToken("--color-rarity-rare", "#6E8BFF"),
-          brightBlue: cssToken("--color-rarity-rare", "#6E8BFF"),
-          cyan: cssToken("--color-info", "#4D8BFF"),
-          brightCyan: cssToken("--color-info", "#4D8BFF"),
-          green: cssToken("--color-brand-turquoise", "#0AFFD4"),
-          brightGreen: cssToken("--color-brand-turquoise", "#0AFFD4"),
-          red: cssToken("--color-category-cybersec", "#FF4757"),
-          brightRed: cssToken("--color-category-cybersec", "#FF4757"),
-          yellow: cssToken("--color-warning", "#FFB020"),
-          brightYellow: cssToken("--color-rarity-legendary", "#FFB547"),
-          magenta: "#B14DFF",
-          brightMagenta: "#D580FF",
-          white: cssToken("--color-text-primary", "#F5F5FA"),
-          brightWhite: cssToken("--color-text-primary", "#F5F5FA"),
-          brightBlack: cssToken("--color-text-disabled", "#3F3D5C"),
-        },
+        theme: linuxTerminalTheme(containerRef.current),
         fontFamily,
         fontSize: 13,
         lineHeight: 1.35,

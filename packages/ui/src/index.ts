@@ -29,3 +29,5 @@ export {
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { cn } from "./lib/utils.js";
 export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";
+export { cssColor, cssToken, toHexColor } from "./lib/css-color.js";
+export type { MonacoTheme, MonacoTokenRule } from "./lib/monaco-theme.js";

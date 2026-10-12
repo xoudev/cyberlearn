@@ -2,6 +2,65 @@
 
 ---
 
+## 2026-10-11 - Les éditeurs de code et le terminal simulé plantaient sur une couleur en variable CSS
+
+### Constat
+
+Même cause que les schémas (entrée du 2026-10-06) : le passage des couleurs
+aux jetons (#425, `0b0c9d18`) avait aussi réécrit en `var(--color-*)` les
+thèmes donnés à Monaco et à xterm, qui lisent leurs couleurs en JavaScript et
+non dans la feuille de style. Monaco prend `editor.background` et
+`editor.foreground` comme couleurs par défaut des jetons, et son analyseur
+lève « Illegal value for token color: var(--color-bg-elevated) » dans
+`editor.defineTheme`. Ses autres couleurs non hexadécimales sont peintes en
+rouge, sans erreur : c'était déjà le cas du curseur et du numéro de ligne
+actif, en `var(--cosmetic-accent)` depuis bien avant #425. xterm, lui, ignore
+une couleur qu'il ne sait pas lire et met la sienne à la place.
+
+### Conséquence
+
+Du 6 au 11 octobre, une leçon dont la section affichait un `CodePlayground` ou
+un `PythonChallenge` plantait en entier dès que l'éditeur se montait. L'éditeur
+MDX partagé (`@cyberlearn/ui/mdx-editor`) plantait de même en vue code, dans la
+console comme dans l'éditeur de leçons des professeurs. Le terminal simulé
+gardait la palette d'xterm (et un fond noir quand le thème de terminal équipé
+ne se lisait pas) au lieu de celle du site.
+
+### Correctif
+
+`cssColor(nom, repli, portée)` (`packages/ui/src/lib/css-color.ts`, exporté
+par `@cyberlearn/ui`) lit un jeton sur un élément sonde placé sous la portée
+(là où les cosmétiques équipés s'appliquent), prend la couleur calculée par
+le navigateur, `var()` imbriquées résolues, et la rend en `#rrggbb` ou
+`#rrggbbaa`. Sur le serveur, pour un jeton absent ou une couleur qu'il ne sait
+pas convertir, c'est le repli hexadécimal. `cssToken`, qui lit un jeton tel
+qu'écrit (la police de la machine Linux), a rejoint le même module. Chaque
+thème est construit par une fonction exportée : `lessonEditorTheme`
+(`lesson-editor-theme.ts`, un seul thème pour `CodePlayground` et
+`PythonChallenge`), `mdxEditorTheme` (`packages/ui`), `simulatedTerminalTheme`
+et `linuxTerminalTheme` (`terminal-themes.ts`). Monaco reçoit les valeurs
+sombres des jetons en hexadécimal, et seul l'accent de l'apprenant (curseur,
+numéro de ligne actif) est lu à l'exécution. Chaque couleur des terminaux
+passe par `cssColor`, le thème de terminal équipé compris.
+
+### Tests
+
+- `css-color.test.ts` (`packages/ui`) : conversion des formats calculés par un
+  navigateur, repli sur le serveur, pour un jeton absent et pour une couleur
+  non convertible, lecture sous la portée, sonde retirée.
+- `mdx-editor-theme.test.ts` (`packages/ui`) et `library-colours.test.ts`
+  (`apps/web`) : chaque couleur de chaque thème, Monaco comme xterm, est
+  hexadécimale sur le serveur, sous jsdom et avec les valeurs d'un navigateur ;
+  le thème tel que #425 l'avait laissé y est refusé.
+
+### Règle
+
+Une couleur donnée à une bibliothèque (Monaco, xterm, un canvas, Mermaid) est
+une valeur concrète, jamais un `var()` : soit un littéral hexadécimal tiré des
+jetons, soit la valeur que `cssColor` lit dans la page, avec son repli.
+
+---
+
 ## 2026-10-11 - Une recherche dans le catalogue listait les leçons des classes des autres
 
 ### Constat
