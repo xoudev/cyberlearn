@@ -14,13 +14,17 @@ import { describe, expect, it } from "vitest";
 
 const ADMIN_ROUTES = join(__dirname, "..", "..", "app", "(admin)");
 
-function pages(dir: string, out: string[] = []): string[] {
+function filesNamed(name: string, dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) pages(full, out);
-    else if (entry === "page.tsx") out.push(full);
+    if (statSync(full).isDirectory()) filesNamed(name, full, out);
+    else if (entry === name) out.push(full);
   }
   return out;
+}
+
+function pages(dir: string): string[] {
+  return filesNamed("page.tsx", dir);
 }
 
 describe("console pages", () => {
@@ -40,6 +44,27 @@ describe("console pages", () => {
       // that needs to know who is looking may keep what the check returns.
       expect(source).toMatch(
         /export default async function[\s\S]*?\{\r?\n\s*(?:const \w+ = )?await requireAdminPage\(\);/,
+      );
+    },
+  );
+});
+
+// A route handler has no layout at all: the check in it is the only one past
+// middleware, which knows a session but not a role.
+describe("console route handlers", () => {
+  const found = filesNamed("route.ts", ADMIN_ROUTES);
+
+  it("are found at all", () => {
+    expect(found.length).toBeGreaterThan(0);
+  });
+
+  it.each(found.map((f) => [relative(ADMIN_ROUTES, f).split(sep).join("/"), f]))(
+    "%s checks the caller first",
+    (_name, file) => {
+      const source = readFileSync(file, "utf8");
+      expect(source).toContain('import { requireAdminAction } from "@/lib/auth";');
+      expect(source).toMatch(
+        /export async function (?:GET|POST|PUT|PATCH|DELETE)\([^)]*\)[^{]*\{\r?\n\s*(?:const \w+ = )?await requireAdminAction\(\);/,
       );
     },
   );

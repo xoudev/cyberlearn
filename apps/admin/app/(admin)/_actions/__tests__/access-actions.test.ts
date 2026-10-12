@@ -317,3 +317,83 @@ describe("address confirmation", () => {
     );
   });
 });
+
+describe("a sign-up that never confirmed, and has no profile yet", () => {
+  // Supabase Auth knows the account; users does not, until the first sign-in.
+  const PENDING = "44444444-4444-4444-8444-444444444444";
+
+  beforeEach(() => {
+    m.getUserById.mockResolvedValue({
+      data: { user: { email: "pending@exemple.fr", email_confirmed_at: null } },
+      error: null,
+    });
+  });
+
+  it("gets its confirmation mail again, from its auth id", async () => {
+    const result = await resendConfirmationAction({}, form({ userId: PENDING }));
+    expect(m.getUserById).toHaveBeenCalledWith(PENDING);
+    expect(m.resend).toHaveBeenCalledWith({
+      type: "signup",
+      email: "pending@exemple.fr",
+      options: { emailRedirectTo: "https://cyberlearn.fr/auth/callback?next=/onboarding" },
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      notice: "E-mail de confirmation renvoyé à pending@exemple.fr.",
+    });
+    expect(m.auditCreate).toHaveBeenCalledWith({
+      data: {
+        actorId: ADMIN,
+        action: "admin.user.confirmation_resent",
+        targetType: "User",
+        targetId: PENDING,
+        metadata: { pendingSignUp: true },
+      },
+    });
+  });
+
+  it("gets its address confirmed, and is told the profile comes at the first sign-in", async () => {
+    const result = await confirmEmailAction({}, form({ userId: PENDING }));
+    expect(m.updateUserById).toHaveBeenCalledWith(PENDING, { email_confirm: true });
+    expect(audited()).toMatchObject({
+      action: "admin.user.email_confirmed",
+      targetId: PENDING,
+      metadata: { pendingSignUp: true },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.notice).toMatch(/première connexion/u);
+  });
+
+  it("marks nothing as pending for an account that has a profile", async () => {
+    await confirmEmailAction({}, form({ userId: LEARNER }));
+    expect(audited()).not.toHaveProperty("metadata");
+  });
+
+  it("says the account is gone when Supabase does not know it either", async () => {
+    m.getUserById.mockResolvedValue({ data: { user: null }, error: { status: 404 } });
+    expect((await resendConfirmationAction({}, form({ userId: PENDING }))).error).toBe(
+      "Ce compte n'existe plus.",
+    );
+    expect((await confirmEmailAction({}, form({ userId: PENDING }))).error).toBe(
+      "Ce compte n'existe plus.",
+    );
+    expect(m.resend).not.toHaveBeenCalled();
+    expect(m.updateUserById).not.toHaveBeenCalled();
+    expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("still requires an administrator", async () => {
+    m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(confirmEmailAction({}, form({ userId: PENDING }))).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
+    expect(m.getUserById).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed read as a failed gesture, not as a crash", async () => {
+    m.getUserById.mockRejectedValue(new Error("network down"));
+    expect((await resendConfirmationAction({}, form({ userId: PENDING }))).error).toBe(
+      "Le renvoi a échoué.",
+    );
+  });
+});

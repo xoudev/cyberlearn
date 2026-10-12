@@ -232,7 +232,7 @@
 | `/` | Redirige vers `/dashboard` |
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
-| `/lessons` | Liste des leçons |
+| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
 | `/lessons/[id]/edit` | Éditer une leçon |
 | `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
@@ -247,14 +247,16 @@
 | `/badges/new` | Créer un badge (10 types de critères) |
 | `/badges/[id]/edit` | Éditer un badge |
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
-| `/users` | Liste des comptes (recherche, filtres, rôle) |
+| `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
+| `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
 | `/users/[id]` | Un compte : rôle, bannissement, remise à zéro, suppression |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/moderation` | File de relecture des contenus signalés |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
-| `/audit` | Journal d'audit (qui a fait quoi, quand) |
+| `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
+| `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/settings` | Configuration de l'application |
 
 ---
@@ -263,7 +265,11 @@
 
 #### Gestion des leçons
 - Création et édition par blocs (titres, Markdown, et les vingt-huit composants sous forme de champs, exercices et labos compris, validés par le parseur de la page) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
-- Gestion du statut : DRAFT → PUBLISHED → ARCHIVED
+- Gestion du statut : DRAFT → PUBLISHED → ARCHIVED, ligne par ligne ou sur
+  une sélection, gardée d'une page à l'autre
+- Liste lue page par page par la base ; ses filtres sont dans l'adresse, et les
+  jauges de contenu du tableau de bord y mènent déjà filtrées (publiées,
+  brouillons, archives)
 - Suppression (uniquement si DRAFT)
 - Import en masse
 
@@ -285,7 +291,13 @@
 - RefCode format : `CL-BDG-NNN`
 
 #### Gestion des utilisateurs
-- Liste paginée avec recherche et filtres
+- Liste paginée par la base (25 par page) : recherche sur l'adresse, le
+  @pseudo et le nom, filtre de rôle, tri par colonne, le tout dans l'adresse
+- Inscriptions en attente : les comptes de Supabase Auth dont l'adresse n'a
+  jamais été confirmée n'ont pas encore de profil (il se crée à la première
+  connexion) ; ils sont listés à part, lus par la clé de service, avec le
+  renvoi du mail de confirmation et la confirmation forcée, tracés dans
+  l'audit log
 - Rôle STUDENT / TEACHER / ADMIN : chaque changement se confirme ; personne ne
   retire son propre rôle Admin, ni celui du dernier administrateur
 - État de connexion d'un compte (adresse confirmée, méthodes, double
@@ -320,6 +332,12 @@
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)
 - IP pseudonymisée (hash SHA-256 + sel)
+- Lu page par page, filtré par acteur (identifiant, adresse, @pseudo), cible
+  (identifiant ou type), action exacte et période (jours de Paris) ; la page
+  d'un compte ouvre son propre journal
+- Export CSV du filtre courant (séparateur point-virgule, UTF-8 avec BOM,
+  cellules prises pour des formules neutralisées), 50 000 lignes au plus :
+  au-delà, la page demande un filtre plus étroit ; l'export est lui-même tracé
 
 ---
 
@@ -327,7 +345,7 @@
 
 ### `packages/db` - Couche données
 - **Prisma 6** : 60 modèles, 23 enums
-- 27 repositories : badge, ban, certificate, challenge, class, cosmetic, forum,
+- 28 repositories : audit-log, badge, ban, certificate, challenge, class, cosmetic, forum,
   friendship, leaderboard, league, lesson, moderation, note, note-folder,
   note-share, notification, path, qa, quest, quiz, rating, search, stats,
   streak, ticket, user, wrapped

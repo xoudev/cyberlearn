@@ -1,0 +1,121 @@
+"use client";
+
+import React, { useId, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Select } from "@cyberlearn/ui";
+import { gridHref } from "@/lib/grid-href";
+
+/**
+ * The audit log's filters: who, on what, which action, between which days.
+ *
+ * A GET form, so the filter is the URL: it can be linked to (an account's
+ * page opens its own trail this way) and the export reads the same one. With
+ * scripts, the submit goes through the router and leaves out the empty fields.
+ */
+
+const FIELDS = ["actor", "target", "action", "from", "to"] as const;
+
+export function AuditFilters({
+  params,
+  actions,
+}: {
+  /** The filters the server understood, as the URL carries them. */
+  params: Readonly<Record<string, string>>;
+  /** Every action the log holds. */
+  actions: readonly string[];
+}): React.ReactElement {
+  const router = useRouter();
+  const actionLabel = useId();
+  const [pending, startTransition] = useTransition();
+  const filtered = FIELDS.some((field) => (params[field] ?? "") !== "");
+  // What a reset keeps: the order, which is not a filter.
+  const resetHref = gridHref("/audit", params.sort === undefined ? {} : { sort: params.sort });
+
+  return (
+    <form
+      // A new URL (a reset, a link from an account) brings new defaults.
+      key={JSON.stringify(params)}
+      className="a-filters"
+      action="/audit"
+      method="get"
+      aria-label="Filtrer le journal"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const changes: Record<string, string | null> = {};
+        for (const field of FIELDS) {
+          const value = data.get(field);
+          changes[field] = typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+        }
+        startTransition(() => {
+          router.push(gridHref("/audit", params, changes), { scroll: false });
+        });
+      }}
+    >
+      <label className="a-filter">
+        Acteur
+        <input
+          name="actor"
+          className="a-input a-input--sm"
+          defaultValue={params.actor ?? ""}
+          placeholder="Adresse, @pseudo, identifiant"
+          maxLength={100}
+        />
+      </label>
+      <label className="a-filter">
+        Cible
+        <input
+          name="target"
+          className="a-input a-input--sm"
+          defaultValue={params.target ?? ""}
+          placeholder="Identifiant, ou un type : Lesson"
+          maxLength={100}
+        />
+      </label>
+      <div className="a-filter">
+        <span id={actionLabel}>Action</span>
+        <Select
+          name="action"
+          block={false}
+          aria-labelledby={actionLabel}
+          defaultValue={params.action ?? ""}
+          triggerStyle={{ height: 36, fontSize: 11, padding: "0 10px", minWidth: 200 }}
+          options={[
+            { value: "", label: "Toutes" },
+            ...actions.map((action) => ({ value: action, label: action })),
+          ]}
+        />
+      </div>
+      <label className="a-filter">
+        Du
+        <input
+          type="date"
+          name="from"
+          className="a-input a-input--sm"
+          defaultValue={params.from ?? ""}
+        />
+      </label>
+      <label className="a-filter">
+        Au
+        <input
+          type="date"
+          name="to"
+          className="a-input a-input--sm"
+          defaultValue={params.to ?? ""}
+        />
+      </label>
+      {params.sort !== undefined && <input type="hidden" name="sort" value={params.sort} />}
+      <div className="a-filter-actions">
+        <button type="submit" className="a-btn a-btn--ghost a-btn--sm" disabled={pending}>
+          {pending ? "Filtrage…" : "Filtrer"}
+        </button>
+        {filtered && (
+          <Link href={resetHref} className="a-toolbar-reset" scroll={false}>
+            Réinitialiser
+          </Link>
+        )}
+      </div>
+    </form>
+  );
+}
