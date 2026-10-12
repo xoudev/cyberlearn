@@ -13,9 +13,9 @@ export default async function ArchivedLessonsPage(): Promise<React.ReactElement>
   const { rows } = await listLessons("archives");
 
   return (
-    <main className="admin-page-content">
+    <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
         title={`Leçons archivées (${String(rows.length)})`}
         description="Invisibles sur le site et dans l'app. Les progressions et les réponses de ceux qui les ont suivies sont conservées. Une leçon remise en brouillon retourne dans la liste des leçons."
         actions={<GhostLink href="/lessons">Retour aux leçons</GhostLink>}

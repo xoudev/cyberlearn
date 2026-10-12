@@ -1,20 +1,39 @@
 /* ─── Admin console component system ─────────────────────────────────────────
-   Class-based UI layer for the back-office. Mirrors the product tokens
-   (dark navy surfaces, subtle borders, turquoise accent, mono labels) and
-   owns all responsive behaviour so pages stay free of ad-hoc styling. */
+   Class-based UI layer for the back-office, on the site's own tokens (dark
+   navy surfaces, subtle borders, turquoise accent, mono labels). It owns all
+   responsive behaviour so pages stay free of ad-hoc styling. */
 
+/* The console's names for the shared tokens of packages/ui/src/tokens.css.
+   Every value is a reference and none is a colour: the console used to restate
+   the palette in hex, and its danger, info and warning had drifted from the
+   site's. The root element carries the "dark" class, which is the theme these
+   resolve against. A component that needs a colour in JS writes the same
+   var(--a-*) string. */
 :root {
-  --a-bg: #030219;
-  --a-surface: #0a0826;
-  --a-surface-2: #05041a;
-  --a-hover: #0e0b2e;
-  --a-border: #1f1b47;
-  --a-border-2: #2a2560;
-  --a-fg: #f5f5fa;
-  --a-fg-2: #b8b5d1;
-  --a-muted: #7f7ba9;
-  --a-faint: #3f3d5c;
-  --a-accent: #0affd4;
+  --a-bg: var(--color-bg-base);
+  --a-surface: var(--color-bg-elevated);
+  --a-surface-2: var(--color-bg-sunken);
+  /* Between a card and a raised overlay: a row under the pointer lifts, but
+     less than a menu does. */
+  --a-hover: color-mix(in srgb, var(--color-bg-elevated), var(--color-bg-overlay));
+  --a-border: var(--color-border-subtle);
+  --a-border-2: var(--color-border-default);
+  --a-fg: var(--color-text-primary);
+  --a-fg-2: var(--color-text-secondary);
+  --a-muted: var(--color-text-muted);
+  --a-faint: var(--color-text-disabled);
+  --a-accent: var(--color-brand-turquoise);
+  --a-blue: var(--color-brand-blue);
+  --a-info: var(--color-info);
+  --a-danger: var(--color-danger);
+  --a-warning: var(--color-warning);
+  --a-purple: var(--color-rarity-epic);
+  /* A badge's rarity wears the site's own ramp, not a tone: Rare is the site's
+     blue, which the info tone is not. */
+  --a-rarity-common: var(--color-rarity-common);
+  --a-rarity-rare: var(--color-rarity-rare);
+  --a-rarity-epic: var(--color-rarity-epic);
+  --a-rarity-legendary: var(--color-rarity-legendary);
 
   /* The shared <Select>: its defaults are the web app's palette, so the two
      values that differ here are named rather than the whole scale restated.
@@ -22,11 +41,6 @@
      inherits from there, not from the field. */
   --cl-select-border: var(--a-border);
   --cl-select-accent: var(--a-accent);
-  --a-blue: #0024ff;
-  --a-blue-2: #6e8bff;
-  --a-danger: #ff4d6d;
-  --a-warning: #ffb020;
-  --a-purple: #b14dff;
 }
 
 /* ─── Focus & interaction defaults ─────────────────────────── */
@@ -52,7 +66,7 @@
   align-items: center;
   gap: 14px;
   padding: 0 16px;
-  background: rgba(3, 2, 25, 0.92);
+  background: color-mix(in srgb, var(--a-bg) 92%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--a-border);
@@ -219,7 +233,41 @@
   content: "";
   width: 22px;
   height: 1px;
+  flex-shrink: 0;
   background: var(--a-accent);
+}
+
+/* The trail in the eyebrow: the section, then each parent page as a link.
+   The page itself is the title underneath, so it is not repeated here. A step
+   you cannot click is muted and a link is brighter, so the accent stays on the
+   dash and never marks a label that goes nowhere. */
+.a-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.a-crumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--a-muted);
+}
+.a-crumbs li + li::before {
+  content: "/";
+  color: var(--a-faint);
+}
+.a-crumbs a {
+  color: var(--a-fg-2);
+  transition: color 140ms ease;
+}
+.a-crumbs a:hover {
+  color: var(--a-accent);
 }
 
 .a-h1 {
@@ -238,6 +286,14 @@
   color: var(--a-muted);
   font-size: 13.5px;
   line-height: 1.65;
+}
+
+/* A reference code in running text, the subtitle's included: the mono face at
+   the size of the words around it. */
+.a-mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  letter-spacing: 0.02em;
 }
 
 .a-head-actions {
@@ -467,7 +523,7 @@
   --tag: var(--a-accent);
 }
 .a-tag[data-tone="info"] {
-  --tag: var(--a-blue-2);
+  --tag: var(--a-info);
 }
 .a-tag[data-tone="warning"] {
   --tag: var(--a-warning);
@@ -837,7 +893,7 @@
 }
 .a-auth-tagline em {
   font-style: normal;
-  background: linear-gradient(90deg, var(--a-blue-2), var(--a-accent));
+  background: linear-gradient(90deg, var(--a-info), var(--a-accent));
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -1342,7 +1398,7 @@
   background: color-mix(in srgb, var(--warn) 7%, transparent);
 }
 .a-sync-warn[data-tone="info"] {
-  --warn: var(--a-blue-2);
+  --warn: var(--a-info);
 }
 .a-sync-fields {
   display: grid;
@@ -1547,6 +1603,6 @@
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--a-fg-2);
-  border-left: 2px solid var(--a-blue-2);
-  background: color-mix(in srgb, var(--a-blue-2) 7%, transparent);
+  border-left: 2px solid var(--a-info);
+  background: color-mix(in srgb, var(--a-info) 7%, transparent);
 }

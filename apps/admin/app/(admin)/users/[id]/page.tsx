@@ -3,15 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
-import {
-  Card,
-  GhostLink,
-  KpiCard,
-  Monogram,
-  PageHeader,
-  Tag,
-  UI,
-} from "../../_components/admin-ui";
+import { Card, GhostLink, KpiCard, Monogram, PageHeader, Tag } from "../../_components/admin-ui";
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import { banRepository, userRepository } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
@@ -155,7 +147,7 @@ export default async function AdminUserPage({
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow={ROLE_LABEL[user.role]}
+        crumbs={[{ label: "Comptes" }, { label: "Utilisateurs", href: "/users" }]}
         title={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
             <Monogram text={handle.replace("@", "")} size={32} tone={roleTone(user.role)} />
@@ -239,7 +231,7 @@ export default async function AdminUserPage({
                         <span className="a-row-link-title">{t.class.name}</span>
                       </Link>
                     </td>
-                    <td style={{ color: UI.muted }}>
+                    <td style={{ color: "var(--a-muted)" }}>
                       {t.class.promotion.establishment.name} · {t.class.promotion.name}
                     </td>
                     <td align="right">
@@ -254,7 +246,7 @@ export default async function AdminUserPage({
                         <span className="a-row-link-title">{m.class.name}</span>
                       </Link>
                     </td>
-                    <td style={{ color: UI.muted }}>
+                    <td style={{ color: "var(--a-muted)" }}>
                       {m.class.promotion.establishment.name} · {m.class.promotion.name}
                     </td>
                     <td align="right">

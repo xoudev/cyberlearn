@@ -16,7 +16,7 @@ export default async function NewTournamentPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Tournois"
+        crumbs={[{ label: "Gamification" }, { label: "Tournois", href: "/tournaments" }]}
         title="Nouveau tournoi"
         description="Les élèves des classes choisies reçoivent une notification dès l'enregistrement ; les défis restent cachés jusqu'au début."
       />

@@ -13,12 +13,27 @@ interface DiffColor {
   color: string;
   bg: string;
 }
-const DIFF_DEFAULT: DiffColor = { color: "#7F7BA9", bg: "rgba(42,37,96,0.3)" };
+const DIFF_DEFAULT: DiffColor = {
+  color: "var(--a-muted)",
+  bg: "color-mix(in srgb, var(--a-border-2) 30%, transparent)",
+};
 const DIFF_COLORS: Record<string, DiffColor> = {
-  BEGINNER: { color: "#0AFFD4", bg: "rgba(10,255,212,0.1)" },
-  INTERMEDIATE: { color: "#4D8BFF", bg: "rgba(77,139,255,0.1)" },
-  ADVANCED: { color: "#B14DFF", bg: "rgba(177,77,255,0.1)" },
-  EXPERT: { color: "#FFB020", bg: "rgba(255,176,32,0.1)" },
+  BEGINNER: {
+    color: "var(--a-accent)",
+    bg: "color-mix(in srgb, var(--a-accent) 10%, transparent)",
+  },
+  INTERMEDIATE: {
+    color: "var(--a-info)",
+    bg: "color-mix(in srgb, var(--a-info) 10%, transparent)",
+  },
+  ADVANCED: {
+    color: "var(--a-purple)",
+    bg: "color-mix(in srgb, var(--a-purple) 10%, transparent)",
+  },
+  EXPERT: {
+    color: "var(--a-warning)",
+    bg: "color-mix(in srgb, var(--a-warning) 10%, transparent)",
+  },
 };
 
 // No reference column: the ref sits under the title, where it is read with it.
@@ -350,7 +365,9 @@ export function LessonsTable({
               </button>
             ) : confirmArchive ? (
               <>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#FF4757" }}>
+                <span
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--a-danger)" }}
+                >
                   {selected.size > 1
                     ? `${String(selected.size)} leçons quitteront le site et l'app, et rejoindront les archives.`
                     : "Cette leçon quittera le site et l'app, et rejoindra les archives."}
@@ -361,7 +378,7 @@ export function LessonsTable({
                   onClick={() => {
                     runBulk("ARCHIVED");
                   }}
-                  style={bulkBtn("#FF4757", isPending)}
+                  style={bulkBtn("var(--a-danger)", isPending)}
                 >
                   Confirmer l&apos;archivage
                 </button>
@@ -404,7 +421,7 @@ export function LessonsTable({
                   onClick={() => {
                     setConfirmArchive(true);
                   }}
-                  style={bulkBtn("#FF4757", isPending)}
+                  style={bulkBtn("var(--a-danger)", isPending)}
                 >
                   Archiver
                 </button>
@@ -439,7 +456,9 @@ export function LessonsTable({
             </span>
           )}
           {bulkError !== null && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#FF4757" }}>
+            <span
+              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--a-danger)" }}
+            >
               {bulkError}
             </span>
           )}
@@ -558,8 +577,8 @@ export function LessonsTable({
                       marginTop: 3,
                     }}
                   >
-                    <span style={{ color: "#6E8BFF" }}>{lesson.refCode}</span> · {lesson.slug} ·{" "}
-                    {String(lesson.estimatedMinutes)} min
+                    <span style={{ color: "var(--a-info)" }}>{lesson.refCode}</span> · {lesson.slug}{" "}
+                    · {String(lesson.estimatedMinutes)} min
                   </div>
                   {/* Otherwise an admin scanning this list finds a lesson they
                       did not commission, cannot see in the catalogue, and has
@@ -571,7 +590,7 @@ export function LessonsTable({
                         fontSize: 11,
                         letterSpacing: "0.12em",
                         textTransform: "uppercase",
-                        color: "#FFB020",
+                        color: "var(--a-warning)",
                         marginTop: 3,
                       }}
                     >

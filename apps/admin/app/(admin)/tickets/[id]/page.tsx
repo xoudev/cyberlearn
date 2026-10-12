@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isTicketOpen, prisma } from "@cyberlearn/db";
-import { Card, GhostLink, PageHeader, Tag, UI, type Tone } from "../../_components/admin-ui";
+import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TicketThread } from "../_components/TicketThread";
 import { STATUS_META, THEME_META } from "../ticket-meta";
@@ -39,12 +39,12 @@ function DetailRow({
     >
       <span
         style={{
-          fontFamily: UI.mono,
+          fontFamily: "var(--font-mono)",
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: UI.muted,
+          color: "var(--a-muted)",
           flexShrink: 0,
         }}
       >
@@ -53,7 +53,7 @@ function DetailRow({
       <span
         style={{
           fontSize: 12.5,
-          color: UI.fg2,
+          color: "var(--a-fg-2)",
           textAlign: "right",
           overflowWrap: "anywhere",
           minWidth: 0,
@@ -104,7 +104,7 @@ export default async function AdminTicketPage({
   if (!ticket) notFound();
 
   const theme = THEME_META[ticket.theme] ?? { label: ticket.theme, tone: "neutral" as Tone };
-  const status = STATUS_META[ticket.status] ?? { label: ticket.status, color: UI.muted };
+  const status = STATUS_META[ticket.status] ?? { label: ticket.status, color: "var(--a-muted)" };
   const requester = ticket.user?.username
     ? `@${ticket.user.username}`
     : (ticket.user?.displayName ?? "Visiteur non connecté");
@@ -117,7 +117,7 @@ export default async function AdminTicketPage({
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Support · Ticket"
+        crumbs={[{ label: "Support" }, { label: "Tickets", href: "/tickets" }]}
         title={ticket.subject}
         description={
           <>
@@ -136,7 +136,7 @@ export default async function AdminTicketPage({
                 padding: 18,
                 fontSize: 14,
                 lineHeight: 1.75,
-                color: UI.fg2,
+                color: "var(--a-fg-2)",
                 whiteSpace: "pre-wrap",
                 overflowWrap: "anywhere",
               }}
@@ -152,9 +152,9 @@ export default async function AdminTicketPage({
               <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
               <span
                 style={{
-                  fontFamily: UI.mono,
+                  fontFamily: "var(--font-mono)",
                   fontSize: 10.5,
-                  color: UI.muted,
+                  color: "var(--a-muted)",
                 }}
               >
                 mis à jour le {formatDateTime(ticket.updatedAt)}
@@ -167,18 +167,20 @@ export default async function AdminTicketPage({
               <DetailRow label="Demandeur">{requester}</DetailRow>
               <DetailRow label="Email">
                 {contactEmail ? (
-                  <a href={`mailto:${contactEmail}`} style={{ color: UI.turquoise }}>
+                  <a href={`mailto:${contactEmail}`} style={{ color: "var(--a-accent)" }}>
                     {contactEmail}
                   </a>
                 ) : (
-                  <span style={{ color: UI.muted }}>anonymisé</span>
+                  <span style={{ color: "var(--a-muted)" }}>anonymisé</span>
                 )}
               </DetailRow>
               <DetailRow label="Thème">
                 <Tag tone={theme.tone}>{theme.label}</Tag>
               </DetailRow>
               <DetailRow label="Statut">
-                <span style={{ color: status.color, fontFamily: UI.mono, fontWeight: 700 }}>
+                <span
+                  style={{ color: status.color, fontFamily: "var(--font-mono)", fontWeight: 700 }}
+                >
                   {status.label}
                 </span>
               </DetailRow>
@@ -189,23 +191,23 @@ export default async function AdminTicketPage({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mono"
-                    style={{ color: UI.blueSoft, fontWeight: 600 }}
+                    style={{ color: "var(--a-info)", fontWeight: 600 }}
                   >
                     {ticket.jiraIssueKey} ↗
                   </a>
                 ) : (
-                  <span style={{ color: UI.muted }}>Aucun ticket lié</span>
+                  <span style={{ color: "var(--a-muted)" }}>Aucun ticket lié</span>
                 )}
               </DetailRow>
               <DetailRow label="Créé le">{formatDateTime(ticket.createdAt)}</DetailRow>
               <DetailRow label="Référence">
-                <span className="mono" style={{ fontSize: 11, color: UI.muted }}>
+                <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
                   {ticket.id}
                 </span>
               </DetailRow>
               {ticket.userAgent ? (
                 <DetailRow label="Navigateur">
-                  <span className="mono" style={{ fontSize: 10.5, color: UI.muted }}>
+                  <span className="mono" style={{ fontSize: 10.5, color: "var(--a-muted)" }}>
                     {ticket.userAgent}
                   </span>
                 </DetailRow>

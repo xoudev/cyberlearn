@@ -15,7 +15,6 @@ import {
   PrimaryLink,
   Tag,
   toneColor,
-  UI,
   type CssWithVars,
   type Tone,
 } from "../_components/admin-ui";
@@ -143,7 +142,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Aperçu"
+        crumbs={[{ label: "Aperçu" }]}
         title="Vue d'ensemble"
         description="Croissance, contenu publié et signalements : l'état de la plateforme sur les 8 dernières semaines."
         actions={
@@ -225,7 +224,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         title="Erreurs · 24 h"
         action={
           sentry.state === "ok" && sentry.issues.length > 0 ? (
-            <span style={{ fontFamily: UI.mono, fontSize: 11, color: UI.danger }}>
+            <span
+              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--a-danger)" }}
+            >
               {sentry.issues.length} non résolue{sentry.issues.length > 1 ? "s" : ""}
             </span>
           ) : undefined
@@ -242,9 +243,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 margin: 0,
                 padding: "40px 18px",
                 textAlign: "center",
-                fontFamily: UI.mono,
+                fontFamily: "var(--font-mono)",
                 fontSize: 11.5,
-                color: UI.muted,
+                color: "var(--a-muted)",
               }}
             >
               Aucune activité récente
@@ -264,10 +265,12 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       <span className="a-feed-line" />
                     </span>
                     <div className="a-feed-body">
-                      <b style={{ color: UI.fg }}>@{actor}</b>{" "}
-                      <span style={{ fontFamily: UI.mono, fontSize: 11.5 }}>{log.action}</span>
+                      <b style={{ color: "var(--a-fg)" }}>@{actor}</b>{" "}
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>
+                        {log.action}
+                      </span>
                       <div className="a-feed-meta">
-                        <span style={{ color: UI.turquoise }}>{log.targetType}</span>
+                        <span style={{ color: "var(--a-accent)" }}>{log.targetType}</span>
                         {log.targetId ? ` · ${log.targetId.slice(0, 8)}` : null}
                       </div>
                     </div>
@@ -306,10 +309,12 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                           <Tag tone={roleTone(u.role)}>{roleLabel(u.role)}</Tag>
                         </td>
                         <td className="num">
-                          <span style={{ color: UI.muted }}>LVL·</span>
-                          <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
+                          <span style={{ color: "var(--a-muted)" }}>LVL·</span>
+                          <b style={{ color: "var(--a-accent)" }}>
+                            {String(u.level).padStart(2, "0")}
+                          </b>
                         </td>
-                        <td className="num" style={{ color: UI.muted }}>
+                        <td className="num" style={{ color: "var(--a-muted)" }}>
                           {new Intl.DateTimeFormat("fr-FR", {
                             day: "2-digit",
                             month: "short",
@@ -339,11 +344,11 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      fontFamily: UI.mono,
+                      fontFamily: "var(--font-mono)",
                       fontSize: 10.5,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: UI.muted,
+                      color: "var(--a-muted)",
                     }}
                   >
                     <span>{row.label}</span>
@@ -364,16 +369,16 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   display: "flex",
                   justifyContent: "space-between",
                   paddingTop: 4,
-                  borderTop: `1px solid ${UI.border}`,
-                  fontFamily: UI.mono,
+                  borderTop: "1px solid var(--a-border)",
+                  fontFamily: "var(--font-mono)",
                   fontSize: 10.5,
-                  color: UI.muted,
+                  color: "var(--a-muted)",
                 }}
               >
                 <span>
-                  <b style={{ color: UI.fg2 }}>{pathCount}</b> parcours publiés
+                  <b style={{ color: "var(--a-fg-2)" }}>{pathCount}</b> parcours publiés
                 </span>
-                <Link href="/paths" style={{ color: UI.turquoise }}>
+                <Link href="/paths" style={{ color: "var(--a-accent)" }}>
                   Voir →
                 </Link>
               </div>

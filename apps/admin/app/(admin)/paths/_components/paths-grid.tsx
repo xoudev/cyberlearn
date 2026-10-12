@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Tag, UI, type Tone } from "../../_components/admin-ui";
+import { Tag, type Tone } from "../../_components/admin-ui";
 import { DataGrid, type GridFacet, type GridRow } from "../../_components/data-grid";
 import { StatusBadge } from "../../_components/status-badge";
 import { DeletePathButton } from "./delete-path-button";
@@ -62,7 +62,7 @@ export function PathsGrid({
             style={{
               display: "block",
               fontWeight: 600,
-              color: UI.fg,
+              color: "var(--a-fg)",
               fontSize: 15,
               marginBottom: 3,
               whiteSpace: "nowrap",
@@ -72,10 +72,10 @@ export function PathsGrid({
           >
             {p.title}
           </span>
-          <span className="mono" style={{ fontSize: 12, color: UI.muted }}>
-            <span style={{ color: UI.blueSoft }}>{p.refCode}</span> · {p.slug}
+          <span className="mono" style={{ fontSize: 12, color: "var(--a-muted)" }}>
+            <span style={{ color: "var(--a-info)" }}>{p.refCode}</span> · {p.slug}
             {p.origin === "first" ? (
-              <span style={{ color: UI.warning }}> · ancien catalogue</span>
+              <span style={{ color: "var(--a-warning)" }}> · ancien catalogue</span>
             ) : null}
           </span>
         </Link>,
@@ -86,7 +86,7 @@ export function PathsGrid({
             fontSize: 12,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: UI.fg2,
+            color: "var(--a-fg-2)",
           }}
         >
           {cat}
@@ -95,17 +95,20 @@ export function PathsGrid({
           {diff.label}
         </Tag>,
         String(p.lessons),
-        <b key="p" style={{ color: UI.turquoise }}>
+        <b key="p" style={{ color: "var(--a-accent)" }}>
           {String(p.completions)}
         </b>,
         String(p.certificates),
         p.avgRating != null ? (
-          <span key="n" style={{ color: UI.warning, fontWeight: 700 }}>
+          <span key="n" style={{ color: "var(--a-warning)", fontWeight: 700 }}>
             {p.avgRating.toFixed(1)}
-            <span style={{ color: UI.muted, fontWeight: 400 }}> ({String(p.ratingsCount)})</span>
+            <span style={{ color: "var(--a-muted)", fontWeight: 400 }}>
+              {" "}
+              ({String(p.ratingsCount)})
+            </span>
           </span>
         ) : (
-          <span key="n" style={{ color: UI.muted }}>
+          <span key="n" style={{ color: "var(--a-muted)" }}>
             Aucune
           </span>
         ),

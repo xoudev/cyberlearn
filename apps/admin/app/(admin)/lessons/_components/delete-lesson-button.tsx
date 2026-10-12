@@ -86,10 +86,13 @@ export function DeleteLessonButton({
           justifyContent: "center",
           width: 28,
           height: 28,
-          background: hov && !disabled ? "rgba(255,71,87,0.08)" : "transparent",
-          border: `1px solid ${hov && !disabled ? "rgba(255,71,87,0.3)" : "transparent"}`,
+          background:
+            hov && !disabled
+              ? "color-mix(in srgb, var(--a-danger) 8%, transparent)"
+              : "transparent",
+          border: `1px solid ${hov && !disabled ? "color-mix(in srgb, var(--a-danger) 30%, transparent)" : "transparent"}`,
           borderRadius: 4,
-          color: disabled ? "#2A2560" : "#FF4757",
+          color: disabled ? "#2A2560" : "var(--a-danger)",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,
@@ -100,7 +103,7 @@ export function DeleteLessonButton({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
-              color: "#FF4757",
+              color: "var(--a-danger)",
               animation: "spin 0.9s linear infinite",
               display: "inline-block",
             }}
@@ -119,12 +122,12 @@ export function DeleteLessonButton({
             right: 0,
             top: "calc(100% + 4px)",
             background: "#0A0826",
-            border: "1px solid rgba(255,71,87,0.4)",
+            border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
             borderRadius: 4,
             padding: "6px 10px",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#FF4757",
+            color: "var(--a-danger)",
             whiteSpace: "nowrap",
             zIndex: 50,
             maxWidth: 260,

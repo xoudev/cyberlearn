@@ -14,8 +14,11 @@ export default function GlobalError({
     Sentry.captureException(error);
   }, [error]);
 
+  // The "dark" class the root layout's <html> carries: once its stylesheet is
+  // loaded, globals.css reads var(--a-bg) and var(--a-fg), which are the dark
+  // tokens only under it.
   return (
-    <html lang="fr">
+    <html lang="fr" className="dark">
       <body
         style={{
           margin: 0,

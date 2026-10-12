@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { EMAIL_SAMPLES, renderEmailSample } from "@cyberlearn/email";
 import { wrappedWindow } from "@cyberlearn/lib";
 import { env } from "@/lib/env";
-import { Card, PageHeader, Tag, UI } from "../_components/admin-ui";
+import { Card, PageHeader, Tag } from "../_components/admin-ui";
 import { EmailViewer } from "./_components/email-viewer";
 import { ModerationProbe } from "./_components/moderation-probe";
 
@@ -37,49 +37,57 @@ export default async function LabPage(): Promise<React.JSX.Element> {
   const wrappedUrl = `${env.NEXT_PUBLIC_SITE_URL}/wrapped?apercu=1`;
 
   return (
-    <>
+    <main className="a-page">
       <PageHeader
-        eyebrow="Outils"
+        crumbs={[{ label: "Outils" }]}
         title="Banc d'essai"
         description="Voir ce qui ne se montre qu'une fois par an, ou qu'une fois envoyé. Rien ici n'écrit, n'envoie ni ne modifie quoi que ce soit."
       />
 
-      <Card
-        title="Wrapped"
-        action={
-          <Tag tone={window.open ? "accent" : "neutral"}>
-            {window.open ? "ouvert au public" : "fermé au public"}
-          </Tag>
-        }
-        pad
-      >
-        <p style={{ font: `400 14px ${UI.sans}`, color: UI.fg2, margin: "0 0 12px" }}>
-          {window.open
-            ? `L'édition ${window.periodKey} est ouverte à tout le monde.`
-            : `L'édition ${window.periodKey} rouvre au public le 1er décembre. Ce lien l'ouvre
-               quand même, avec tes propres données, et pour un administrateur seulement.`}
-        </p>
-        <a
-          href={wrappedUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="a-btn a-btn--primary"
+      <div className="a-stack">
+        <Card
+          title="Wrapped"
+          action={
+            <Tag tone={window.open ? "accent" : "neutral"}>
+              {window.open ? "ouvert au public" : "fermé au public"}
+            </Tag>
+          }
+          pad
         >
-          Ouvrir mon Wrapped {window.periodKey}
-        </a>
-      </Card>
+          <p
+            style={{
+              font: "400 14px var(--font-sans)",
+              color: "var(--a-fg-2)",
+              margin: "0 0 12px",
+            }}
+          >
+            {window.open
+              ? `L'édition ${window.periodKey} est ouverte à tout le monde.`
+              : `L'édition ${window.periodKey} rouvre au public le 1er décembre. Ce lien l'ouvre
+               quand même, avec tes propres données, et pour un administrateur seulement.`}
+          </p>
+          <a
+            href={wrappedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="a-btn a-btn--primary"
+          >
+            Ouvrir mon Wrapped {window.periodKey}
+          </a>
+        </Card>
 
-      <Card
-        title="Filtre de modération"
-        action={<Tag tone="info">rien n&apos;est enregistré</Tag>}
-        pad
-      >
-        <ModerationProbe />
-      </Card>
+        <Card
+          title="Filtre de modération"
+          action={<Tag tone="info">rien n&apos;est enregistré</Tag>}
+          pad
+        >
+          <ModerationProbe />
+        </Card>
 
-      <Card title="Modèles d'e-mail" action={<Tag tone="info">aucun envoi</Tag>} pad>
-        <EmailViewer samples={samples} />
-      </Card>
-    </>
+        <Card title="Modèles d'e-mail" action={<Tag tone="info">aucun envoi</Tag>} pad>
+          <EmailViewer samples={samples} />
+        </Card>
+      </div>
+    </main>
   );
 }

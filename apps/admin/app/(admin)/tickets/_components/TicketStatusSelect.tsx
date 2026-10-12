@@ -7,10 +7,10 @@ import { updateTicketStatusAction } from "../../_actions/ticket-actions";
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
-  OPEN: "#FF4757",
-  IN_PROGRESS: "#FFB020",
-  RESOLVED: "#0AFFD4",
-  CLOSED: "#44406B",
+  OPEN: "var(--a-danger)",
+  IN_PROGRESS: "var(--a-warning)",
+  RESOLVED: "var(--a-accent)",
+  CLOSED: "var(--a-faint)",
 };
 
 const STATUS_LABELS: Record<TicketStatus, string> = {

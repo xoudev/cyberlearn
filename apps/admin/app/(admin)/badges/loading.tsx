@@ -14,9 +14,9 @@ const CARD: React.CSSProperties = {
 
 export default function AdminBadgesLoading(): React.ReactElement {
   return (
-    <div className="admin-page-content">
+    <div className="a-page">
       {/* Header */}
-      <div className="admin-page-header">
+      <div className="a-page-head">
         <div>
           <Skeleton width={140} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={200} height={14} />

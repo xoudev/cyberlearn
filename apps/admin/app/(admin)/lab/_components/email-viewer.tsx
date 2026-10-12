@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import type { EmailSample } from "@cyberlearn/email";
-import { UI } from "../../_components/admin-ui";
 
 /**
  * The nine templates, side by side with what they look like.
@@ -37,15 +36,21 @@ export function EmailViewer({
             style={{
               textAlign: "left",
               padding: "8px 10px",
-              background: s.key === active ? UI.surfaceDeep : "transparent",
-              border: `1px solid ${s.key === active ? UI.borderStrong : "transparent"}`,
-              color: s.key === active ? UI.fg : UI.fg2,
+              background: s.key === active ? "var(--a-surface-2)" : "transparent",
+              border: `1px solid ${s.key === active ? "var(--a-border-2)" : "transparent"}`,
+              color: s.key === active ? "var(--a-fg)" : "var(--a-fg-2)",
               cursor: "pointer",
-              font: `600 13px ${UI.sans}`,
+              font: "600 13px var(--font-sans)",
             }}
           >
             {s.label}
-            <span style={{ display: "block", font: `400 11px ${UI.mono}`, color: UI.muted }}>
+            <span
+              style={{
+                display: "block",
+                font: "400 11px var(--font-mono)",
+                color: "var(--a-muted)",
+              }}
+            >
               {s.when}
             </span>
           </button>
@@ -68,7 +73,7 @@ export function EmailViewer({
             style={{
               width: "100%",
               height: 620,
-              border: `1px solid ${UI.border}`,
+              border: "1px solid var(--a-border)",
               background: "#fff",
             }}
           />

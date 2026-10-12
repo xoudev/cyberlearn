@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
+import { Card, PageHeader } from "../../../_components/admin-ui";
 import { EditChallengeForm } from "./_components/edit-challenge-form";
 import { HintsManager } from "./_components/hints-manager";
 import type { ChallengeOption } from "../../new/_components/new-challenge-form";
@@ -65,88 +66,45 @@ export default async function EditChallengePage({ params }: Props): Promise<Reac
   }));
 
   return (
-    <div style={{ padding: "32px 40px", maxWidth: 900 }}>
-      <div style={{ marginBottom: 32 }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "#FF4D6D",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            marginBottom: 6,
-          }}
-        >
-          {"// ADMIN › CHALLENGES › ÉDITER"}
-        </div>
-        <h1
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 24,
-            fontWeight: 700,
-            color: "#F5F5FA",
-            margin: "0 0 4px",
-          }}
-        >
-          {challenge.title}
-        </h1>
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "#7F7BA9",
-            margin: 0,
-          }}
-        >
-          {challenge.refCode}
-        </p>
+    <main className="a-page">
+      <PageHeader
+        crumbs={[{ label: "Gamification" }, { label: "Challenges", href: "/challenges" }]}
+        title={challenge.title}
+        description={<span className="a-mono">{challenge.refCode}</span>}
+      />
+      <div className="a-stack">
+        <Card pad>
+          <EditChallengeForm
+            challenge={{
+              id: challenge.id,
+              refCode: challenge.refCode,
+              slug: challenge.slug,
+              title: challenge.title,
+              description: challenge.description,
+              instructions: challenge.instructions,
+              category: challenge.category,
+              difficulty: challenge.difficulty,
+              type: challenge.type,
+              xpReward: challenge.xpReward,
+              timeLimitMin: challenge.timeLimitMin,
+              maxAttempts: challenge.maxAttempts,
+              flag: challenge.flag,
+              machine: challenge.machine === null ? "" : JSON.stringify(challenge.machine, null, 2),
+              starterCode: challenge.starterCode,
+              isActive: challenge.isActive,
+              orderIndex: challenge.orderIndex,
+              prerequisiteId: challenge.prerequisiteId,
+              attachmentUrl: challenge.attachmentUrl,
+              resourceUrl: challenge.resourceUrl,
+              solveCount: challenge._count.progress,
+            }}
+            prerequisites={prerequisites}
+          />
+        </Card>
+        <Card pad>
+          <HintsManager challengeId={challenge.id} hints={challenge.hints} />
+        </Card>
       </div>
-
-      <div
-        style={{
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
-          padding: 32,
-          marginBottom: 24,
-        }}
-      >
-        <EditChallengeForm
-          challenge={{
-            id: challenge.id,
-            refCode: challenge.refCode,
-            slug: challenge.slug,
-            title: challenge.title,
-            description: challenge.description,
-            instructions: challenge.instructions,
-            category: challenge.category,
-            difficulty: challenge.difficulty,
-            type: challenge.type,
-            xpReward: challenge.xpReward,
-            timeLimitMin: challenge.timeLimitMin,
-            maxAttempts: challenge.maxAttempts,
-            flag: challenge.flag,
-            machine: challenge.machine === null ? "" : JSON.stringify(challenge.machine, null, 2),
-            starterCode: challenge.starterCode,
-            isActive: challenge.isActive,
-            orderIndex: challenge.orderIndex,
-            prerequisiteId: challenge.prerequisiteId,
-            attachmentUrl: challenge.attachmentUrl,
-            resourceUrl: challenge.resourceUrl,
-            solveCount: challenge._count.progress,
-          }}
-          prerequisites={prerequisites}
-        />
-      </div>
-
-      <div
-        style={{
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
-          padding: 32,
-        }}
-      >
-        <HintsManager challengeId={challenge.id} hints={challenge.hints} />
-      </div>
-    </div>
+    </main>
   );
 }

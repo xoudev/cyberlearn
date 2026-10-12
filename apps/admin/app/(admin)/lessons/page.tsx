@@ -20,9 +20,9 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="admin-page-content">
+    <main className="a-page">
       <PageHeader
-        eyebrow="Contenu"
+        crumbs={[{ label: "Contenu" }]}
         title={`Leçons (${String(rows.length)})`}
         description={`${String(counts.published)} publiée${counts.published !== 1 ? "s" : ""} · ${String(counts.draft)} brouillon${counts.draft !== 1 ? "s" : ""}. Les leçons archivées sont rangées à part.`}
         actions={

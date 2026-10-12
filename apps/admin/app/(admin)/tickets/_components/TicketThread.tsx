@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useTransition } from "react";
-import { UI } from "../../_components/admin-ui";
 import { replyToTicketAction } from "../../_actions/ticket-actions";
 
 /**
@@ -82,12 +81,12 @@ export function TicketThread({
           style={{
             margin: 0,
             padding: "12px 14px",
-            border: `1px solid ${UI.border}`,
+            border: "1px solid var(--a-border)",
             background: "rgba(3,2,25,0.6)",
-            fontFamily: UI.mono,
+            fontFamily: "var(--font-mono)",
             fontSize: 11.5,
             lineHeight: 1.6,
-            color: UI.muted,
+            color: "var(--a-muted)",
           }}
         >
           Ce ticket est terminé. Repasse-le en cours pour reprendre la conversation.
@@ -105,9 +104,9 @@ export function TicketThread({
               width: "100%",
               padding: "10px 12px",
               background: "rgba(3,2,25,0.6)",
-              border: `1px solid ${UI.border}`,
-              color: UI.fg,
-              fontFamily: UI.mono,
+              border: "1px solid var(--a-border)",
+              color: "var(--a-fg)",
+              fontFamily: "var(--font-mono)",
               fontSize: 13,
               lineHeight: 1.6,
               outline: "none",
@@ -121,26 +120,35 @@ export function TicketThread({
               style={{
                 justifySelf: "start",
                 padding: "9px 16px",
-                fontFamily: UI.mono,
+                fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 color: "#fff",
-                background: UI.blue,
-                border: `1px solid ${UI.blue}`,
+                background: "var(--a-blue)",
+                border: "1px solid var(--a-blue)",
                 cursor: pending ? "default" : "pointer",
                 opacity: pending ? 0.5 : 1,
               }}
             >
               {pending ? "…" : "Envoyer la réponse"}
             </button>
-            <span style={{ fontFamily: UI.mono, fontSize: 10.5, color: UI.muted }}>
+            <span
+              style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--a-muted)" }}
+            >
               Part par e-mail et s&apos;affiche sur sa page. Un ticket ouvert passe en cours.
             </span>
           </div>
           {error !== null && (
-            <p style={{ margin: 0, fontFamily: UI.mono, fontSize: 11.5, color: UI.danger }}>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-mono)",
+                fontSize: 11.5,
+                color: "var(--a-danger)",
+              }}
+            >
               {error}
             </p>
           )}
@@ -166,17 +174,17 @@ function Bubble({
       style={{
         padding: "11px 14px",
         background: staff ? "rgba(10,255,212,0.05)" : "rgba(5,4,26,0.5)",
-        border: `1px solid ${staff ? "rgba(10,255,212,0.25)" : UI.border}`,
-        borderLeft: `3px solid ${staff ? UI.turquoise : UI.border}`,
+        border: `1px solid ${staff ? "rgba(10,255,212,0.25)" : "var(--a-border)"}`,
+        borderLeft: `3px solid ${staff ? "var(--a-accent)" : "var(--a-border)"}`,
       }}
     >
       <div
         style={{
-          fontFamily: UI.mono,
+          fontFamily: "var(--font-mono)",
           fontSize: 10,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: staff ? UI.turquoise : UI.muted,
+          color: staff ? "var(--a-accent)" : "var(--a-muted)",
           marginBottom: 6,
         }}
       >
@@ -187,7 +195,7 @@ function Bubble({
           margin: 0,
           fontSize: 13.5,
           lineHeight: 1.65,
-          color: UI.fg2,
+          color: "var(--a-fg-2)",
           whiteSpace: "pre-wrap",
         }}
       >

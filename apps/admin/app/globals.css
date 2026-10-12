@@ -9,14 +9,14 @@
 }
 
 html {
-  background-color: #030219;
-  color: #f5f5fa;
+  background-color: var(--a-bg);
+  color: var(--a-fg);
   scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans), system-ui, sans-serif;
-  background: #030219;
+  background: var(--a-bg);
   min-height: 100vh;
 }
 
@@ -42,7 +42,7 @@ body::before {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #0024ff, #0affd4);
+  background: linear-gradient(90deg, var(--a-blue), var(--a-accent));
   z-index: 9999;
   pointer-events: none;
 }
@@ -54,8 +54,8 @@ body::before {
     border-color 150ms ease;
 }
 .admin-signout:hover {
-  color: #ff4d6d;
-  border-color: color-mix(in srgb, #ff4d6d 45%, transparent);
+  color: var(--a-danger);
+  border-color: color-mix(in srgb, var(--a-danger) 45%, transparent);
 }
 
 /* ─── Keyframes ─────────────────────────────────────────── */
@@ -72,11 +72,11 @@ body::before {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    #1f1b47 0%,
-    #1f1b47 30%,
-    #2a2560 50%,
-    #1f1b47 70%,
-    #1f1b47 100%
+    var(--a-border) 0%,
+    var(--a-border) 30%,
+    var(--a-border-2) 50%,
+    var(--a-border) 70%,
+    var(--a-border) 100%
   );
   background-size: 800px 100%;
   animation: skeleton-shimmer 1.8s ease-in-out infinite;
@@ -86,7 +86,7 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer {
     animation: none;
-    background: #1f1b47;
+    background: var(--a-border);
   }
 }
 
@@ -156,7 +156,7 @@ body::before {
   flex-shrink: 0;
   background: transparent;
   border: none;
-  color: #7f7ba9;
+  color: var(--a-muted);
   cursor: pointer;
 }
 @media (min-width: 768px) {
@@ -203,23 +203,6 @@ body::before {
   }
 }
 
-/* Page content wrapper: responsive padding + max-width */
-.admin-page-content {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 24px 16px 80px;
-}
-@media (min-width: 768px) {
-  .admin-page-content {
-    padding: 32px 32px 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .admin-page-content {
-    padding: 36px 56px 120px;
-  }
-}
-
 /* Stats grid: 2-col mobile → 4-col desktop */
 .admin-stats-grid {
   display: grid;
@@ -256,22 +239,6 @@ body::before {
 @media (min-width: 768px) {
   .admin-settings-grid {
     grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* Page header: stacked mobile → row desktop */
-.admin-page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-@media (min-width: 768px) {
-  .admin-page-header {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
   }
 }
 

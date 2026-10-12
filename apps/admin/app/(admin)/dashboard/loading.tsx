@@ -11,9 +11,9 @@ const CARD: React.CSSProperties = {
 
 export default function AdminDashboardLoading(): React.ReactElement {
   return (
-    <div className="admin-page-content">
+    <div className="a-page">
       {/* Page header */}
-      <div className="admin-page-header">
+      <div className="a-page-head">
         <div>
           <Skeleton width={220} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={160} height={14} />

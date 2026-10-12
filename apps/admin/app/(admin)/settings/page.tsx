@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
-import { Card, PageHeader, Tag, UI } from "../_components/admin-ui";
+import { Card, PageHeader, Tag } from "../_components/admin-ui";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -62,7 +62,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Système"
+        crumbs={[{ label: "Système" }]}
         title="Paramètres"
         description="Configuration du runtime, variables d'environnement et volumétrie de la base de données."
       />
@@ -88,7 +88,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
         <Card title="Base de données">
           {stats.map((s) => (
             <DefRow key={s.label} label={s.label}>
-              <b style={{ fontFamily: UI.mono, fontSize: 13, color: UI.turquoise }}>
+              <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--a-accent)" }}>
                 {s.val.toLocaleString("fr-FR")}
               </b>
             </DefRow>
@@ -104,7 +104,9 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
               { label: "Admin URL", val: process.env.NEXT_PUBLIC_ADMIN_URL ?? "-" },
             ].map((item) => (
               <DefRow key={item.label} label={item.label}>
-                <span style={{ fontFamily: UI.mono, fontSize: 12, color: UI.muted }}>
+                <span
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-muted)" }}
+                >
                   {item.val}
                 </span>
               </DefRow>

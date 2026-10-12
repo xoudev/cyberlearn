@@ -104,7 +104,7 @@ export default async function AdminTournamentPage({ params }: Props): Promise<Re
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Tournois"
+        crumbs={[{ label: "Gamification" }, { label: "Tournois", href: "/tournaments" }]}
         title={edited.title}
         description={`${String(edited._count.solves)} flag${edited._count.solves > 1 ? "s" : ""} trouvé${edited._count.solves > 1 ? "s" : ""}.`}
         actions={

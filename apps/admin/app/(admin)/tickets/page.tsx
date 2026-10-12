@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
-import { KpiCard, PageHeader, Tag, UI, type Tone } from "../_components/admin-ui";
+import { KpiCard, PageHeader, Tag, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { TicketStatusSelect } from "./_components/TicketStatusSelect";
 import { STATUS_META, THEME_META } from "./ticket-meta";
@@ -52,7 +52,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
     const userLabel = t.user?.username
       ? `@${t.user.username}`
       : (t.user?.displayName ?? t.email ?? "anonyme");
-    const status = STATUS_META[t.status] ?? { label: t.status, color: UI.muted };
+    const status = STATUS_META[t.status] ?? { label: t.status, color: "var(--a-muted)" };
 
     return {
       id: t.id,
@@ -87,14 +87,14 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           >
             {t.subject}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: UI.muted }}>
+          <span className="mono" style={{ fontSize: 10, color: "var(--a-muted)" }}>
             {t.id.slice(0, 8)} · lire le message →
           </span>
         </Link>,
         <Tag key="th" tone={isActive ? theme.tone : "neutral"}>
           {theme.label}
         </Tag>,
-        <span key="u" className="mono" style={{ color: UI.muted }}>
+        <span key="u" className="mono" style={{ color: "var(--a-muted)" }}>
           {userLabel}
         </span>,
         t.jiraIssueKey && t.jiraIssueUrl ? (
@@ -104,16 +104,16 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
             target="_blank"
             rel="noopener noreferrer"
             className="mono"
-            style={{ color: UI.blueSoft, fontWeight: 600 }}
+            style={{ color: "var(--a-info)", fontWeight: 600 }}
           >
             {t.jiraIssueKey} ↗
           </a>
         ) : (
-          <span key="j" style={{ color: UI.muted }}>
+          <span key="j" style={{ color: "var(--a-muted)" }}>
             Aucun
           </span>
         ),
-        <span key="d" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
+        <span key="d" className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
           {formatDate(t.createdAt)}
         </span>,
         isActive ? (
@@ -125,7 +125,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              fontFamily: UI.mono,
+              fontFamily: "var(--font-mono)",
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: "0.1em",
@@ -153,7 +153,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Support"
+        crumbs={[{ label: "Support" }]}
         title="Tickets"
         description="Signalements du formulaire de contact. Les bugs et alertes sécurité encore ouverts sont considérés critiques."
       />

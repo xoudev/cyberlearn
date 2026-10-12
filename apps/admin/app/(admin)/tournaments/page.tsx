@@ -29,7 +29,7 @@ export default async function AdminTournamentsPage(): Promise<React.ReactElement
   return (
     <main className="a-page">
       <PageHeader
-        eyebrow="Gamification"
+        crumbs={[{ label: "Gamification" }]}
         title="Tournois"
         description="Des défis à flag ouverts sur une période, entre classes ou entre écoles, avec un tableau des scores en direct sur le site et dans l'app."
         actions={<PrimaryLink href="/tournaments/new">Nouveau tournoi</PrimaryLink>}

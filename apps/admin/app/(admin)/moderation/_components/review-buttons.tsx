@@ -106,7 +106,7 @@ export function ReviewButtons({
       )}
 
       {failed && (
-        <span className="a-field-hint" style={{ color: "#FFB547" }}>
+        <span className="a-field-hint" style={{ color: "var(--a-warning)" }}>
           Contenu supprimé. La sanction n&apos;a pas été appliquée : ce compte est déjà banni.
         </span>
       )}

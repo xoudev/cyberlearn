@@ -1,4 +1,4 @@
-import { UI, type Tone } from "../_components/admin-ui";
+import type { Tone } from "../_components/admin-ui";
 
 export const THEME_META: Record<string, { label: string; tone: Tone }> = {
   BUG: { label: "Bug", tone: "danger" },
@@ -12,8 +12,8 @@ export const THEME_META: Record<string, { label: string; tone: Tone }> = {
 };
 
 export const STATUS_META: Record<string, { label: string; color: string }> = {
-  OPEN: { label: "Ouvert", color: UI.danger },
-  IN_PROGRESS: { label: "En cours", color: UI.warning },
-  RESOLVED: { label: "Résolu", color: UI.turquoise },
-  CLOSED: { label: "Fermé", color: UI.faint },
+  OPEN: { label: "Ouvert", color: "var(--a-danger)" },
+  IN_PROGRESS: { label: "En cours", color: "var(--a-warning)" },
+  RESOLVED: { label: "Résolu", color: "var(--a-accent)" },
+  CLOSED: { label: "Fermé", color: "var(--a-faint)" },
 };

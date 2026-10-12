@@ -48,7 +48,7 @@ export default async function AdminLayout({
   const handle = `@${displayHandle}`;
 
   return (
-    <div className="admin-console" style={{ background: "#030219", minHeight: "100vh" }}>
+    <div className="admin-console" style={{ background: "var(--a-bg)", minHeight: "100vh" }}>
       <AdminShellClient>
         <AdminTopbar initials={initials} handle={handle} />
         <AdminSidebar
