@@ -1,8 +1,7 @@
-// @vitest-environment jsdom
 import React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ModalShell } from "../modal-shell";
+import { ModalShell } from "../components/modal-shell.js";
 
 /**
  * The behaviour every pop-up shares, exercised once: Escape, the backdrop,

@@ -7,7 +7,7 @@ import {
   unshareNoteAction,
   type ShareAudienceEntry,
 } from "../_actions/share-actions";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 
 /**
  * Who gets the note.

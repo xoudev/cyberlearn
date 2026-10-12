@@ -4,7 +4,7 @@ import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 import { useSettingsReload } from "../../_components/settings-reload";
 
 interface Props {

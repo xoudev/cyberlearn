@@ -4,7 +4,7 @@ import React, { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import styles from "../banned.module.css";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 import {
   acknowledgeBanAction,
   appealBanAction,

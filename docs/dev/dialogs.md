@@ -1,0 +1,117 @@
+# Dialogs, drawers and pages
+
+The site draws its windows with two primitives from `@cyberlearn/ui`, and opens
+the ones that need an address through one hook and one host. This page says
+when something should be a window rather than a page, and how to add one.
+
+## Window or page
+
+A **dialog or a drawer** fits what is done or read without leaving what the
+reader was doing:
+
+- a thin form (a new forum topic, a support request);
+- a single action or a confirmation (challenge a friend, delete an account);
+- a small detail view (a support ticket, the release notes, a note).
+
+A **page** fits what stands on its own:
+
+- it needs a shareable address that loads alone, as the thing itself rather
+  than as an aside (a lesson, a challenge, a public profile);
+- it polls or updates live (a duel);
+- it runs a machine (a tournament challenge with its Linux machine);
+- it is the target of a notification or of an e-mail link (a duel, the
+  account deletion landing pages).
+
+When a page becomes a window, its address stays alive with a redirect in
+`apps/web/next.config.ts` to the page that hosts the window, with the window's
+parameter (`/settings/:section` goes to `/dashboard?settings=:section`). Make
+the redirect `permanent: false`: a browser must not remember where an address
+of the site goes.
+
+## Dialog or drawer
+
+| Primitive | Use it for | Behaviour |
+|---|---|---|
+| `ModalShell` | A short exchange that asks for an answer: a confirmation, a form of a few fields, a notice | Centred over the page. Escape and the backdrop close it (unless `dismissable={false}`), the page is locked, Tab stays inside, a dialog opened over another gets the keyboard. Three amounts of chrome: `panel`, `plain`, `none` |
+| `SideDrawer` | Something taller, read beside the page: a list, a thread, a set of sections (the settings) | Against the right edge, a header with its name and a close button, an Escape hint at the bottom. Modal by default: a `ModalShell` without chrome, same behaviour |
+| `SideDrawer modal={false}` | Something used while working in the page (the notes of a lesson) | Docked: no backdrop, no scroll lock, no focus trap, the page stays in use beside it. Escape closes it when the focus is in it |
+
+A `SideDrawer` moves the focus into it when it opens and gives it back to what
+opened it when it closes, unless the reader has put it elsewhere in the page
+in the meantime. Pass `returnFocus={false}` in the render that closes it when
+the page changed under it (the settings drawer does, on a navigation): the
+opener may still be on screen, but a new page is read from its start. A
+`ModalShell` focuses itself on open; giving the focus back is its caller's.
+
+Their classes live in `packages/ui/src/dialogs.css`, which both apps import
+after the tokens. The console can use them as they are.
+
+The shadcn `Sheet` (`apps/web/components/ui/sheet.tsx`) is the sidebar's on a
+phone and nothing else's. Do not build a window on it.
+
+## Opened by the address
+
+A window that a link, a redirect or the browser's history should be able to
+open has its open state in the address: `?news=1` open, no `news` closed.
+
+- `useQueryDialog(key)` (`apps/web/hooks/use-query-dialog.ts`) returns the
+  parameter's `value` (null when closed), `open(value = "1")` and `close()`.
+  `open` adds a step to the history, so Back closes the window and Forward
+  opens it again. `close` steps back over that step, or takes the parameter
+  off an address the window came with (a link, a redirect, a reload). Both go
+  through the History API, which Next follows in `useSearchParams` without
+  asking the server for anything: the page under the window does not move.
+  The hook only steps back from a step it knows this page load added: the
+  mark `open` leaves on the entry is dropped by Next at the next refresh or
+  revalidating server action, so the hook keeps its own record of the step as
+  well, and a mark from before a reload never sends the reader back into the
+  page that reload threw away.
+- `QueryDialogHost` (`apps/web/components/query-dialog-host.tsx`) is mounted
+  once in `apps/web/app/(app)/layout.tsx`. It draws the registered window the
+  address names, over any page of the signed-in site.
+- `QUERY_DIALOGS` (`apps/web/components/query-dialogs.ts`) maps each parameter
+  to its window.
+
+The settings drawer is registered under `settings` with a difference: it keeps
+its own state, so its entry hands the request to the drawer and takes the
+parameter off the address at once. Opening it from a link does not touch the
+address.
+
+## Adding a window
+
+1. Write the window as a client component that takes `QueryDialogProps`
+   (`{ value, onClose }`) and draws itself with `ModalShell` or `SideDrawer`,
+   open. It is a default export.
+2. Register it, lazy, so its code loads only when it is asked for:
+
+   ```ts
+   export const QUERY_DIALOGS = {
+     [SETTINGS_QUERY]: SettingsFromAddress,
+     news: lazy(() => import("@/app/(app)/changelog/_components/news-drawer")),
+   };
+   ```
+
+3. Open it from a client component with the hook:
+
+   ```tsx
+   const news = useQueryDialog("news");
+   <button type="button" onClick={() => news.open()}>Nouveautés</button>
+   ```
+
+   A `<Link href="/dashboard?news=1">` opens it too, from a server component
+   or another page, at the cost of a navigation.
+4. If the window replaces a page, redirect the old address (see above) and
+   delete the page.
+5. Test the window on its own. The host and the hook are covered once, in
+   `apps/web/components/__tests__/query-dialog-host.test.tsx`.
+
+A window that belongs to one page only (a composer on one forum category)
+does not need the registry: the page's client component calls
+`useQueryDialog(key)` and draws the window itself while `value` is not null.
+
+Use short English parameter names, one per window. One window open at a time:
+two at once work, but their steps of the history interleave.
+
+The mobile app has native screens: whether the site shows a feature as a
+window or as a page changes nothing for it. The feature itself still follows
+`docs/MOBILE_PARITY.md`.

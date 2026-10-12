@@ -113,7 +113,7 @@
   background: rgba(111, 107, 153, 0.08);
 }
 
-/* ── The notice on arrival (in the site's dialog, components/modal-shell) ── */
+/* ── The notice on arrival (in the site's dialog, ModalShell of @cyberlearn/ui) ── */
 
 .notice {
   padding: 20px;

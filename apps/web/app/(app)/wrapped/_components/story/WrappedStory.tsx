@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { SLIDE_MS, buildStorySlides, type Slide } from "@cyberlearn/lib/gamification/wrapped-story";
 import { useStoryClock } from "./use-story-clock";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 import "./story.css";
 
 /**

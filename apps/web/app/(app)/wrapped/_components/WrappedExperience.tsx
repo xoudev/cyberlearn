@@ -4,7 +4,7 @@ import React from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { WrappedShare } from "./WrappedClient";
 import { WrappedStory } from "./story/WrappedStory";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell } from "@cyberlearn/ui";
 
 /**
  * One recap, two ways in: the chip in the navbar and a direct link to

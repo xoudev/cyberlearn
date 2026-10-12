@@ -6,9 +6,8 @@ import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { downloadMarkdown, noteToMarkdown } from "@/lib/notes/export";
 import { ReportNoteForm } from "./report-note-form";
 import { ShareDialog } from "./share-dialog";
-import { ModalShell } from "@/components/modal-shell";
 import { CAT, type SerializedFolder, type SerializedNote } from "./notes-shared";
-import { Select } from "@cyberlearn/ui";
+import { ModalShell, Select } from "@cyberlearn/ui";
 import type { NoteReportReasonKey } from "@cyberlearn/lib/notes/report-reasons";
 
 interface NoteReaderProps {
