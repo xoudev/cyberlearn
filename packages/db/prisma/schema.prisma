@@ -59,6 +59,8 @@ model User {
   certificates      Certificate[]
   notifications     Notification[]
   reviewSchedules   ReviewSchedule[]
+  reviewCards       ReviewCard[]
+  reviewSessions    ReviewSession[]
   contactTickets    ContactTicket[]
   ratings           Rating[]
   lessonQuizAnswers LessonQuizAnswer[]
@@ -521,6 +523,7 @@ model Lesson {
   quizAnswers      LessonQuizAnswer[]
   quizReports      QuizReport[]
   reviewSchedules  ReviewSchedule[]
+  reviewCards      ReviewCard[]
   ratings          Rating[]
   questions        LessonQuestion[]
   prerequisites    LessonPrerequisite[] @relation("LessonPrerequisites")
@@ -1612,6 +1615,64 @@ model ReviewSchedule {
   @@unique([userId, lessonId])
   @@index([nextReviewAt])
   @@map("review_schedules")
+}
+
+/// One lesson quiz question a learner is asked again: a card in a Leitner box.
+/// Completing a lesson enqueues the questions answered wrong there and at most
+/// one answered right; a right answer moves the card up a box, a wrong one
+/// sends it back to the first, and past the last box it retires. The rules are
+/// @cyberlearn/lib/revisions/cards. The question itself stays in the lesson,
+/// referred to by its quiz id, so a card is asked as the lesson has it now.
+model ReviewCard {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  lessonId       String    @db.Uuid
+  quizId         String    @db.VarChar(100)
+  /// 1 to 4: how long until the card comes back (1, 3, 7, then 21 days).
+  box            Int       @default(1) @db.SmallInt
+  /// The start of the day the card is due, stored as a day is (dayStart).
+  dueAt          DateTime
+  /// Wrong answers since the card was enqueued.
+  lapses         Int       @default(0) @db.SmallInt
+  /// Whether the question was ever answered right, in its lesson or as a card:
+  /// only such a card retires on its own when long overdue.
+  everCorrect    Boolean   @default(false)
+  lastAnsweredAt DateTime?
+  /// When the card left the cycle: past its last box, its question gone from
+  /// the lesson, or long overdue after a right answer once. Kept rather than
+  /// deleted: enqueueing the same question again leaves it retired.
+  retiredAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, quizId])
+  @@index([userId, dueAt])
+  @@map("review_cards")
+}
+
+/// A day's review session: the cards drawn and the order their options are
+/// shown in, never the answer key, and the answers given. One per learner and
+/// day, so the session is graded and its XP credited once, whatever a second
+/// tab or a replayed request does.
+model ReviewSession {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  /// The calendar day the session is for (gamification/day.ts).
+  day         DateTime  @db.Date
+  /// The drawn cards: card, lesson, quiz, option order (ReviewDrawRef[]).
+  draw        Json
+  /// The shown option picked, by drawn index.
+  answers     Json      @default("{}")
+  completedAt DateTime?
+  xpCredited  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@map("review_sessions")
 }
 
 // ============================================================

@@ -22,7 +22,12 @@ vi.mock("@cyberlearn/db", () => ({
   lessonQuizRepository: { recordFirst: m.recordFirst, findForLesson: m.findForLesson },
 }));
 
-const { recordQuizAnswer, lessonQuizScore } = await import("../quiz-answer");
+const { recordQuizAnswer, readLessonQuizRecord, quizScoreOf } = await import("../quiz-answer");
+
+/** The score a completion fixes, read as complete.ts reads it. */
+async function scoreOf(contentMdx: string): Promise<ReturnType<typeof quizScoreOf>> {
+  return quizScoreOf(await readLessonQuizRecord("u1", LESSON, contentMdx));
+}
 
 const MDX = [
   "## Les listes",
@@ -87,28 +92,28 @@ describe("recordQuizAnswer", () => {
   });
 });
 
-describe("lessonQuizScore", () => {
+describe("the completion score (readLessonQuizRecord, quizScoreOf)", () => {
   it("counts right answers to the quizzes the lesson has now", async () => {
     m.findForLesson.mockResolvedValue([
       { quizId: "q-1", selected: 1, correct: true },
       { quizId: "q-removed", selected: 0, correct: true },
     ]);
-    expect(await lessonQuizScore("u1", LESSON, MDX)).toEqual({ correct: 1, total: 2 });
+    expect(await scoreOf(MDX)).toEqual({ correct: 1, total: 2 });
   });
 
   it("counts a quiz left unanswered as not right", async () => {
     m.findForLesson.mockResolvedValue([{ quizId: "q-2", selected: 0, correct: false }]);
-    expect(await lessonQuizScore("u1", LESSON, MDX)).toEqual({ correct: 0, total: 2 });
+    expect(await scoreOf(MDX)).toEqual({ correct: 0, total: 2 });
   });
 
   it("is null when nothing was recorded, rather than blaming the learner for their app", async () => {
     // A completion from a mobile build that does not record answers yet.
     m.findForLesson.mockResolvedValue([]);
-    expect(await lessonQuizScore("u1", LESSON, MDX)).toBeNull();
+    expect(await scoreOf(MDX)).toBeNull();
   });
 
   it("is null for a lesson without quizzes", async () => {
-    expect(await lessonQuizScore("u1", LESSON, "## S\n\nDu texte.")).toBeNull();
+    expect(await scoreOf("## S\n\nDu texte.")).toBeNull();
     expect(m.findForLesson).not.toHaveBeenCalled();
   });
 });

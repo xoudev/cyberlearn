@@ -5,13 +5,20 @@ import {
   evaluateBadges,
   registerActivity,
 } from "@cyberlearn/lib";
-import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
+import { cardsForCompletion, isReviewableLesson } from "@cyberlearn/lib/revisions/cards";
+import {
+  prisma,
+  lessonRepository,
+  badgeRepository,
+  reviewCardRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
 import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
 import { recordQuestProgress } from "@/lib/quests/progress";
-import { lessonQuizScore } from "@/lib/lessons/quiz-answer";
+import { quizScoreOf, readLessonQuizRecord } from "@/lib/lessons/quiz-answer";
 
 export interface CompleteLessonResult {
   alreadyCompleted: boolean;
@@ -49,7 +56,14 @@ export async function completeLessonForUser(
   const [lesson, user, existing, allBadges, wantsRevisions] = await Promise.all([
     prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { xpReward: true, slug: true, category: true, contentMdx: true },
+      select: {
+        xpReward: true,
+        slug: true,
+        title: true,
+        audience: true,
+        category: true,
+        contentMdx: true,
+      },
     }),
     userRepository.findForGamification(userId),
     lessonRepository.findProgress(userId, lessonId),
@@ -61,7 +75,8 @@ export async function completeLessonForUser(
 
   // The quiz score is fixed now, with the completion: right answers out of
   // the quizzes the lesson has at this moment. The catalogue shows it.
-  const quizScore = await lessonQuizScore(userId, lessonId, lesson.contentMdx);
+  const quizRecord = await readLessonQuizRecord(userId, lessonId, lesson.contentMdx);
+  const quizScore = quizScoreOf(quizRecord);
   const scoreColumns = {
     quizCorrect: quizScore?.correct ?? null,
     quizTotal: quizScore?.total ?? null,
@@ -73,6 +88,19 @@ export async function completeLessonForUser(
   // nothing is credited unless that claim succeeds.
   const isFirstCompletion = existing?.status !== "COMPLETED";
   const now = new Date();
+
+  // The review cards this completion enqueues, from the same answers as the
+  // score: the questions missed, and one answered right. Behind the same
+  // switch as the lesson-level queue below, and not for a module review, a
+  // project or a class lesson (isReviewableLesson says why).
+  const reviewCards =
+    wantsRevisions && isReviewableLesson(lesson)
+      ? cardsForCompletion(
+          quizRecord.quizzes.map((quiz) => quiz.id),
+          quizRecord.answers,
+          now,
+        )
+      : [];
 
   // Projected XP total after the lesson reward - used ONLY to evaluate
   // XP_THRESHOLD badges below. The actual credit happens via creditXp in-tx.
@@ -209,6 +237,10 @@ export async function completeLessonForUser(
         },
         update: {},
       });
+      // Alongside the lesson-level queue until the cards replace it. In the
+      // same transaction, so they are enqueued once, with the completion
+      // that claimed it.
+      await reviewCardRepository.enqueueForLesson(userId, lessonId, reviewCards, tx);
     }
 
     return { award: awardResult, finalLevel: txLevel, firstCompletion };

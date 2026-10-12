@@ -1,4 +1,5 @@
 import { prisma } from "@cyberlearn/db";
+import { readDraw, readSessionAnswers } from "@cyberlearn/lib/revisions/cards";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 
@@ -123,6 +124,34 @@ export interface ExportPayload {
     repetitions: number;
     nextReviewAt: Date;
     lastReviewedAt: Date;
+  }[];
+  /** The lesson questions to be asked again, each in its box, retired ones included. */
+  reviewCards: {
+    lessonTitle: string;
+    lessonSlug: string;
+    quizId: string;
+    box: number;
+    dueAt: Date;
+    lapses: number;
+    everCorrect: boolean;
+    lastAnsweredAt: Date | null;
+    retiredAt: Date | null;
+    createdAt: Date;
+  }[];
+  /** The daily review sessions: the questions drawn, in the order asked, and the answers given. */
+  reviewSessions: {
+    day: Date;
+    questions: {
+      lessonTitle: string;
+      quizId: string;
+      /** The options in the order shown: `optionOrder[k]` is the lesson's index of the k-th one. */
+      optionOrder: number[];
+      /** The shown option picked, null when left unanswered. */
+      selected: number | null;
+    }[];
+    completedAt: Date | null;
+    xpCredited: boolean;
+    createdAt: Date;
   }[];
   ratings: {
     contentTitle: string | null;
@@ -289,6 +318,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     lessonQuizAnswers,
     quizReports,
     noteReports,
+    reviewCards,
+    reviewSessions,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -612,6 +643,33 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.reviewCard.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        box: true,
+        dueAt: true,
+        lapses: true,
+        everCorrect: true,
+        lastAnsweredAt: true,
+        retiredAt: true,
+        createdAt: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.reviewSession.findMany({
+      where: { userId },
+      select: {
+        day: true,
+        draw: true,
+        answers: true,
+        completedAt: true,
+        xpCredited: true,
+        createdAt: true,
+      },
+      orderBy: { day: "asc" },
+    }),
   ]);
 
   return {
@@ -706,6 +764,36 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       nextReviewAt: rs.nextReviewAt,
       lastReviewedAt: rs.lastReviewedAt,
     })),
+    reviewCards: reviewCards.map((card) => ({
+      lessonTitle: card.lesson.title,
+      lessonSlug: card.lesson.slug,
+      quizId: card.quizId,
+      box: card.box,
+      dueAt: card.dueAt,
+      lapses: card.lapses,
+      everCorrect: card.everCorrect,
+      lastAnsweredAt: card.lastAnsweredAt,
+      retiredAt: card.retiredAt,
+      createdAt: card.createdAt,
+    })),
+    // A draw refers to its cards and lessons by internal id: the export names
+    // the lesson as the session showed it instead, and pairs each question
+    // with the option picked.
+    reviewSessions: reviewSessions.map((session) => {
+      const answers = readSessionAnswers(session.answers);
+      return {
+        day: session.day,
+        questions: readDraw(session.draw).map((ref, index) => ({
+          lessonTitle: ref.domain,
+          quizId: ref.quizId,
+          optionOrder: ref.order,
+          selected: answers[String(index)] ?? null,
+        })),
+        completedAt: session.completedAt,
+        xpCredited: session.xpCredited,
+        createdAt: session.createdAt,
+      };
+    }),
     ratings: ratings.map((r) => ({
       contentTitle: r.lesson?.title ?? r.path?.title ?? null,
       contentType: r.lesson !== null ? ("lesson" as const) : ("path" as const),
