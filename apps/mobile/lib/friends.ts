@@ -149,17 +149,34 @@ export function listCountLabel(kind: FriendListKind, count: number): string {
 }
 
 /**
- * The line under the friends board. Being on this board says nothing about
- * being on the friends' own boards, so it says which of the two the reader is,
- * with the word the link carries.
+ * The line under the friends board, beside its switch. Being on this board
+ * says nothing about being on the friends' own boards, so it says which of the
+ * two the reader is, in the site's words.
  */
-export function friendsBoardNotice(listedForFriends: boolean): { text: string; link: string } {
+export function friendsBoardNotice(listedForFriends: boolean): string {
   return listedForFriends
-    ? { text: "Tes amis te voient dans leur propre classement.", link: "Changer" }
-    : {
-        text: "Tu n'apparais pas dans le classement de tes amis : ce tableau est le tien, eux ne t'y voient pas.",
-        link: "S'y ajouter",
-      };
+    ? "Tes amis te voient dans leur propre classement."
+    : "Tu n'apparais pas dans le classement de tes amis : ce tableau est le tien, eux ne t'y voient pas.";
+}
+
+/**
+ * Whether a board row carries the friend mark, as on the site: the server
+ * flags a friend only on a row that shows who it is, and the row checks
+ * again that it names somebody - a mark beside "Anonyme" would say who it
+ * is. A server from before the marks sends no flag at all, which marks
+ * nobody.
+ */
+export function showsFriendMark(entry: {
+  isFriend?: boolean;
+  isCurrentUser: boolean;
+  displayName: string | null;
+  username: string | null;
+}): boolean {
+  return (
+    entry.isFriend === true &&
+    !entry.isCurrentUser &&
+    (entry.username !== null || entry.displayName !== null)
+  );
 }
 
 /** A board row's name: nobody is anonymous on the friends board. */

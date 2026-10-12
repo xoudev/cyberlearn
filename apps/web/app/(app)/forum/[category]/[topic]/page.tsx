@@ -2,11 +2,23 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { POSTS_PER_PAGE, forumRepository, userRepository } from "@cyberlearn/db";
+import {
+  POSTS_PER_PAGE,
+  forumRepository,
+  friendshipRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { forumAuthorHandle } from "@/lib/forum/author-name";
-import { Crumbs, ForumHeader, authorName, formatDate } from "../../_components/forum-bits";
+import { FriendMark } from "@/components/friend-mark";
+import {
+  Crumbs,
+  ForumHeader,
+  authorIsFriend,
+  authorName,
+  formatDate,
+} from "../../_components/forum-bits";
 import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
 import { TopicTools } from "../../_components/topic-tools";
@@ -48,12 +60,15 @@ export default async function ForumTopicPage({
   // the value has to be resolved before it crosses the boundary - and one
   // call per post would be one network round-trip per post. The same goes for
   // whose profile the reader may open: a name links only where it leads.
-  const [avatars, openProfiles] = await Promise.all([
+  const [avatars, openProfiles, friends] = await Promise.all([
     resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null)),
     userRepository.profilesOpenTo(
       user.id,
       view.posts.flatMap((p) => (p.author ? [p.author.id] : [])),
     ),
+    // The reader's friends, for the mark beside their names: the topic's
+    // author in the header and each post's.
+    friendshipRepository.friendIds(user.id),
   ]);
 
   const isAdmin = profile?.role === "ADMIN";
@@ -79,7 +94,9 @@ export default async function ForumTopicPage({
             {view.pinned && <span className="fo-tag fo-tag--pinned">Épinglé</span>}
             {view.locked && <span className="fo-tag fo-tag--locked">Fermé</span>}
             <span className="fo-eyebrow-text">
-              Ouvert par {authorName(view.author)} · {formatDate(view.createdAt)}
+              Ouvert par {authorName(view.author)}
+              {authorIsFriend(view.author, friends) && <FriendMark size={12} />} ·{" "}
+              {formatDate(view.createdAt)}
             </span>
           </>
         }
@@ -102,6 +119,7 @@ export default async function ForumTopicPage({
             profileHref={handle !== null ? `/u/${handle}` : null}
             path={path}
             hidden={post.isHidden}
+            isFriend={authorIsFriend(post.author, friends)}
             canEdit={post.author?.id === user.id}
             canRemove={post.author?.id === user.id || isAdmin}
           />

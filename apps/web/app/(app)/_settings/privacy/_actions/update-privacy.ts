@@ -55,3 +55,41 @@ export async function updatePrivacyAction(
 
   return { success: true };
 }
+
+/** The friends-board switch alone: the same field, read the same way. */
+const friendsBoardSchema = updatePrivacySchema.pick({ friendsLeaderboard: true });
+
+/**
+ * The same setting as the privacy form's "Visible par mes amis", from the
+ * friends tab of the leaderboard, where an empty board is the moment the
+ * question makes sense.
+ *
+ * It writes that one column and nothing else. The form sends its whole state
+ * because it shows all of it; the leaderboard shows one switch, and sending
+ * the visibility it read when the page loaded would put back whatever the
+ * reader changed since in another tab - a board they hid from, re-entered.
+ */
+export async function setFriendsLeaderboardAction(
+  _prev: UpdatePrivacyState,
+  formData: FormData,
+): Promise<UpdatePrivacyState> {
+  const authUser = await requireRequestUser();
+
+  const parsed = friendsBoardSchema.safeParse({
+    friendsLeaderboard: readBoolean(formData.get("friendsLeaderboard")),
+  });
+  if (!parsed.success) {
+    return { error: "Paramètres de confidentialité invalides." };
+  }
+
+  const { friendsLeaderboard } = parsed.data;
+  await prisma.userPreferences.upsert({
+    where: { userId: authUser.id },
+    create: { userId: authUser.id, friendsLeaderboard },
+    update: { friendsLeaderboard },
+  });
+
+  revalidatePath("/leaderboard");
+
+  return { success: true };
+}

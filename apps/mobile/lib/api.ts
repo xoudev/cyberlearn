@@ -23,6 +23,7 @@ import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
+import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
 import type { QaQuestion } from "@/lib/lesson-qa";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
@@ -552,6 +553,11 @@ export interface LeaderboardEntry {
   streakDays: number;
   /** The name may open the profile: decided by the server, never inferred here. */
   hasPublicProfile: boolean;
+  /**
+   * The reader's friend, on a named row only (the server decides). Absent
+   * from a server older than the friend marks.
+   */
+  isFriend?: boolean;
 }
 
 export interface PodEntry {
@@ -563,6 +569,8 @@ export interface PodEntry {
   seasonXp: number;
   promotion: boolean;
   relegation: boolean;
+  /** As on LeaderboardEntry: a friend, on a named row only. */
+  isFriend?: boolean;
 }
 
 export interface LeaderboardData {
@@ -576,6 +584,20 @@ export interface LeaderboardData {
   } | null;
   /** The reader's friends who chose to be listed, plus the reader, as on the site. */
   friendsBoard: FriendsBoard;
+  /**
+   * Since when the period counts ("depuis lundi 12 octobre"); null for all
+   * time. `entries`, `userRank` and `friendsBoard` are the period's then, and
+   * each row's xpTotal is the XP earned in it.
+   */
+  periodSince: string | null;
+  /** Everybody the board ranks, where `entries` stops at its first rows. */
+  totalPlayers: number | null;
+  /**
+   * The period these rows are for, as the server answered it. The screen
+   * words the board from this rather than from the chip just tapped: while
+   * the next period loads, the rows on screen are still the previous one's.
+   */
+  period: LeaderboardPeriod;
 }
 
 export interface FriendsBoard {
@@ -584,15 +606,23 @@ export interface FriendsBoard {
   listedForFriends: boolean;
 }
 
-export async function fetchLeaderboard(): Promise<LeaderboardData> {
-  const res = await authedFetch("/api/mobile/leaderboard");
-  const body = (await res.json()) as ({ ok: true } & LeaderboardData) | { ok: false };
+export async function fetchLeaderboard(
+  period: LeaderboardPeriod = "all",
+): Promise<LeaderboardData> {
+  const res = await authedFetch(leaderboardPath(period));
+  const body = (await res.json()) as
+    | ({ ok: true } & Omit<LeaderboardData, "periodSince" | "totalPlayers" | "period"> &
+        Partial<Pick<LeaderboardData, "periodSince" | "totalPlayers">> & { period?: unknown })
+    | { ok: false };
   if (!body.ok) throw new Error("Chargement impossible");
   return {
     entries: body.entries,
     userRank: body.userRank,
     league: body.league,
     friendsBoard: body.friendsBoard,
+    periodSince: body.periodSince ?? null,
+    totalPlayers: body.totalPlayers ?? null,
+    period: answeredPeriod(body.period),
   };
 }
 

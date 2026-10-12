@@ -218,3 +218,60 @@ describe("buildCurrentUserPosition", () => {
     expect(pos.displayName).toBe(SECRET_NAME);
   });
 });
+
+// ─── buildLeaderboard - the friend mark ───────────────────────────────────────
+
+describe("buildLeaderboard - the friend mark", () => {
+  const FRIENDS = new Set(["pub-friend", "anon-friend", "hidden-friend", "no-prefs-friend", "me"]);
+
+  it("marks a PUBLIC friend, whose name the row already shows", () => {
+    const [entry] = buildLeaderboard(
+      [rawUser("pub-friend", LeaderboardVisibility.PUBLIC, 100)],
+      VIEWER,
+      FRIENDS,
+    );
+    expect(entry?.isFriend).toBe(true);
+  });
+
+  it("never marks an anonymised friend: the mark would name the row", () => {
+    const result = buildLeaderboard(
+      [
+        rawUser("anon-friend", LeaderboardVisibility.ANONYMOUS, 300),
+        rawUser("no-prefs-friend", null, 200),
+      ],
+      VIEWER,
+      FRIENDS,
+    );
+    expect(result.map((e) => e.isFriend)).toEqual([false, false]);
+    expect(result.map((e) => e.username)).toEqual([null, null]);
+  });
+
+  it("drops a HIDDEN friend like anybody hidden, mark or no mark", () => {
+    const result = buildLeaderboard(
+      [rawUser("hidden-friend", LeaderboardVisibility.HIDDEN, 300)],
+      VIEWER,
+      FRIENDS,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("does not mark a PUBLIC player who is not a friend, nor the reader", () => {
+    const result = buildLeaderboard(
+      [
+        rawUser("stranger", LeaderboardVisibility.PUBLIC, 300),
+        rawUser("me", LeaderboardVisibility.PUBLIC, 200),
+      ],
+      "me",
+      FRIENDS,
+    );
+    expect(result.map((e) => e.isFriend)).toEqual([false, false]);
+  });
+
+  it("marks nobody when no friends are given", () => {
+    const [entry] = buildLeaderboard(
+      [rawUser("pub-friend", LeaderboardVisibility.PUBLIC, 100)],
+      VIEWER,
+    );
+    expect(entry?.isFriend).toBe(false);
+  });
+});

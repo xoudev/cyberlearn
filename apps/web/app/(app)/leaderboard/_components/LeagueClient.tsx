@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import type { PodLadderEntry } from "@cyberlearn/db";
+import { FriendMark } from "@/components/friend-mark";
 import { DIVISION_LABEL, type LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, HexAvatar, MONO } from "./shared";
 import { EmptyState } from "@/components/empty-state";
@@ -196,7 +198,20 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
             }}
           >
             <span style={{ color: CYAN, ...MONO, fontWeight: 500 }}>@</span>
-            {handle}
+            {/* A name opens the profile only where the server said it may:
+                a PUBLIC member whose profile page is public too. */}
+            {entry.hasPublicProfile && entry.username !== null ? (
+              <Link href={`/u/${entry.username}`} style={{ color: "inherit" }}>
+                {handle}
+              </Link>
+            ) : (
+              handle
+            )}
+            {/* Set by buildPodLadder on PUBLIC rows only; the name is checked
+                again, as on the global board. */}
+            {entry.isFriend && !isMe && (entry.username !== null || entry.displayName !== null) ? (
+              <FriendMark size={12} />
+            ) : null}
           </span>
           <span
             style={{

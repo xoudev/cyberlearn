@@ -1,7 +1,13 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { classRepository, exerciseRepository, lessonsVisibleTo, prisma } from "@cyberlearn/db";
+import {
+  classRepository,
+  exerciseRepository,
+  friendshipRepository,
+  lessonsVisibleTo,
+  prisma,
+} from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
@@ -37,9 +43,11 @@ const WEEK_MS = 7 * 86_400_000;
 export default async function MyClassPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  const [taught, memberships] = await Promise.all([
+  const [taught, memberships, friendIds] = await Promise.all([
     classRepository.findForTeacher(authUser.id),
     classRepository.findForMember(authUser.id),
+    // For the mark beside a classmate who is also a friend.
+    friendshipRepository.friendIds(authUser.id),
   ]);
 
   // No class either way, no page. An empty shell saying so is a page that
@@ -298,6 +306,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
                       : "Anonyme",
                     username: visible ? mem.user.username : null,
                     visible,
+                    isFriend: visible && friendIds.has(mem.user.id),
                     level: mem.user.level,
                     xpTotal: mem.user.xpTotal,
                     completed: completedByUser.get(mem.user.id) ?? 0,

@@ -6,13 +6,16 @@ import styles from "./_components/leaderboard.module.css";
 /**
  * The leaderboard while it loads, drawn on the page's own classes and layout
  * (LeaderboardClient.tsx, leaderboard.module.css): the breadcrumb, the title
- * with its `tabs`, the meta strip, the `cl-podium` of three (inline-styled
+ * with its `tabs`, the period `pills`, the meta strip, the `cl-podium` of three (inline-styled
  * cards with no class, so `SkeletonCard`), the `position` banner, and the
  * `players` grid of `card card--sunken` player cards.
  */
 
-/** Global, Amis, Ligue, Ce mois, Cette semaine: each label's width in 11px mono. */
-const TAB_WIDTHS = [57, 38, 48, 66, 124];
+/** Global, Amis, Ligue: each label's width in 11px mono. */
+const TAB_WIDTHS = [57, 38, 48];
+
+/** Depuis toujours, Ce mois, Cette semaine: each pill's label in 11px mono capitals. */
+const PERIOD_WIDTHS = [118, 60, 104];
 
 function PodiumCardSkeleton({ gold }: { gold: boolean }): React.ReactElement {
   return (
@@ -100,6 +103,16 @@ export default function LeaderboardLoading(): React.ReactElement {
           {TAB_WIDTHS.map((w) => (
             <div key={w} className="tabs__tab">
               <Skeleton w={w} h={11} style={{ margin: "2px 0" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.periods} aria-hidden="true">
+        <div className="pills">
+          {PERIOD_WIDTHS.map((w) => (
+            <div key={w} className="pill">
+              <Skeleton w={w} h={11} />
             </div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip } from "@/components/buttons";
 import { Avatar } from "@/components/media";
@@ -9,6 +10,39 @@ import { acceptFriendApi, removeFriendApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { removeLabel, unfriendAlert, type Friend, type FriendListKind } from "@/lib/friends";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+
+/**
+ * "Ami", beside a friend's name on a board: the site's mark
+ * (apps/web/components/friend-mark.tsx), the same two heads, read as the word
+ * by a screen reader. Only where showsFriendMark says so - never on an
+ * anonymous row, where it would say who the row is.
+ */
+export function FriendMark({ size = 13 }: { size?: number }): React.JSX.Element {
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel="Ami"
+      style={{ marginLeft: 6, flexShrink: 0 }}
+    >
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke={colors.accent}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <Circle cx="7.5" cy="6.5" r="3" />
+        <Path d="M2 16.5c0-3 2.5-4.6 5.5-4.6s5.5 1.6 5.5 4.6" />
+        <Circle cx="14.5" cy="7.5" r="2.4" fill={colors.accent} />
+        <Path d="M13 12.2c3 0 5 1.5 5 4.3" />
+      </Svg>
+    </View>
+  );
+}
 
 /**
  * One person in a friends list, with what the site's panel offers on the

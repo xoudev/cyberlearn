@@ -24,6 +24,14 @@ const XP_HID = 2_000_000_003;
 const XP_PUB = 2_000_000_002;
 const XP_ANON = 2_000_000_001;
 
+// Ledger credits for the period board (rows cascade away with their users).
+const PERIOD_START = new Date(Date.now() - 3_600_000);
+const LEDGER_TEACH = 1_500_000_004;
+const LEDGER_HID = 1_500_000_003;
+const LEDGER_PUB = 1_500_000_002;
+const LEDGER_ANON = 1_500_000_001;
+const LEDGER_OLD = 500_000_000;
+
 const suffix = randomUUID().slice(0, 8);
 const pub = {
   id: randomUUID(),
@@ -118,6 +126,22 @@ describe("leaderboardRepository (integration, real DB)", () => {
       },
     });
 
+    // The period boards read the ledger. Amounts in their own band too, far
+    // above what anybody earns in a week, and the same trap as above: the
+    // HIDDEN user and the teacher earned the most. Anon also has an older
+    // credit, before the window, which would put them first if it counted.
+    const inWindow = new Date();
+    const beforeWindow = new Date(PERIOD_START.getTime() - 86_400_000);
+    await prisma.xpLedger.createMany({
+      data: [
+        { userId: pub.id, amount: LEDGER_PUB, source: "LESSON", createdAt: inWindow },
+        { userId: anon.id, amount: LEDGER_ANON, source: "LESSON", createdAt: inWindow },
+        { userId: anon.id, amount: LEDGER_OLD, source: "LESSON", createdAt: beforeWindow },
+        { userId: hid.id, amount: LEDGER_HID, source: "LESSON", createdAt: inWindow },
+        { userId: teach.id, amount: LEDGER_TEACH, source: "LESSON", createdAt: inWindow },
+      ],
+    });
+
     configured = true;
   });
 
@@ -194,5 +218,42 @@ describe("leaderboardRepository (integration, real DB)", () => {
 
     const rank = await leaderboardRepository.findUserRank(teach.id);
     expect(rank).toBe(0);
+  });
+
+  it("countRanked counts the same players as the board, beyond its first rows", async () => {
+    if (!configured) return;
+    const total = await leaderboardRepository.countRanked();
+    const top = await leaderboardRepository.findTopUsers(1, pub.id);
+    // At least PUBLIC and ANONYMOUS; never the HIDDEN user nor the teacher,
+    // so it can exceed the one row asked for without counting either.
+    expect(total).toBeGreaterThanOrEqual(2);
+    expect(top).toHaveLength(1);
+  });
+
+  it("findTopUsersSince: the period's XP, the same visibility rules, the old credit left out", async () => {
+    if (!configured) return;
+    const board = await leaderboardRepository.findTopUsersSince(PERIOD_START, 100, pub.id);
+
+    const pubEntry = board.entries.find((e) => e.xpTotal === LEDGER_PUB);
+    const anonEntry = board.entries.find((e) => e.xpTotal === LEDGER_ANON);
+
+    // HIDDEN and the teacher earned the most and are not there.
+    expect(board.entries.find((e) => e.xpTotal === LEDGER_HID)).toBeUndefined();
+    expect(board.entries.find((e) => e.xpTotal === LEDGER_TEACH)).toBeUndefined();
+
+    // Anon's older credit did not count: PUBLIC is first, anon second.
+    expect(pubEntry?.rank).toBe(1);
+    expect(pubEntry?.isCurrentUser).toBe(true);
+    expect(pubEntry?.username).toBe(pub.username);
+    expect(anonEntry?.rank).toBe(2);
+    expect(anonEntry?.username).toBeNull();
+    expect(anonEntry?.displayName).toBeNull();
+
+    expect(board.total).toBeGreaterThanOrEqual(2);
+    expect(board.standing).toEqual({ rank: 1, xp: LEDGER_PUB });
+
+    // The HIDDEN user has no place on it, whatever they earned.
+    const hidden = await leaderboardRepository.findTopUsersSince(PERIOD_START, 100, hid.id);
+    expect(hidden.standing).toBeNull();
   });
 });

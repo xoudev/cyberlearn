@@ -71,8 +71,16 @@ const BASE: TournamentView = {
     { rank: 2, name: "SIO1-A", detail: "Lycée Jean Moulin", points: 100, solved: 1, isMine: true },
   ],
   players: [
-    { rank: 1, name: "Anonyme", team: "SIO1-B", points: 100, solved: 1, isMe: false },
-    { rank: 2, name: "Moi", team: "SIO1-A", points: 0, solved: 0, isMe: true },
+    {
+      rank: 1,
+      name: "Anonyme",
+      team: "SIO1-B",
+      points: 100,
+      solved: 1,
+      isMe: false,
+      isFriend: false,
+    },
+    { rank: 2, name: "Moi", team: "SIO1-A", points: 0, solved: 0, isMe: true, isFriend: false },
   ],
   me: { points: 0, solved: 0, rank: 2 },
 };
@@ -105,6 +113,40 @@ describe("TournamentBoard", () => {
     expect(within(teams).getByText("Ton équipe")).toBeTruthy();
     expect(screen.getByLabelText("Les joueurs").textContent).toContain("Toi");
     expect(screen.getByRole("timer").textContent).toBe("Fin dans 1 h 00 min");
+  });
+
+  it("marks a friend named on the scoreboard, and only them", () => {
+    render(
+      <TournamentBoard
+        initial={{
+          ...BASE,
+          players: [
+            ...BASE.players,
+            {
+              rank: 3,
+              name: "Alex",
+              team: "SIO1-A",
+              points: 0,
+              solved: 0,
+              isMe: false,
+              isFriend: true,
+            },
+          ],
+        }}
+      />,
+    );
+    const players = screen.getByLabelText("Les joueurs");
+    expect(within(players).getAllByRole("img", { name: "Ami" })).toHaveLength(1);
+    // The one mark is on Alex's row, and on neither the anonymous one nor the
+    // reader's own.
+    const rowOf = (name: string): HTMLElement => {
+      const row = within(players).getByText(name).closest("li");
+      if (row === null) throw new Error(`No row for ${name}`);
+      return row;
+    };
+    expect(within(rowOf("Alex")).getByRole("img", { name: "Ami" })).toBeTruthy();
+    expect(within(rowOf("Anonyme")).queryByRole("img", { name: "Ami" })).toBeNull();
+    expect(within(rowOf("Moi")).queryByRole("img", { name: "Ami" })).toBeNull();
   });
 
   it("keeps the teams' ranking in sight beside the challenges as the page scrolls", () => {

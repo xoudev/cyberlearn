@@ -6,7 +6,9 @@ import { prisma } from "../prisma.js";
  * rule (apps/web/lib/challenges/writeups.ts); this reads and writes rows.
  */
 
-const AUTHOR = { select: { displayName: true, username: true } } as const;
+// The id stays on the server: the service reads it to mark a friend's
+// solution and sends only the name.
+const AUTHOR = { select: { id: true, displayName: true, username: true } } as const;
 
 export const writeupRepository = {
   /** Whether this person solved the challenge: the condition to read and to publish. */

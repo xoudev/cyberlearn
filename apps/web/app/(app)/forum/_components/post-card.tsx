@@ -9,6 +9,7 @@ import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { editPostAction, hidePostAction } from "../_actions/forum-actions";
 import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 import { ConfirmButton } from "@/components/confirm-button";
+import { FriendMark } from "@/components/friend-mark";
 import { Monogram, authorName, formatDate } from "./forum-bits";
 import type { ForumPostView } from "@cyberlearn/db";
 
@@ -29,12 +30,15 @@ export function PostCard({
   canRemove,
   path,
   hidden = false,
+  isFriend = false,
 }: {
   post: ForumPostView;
   /** Resolved on the server: an uploaded avatar's URL is signed and expires. */
   avatarSrc: string | null;
   /** The author's profile, or null when the reader would not be let in. */
   profileHref: string | null;
+  /** The author is one of the reader's friends: a forum post is always signed. */
+  isFriend?: boolean;
   canEdit: boolean;
   canRemove: boolean;
   path: string;
@@ -85,13 +89,16 @@ export function PostCard({
     <article className="fo-post" data-hidden={hidden}>
       <div className="fo-post-author">
         <Monogram author={post.author} src={avatarSrc} />
-        {profileHref !== null ? (
-          <Link href={profileHref} className="fo-post-name">
-            {authorName(post.author)}
-          </Link>
-        ) : (
-          <span className="fo-post-name">{authorName(post.author)}</span>
-        )}
+        <span className="fo-post-who">
+          {profileHref !== null ? (
+            <Link href={profileHref} className="fo-post-name">
+              {authorName(post.author)}
+            </Link>
+          ) : (
+            <span className="fo-post-name">{authorName(post.author)}</span>
+          )}
+          {isFriend && <FriendMark />}
+        </span>
         {post.author?.role === "TEACHER" && <span className="fo-post-role">Professeur</span>}
         {post.author?.role === "ADMIN" && <span className="fo-post-role">Équipe</span>}
         {post.author && <span className="fo-post-level">niveau {post.author.level}</span>}

@@ -211,3 +211,31 @@ describe("buildPodLadder - no PII / no userId leaks", () => {
     }
   });
 });
+
+// ─── The friend mark ──────────────────────────────────────────────────────────
+
+describe("buildPodLadder - the friend mark", () => {
+  const FRIENDS = new Set(["pub", "anon", "hidden"]);
+
+  it("marks a PUBLIC friend and no anonymised one, HIDDEN included", () => {
+    const result = buildPodLadder(
+      [
+        rawPodMember("pub", LeaderboardVisibility.PUBLIC, 300),
+        rawPodMember("anon", LeaderboardVisibility.ANONYMOUS, 200),
+        rawPodMember("hidden", LeaderboardVisibility.HIDDEN, 100),
+      ],
+      VIEWER,
+      FRIENDS,
+    );
+    expect(result.map((e) => e.isFriend)).toEqual([true, false, false]);
+  });
+
+  it("does not mark the reader's own row", () => {
+    const [entry] = buildPodLadder(
+      [rawPodMember("pub", LeaderboardVisibility.PUBLIC, 300)],
+      "pub",
+      FRIENDS,
+    );
+    expect(entry?.isFriend).toBe(false);
+  });
+});

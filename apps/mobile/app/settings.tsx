@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
-import { Pressable, Switch, View } from "react-native";
+import { Alert, Pressable, Switch, View } from "react-native";
 import {
   SHOWN_NOTIFICATION_SETTINGS,
   SPACED_REPETITION_SETTING,
@@ -22,6 +22,7 @@ import {
 } from "@/lib/device-notifications";
 import {
   DEFAULT_PREFS,
+  PREFERENCE_NOT_SAVED,
   updateLeaderboardVisibility,
   updatePreference,
   usePreferences,
@@ -106,7 +107,14 @@ export default function Reglages(): React.JSX.Element {
       ...(old ?? DEFAULT_PREFS),
       [key]: value,
     }));
-    await updatePreference(userId, key, value);
+    try {
+      await updatePreference(userId, key, value);
+    } catch {
+      // Not saved: the switch goes back to what the database holds, and says so.
+      await queryClient.invalidateQueries({ queryKey: ["preferences", userId] });
+      Alert.alert(PREFERENCE_NOT_SAVED);
+      return;
+    }
     // The revisions screen and the home card read the same switch.
     if (key === "spacedRepetition") {
       await queryClient.invalidateQueries({ queryKey: ["revisions", userId] });

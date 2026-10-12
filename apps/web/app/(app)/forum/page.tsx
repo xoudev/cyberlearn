@@ -1,9 +1,15 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { forumRepository } from "@cyberlearn/db";
+import { forumRepository, friendshipRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { ForumHeader, TopicRow, accentStyle, formatDate } from "./_components/forum-bits";
+import {
+  ForumHeader,
+  TopicRow,
+  accentStyle,
+  authorIsFriend,
+  formatDate,
+} from "./_components/forum-bits";
 import "./forum.css";
 import { EmptyState } from "@/components/empty-state";
 
@@ -12,9 +18,11 @@ export const dynamic = "force-dynamic";
 
 export default async function ForumPage(): Promise<React.JSX.Element> {
   const user = await requireRequestUser();
-  const [categories, recent] = await Promise.all([
+  const [categories, recent, friends] = await Promise.all([
     forumRepository.listCategories(user.id),
     forumRepository.listRecentTopics(user.id),
+    // The reader's friends, for the mark beside a topic's author.
+    friendshipRepository.friendIds(user.id),
   ]);
 
   return (
@@ -59,7 +67,7 @@ export default async function ForumPage(): Promise<React.JSX.Element> {
       ) : (
         <ul className="fo-list">
           {recent.map((t) => (
-            <TopicRow key={t.id} topic={t} />
+            <TopicRow key={t.id} topic={t} isFriend={authorIsFriend(t.author, friends)} />
           ))}
         </ul>
       )}

@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   MODERATION_SURFACE,
+  friendshipRepository,
   moderationRepository,
   prisma,
   writeupRepository,
@@ -24,6 +25,8 @@ import { checkQaSubmission } from "@/lib/rate-limit";
 export interface WriteupAuthor {
   name: string;
   username: string | null;
+  /** One of the reader's friends: a write-up is always signed, so the mark hides nothing. */
+  isFriend: boolean;
 }
 
 export interface WriteupView {
@@ -66,10 +69,15 @@ async function findActive(id: string): Promise<{ slug: string } | null> {
 }
 
 function authorOf(
-  user: { displayName: string; username: string | null } | null,
+  user: { id: string; displayName: string; username: string | null } | null,
+  friends: ReadonlySet<string>,
 ): WriteupAuthor | null {
   if (user === null) return null;
-  return { name: user.displayName || (user.username ?? "Sans nom"), username: user.username };
+  return {
+    name: user.displayName || (user.username ?? "Sans nom"),
+    username: user.username,
+    isFriend: friends.has(user.id),
+  };
 }
 
 /**
@@ -88,9 +96,10 @@ export async function writeupBoardFor(
     writeupRepository.countVisible(id.data),
   ]);
   if (!solved) return { solved: false, count };
-  const [own, others] = await Promise.all([
+  const [own, others, friends] = await Promise.all([
     writeupRepository.findOwn(userId, id.data),
     writeupRepository.listOthers(id.data, userId),
+    friendshipRepository.friendIds(userId),
   ]);
   return {
     solved: true,
@@ -102,7 +111,7 @@ export async function writeupBoardFor(
     others: others.map((w) => ({
       id: w.id,
       content: w.content,
-      author: authorOf(w.user),
+      author: authorOf(w.user, friends),
       updatedAt: w.updatedAt.toISOString(),
     })),
   };

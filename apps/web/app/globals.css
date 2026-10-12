@@ -5270,6 +5270,17 @@ a.cls-res__title:hover {
   box-shadow: 0 0 0 2px var(--color-bg-base);
 }
 
+/* The mark beside a friend's name (components/friend-mark.tsx): wherever a
+   list of people is, on the line of the name, never pushing it to wrap. */
+.friend-mark {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 6px;
+  vertical-align: -2px;
+  line-height: 0;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    The Wrapped chip (navbar)
    Wrapped was a permanent sidebar tab, which is the shape of a place you can

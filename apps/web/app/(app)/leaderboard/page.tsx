@@ -2,8 +2,10 @@ import React from "react";
 import type { Metadata } from "next";
 import { requireRequestUser } from "@/lib/auth";
 import { leaderboardRepository, leagueRepository, type PodLadderEntry } from "@cyberlearn/db";
-import type { LeagueDivisionCode } from "@cyberlearn/lib";
+import { leaderboardPeriodStart, type LeagueDivisionCode } from "@cyberlearn/lib";
 import { rolloverDueSeasons } from "@/lib/league/rollover";
+import { boardRows, publicBoardFor } from "@/lib/leaderboard/boards";
+import { parseLeaderboardQuery } from "@/lib/leaderboard/query";
 import { LeaderboardClient } from "./_components/LeaderboardClient";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
@@ -24,8 +26,16 @@ export const maxDuration = 60;
  */
 const LAZY_ROLLOVER_GRACE_MS = 15 * 60 * 1000;
 
-export default async function LeaderboardPage(): Promise<React.ReactElement> {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
+  // The period and the tab live in the address: a period is read on the
+  // server, from the ledger, and the tab has to survive that round-trip.
+  const { period, board } = parseLeaderboardQuery(await searchParams);
+  const start = leaderboardPeriodStart(period, new Date());
 
   // Lazy fallback for the weekly season rollover (the cron is the primary
   // driver). Idempotent + concurrency-safe; must never block the page render.
@@ -36,13 +46,11 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
     log.error({ scope: "leaderboard", err: errorMessage(error) }, "lazy season rollover failed");
   }
 
-  const [entries, userRank, season, friendsBoard] = await Promise.all([
-    leaderboardRepository.findTopUsers(100, authUser.id),
-    leaderboardRepository.findUserRank(authUser.id),
+  const [publicBoard, season, friendsBoard] = await Promise.all([
+    publicBoardFor(authUser.id, start),
     leagueRepository.getActiveSeason(),
-    leaderboardRepository.findFriendsBoard(authUser.id),
+    leaderboardRepository.findFriendsBoard(authUser.id, start),
   ]);
-  const currentEntry = entries.find((e) => e.isCurrentUser) ?? null;
 
   // League: shown only when a season is ACTIVE and the user has joined it (i.e.
   // earned XP this season). All PII stripping happens server-side in getPodLadder.
@@ -63,14 +71,20 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
 
   return (
     <LeaderboardClient
-      entries={entries}
-      userRank={userRank}
-      currentEntry={currentEntry}
+      board={board}
+      period={period}
+      periodStart={start === null ? null : start.getTime()}
+      rows={publicBoard.rows}
+      total={publicBoard.total}
+      standing={publicBoard.standing}
       season={seasonProp}
       membership={membership}
       podLadder={podLadder}
       podMemberCount={podLadder.length}
-      friendsBoard={friendsBoard}
+      friendsBoard={{
+        rows: await boardRows(friendsBoard.entries),
+        listedForFriends: friendsBoard.listedForFriends,
+      }}
     />
   );
 }

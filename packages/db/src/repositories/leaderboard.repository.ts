@@ -59,6 +59,32 @@ export interface FriendsBoard {
   listedForFriends: boolean;
 }
 
+/**
+ * The public board over a period of the ledger: this week, this month.
+ *
+ * `xpTotal` on each entry is what the board ranks by, the XP earned since the
+ * period opened, so a screen draws a period board with the same row as the
+ * all-time one.
+ */
+export interface PeriodBoard {
+  /** The first rows, as many as the caller asked for. */
+  entries: LeaderboardEntry[];
+  /** Everybody the period ranks, not only the rows sent. */
+  total: number;
+  /**
+   * The reader's place and their XP of the period, or null when the period
+   * does not rank them: no XP since it opened, hidden, or not a student.
+   * Like findCurrentUserPosition, the rank counts the players strictly ahead.
+   */
+  standing: { rank: number; xp: number } | null;
+}
+
+/** "a before b" for two uuids, in the order Postgres gives them: every board's tiebreak. */
+function byIdAscending(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 const friendsBoardSelect = {
   id: true,
   displayName: true,
@@ -81,13 +107,85 @@ export const leaderboardRepository = {
    * Ranks are continuous over the ranked subset, which is students only.
    */
   async findTopUsers(limit: number, currentUserId: string): Promise<LeaderboardEntry[]> {
-    const users = await prisma.user.findMany({
-      where: RANKED_USER_FILTER,
-      orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
-      take: limit,
-      select: leaderboardSelect,
+    const [users, friendIds] = await Promise.all([
+      prisma.user.findMany({
+        where: RANKED_USER_FILTER,
+        orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
+        take: limit,
+        select: leaderboardSelect,
+      }),
+      // For the friend mark, which buildLeaderboard sets on public rows only.
+      friendshipRepository.friendIds(currentUserId),
+    ]);
+    return buildLeaderboard(users, currentUserId, friendIds);
+  },
+
+  /**
+   * How many players the all-time board ranks. findTopUsers returns the first
+   * hundred, and "100 joueurs classés" under a list cut at a hundred was the
+   * length of the list, not the number of players.
+   */
+  async countRanked(): Promise<number> {
+    return prisma.user.count({ where: RANKED_USER_FILTER });
+  },
+
+  /**
+   * The public board since `start`: the same players as findTopUsers, ranked
+   * by the XP the ledger recorded from that moment on.
+   *
+   * The same two conditions hold (RANKED_USER_FILTER, read through the
+   * ledger's user), and buildLeaderboard strips and marks the rows exactly as
+   * on the all-time board. Taking part means earning XP in the period: a
+   * player with nothing since Monday is not "0 XP" on this week's board, the
+   * way an account with no XP at all is not on the all-time one.
+   *
+   * The sums are taken in SQL, one row per player active in the period, and
+   * the whole list is read: the count and the reader's place are both
+   * answered from it, where a cut list could answer neither. The people
+   * behind the rows are then read for the first `limit` only. The range on
+   * createdAt, across every user, is what the ledger's (createdAt, userId)
+   * index is for; the (userId, createdAt) one cannot serve it.
+   */
+  async findTopUsersSince(start: Date, limit: number, currentUserId: string): Promise<PeriodBoard> {
+    const [sums, friendIds] = await Promise.all([
+      prisma.xpLedger.groupBy({
+        by: ["userId"],
+        where: { createdAt: { gte: start }, user: { is: RANKED_USER_FILTER } },
+        _sum: { amount: true },
+        having: { amount: { _sum: { gt: 0 } } },
+        orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
+      }),
+      friendshipRepository.friendIds(currentUserId),
+    ]);
+    const xpOf = (row: (typeof sums)[number]): number => row._sum.amount ?? 0;
+
+    const top = sums.slice(0, limit);
+    const users =
+      top.length === 0
+        ? []
+        : await prisma.user.findMany({
+            where: { id: { in: top.map((row) => row.userId) } },
+            select: leaderboardSelect,
+          });
+    const byId = new Map(users.map((user) => [user.id, user]));
+    // In the ledger's order, each person carrying the period's XP in place of
+    // their total: that is the figure this board ranks by and shows.
+    const rows = top.flatMap((row) => {
+      const user = byId.get(row.userId);
+      return user === undefined ? [] : [{ ...user, xpTotal: xpOf(row) }];
     });
-    return buildLeaderboard(users, currentUserId);
+
+    const mine = sums.find((row) => row.userId === currentUserId);
+    const standing =
+      mine === undefined
+        ? null
+        : { rank: sums.filter((row) => xpOf(row) > xpOf(mine)).length + 1, xp: xpOf(mine) };
+
+    return {
+      entries: buildLeaderboard(rows, currentUserId, friendIds),
+      total: sums.length,
+      standing,
+    };
   },
 
   /**
@@ -132,8 +230,13 @@ export const leaderboardRepository = {
    * from every one of those friends' own boards, is a thing the page has to be
    * able to say out loud. It costs nothing - the reader's own row is already
    * being read.
+   *
+   * With `since`, the same people ranked by the XP the ledger recorded from
+   * that moment on, which is what each row then carries as its XP. Nobody
+   * leaves the board for a quiet week: on a list of friends, a name dropping
+   * out reads as a falling-out rather than as "0 XP".
    */
-  async findFriendsBoard(userId: string): Promise<FriendsBoard> {
+  async findFriendsBoard(userId: string, since: Date | null = null): Promise<FriendsBoard> {
     const friends = await friendshipRepository.listFriends(userId, FRIENDS_BOARD_LIMIT);
     const users = await prisma.user.findMany({
       where: {
@@ -149,11 +252,20 @@ export const leaderboardRepository = {
       orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
       select: friendsBoardSelect,
     });
-    return {
-      entries: buildFriendsBoard(users, userId),
-      listedForFriends:
-        users.find((u) => u.id === userId)?.preferences?.friendsLeaderboard === true,
-    };
+    const listedForFriends =
+      users.find((u) => u.id === userId)?.preferences?.friendsLeaderboard === true;
+    if (since === null) return { entries: buildFriendsBoard(users, userId), listedForFriends };
+
+    const sums = await prisma.xpLedger.groupBy({
+      by: ["userId"],
+      where: { userId: { in: users.map((u) => u.id) }, createdAt: { gte: since } },
+      _sum: { amount: true },
+    });
+    const earned = new Map(sums.map((row) => [row.userId, row._sum.amount ?? 0]));
+    const ranked = users
+      .map((user) => ({ ...user, xpTotal: earned.get(user.id) ?? 0 }))
+      .sort((a, b) => b.xpTotal - a.xpTotal || byIdAscending(a.id, b.id));
+    return { entries: buildFriendsBoard(ranked, userId), listedForFriends };
   },
 
   /**
