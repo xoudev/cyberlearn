@@ -333,6 +333,12 @@ a.fo-post-name:focus-visible {
   border: 1px solid var(--color-border-subtle);
   background: rgba(5, 4, 26, 0.5);
 }
+/* In the window a section opens to write a thread (new-topic-dialog.tsx), the
+   window is the frame: the form loses its own. */
+.fo-compose .fo-form {
+  border: 0;
+  background: none;
+}
 .fo-label {
   display: block;
   margin-bottom: 6px;

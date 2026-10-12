@@ -19,8 +19,9 @@ import { fileSupportTicketApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 
 /**
- * A new request: the site's contact form, for a signed-in account. No address
- * to type: the answer goes to the account's own, which the server reads.
+ * A new request: the site's "Nouvelle demande" window, for a signed-in
+ * account. No address to type: the answer goes to the account's own, which the
+ * server reads.
  */
 export default function SupportNew(): React.JSX.Element {
   const router = useRouter();

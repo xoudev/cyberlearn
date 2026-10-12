@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   create: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ id: string }>>(),
   findFirst: vi.fn<(args: unknown) => Promise<{ id: string } | null>>(),
+  findUser: vi.fn<(args: unknown) => Promise<{ email: string | null } | null>>(),
   addMessage:
     vi.fn<
       (input: unknown) => Promise<{ ok: true } | { ok: false; reason: "NOT_FOUND" | "TERMINAL" }>
@@ -12,7 +13,10 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  prisma: { contactTicket: { create: m.create, findFirst: m.findFirst } },
+  prisma: {
+    contactTicket: { create: m.create, findFirst: m.findFirst },
+    user: { findUnique: m.findUser },
+  },
   ticketRepository: { addMessage: m.addMessage },
 }));
 vi.mock("@/lib/rate-limit", () => ({
@@ -21,7 +25,9 @@ vi.mock("@/lib/rate-limit", () => ({
   checkNotifyingWrite: () => Promise.resolve({ success: true }),
 }));
 
-const { fileTicket, replyAsRequester } = await import("../requester");
+const { NO_REPLY_ADDRESS, fileAccountTicket, fileTicket, replyAsRequester } = await import(
+  "../requester"
+);
 
 const TICKET_ID = "5b7c2d9e-1f3a-4c5b-8d7e-9f0a1b2c3d4e";
 const FIELDS = {
@@ -80,6 +86,50 @@ describe("fileTicket", () => {
       ok: false,
       error: "Trop de demandes. Réessayez dans 30 secondes.",
     });
+    expect(m.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("fileAccountTicket", () => {
+  const request = { subject: FIELDS.subject, theme: FIELDS.theme, message: FIELDS.message };
+  const user = { id: "user-1", email: "session@example.org" };
+
+  it("files as the account, answered at the profile's address, whatever the input says", async () => {
+    m.findUser.mockResolvedValue({ email: "profil@example.org" });
+    const result = await fileAccountTicket({
+      user,
+      ip: "203.0.113.7",
+      fields: { ...request, email: "autre@example.org", userId: "user-2" },
+    });
+    expect(result).toEqual({ ok: true, ticketId: TICKET_ID });
+    expect(m.findUser).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+    expect(m.create).toHaveBeenCalledWith({
+      data: { ...request, email: "profil@example.org", userId: "user-1", status: "OPEN" },
+      select: { id: true },
+    });
+    // The contact form's budget, spent by whoever is asking.
+    expect(m.checkContactForm).toHaveBeenCalledWith("203.0.113.7");
+  });
+
+  it("falls back on the session's address, and refuses without any", async () => {
+    m.findUser.mockResolvedValue({ email: null });
+    await fileAccountTicket({ user, ip: "x", fields: request });
+    expect(m.create.mock.calls[0]?.[0].data.email).toBe("session@example.org");
+
+    m.create.mockClear();
+    expect(await fileAccountTicket({ user: { id: "user-1" }, ip: "x", fields: request })).toEqual({
+      ok: false,
+      error: NO_REPLY_ADDRESS,
+    });
+    expect(m.create).not.toHaveBeenCalled();
+  });
+
+  it("names the missing fields of an input that is not a request", async () => {
+    m.findUser.mockResolvedValue({ email: "profil@example.org" });
+    const result = await fileAccountTicket({ user, ip: "x", fields: null });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(Object.keys(result.fieldErrors ?? {}).sort()).toEqual(["message", "subject", "theme"]);
     expect(m.create).not.toHaveBeenCalled();
   });
 });

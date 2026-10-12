@@ -1,7 +1,10 @@
+import { lazy } from "react";
 import type React from "react";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import { SettingsFromAddress } from "@/app/(app)/_settings/_components/SettingsDrawer";
 import { SETTINGS_QUERY } from "@/app/(app)/_settings/_components/sections";
+import { NEW_REQUEST_QUERY } from "@/app/(app)/support/_components/new-request-query";
+import { NEWS_QUERY } from "./changelog/news-query";
 
 /**
  * The windows any page of the signed-in site opens from its address, by the
@@ -11,7 +14,7 @@ import { SETTINGS_QUERY } from "@/app/(app)/_settings/_components/sections";
  *
  * A window is added with one entry, loaded only once it is asked for:
  *
- *   news: lazy(() => import("@/app/(app)/changelog/_components/news-drawer")),
+ *   [NEWS_QUERY]: lazy(() => import("./changelog/news-drawer")),
  *
  * The component receives the parameter's value and onClose (QueryDialogProps)
  * and draws itself on ModalShell or SideDrawer from @cyberlearn/ui. See
@@ -22,4 +25,8 @@ export const QUERY_DIALOGS: Readonly<Record<string, React.ComponentType<QueryDia
   // it) and keeps its own state: this entry only hands it the request, so it
   // is not lazy.
   [SETTINGS_QUERY]: SettingsFromAddress,
+  // The release notes, from the navbar's Nouveautés (/changelog redirects here).
+  [NEWS_QUERY]: lazy(() => import("./changelog/news-drawer")),
+  // A help request, filed without leaving the site for the public contact page.
+  [NEW_REQUEST_QUERY]: lazy(() => import("@/app/(app)/support/_components/new-request-dialog")),
 };

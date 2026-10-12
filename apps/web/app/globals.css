@@ -1650,6 +1650,7 @@ aside[data-state="collapsed"] .sidebar-account {
   background: transparent;
   border: 1px solid var(--color-border-default);
   text-decoration: none;
+  cursor: pointer;
   transition:
     color 150ms ease,
     border-color 150ms ease,
@@ -1685,6 +1686,137 @@ aside[data-state="collapsed"] .sidebar-account {
 @media (max-width: 560px) {
   .news-chip__label {
     display: none;
+  }
+}
+
+/* The release notes the button opens, in the news drawer
+   (components/changelog/): a timeline of the versions, newest first, the
+   latest one lit with the accent. */
+.news-log {
+  padding: 20px 24px 8px;
+}
+.news-log__lede {
+  margin: 0 0 28px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+.news-log__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.news-entry {
+  position: relative;
+  padding: 0 0 32px 34px;
+}
+/* The rail, from under this version's node down to the next one. */
+.news-entry::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 20px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border-subtle);
+}
+.news-entry__node {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--color-bg-elevated);
+  border: 2px solid var(--color-border-default);
+}
+.news-entry[data-latest="true"] .news-entry__node {
+  background: var(--cosmetic-accent);
+  border-color: var(--cosmetic-accent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
+}
+.news-entry__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.news-entry__version {
+  padding: 4px 10px;
+  font: 700 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--color-text-primary);
+  background: rgba(10, 8, 38, 0.6);
+  border: 1px solid var(--color-border-default);
+}
+.news-entry[data-latest="true"] .news-entry__version {
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+}
+.news-entry__latest {
+  font: 700 9.5px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+}
+.news-entry__date {
+  margin-left: auto;
+  font: 11px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.news-entry__title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+.news-entry__changes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.news-change {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* Its colours are the change type's own (CHANGE_META), inline. */
+.news-change__type {
+  flex-shrink: 0;
+  min-width: 96px;
+  margin-top: 1px;
+  padding: 3px 8px;
+  font: 700 9.5px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+  border: 1px solid;
+}
+.news-change__text {
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+/* A phone's drawer is the width of the screen: the type goes above its text
+   rather than taking a third of the line from it. */
+@media (max-width: 480px) {
+  .news-log {
+    padding: 16px 16px 4px;
+  }
+  .news-change {
+    flex-direction: column;
+    gap: 6px;
   }
 }
 
@@ -5246,6 +5378,67 @@ a.cls-res__title:hover {
   border: 1px solid rgba(42, 37, 96, 0.8);
   background: rgba(10, 8, 38, 0.4);
   padding: 16px;
+}
+
+/* "Ouvrir une nouvelle demande" under a finished ticket: a button, since it
+   opens the request window, read as the link in the sentence it ends. */
+.tk-follow-up {
+  padding: 0;
+  font: inherit;
+  color: var(--cosmetic-accent);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* A new request, in its window over the page
+   ((app)/support/_components/new-request-dialog.tsx). */
+.tk-new {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+.tk-new__lede {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.tk-new__message {
+  min-height: 140px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.tk-new__error {
+  margin: 0;
+  font: 11px var(--font-mono);
+  line-height: 1.5;
+  color: #ff8aa0;
+}
+/* What an establishment request has to say, shown once that theme is picked. */
+.tk-checklist {
+  margin-top: 6px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--cosmetic-accent) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent);
+  border-left: 3px solid var(--cosmetic-accent);
+}
+.tk-checklist__title {
+  margin: 0 0 8px;
+  font: 700 10px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+}
+.tk-checklist ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

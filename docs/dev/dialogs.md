@@ -72,6 +72,15 @@ open has its open state in the address: `?news=1` open, no `news` closed.
 - `QUERY_DIALOGS` (`apps/web/components/query-dialogs.ts`) maps each parameter
   to its window.
 
+The windows of the site today:
+
+| Parameter | Window | Opened from | Old address, redirected |
+|---|---|---|---|
+| `settings=<section>` | The settings, a drawer (registered) | The navbar's gear, any link to `/settings/...` | `/settings/:section` to `/dashboard?settings=:section` |
+| `news=1` | The release notes, a drawer (registered, `components/changelog/`) | The navbar's Nouveautés | `/changelog` to `/dashboard?news=1` |
+| `request=1` | A new help request, a dialog (registered, `(app)/support/_components/new-request-dialog.tsx`) | "Nouvelle demande" on `/support` and under a finished ticket | none: the public `/contact` stays, for visitors |
+| `compose=1` | A new forum thread, a dialog drawn by its section page (`(app)/forum/_components/new-topic-dialog.tsx`) | "Nouveau sujet" on `/forum/<section>` | `/forum/:category/nouveau` to `/forum/:category?compose=1` |
+
 The settings drawer is registered under `settings` with a difference: it keeps
 its own state, so its entry hands the request to the drawer and takes the
 parameter off the address at once. Opening it from a link does not touch the
@@ -87,14 +96,14 @@ address.
    ```ts
    export const QUERY_DIALOGS = {
      [SETTINGS_QUERY]: SettingsFromAddress,
-     news: lazy(() => import("@/app/(app)/changelog/_components/news-drawer")),
+     [NEWS_QUERY]: lazy(() => import("./changelog/news-drawer")),
    };
    ```
 
 3. Open it from a client component with the hook:
 
    ```tsx
-   const news = useQueryDialog("news");
+   const news = useQueryDialog(NEWS_QUERY);
    <button type="button" onClick={() => news.open()}>Nouveautés</button>
    ```
 
@@ -108,6 +117,12 @@ address.
 A window that belongs to one page only (a composer on one forum category)
 does not need the registry: the page's client component calls
 `useQueryDialog(key)` and draws the window itself while `value` is not null.
+Registered, it would open over every page, where it has nothing to work on.
+
+A window that leads to a page once it is done (the new thread, the new
+request) goes there with `router.replace` or `<Link replace>`: the page takes
+the place of the window's step of the history, and Back returns to the page
+the window was opened over rather than to the window again.
 
 Use short English parameter names, one per window. One window open at a time:
 two at once work, but their steps of the history interleave.

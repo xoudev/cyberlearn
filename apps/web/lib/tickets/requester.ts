@@ -16,7 +16,8 @@ import { checkContactForm, checkNotifyingWrite } from "@/lib/rate-limit";
  * A help request, from the side of the person asking: filing one, and adding
  * to its conversation.
  *
- * Shared by the site (the contact form and /support) and the app
+ * Shared by the site (the contact form, the "Nouvelle demande" window and
+ * /support) and the app
  * (/api/mobile/support/*), so a request from a phone is limited, checked and
  * refused exactly like one from the site. Callers are responsible for
  * AUTHENTICATION; `userId` must be a verified identity. Lives outside any
@@ -80,6 +81,48 @@ export async function fileTicket(input: {
     select: { id: true },
   });
   return { ok: true, ticketId: ticket.id };
+}
+
+/**
+ * What a signed-in requester sends: the request alone. Anything else in the
+ * input (an address, another account's id) is dropped here, not trusted.
+ */
+const accountFieldsSchema = z.object({
+  subject: z.unknown(),
+  theme: z.unknown(),
+  message: z.unknown(),
+});
+
+export const NO_REPLY_ADDRESS = "Aucune adresse e-mail sur ce compte pour te répondre.";
+
+/**
+ * Files a request as a signed-in account, answered at the account's own
+ * address: neither the app nor the site's "Nouvelle demande" window asks for
+ * one, and a reply sent to an address typed by hand is a reply that may never
+ * arrive. The profile's address first, the session's when the profile has
+ * none. Then the same validation and rate limit as the contact form.
+ */
+export async function fileAccountTicket(input: {
+  user: { id: string; email?: string | null };
+  /** Whoever is asking, for the contact form's rate limit. */
+  ip: string;
+  fields: unknown;
+}): Promise<FileTicketResult> {
+  const profile = await prisma.user.findUnique({
+    where: { id: input.user.id },
+    select: { email: true },
+  });
+  const email = profile?.email ?? input.user.email;
+  if (!email) return { ok: false, error: NO_REPLY_ADDRESS };
+
+  // Not an object at all: the request's fields are missing, and fileTicket
+  // names each of them.
+  const fields = accountFieldsSchema.safeParse(input.fields);
+  return fileTicket({
+    userId: input.user.id,
+    ip: input.ip,
+    fields: { ...(fields.success ? fields.data : {}), email },
+  });
 }
 
 const replySchema = z.object({

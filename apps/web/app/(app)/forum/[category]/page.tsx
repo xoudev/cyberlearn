@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { TOPICS_PER_PAGE, forumRepository, friendshipRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { Crumbs, ForumHeader, TopicRow, authorIsFriend } from "../_components/forum-bits";
+import { NewTopicDialog } from "../_components/new-topic-dialog";
 import "../forum.css";
 import { EmptyState } from "@/components/empty-state";
 
@@ -48,11 +49,7 @@ export default async function ForumCategoryPage({
         title={data.category.name}
         accent={data.category.accent}
         lede={data.category.description}
-        actions={
-          <Link href={`/forum/${category}/nouveau`} className="btn btn--accent btn--sm">
-            Nouveau sujet
-          </Link>
-        }
+        actions={<NewTopicDialog categorySlug={category} categoryName={data.category.name} />}
       />
 
       {data.topics.length === 0 ? (

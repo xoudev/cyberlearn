@@ -103,6 +103,14 @@ const nextConfig: NextConfig = {
       { source: "/profile/edit", destination: "/dashboard?settings=profile", permanent: false },
       // The path guide is a window over the catalogue now, not a page.
       { source: "/paths/guide", destination: "/paths", permanent: false },
+      // So are the release notes, a drawer over any page (?news=1), and the
+      // form that opens a thread, a window over its section (?compose=1).
+      { source: "/changelog", destination: "/dashboard?news=1", permanent: false },
+      {
+        source: "/forum/:category/nouveau",
+        destination: "/forum/:category?compose=1",
+        permanent: false,
+      },
     ]);
   },
   rewrites() {

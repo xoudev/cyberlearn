@@ -15,9 +15,10 @@ import { useCosmetics } from "@/lib/cosmetics";
 import { useChangelogSeen } from "@/lib/use-changelog-seen";
 
 /**
- * The site's /changelog: every release, newest first, each change marked
- * Nouveau, Amélioration or Correctif. Opening it clears the "new" mark on the
- * profile hub, as the site's page clears its sidebar dot.
+ * The site's release notes (the drawer its navbar's Nouveautés opens): every
+ * release, newest first, each change marked Nouveau, Amélioration or
+ * Correctif. Opening it clears the "new" mark on the profile hub, as opening
+ * the drawer clears the dot on the site's button.
  */
 export default function Changelog(): React.JSX.Element {
   const { theme } = useCosmetics();

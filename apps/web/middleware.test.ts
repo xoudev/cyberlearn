@@ -83,13 +83,18 @@ describe("protected route classification", () => {
     expect(isProtectedRoute(path)).toBe(true);
   });
 
-  // /settings has no page: next.config redirects it before the middleware.
-  it.each(["/catalogue", "/contact", "/page-inconnue", "/u/introuvable", "/settings"])(
-    "lets Next render public and unknown route %s",
-    (path) => {
-      expect(isProtectedRoute(path)).toBe(false);
-    },
-  );
+  // /settings and /changelog have no page: next.config redirects them before
+  // the middleware, to the dashboard with their window open.
+  it.each([
+    "/catalogue",
+    "/contact",
+    "/page-inconnue",
+    "/u/introuvable",
+    "/settings",
+    "/changelog",
+  ])("lets Next render public and unknown route %s", (path) => {
+    expect(isProtectedRoute(path)).toBe(false);
+  });
 });
 
 describe("the landing page is for people who are not signed in", () => {

@@ -5,6 +5,7 @@ import { ticketRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { STATUS_LABEL, STATUS_TONE, THEME_LABEL } from "@/lib/tickets/meta";
+import { NewRequestButton } from "./_components/new-request-button";
 
 export const metadata: Metadata = { title: "Mes demandes" };
 export const dynamic = "force-dynamic";
@@ -16,7 +17,9 @@ const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "lon
  *
  * Until now a ticket left through the contact form and was never seen again:
  * the answer arrived by e-mail if it arrived at all, and nothing on the site
- * said a request existed. This is the other half of that form.
+ * said a request existed. This is the other half of that form. A new request
+ * is written here too, in a window over the list (new-request-dialog.tsx),
+ * rather than on the public contact page.
  */
 export default async function SupportPage(): Promise<React.ReactElement> {
   const user = await requireRequestUser();
@@ -36,9 +39,7 @@ export default async function SupportPage(): Promise<React.ReactElement> {
       />
 
       <p style={{ marginBottom: 24 }}>
-        <Link href="/contact" className="btn btn--sm">
-          Nouvelle demande
-        </Link>
+        <NewRequestButton className="btn btn--sm">Nouvelle demande</NewRequestButton>
       </p>
 
       {tickets.length === 0 ? (
