@@ -47,12 +47,19 @@ export function CopyButton({
   label = "copier",
   copiedLabel = "✓ copié",
   ariaLabel,
+  className = "copy-button",
 }: {
   /** What to copy, or how to get it at the moment of the click. */
   text: string | (() => string);
   label?: string;
   copiedLabel?: string;
   ariaLabel?: string;
+  /**
+   * The button's look: the small inline chip by default, a page button
+   * (`btn ...`) where it stands among others. It lights up in the accent
+   * while it says it copied, either way.
+   */
+  className?: string;
 }): React.ReactElement {
   const { copied, copy } = useCopyToClipboard();
   return (
@@ -62,7 +69,7 @@ export function CopyButton({
         copy(typeof text === "function" ? text() : text);
       }}
       aria-label={ariaLabel}
-      className={`copy-button${copied ? " copy-button--copied" : ""}`}
+      className={`${className}${copied ? " copy-button--copied" : ""}`}
     >
       {copied ? copiedLabel : label}
     </button>

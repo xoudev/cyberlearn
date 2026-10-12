@@ -3,6 +3,7 @@ import {
   certificateVerifyUrl,
   lessonsFinishedLabel,
   linkedInCertificateUrl,
+  publicProfileUrl,
   skillLines,
 } from "./portfolio";
 
@@ -43,6 +44,13 @@ describe("skillLines", () => {
   it("counts lessons in French", () => {
     expect(lessonsFinishedLabel(1)).toBe("1 leçon terminée");
     expect(lessonsFinishedLabel(12)).toBe("12 leçons terminées");
+  });
+});
+
+describe("the profile's own link", () => {
+  it("points at the profile from the site's origin, whatever its trailing slash", () => {
+    expect(publicProfileUrl("https://cyberlearn.fr/", "alex")).toBe("https://cyberlearn.fr/u/alex");
+    expect(publicProfileUrl("https://cyberlearn.fr", "alex")).toBe("https://cyberlearn.fr/u/alex");
   });
 });
 

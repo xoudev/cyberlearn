@@ -81,4 +81,16 @@ describe("the copy button", () => {
     expect(html).toContain('aria-label="Copier le flag"');
     expect(html).not.toContain("copy-button--copied");
   });
+
+  it("takes a page button's look where it stands among other buttons", () => {
+    const html = renderToStaticMarkup(
+      <CopyButton
+        text="https://cyberlearn.fr/u/alex"
+        label="Copier le lien"
+        className="btn btn--sm"
+      />,
+    );
+    expect(html).toContain('class="btn btn--sm"');
+    expect(html).toContain(">Copier le lien<");
+  });
 });

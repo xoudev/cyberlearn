@@ -11,6 +11,8 @@ import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
 import { Crumb } from "@/components/crumb";
+import { CopyButton } from "@/components/copy-button";
+import { publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
 import { StatTile } from "@/components/stat-tile";
 import { AvatarView } from "@/components/avatar-view";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
@@ -227,6 +229,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   const badgesCount = user.badges.length;
   const certsCount = certs.length;
   const legendaryCount = user.badges.filter((ub) => ub.badge.rarity === "LEGENDARY").length;
+  const isPublic = user.preferences?.publicProfile !== false;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 
   return (
     <div className="page-container">
@@ -569,6 +573,29 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             </svg>
             Éditer le profil
           </Link>
+
+          {/* The page the others see, and its link to hand out: nothing in
+              the app led to it, so the owner of a profile "accessible par
+              lien" never had the link. A closed profile still opens to
+              friends, so the way to it stays, under a name that does not
+              promise a public page. */}
+          {user.username && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              <Link
+                href={`/u/${user.username}`}
+                className="btn btn--ghost btn--sm"
+                style={{ flex: "1 1 auto" }}
+              >
+                {isPublic ? "Voir mon profil public" : "Voir mon profil"}
+              </Link>
+              <CopyButton
+                text={publicProfileUrl(siteUrl, user.username)}
+                label="Copier le lien"
+                copiedLabel="✓ Lien copié"
+                className="btn btn--accent btn--ghost btn--sm"
+              />
+            </div>
+          )}
         </div>
       </section>
 

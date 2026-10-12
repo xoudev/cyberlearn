@@ -55,6 +55,11 @@ export function certificateVerifyUrl(siteUrl: string, publicId: string): string 
   return `${siteUrl.replace(/\/+$/u, "")}/verify/${encodeURIComponent(publicId)}`;
 }
 
+/** Somebody's profile, from the site's origin: the link its owner hands out. */
+export function publicProfileUrl(siteUrl: string, username: string): string {
+  return `${siteUrl.replace(/\/+$/u, "")}/u/${encodeURIComponent(username)}`;
+}
+
 export interface CertificateToAdd {
   /** The certificate's name on LinkedIn: the path's title. */
   name: string;

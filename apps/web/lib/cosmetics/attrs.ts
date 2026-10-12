@@ -21,3 +21,23 @@ export function cosmeticAttrs(loadout: EquippedCodes | null): CosmeticAttrs {
   if (loadout.terminalTheme) attrs["data-terminal"] = loadout.terminalTheme;
   return attrs;
 }
+
+/** The code each slot shows when nothing is equipped: the defaults tokens.css states. */
+const DEFAULT_ATTRS: Required<CosmeticAttrs> = {
+  "data-accent": "accent-turquoise",
+  "data-hex": "hex-solid",
+  "data-frame": "frame-standard",
+  "data-terminal": "theme-midnight-ops",
+};
+
+/**
+ * Somebody else's cosmetics, for a scope nested inside the reader's own: a
+ * profile wears its owner's look inside the shell that wears the reader's.
+ *
+ * Every slot is set. An empty one left out would inherit from the scope
+ * around it, so a profile whose owner equipped nothing would show the
+ * reader's accent as if it were theirs.
+ */
+export function scopedCosmeticAttrs(loadout: EquippedCodes | null): Required<CosmeticAttrs> {
+  return { ...DEFAULT_ATTRS, ...cosmeticAttrs(loadout) };
+}
