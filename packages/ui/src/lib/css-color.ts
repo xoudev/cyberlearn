@@ -11,7 +11,6 @@
 
 const HEX = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
 const COLOR_FUNCTION = /^(rgba?|color)\((.*)\)$/;
-const SRGB_ARGUMENTS = /^\s*srgb\s+(.*)$/;
 
 /**
  * A token's value as written, for a library that takes something other than
@@ -57,9 +56,11 @@ export function toHexColor(css: string): string | null {
   let scale = 255;
   if (name === "color") {
     // Only sRGB: another space (display-p3) would need converting, not reading.
-    const srgb = SRGB_ARGUMENTS.exec(body);
-    if (srgb === null) return null;
-    args = srgb[1] ?? "";
+    // Sliced rather than matched: a pattern with \s+ before a capture of the
+    // rest backtracks polynomially on a long run of spaces.
+    const space = body.trimStart();
+    if (!space.startsWith("srgb") || space.slice(4).trimStart() === space.slice(4)) return null;
+    args = space.slice(4).trimStart();
     scale = 1;
   }
   const parts = args.split(/[\s,/]+/).filter((part) => part !== "");

@@ -62,6 +62,17 @@ describe("toHexColor", () => {
   ])("cannot read %s", (css) => {
     expect(toHexColor(css)).toBeNull();
   });
+
+  it("reads sRGB after any run of spaces, and needs at least one", () => {
+    expect(toHexColor("color(  srgb \t 0.0392 1 0.8314)")).toBe("#0affd4");
+    expect(toHexColor("color(srgb0.0392 1 0.8314)")).toBeNull();
+  });
+
+  it("stays linear on a long run of spaces after srgb", () => {
+    const started = performance.now();
+    expect(toHexColor(`color(srgb${"\t".repeat(50_000)}x)`)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(200);
+  });
 });
 
 describe("cssColor", () => {
