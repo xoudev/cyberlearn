@@ -6,7 +6,7 @@ import { lessonByline } from "@/lib/lessons/byline";
 import { AvatarView } from "@/components/avatar-view";
 
 /**
- * Who wrote this lesson, in the right rail.
+ * Who wrote this lesson, in the plan's drawer under the list of sections.
  *
  * Replaces the finisher podium that used to sit here: the podium said who was
  * fastest, which tells a reader nothing about the lesson they are about to
@@ -90,7 +90,7 @@ export async function LessonAuthor({
             lineHeight: 1.45,
             letterSpacing: "0.06em",
             color: "var(--color-text-muted)",
-            // Wraps rather than truncating: the rail is narrow, and "Équipe
+            // Wraps rather than truncating: the drawer is narrow, and "Équipe
             // CyberLearn · 3 février 2026" would lose the date to an ellipsis.
           }}
         >

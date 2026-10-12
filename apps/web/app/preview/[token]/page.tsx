@@ -6,6 +6,7 @@ import { LESSON_MDX_COMPONENTS } from "../../(app)/lessons/[slug]/_components/le
 import { LESSON_MDX_OPTIONS } from "../../(app)/lessons/[slug]/_components/lesson-mdx-options";
 import { LessonSection } from "../../(app)/lessons/[slug]/_components/lesson-section";
 import { SectionPane } from "../../(app)/lessons/[slug]/_components/section-pane";
+import { LESSON_ARTICLE_CLASS } from "../../(app)/lessons/[slug]/_components/lesson-article";
 import { PreviewScroll } from "./_components/preview-scroll";
 
 /**
@@ -19,9 +20,12 @@ import { PreviewScroll } from "./_components/preview-scroll";
  * repository), inside the editor's frame.
  *
  * Everything the lesson page does besides drawing is left out: no progress
- * row, no XP, no stepper (every section is on the page, one under the other,
- * so the author scrolls instead of clicking through), no quiz provider (a quiz
- * then scores on the page and records nothing), no notes, rating or Q&A.
+ * row, no XP, no stepper and no toolbar (every section is on the page, one
+ * under the other, so the author scrolls instead of clicking through), no
+ * quiz provider (a quiz then scores on the page and records nothing), no
+ * notes, rating or Q&A. The column is the page's: the same `.lesson-page`
+ * and the same article classes, so the prose keeps the page's measure and a
+ * component the article's width.
  *
  * Outside the (app) layout on purpose: a frame 600 pixels wide has no room for
  * a sidebar, and the page must work without a session on this site, which the
@@ -54,7 +58,7 @@ export default async function PreviewPage({
         <b>Aperçu.</b> La leçon telle que le site la rend, section après section ; rien n&apos;est
         enregistré, et les quiz se corrigent sur place.
       </p>
-      <article className="prose lesson-content max-w-none">
+      <article className={LESSON_ARTICLE_CLASS}>
         {sections.map((src, i) => (
           // SAFETY: index key is stable - sections do not reorder after render
           <SectionPane key={i} index={i}>

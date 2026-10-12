@@ -2,15 +2,31 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { SideDrawer } from "@cyberlearn/ui";
 import { saveNoteAction } from "@/app/(app)/notes/_actions/note-actions";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
-const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
+/**
+ * From this width the notes sit beside the lesson instead of over it: there is
+ * room for the drawer and for a column of text, so the reader can read and
+ * write at once. Below it, the drawer covers the page like any other.
+ */
+export const NOTES_DOCKED_QUERY = "(min-width: 1440px)";
+
+/**
+ * The drawer's widths, in pixels. Docked, the wide one is narrower than over
+ * the page: the lesson still needs a column beside it. globals.css carries a
+ * copy of the docked widths, the room it leaves the drawer on the right.
+ */
+export const NOTE_DRAWER_WIDTH = { narrow: 400, wide: 760, wideDocked: 560 } as const;
 
 interface NoteDrawerProps {
   lessonId: string;
   lessonTitle: string;
   initialContent: string;
   initialWordCount: number;
+  open: boolean;
+  onClose: () => void;
 }
 
 type SaveStatus = "idle" | "saving" | "saved";
@@ -53,13 +69,24 @@ function ToolBtn({
   );
 }
 
+/**
+ * The reader's note on this lesson, in a drawer opened from the lesson's
+ * toolbar. It keeps the note while closed (the toolbar keeps it mounted), and
+ * saves it a moment after each pause in the typing.
+ *
+ * Docked beside the page on a wide screen (NOTES_DOCKED_QUERY): no backdrop,
+ * the lesson stays in use, and the page makes room for it (globals.css). Over
+ * the page, dimmed behind it, below that width.
+ */
 export function NoteDrawer({
   lessonId,
   lessonTitle,
   initialContent,
   initialWordCount,
+  open,
+  onClose,
 }: NoteDrawerProps): React.JSX.Element {
-  const [open, setOpen] = useState(false);
+  const docked = useMediaQuery(NOTES_DOCKED_QUERY);
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [wordCount, setWordCount] = useState(initialWordCount);
@@ -116,326 +143,51 @@ export function NoteDrawer({
     });
   }, []);
 
-  const width = expanded ? "min(760px, 96vw)" : "min(400px, 96vw)";
+  const width = !expanded
+    ? NOTE_DRAWER_WIDTH.narrow
+    : docked
+      ? NOTE_DRAWER_WIDTH.wideDocked
+      : NOTE_DRAWER_WIDTH.wide;
 
   return (
-    <>
-      {/* Floating trigger */}
-      <button
-        className="mono-label"
-        type="button"
-        onClick={() => {
-          setOpen((v) => !v);
-        }}
-        style={{
-          position: "fixed",
-          right: 20,
-          bottom: 20,
-          zIndex: 45,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "12px 16px",
-          fontWeight: 700,
-          color: open ? "var(--color-bg-sunken)" : "var(--cosmetic-accent)",
-          background: open ? "var(--cosmetic-accent)" : "rgba(10,8,38,0.92)",
-          border: `1px solid ${open ? "var(--cosmetic-accent)" : "var(--color-border-default)"}`,
-          boxShadow: "0 6px 24px rgba(0,0,0,0.5)",
-          cursor: "pointer",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.4}
-          aria-hidden="true"
-        >
-          <path d="M3 2h7l3 3v9H3z" strokeLinejoin="round" />
-          <path d="M6 6h4M6 9h4" strokeLinecap="round" />
-        </svg>
-        {open ? "Notes ouvertes" : "Notes"}
-      </button>
-
-      {/* Backdrop */}
-      {open && (
-        <div
-          aria-hidden="true"
+    <SideDrawer
+      open={open}
+      onClose={onClose}
+      modal={!docked}
+      title="Mes notes"
+      closeLabel="Fermer les notes"
+      width={width}
+      className={expanded ? "lesson-notes lesson-notes--wide" : "lesson-notes"}
+      meta={
+        <button
+          type="button"
           onClick={() => {
-            setOpen(false);
+            setExpanded((v) => !v);
           }}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 44 }}
-        />
-      )}
-
-      {/* Drawer */}
-      <aside
-        aria-hidden={!open}
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          height: "100dvh",
-          width,
-          zIndex: 46,
-          background: "#08061c",
-          borderLeft: "1px solid var(--color-border-default)",
-          transform: open ? "translateX(0)" : "translateX(105%)",
-          transition: "transform 240ms cubic-bezier(0.2,0.7,0.2,1)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "18px 18px 16px",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
+          aria-label={expanded ? "Réduire" : "Agrandir"}
+          aria-pressed={expanded}
+          title={expanded ? "Réduire" : "Agrandir"}
+          style={hdrBtn}
         >
-          <span
-            style={{
-              position: "relative",
-              width: 26,
-              height: 29,
-              display: "grid",
-              placeItems: "center",
-              flexShrink: 0,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "var(--cosmetic-accent)",
-                clipPath: HEX,
-                opacity: 0.9,
-              }}
-            />
-            <span
-              aria-hidden="true"
-              style={{ position: "absolute", inset: 2, background: "#08061c", clipPath: HEX }}
-            />
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="var(--cosmetic-accent)"
-              strokeWidth={1.4}
-              style={{ position: "relative" }}
-              aria-hidden="true"
-            >
-              <path d="M3 2h7l3 3v9H3z" strokeLinejoin="round" />
-              <path d="M6 6h4M6 9h4" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span
-            style={{
-              flex: 1,
-              fontFamily: "var(--font-sans)",
-              fontWeight: 700,
-              fontSize: 15,
-              color: "var(--color-text-primary)",
-            }}
-          >
-            Mes notes
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setExpanded((v) => !v);
-            }}
-            aria-label={expanded ? "Réduire" : "Agrandir"}
-            style={hdrBtn}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.4}
-              aria-hidden="true"
-            >
-              <path
-                d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-            }}
-            aria-label="Fermer"
-            style={hdrBtn}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              aria-hidden="true"
-            >
-              <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Linked-lesson badge */}
-        <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--color-border-subtle)" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "9px 12px",
-              background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "var(--cosmetic-accent)",
-                flexShrink: 0,
-              }}
-            />
-            Liée à cette leçon ·{" "}
-            <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{lessonTitle}</b>
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            padding: "8px 14px",
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <ToolBtn
-            label="Gras"
-            onClick={() => {
-              surround("**");
-            }}
-          >
-            <b>B</b>
-          </ToolBtn>
-          <ToolBtn
-            label="Italique"
-            onClick={() => {
-              surround("*");
-            }}
-          >
-            <i>I</i>
-          </ToolBtn>
-          <ToolBtn
-            label="Titre"
-            onClick={() => {
-              prefixLine("## ");
-            }}
-          >
-            <b>H</b>
-          </ToolBtn>
-          <span
-            style={{
-              width: 1,
-              height: 16,
-              background: "var(--color-border-default)",
-              margin: "0 6px",
-            }}
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.4}
             aria-hidden="true"
-          />
-          <ToolBtn
-            label="Code"
-            onClick={() => {
-              surround("`");
-            }}
           >
-            {"</>"}
-          </ToolBtn>
-          <ToolBtn
-            label="Liste"
-            onClick={() => {
-              prefixLine("- ");
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.4}
-              aria-hidden="true"
-            >
-              <path d="M6 4h8M6 8h8M6 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" strokeLinecap="round" />
-            </svg>
-          </ToolBtn>
-        </div>
-
-        {/* Editor */}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-          }}
-          placeholder={
-            "# Titre de la note\n\nÉcris tes notes en markdown…\n\n- **gras**, *italique*, `code`"
-          }
-          spellCheck={false}
-          style={{
-            flex: 1,
-            width: "100%",
-            resize: "none",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            padding: "18px 18px",
-            color: "#E6E4F0",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13.5,
-            lineHeight: 1.65,
-            letterSpacing: "0.01em",
-          }}
-        />
-
-        {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-            padding: "12px 18px",
-            borderTop: "1px solid var(--color-border-subtle)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-          }}
-        >
+            <path
+              d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      }
+      footer={
+        <>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
             <span
               aria-hidden="true"
@@ -457,15 +209,147 @@ export function NoteDrawer({
               style={{
                 color: "var(--cosmetic-accent)",
                 textDecoration: "none",
-                letterSpacing: "0.06em",
               }}
             >
               Toutes mes notes →
             </Link>
           </span>
+        </>
+      }
+    >
+      {/* Linked-lesson badge */}
+      <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--color-border-subtle)" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 12px",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            color: "var(--color-text-secondary)",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: "var(--cosmetic-accent)",
+              flexShrink: 0,
+            }}
+          />
+          <span style={{ minWidth: 0 }}>
+            Liée à cette leçon ·{" "}
+            <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{lessonTitle}</b>
+          </span>
         </div>
-      </aside>
-    </>
+      </div>
+
+      {/* Formatting toolbar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          padding: "8px 14px",
+          borderBottom: "1px solid var(--color-border-subtle)",
+          flexShrink: 0,
+        }}
+      >
+        <ToolBtn
+          label="Gras"
+          onClick={() => {
+            surround("**");
+          }}
+        >
+          <b>B</b>
+        </ToolBtn>
+        <ToolBtn
+          label="Italique"
+          onClick={() => {
+            surround("*");
+          }}
+        >
+          <i>I</i>
+        </ToolBtn>
+        <ToolBtn
+          label="Titre"
+          onClick={() => {
+            prefixLine("## ");
+          }}
+        >
+          <b>H</b>
+        </ToolBtn>
+        <span
+          style={{
+            width: 1,
+            height: 16,
+            background: "var(--color-border-default)",
+            margin: "0 6px",
+          }}
+          aria-hidden="true"
+        />
+        <ToolBtn
+          label="Code"
+          onClick={() => {
+            surround("`");
+          }}
+        >
+          {"</>"}
+        </ToolBtn>
+        <ToolBtn
+          label="Liste"
+          onClick={() => {
+            prefixLine("- ");
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.4}
+            aria-hidden="true"
+          >
+            <path d="M6 4h8M6 8h8M6 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" strokeLinecap="round" />
+          </svg>
+        </ToolBtn>
+      </div>
+
+      {/* Editor */}
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+        }}
+        aria-label="Note de la leçon"
+        placeholder={
+          "# Titre de la note\n\nÉcris tes notes en markdown…\n\n- **gras**, *italique*, `code`"
+        }
+        spellCheck={false}
+        style={{
+          flex: 1,
+          minHeight: 160,
+          width: "100%",
+          resize: "none",
+          background: "transparent",
+          border: "none",
+          outline: "none",
+          padding: "18px 18px",
+          color: "var(--color-text-primary)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 13.5,
+          lineHeight: 1.65,
+          letterSpacing: "0.01em",
+        }}
+      />
+    </SideDrawer>
   );
 }
 
@@ -476,7 +360,6 @@ const hdrBtn: React.CSSProperties = {
   height: 28,
   background: "transparent",
   border: "1px solid var(--color-border-default)",
-  color: "#8B88A8",
+  color: "var(--color-text-muted)",
   cursor: "pointer",
-  borderRadius: 2,
 };

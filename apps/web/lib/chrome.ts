@@ -37,6 +37,16 @@ const STICKY_GAP = 24;
 export const STICKY_TOP = NAVBAR_HEIGHT + STICKY_GAP;
 
 /**
+ * The lesson toolbar (lessons/[slug]/_components/lesson-toolbar.tsx) is this
+ * tall, and sticks flush under the navbar rather than at STICKY_TOP: it spans
+ * the lesson's column, and the text scrolling through a gap above it would
+ * show between the two bars. A lesson's anchors, and each new section, land
+ * below both with the usual air: STICKY_TOP + LESSON_TOOLBAR_HEIGHT, which
+ * globals.css carries a copy of.
+ */
+export const LESSON_TOOLBAR_HEIGHT = 48;
+
+/**
  * The `top` a rail this tall sticks at. One that can be read whole below the
  * navbar rests there, at STICKY_TOP. A taller one rests by its bottom instead,
  * the same air above the bottom of the window: its `top` comes out under

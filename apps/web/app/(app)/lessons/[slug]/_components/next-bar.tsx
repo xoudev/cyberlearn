@@ -52,11 +52,9 @@ export function NextBar({
   return (
     <>
       <div
-        className="card"
+        className="card lesson-next-bar"
         style={{
           marginTop: 88,
-          display: "grid",
-          gridTemplateColumns: "1fr auto",
           position: "relative",
           overflow: "hidden",
         }}
@@ -73,14 +71,14 @@ export function NextBar({
           }}
         />
 
-        {/* Preview */}
+        {/* Preview: beside the actions, or above them on a phone (globals.css) */}
         <div
+          className="lesson-next-bar__preview"
           style={{
             padding: "24px 28px",
             display: "flex",
             flexDirection: "column",
             gap: 8,
-            borderRight: "1px solid var(--color-border-default)",
             minWidth: 0,
             position: "relative",
             zIndex: 1,
@@ -179,17 +177,10 @@ export function NextBar({
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "stretch" }}>
+        <div className="lesson-next-bar__actions">
           {/* CompleteButton unmounts when isCompleted flips - that's fine, modal state is here */}
           {!isCompleted && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "0 24px",
-                borderRight: "1px solid var(--color-border-default)",
-              }}
-            >
+            <div className="lesson-next-bar__complete">
               <CompleteButton
                 lessonId={lessonId}
                 xpReward={xpReward}

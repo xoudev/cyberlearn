@@ -2,8 +2,8 @@ import Link from "next/link";
 import React from "react";
 
 /**
- * Says, in the lesson's side column, what the dotted underlines are, and leads
- * to the page that lists every term (see rehypeGlossary).
+ * Says, in the lesson's plan, what the dotted underlines are, and leads to
+ * the page that lists every term (see rehypeGlossary).
  */
 export function LessonGlossaryNote(): React.ReactElement {
   return (

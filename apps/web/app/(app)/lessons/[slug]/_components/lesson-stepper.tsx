@@ -11,12 +11,12 @@ import React, {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Zap } from "lucide-react";
-import { StickyRail } from "@/components/sticky-rail";
 import { StepperContext, type StepperContextType } from "./section-pane";
 import { completeLesson } from "../_actions/track-progress";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 import { LessonCompleteModal } from "./lesson-complete-modal";
+import { LessonToolbar, canOpenSection, pendingMessage } from "./lesson-toolbar";
+import { LESSON_ARTICLE_CLASS } from "./lesson-article";
 
 // ── Per-section exercise state ─────────────────────────────────────────────────
 
@@ -70,9 +70,17 @@ interface LessonStepperProps {
   xpReward: number;
   isCompleted: boolean;
   sections: { text: string; id: string }[];
-  railExtra?: ReactNode;
+  /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
+  planExtra?: ReactNode;
+  /** The reader's note on the lesson, as saved. */
+  note: { content: string; wordCount: number };
 }
 
+/**
+ * The lesson, one section at a time: the toolbar that moves between them (and
+ * opens the plan and the notes), the article showing the current one, and at
+ * its end what stops the reader going on, or says the lesson is done.
+ */
 export function LessonStepper({
   children,
   lessonId,
@@ -80,7 +88,8 @@ export function LessonStepper({
   xpReward,
   isCompleted,
   sections,
-  railExtra,
+  planExtra,
+  note,
 }: LessonStepperProps): React.ReactElement {
   const totalSteps = Math.max(1, sections.length);
 
@@ -98,8 +107,9 @@ export function LessonStepper({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // A new section starts at its top. The button that changes it sits at the
-  // bottom of the previous one, so without this the reader landed in the
+  // A new section starts at its top, below the navbar and the toolbar (the
+  // page's scroll-padding-top). The reader asks for it from wherever they are
+  // in the previous one, usually its end, so without this they landed in the
   // middle of the next section, or past its end. Skipped on the first render:
   // opening a lesson must not move the page.
   const articleRef = useRef<HTMLElement>(null);
@@ -194,7 +204,7 @@ export function LessonStepper({
 
   function handleJump(i: number) {
     if (i === currentStep) return;
-    if (isCompleted || i < currentStep || doneSteps.has(i)) {
+    if (canOpenSection(i, { currentStep, doneSteps, isCompleted })) {
       setCurrentStep(i);
     }
   }
@@ -203,67 +213,49 @@ export function LessonStepper({
 
   return (
     <StepperContext.Provider value={ctx}>
-      {/* Timeline - only shown when multiple sections */}
-      {sections.length > 1 && (
-        <StepperTimeline
-          sections={sections}
-          currentStep={currentStep}
-          doneSteps={doneSteps}
-          onSelect={handleJump}
-        />
+      <LessonToolbar
+        sections={sections}
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        doneSteps={doneSteps}
+        isCompleted={isCompleted}
+        canAdvance={canAdvance}
+        pendingCount={stepComp.pendingCount}
+        isPending={isPending}
+        xpReward={xpReward}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onJump={handleJump}
+        planExtra={planExtra}
+        lessonId={lessonId}
+        lessonTitle={lessonTitle}
+        note={note}
+      />
+
+      {/* MDX content - flows directly, no card wrapper per design. Its prose
+          keeps a reading measure, its components the article's width
+          (globals.css). */}
+      <article
+        ref={articleRef}
+        tabIndex={-1}
+        aria-label={sections[currentStep]?.text}
+        className={LESSON_ARTICLE_CLASS}
+        style={{ counterReset: `h2-counter ${String(currentStep)}`, outline: "none" }}
+      >
+        {children}
+      </article>
+
+      {/* What stops the reader going on: said where they finish reading,
+          while the toolbar's "next" waits. */}
+      {!canAdvance && stepComp.pendingCount > 0 && (
+        <p className="lesson-pending" role="status">
+          <span aria-hidden="true">›</span>
+          {pendingMessage(stepComp.pendingCount)}
+        </p>
       )}
 
-      {/* Content grid */}
-      <div className="lesson-stepper-grid">
-        {/* Article + navigation */}
-        <div>
-          {/* MDX content - flows directly, no card wrapper per design */}
-          <article
-            ref={articleRef}
-            tabIndex={-1}
-            aria-label={sections[currentStep]?.text}
-            className="prose lesson-content max-w-none"
-            style={{
-              paddingBottom: 20,
-              counterReset: `h2-counter ${String(currentStep)}`,
-              scrollMarginTop: 24,
-              outline: "none",
-            }}
-          >
-            {children}
-          </article>
+      {isCompleted && isLastStep && <CompletionBanner xpReward={xpReward} />}
 
-          {isCompleted && isLastStep ? (
-            <CompletionBanner xpReward={xpReward} />
-          ) : (
-            <SectionNavBar
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-              sections={sections}
-              isLastStep={isLastStep}
-              canAdvance={canAdvance}
-              isPending={isPending}
-              xpReward={xpReward}
-              pendingCount={stepComp.pendingCount}
-              isCompleted={isCompleted}
-              onPrev={handlePrev}
-              onNext={handleNext}
-            />
-          )}
-        </div>
-
-        {/* Right rail */}
-        <StickyRail className="lesson-stepper-rail">
-          <StepperRail
-            sections={sections}
-            currentStep={currentStep}
-            doneSteps={doneSteps}
-            isCompleted={isCompleted}
-            onSelect={handleJump}
-            railExtra={railExtra}
-          />
-        </StickyRail>
-      </div>
       {completionResult !== null && (
         <LessonCompleteModal
           result={completionResult}
@@ -275,545 +267,12 @@ export function LessonStepper({
   );
 }
 
-// ── StepperTimeline ────────────────────────────────────────────────────────────
-
-function StepperTimeline({
-  sections,
-  currentStep,
-  doneSteps,
-  onSelect,
-}: {
-  sections: { text: string; id: string }[];
-  currentStep: number;
-  doneSteps: ReadonlySet<number>;
-  onSelect: (i: number) => void;
-}): React.ReactElement {
-  return (
-    <div
-      style={{
-        margin: "0 0 64px",
-        padding: "28px 8px 24px",
-        borderTop: "1px solid var(--color-border-subtle)",
-        borderBottom: "1px solid var(--color-border-subtle)",
-        position: "relative",
-        overflowX: "auto",
-      }}
-    >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          height: 1,
-          background:
-            "linear-gradient(90deg, transparent, color-mix(in srgb, var(--cosmetic-accent) 50%, transparent) 30%, rgba(0,36,255,0.5) 70%, transparent)",
-          opacity: 0.5,
-        }}
-      />
-
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 0,
-          minWidth: "max-content",
-        }}
-      >
-        {/* Connector line - top: label(28) + margin(12) + half-diamond(7) */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: 14,
-            right: 14,
-            top: 47,
-            height: 1,
-            background: "var(--color-border-subtle)",
-            zIndex: 0,
-          }}
-        />
-
-        {sections.map((section, i) => {
-          const isDone = doneSteps.has(i);
-          const isCurrent = i === currentStep;
-          const isClickable = isDone || i < currentStep;
-
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => {
-                onSelect(i);
-              }}
-              disabled={!isClickable && !isCurrent}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                position: "relative",
-                zIndex: 1,
-                flex: 1,
-                textAlign: "center",
-                minWidth: 0,
-                padding: "0 4px",
-                background: "transparent",
-                border: "none",
-                cursor: isClickable ? "pointer" : "default",
-                opacity: isClickable || isCurrent ? 1 : 0.5,
-              }}
-            >
-              {/* Label */}
-              <div
-                style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  marginBottom: 12,
-                  height: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  lineHeight: 1.3,
-                  maxWidth: 120,
-                }}
-              >
-                <b
-                  style={{
-                    color: isDone
-                      ? "var(--cosmetic-accent)"
-                      : isCurrent
-                        ? "var(--color-text-primary)"
-                        : "var(--color-text-disabled)",
-                  }}
-                >
-                  {String(i + 1).padStart(2, "0")} · {section.text}
-                </b>
-              </div>
-
-              {/* Diamond */}
-              {isDone ? (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 14,
-                    height: 14,
-                    background: "var(--cosmetic-accent)",
-                    border: "1.5px solid var(--cosmetic-accent)",
-                    transform: "rotate(45deg)",
-                    boxShadow:
-                      "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-                    flexShrink: 0,
-                  }}
-                />
-              ) : isCurrent ? (
-                <span
-                  className="timeline-node-current"
-                  style={{
-                    display: "inline-block",
-                    width: 18,
-                    height: 18,
-                    background: "var(--color-bg-base)",
-                    border: "2px solid var(--cosmetic-accent)",
-                    transform: "rotate(45deg)",
-                    flexShrink: 0,
-                  }}
-                />
-              ) : (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 14,
-                    height: 14,
-                    background: "var(--color-bg-base)",
-                    border: "1.5px solid var(--color-border-default)",
-                    transform: "rotate(45deg)",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-
-              {/* Sub-label */}
-              <div
-                style={{
-                  marginTop: 10,
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
-                  color: isDone
-                    ? "var(--cosmetic-accent)"
-                    : isCurrent
-                      ? "var(--color-text-primary)"
-                      : "var(--color-text-disabled)",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {isDone ? "✓" : isCurrent ? "~ en cours" : "-"}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── StepperRail ────────────────────────────────────────────────────────────────
-
-function StepperRail({
-  sections,
-  currentStep,
-  doneSteps,
-  isCompleted,
-  onSelect,
-  railExtra,
-}: {
-  sections: { text: string; id: string }[];
-  currentStep: number;
-  doneSteps: ReadonlySet<number>;
-  isCompleted: boolean;
-  onSelect: (i: number) => void;
-  railExtra?: ReactNode;
-}): React.ReactElement {
-  const completedCount = isCompleted ? sections.length : doneSteps.size;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      {/* TOC section */}
-      <div>
-        {/* Section header - rail-v2__head style */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--color-text-muted)",
-            marginBottom: 14,
-            paddingBottom: 10,
-            borderBottom: "1px solid var(--color-border-subtle)",
-          }}
-        >
-          <span>Dans cette leçon</span>
-          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
-            {completedCount}/{sections.length}
-          </b>
-        </div>
-
-        {/* TOC items */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {sections.map((entry, i) => {
-            const isDone = isCompleted || doneSteps.has(i);
-            const isCurrent = !isCompleted && i === currentStep;
-            const isClickable = isDone || i < currentStep;
-
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  onSelect(i);
-                }}
-                disabled={!isClickable && !isCurrent}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "24px 1fr auto",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "10px 12px 10px 14px",
-                  marginLeft: -2,
-                  background: isCurrent
-                    ? "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 80%)"
-                    : "transparent",
-                  boxShadow: isCurrent
-                    ? "-2px 0 12px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)"
-                    : "none",
-                  color: isCurrent
-                    ? "var(--color-text-primary)"
-                    : isDone
-                      ? "var(--color-text-secondary)"
-                      : "var(--color-text-faint)",
-                  cursor: isClickable ? "pointer" : "default",
-                  border: "none",
-                  borderLeft: `2px solid ${isCurrent ? "var(--cosmetic-accent)" : "transparent"}`,
-                  textAlign: "left",
-                  width: "100%",
-                  fontFamily: "var(--font-body, sans-serif)",
-                  fontSize: 14,
-                  transition: "all 150ms ease",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
-                    color:
-                      isDone || isCurrent ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span style={{ fontWeight: isCurrent ? 500 : 400 }}>{entry.text}</span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
-                    color:
-                      isDone || isCurrent ? "var(--cosmetic-accent)" : "var(--color-text-disabled)",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {isDone ? "✓" : isCurrent ? "~" : "-"}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Extra rail sections (lesson author + rating) */}
-      {railExtra}
-    </div>
-  );
-}
-
-// ── SectionNavBar - section navigation under the article ──────────────────────
-
-function SectionNavBar({
-  currentStep,
-  totalSteps,
-  sections,
-  isLastStep,
-  canAdvance,
-  isPending,
-  xpReward,
-  pendingCount,
-  isCompleted,
-  onPrev,
-  onNext,
-}: {
-  currentStep: number;
-  totalSteps: number;
-  sections: { text: string; id: string }[];
-  isLastStep: boolean;
-  canAdvance: boolean;
-  isPending: boolean;
-  xpReward: number;
-  pendingCount: number;
-  isCompleted: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-}): React.ReactElement {
-  const disabled = !canAdvance || isPending;
-  const sectionName = sections[currentStep]?.text ?? "";
-
-  return (
-    <div>
-      {/* Pending exercises warning */}
-      {!canAdvance && pendingCount > 0 && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: "8px 14px",
-            background: "rgba(255,176,32,0.06)",
-            border: "1px solid rgba(255,176,32,0.2)",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-            color: "var(--color-warning)",
-            letterSpacing: "0.1em",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span>›</span>
-          {pendingCount === 1
-            ? "1 exercice à compléter avant de continuer"
-            : `${String(pendingCount)} exercices à compléter avant de continuer`}
-        </div>
-      )}
-
-      {/* Section nav */}
-      <div className="section-nav-bar">
-        {/* Gradient border overlay */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            padding: 1,
-            background: "linear-gradient(135deg, rgba(0,36,255,0.4), transparent 60%)",
-            WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            WebkitMaskComposite: "xor",
-            maskComposite: "exclude",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Left: Previous */}
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={currentStep === 0}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "18px 24px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            cursor: currentStep === 0 ? "default" : "pointer",
-            background: "transparent",
-            color: currentStep === 0 ? "var(--color-border-default)" : "var(--color-text-muted)",
-            border: 0,
-            minHeight: 60,
-            transition: "color 180ms ease, background 180ms ease",
-          }}
-          onMouseEnter={(e) => {
-            if (currentStep > 0) {
-              e.currentTarget.style.color = "var(--color-text-primary)";
-              e.currentTarget.style.background =
-                "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (currentStep > 0) {
-              e.currentTarget.style.color = "var(--color-text-muted)";
-              e.currentTarget.style.background = "transparent";
-            }
-          }}
-        >
-          <svg viewBox="0 0 14 14" width={12} height={12} fill="none">
-            <path
-              d="M11 7 H3 M6 4 L3 7 L6 10"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Précédent
-        </button>
-
-        {/* Center: current section info */}
-        <div className="section-nav-center">
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 9,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            Section {String(currentStep + 1).padStart(2, "0")} /{" "}
-            {String(totalSteps).padStart(2, "0")}
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              color: "var(--cosmetic-accent)",
-              marginTop: 4,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {sectionName}
-          </span>
-        </div>
-
-        {/* Right: Next / Finish */}
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onNext}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            padding: "18px 24px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            background: disabled ? "rgba(0,36,255,0.15)" : "var(--color-brand-blue)",
-            color: disabled ? "var(--color-border-default)" : "#ffffff",
-            border: 0,
-            cursor: disabled ? "not-allowed" : "pointer",
-            boxShadow: disabled
-              ? "none"
-              : "inset 0 0 0 1px rgba(255,255,255,0.15), 0 0 30px rgba(0,36,255,0.3)",
-            transition: "background 180ms ease",
-            opacity: disabled ? 0.6 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!disabled) e.currentTarget.style.background = "#1F3BFF";
-          }}
-          onMouseLeave={(e) => {
-            if (!disabled) e.currentTarget.style.background = "var(--color-brand-blue)";
-          }}
-        >
-          {isPending ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          ) : isLastStep && !isCompleted ? (
-            <>
-              <CheckCircle size={14} />
-              Terminer la leçon
-              {canAdvance && (
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "2px 6px",
-                    background: "rgba(255,255,255,0.15)",
-                    fontSize: 10,
-                  }}
-                >
-                  <Zap size={9} />+{xpReward} XP
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              Section suivante
-              <svg viewBox="0 0 14 14" width={12} height={12} fill="none">
-                <path
-                  d="M3 7 H11 M8 4 L11 7 L8 10"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── CompletionBanner ───────────────────────────────────────────────────────────
 
 function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElement {
   return (
     <div
+      className="lesson-end"
       style={{
         display: "flex",
         alignItems: "center",

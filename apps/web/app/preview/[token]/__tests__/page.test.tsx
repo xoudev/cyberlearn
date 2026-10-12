@@ -31,6 +31,9 @@ vi.mock("../../../(app)/lessons/[slug]/_components/lesson-section", () => ({
 }));
 
 const { default: PreviewPage } = await import("../page");
+const { LESSON_ARTICLE_CLASS } = await import(
+  "../../../(app)/lessons/[slug]/_components/lesson-article"
+);
 
 const TOKEN = "c".repeat(43);
 
@@ -59,6 +62,16 @@ describe("the preview page", () => {
       expect(call[0].components).toBe(COMPONENTS);
       expect(call[0].lessonSlug).toBe("apercu");
     }
+  });
+
+  it("draws the draft in the lesson page's column and article, measure included", async () => {
+    findLive.mockResolvedValue({ contentMdx: "## un\n\nPremière." });
+    const html = await render(TOKEN);
+    // The prose's measure and the components' width hang off these classes
+    // (globals.css): the same ones as the lesson page, or the author would
+    // compose against another layout.
+    expect(html).toContain('<div class="lesson-page">');
+    expect(html).toContain(`<article class="${LESSON_ARTICLE_CLASS}">`);
   });
 
   it("says the preview has expired when the token no longer opens anything", async () => {
