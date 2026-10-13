@@ -67,8 +67,10 @@ open has its open state in the address: `?news=1` open, no `news` closed.
   well, and a mark from before a reload never sends the reader back into the
   page that reload threw away.
 - `QueryDialogHost` (`apps/web/components/query-dialog-host.tsx`) is mounted
-  once in `apps/web/app/(app)/layout.tsx`. It draws the registered window the
-  address names, over any page of the signed-in site.
+  once in the app shell (`apps/web/components/app-shell.tsx`), which the
+  `(app)` layout draws every signed-in page in, and a public profile too when
+  a session reads it. It draws the registered window the address names, over
+  any page of the signed-in site.
 - `QUERY_DIALOGS` (`apps/web/components/query-dialogs.ts`) maps each parameter
   to its window.
 

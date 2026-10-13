@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cosmeticAttrs } from "../attrs";
+import { cosmeticAttrs, scopedCosmeticAttrs } from "../attrs";
 
 describe("cosmeticAttrs", () => {
   it("returns no attributes when there is no loadout", () => {
@@ -31,5 +31,32 @@ describe("cosmeticAttrs", () => {
         terminalTheme: null,
       }),
     ).toEqual({ "data-accent": "accent-violet" });
+  });
+});
+
+describe("scopedCosmeticAttrs", () => {
+  it("states every slot, an empty one as its default, so nothing leaks in from around it", () => {
+    expect(scopedCosmeticAttrs(null)).toEqual({
+      "data-accent": "accent-turquoise",
+      "data-hex": "hex-solid",
+      "data-frame": "frame-standard",
+      "data-terminal": "theme-midnight-ops",
+    });
+  });
+
+  it("keeps what the owner equipped", () => {
+    expect(
+      scopedCosmeticAttrs({
+        accentColor: "accent-violet",
+        hexagonStyle: null,
+        profileFrame: "frame-gilded",
+        terminalTheme: null,
+      }),
+    ).toEqual({
+      "data-accent": "accent-violet",
+      "data-hex": "hex-solid",
+      "data-frame": "frame-gilded",
+      "data-terminal": "theme-midnight-ops",
+    });
   });
 });

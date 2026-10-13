@@ -55,24 +55,64 @@ export function friendshipView(
 }
 
 /**
- * What the button on somebody's profile says, for each of the four. Shared by
- * the site's button and the app's, so the same state reads the same way.
+ * What can be done about a friendship from somebody's profile. A request
+ * received is answered either way, so it is two buttons; ending a friendship
+ * is the one that cannot be redone alone, so it sits behind the "Ami ✓" the
+ * profile shows while two people are friends rather than in plain sight.
  */
-export const FRIENDSHIP_ACTION_LABEL: Record<FriendshipView, string> = {
-  none: "Ajouter en ami",
-  outgoing: "Annuler la demande",
-  incoming: "Accepter la demande",
-  friends: "Retirer des amis",
-};
+export type FriendshipAction = "request" | "cancel" | "accept" | "decline" | "unfriend";
 
 /**
- * What pressing that button does. Accepting goes through a request on
- * purpose: asking somebody who already asked is agreeing, so the one call
- * covers both, and a request cancelled in the meantime becomes a fresh ask
- * rather than an error.
+ * What each button says. Shared by the site's profile and the app's, so the
+ * same state reads the same way. The label is the action, not the state:
+ * somebody who has asked sees how to take it back, not a reminder that they
+ * asked.
  */
-export function friendshipMove(view: FriendshipView): "request" | "remove" {
-  return view === "none" || view === "incoming" ? "request" : "remove";
+export const FRIENDSHIP_ACTION_LABEL: Record<FriendshipAction, string> = {
+  request: "Ajouter en ami",
+  cancel: "Annuler la demande",
+  accept: "Accepter",
+  decline: "Refuser",
+  unfriend: "Retirer des amis",
+};
+
+/** What a profile says while two people are friends: a state, with a menu behind it. */
+export const FRIENDS_LABEL = "Ami ✓";
+
+/**
+ * The buttons a profile offers in each state, the one to press first leading.
+ * For friends it is what the menu behind "Ami ✓" holds.
+ */
+export function friendshipActions(view: FriendshipView): readonly FriendshipAction[] {
+  switch (view) {
+    case "none":
+      return ["request"];
+    case "outgoing":
+      return ["cancel"];
+    case "incoming":
+      return ["accept", "decline"];
+    case "friends":
+      return ["unfriend"];
+  }
+}
+
+/**
+ * The call behind a button. Accepting goes through a request on purpose:
+ * asking somebody who already asked is agreeing, so the one call covers both,
+ * and a request cancelled in the meantime becomes a fresh ask rather than an
+ * error. Declining, cancelling and unfriending all delete the row.
+ */
+export function friendshipMove(action: FriendshipAction): "request" | "remove" {
+  return action === "request" || action === "accept" ? "request" : "remove";
+}
+
+/**
+ * Whether a profile offers a duel: only between friends, as a duel itself
+ * requires. Read from the state the buttons are in, so the offer appears the
+ * moment a request is accepted and goes the moment the friendship ends.
+ */
+export function canChallenge(view: FriendshipView): boolean {
+  return view === "friends";
 }
 
 /**
@@ -90,10 +130,11 @@ export function friendshipAfter(
 /**
  * Whether pressing the button asks first. Ending a friendship is one call and
  * nobody is told, so a slipped tap would undo something only the other person
- * can redo. A request, or taking one back, costs one tap to send again.
+ * can redo. A request, taking one back or refusing one costs one tap to send
+ * again.
  */
-export function friendshipMoveAsksFirst(view: FriendshipView): boolean {
-  return view === "friends";
+export function friendshipActionAsksFirst(action: FriendshipAction): boolean {
+  return action === "unfriend";
 }
 
 /** The question before a friendship ends, the same on the site and in the app. */

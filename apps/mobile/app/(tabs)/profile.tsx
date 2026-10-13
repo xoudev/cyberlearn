@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, Share, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
+import { publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
+import { ActionChip } from "@/components/buttons";
 import { BadgeCollectionList } from "@/components/badge-collection";
 import { ChevronRight } from "@/components/icons";
 import { Avatar, BadgeIcon } from "@/components/media";
@@ -13,7 +15,7 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
-import { fetchFriendsApi, fetchMyAvatarUrl } from "@/lib/api";
+import { fetchFriendsApi, fetchMyAvatarUrl, SITE_URL } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
 import { PROFILE_SUB_TABS, profileSubFrom, type ProfileSub } from "@/lib/profile-tabs";
 import { useProfile } from "@/lib/queries";
@@ -117,6 +119,7 @@ export default function Profil(): React.JSX.Element {
   }
 
   const { me, level, tier, completed, badges, certificates } = data;
+  const handle = me.username;
 
   return (
     <Screen onRefresh={() => refetch()}>
@@ -134,6 +137,25 @@ export default function Profil(): React.JSX.Element {
         />
         <Text variant="h1">{me.username ? `@${me.username}` : me.displayName}</Text>
         <Pill label={`◆ Palier ${tier.tier.label}`} color={tier.tier.color} />
+        {/* The page the others see, and its link to hand out, as on the
+            site's profile: nothing here led to it before. */}
+        {handle ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <ActionChip
+              label="Mon profil public"
+              tone="neutral"
+              onPress={() => {
+                router.push({ pathname: "/u/[username]", params: { username: handle } });
+              }}
+            />
+            <ActionChip
+              label="Partager le lien"
+              onPress={() => {
+                void Share.share({ message: publicProfileUrl(SITE_URL, handle) });
+              }}
+            />
+          </View>
+        ) : null}
       </View>
 
       {/* XP */}

@@ -2,21 +2,25 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
-import { Alert, View } from "react-native";
+import { Alert, Share, View } from "react-native";
 import {
+  canChallenge,
+  FRIENDS_LABEL,
   FRIENDSHIP_ACTION_LABEL,
+  friendshipActionAsksFirst,
+  friendshipActions,
   friendshipAfter,
   friendshipMove,
-  friendshipMoveAsksFirst,
+  type FriendshipAction,
 } from "@cyberlearn/lib/social/friendship";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { lessonsFinishedLabel } from "@cyberlearn/lib/social/portfolio";
+import { lessonsFinishedLabel, publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Divider, SectionLabel, StatCell, Text, XPBar } from "@/components/ui";
-import { fetchProfileApi, removeFriendApi, requestFriendApi } from "@/lib/api";
+import { fetchProfileApi, removeFriendApi, requestFriendApi, SITE_URL } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, RARITY_COLOR } from "@/lib/db";
 import {
@@ -33,8 +37,9 @@ import {
 /**
  * Somebody's profile page: the site's /u/[username]. Who gets in is the
  * server's rule (anybody on a public profile, only friends on a closed one),
- * and a closed profile reads exactly like a handle that does not exist. The
- * one thing a visitor can do here is the friend button, as on the site.
+ * and a closed profile reads exactly like a handle that does not exist. What
+ * a visitor can do here is the friendship, as on the site; the owner gets the
+ * way to change it and the link to hand out.
  */
 export default function PublicProfileScreen(): React.JSX.Element {
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -108,25 +113,32 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
             {profile.bio}
           </Text>
         ) : null}
-        {/* Absent on the reader's own page: a button that cannot work is worse
-            than no button. */}
-        {profile.isSelf ? null : (
-          <FriendButton
+        {/* The reader's own page: the way to change it and the link to hand
+            out. Somebody else's: the friendship with them. No friend button
+            on your own page - a button that cannot work is worse than none. */}
+        {profile.isSelf ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <ActionChip
+              label="Modifier mon profil"
+              tone="neutral"
+              onPress={() => {
+                router.push("/profile-edit");
+              }}
+            />
+            <ActionChip
+              label="Partager le lien"
+              onPress={() => {
+                void Share.share({ message: publicProfileUrl(SITE_URL, profile.username) });
+              }}
+            />
+          </View>
+        ) : (
+          <FriendActions
             targetId={profile.id}
             name={profile.displayName || profile.username}
             initial={profile.friendship}
           />
         )}
-        {profile.friendship === "friends" ? (
-          <View style={{ alignSelf: "flex-start" }}>
-            <ActionChip
-              label="Défier en duel"
-              onPress={() => {
-                router.push({ pathname: "/duels", params: { ami: profile.id } });
-              }}
-            />
-          </View>
-        ) : null}
       </Card>
 
       {/* Level */}
@@ -325,12 +337,16 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
 }
 
 /**
- * The friend button, as on the site (AddFriendButton): the label and the
- * move come from the same module, and the state afterwards is what the server
- * answered, not a guess: asking somebody who already asked lands on friends.
- * Ending a friendship asks first, and a refusal is said, whatever the move.
+ * The friendship, as on the site (FriendshipActions): the buttons, their
+ * labels and their moves come from the same module, and the state afterwards
+ * is what the server answered, not a guess: asking somebody who already asked
+ * lands on friends. A request received is accepted or refused. Between
+ * friends the card says "Ami ✓", and pressing it offers to end the
+ * friendship, which asks first. The duel follows the state, so it appears on
+ * accepting and goes on removing, as the site's does. A refusal is said,
+ * whatever the move.
  */
-function FriendButton({
+function FriendActions({
   targetId,
   name,
   initial,
@@ -339,14 +355,15 @@ function FriendButton({
   name: string;
   initial: FriendshipView;
 }): React.JSX.Element {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [state, setState] = useState<FriendshipView>(initial);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setState(initial), [initial]);
-  const move = friendshipMove(state);
 
-  const press = async (): Promise<void> => {
+  const press = async (action: FriendshipAction): Promise<void> => {
+    const move = friendshipMove(action);
     setPending(true);
     setError(null);
     const reply =
@@ -364,33 +381,61 @@ function FriendButton({
     }
   };
 
-  const onPress = (): void => {
-    if (!friendshipMoveAsksFirst(state)) {
-      void press();
+  const onPress = (action: FriendshipAction): void => {
+    if (!friendshipActionAsksFirst(action)) {
+      void press(action);
       return;
     }
-    const alert = unfriendAlert(name, () => void press());
+    const alert = unfriendAlert(name, () => void press(action));
     Alert.alert(alert.title, alert.message, alert.buttons);
   };
 
   return (
     <View style={{ gap: 6 }}>
-      {move === "request" ? (
-        <GradientButton
-          label={FRIENDSHIP_ACTION_LABEL[state]}
-          loading={pending}
-          onPress={onPress}
-        />
-      ) : (
-        <View style={{ alignSelf: "flex-start" }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        {state === "friends" ? (
+          // The state, with its one way out behind it: the dialog that asks
+          // before a friendship ends.
           <ActionChip
-            label={FRIENDSHIP_ACTION_LABEL[state]}
-            tone="neutral"
+            label={FRIENDS_LABEL}
             disabled={pending}
-            onPress={onPress}
+            onPress={() => {
+              onPress("unfriend");
+            }}
           />
-        </View>
-      )}
+        ) : (
+          friendshipActions(state).map((action) =>
+            action === "request" || action === "accept" ? (
+              <GradientButton
+                key={action}
+                label={FRIENDSHIP_ACTION_LABEL[action]}
+                loading={pending}
+                onPress={() => {
+                  onPress(action);
+                }}
+              />
+            ) : (
+              <ActionChip
+                key={action}
+                label={FRIENDSHIP_ACTION_LABEL[action]}
+                tone="neutral"
+                disabled={pending}
+                onPress={() => {
+                  onPress(action);
+                }}
+              />
+            ),
+          )
+        )}
+        {canChallenge(state) ? (
+          <ActionChip
+            label="Défier en duel"
+            onPress={() => {
+              router.push({ pathname: "/duels", params: { ami: targetId } });
+            }}
+          />
+        ) : null}
+      </View>
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
           {error}

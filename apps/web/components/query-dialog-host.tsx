@@ -10,7 +10,7 @@ import { QUERY_DIALOGS } from "./query-dialogs";
 /**
  * Draws the window the address asks for (`?<key>=<value>`, keys in
  * components/query-dialogs.ts) over whatever page is shown. Mounted once, in
- * the (app) layout.
+ * the app shell (components/app-shell.tsx).
  *
  * The boundary keeps the page from waiting on the address. It also delays
  * the windows' first effects past the commit where Next takes over the
