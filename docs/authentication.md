@@ -114,6 +114,17 @@ and written to the audit log:
 Supabase answers 429 when a mail went to the same address under a minute
 ago; the console says so instead of failing.
 
+A sign-up whose address was never confirmed has no row in `users` yet: the
+profile is created at the first sign-in (`userRepository.upsertFromAuth`),
+and a password sign-in needs the confirmed address. Such accounts are listed
+on `admin.cyberlearn.fr/users/pending`, read from Supabase Auth through the
+service role (`auth.admin.listUsers`, a thousand at a time, up to twenty
+thousand accounts), keeping those unconfirmed and without a profile. The two
+address gestures above work from that list too: they look the account up in
+Supabase Auth by its id, profile or not, and their audit row then carries
+`pendingSignUp: true`. The auth id becomes the profile's id at the first
+sign-in, so the trail continues on the account page.
+
 The audit row is written once the gesture is done. If that write fails, the
 gesture is still reported as done, since the account has changed or the mail
 has left, and the page says the trace is missing; the failure is logged.

@@ -155,7 +155,13 @@ export default async function AdminUserPage({
           </span>
         }
         description={user.email}
-        actions={<GhostLink href="/users">Retour aux comptes</GhostLink>}
+        actions={
+          <>
+            {/* What was done to the account, from the console. */}
+            <GhostLink href={`/audit?target=${user.id}`}>Journal d&apos;audit</GhostLink>
+            <GhostLink href="/users">Retour aux comptes</GhostLink>
+          </>
+        }
       />
 
       <div className="a-kpi-grid">

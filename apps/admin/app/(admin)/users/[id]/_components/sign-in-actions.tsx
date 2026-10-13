@@ -92,9 +92,9 @@ export function SignInActions({
         )}
       </div>
 
-      <Outcome state={resetState} />
-      <Outcome state={resendState} />
-      <Outcome state={confirmState} />
+      <AccessOutcome state={resetState} />
+      <AccessOutcome state={resendState} />
+      <AccessOutcome state={confirmState} />
     </div>
   );
 }
@@ -107,7 +107,8 @@ export function SignInActions({
 export const AUDIT_FAILED =
   "Ce geste n'a pas pu être inscrit au journal d'audit. Il n'est pas annulé pour autant : ne le refais pas, et garde-en une trace ailleurs.";
 
-function Outcome({ state }: { state: AccessActionState }): React.ReactElement | null {
+/** What a gesture came to: its error, or its notice and a missing audit row. */
+export function AccessOutcome({ state }: { state: AccessActionState }): React.ReactElement | null {
   if (state.error !== undefined) return <p className="a-form-error">{state.error}</p>;
   if (state.notice === undefined) return null;
   return (

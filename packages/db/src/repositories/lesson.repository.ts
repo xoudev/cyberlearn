@@ -1,5 +1,7 @@
 import { prisma } from "../prisma.js";
-import type { Category, Difficulty, Prisma, ProgressStatus } from "@prisma/client";
+import type { Category, ContentStatus, Difficulty, Prisma, ProgressStatus } from "@prisma/client";
+import { isFirstCatalogueLesson } from "@cyberlearn/types";
+import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 
 /**
  * What the open catalogue is, in one place.
@@ -115,7 +117,150 @@ function quizScoreOf(
   return { correct: progress.quizCorrect, total: progress.quizTotal };
 }
 
+/** The console's two lesson lists: the working one, and the archives. */
+export type ConsoleLessonFolder = "active" | "archives";
+
+/** Which catalogue a lesson comes from: a teacher's class, the first one (CL-LSN-NNN), the new one. */
+export type ConsoleLessonOrigin = "new" | "first" | "class";
+
+export type ConsoleLessonSort = "title" | "category" | "difficulty" | "xp" | "status";
+
+export interface ConsoleLessonQuery extends ConsolePage {
+  folder: ConsoleLessonFolder;
+  /** Part of a title, a refCode or a slug; empty for none. */
+  q: string;
+  category: Category | undefined;
+  difficulty: Difficulty | undefined;
+  /** The working list only: the archives hold one status. */
+  status: "DRAFT" | "PUBLISHED" | undefined;
+  origin: ConsoleLessonOrigin | undefined;
+  /** None keeps the list's own order: drafts first, newest first. */
+  sort: { key: ConsoleLessonSort; dir: SortDir } | undefined;
+}
+
+const CONSOLE_LESSON_ROW = {
+  id: true,
+  refCode: true,
+  slug: true,
+  title: true,
+  category: true,
+  difficulty: true,
+  status: true,
+  audience: true,
+  xpReward: true,
+  estimatedMinutes: true,
+  _count: {
+    select: {
+      progress: { where: { status: "COMPLETED" } },
+      pathLessons: true,
+    },
+  },
+} as const satisfies Prisma.LessonSelect;
+
+export type ConsoleLessonRow = Prisma.LessonGetPayload<{ select: typeof CONSOLE_LESSON_ROW }>;
+
+function folderWhere(folder: ConsoleLessonFolder): Prisma.LessonWhereInput {
+  return folder === "archives"
+    ? { status: "ARCHIVED" }
+    : { status: { in: ["DRAFT", "PUBLISHED"] } };
+}
+
+/**
+ * The first catalogue is told apart by the shape of its refCode, which a
+ * Prisma filter cannot express. Its lessons are read once, ids and codes only,
+ * and only when the origin filter asks for them.
+ */
+async function firstCatalogueIds(folder: ConsoleLessonFolder): Promise<string[]> {
+  const catalogue = await prisma.lesson.findMany({
+    where: { AND: [folderWhere(folder), { audience: "CATALOGUE" }] },
+    select: { id: true, refCode: true },
+  });
+  return catalogue.filter((row) => isFirstCatalogueLesson(row.refCode)).map((row) => row.id);
+}
+
+/**
+ * The lessons a console filter matches. Each filter is its own term of an AND,
+ * as in catalogueWhere: the search says OR, and spread into one object with
+ * another OR one of them would be lost.
+ */
+async function consoleLessonWhere(query: ConsoleLessonQuery): Promise<Prisma.LessonWhereInput> {
+  const terms: Prisma.LessonWhereInput[] = [folderWhere(query.folder)];
+  if (query.folder === "active" && query.status !== undefined) terms.push({ status: query.status });
+  if (query.category !== undefined) terms.push({ category: query.category });
+  if (query.difficulty !== undefined) terms.push({ difficulty: query.difficulty });
+  const q = query.q.trim();
+  if (q !== "") {
+    terms.push({
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { refCode: { contains: q, mode: "insensitive" } },
+        { slug: { contains: q, mode: "insensitive" } },
+      ],
+    });
+  }
+  if (query.origin === "class") {
+    terms.push({ audience: "CLASS" });
+  } else if (query.origin !== undefined) {
+    const first = await firstCatalogueIds(query.folder);
+    terms.push(
+      query.origin === "first"
+        ? { id: { in: first } }
+        : { audience: "CATALOGUE", id: { notIn: first } },
+    );
+  }
+  return { AND: terms };
+}
+
+function consoleLessonOrder(
+  sort: ConsoleLessonQuery["sort"],
+): Prisma.LessonOrderByWithRelationInput[] {
+  // The id last: rows that tie would otherwise trade places between pages.
+  const tieBreak: Prisma.LessonOrderByWithRelationInput = { id: "asc" };
+  if (sort === undefined) return [{ status: "asc" }, { createdAt: "desc" }, tieBreak];
+  switch (sort.key) {
+    case "title":
+      return [{ title: sort.dir }, tieBreak];
+    case "category":
+      return [{ category: sort.dir }, { title: "asc" }, tieBreak];
+    case "difficulty":
+      return [{ difficulty: sort.dir }, { title: "asc" }, tieBreak];
+    case "xp":
+      return [{ xpReward: sort.dir }, { title: "asc" }, tieBreak];
+    case "status":
+      return [{ status: sort.dir }, { createdAt: "desc" }, tieBreak];
+  }
+}
+
 export const lessonRepository = {
+  /**
+   * One page of one of the console's lesson lists, under its filters. The
+   * completions are counted in the same read; no column sorts by them, since
+   * the database can only order by every progress row, finished or not.
+   */
+  async listForConsole(query: ConsoleLessonQuery): Promise<ConsoleSlice<ConsoleLessonRow>> {
+    const where = await consoleLessonWhere(query);
+    return readSlice(
+      query,
+      () => prisma.lesson.count({ where }),
+      ({ skip, take }) =>
+        prisma.lesson.findMany({
+          where,
+          orderBy: consoleLessonOrder(query.sort),
+          skip,
+          take,
+          select: CONSOLE_LESSON_ROW,
+        }),
+    );
+  },
+
+  /** How many lessons each status holds, every audience included. */
+  async countByStatus(): Promise<Record<ContentStatus, number>> {
+    const grouped = await prisma.lesson.groupBy({ by: ["status"], _count: { _all: true } });
+    const count = (status: ContentStatus): number =>
+      grouped.find((g) => g.status === status)?._count._all ?? 0;
+    return { DRAFT: count("DRAFT"), PUBLISHED: count("PUBLISHED"), ARCHIVED: count("ARCHIVED") };
+  },
+
   /** The id of a published lesson this reader may open, by slug; null otherwise. */
   async findIdBySlug(slug: string, viewerId: string): Promise<string | null> {
     const lesson = await prisma.lesson.findFirst({

@@ -332,14 +332,29 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             <div style={{ display: "grid", gap: 16 }}>
               {(
                 [
-                  { label: "Publiées", value: statusCount("PUBLISHED"), tone: "accent" },
-                  { label: "Brouillons", value: statusCount("DRAFT"), tone: "warning" },
-                  { label: "Archivées", value: statusCount("ARCHIVED"), tone: "neutral" },
+                  {
+                    label: "Publiées",
+                    value: statusCount("PUBLISHED"),
+                    tone: "accent",
+                    href: "/lessons?status=PUBLISHED",
+                  },
+                  {
+                    label: "Brouillons",
+                    value: statusCount("DRAFT"),
+                    tone: "warning",
+                    href: "/lessons?status=DRAFT",
+                  },
+                  {
+                    label: "Archivées",
+                    value: statusCount("ARCHIVED"),
+                    tone: "neutral",
+                    href: "/lessons/archives",
+                  },
                 ] as const
               ).map((row) => (
-                // Each meter links to the lessons list, where the status facet
-                // lets the admin locate the exact lessons behind the number.
-                <Link key={row.label} href="/lessons" className="a-meter">
+                // Each meter opens the lessons behind its number: the list is
+                // filtered by its URL, and the archives are a list of their own.
+                <Link key={row.label} href={row.href} className="a-meter">
                   <span
                     style={{
                       display: "flex",

@@ -303,6 +303,28 @@ export async function sendPasswordResetAction(
 
 // ─── Address confirmation ───────────────────────────────────────────────────
 
+/**
+ * The account an address gesture acts on: the Supabase Auth account, whether
+ * or not it has a profile yet.
+ *
+ * A sign-up gets its row in users at its first sign-in, and a password
+ * sign-in needs a confirmed address: somebody whose confirmation mail never
+ * arrived has no profile at all. They are the very people these two gestures
+ * are for, so the auth account is what they look up, and the console's list
+ * of pending sign-ups calls them with its id.
+ */
+async function addressTarget(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+): Promise<{ ok: true; email: string; withoutProfile: boolean } | { ok: false; error: string }> {
+  const [profile, account] = await Promise.all([findTarget(userId), authAccount(supabase, userId)]);
+  if (account === null) {
+    return { ok: false, error: profile === null ? "Ce compte n'existe plus." : NO_IDENTITY };
+  }
+  if (account.confirmed) return { ok: false, error: "Cette adresse est déjà confirmée." };
+  return { ok: true, email: account.email, withoutProfile: profile === null };
+}
+
 /** Sends the sign-up confirmation mail again, to an address not yet confirmed. */
 export async function resendConfirmationAction(
   _prev: AccessActionState,
@@ -311,31 +333,35 @@ export async function resendConfirmationAction(
   const admin = await requireAdminAction();
   const parsed = targetSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Paramètres invalides." };
-
-  const target = await findTarget(parsed.data.userId);
-  if (!target) return { error: "Ce compte n'existe plus." };
+  const userId = parsed.data.userId;
 
   let sentTo: string;
+  let withoutProfile: boolean;
   try {
     const supabase = createSupabaseAdminClient();
-    const account = await authAccount(supabase, target.id);
-    if (account === null) return { error: NO_IDENTITY };
-    if (account.confirmed) return { error: "Cette adresse est déjà confirmée." };
+    const target = await addressTarget(supabase, userId);
+    if (!target.ok) return { error: target.error };
 
     const { error } = await supabase.auth.resend({
       type: "signup",
-      email: account.email,
+      email: target.email,
       options: { emailRedirectTo: learnerUrl(SIGNUP_REDIRECT) },
     });
     if (error?.status === 429) return { error: TOO_SOON };
     if (error !== null) throw error;
-    sentTo = account.email;
+    sentTo = target.email;
+    withoutProfile = target.withoutProfile;
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "resendConfirmationAction failed");
     return { error: "Le renvoi a échoué." };
   }
 
-  const logged = await audit(admin.id, "admin.user.confirmation_resent", target.id);
+  const logged = await audit(
+    admin.id,
+    "admin.user.confirmation_resent",
+    userId,
+    withoutProfile ? { pendingSignUp: true } : undefined,
+  );
   return {
     ok: true,
     notice: `E-mail de confirmation renvoyé à ${sentTo}.`,
@@ -357,26 +383,39 @@ export async function confirmEmailAction(
   const admin = await requireAdminAction();
   const parsed = targetSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Paramètres invalides." };
-
-  const target = await findTarget(parsed.data.userId);
-  if (!target) return { error: "Ce compte n'existe plus." };
+  const userId = parsed.data.userId;
 
   let confirmed: string;
+  let withoutProfile: boolean;
   try {
     const supabase = createSupabaseAdminClient();
-    const account = await authAccount(supabase, target.id);
-    if (account === null) return { error: NO_IDENTITY };
-    if (account.confirmed) return { error: "Cette adresse est déjà confirmée." };
+    const target = await addressTarget(supabase, userId);
+    if (!target.ok) return { error: target.error };
 
-    const { error } = await supabase.auth.admin.updateUserById(target.id, { email_confirm: true });
+    const { error } = await supabase.auth.admin.updateUserById(userId, { email_confirm: true });
     if (error !== null) throw error;
-    confirmed = account.email;
+    confirmed = target.email;
+    withoutProfile = target.withoutProfile;
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "confirmEmailAction failed");
     return { error: "La confirmation a échoué." };
   }
 
-  const logged = await audit(admin.id, "admin.user.email_confirmed", target.id);
-  revalidatePath(`/users/${target.id}`);
-  return { ok: true, notice: `Adresse ${confirmed} confirmée.`, auditFailed: !logged };
+  const logged = await audit(
+    admin.id,
+    "admin.user.email_confirmed",
+    userId,
+    withoutProfile ? { pendingSignUp: true } : undefined,
+  );
+  // The account's page only: a pending sign-up stays on the list it was
+  // confirmed from, with the notice, until that list is read again.
+  revalidatePath(`/users/${userId}`);
+  return {
+    ok: true,
+    // Without a profile, the account still has to sign in once to get one.
+    notice: withoutProfile
+      ? `Adresse ${confirmed} confirmée. Le compte apparaîtra dans la liste à sa première connexion.`
+      : `Adresse ${confirmed} confirmée.`,
+    auditFailed: !logged,
+  };
 }

@@ -1,6 +1,7 @@
-import type { UserRole } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { classRepository } from "./class.repository.js";
+import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 import { friendshipRepository } from "./friendship.repository.js";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
@@ -12,6 +13,107 @@ export type ChangeRoleResult =
 
 /** The audit action every role change writes, read back by heldAdminRoleSince. */
 const ROLE_UPDATE_ACTION = "user.role.update";
+
+/** The columns the console's account list sorts by. */
+export type ConsoleUserSort =
+  | "user"
+  | "email"
+  | "role"
+  | "level"
+  | "xp"
+  | "streak"
+  | "badges"
+  | "created"
+  | "active";
+
+export interface ConsoleUserQuery extends ConsolePage {
+  /** Part of an address, a @pseudo or a display name; empty for none. */
+  q: string;
+  role: UserRole | undefined;
+  sort: { key: ConsoleUserSort; dir: SortDir };
+}
+
+const CONSOLE_USER_ROW = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  role: true,
+  level: true,
+  xpTotal: true,
+  streakDays: true,
+  createdAt: true,
+  lastActiveAt: true,
+  _count: {
+    select: {
+      badges: true,
+      certificates: { where: { revokedAt: null } },
+    },
+  },
+} as const satisfies Prisma.UserSelect;
+
+export type ConsoleUserRow = Prisma.UserGetPayload<{ select: typeof CONSOLE_USER_ROW }>;
+
+/**
+ * The order of each sortable column. The id comes last everywhere: rows that
+ * tie (a hundred accounts at level 1) would otherwise trade places between two
+ * pages, and one could show up twice while another never shows.
+ *
+ * No column sorts by certificates: the list counts the ones still valid, and
+ * the database can only order by all of them, revoked included. A sort that
+ * disagrees with the number on screen is worse than none.
+ */
+function consoleUserOrder(
+  key: ConsoleUserSort,
+  dir: SortDir,
+): Prisma.UserOrderByWithRelationInput[] {
+  const tieBreak: Prisma.UserOrderByWithRelationInput = { id: "asc" };
+  switch (key) {
+    case "user":
+      // A handle when there is one, the display name until onboarding gives one.
+      return [{ username: { sort: dir, nulls: "last" } }, { displayName: dir }, tieBreak];
+    case "email":
+      return [{ email: dir }, tieBreak];
+    case "role":
+      // The enum is declared STUDENT, TEACHER, ADMIN, and the console reads
+      // roles most privileged first: ascending there is descending here.
+      return [{ role: dir === "asc" ? "desc" : "asc" }, tieBreak];
+    case "level":
+      return [{ level: dir }, tieBreak];
+    case "xp":
+      return [{ xpTotal: dir }, tieBreak];
+    case "streak":
+      return [{ streakDays: dir }, tieBreak];
+    case "badges":
+      return [{ badges: { _count: dir } }, tieBreak];
+    case "created":
+      return [{ createdAt: dir }, tieBreak];
+    case "active":
+      return [{ lastActiveAt: dir }, tieBreak];
+  }
+}
+
+/**
+ * The accounts a console search matches. A leading @ is dropped, so "@amelie"
+ * finds the handle the list prints that way.
+ */
+export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.UserWhereInput {
+  const term = q.trim().replace(/^@/u, "");
+  const terms: Prisma.UserWhereInput[] = [];
+  if (role !== undefined) terms.push({ role });
+  if (term !== "") {
+    terms.push({
+      OR: [
+        { email: { contains: term, mode: "insensitive" } },
+        { username: { contains: term, mode: "insensitive" } },
+        { displayName: { contains: term, mode: "insensitive" } },
+      ],
+    });
+  }
+  return { AND: terms };
+}
+
+const WEEK_MS = 7 * 86_400_000;
 
 export const userRepository = {
   /**
@@ -309,5 +411,48 @@ export const userRepository = {
     });
     for (const row of friendships) open.add(row.userAId === viewerId ? row.userBId : row.userAId);
     return open;
+  },
+
+  /**
+   * One page of the console's account list, under its search and role filter.
+   * The console used to load every account to filter them in the browser.
+   */
+  async listForConsole(query: ConsoleUserQuery): Promise<ConsoleSlice<ConsoleUserRow>> {
+    const where = consoleUserWhere(query.q, query.role);
+    return readSlice(
+      query,
+      () => prisma.user.count({ where }),
+      ({ skip, take }) =>
+        prisma.user.findMany({
+          where,
+          orderBy: consoleUserOrder(query.sort.key, query.sort.dir),
+          skip,
+          take,
+          select: CONSOLE_USER_ROW,
+        }),
+    );
+  },
+
+  /** The figures above the account list, over every account whatever the filter. */
+  async consoleCounts(now: Date): Promise<{ total: number; admins: number; activeWeek: number }> {
+    const [total, admins, activeWeek] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: "ADMIN" } }),
+      prisma.user.count({ where: { lastActiveAt: { gte: new Date(now.getTime() - WEEK_MS) } } }),
+    ]);
+    return { total, admins, activeWeek };
+  },
+
+  /**
+   * Which of these auth ids already have a profile. A sign-up gets its row at
+   * its first sign-in, so an address never confirmed has none.
+   */
+  async existingIds(ids: readonly string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const rows = await prisma.user.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true },
+    });
+    return new Set(rows.map((row) => row.id));
   },
 };

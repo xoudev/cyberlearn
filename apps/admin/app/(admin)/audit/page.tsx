@@ -1,8 +1,20 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import Link from "next/link";
+import { auditLogRepository } from "@cyberlearn/db";
 import { Monogram, PageHeader, Tag, type Tone } from "../_components/admin-ui";
-import { DataGrid, type GridRow } from "../_components/data-grid";
+import { DataGrid, type GridColumn, type GridRowBase } from "../_components/data-grid";
+import { AuditFilters } from "./_components/audit-filters";
+import { AUDIT_EXPORT_MAX, auditActorName } from "@/lib/audit-export";
+import { gridHref } from "@/lib/grid-href";
+import type { RawParams } from "@/lib/grid-params";
+import {
+  AUDIT_PAGE_SIZE,
+  auditListSearch,
+  auditQueryOf,
+  parseAuditListParams,
+  withKnownAction,
+} from "@/lib/list-params";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -18,11 +30,11 @@ const ACTION_TONES: Record<string, Tone> = {
   login: "info",
 };
 
-function actionKind(action: string): string {
-  for (const key of Object.keys(ACTION_TONES)) {
-    if (action.includes(key)) return key;
+function actionTone(action: string): Tone {
+  for (const [key, tone] of Object.entries(ACTION_TONES)) {
+    if (action.includes(key)) return tone;
   }
-  return "other";
+  return "neutral";
 }
 
 function formatTs(d: Date): string {
@@ -33,50 +45,78 @@ function formatTs(d: Date): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    timeZone: "Europe/Paris",
   }).format(d);
 }
 
-export default async function AdminAuditPage(): Promise<React.ReactElement> {
-  await requireAdminPage();
-  const logs = await prisma.auditLog.findMany({
-    take: 500,
-    orderBy: { createdAt: "desc" },
-    include: {
-      actor: { select: { username: true, displayName: true, email: true } },
-    },
-  });
+const AUDIT_COLUMNS: readonly GridColumn[] = [
+  { label: "Action" },
+  { label: "Acteur" },
+  { label: "Cible" },
+  { label: "Métadonnées" },
+  { label: "Horodatage", sortKey: "date" },
+];
 
-  const rows: GridRow[] = logs.map((log) => {
-    const actorRecord = log.actor;
-    const actor = actorRecord?.username
-      ? `@${actorRecord.username}`
-      : (actorRecord?.displayName ?? actorRecord?.email.split("@").at(0) ?? "system");
-    const metaStr = log.metadata ? JSON.stringify(log.metadata) : null;
-    const kind = actionKind(log.action);
+/**
+ * The audit log, a page of 50 at a time under the filters of the URL (actor,
+ * target, action, from, to). It used to read the last 500 entries and filter
+ * those in the browser: anything older could not be found, even by its date.
+ */
+export default async function AdminAuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawParams>;
+}): Promise<React.ReactElement> {
+  await requireAdminPage();
+  const actions = await auditLogRepository.actionNames();
+  const params = withKnownAction(parseAuditListParams(await searchParams), actions);
+  const slice = await auditLogRepository.list(auditQueryOf(params));
+  const search = auditListSearch({ ...params, page: slice.page });
+
+  // The export reads the same filter, every page of it.
+  const exportHref = gridHref("/audit/export", search, { page: null });
+  const tooLarge = slice.total > AUDIT_EXPORT_MAX;
+
+  const rows: GridRowBase[] = slice.rows.map((log) => {
+    const actor = log.actor?.username ? `@${log.actor.username}` : auditActorName(log);
+    const metaStr = log.metadata !== null ? JSON.stringify(log.metadata) : null;
 
     return {
       id: log.id,
-      search: `${log.action} ${actor} ${log.targetType} ${metaStr ?? ""}`.toLowerCase(),
-      facets: [kind],
-      sort: [
-        log.action,
-        actor.toLowerCase(),
-        log.targetType,
-        metaStr ?? "",
-        log.createdAt.getTime(),
-      ],
       cells: [
-        <Tag key="a" tone={ACTION_TONES[kind] ?? "neutral"}>
+        <Tag key="a" tone={actionTone(log.action)}>
           {log.action}
         </Tag>,
-        <span key="ac" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <Monogram text={actor.replace("@", "")} size={22} />
-          <span className="mono">{actor}</span>
-        </span>,
+        // A name narrows the log to that account's gestures.
+        log.actorId !== null ? (
+          <Link
+            key="ac"
+            href={gridHref("/audit", search, { actor: log.actorId })}
+            title="Voir les gestes de ce compte"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+          >
+            <Monogram text={actor.replace("@", "")} size={22} />
+            <span className="mono">{actor}</span>
+          </Link>
+        ) : (
+          <span key="ac" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Monogram text={actor} size={22} />
+            <span className="mono" style={{ color: "var(--a-muted)" }}>
+              {actor}
+            </span>
+          </span>
+        ),
         <span key="t" className="mono">
           <span style={{ color: "var(--a-accent)" }}>{log.targetType}</span>
           {log.targetId && (
-            <span style={{ color: "var(--a-muted)" }}> · {log.targetId.slice(0, 8)}</span>
+            <Link
+              href={gridHref("/audit", search, { target: log.targetId })}
+              title="Voir tout ce qui a touché cette cible"
+              style={{ color: "var(--a-muted)" }}
+            >
+              {" "}
+              · {log.targetId.slice(0, 8)}
+            </Link>
           )}
         </span>,
         metaStr ? (
@@ -114,35 +154,40 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
       <PageHeader
         crumbs={[{ label: "Système" }]}
         title="Audit log"
-        description={`${String(logs.length)} entrées récentes · rétention 1 an. Chaque action d'administration est journalisée avec son acteur et sa cible.`}
+        description={`${slice.total.toLocaleString("fr-FR")} entrée${slice.total !== 1 ? "s" : ""} pour ce filtre · rétention 1 an. Chaque action d'administration est journalisée avec son acteur et sa cible.`}
+        actions={
+          slice.total > 0 && !tooLarge ? (
+            // A plain link: the file comes from a route, not a page the
+            // router could render.
+            <a href={exportHref} className="a-btn a-btn--ghost" download>
+              Exporter en CSV
+            </a>
+          ) : undefined
+        }
       />
 
+      {tooLarge && (
+        <p className="a-form-notice" style={{ marginBottom: 18 }}>
+          L&apos;export est limité à {AUDIT_EXPORT_MAX.toLocaleString("fr-FR")} lignes, et ce filtre
+          en compte {slice.total.toLocaleString("fr-FR")}. Resserre-le (une période plus courte, une
+          action, un acteur) pour l&apos;exporter.
+        </p>
+      )}
+
       <DataGrid
-        columns={[
-          { label: "Action", sortable: true },
-          { label: "Acteur", sortable: true },
-          { label: "Cible", sortable: true },
-          { label: "Métadonnées" },
-          { label: "Horodatage", sortable: true },
-        ]}
+        columns={AUDIT_COLUMNS}
         rows={rows}
-        facets={[
-          {
-            label: "Type",
-            options: [
-              { value: "create", label: "Création" },
-              { value: "import", label: "Import" },
-              { value: "publish", label: "Publication" },
-              { value: "update", label: "Mise à jour" },
-              { value: "delete", label: "Suppression" },
-              { value: "revoke", label: "Révocation" },
-              { value: "login", label: "Connexion" },
-              { value: "other", label: "Autre" },
-            ],
-          },
-        ]}
-        pageSize={25}
-        searchPlaceholder="Rechercher une action, un acteur, une cible…"
+        server={{
+          path: "/audit",
+          params: search,
+          total: slice.total,
+          page: slice.page,
+          pageSize: AUDIT_PAGE_SIZE,
+          sort: { key: "date", dir: params.dir },
+          defaultSort: { key: "date", dir: "desc" },
+          searchKey: null,
+        }}
+        toolbar={<AuditFilters params={search} actions={actions} />}
         emptyTitle="Aucune entrée"
         emptyText="Le journal ne contient rien pour ces critères."
       />

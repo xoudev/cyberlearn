@@ -191,7 +191,7 @@ describe("lessonSyncOverview", () => {
     const o = await lessonSyncOverview(repository ?? "");
     expect(o.unreadable).toEqual([]);
     expect(o.notImported.length).toBeGreaterThan(100);
-  });
+  }, 30_000); // Reads every lesson of the repository: slow when the whole suite runs at once.
 
   it("lists the files not imported yet so that each follows its prerequisites", async () => {
     const needs = (refCode: string, prereq: string): string =>
