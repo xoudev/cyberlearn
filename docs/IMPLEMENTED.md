@@ -114,7 +114,8 @@
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)
-- Navigation par sections avec stepper
+- Une colonne centrée : en-tête compact (fil d'Ariane, titre, chapeau, durée, XP, difficulté, statut), la prose dans une mesure de lecture (720 px), les composants à la largeur de l'article
+- Navigation par sections depuis une barre d'outils collée sous la barre du haut : section n/N avec sa barre, précédente et suivante (ou « Terminer » sur la dernière), plan des sections en tiroir avec l'auteur et le glossaire, notes en tiroir (ancrées à côté du texte à partir de 1440 px), « Mode focus » qui replie la barre latérale
 - Quiz optionnel intégré
 - Q&A par leçon (questions, réponses, votes, marquer comme acceptée)
 - Notation 1–5 étoiles avec recalcul des moyennes en temps réel

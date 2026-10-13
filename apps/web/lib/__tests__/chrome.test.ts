@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { NAVBAR_HEIGHT, STICKY_TOP, TOAST_TOP_OFFSET, railStickyTop } from "../chrome";
+import {
+  LESSON_TOOLBAR_HEIGHT,
+  NAVBAR_HEIGHT,
+  STICKY_TOP,
+  TOAST_TOP_OFFSET,
+  railStickyTop,
+} from "../chrome";
 
 describe("app chrome measurements", () => {
   it("starts a toast below the navbar rather than across it", () => {
@@ -20,6 +26,11 @@ describe("app chrome measurements", () => {
     // CSS cannot import the number, so globals.css carries a copy of it.
     const css = readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
     expect(css).toContain(`scroll-padding-top: ${String(STICKY_TOP)}px;`);
+  });
+
+  it("lands an anchor of a lesson below its toolbar as well", () => {
+    const css = readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
+    expect(css).toContain(`scroll-padding-top: ${String(STICKY_TOP + LESSON_TOOLBAR_HEIGHT)}px;`);
   });
 });
 
