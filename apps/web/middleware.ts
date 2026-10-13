@@ -206,7 +206,6 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/profile",
   "/support",
   "/wrapped",
-  "/changelog",
   "/duels",
   "/tournaments",
   "/onboarding",

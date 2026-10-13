@@ -1,5 +1,5 @@
 /**
- * The release notes in the app: the site's /changelog, from the same list
+ * The release notes in the app: the site's Nouveautés drawer, from the same list
  * (@cyberlearn/lib/changelog/entries), with the same "new" mark until the
  * latest version has been opened on this device.
  */

@@ -1,23 +1,22 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { FileTicketResult } from "@/lib/tickets/requester";
 
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
   findForUser: vi.fn<(userId: string) => Promise<unknown[]>>(),
   findForRequester: vi.fn<(id: string, userId: string) => Promise<unknown>>(),
-  findUser: vi.fn<(args: unknown) => Promise<{ email: string | null } | null>>(),
-  fileTicket: vi.fn<(input: unknown) => Promise<unknown>>(),
+  fileAccountTicket: vi.fn<(input: unknown) => Promise<FileTicketResult>>(),
   replyAsRequester: vi.fn<(userId: string, input: unknown) => Promise<unknown>>(),
 }));
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("@cyberlearn/db", () => ({
-  prisma: { user: { findUnique: m.findUser } },
   ticketRepository: { findForUser: m.findForUser, findForRequester: m.findForRequester },
   isTicketOpen: (status: string) => status === "OPEN" || status === "IN_PROGRESS",
 }));
 vi.mock("@/lib/tickets/requester", () => ({
-  fileTicket: m.fileTicket,
+  fileAccountTicket: m.fileAccountTicket,
   replyAsRequester: m.replyAsRequester,
 }));
 
@@ -55,7 +54,7 @@ describe("every support route", () => {
     expect((await call()).status).toBe(401);
     expect(m.findForUser).not.toHaveBeenCalled();
     expect(m.findForRequester).not.toHaveBeenCalled();
-    expect(m.fileTicket).not.toHaveBeenCalled();
+    expect(m.fileAccountTicket).not.toHaveBeenCalled();
     expect(m.replyAsRequester).not.toHaveBeenCalled();
   });
 
@@ -102,40 +101,21 @@ describe("GET /api/mobile/support", () => {
 describe("POST /api/mobile/support", () => {
   const fields = { subject: "Vidéo muette", theme: "BUG", message: "Pas de son sur la leçon 3." };
 
-  it("files as the token's user, answered at the account's address", async () => {
-    m.findUser.mockResolvedValue({ email: "profil@example.org" });
-    m.fileTicket.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
+  it("files as the token's user, through the service that reads the account's address", async () => {
+    m.fileAccountTicket.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
+    const body = { ...fields, email: "autre@example.org", userId: "x" };
     const res = await FILE(
-      post("", JSON.stringify({ ...fields, email: "autre@example.org", userId: "x" }), {
-        "x-forwarded-for": "203.0.113.7, 10.0.0.1",
-      }),
+      post("", JSON.stringify(body), { "x-forwarded-for": "203.0.113.7, 10.0.0.1" }),
     );
     expect(res.status).toBe(200);
-    expect(m.fileTicket).toHaveBeenCalledWith({
-      userId: "user-1",
-      ip: "203.0.113.7",
-      fields: { ...fields, email: "profil@example.org" },
-    });
+    // The body goes as it came: the service keeps the request's fields alone,
+    // and the address is the account's (lib/tickets/__tests__/requester.test.ts).
+    expect(m.fileAccountTicket).toHaveBeenCalledWith({ user: ME, ip: "203.0.113.7", fields: body });
     expect(await res.json()).toEqual({ ok: true, ticketId: TICKET_ID });
   });
 
-  it("falls back on the session's address, and refuses without any", async () => {
-    m.findUser.mockResolvedValue({ email: null });
-    m.fileTicket.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
-    await FILE(post("", JSON.stringify(fields)));
-    expect(m.fileTicket.mock.calls[0]?.[0]).toMatchObject({
-      fields: { email: "session@example.org" },
-    });
-
-    m.userFromBearer.mockResolvedValue({ id: "user-1", email: null });
-    m.fileTicket.mockClear();
-    expect((await FILE(post("", JSON.stringify(fields)))).status).toBe(409);
-    expect(m.fileTicket).not.toHaveBeenCalled();
-  });
-
   it("passes a refusal on, with the fields at fault", async () => {
-    m.findUser.mockResolvedValue({ email: "profil@example.org" });
-    m.fileTicket.mockResolvedValue({
+    m.fileAccountTicket.mockResolvedValue({
       ok: false,
       error: "Formulaire invalide.",
       fieldErrors: { theme: "Choisis un thème." },

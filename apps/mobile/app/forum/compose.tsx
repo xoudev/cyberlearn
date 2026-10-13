@@ -14,9 +14,9 @@ import { useForumSection } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 /**
- * A new thread in a section: the site's /forum/<section>/nouveau. The section
- * is read first, as on the site, so the screen never invites a post into one
- * that does not exist.
+ * A new thread in a section: the site's composer window on /forum/<section>
+ * (?compose=1). The section is read first, as on the site, so the screen never
+ * invites a post into one that does not exist.
  */
 export default function ForumCompose(): React.JSX.Element {
   const { category } = useLocalSearchParams<{ category: string }>();

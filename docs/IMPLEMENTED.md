@@ -19,7 +19,7 @@
 | `/register` | Création de compte |
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
-| `/contact` | Formulaire de contact / signalement |
+| `/contact` | Formulaire de contact / signalement, pour un visiteur (connecté, on dépose une demande depuis la fenêtre « Nouvelle demande » de `/support`) |
 | `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat |
 | `/tournaments` · `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct |
 | `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction |
@@ -55,14 +55,15 @@
 | `/badges` · `/certificates` | Collection de badges, attestations obtenues |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
-| `/forum` · `/forum/[category]` | Forum par catégories |
-| `/forum/[category]/[topic]` · `/nouveau` | Sujet et ouverture d'un sujet |
+| `/forum` · `/forum/[category]` | Forum par catégories ; « Nouveau sujet » ouvre le formulaire dans une fenêtre sur la section (`?compose=1`) |
+| `/forum/[category]/[topic]` | Sujet |
+| `/forum/[category]/nouveau` | Pas de page : redirection vers `/forum/[category]?compose=1` |
 | `/my-class` | Ma classe — vue élève ou vue enseignant |
 | `/my-class/lessons/new` · `/[id]/edit` | Leçon écrite par un enseignant pour ses classes |
 | `/my-class/paths/new` · `/[id]/edit` | Parcours composé par un enseignant |
-| `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande |
+| `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande ; « Nouvelle demande » ouvre une fenêtre (`?request=1`) : thème, objet, message, réponse à l'adresse du compte |
 | `/wrapped` | Récap annuel, ouvert du 1er décembre au 7 janvier |
-| `/changelog` | Notes de version |
+| `/changelog` | Pas de page : redirection vers `/dashboard?news=1`. Les notes de version s'ouvrent dans un tiroir sur la page en cours, depuis le bouton Nouveautés de la barre du haut |
 | `/profile` | Profil |
 | `/settings/<section>` | Pas de page : redirection vers `/dashboard?settings=<section>`, où le volet des paramètres s'ouvre sur la section (`profile`, `privacy`, `preferences`, `notifications`, `moderation`, `account`, `data`). `/profile/edit` redirige vers la section profil |
 

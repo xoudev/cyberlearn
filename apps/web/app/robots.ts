@@ -8,6 +8,10 @@ import { SITE_URL } from "./site-url";
  * Everything behind authentication is disallowed: those URLs redirect to /login
  * for a crawler, which produces a pile of near-duplicate login pages in the
  * index and dilutes the pages that matter.
+ *
+ * /settings and /changelog are no pages any more but windows over the
+ * dashboard, which their addresses redirect to (next.config.ts). They stay
+ * listed: a crawler has no reason to follow them there.
  */
 const PRIVATE = [
   "/dashboard",

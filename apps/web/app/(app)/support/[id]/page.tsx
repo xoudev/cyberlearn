@@ -7,6 +7,7 @@ import { TICKET_FOLLOW_UP, ticketConclusion } from "@cyberlearn/lib/tickets/tick
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { STATUS_LABEL, STATUS_TONE, THEME_LABEL } from "@/lib/tickets/meta";
+import { NewRequestButton } from "../_components/new-request-button";
 import { TicketReply } from "../_components/ticket-reply";
 
 export const metadata: Metadata = { title: "Ma demande" };
@@ -86,9 +87,9 @@ export default async function TicketPage({
           </p>
           <p style={{ margin: "8px 0 0" }}>
             {TICKET_FOLLOW_UP}{" "}
-            <Link href="/contact" style={{ color: "var(--cosmetic-accent)" }}>
+            <NewRequestButton className="tk-follow-up">
               Ouvrir une nouvelle demande
-            </Link>
+            </NewRequestButton>
           </p>
         </div>
       )}
