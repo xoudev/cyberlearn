@@ -3,12 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   awaitsTeamReply,
+  compareTicketsForQueue,
   isCriticalTicket,
   isTicketOpen,
   LAST_TICKET_MESSAGE,
-  needsTeam,
   prisma,
-  type TicketStatus,
 } from "@cyberlearn/db";
 import { KpiCard, PageHeader, Tag, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
@@ -21,14 +20,6 @@ export const metadata: Metadata = { title: "Tickets" };
 
 /** The facet value of a ticket whose requester wrote last. */
 const AWAITING = "AWAITING";
-
-/** How the tickets the team owes nothing on are ordered: in progress before finished. */
-const STATUS_RANK: Record<TicketStatus, number> = {
-  OPEN: 0,
-  IN_PROGRESS: 1,
-  RESOLVED: 2,
-  CLOSED: 3,
-};
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -57,21 +48,18 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
     },
   });
 
-  // What the team owes first - new tickets, and the ones answered back - the
-  // most recently touched on top; then the rest by status. A reply moves
-  // updatedAt, so a ticket somebody just wrote on rises instead of staying
-  // where it was opened.
+  // What the team owes first, the most recently touched on top; then the rest
+  // by status. See compareTicketsForQueue.
   const tickets = read
     .map((t) => {
-      const follow = { status: t.status, lastMessageFromStaff: t.messages[0]?.fromStaff ?? null };
-      return { ...t, awaiting: awaitsTeamReply(follow), owed: needsTeam(follow) };
+      const lastMessageFromStaff = t.messages[0]?.fromStaff ?? null;
+      return {
+        ...t,
+        lastMessageFromStaff,
+        awaiting: awaitsTeamReply({ status: t.status, lastMessageFromStaff }),
+      };
     })
-    .sort(
-      (a, b) =>
-        Number(b.owed) - Number(a.owed) ||
-        (a.owed ? 0 : STATUS_RANK[a.status] - STATUS_RANK[b.status]) ||
-        b.updatedAt.getTime() - a.updatedAt.getTime(),
-    );
+    .sort(compareTicketsForQueue);
 
   const openCount = tickets.filter((t) => t.status === "OPEN").length;
   const inProgressCount = tickets.filter((t) => t.status === "IN_PROGRESS").length;

@@ -14,7 +14,7 @@ export const TICKET_STATUSES = [
  * cast, so a value that is not one never reaches the action as if it were.
  */
 export function isTicketStatus(value: string): value is TicketStatus {
-  return (TICKET_STATUSES as readonly string[]).includes(value);
+  return TICKET_STATUSES.some((status) => status === value);
 }
 
 export const THEME_META: Record<string, { label: string; tone: Tone }> = {

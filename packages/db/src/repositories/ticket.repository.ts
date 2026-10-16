@@ -47,8 +47,7 @@ export const CRITICAL_TICKET_THEMES = ["BUG", "SECURITY"] as const satisfies rea
 /** A bug or a security report that is not over yet. */
 export function isCriticalTicket(ticket: { status: TicketStatus; theme: TicketTheme }): boolean {
   return (
-    isTicketOpen(ticket.status) &&
-    (CRITICAL_TICKET_THEMES as readonly TicketTheme[]).includes(ticket.theme)
+    isTicketOpen(ticket.status) && CRITICAL_TICKET_THEMES.some((theme) => theme === ticket.theme)
   );
 }
 
@@ -82,6 +81,41 @@ export function needsTeam(ticket: {
   lastMessageFromStaff: boolean | null;
 }): boolean {
   return ticket.status === "OPEN" || awaitsTeamReply(ticket);
+}
+
+/** What the console's queue orders a ticket by. */
+export interface QueueTicket {
+  status: TicketStatus;
+  lastMessageFromStaff: boolean | null;
+  updatedAt: Date;
+}
+
+/** How the tickets the team owes nothing on are ordered: in progress before finished. */
+const QUEUE_STATUS_RANK: Record<TicketStatus, number> = {
+  OPEN: 0,
+  IN_PROGRESS: 1,
+  RESOLVED: 2,
+  CLOSED: 3,
+};
+
+/**
+ * The console's queue order, as a comparator for `sort`.
+ *
+ * What the team owes first - new tickets, and the ones answered back - the
+ * most recently touched on top whatever their status; then the rest by status,
+ * in progress before finished; most recent first within a group. A reply moves
+ * updatedAt, so a ticket somebody just wrote on rises instead of staying where
+ * it was opened.
+ */
+export function compareTicketsForQueue(a: QueueTicket, b: QueueTicket): number {
+  const aOwed = needsTeam(a);
+  const bOwed = needsTeam(b);
+  if (aOwed !== bOwed) return aOwed ? -1 : 1;
+  if (!aOwed) {
+    const byStatus = QUEUE_STATUS_RANK[a.status] - QUEUE_STATUS_RANK[b.status];
+    if (byStatus !== 0) return byStatus;
+  }
+  return b.updatedAt.getTime() - a.updatedAt.getTime();
 }
 
 /** The latest turn of a thread, which says who spoke last. */

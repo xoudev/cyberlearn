@@ -1,7 +1,12 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CRITICAL_TICKET_WHERE, prisma, ticketRepository } from "@cyberlearn/db";
+import {
+  CRITICAL_TICKET_WHERE,
+  OPEN_TICKET_STATUSES,
+  prisma,
+  ticketRepository,
+} from "@cyberlearn/db";
 import { auditActorName } from "@/lib/audit-export";
 import { roleLabel, roleTone } from "@/lib/roles";
 import { fetchSentryIssues } from "@/lib/sentry-issues";
@@ -83,6 +88,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     lessonThisMonth,
     certCount,
     certThisWeek,
+    activeTickets,
     openTickets,
     criticalTickets,
     awaitingTickets,
@@ -102,6 +108,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     prisma.lesson.count({ where: { status: "PUBLISHED", publishedAt: { gte: oneMonthAgo } } }),
     prisma.certificate.count({ where: { revokedAt: null } }),
     prisma.certificate.count({ where: { revokedAt: null, issuedAt: { gte: oneWeekAgo } } }),
+    // The card counts what its delta counts within: open or in progress. With
+    // OPEN alone, a security report taken in hand read "0" over "1 critique".
+    prisma.contactTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
     prisma.contactTicket.count({ where: { status: "OPEN" } }),
     // The tickets page's definitions, from the same place: a security report
     // taken in hand is still critical, here as there.
@@ -201,8 +210,8 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           tone="purple"
         />
         <KpiCard
-          label="Tickets ouverts"
-          value={openTickets.toLocaleString("fr-FR")}
+          label="Tickets actifs"
+          value={activeTickets.toLocaleString("fr-FR")}
           series={weeklySeries(
             ticketDates.map((t) => t.createdAt),
             now,

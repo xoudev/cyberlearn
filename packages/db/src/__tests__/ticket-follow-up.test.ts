@@ -3,8 +3,10 @@ import type { TicketStatus, TicketTheme } from "@prisma/client";
 import {
   CRITICAL_TICKET_WHERE,
   awaitsTeamReply,
+  compareTicketsForQueue,
   isCriticalTicket,
   needsTeam,
+  type QueueTicket,
 } from "../repositories/ticket.repository.js";
 
 /**
@@ -82,5 +84,59 @@ describe("isCriticalTicket", () => {
         expect(filtered, `${status} ${theme}`).toBe(critical(status, theme));
       }
     }
+  });
+});
+
+describe("compareTicketsForQueue", () => {
+  const at = (minute: number): Date => new Date(Date.UTC(2026, 9, 16, 12, minute));
+  const ticket = (
+    id: string,
+    status: TicketStatus,
+    lastMessageFromStaff: boolean | null,
+    minute: number,
+  ): QueueTicket & { id: string } => ({ id, status, lastMessageFromStaff, updatedAt: at(minute) });
+
+  const order = (tickets: (QueueTicket & { id: string })[]): string[] =>
+    [...tickets].sort(compareTicketsForQueue).map((t) => t.id);
+
+  it("puts what the team owes first, most recently touched on top, whatever the status", () => {
+    const queue = [
+      ticket("in-progress-answered-latest", "IN_PROGRESS", true, 59),
+      ticket("open-old", "OPEN", null, 1),
+      ticket("follow-up-recent", "IN_PROGRESS", false, 40),
+      ticket("resolved-latest", "RESOLVED", true, 58),
+      ticket("open-recent", "OPEN", null, 30),
+    ];
+    expect(order(queue)).toEqual([
+      "follow-up-recent",
+      "open-recent",
+      "open-old",
+      "in-progress-answered-latest",
+      "resolved-latest",
+    ]);
+  });
+
+  it("orders the rest in progress, then resolved, then closed, however recent", () => {
+    const queue = [
+      ticket("closed-latest", "CLOSED", true, 50),
+      ticket("resolved-recent", "RESOLVED", true, 40),
+      ticket("in-progress-old", "IN_PROGRESS", true, 2),
+    ];
+    expect(order(queue)).toEqual(["in-progress-old", "resolved-recent", "closed-latest"]);
+  });
+
+  it("puts the most recent first within a group", () => {
+    const queue = [
+      ticket("resolved-old", "RESOLVED", true, 5),
+      ticket("resolved-new", "RESOLVED", false, 45),
+      ticket("in-progress-old", "IN_PROGRESS", null, 3),
+      ticket("in-progress-new", "IN_PROGRESS", true, 33),
+    ];
+    expect(order(queue)).toEqual([
+      "in-progress-new",
+      "in-progress-old",
+      "resolved-new",
+      "resolved-old",
+    ]);
   });
 });

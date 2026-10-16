@@ -272,7 +272,9 @@ export {
   CRITICAL_TICKET_WHERE,
   LAST_TICKET_MESSAGE,
   awaitsTeamReply,
+  compareTicketsForQueue,
   isCriticalTicket,
   needsTeam,
   type AddMessageResult,
+  type QueueTicket,
 } from "./repositories/ticket.repository.js";
