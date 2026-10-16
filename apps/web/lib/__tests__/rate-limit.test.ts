@@ -287,15 +287,19 @@ describe("auth budgets - a class behind one public address", () => {
     }
   });
 
-  it("does not spend the sign-in budget on passwords that were right", async () => {
+  it("lets a whole class sign in, again and again, behind one address", async () => {
+    // Right passwords spend nothing of the network budget the class shares:
+    // three sign-ins each for thirty-five pupils is past its hundred.
     const school = from(uid());
-    const email = address();
-    for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress * 3; i++) {
-      expect(await allowAuthAttempt("sign-in", school, email)).toBe(true);
+    const pupils = Array.from({ length: 35 }, () => address());
+    for (let round = 0; round < 3; round++) {
+      for (const email of pupils) {
+        expect(await allowAuthAttempt("sign-in", school, email)).toBe(true);
+      }
     }
   });
 
-  it("refuses an address after five refused passwords, and only that address", async () => {
+  it("refuses an address once its sign-in budget is spent, and only that address", async () => {
     const school = from(uid());
     const email = address();
     for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress; i++) {
@@ -307,10 +311,23 @@ describe("auth budgets - a class behind one public address", () => {
     expect(await allowAuthAttempt("sign-in", school, address())).toBe(true);
   });
 
-  it("does not let failures elsewhere lock somebody's address", async () => {
+  it("lets no more passwords through than the budget when they are sent at once", async () => {
+    // A burst used to read the same untouched budget on every request, since
+    // nothing was spent until Supabase had refused the password.
+    const source = from(uid());
+    const email = address();
+    const budget = AUTH_BUDGETS["sign-in"].perAddress;
+    const answers = await Promise.all(
+      Array.from({ length: budget * 3 }, () => allowAuthAttempt("sign-in", source, email)),
+    );
+    expect(answers.filter(Boolean)).toHaveLength(budget);
+  });
+
+  it("does not let attempts elsewhere lock somebody's address", async () => {
     const email = address();
     const elsewhere = from(uid());
     for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress; i++) {
+      await allowAuthAttempt("sign-in", elsewhere, email);
       await recordSignInFailure(elsewhere, email);
     }
     expect(await allowAuthAttempt("sign-in", elsewhere, email)).toBe(false);

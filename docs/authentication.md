@@ -19,10 +19,12 @@ portal, and the native mobile application.
   site the action is rate-limited like the other auth actions.
 - On the site, each auth action has its own budget per quarter-hour
   (`AUTH_BUDGETS` in `apps/web/lib/rate-limit.ts`): a tight one per address
-  typed and network (5 refused passwords, 5 sign-ups, 3 confirmation mails,
-  3 reset mails), and one per network sized for a class behind the school's
-  single public address (100). A sign-in spends from them only when the
-  password is refused. The links of the e-mails (`/auth/confirm`,
+  typed and network (10 sign-ins, 5 sign-ups, 3 confirmation mails, 3 reset
+  mails), and one per network sized for a class behind the school's single
+  public address (100). A sign-in takes its unit of the address budget before
+  the password is tried, in one atomic step, so a burst of parallel attempts
+  cannot all slip through; the network budget counts only the refused
+  passwords. The links of the e-mails (`/auth/confirm`,
   `/auth/callback`) are not rate-limited: their token is single-use. The
   limiter fails open when Upstash is missing or does not answer within a
   second.

@@ -17,8 +17,9 @@ import { initialAuthActionState } from "../auth-action-state";
  * service throws.
  *
  * Each action spends from its own budget, keyed on the address; a sign-in
- * spends only when the password is refused. A refused form hands the address
- * back, never a password, since React empties the form once the action ran.
+ * adds to the network's only when the password is refused. A refused form
+ * hands the address back, never a password, since React empties the form
+ * once the action ran.
  * The reset form past its 15 minutes says so and offers a new link.
  */
 
@@ -261,7 +262,7 @@ describe("signInWithPassword", () => {
     expect(m.signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("counts a refused password against the address", async () => {
+  it("counts a refused password against the network", async () => {
     m.signInWithPassword.mockResolvedValue({
       data: { user: null, session: null },
       error: new AuthApiError("Invalid login credentials", 400, "invalid_credentials"),

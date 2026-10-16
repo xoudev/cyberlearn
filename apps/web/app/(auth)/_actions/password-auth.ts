@@ -45,9 +45,9 @@ async function isRateLimited(action: AuthAction, email: string): Promise<boolean
 
 /**
  * Whether Supabase refused the credentials themselves, which is all the
- * sign-in budget counts. An outage (a 5xx, a network failure) or Supabase's
- * own rate limit says nothing about the password, and must not lock anybody
- * out on top of it.
+ * network's sign-in budget counts. An outage (a 5xx, a network failure) or
+ * Supabase's own rate limit says nothing about the password, and must not
+ * lock anybody out on top of it.
  */
 function isCredentialRefusal(error: { status?: number | undefined }): boolean {
   const { status } = error;

@@ -45,13 +45,18 @@ export type AuthAction = "sign-in" | "sign-up" | "resend-confirmation" | "passwo
  * accounts, and it is sized for a classroom - thirty-odd people signing up,
  * mistyping, asking for the mail again - with room to spare.
  *
- * A sign-in spends from them only when the password is refused: somebody who
- * types the right one has not spent anything.
+ * A sign-in spends from the address budget before the password is tried,
+ * whatever the answer, and in one step: a script that sends twenty attempts
+ * at once gets ten through, not twenty. Read first and spent once refused, a
+ * burst saw the same untouched budget on every request, and every one of its
+ * passwords reached Supabase. Ten leaves room for somebody who signs in again
+ * on another device. The network budget, which a whole class shares, still
+ * counts only the refused passwords (`recordSignInFailure`).
  */
 export const AUTH_BUDGETS: Readonly<
   Record<AuthAction, { readonly perAddress: number; readonly perNetwork: number }>
 > = {
-  "sign-in": { perAddress: 5, perNetwork: 100 },
+  "sign-in": { perAddress: 10, perNetwork: 100 },
   "sign-up": { perAddress: 5, perNetwork: 100 },
   "resend-confirmation": { perAddress: 3, perNetwork: 100 },
   "password-reset": { perAddress: 3, perNetwork: 100 },
@@ -134,8 +139,9 @@ async function logFailOpen(error: unknown): Promise<void> {
  * Whether `action` may go ahead for `email` from the network `request` comes
  * from.
  *
- * Spends one unit of both budgets, except for a sign-in, which only reads
- * them: its refusals are counted afterwards, by `recordSignInFailure`.
+ * Spends one unit of both budgets, except for a sign-in, which spends from
+ * the address budget and only reads the network's: the refusals are counted
+ * against the network afterwards, by `recordSignInFailure`.
  *
  * Authentication must remain available when Redis is missing or temporarily
  * unreachable. The limiter is a defense-in-depth control; Supabase still
@@ -151,13 +157,15 @@ export async function allowAuthAttempt(
   try {
     const keys = authKeys(request.headers, email);
     if (action === "sign-in") {
+      // `limit` takes its unit atomically, so parallel attempts cannot all
+      // see the same remaining budget, as they did through `getRemaining`.
       const [address, network] = await withAuthTimeout(
         Promise.all([
-          limiters.address.getRemaining(keys.address),
+          limiters.address.limit(keys.address),
           limiters.network.getRemaining(keys.network),
         ]),
       );
-      return address.remaining > 0 && network.remaining > 0;
+      return address.success && network.remaining > 0;
     }
     const [address, network] = await withAuthTimeout(
       Promise.all([limiters.address.limit(keys.address), limiters.network.limit(keys.network)]),
@@ -169,7 +177,11 @@ export async function allowAuthAttempt(
   }
 }
 
-/** Counts a refused password against the address and the network it came from. */
+/**
+ * Counts a refused password against the network it came from. The address
+ * budget has already been spent, by `allowAuthAttempt`, before the password
+ * was tried.
+ */
 export async function recordSignInFailure(
   request: { headers: Headers },
   email: string,
@@ -178,9 +190,7 @@ export async function recordSignInFailure(
   const limiters = authLimiters["sign-in"];
   try {
     const keys = authKeys(request.headers, email);
-    await withAuthTimeout(
-      Promise.all([limiters.address.limit(keys.address), limiters.network.limit(keys.network)]),
-    );
+    await withAuthTimeout(limiters.network.limit(keys.network));
   } catch (error) {
     await logFailOpen(error);
   }
