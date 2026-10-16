@@ -154,6 +154,43 @@ describe("the note drawer", () => {
     expect(within(drawer()).getByText("Sauvegardé auto")).toBeTruthy();
   });
 
+  it("saves the note again when it goes back to the stored text while a save is on its way", async () => {
+    // Stored "Début", "Début!" sent, then the "!" deleted before the answer:
+    // the server ends with "Début!", so "Début" is not saved yet.
+    vi.useFakeTimers();
+    let answer: (value: unknown) => void = () => undefined;
+    saveNoteAction.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    );
+    render(<Notes />);
+    fireEvent.change(editor(), { target: { value: "Début!" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(saveNoteAction).toHaveBeenCalledWith({ lessonId: "lesson-1", content: "Début!" });
+
+    fireEvent.change(editor(), { target: { value: "Début" } });
+    expect(within(drawer()).getByRole("status").textContent).toBe("Enregistrement…");
+
+    // The earlier save lands: it speaks for a text no longer on screen.
+    await act(async () => {
+      answer({ ok: true, wordCount: 1 });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(within(drawer()).getByRole("status").textContent).toBe("Enregistrement…");
+
+    saveNoteAction.mockResolvedValueOnce({ ok: true, wordCount: 1 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(saveNoteAction).toHaveBeenCalledTimes(2);
+    expect(saveNoteAction).toHaveBeenLastCalledWith({ lessonId: "lesson-1", content: "Début" });
+    expect(within(drawer()).getByRole("status").textContent).toBe("Sauvegardé auto");
+  });
+
   it("counts the characters left near the limit only", () => {
     render(<Notes />);
     expect(within(drawer()).queryByText(/restants?$/)).toBeNull();

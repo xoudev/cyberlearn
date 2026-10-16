@@ -117,6 +117,12 @@ export function NoteDrawer({
   // Only the latest save speaks: an earlier one answering late must not
   // overwrite what the footer says about the note as it is now.
   const latestSave = useRef(0);
+  // Saves sent and not answered yet. Until they are, what is stored is not
+  // known: one of them may still land, with a text the note no longer has.
+  const inFlight = useRef(0);
+  // The note as it is on screen, for an answer that arrives after it changed.
+  const contentRef = useRef(content);
+  contentRef.current = content;
 
   // A refused save used to fall back to "Sauvegardé auto", and a dropped
   // request left "Enregistrement…" up for good: the note was lost on reload
@@ -124,8 +130,11 @@ export function NoteDrawer({
   const save = useCallback(
     (text: string) => {
       const id = ++latestSave.current;
+      // Speaks only for the note on screen: once it has changed, a newer save
+      // is waiting to go or already sent, and that one will say how it went.
+      const current = (): boolean => id === latestSave.current && text === contentRef.current;
       const fail = (message: string): void => {
-        if (id !== latestSave.current) return;
+        if (!current()) return;
         setSaveError(message);
         setStatus("error");
       };
@@ -134,19 +143,22 @@ export function NoteDrawer({
         return;
       }
       setStatus("saving");
+      inFlight.current++;
       saveNoteAction({ lessonId, content: text }).then(
         (res) => {
+          inFlight.current--;
           if (!res.ok) {
             fail(res.error ?? SAVE_FAILED);
             return;
           }
           lastSaved.current = text;
-          if (id !== latestSave.current) return;
+          if (!current()) return;
           setWordCount(res.wordCount ?? 0);
           setSaveError(null);
           setStatus("saved");
         },
         () => {
+          inFlight.current--;
           fail(OFFLINE);
         },
       );
@@ -156,9 +168,11 @@ export function NoteDrawer({
 
   // Debounced auto-save whenever the content differs from the last saved value.
   useEffect(() => {
-    if (content === lastSaved.current) {
+    if (content === lastSaved.current && inFlight.current === 0) {
       // Back to what is stored, say a too-long note undone: nothing is left to
-      // save, and a failure about a later version no longer applies.
+      // save, and a failure about a later version no longer applies. Not while
+      // a save is on its way: "A" typed into "AB" and back to "A" while "AB"
+      // is sent ends with "AB" stored, so "A" is saved again.
       latestSave.current++;
       setSaveError(null);
       setStatus((s) => (s === "idle" ? s : "saved"));
