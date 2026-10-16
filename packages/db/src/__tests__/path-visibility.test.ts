@@ -118,6 +118,14 @@ describe("a path's missions", () => {
     expect(await pathRepository.areLessonsComplete(USER, PATH)).toBe(true);
   });
 
+  it("never finishes a path with no published lesson left", async () => {
+    // Every link points at a draft or an archived lesson: "nothing left to do"
+    // opened the exam and the certificate for zero lessons.
+    mockPrisma.pathLesson.findMany.mockResolvedValue([]);
+    mockPrisma.userLessonProgress.count.mockResolvedValue(0);
+    expect(await pathRepository.areLessonsComplete(USER, PATH)).toBe(false);
+  });
+
   it("cuts the revision sheet from the published lessons", async () => {
     await pathRepository.findSheetOutline("reseau", USER);
     const [args] = mockPrisma.path.findFirst.mock.calls[0] ?? [];

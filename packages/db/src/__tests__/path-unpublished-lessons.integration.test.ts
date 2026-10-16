@@ -7,6 +7,11 @@
  * the certificate) and put its recap on the module's revision sheet. These
  * reads now count the published lessons only, and this holds them to it.
  *
+ * Counting them out must not swing the other way: a path whose every link is
+ * a draft or an archived lesson has no mission left, and that is not a path
+ * the learner finished. Read as one, it opened the exam and the certificate
+ * for zero lessons.
+ *
  * Skips gracefully when DATABASE_URL is absent, like the other integration
  * specs. Rows are namespaced by a run suffix and removed in afterAll.
  */
@@ -26,6 +31,7 @@ const USER_IDS = [admin, learner];
 
 let pathId = "";
 const pathSlug = `parcours-brouillon-${suffix}`;
+let unpublishedPathId = "";
 let firstId = "";
 let draftId = "";
 let archivedId = "";
@@ -94,6 +100,29 @@ describe("unpublished lessons in a published path (integration, real DB)", () =>
     });
     pathId = path.id;
 
+    // Published, with only a draft and an archived lesson linked to it.
+    const unpublished = await prisma.path.create({
+      data: {
+        refCode: `UP-PATH-${suffix.slice(0, 3)}-V02`,
+        slug: `parcours-sans-mission-${suffix}`,
+        title: `Parcours vide ${suffix}`,
+        description: "Un parcours du catalogue sans leçon publiée",
+        category: "NETWORK",
+        difficulty: "BEGINNER",
+        estimatedHours: 1,
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        lessons: {
+          create: [
+            { lessonId: draftId, position: 1 },
+            { lessonId: archivedId, position: 2 },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    unpublishedPathId = unpublished.id;
+
     // The learner finished both published lessons, and the archived one back
     // when it was still published.
     await prisma.userLessonProgress.createMany({
@@ -110,7 +139,7 @@ describe("unpublished lessons in a published path (integration, real DB)", () =>
 
   afterAll(async () => {
     if (!configured) return;
-    await prisma.path.deleteMany({ where: { id: pathId } });
+    await prisma.path.deleteMany({ where: { id: { in: [pathId, unpublishedPathId] } } });
     await prisma.lesson.deleteMany({
       where: { id: { in: [firstId, draftId, archivedId, lastId] } },
     });
@@ -131,6 +160,13 @@ describe("unpublished lessons in a published path (integration, real DB)", () =>
   it("lets the learner finish the path, which opens the exam and the certificate", async () => {
     if (!configured) return;
     expect(await pathRepository.areLessonsComplete(learner, pathId)).toBe(true);
+  });
+
+  it("never finishes a path whose only lessons are a draft and an archived one", async () => {
+    if (!configured) return;
+    // The learner finished the archived lesson; nothing published is left.
+    expect(await pathRepository.findLessonIds(unpublishedPathId)).toEqual([]);
+    expect(await pathRepository.areLessonsComplete(learner, unpublishedPathId)).toBe(false);
   });
 
   it("cuts the revision sheet from the published lessons", async () => {

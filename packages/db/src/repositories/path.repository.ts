@@ -176,15 +176,20 @@ export const pathRepository = {
   },
 
   /**
-   * Whether the user has completed all lessons of a path. Mirrors the existing
-   * `completedCount >= totalIds.length` gate (true also for a 0-lesson path,
-   * preserving current behaviour).
+   * Whether the user has completed all the published lessons of a path.
+   *
+   * A path with none left is never complete. Its links can all point at drafts
+   * (the sync links lessons imported as drafts, and nothing stops the path
+   * being published before them) or at archived lessons; read as "nothing left
+   * to do", it opened the exam and issued a verifiable certificate for zero
+   * lessons to anyone who asked. This is the gate the exam, the claim and the
+   * certificate itself read, so it refuses rather than the screens alone.
    */
   async areLessonsComplete(userId: string, pathId: string): Promise<boolean> {
     const [total, completed] = await Promise.all([
       this.findLessonIds(pathId),
       this.countCompletedLessons(userId, pathId),
     ]);
-    return completed >= total.length;
+    return total.length > 0 && completed >= total.length;
   },
 };
