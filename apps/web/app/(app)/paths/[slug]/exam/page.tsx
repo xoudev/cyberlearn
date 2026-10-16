@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireUser } from "@cyberlearn/lib";
 import { examStatus } from "@/lib/exam/exam-service";
+import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ExamFlow } from "./_components/exam-flow";
 
@@ -12,8 +13,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const path = await prisma.path.findUnique({ where: { slug }, select: { title: true } });
-  return { title: path ? `Examen : ${path.title}` : "Examen" };
+  const title = await visiblePathTitle(slug);
+  return { title: title !== null ? `Examen : ${title}` : "Examen" };
 }
 
 export default async function ExamPage({

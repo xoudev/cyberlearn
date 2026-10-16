@@ -1,5 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { missionStates } from "../missions";
+import { countMissions, missionStates, publishedLesson } from "../missions";
+
+describe("publishedLesson", () => {
+  const lesson = (status: string) => ({ id: "l1", slug: "l1", title: "L1", status });
+
+  it("hands back a published lesson, embedded alone or as a list", () => {
+    expect(publishedLesson(lesson("PUBLISHED"))).toEqual(lesson("PUBLISHED"));
+    expect(publishedLesson([lesson("PUBLISHED")])).toEqual(lesson("PUBLISHED"));
+  });
+
+  it("drops a draft or an archived lesson, which RLS still shows an administrator", () => {
+    // The path page and the home card read the lessons through this: the
+    // site's PUBLISHED_PATH_LESSON draws neither as a mission.
+    expect(publishedLesson(lesson("DRAFT"))).toBeNull();
+    expect(publishedLesson([lesson("ARCHIVED")])).toBeNull();
+  });
+
+  it("reads a lesson RLS kept from the reader as none", () => {
+    expect(publishedLesson(null)).toBeNull();
+    expect(publishedLesson(undefined)).toBeNull();
+    expect(publishedLesson([])).toBeNull();
+  });
+});
+
+describe("countMissions", () => {
+  it("counts a path's published lessons", () => {
+    expect(
+      countMissions([{ lessons: { status: "PUBLISHED" } }, { lessons: [{ status: "PUBLISHED" }] }]),
+    ).toBe(2);
+  });
+
+  it("leaves out a draft, an archived lesson and one RLS kept from the reader", () => {
+    // The link stays when a lesson is archived or imported as a draft; the
+    // site counts neither (PUBLISHED_PATH_LESSON), and the card did.
+    expect(
+      countMissions([
+        { lessons: { status: "PUBLISHED" } },
+        { lessons: { status: "DRAFT" } },
+        { lessons: { status: "ARCHIVED" } },
+        { lessons: null },
+        { lessons: [] },
+      ]),
+    ).toBe(1);
+  });
+
+  it("reads a path without links as empty", () => {
+    expect(countMissions(null)).toBe(0);
+    expect(countMissions([])).toBe(0);
+  });
+});
 
 const path = (...statuses: ("COMPLETED" | "IN_PROGRESS" | null)[]) =>
   statuses.map((status) => ({ status }));

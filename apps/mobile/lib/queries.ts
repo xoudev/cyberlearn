@@ -28,6 +28,7 @@ import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { inScope, scopeFitsUrl, statusScope, type StatusFilter } from "@/lib/lesson-status";
+import { countMissions, publishedLesson, type LessonLink } from "@/lib/missions";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
@@ -115,7 +116,7 @@ interface RawPath {
   description: string;
   category: Category;
   difficulty: Difficulty;
-  path_lessons: { lessonId: string }[] | null;
+  path_lessons: LessonLink[] | null;
 }
 
 async function fetchPathStatuses(userId: string | undefined): Promise<Map<string, ProgressStatus>> {
@@ -136,7 +137,7 @@ function toPathCards(rows: RawPath[], statuses: Map<string, ProgressStatus>): Pa
     description: p.description,
     category: p.category,
     difficulty: p.difficulty,
-    missions: p.path_lessons?.length ?? 0,
+    missions: countMissions(p.path_lessons),
     status: statuses.get(p.id) ?? null,
   }));
 }
@@ -170,7 +171,13 @@ interface RawHomePath {
   path_lessons: {
     position: number;
     moduleId: string | null;
-    lessons: Embed<{ id: string; slug: string; title: string; estimatedMinutes: number }>;
+    lessons: Embed<{
+      id: string;
+      slug: string;
+      title: string;
+      estimatedMinutes: number;
+      status: string;
+    }>;
   }[];
 }
 
@@ -245,7 +252,7 @@ export function useDashboard(userId: string | undefined) {
         supabase
           .from("paths")
           .select(
-            "id,slug,title,description,category,difficulty,estimatedHours,path_modules(id,position,title),path_lessons(position,moduleId,lessons(id,slug,title,estimatedMinutes))",
+            "id,slug,title,description,category,difficulty,estimatedHours,path_modules(id,position,title),path_lessons(position,moduleId,lessons(id,slug,title,estimatedMinutes,status))",
           )
           .eq("status", "PUBLISHED"),
         fetchPathStatuses(uid),
@@ -293,9 +300,22 @@ export function useDashboard(userId: string | undefined) {
         difficulty: p.difficulty,
         estimatedHours: p.estimatedHours,
         status: statuses.get(p.id) ?? null,
+        // Its missions, as the site's dashboard reads them: a draft or an
+        // archived lesson still linked is neither counted nor offered next.
         lessons: p.path_lessons.flatMap((pl) => {
-          const lesson = one(pl.lessons);
-          return lesson ? [{ ...lesson, position: pl.position, moduleId: pl.moduleId }] : [];
+          const lesson = publishedLesson(pl.lessons);
+          return lesson
+            ? [
+                {
+                  id: lesson.id,
+                  slug: lesson.slug,
+                  title: lesson.title,
+                  estimatedMinutes: lesson.estimatedMinutes,
+                  position: pl.position,
+                  moduleId: pl.moduleId,
+                },
+              ]
+            : [];
         }),
         modules: p.path_modules ?? [],
       }));
@@ -357,7 +377,7 @@ export function usePaths(userId: string | undefined) {
       const [pathsRes, statuses] = await Promise.all([
         supabase
           .from("paths")
-          .select("id,slug,title,description,category,difficulty,path_lessons(lessonId)")
+          .select("id,slug,title,description,category,difficulty,path_lessons(lessons(status))")
           .eq("status", "PUBLISHED")
           .order("title"),
         fetchPathStatuses(userId),
@@ -601,7 +621,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
       const pathRes = await supabase
         .from("paths")
         .select(
-          "id,slug,title,description,category,difficulty,estimatedHours,avgRating,ratingsCount, path_modules(id,position,title,description), path_lessons(position, moduleId, lessons(id,slug,title,estimatedMinutes,xpReward))",
+          "id,slug,title,description,category,difficulty,estimatedHours,avgRating,ratingsCount, path_modules(id,position,title,description), path_lessons(position, moduleId, lessons(id,slug,title,estimatedMinutes,xpReward,status))",
         )
         .eq("slug", slug as string) // gated by `enabled`
         .eq("status", "PUBLISHED")
@@ -626,6 +646,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
             title: string;
             estimatedMinutes: number;
             xpReward: number;
+            status: string;
           }>;
         }[];
       } | null;
@@ -645,9 +666,10 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         );
       }
 
+      // The published lessons only, as the site's path page draws them.
       const missions: PathMission[] = raw.path_lessons
         .map((pl) => {
-          const lesson = one(pl.lessons);
+          const lesson = publishedLesson(pl.lessons);
           if (!lesson) return null;
           return {
             lessonId: lesson.id,

@@ -20,6 +20,20 @@ export const CATALOGUE_PATH = {
 } as const satisfies Prisma.PathWhereInput;
 
 /**
+ * Which of a path's lessons count as its missions: the published ones.
+ *
+ * A link can point at a lesson nobody may open: the catalogue sync links a
+ * lesson imported as a draft, and archiving a lesson leaves its links behind.
+ * Counted, that lesson was a mission the map offered and the lesson page
+ * refused, one the path could never be finished without, and a recap handed
+ * out on the module's sheet. Every read of a path's lessons applies this, the
+ * rule the lesson page's own reading of its path (findPathContexts) applies.
+ */
+export const PUBLISHED_PATH_LESSON = {
+  lesson: { status: "PUBLISHED" },
+} as const satisfies Prisma.PathLessonWhereInput;
+
+/**
  * What one person may open: the catalogue, plus the paths built for the classes
  * they are in or teach.
  *
@@ -130,42 +144,52 @@ export const pathRepository = {
         },
         lessons: {
           orderBy: { position: "asc" },
+          where: PUBLISHED_PATH_LESSON,
           select: { lessonId: true, moduleId: true },
         },
       },
     });
   },
 
-  /** Returns the IDs of all required lessons in a path. */
+  /** Returns the IDs of all required lessons in a path: its published ones. */
   async findLessonIds(pathId: string): Promise<string[]> {
     const rows = await prisma.pathLesson.findMany({
-      where: { pathId },
+      where: { pathId, ...PUBLISHED_PATH_LESSON },
       select: { lessonId: true },
     });
     return rows.map((r) => r.lessonId);
   },
 
-  /** Returns the count of COMPLETED lessons for a user within a specific path. */
+  /**
+   * Returns the count of COMPLETED lessons for a user within a specific path,
+   * among its published ones: a lesson finished before it was archived would
+   * otherwise make up for one still to do.
+   */
   async countCompletedLessons(userId: string, pathId: string): Promise<number> {
     return prisma.userLessonProgress.count({
       where: {
         userId,
         status: "COMPLETED",
-        lesson: { pathLessons: { some: { pathId } } },
+        lesson: { status: "PUBLISHED", pathLessons: { some: { pathId } } },
       },
     });
   },
 
   /**
-   * Whether the user has completed all lessons of a path. Mirrors the existing
-   * `completedCount >= totalIds.length` gate (true also for a 0-lesson path,
-   * preserving current behaviour).
+   * Whether the user has completed all the published lessons of a path.
+   *
+   * A path with none left is never complete. Its links can all point at drafts
+   * (the sync links lessons imported as drafts, and nothing stops the path
+   * being published before them) or at archived lessons; read as "nothing left
+   * to do", it opened the exam and issued a verifiable certificate for zero
+   * lessons to anyone who asked. This is the gate the exam, the claim and the
+   * certificate itself read, so it refuses rather than the screens alone.
    */
   async areLessonsComplete(userId: string, pathId: string): Promise<boolean> {
     const [total, completed] = await Promise.all([
       this.findLessonIds(pathId),
       this.countCompletedLessons(userId, pathId),
     ]);
-    return completed >= total.length;
+    return total.length > 0 && completed >= total.length;
   },
 };

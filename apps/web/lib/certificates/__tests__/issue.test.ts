@@ -25,6 +25,7 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("@cyberlearn/db", () => ({
+  PUBLISHED_PATH_LESSON: { lesson: { status: "PUBLISHED" } },
   pathRepository: {
     areLessonsComplete: m.areLessonsComplete,
     findProgress: m.findProgress,
@@ -175,6 +176,23 @@ describe("issueCertificate - gate + idempotence guards", () => {
       expect.anything(),
     );
     expect(created.publicId).toEqual(expect.any(String));
+  });
+
+  it("counts the path's published lessons only, for the number the PDF states", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1", { score: 85 });
+
+    // A draft or an archived lesson still linked to the path is not one the
+    // learner finished, and the certificate used to count it.
+    expect(m.pathFindUnique).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      select: {
+        title: true,
+        _count: { select: { lessons: { where: { lesson: { status: "PUBLISHED" } } } } },
+      },
+    });
   });
 
   it("mints a distinct hash and identifiers per certificate", async () => {

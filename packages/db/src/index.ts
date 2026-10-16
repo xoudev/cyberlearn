@@ -100,6 +100,7 @@ export {
 export {
   pathRepository,
   CATALOGUE_PATH,
+  PUBLISHED_PATH_LESSON,
   pathsVisibleTo,
 } from "./repositories/path.repository.js";
 export { certificateRepository } from "./repositories/certificate.repository.js";

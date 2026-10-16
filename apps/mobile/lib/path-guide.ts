@@ -5,6 +5,7 @@ import {
   type StartingLevel,
 } from "@cyberlearn/lib/paths/suggest";
 import type { Category, Difficulty } from "@/lib/db";
+import { countMissions, type LessonLink } from "./missions";
 
 /**
  * "Trouver mon parcours": the site's two questions, and the same suggestions
@@ -34,11 +35,11 @@ export interface RawGuidePath {
   estimatedHours: number;
   refCode: string;
   avgRating: number | null;
-  path_lessons: { lessonId: string }[] | null;
+  path_lessons: LessonLink[] | null;
 }
 
 export const GUIDE_PATH_COLUMNS =
-  "slug,title,category,track,difficulty,estimatedHours,refCode,avgRating,path_lessons(lessonId)";
+  "slug,title,category,track,difficulty,estimatedHours,refCode,avgRating,path_lessons(lessons(status))";
 
 export function toGuidePaths(rows: RawGuidePath[]): GuidePath[] {
   return rows.map((p) => ({
@@ -50,7 +51,8 @@ export function toGuidePaths(rows: RawGuidePath[]): GuidePath[] {
     estimatedHours: p.estimatedHours,
     refCode: p.refCode,
     avgRating: p.avgRating,
-    lessonCount: p.path_lessons?.length ?? 0,
+    // Its missions, as the site's guide counts them: published lessons only.
+    lessonCount: countMissions(p.path_lessons),
   }));
 }
 

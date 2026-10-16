@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
 import { examStatus } from "@/lib/exam/exam-service";
 import { userFromBearer } from "../_lib/auth";
 
@@ -44,8 +45,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     ok: true,
     // A class path carries no certificate: the platform only vouches for its
-    // catalogue (see findPublishedPathsForLesson and claimCertificate).
-    path: { ...shown, certifiable: audience === "CATALOGUE" },
+    // catalogue. The site's path page reads the same rule.
+    path: { ...shown, certifiable: isCertifiablePath({ audience }) },
     status: {
       ...status,
       resumeStartedAt: status.resumeStartedAt?.toISOString() ?? null,

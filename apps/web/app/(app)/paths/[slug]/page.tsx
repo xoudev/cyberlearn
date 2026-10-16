@@ -9,8 +9,11 @@ import { indexPlacements, type LockState, resumeLesson } from "@/lib/lessons/unl
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
-import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
+import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
+import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
+import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
+import { BriefCertificate } from "./_components/brief-certificate";
 import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
@@ -27,8 +30,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const path = await prisma.path.findUnique({ where: { slug }, select: { title: true } });
-  return { title: path?.title ?? "Parcours" };
+  return { title: (await visiblePathTitle(slug)) ?? "Parcours" };
 }
 
 // ── Design meta maps ────────────────────────────────────────────────────────────
@@ -200,6 +202,11 @@ export default async function PathDetailPage({
       },
       lessons: {
         orderBy: { position: "asc" },
+        // Its published lessons only, as the lesson page reads the path: a
+        // draft or an archived lesson still linked here was a mission the map
+        // offered and the lesson page answered with a 404, and one the path
+        // could never be finished without.
+        where: PUBLISHED_PATH_LESSON,
         include: {
           lesson: {
             select: {
@@ -225,14 +232,15 @@ export default async function PathDetailPage({
   const diff = difficultyMeta(path.difficulty);
   const trackLabel = path.track === "CAREER" ? "Métier" : "Compétence";
 
-  // Fetch user's completed lessons for this path
+  // Fetch user's completed lessons for this path, among the missions drawn
+  // below: one finished before it was archived is not one of them.
   const completedLessonIds = new Set(
     (
       await prisma.userLessonProgress.findMany({
         where: {
           userId: authUser.id,
           status: "COMPLETED",
-          lesson: { pathLessons: { some: { pathId: path.id } } },
+          lesson: { status: "PUBLISHED", pathLessons: { some: { pathId: path.id } } },
         },
         select: { lessonId: true },
       })
@@ -282,6 +290,9 @@ export default async function PathDetailPage({
   const pathCompleted = pathStatus === "COMPLETED";
   const hasQuiz = activeQuiz !== null;
   const hasCertConcept = path.certificateTemplate !== null;
+  // A class path carries no certificate: the server refuses to claim or issue
+  // one, so the page promises none, as the app's final card shows nothing.
+  const certifiable = isCertifiablePath(path);
   // The certificate is "obtained" once it's been issued (same signal the final-boss
   // node uses for its download link). Drives the MISSION.BRIEF certificate cell.
   const certObtained = userPathProgress.certificateId !== null;
@@ -304,7 +315,8 @@ export default async function PathDetailPage({
 
   // The final boss (certificate gate) shows whenever any current affordance would:
   // completed, lessons done (exam/claim), an active quiz, or a cert template.
-  const showBoss = lessonsComplete || pathCompleted || hasQuiz || hasCertConcept;
+  // Never on a class path: every one of its states leads to a certificate.
+  const showBoss = certifiable && (lessonsComplete || pathCompleted || hasQuiz || hasCertConcept);
 
   return (
     <div className="pd2">
@@ -364,41 +376,7 @@ export default async function PathDetailPage({
               <div className="lbl">XP total</div>
               <div className="val">{xpTotal.toLocaleString("fr-FR")}</div>
             </div>
-            <div className="brief__cell brief__cell--cert">
-              {certObtained ? (
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 10.5 L8.5 15 L16 6" />
-                </svg>
-              ) : (
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="10" cy="8" r="4" />
-                  <path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5" />
-                </svg>
-              )}
-              <span>
-                Certificat
-                <br />
-                {certObtained ? "disponible" : "inclus"}
-              </span>
-            </div>
+            <BriefCertificate certifiable={certifiable} certObtained={certObtained} />
           </div>
           {resumeSlug !== null && (
             <Link href={`/lessons/${resumeSlug}`} className="brief__cta">

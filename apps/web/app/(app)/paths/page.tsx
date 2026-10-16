@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
 import { requireRequestUser } from "@/lib/auth";
@@ -21,6 +21,9 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       include: {
         lessons: {
           orderBy: { position: "asc" },
+          // The missions the path page draws: a draft or an archived lesson
+          // still linked to a path is neither counted nor offered as the next.
+          where: PUBLISHED_PATH_LESSON,
           include: {
             lesson: {
               select: {

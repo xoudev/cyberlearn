@@ -15,6 +15,7 @@ import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
 import {
   CATALOGUE_PATH,
   leaderboardRepository,
+  PUBLISHED_PATH_LESSON,
   pathsVisibleTo,
   prisma,
   reviewRepository,
@@ -129,7 +130,12 @@ async function DashboardContent(): Promise<React.ReactElement> {
         category: true,
         difficulty: true,
         estimatedHours: true,
-        _count: { select: { lessons: true, progress: { where: { status: "COMPLETED" } } } },
+        _count: {
+          select: {
+            lessons: { where: PUBLISHED_PATH_LESSON },
+            progress: { where: { status: "COMPLETED" } },
+          },
+        },
         progress: { where: { userId: authUser.id }, select: { status: true }, take: 1 },
       },
     }),
@@ -181,6 +187,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
           },
           lessons: {
             orderBy: { position: "asc" },
+            // The path page's missions: the mission card must not send the
+            // reader to a draft or an archived lesson, which is a 404.
+            where: PUBLISHED_PATH_LESSON,
             select: {
               moduleId: true,
               lesson: {

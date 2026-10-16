@@ -184,6 +184,21 @@ describe("class paths (integration, real DB)", () => {
       expect(ids).not.toContain(classPathId);
     });
 
+    it("is absent from the public catalogue and from the landing's featured paths", async () => {
+      if (!configured) return;
+      // Both used to read "published": a visitor saw the class's path, its
+      // title and its description, on /catalogue and on the front page.
+      const catalogue = (await statsRepository.findPublicCatalog()).map((p) => p.slug);
+      expect(catalogue).toContain(`catalogue-parcours-${suffix}`);
+      expect(catalogue).not.toContain(classPathSlug);
+
+      // Every featured path rather than the first three, so the class path
+      // cannot pass merely by ranking low.
+      const featured = (await statsRepository.findFeaturedPaths(10_000)).map((p) => p.slug);
+      expect(featured).toContain(`catalogue-parcours-${suffix}`);
+      expect(featured).not.toContain(classPathSlug);
+    });
+
     it("is not counted in the figures the landing page prints", async () => {
       if (!configured) return;
       const before = await statsRepository.findLandingStats();

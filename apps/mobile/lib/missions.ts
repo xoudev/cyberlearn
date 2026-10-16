@@ -1,5 +1,32 @@
 import type { PathMission } from "@/lib/queries";
 
+/** A path's link to one lesson, with the lesson's status as PostgREST embeds it. */
+export interface LessonLink {
+  lessons: { status: string } | { status: string }[] | null | undefined;
+}
+
+/**
+ * The lesson a path's link points at, when it is one of the path's missions:
+ * a published lesson, as the site reads them (PUBLISHED_PATH_LESSON). A draft
+ * or an archived lesson still linked to the path is null, like a lesson RLS
+ * kept from the reader. The status is read rather than left to RLS, which
+ * shows an administrator every lesson.
+ */
+export function publishedLesson<T extends { status: string }>(
+  embed: T | T[] | null | undefined,
+): T | null {
+  const lesson = Array.isArray(embed) ? embed[0] : embed;
+  return lesson?.status === "PUBLISHED" ? lesson : null;
+}
+
+/**
+ * How many missions a path has: its published lessons, as the site counts
+ * them. Counting the links alone counted a draft or an archived lesson.
+ */
+export function countMissions(links: readonly LessonLink[] | null | undefined): number {
+  return (links ?? []).filter((link) => publishedLesson(link.lessons) !== null).length;
+}
+
 /**
  * How each mission of a path reads on its screen.
  *
