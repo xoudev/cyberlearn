@@ -249,6 +249,9 @@ export function OnboardingForm({
               placeholder="mon-pseudo"
               minLength={3}
               maxLength={32}
+              // React empties the form once the action has run: what was typed
+              // comes back from it after a refusal.
+              defaultValue={state.values?.username}
               style={INPUT_STYLE}
             />
             <span
@@ -275,7 +278,7 @@ export function OnboardingForm({
               type="text"
               required
               autoComplete="name"
-              defaultValue={initialDisplayName}
+              defaultValue={state.values?.displayName ?? initialDisplayName}
               placeholder="Ton nom ou pseudo"
               maxLength={64}
               style={INPUT_STYLE}
@@ -335,6 +338,7 @@ export function OnboardingForm({
                 name="bio"
                 rows={3}
                 maxLength={BIO_MAX}
+                defaultValue={state.values?.bio}
                 placeholder="Qui es-tu ? Qu'est-ce qui t'a amené ici ?"
                 onChange={(e) => {
                   setBioLen(e.target.value.length);
