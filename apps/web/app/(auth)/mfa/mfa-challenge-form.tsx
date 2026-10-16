@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { OtpCodeInput, useOtpAutoSubmit } from "@cyberlearn/ui";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import { completeMfaSignIn } from "../_actions/mfa-sign-in";
 import styles from "../_components/auth-shell.module.css";
 
 export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element {
@@ -42,7 +43,17 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
         return;
       }
 
-      router.replace(next);
+      // The sign-in is finished on the server: the profile synchronisation
+      // (lastActiveAt above all) and the onboarding step were skipped while
+      // the code was owed. Should that request fail, the session is valid all
+      // the same, and the destination asked for is still the right place.
+      let destination: string;
+      try {
+        destination = (await completeMfaSignIn(next)).redirectTo;
+      } catch {
+        destination = next;
+      }
+      router.replace(destination);
       router.refresh();
     },
     [next, router],
