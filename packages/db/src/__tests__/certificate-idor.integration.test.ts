@@ -20,15 +20,18 @@ const TEST_PASSWORD = "TestPassword123!";
 describe("Certificate IDOR - ownership query filter (integration)", () => {
   let adminClient: SupabaseClient;
   let configured = false;
+  let supabaseUrl: string;
+  let supabaseAnonKey: string;
   let userAId: string;
   let userBId: string;
   let pathId: string;
   let certBId: string;
 
   beforeAll(async () => {
-    const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
+    supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
+    supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] ?? "";
     const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
-    if (!supabaseUrl || !serviceRoleKey) return;
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) return;
 
     adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -96,6 +99,20 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
     configured = true;
   });
 
+  async function signInAs(email: string): Promise<SupabaseClient> {
+    const signer = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await signer.auth.signInWithPassword({
+      email,
+      password: TEST_PASSWORD,
+    });
+    if (error || !data.session) throw new Error(`Sign in failed: ${error?.message}`);
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+    });
+  }
+
   afterAll(async () => {
     if (!configured) return;
     await prisma.certificate.deleteMany({ where: { pathId } });
@@ -122,6 +139,21 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
     });
     expect(result).not.toBeNull();
     expect(result?.pdfStorageKey).toMatch(/^certificates\/test-/);
+  });
+
+  // The app's home screen counts the holder's certificates through the Data
+  // API (apps/mobile/lib/queries.ts). It counted on `id`, which the column
+  // grants leave out: every count was refused and drawn as 0.
+  it("the holder counts their certificates through the Data API, on a granted column", async () => {
+    if (!configured) return;
+    const clientB = await signInAs(USER_B_EMAIL);
+    const counted = await clientB
+      .from("certificates")
+      .select("publicId", { count: "exact", head: true })
+      .eq("userId", userBId)
+      .is("revokedAt", null);
+    expect(counted.error).toBeNull();
+    expect(counted.count).toBe(1);
   });
 
   it("revoked certificate is not accessible even by owner", async () => {
