@@ -7,6 +7,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
 
 export const metadata: Metadata = { title: "Mes certificats" };
 
@@ -309,7 +310,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               year: "numeric",
             }).format(cert.issuedAt);
             const isRevoked = !!cert.revokedAt;
-            const certRef = cert.publicId.slice(0, 8).toUpperCase();
+            // The number printed on the PDF and shown on the verification page.
+            const certRef = certificateCode(cert.publicId, cert.issuedAt);
             const hashSnippet = `${cert.sha256Hash.slice(0, 10)}…${cert.sha256Hash.slice(-4)}`;
             const accent = isRevoked ? "var(--color-text-faint)" : GOLD;
 
@@ -389,7 +391,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                               : "var(--color-text-secondary)",
                           }}
                         >
-                          CERT-{certRef}
+                          {certRef}
                         </b>
                       </div>
                     </div>

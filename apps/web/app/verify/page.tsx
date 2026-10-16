@@ -192,8 +192,8 @@ export default function VerifyPage(): React.JSX.Element {
             maxWidth: "44ch",
           }}
         >
-          Entre l&apos;identifiant unique du certificat pour confirmer son authenticité et sa
-          signature SHA-256.
+          Entre le numéro du certificat ou son adresse de vérification pour confirmer son
+          authenticité et sa signature SHA-256.
         </p>
 
         <VerifyForm />

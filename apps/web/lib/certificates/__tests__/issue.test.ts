@@ -141,6 +141,20 @@ describe("issueCertificate - gate + idempotence guards", () => {
     expect(m.upsertProgress).not.toHaveBeenCalled();
   });
 
+  it("keeps the name and the lesson count the PDF prints with the row", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1", { score: 85 });
+
+    // The verification page shows these, not the account's name or the
+    // path's lessons as they are later: a holder renamed in the settings had
+    // the site vouch for a certificate under the new name.
+    expect(m.create).toHaveBeenCalledWith(
+      expect.objectContaining({ holderName: "Alice", lessonCount: 2 }),
+    );
+  });
+
   it("points the certificate notice at the certificates page, not at the raw PDF", async () => {
     m.areLessonsComplete.mockResolvedValue(true);
     m.findProgress.mockResolvedValue(null);

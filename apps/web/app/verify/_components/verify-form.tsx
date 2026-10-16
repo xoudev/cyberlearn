@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { INVALID_REFERENCE, verifyTarget } from "./verify-target";
 
 export function VerifyForm(): React.JSX.Element {
   const router = useRouter();
@@ -16,13 +15,13 @@ export function VerifyForm(): React.JSX.Element {
 
   function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>): void {
     e.preventDefault();
-    const id = value.trim().replace(/^#/, "");
-    if (!UUID_RE.test(id)) {
-      setError("Identifiant invalide. Attendu : un identifiant unique (UUID).");
+    const target = verifyTarget(value);
+    if (target === null) {
+      setError(INVALID_REFERENCE);
       return;
     }
     setError("");
-    router.push(`/verify/${id}`);
+    router.push(target);
   }
 
   const borderColor = error
@@ -43,7 +42,7 @@ export function VerifyForm(): React.JSX.Element {
             marginBottom: 10,
           }}
         >
-          Identifiant du certificat
+          Numéro ou adresse du certificat
         </label>
 
         <div
@@ -81,7 +80,7 @@ export function VerifyForm(): React.JSX.Element {
             onBlur={() => {
               setFocused(false);
             }}
-            placeholder="0f8a1c2e-3b4d-5e6f-7a8b-9c0d1e2f3a4b"
+            placeholder="CL-2026-0F8A1C2E"
             style={{
               flex: 1,
               minWidth: 0,
@@ -120,7 +119,7 @@ export function VerifyForm(): React.JSX.Element {
               marginTop: 8,
             }}
           >
-            Identifiant unique · visible en bas de chaque certificat
+            Numéro en haut à droite du certificat · adresse en bas
           </p>
         )}
       </div>

@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../prisma.js";
+import { certificateRepository } from "../repositories/certificate.repository.js";
 
 const USER_A_EMAIL = "idor-cert-a@test.cyberlearn.internal";
 const USER_B_EMAIL = "idor-cert-b@test.cyberlearn.internal";
@@ -26,6 +27,7 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
   let userBId: string;
   let pathId: string;
   let certBId: string;
+  let certBPublicId: string;
 
   beforeAll(async () => {
     supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
@@ -95,6 +97,7 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
       },
     });
     certBId = cert.id;
+    certBPublicId = cert.publicId;
 
     configured = true;
   });
@@ -154,6 +157,12 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
       .is("revokedAt", null);
     expect(counted.error).toBeNull();
     expect(counted.count).toBe(1);
+  });
+
+  it("finds a certificate by the start of its public id, as the PDF prints it", async () => {
+    if (!configured) return;
+    const found = await certificateRepository.findByPublicIdPrefix(certBPublicId.slice(0, 8));
+    expect(found.map((c) => c.publicId)).toContain(certBPublicId);
   });
 
   it("revoked certificate is not accessible even by owner", async () => {
