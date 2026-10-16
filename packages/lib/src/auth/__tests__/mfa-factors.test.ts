@@ -1,5 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { readTotpFactors, removeTotpFactors, type TotpRemovalClient } from "../mfa-factors.js";
+import {
+  canRemoveOwnTotp,
+  readTotpFactors,
+  removeTotpFactors,
+  type TotpRemovalClient,
+} from "../mfa-factors.js";
+
+describe("canRemoveOwnTotp", () => {
+  it("never offers an administrator the removal of their own factor", () => {
+    expect(canRemoveOwnTotp("ADMIN")).toBe(false);
+  });
+
+  it("offers it to every other account, with or without a profile row", () => {
+    expect(canRemoveOwnTotp("STUDENT")).toBe(true);
+    expect(canRemoveOwnTotp("TEACHER")).toBe(true);
+    expect(canRemoveOwnTotp(null)).toBe(true);
+    expect(canRemoveOwnTotp(undefined)).toBe(true);
+  });
+});
 
 describe("readTotpFactors", () => {
   it("lists the verified factors with their names", () => {

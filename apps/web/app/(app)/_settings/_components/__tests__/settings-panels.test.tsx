@@ -56,7 +56,7 @@ const DATA: SettingsData = {
     emailNotifications: true,
   },
   moderation: { events: [] },
-  account: { email: null, emailConfirmed: false },
+  account: { email: null, emailConfirmed: false, canDisableMfa: true },
   data: { pendingExpiresAt: null, certificateCount: 0 },
 };
 

@@ -1,5 +1,4 @@
 import {
-  readTotpFactors,
   removeTotpFactors,
   type TotpFactorsState,
   type TotpRemovalOutcome,
@@ -18,8 +17,8 @@ import { AuthError, AuthField, AuthNotice } from "@/components/auth-form";
 import { BackButton, GradientButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, SectionLabel, Text } from "@/components/ui";
-import { updatePasswordApi } from "@/lib/api";
-import { readTotpQrSvg } from "@/lib/mfa";
+import { fetchMfaRemovalApi, updatePasswordApi } from "@/lib/api";
+import { loadTotpPanel, readTotpQrSvg } from "@/lib/mfa";
 import { supabase } from "@/lib/supabase";
 
 interface PendingTotp {
@@ -32,6 +31,8 @@ export default function Security(): React.JSX.Element {
   // Read as on the site (@cyberlearn/lib/auth/mfa-factors): a failed read is
   // "unknown", not "disabled", so it offers no enrolment over a live factor.
   const [factorsState, setFactorsState] = useState<TotpFactorsState>({ status: "loading" });
+  // False for an administrator, as on the site, and until the server says.
+  const [canDisable, setCanDisable] = useState(false);
   const [pendingTotp, setPendingTotp] = useState<PendingTotp | null>(null);
   const [code, setCode] = useState("");
   const [mfaBusy, setMfaBusy] = useState(false);
@@ -50,11 +51,12 @@ export default function Security(): React.JSX.Element {
 
   const loadFactor = useCallback(async (): Promise<void> => {
     setFactorsState({ status: "loading" });
-    try {
-      setFactorsState(readTotpFactors(await supabase.auth.mfa.listFactors()));
-    } catch {
-      setFactorsState({ status: "error" });
-    }
+    const panel = await loadTotpPanel({
+      listFactors: () => supabase.auth.mfa.listFactors(),
+      fetchCanDisable: fetchMfaRemovalApi,
+    });
+    setCanDisable(panel.canDisable);
+    setFactorsState(panel.factors);
   }, []);
 
   const factorIds = factorsState.status === "ready" ? factorsState.factors.map((f) => f.id) : [];
@@ -161,7 +163,7 @@ export default function Security(): React.JSX.Element {
   // one touch used to remove every factor. The button is the confirmation,
   // so the code does not go on its sixth digit here.
   async function confirmDisable(): Promise<void> {
-    if (factorIds.length === 0) return;
+    if (factorIds.length === 0 || !canDisable) return;
     const result = mfaCodeSchema.safeParse(disableCode);
     if (!result.success) {
       setMfaError("Entre le code à 6 chiffres affiché dans ton application.");
@@ -300,7 +302,7 @@ export default function Security(): React.JSX.Element {
               <Text variant="micro">Annuler</Text>
             </Pressable>
           </View>
-        ) : factorIds.length > 0 && confirmingDisable ? (
+        ) : factorIds.length > 0 && canDisable && confirmingDisable ? (
           <View style={styles.enrollment}>
             <Text variant="bodySm">
               Sans second facteur, ton mot de passe suffira pour entrer dans ton compte. Pour
@@ -336,7 +338,7 @@ export default function Security(): React.JSX.Element {
               <Text variant="micro">Annuler</Text>
             </Pressable>
           </View>
-        ) : factorIds.length > 0 ? (
+        ) : factorIds.length > 0 && canDisable ? (
           <Pressable
             accessibilityRole="button"
             onPress={openDisableConfirmation}
@@ -347,6 +349,12 @@ export default function Security(): React.JSX.Element {
               Désactiver le MFA
             </Text>
           </Pressable>
+        ) : factorIds.length > 0 ? (
+          <Text variant="bodySm">
+            Compte administrateur : ta double authentification protège aussi la console et ne se
+            désactive pas depuis l’app. Si tu perds ton application d’authentification, suis la
+            procédure de secours décrite dans docs/authentication.md.
+          </Text>
         ) : factorsState.status === "error" ? (
           <>
             <Text variant="bodySm">

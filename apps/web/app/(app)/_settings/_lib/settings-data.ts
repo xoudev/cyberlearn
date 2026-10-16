@@ -53,6 +53,8 @@ export const moderationSectionSchema = z.object({
 export const accountSectionSchema = z.object({
   email: z.string().nullable(),
   emailConfirmed: z.boolean(),
+  /** False for an administrator, whose factor only the break-glass procedure removes. */
+  canDisableMfa: z.boolean(),
 });
 
 export const dataSectionSchema = z.object({

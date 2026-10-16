@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * payload and show its error instead of the settings.
  */
 
-const { db, resolveAvatarSrc } = vi.hoisted(() => ({
+const { db, resolveAvatarSrc, canDisableOwnMfa } = vi.hoisted(() => ({
   db: {
     prisma: {
       user: { findUnique: vi.fn() },
@@ -18,10 +18,12 @@ const { db, resolveAvatarSrc } = vi.hoisted(() => ({
     moderationRepository: { findForUser: vi.fn() },
   },
   resolveAvatarSrc: vi.fn(),
+  canDisableOwnMfa: vi.fn<(userId: string) => Promise<boolean>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => db);
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrc }));
+vi.mock("@/lib/auth/mfa-removal", () => ({ canDisableOwnMfa }));
 
 const { loadProfileSection, loadSettings } = await import("../load-settings");
 const { settingsDataSchema } = await import("../settings-data");
@@ -46,6 +48,7 @@ beforeEach(() => {
   db.prisma.accountDeletionToken.findFirst.mockResolvedValue(null);
   db.prisma.certificate.count.mockResolvedValue(0);
   db.moderationRepository.findForUser.mockResolvedValue([]);
+  canDisableOwnMfa.mockResolvedValue(true);
 });
 
 describe("the settings loaders", () => {
@@ -65,7 +68,11 @@ describe("the settings loaders", () => {
     });
     expect(settings.preferences).toEqual({ spacedRepetition: true });
     expect(Object.values(settings.notifications).every(Boolean)).toBe(true);
-    expect(settings.account).toEqual({ email: "ada@example.test", emailConfirmed: false });
+    expect(settings.account).toEqual({
+      email: "ada@example.test",
+      emailConfirmed: false,
+      canDisableMfa: true,
+    });
     expect(settings.data).toEqual({ pendingExpiresAt: null, certificateCount: 0 });
   });
 
@@ -145,5 +152,13 @@ describe("the settings loaders", () => {
     }
     expect(db.moderationRepository.findForUser).toHaveBeenCalledWith("user-1");
     expect(db.prisma.certificate.count).toHaveBeenCalledWith({ where: { userId: "user-1" } });
+    expect(canDisableOwnMfa).toHaveBeenCalledWith("user-1");
+  });
+
+  it("withhold the removal of the second factor from an administrator", async () => {
+    canDisableOwnMfa.mockResolvedValue(false);
+    const settings = await loadSettings(USER);
+    expect(settings.account.canDisableMfa).toBe(false);
+    expect(settingsDataSchema.safeParse(JSON.parse(JSON.stringify(settings))).success).toBe(true);
   });
 });

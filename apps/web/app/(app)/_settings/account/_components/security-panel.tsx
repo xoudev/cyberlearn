@@ -94,7 +94,12 @@ function factorStatusText(state: TotpFactorsState): string {
   return "Protège ton compte avec Google Authenticator, 1Password, Authy ou une application compatible TOTP.";
 }
 
-export function SecurityPanel(): React.JSX.Element {
+/**
+ * `canDisableMfa` is false for an administrator (the role is read on the
+ * server, apps/web/lib/auth/mfa-removal.ts): the panel then offers no removal
+ * of the second factor and points to the break-glass procedure instead.
+ */
+export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): React.JSX.Element {
   const router = useRouter();
   // Loading until Supabase answers: the panel used to start on "no factor",
   // and so told every protected account it was unprotected, with an enrol
@@ -128,6 +133,7 @@ export function SecurityPanel(): React.JSX.Element {
 
   const factors = factorsState.status === "ready" ? factorsState.factors : [];
   const status = factorStatusLabel(factorsState);
+  const offerDisable = canDisableMfa && factors.length > 0;
 
   async function startEnrollment(): Promise<void> {
     setBusy(true);
@@ -212,11 +218,13 @@ export function SecurityPanel(): React.JSX.Element {
   }
 
   // Removal takes an explicit confirmation and a fresh code: one click used
-  // to be enough, so a stray click, or a session in the wrong hands, took the
-  // account's protection away. The code is not sent on its sixth digit, as it
-  // is elsewhere: here the button is the confirmation.
+  // to be enough, so a stray click took the account's protection away. The
+  // code is checked here, in the browser: it does not stop a stolen session,
+  // which can ask Supabase directly (see removeTotpFactors). The code is not
+  // sent on its sixth digit, as it is elsewhere: here the button is the
+  // confirmation.
   async function confirmDisable(): Promise<void> {
-    if (factors.length === 0) return;
+    if (!offerDisable) return;
     const parsed = mfaCodeSchema.safeParse(disableCode);
     if (!parsed.success) {
       setMessage("Entre le code à six chiffres affiché par ton application.");
@@ -430,7 +438,23 @@ export function SecurityPanel(): React.JSX.Element {
             </form>
           ) : null}
 
-          {factors.length > 0 && !confirmingDisable ? (
+          {factors.length > 0 && !canDisableMfa ? (
+            <p
+              style={{
+                margin: 0,
+                color: S.fg2,
+                fontFamily: MONO,
+                fontSize: 11,
+                lineHeight: 1.6,
+              }}
+            >
+              Compte administrateur : ta double authentification protège aussi la console et ne se
+              désactive pas ici. Si tu perds ton application d’authentification, suis la procédure
+              de secours décrite dans docs/authentication.md.
+            </p>
+          ) : null}
+
+          {offerDisable && !confirmingDisable ? (
             <button
               type="button"
               disabled={busy}
@@ -441,7 +465,7 @@ export function SecurityPanel(): React.JSX.Element {
             </button>
           ) : null}
 
-          {factors.length > 0 && confirmingDisable ? (
+          {offerDisable && confirmingDisable ? (
             <form
               onSubmit={(event) => {
                 event.preventDefault();

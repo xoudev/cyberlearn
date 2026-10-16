@@ -1,3 +1,9 @@
+import {
+  readTotpFactors,
+  type ListFactorsAnswer,
+  type TotpFactorsState,
+} from "@cyberlearn/lib/auth/mfa-factors";
+
 const SVG_DATA_URI_PREFIX = "data:image/svg+xml";
 
 /** Converts Supabase's TOTP QR data URI back to XML for react-native-svg. */
@@ -17,6 +23,53 @@ export function readTotpQrSvg(qrCode: string): string | null {
   }
 
   return xml.trimStart().startsWith("<svg") ? xml : null;
+}
+
+/** What the security screen knows of the second factor. */
+export interface TotpPanelState {
+  factors: TotpFactorsState;
+  /**
+   * Whether "Désactiver le MFA" is offered: never to an administrator, whose
+   * factor only the break-glass procedure of docs/authentication.md removes.
+   */
+  canDisable: boolean;
+}
+
+/**
+ * Reads the factors and, when there is one to remove, whether this account
+ * may remove it (the server's answer: the app cannot read the role).
+ *
+ * The second question only matters with a factor, so an account without one
+ * can enrol even when the site does not answer. When it does not answer for a
+ * protected account, the screen says "unknown" with "Réessayer", as for a
+ * failed read of the factors: the removal is never offered on a guess.
+ */
+export async function loadTotpPanel(deps: {
+  listFactors: () => Promise<ListFactorsAnswer>;
+  fetchCanDisable: () => Promise<boolean>;
+}): Promise<TotpPanelState> {
+  let factors: TotpFactorsState;
+  try {
+    factors = readTotpFactors(await deps.listFactors());
+  } catch {
+    return { factors: { status: "error" }, canDisable: false };
+  }
+  if (factors.status !== "ready" || factors.factors.length === 0) {
+    return { factors, canDisable: false };
+  }
+  try {
+    return { factors, canDisable: await deps.fetchCanDisable() };
+  } catch {
+    return { factors: { status: "error" }, canDisable: false };
+  }
+}
+
+/** What /api/mobile/mfa-removal answered: the flag, or null for anything else. */
+export function readMfaRemovalAnswer(body: unknown): boolean | null {
+  if (typeof body !== "object" || body === null) return null;
+  if (!("ok" in body) || body.ok !== true) return null;
+  if (!("canDisable" in body) || typeof body.canDisable !== "boolean") return null;
+  return body.canDisable;
 }
 
 /** The part of `supabase.auth` that the code screen signs out with. */

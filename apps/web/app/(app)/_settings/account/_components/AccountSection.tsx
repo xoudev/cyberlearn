@@ -33,7 +33,7 @@ export function AccountSection({ data }: { data: AccountSectionData }): React.JS
           </span>
         </div>
       </SettingsCard>
-      <SecurityPanel />
+      <SecurityPanel canDisableMfa={data.canDisableMfa} />
     </div>
   );
 }

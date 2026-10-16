@@ -386,3 +386,28 @@ point MCP du serveur de dev. Next est monté en 16.3.8, qui ne contient que ces
 correctifs (et un septième, une fuite de cache entre valeurs de paramètres
 racine). Le catalogue le garde sur la ligne 16.3 (`~16.3.8`) : la 16.4 change
 assez de comportements pour être prise à part.
+
+## Un administrateur peut retirer son second facteur par l'API de Supabase
+
+Le site et l'app ne proposent plus à un `ADMIN` de désactiver sa double
+authentification : le panneau renvoie à la procédure de secours de
+`docs/authentication.md` (« Lost authenticator »). C'est un contrôle masqué,
+pas un refus. Supabase Auth laisse toute session aal2 retirer ses propres
+facteurs vérifiés (`DELETE /factors/{id}`) : quelqu'un qui détient la session
+aal2 d'un administrateur sur le site peut encore l'appeler directement, puis
+inscrire son propre facteur, celui que la console demande. Le code frais que demande la
+désactivation est vérifié dans le client et ne l'en empêche pas non plus.
+
+Un vrai refus devrait se faire en base, par exemple un déclencheur
+`BEFORE DELETE` sur `auth.mfa_factors` pour les propriétaires `ADMIN`. Il n'est
+pas posé, pour trois raisons à trancher d'abord :
+
+- Supabase Auth efface les facteurs avec le même rôle de base
+  (`supabase_auth_admin`) pour l'appel de l'utilisateur et pour
+  `auth.admin.mfa.deleteFactor`, dont se sert le script de secours
+  (`packages/db/prisma/reset-mfa.ts`) : le déclencheur ne les distingue pas, et
+  le script devrait effacer les lignes lui-même en SQL, sous un drapeau de
+  contournement.
+- La suppression d'un compte `auth.users` efface ses facteurs en cascade : le
+  déclencheur doit la laisser passer.
+- Supabase restreint ce qu'un projet peut créer dans le schéma `auth`.

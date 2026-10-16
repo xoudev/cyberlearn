@@ -6,9 +6,10 @@
  * app's security screen. The site's started out showing "MFA INACTIF" and an
  * enrol button while it was still asking Supabase, and kept them when the
  * question failed, to an account that was protected all along. Removal went
- * on one click, with nothing asked. Both rules live here, pure, so that the
- * two panels cannot drift apart again; the app does not depend on
- * @cyberlearn/ui, hence plain functions over an injected client.
+ * on one click, with nothing asked, and was offered to administrators too.
+ * These rules live here, pure, so that the two panels cannot drift apart
+ * again; the app does not depend on @cyberlearn/ui, hence plain functions
+ * over an injected client.
  */
 
 export interface TotpFactorSummary {
@@ -56,15 +57,32 @@ export interface TotpRemovalClient {
 export type TotpRemovalOutcome = "disabled" | "invalid_code" | "failed";
 
 /**
+ * Whether an account may remove its own second factor from the site's panel
+ * or the app's screen: never an administrator's.
+ *
+ * The console requires the factor, and resetting an administrator's is the
+ * break-glass procedure of docs/authentication.md ("Lost authenticator"),
+ * which the console itself refuses to perform. A panel that offered removal
+ * would be a quicker way round that procedure than the procedure. This hides
+ * a control; it is not a refusal on the server, which Supabase Auth does not
+ * make: any aal2 session may unenroll its own verified factors.
+ */
+export function canRemoveOwnTotp(role: string | null | undefined): boolean {
+  return role !== "ADMIN";
+}
+
+/**
  * Removes every verified TOTP factor, once a fresh code from one of them has
  * been accepted.
  *
- * The code is asked for here rather than trusted to the session: a session
- * that reached aal2 an hour ago says nothing about who holds it now, and the
- * factor is precisely what protects the account from a session that changed
- * hands. A code accepted for any of the factors is enough, since each one
- * proves the same thing; trying them in turn covers an account that ended up
- * with two.
+ * The fresh code guards against removal through the panel by a stray click or
+ * tap, and by someone at a device left signed in who does not have the
+ * authenticator at hand. It is checked from the client, before the client
+ * unenrolls: Supabase Auth itself asks only for an aal2 session, so whoever
+ * holds a stolen aal2 session can call its unenroll endpoint directly and
+ * skip this step. It does not protect against that, and is not meant to. A
+ * code accepted for any of the factors is enough, since each one proves the
+ * same thing; trying them in turn covers an account that ended up with two.
  *
  * Every factor goes, not only the first: a second one left behind would keep
  * asking for a code the panel says is no longer needed.
