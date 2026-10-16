@@ -175,8 +175,24 @@ describe("the certificate's link preview", () => {
     });
   });
 
+  it("names one address however the id is cased", async () => {
+    // Postgres compares uuids without regard to case, so an upper-case id is the
+    // same certificate. The page sends it to its one lower-case address rather
+    // than declaring itself a second original there, so its metadata stays the
+    // plain not-found title until the reader lands on the canonical page.
+    const lower = "abcdef12-3456-4abc-8def-0123456789ab";
+    await expect(
+      CertVerifyPage({ params: Promise.resolve({ publicId: lower.toUpperCase() }) }),
+    ).rejects.toThrow(`NEXT_REDIRECT /verify/${lower}`);
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ publicId: lower.toUpperCase() }),
+    });
+    expect(metadata.title).toBe("Certificat introuvable");
+  });
+
   it("leaves the holder out of the description when the certificate names nobody", async () => {
     findByPublicId.mockResolvedValue({
+      publicId: PUBLIC_ID,
       path: { title: "Réseau" },
       user: null,
       holderName: null,

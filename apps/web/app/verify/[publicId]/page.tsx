@@ -36,13 +36,16 @@ export async function generateMetadata({
   // The frozen name printed on the PDF, not the one the account carries now.
   const holder = holderNameOf(cert);
   // The link a holder shares, on LinkedIn or anywhere: its preview names the
-  // certificate and leads back here, not to the home page.
+  // certificate and leads back here, not to the home page. The address is
+  // built from the stored id, not the one typed: Postgres matches a uuid
+  // whatever its case, so /verify/ABCD… and /verify/abcd… show the same
+  // certificate, and both must name the one address.
   return {
     title: `Certificat · ${holder ?? "Certificat"} · ${cert.path.title}`,
     description: `Certificat CyberLearn du parcours « ${cert.path.title} »${
       holder === null ? "" : ` délivré à ${holder}`
     }. Son authenticité se vérifie sur cette page.`,
-    ...pageAddress(`/verify/${encodeURIComponent(publicId)}`),
+    ...pageAddress(`/verify/${cert.publicId.toLowerCase()}`),
   };
 }
 
