@@ -1053,13 +1053,16 @@ export function usePreferences(userId: string | undefined) {
     queryKey: ["preferences", userId],
     enabled: Boolean(userId),
     queryFn: async (): Promise<Preferences> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_preferences")
         .select(
           "emailNotifications,reviewReminders,weeklyDigest,streakReminder,spacedRepetition,publicProfile,friendsLeaderboard,leaderboardVisibility",
         )
         .eq("userId", userId as string) // gated by `enabled`
         .maybeSingle();
+      // A failed read throws, so the query keeps the settings it last read.
+      // Read as "no row", it put the defaults on screen, privacy included.
+      if (error) throw new Error(error.message);
       return (data as Preferences | null) ?? DEFAULT_PREFS;
     },
   });

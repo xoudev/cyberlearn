@@ -15,6 +15,7 @@ import { Screen } from "@/components/screen";
 import { useTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
 import { SITE_URL } from "@/lib/api";
+import { undoSettingChange } from "@/lib/preferences";
 import {
   deviceNotificationsSupported,
   isDeviceNotificationsEnabled,
@@ -100,8 +101,22 @@ export default function Reglages(): React.JSX.Element {
     await setDeviceNotificationsEnabled(value);
   }
 
+  /**
+   * Puts one setting back after its write failed, then rereads the row. The
+   * value restored is the one shown before the change: the reread fails too
+   * when the network is what failed, and usePreferences then keeps it.
+   */
+  async function undoChange(key: keyof Preferences, before: Preferences): Promise<void> {
+    queryClient.setQueryData(["preferences", userId], (old: Preferences | undefined) =>
+      undoSettingChange(old ?? DEFAULT_PREFS, before, key),
+    );
+    Alert.alert(PREFERENCE_NOT_SAVED);
+    await queryClient.invalidateQueries({ queryKey: ["preferences", userId] });
+  }
+
   async function toggle(key: PreferenceSwitch, value: boolean): Promise<void> {
     if (!userId) return;
+    const before = queryClient.getQueryData<Preferences>(["preferences", userId]) ?? DEFAULT_PREFS;
     // Optimistic cache update, then persist (prefs_self_all RLS).
     queryClient.setQueryData(["preferences", userId], (old: Preferences | undefined) => ({
       ...(old ?? DEFAULT_PREFS),
@@ -110,9 +125,8 @@ export default function Reglages(): React.JSX.Element {
     try {
       await updatePreference(userId, key, value);
     } catch {
-      // Not saved: the switch goes back to what the database holds, and says so.
-      await queryClient.invalidateQueries({ queryKey: ["preferences", userId] });
-      Alert.alert(PREFERENCE_NOT_SAVED);
+      // Not saved: the switch goes back to where it was, and says so.
+      await undoChange(key, before);
       return;
     }
     // The revisions screen and the home card read the same switch.
@@ -127,6 +141,7 @@ export default function Reglages(): React.JSX.Element {
 
   async function chooseVisibility(value: LeaderboardVisibility): Promise<void> {
     if (!userId) return;
+    const before = queryClient.getQueryData<Preferences>(["preferences", userId]) ?? DEFAULT_PREFS;
     queryClient.setQueryData(["preferences", userId], (old: Preferences | undefined) => ({
       ...(old ?? DEFAULT_PREFS),
       leaderboardVisibility: value,
@@ -134,9 +149,8 @@ export default function Reglages(): React.JSX.Element {
     try {
       await updateLeaderboardVisibility(userId, value);
     } catch {
-      // Not saved: the choice goes back to what the database holds, and says so.
-      await queryClient.invalidateQueries({ queryKey: ["preferences", userId] });
-      Alert.alert(PREFERENCE_NOT_SAVED);
+      // Not saved: the choice goes back to where it was, and says so.
+      await undoChange("leaderboardVisibility", before);
       return;
     }
     await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
