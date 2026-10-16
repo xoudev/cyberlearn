@@ -35,12 +35,6 @@ const TOPIC = "8f7c9a52-7d3e-4c1b-9a6e-2b5d4c3a1f00";
 const POST = "1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b";
 const THREAD = "/forum/reseau/subnetting-en-27";
 
-/** What a forged call can send that the types do not allow. */
-function forged<T>(value: unknown): T {
-  // SAFETY: deliberately the wrong shape, to stand for a call made by hand.
-  return value as T;
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireRequestUser.mockResolvedValue({ id: USER });
@@ -105,11 +99,10 @@ describe("moderateTopicAction", () => {
   });
 
   it("refuses a flag that is not a boolean instead of letting Prisma fail with a 500", async () => {
-    const result = await moderateTopicAction({
-      topicId: TOPIC,
-      locked: forged<boolean>("yes"),
-      path: THREAD,
-    });
+    // SAFETY: deliberately the wrong type, to stand for a call made by hand -
+    // a server action is an endpoint, and the browser can send it anything.
+    const locked = "yes" as unknown as boolean;
+    const result = await moderateTopicAction({ topicId: TOPIC, locked, path: THREAD });
     expect(result).toMatchObject({ ok: false });
     expect(m.setLocked).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();

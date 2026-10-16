@@ -204,7 +204,12 @@ describe("NotificationPanel failures", () => {
   it("keeps the notices unread when marking them all fails, and says so", async () => {
     m.markAllNotificationsReadAction.mockRejectedValueOnce(new Error("network"));
     await openPanel();
-    fireEvent.click(screen.getByRole("button", { name: "Tout lire" }));
+    // Disabled while the panel's load is still settling: a click then is lost.
+    const markAll = screen.getByRole<HTMLButtonElement>("button", { name: "Tout lire" });
+    await vi.waitFor(() => {
+      expect(markAll.disabled).toBe(false);
+    });
+    fireEvent.click(markAll);
     expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible de tout marquer/);
     expect(screen.getByRole("button", { name: "2 notifications non lues" })).toBeTruthy();
   });
