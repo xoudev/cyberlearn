@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { PROTECTED_ROUTE_PREFIXES } from "@/lib/protected-routes";
 import { SITE_URL } from "./site-url";
 
 /**
@@ -7,29 +8,19 @@ import { SITE_URL } from "./site-url";
  *
  * Everything behind authentication is disallowed: those URLs redirect to /login
  * for a crawler, which produces a pile of near-duplicate login pages in the
- * index and dilutes the pages that matter.
+ * index and dilutes the pages that matter. The middleware's own list is read,
+ * so a protected route added there is disallowed here too.
  *
- * /settings and /changelog are no pages any more but windows over the
- * dashboard, which their addresses redirect to (next.config.ts). They stay
- * listed: a crawler has no reason to follow them there.
+ * The rest are not pages a crawler has any business on either: /account and
+ * /auth are account flows, /api answers JSON. /settings and /changelog are no
+ * pages any more but windows over the dashboard, which their addresses
+ * redirect to (next.config.ts). They stay listed: a crawler has no reason to
+ * follow them there.
  */
 const PRIVATE = [
-  "/dashboard",
-  "/lessons",
-  "/paths",
-  "/challenges",
-  "/review",
-  "/revisions",
-  "/notes",
-  "/badges",
-  "/certificates",
-  "/leaderboard",
-  "/locker",
-  "/profile",
+  ...PROTECTED_ROUTE_PREFIXES,
   "/settings",
-  "/wrapped",
   "/changelog",
-  "/onboarding",
   "/account",
   "/auth",
   "/api",
