@@ -4,7 +4,7 @@ import {
   KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATARS,
   ONBOARDING_AVATAR_CHOICES,
-  identityPhoto,
+  avatarToKeep,
   initialOnboardingChoice,
   isOnboardingAvatar,
 } from "./avatars.js";
@@ -23,17 +23,24 @@ describe("the sign-up avatars", () => {
   });
 });
 
-describe("the photo the avatar step offers to keep", () => {
+describe("the avatar the step offers to keep", () => {
   it("is the identity's picture, an address of its own", () => {
     const github = "https://avatars.githubusercontent.com/u/1?v=4";
-    expect(identityPhoto(github)).toBe(github);
+    expect(avatarToKeep(github)).toBe(github);
   });
 
-  it("is nothing for one of the eight, a glyph, an uploaded file or no avatar", () => {
-    expect(identityPhoto("/avatars/av-8.svg")).toBeNull();
-    expect(identityPhoto("__glyph:skull")).toBeNull();
-    expect(identityPhoto("__upload:me.png")).toBeNull();
-    expect(identityPhoto(null)).toBeNull();
+  it("is a photo uploaded at this step, met again on the way back", () => {
+    expect(avatarToKeep("__upload:user-1/me.png")).toBe("__upload:user-1/me.png");
+  });
+
+  it("is a glyph the profile already has", () => {
+    expect(avatarToKeep("__glyph:skull")).toBe("__glyph:skull");
+  });
+
+  it("is nothing for one of the eight or no avatar", () => {
+    expect(avatarToKeep("/avatars/av-8.svg")).toBeNull();
+    expect(avatarToKeep(null)).toBeNull();
+    expect(avatarToKeep("")).toBeNull();
   });
 
   it("is kept by a value that is none of the eight", () => {
@@ -52,8 +59,16 @@ describe("what the avatar step starts on", () => {
     );
   });
 
+  it("is the uploaded photo, so coming back from the goals does not replace it", () => {
+    expect(initialOnboardingChoice("__upload:user-1/me.png")).toBe(KEEP_CURRENT_AVATAR);
+  });
+
+  it("is the glyph in use rather than CL", () => {
+    expect(initialOnboardingChoice("__glyph:skull")).toBe(KEEP_CURRENT_AVATAR);
+  });
+
   it("is CL when there is nothing to keep", () => {
     expect(initialOnboardingChoice(null)).toBe(DEFAULT_ONBOARDING_AVATAR);
-    expect(initialOnboardingChoice("__glyph:skull")).toBe(DEFAULT_ONBOARDING_AVATAR);
+    expect(initialOnboardingChoice("")).toBe(DEFAULT_ONBOARDING_AVATAR);
   });
 });

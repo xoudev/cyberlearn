@@ -13,9 +13,10 @@ import Link from "next/link";
 import {
   KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATAR_CHOICES,
-  identityPhoto,
+  avatarToKeep,
   initialOnboardingChoice,
 } from "@cyberlearn/lib/onboarding/avatars";
+import { AvatarView } from "@/components/avatar-view";
 
 // The app offers the same eight (@cyberlearn/lib/onboarding/avatars).
 const AVATARS = ONBOARDING_AVATAR_CHOICES;
@@ -23,16 +24,25 @@ const AVATARS = ONBOARDING_AVATAR_CHOICES;
 const initialState: SaveAvatarState = {};
 
 interface AvatarFormProps {
+  /** As stored: one of the eight, a GitHub address, an upload or glyph marker. */
   currentAvatarUrl: string | null;
+  /** The same avatar, drawable: an upload marker resolved to a signed URL. */
+  currentAvatarSrc: string | null;
+  displayName: string;
 }
 
-export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactElement {
+export function AvatarForm({
+  currentAvatarUrl,
+  currentAvatarSrc,
+  displayName,
+}: AvatarFormProps): React.ReactElement {
   const [state, formAction, isPending] = useActionState(saveAvatar, initialState);
-  // A GitHub account arrives with its photo, which step 1 has just shown: it
-  // is offered first and preselected, rather than replaced by "CL".
-  const photo = identityPhoto(currentAvatarUrl);
+  // The avatar the profile already has, if it is none of the eight - GitHub's
+  // photo, or one uploaded here before going on to the goals and coming
+  // back - is offered first and preselected, rather than replaced by "CL".
+  const hasAvatarToKeep = avatarToKeep(currentAvatarUrl) !== null;
   const [selected, setSelected] = useState<string>(() => initialOnboardingChoice(currentAvatarUrl));
-  const photoSelected = photo !== null && selected === KEEP_CURRENT_AVATAR;
+  const photoSelected = hasAvatarToKeep && selected === KEEP_CURRENT_AVATAR;
 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -188,8 +198,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
         <form action={formAction}>
           <input type="hidden" name="avatarUrl" value={selected} />
 
-          {/* The photo the account already has (GitHub's), to keep */}
-          {photo !== null && (
+          {/* The avatar the account already has (GitHub's, or uploaded), to keep */}
+          {hasAvatarToKeep && (
             <button
               type="button"
               aria-pressed={photoSelected}
@@ -213,13 +223,24 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 transition: "border-color 120ms ease, background 120ms ease",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- the identity's photo, shown as step 1 shows it */}
-              <img
-                src={photo}
-                alt=""
-                width={48}
-                height={48}
-                style={{ width: 48, height: 48, objectFit: "cover", flexShrink: 0 }}
+              <AvatarView
+                src={currentAvatarSrc}
+                name={displayName}
+                glyphSize={28}
+                glyphColor="var(--color-brand-turquoise)"
+                style={{
+                  width: 48,
+                  height: 48,
+                  objectFit: "cover",
+                  flexShrink: 0,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "var(--color-bg-elevated)",
+                  color: "var(--color-text-secondary)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 14,
+                }}
               />
               <span style={{ display: "grid", gap: 4 }}>
                 <span

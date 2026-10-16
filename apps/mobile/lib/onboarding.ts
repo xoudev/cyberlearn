@@ -8,7 +8,7 @@
 export {
   KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATAR_CHOICES,
-  identityPhoto,
+  avatarToKeep,
   initialOnboardingChoice,
 } from "@cyberlearn/lib/onboarding/avatars";
 

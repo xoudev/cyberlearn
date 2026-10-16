@@ -31,30 +31,35 @@ export function isOnboardingAvatar(value: string | null): value is OnboardingAva
 }
 
 /**
- * What the avatar step sends to keep the photo the profile already has
- * (see `identityPhoto`) rather than pick one of the eight. The server writes
+ * What the avatar step sends to keep the avatar the profile already has
+ * (see `avatarToKeep`) rather than pick one of the eight. The server writes
  * nothing for it.
  */
 export const KEEP_CURRENT_AVATAR = "current";
 
 /**
- * The photo the avatar step offers first, and preselects: the picture of the
- * identity the account signed up with - GitHub's - which the first step has
- * just shown. The step used to preselect "CL" whenever the avatar was not one
- * of the eight, so continuing without a second look replaced that photo.
+ * The avatar the step offers first, and preselects: whatever the profile
+ * holds that is not one of the eight - the picture of the identity the
+ * account signed up with (GitHub's), a photo uploaded at this very step
+ * (`__upload:<key>`, a marker each app resolves to draw it), or a glyph.
  *
- * Null for one of the eight, a glyph, an uploaded file (a marker, not an
- * address) or nothing.
+ * The step used to preselect "CL" whenever the avatar was not one of the
+ * eight, so continuing without a second look replaced it: the GitHub photo
+ * at the first visit, an uploaded one when the learner came back from the
+ * goals step.
+ *
+ * Null for one of the eight or nothing.
  */
-export function identityPhoto(stored: string | null): string | null {
-  return stored?.startsWith("https://") ? stored : null;
+export function avatarToKeep(stored: string | null): string | null {
+  if (stored === null || stored === "" || isOnboardingAvatar(stored)) return null;
+  return stored;
 }
 
 /**
  * What the avatar step starts on, on the site and in the app: the one of the
- * eight in use, else the photo to keep, else "CL".
+ * eight in use, else the avatar to keep, else "CL".
  */
 export function initialOnboardingChoice(stored: string | null): string {
   if (isOnboardingAvatar(stored)) return stored;
-  return identityPhoto(stored) !== null ? KEEP_CURRENT_AVATAR : DEFAULT_ONBOARDING_AVATAR;
+  return avatarToKeep(stored) !== null ? KEEP_CURRENT_AVATAR : DEFAULT_ONBOARDING_AVATAR;
 }
