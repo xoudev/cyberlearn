@@ -70,6 +70,23 @@ describe("missionStates", () => {
     ]);
   });
 
+  it("opens a mission whose predecessor is completed, as the site does", () => {
+    // Missions 1, 2 and 4 completed (before the lock existed): the site opens
+    // 3 and 5, each behind a completed one. The app used to lock 5.
+    expect(missionStates(path("COMPLETED", "COMPLETED", null, "COMPLETED", null, null))).toEqual([
+      "done",
+      "done",
+      "current",
+      "done",
+      "open",
+      "locked",
+    ]);
+  });
+
+  it("keeps a mission that opens the path open, even with nothing completed", () => {
+    expect(missionStates(path(null, null))).toEqual(["current", "locked"]);
+  });
+
   it("opens every other mission to an administrator, without moving where they are", () => {
     expect(missionStates(path("COMPLETED", null, null, "COMPLETED"), true)).toEqual([
       "done",
@@ -81,6 +98,7 @@ describe("missionStates", () => {
 
   it("has no current mission once everything is completed", () => {
     expect(missionStates(path("COMPLETED", "COMPLETED"), true)).toEqual(["done", "done"]);
+    expect(missionStates([])).toEqual([]);
   });
 
   it("opens the mission after one completed out of order, as the site does", () => {

@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import type { KeyValueStorage } from "@/lib/migrating-storage";
 import {
+  claimOffline,
+  clearOffline,
   listModules,
   moduleKey,
   removeModule,
@@ -25,7 +27,26 @@ export const offlineStorage: KeyValueStorage = {
   removeItem: (key) => AsyncStorage.removeItem(key),
 };
 
-const MODULES_KEY = ["offline-modules"] as const;
+export const MODULES_KEY = ["offline-modules"] as const;
+
+/**
+ * Keeps the saved modules to the account signed in (lib/offline.ts says how):
+ * forgotten when it signs out, another account's removed when one signs in.
+ * `startedSignedIn` is true for the session the app started with. Called
+ * where the session changes, beside the query cache's own clear.
+ */
+export async function bindOfflineToAccount(
+  userId: string | null,
+  startedSignedIn: boolean,
+): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    if (userId === null) await clearOffline(offlineStorage, keys);
+    else await claimOffline(offlineStorage, keys, userId, startedSignedIn);
+  } catch {
+    // Storage unavailable: nothing to do but leave it, as the reader's lists do.
+  }
+}
 
 /** The saved modules, read once and kept current by the hooks below. */
 export function useOfflineModules(): OfflineModule[] {

@@ -16,6 +16,7 @@ import {
   type NotificationItem,
 } from "@/lib/queries";
 import { inAppRouteFor } from "@/lib/notification-links";
+import { notificationMeta } from "@/lib/notification-meta";
 import { useSession } from "@/lib/session";
 
 const TYPE_META: Record<string, { icon: string; color: string }> = {
@@ -74,7 +75,9 @@ export default function Notifications(): React.JSX.Element {
 
       {isLoading ? (
         <ListSkeleton rows={5} />
-      ) : error ? (
+      ) : error && data === undefined ? (
+        // A failed refresh keeps the list it already has; only a first load
+        // that failed says so, instead of passing for an empty inbox.
         <ErrorState onRetry={() => void refetch()} code="NOTIF_LOAD" />
       ) : (data ?? []).length === 0 ? (
         <EmptyState
@@ -84,7 +87,7 @@ export default function Notifications(): React.JSX.Element {
       ) : (
         <View style={{ gap: 10 }}>
           {(data ?? []).map((n: NotificationItem, i) => {
-            const meta = TYPE_META[n.type] ?? { icon: "•", color: colors.textSecondary };
+            const meta = notificationMeta(n.type);
             const isUnread = n.readAt === null;
             const route = inAppRouteFor(n.actionUrl);
             return (

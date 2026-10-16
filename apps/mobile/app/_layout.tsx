@@ -26,10 +26,12 @@ import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
 import { useReducedMotionPreference } from "@/lib/accessibility";
 import { CosmeticsProvider } from "@/lib/cosmetics";
-import { mirrorInboxToDevice } from "@/lib/device-notifications";
+import { mirrorInboxToDevice, onDeviceNotificationTapped } from "@/lib/device-notifications";
+import { tapRoute } from "@/lib/notification-links";
+import { bindOfflineToAccount, MODULES_KEY as OFFLINE_MODULES_KEY } from "@/lib/offline-store";
 import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
 import { isRecoveryPending, signedInRoute } from "@/lib/recovery";
-import { ensureUserRow, useNotifications } from "@/lib/queries";
+import { ensureUserRow, markNotificationRead, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { type AssuranceAssessment, assuranceView, sessionGateRedirect } from "@/lib/session-gate";
 import { supabase } from "@/lib/supabase";
@@ -56,14 +58,43 @@ const queryClient = new QueryClient({
 /** Mirrors fresh inbox items to the device notification tray (60s polling). */
 function NotificationMirror(): null {
   const { session } = useSession();
-  const { data } = useNotifications(session?.user.id);
+  const userId = session?.user.id;
+  const { data } = useNotifications(userId);
   useEffect(() => {
-    if (data && data.length > 0) void mirrorInboxToDevice(data);
-  }, [data]);
+    if (userId && data && data.length > 0) void mirrorInboxToDevice(userId, data);
+  }, [userId, data]);
   return null;
 }
 
-/** Prevents one signed-in account from seeing another account's cached data. */
+/**
+ * A tap on a notification in the phone's tray does what a tap in the inbox
+ * does: it marks the notification read and opens what it is about.
+ */
+function NotificationTaps(): null {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!userId) return;
+    return onDeviceNotificationTapped((tapped) => {
+      // Posted for another account of this phone: neither its row nor its link
+      // belong to the one signed in now.
+      if (tapped.userId !== userId) return;
+      void markNotificationRead(tapped.id).then(async () => {
+        await queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+        await queryClient.invalidateQueries({ queryKey: ["notifications-unread", userId] });
+      });
+      router.push(tapRoute(tapped.actionUrl));
+    });
+  }, [userId, router, queryClient]);
+  return null;
+}
+
+/**
+ * Prevents one signed-in account from seeing another account's data: the
+ * query cache, and the modules saved on the phone for reading offline.
+ */
 function SessionCacheBoundary(): null {
   const { session, initializing } = useSession();
   const queryClient = useQueryClient();
@@ -74,11 +105,15 @@ function SessionCacheBoundary(): null {
     const userId = session?.user.id ?? null;
     if (previousUserId.current === undefined) {
       previousUserId.current = userId;
+      if (userId !== null) void bindOfflineToAccount(userId, true);
       return;
     }
     if (previousUserId.current !== userId) {
       queryClient.clear();
       previousUserId.current = userId;
+      void bindOfflineToAccount(userId, false).then(() =>
+        queryClient.invalidateQueries({ queryKey: OFFLINE_MODULES_KEY }),
+      );
     }
   }, [initializing, queryClient, session?.user.id]);
 
@@ -197,6 +232,7 @@ function RootNavigator(): React.JSX.Element {
   return (
     <CosmeticsProvider userId={session && !mfaRequired ? session.user.id : undefined}>
       {session && !mfaRequired ? <NotificationMirror /> : null}
+      {session && !mfaRequired ? <NotificationTaps /> : null}
       <Stack
         screenOptions={{
           headerShown: false,

@@ -131,7 +131,14 @@ export default function Reglages(): React.JSX.Element {
       ...(old ?? DEFAULT_PREFS),
       leaderboardVisibility: value,
     }));
-    await updateLeaderboardVisibility(userId, value);
+    try {
+      await updateLeaderboardVisibility(userId, value);
+    } catch {
+      // Not saved: the choice goes back to what the database holds, and says so.
+      await queryClient.invalidateQueries({ queryKey: ["preferences", userId] });
+      Alert.alert(PREFERENCE_NOT_SAVED);
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
   }
 

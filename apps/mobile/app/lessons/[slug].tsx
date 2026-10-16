@@ -38,6 +38,7 @@ import {
   fetchOpenQuizReports,
   markLessonOpened,
   useLessonDetail,
+  useLessonLock,
 } from "@/lib/queries";
 import { QuizReportControl } from "@/components/quiz-report";
 import { letterOf, optionOrderFor, scoreOf, type RecordedAnswer } from "@/lib/quiz";
@@ -70,6 +71,11 @@ export default function LessonReader(): React.JSX.Element {
   const queryClient = useQueryClient();
   const userId = session?.user.id;
   const { data, isLoading, error, refetch } = useLessonDetail(userId, slug);
+  // The path lock, asked of the server once the lesson is known; not for the
+  // copy read offline, where nothing can be recorded.
+  const online = data !== undefined && data.offline !== true;
+  const lockQuery = useLessonLock(userId, online ? data.id : undefined);
+  const lock = lockQuery.data ?? null;
 
   const [step, setStep] = useState<Step>({ mode: "read", section: 0 });
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -82,12 +88,21 @@ export default function LessonReader(): React.JSX.Element {
 
   const parsed = useMemo(() => (data ? parseLesson(data.contentMdx) : null), [data]);
 
-  // Resume tracking: opening a lesson marks it IN_PROGRESS (no XP involved).
+  // A lesson still locked in its path sends the reader to the path, as the
+  // site's lesson page does, whether it was opened from the catalogue, the
+  // search or a link: the path says what to finish first.
   useEffect(() => {
-    if (userId && data && data.status !== "COMPLETED") {
+    if (lock) router.replace({ pathname: "/paths/[slug]", params: { slug: lock.slug } });
+  }, [lock, router]);
+
+  // Resume tracking: opening a lesson marks it IN_PROGRESS (no XP involved),
+  // once it is known not to be locked.
+  const lockChecked = lockQuery.isSuccess && lockQuery.data === null;
+  useEffect(() => {
+    if (userId && data && online && lockChecked && data.status !== "COMPLETED") {
       void markLessonOpened(userId, data.id);
     }
-  }, [userId, data]);
+  }, [userId, data, online, lockChecked]);
 
   const lessonId = data?.id;
   useEffect(() => {
@@ -104,7 +119,9 @@ export default function LessonReader(): React.JSX.Element {
     };
   }, [userId, lessonId]);
 
-  if (isLoading || !data || !parsed) {
+  // Nothing of a lesson shows before its lock is known, nor while a locked
+  // one is on its way to its path.
+  if (isLoading || !data || !parsed || lockQuery.isLoading || lock) {
     return (
       <Screen>
         <View style={{ marginBottom: 16 }}>

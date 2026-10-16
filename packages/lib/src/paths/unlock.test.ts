@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { indexPlacements, isReadable, type PathWithLessons, resumeLesson } from "./unlock";
+import {
+  indexPlacements,
+  isReadable,
+  type PathWithLessons,
+  resumeIndex,
+  resumeLesson,
+} from "./unlock";
 
 function lesson(id: string) {
   return {
@@ -182,5 +188,22 @@ describe("resumeLesson", () => {
     const placements = indexPlacements([PYTHON], [], { waivedLessonIds: ids });
     const states = ids.map((id) => placements.get(id)?.state ?? "locked");
     expect(resumeLesson(ids, states, [true, true, true, true])).toBe("a");
+  });
+});
+
+describe("resumeIndex", () => {
+  it("lands on the first open lesson, past the waived ones", () => {
+    expect(resumeIndex(["completed", "unlocked", "unlocked", "locked"], [false, true, false])).toBe(
+      2,
+    );
+  });
+
+  it("falls back to the first waived open lesson when nothing else is open", () => {
+    expect(resumeIndex(["completed", "unlocked", "unlocked"], [false, true, true])).toBe(1);
+  });
+
+  it("is -1 when no lesson is open", () => {
+    expect(resumeIndex(["completed", "completed"])).toBe(-1);
+    expect(resumeIndex([])).toBe(-1);
   });
 });

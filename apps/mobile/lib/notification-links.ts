@@ -90,3 +90,33 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
       return null;
   }
 }
+
+/**
+ * What a notification posted to the phone's tray carries, so that a tap on
+ * it can open what it is about and mark its inbox row read: the row, the
+ * account it was posted for, and the site's link.
+ */
+export interface DeviceNotificationData {
+  id: string;
+  userId: string;
+  actionUrl: string | null;
+}
+
+/** The data of a tapped tray notification read back; null for one the app did not post. */
+export function deviceNotificationData(data: unknown): DeviceNotificationData | null {
+  if (typeof data !== "object" || data === null) return null;
+  if (!("id" in data) || typeof data.id !== "string" || data.id === "") return null;
+  if (!("userId" in data) || typeof data.userId !== "string" || data.userId === "") return null;
+  const actionUrl =
+    "actionUrl" in data && typeof data.actionUrl === "string" ? data.actionUrl : null;
+  return { id: data.id, userId: data.userId, actionUrl };
+}
+
+/**
+ * Where a tap on a tray notification leads: the screen it is about, or the
+ * inbox for one that only needs reading, so that a tap never leaves the
+ * reader where they were.
+ */
+export function tapRoute(actionUrl: string | null): InAppRoute | { pathname: "/notifications" } {
+  return inAppRouteFor(actionUrl) ?? { pathname: "/notifications" };
+}

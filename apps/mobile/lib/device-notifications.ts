@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
+import type { NotificationResponse } from "expo-notifications";
 import type { NotificationItem } from "@/lib/queries";
 import { dbTime } from "@/lib/db-time";
+import { deviceNotificationData, type DeviceNotificationData } from "@/lib/notification-links";
 
 // Mirrors the in-app inbox to the DEVICE notification tray with local
 // notifications. expo-notifications was REMOVED from Expo Go on Android
@@ -11,8 +13,16 @@ import { dbTime } from "@/lib/db-time";
 // builds. True remote push (app closed) will ride on this once an EAS dev
 // build exists.
 
-const LAST_SEEN_KEY = "cl.notifications.lastSeenAt";
+// The high-water mark is the account's own: one global mark let the next
+// account on a shared phone inherit the last one's, and skip whatever of its
+// own inbox was older. The unscoped key is what older versions wrote.
+const LEGACY_LAST_SEEN_KEY = "cl.notifications.lastSeenAt";
+const LAST_SEEN_PREFIX = "cl.notifications.lastSeenAt:";
 const ENABLED_KEY = "cl.notifications.deviceEnabled";
+
+function lastSeenKey(userId: string): string {
+  return `${LAST_SEEN_PREFIX}${userId}`;
+}
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -91,19 +101,25 @@ export async function setDeviceNotificationsEnabled(enabled: boolean): Promise<v
 
 /**
  * Present device notifications for inbox items newer than the last mirrored
- * one. Call with the freshly-fetched inbox; keeps its own high-water mark.
+ * one. Call with the account's freshly-fetched inbox; keeps a high-water mark
+ * per account.
  */
-export async function mirrorInboxToDevice(items: NotificationItem[]): Promise<void> {
+export async function mirrorInboxToDevice(
+  userId: string,
+  items: NotificationItem[],
+): Promise<void> {
   if (items.length === 0) return;
   const N = getNotifications();
   if (!N) return;
   if (!(await isDeviceNotificationsEnabled())) return;
 
-  const lastSeenRaw = await AsyncStorage.getItem(LAST_SEEN_KEY);
+  const key = lastSeenKey(userId);
+  const lastSeenRaw = await AsyncStorage.getItem(key);
   // First run: don't spam the tray with the whole history - just set the mark.
   if (lastSeenRaw === null) {
     const newest = items[0]?.createdAt;
-    if (newest) await AsyncStorage.setItem(LAST_SEEN_KEY, newest);
+    if (newest) await AsyncStorage.setItem(key, newest);
+    await AsyncStorage.removeItem(LEGACY_LAST_SEEN_KEY);
     return;
   }
 
@@ -115,9 +131,12 @@ export async function mirrorInboxToDevice(items: NotificationItem[]): Promise<vo
   if (!(await ensureConfigured())) return;
 
   for (const n of fresh.reverse()) {
+    // What a tap reads back (onDeviceNotificationTapped): the row to mark
+    // read, and the link to open, as the inbox screen does.
+    const data: DeviceNotificationData = { id: n.id, userId, actionUrl: n.actionUrl };
     try {
       await N.scheduleNotificationAsync({
-        content: { title: n.title, body: n.body },
+        content: { title: n.title, body: n.body, data: { ...data } },
         trigger: null, // deliver immediately
       });
     } catch {
@@ -125,5 +144,48 @@ export async function mirrorInboxToDevice(items: NotificationItem[]): Promise<vo
     }
   }
   const newest = items[0]?.createdAt;
-  if (newest) await AsyncStorage.setItem(LAST_SEEN_KEY, newest);
+  if (newest) await AsyncStorage.setItem(key, newest);
+}
+
+// A response is reported twice when the app was opened by it: once by the
+// listener, once as the last response. Each notification is handled once.
+const handledTaps = new Set<string>();
+
+/**
+ * Calls `onTap` with what each tray notification the reader taps stands for:
+ * the one that opened the app, then every one tapped while it runs. Returns
+ * the unsubscribe; inert where the runtime has no notifications.
+ */
+export function onDeviceNotificationTapped(
+  onTap: (tapped: DeviceNotificationData) => void,
+): () => void {
+  const N = getNotifications();
+  if (!N) return () => undefined;
+
+  const handle = (response: NotificationResponse): void => {
+    if (response.actionIdentifier !== N.DEFAULT_ACTION_IDENTIFIER) return;
+    const { identifier, content } = response.notification.request;
+    if (handledTaps.has(identifier)) return;
+    handledTaps.add(identifier);
+    const tapped = deviceNotificationData(content.data);
+    if (tapped) onTap(tapped);
+  };
+
+  try {
+    const subscription = N.addNotificationResponseReceivedListener(handle);
+    // A cold start: the tap that opened the app happened before any listener.
+    void N.getLastNotificationResponseAsync()
+      .then(async (response) => {
+        if (response === null) return;
+        handle(response);
+        await N.clearLastNotificationResponseAsync();
+      })
+      .catch(() => undefined);
+    return () => {
+      subscription.remove();
+    };
+  } catch {
+    // Notification runtime unavailable (e.g. stripped Expo Go).
+    return () => undefined;
+  }
 }
