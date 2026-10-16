@@ -11,7 +11,12 @@ import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, Text } from "@/components/ui";
 import { WeeklyCountdown } from "@/components/weekly-countdown";
-import { completeChallengeApi, revealChallengeHintApi, submitChallengeFlagApi } from "@/lib/api";
+import {
+  completeChallengeApi,
+  revealChallengeHintApi,
+  SITE_URL,
+  submitChallengeFlagApi,
+} from "@/lib/api";
 import {
   attemptsLeft,
   CATEGORY_LABEL,
@@ -25,8 +30,6 @@ import { parseLesson } from "@/lib/lesson-blocks";
 import { useChallenge } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { siteLink } from "@/lib/tournaments";
-
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 /**
  * One challenge, as the site's page shows it, less what only the site can

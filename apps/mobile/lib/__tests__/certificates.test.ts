@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CERTIFICATE_COUNT_COLUMN, certificateCountOf } from "../certificates";
+import { CERTIFICATE_COUNT_COLUMN, certificateCountOf, verifyPageLabel } from "../certificates";
 
 /**
  * The home screen's "Certificats" tile read 0 for every holder: it counted on
@@ -23,5 +23,12 @@ describe("the certificate count", () => {
     expect(() =>
       certificateCountOf({ count: null, error: { message: "permission denied for table" } }),
     ).toThrow("permission denied");
+  });
+});
+
+describe("verifyPageLabel", () => {
+  it("names the verification page of the site the app talks to", () => {
+    expect(verifyPageLabel("https://cyberlearn.fr")).toBe("cyberlearn.fr/verify");
+    expect(verifyPageLabel("http://localhost:3000/")).toBe("localhost:3000/verify");
   });
 });

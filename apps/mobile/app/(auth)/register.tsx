@@ -6,9 +6,9 @@ import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
 import { ResendConfirmation } from "@/components/resend-confirmation";
 import { Text } from "@/components/ui";
+import { SITE_URL } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(/\/$/, "");
 const EMAIL_REDIRECT_URL = `${SITE_URL}/auth/callback?next=/onboarding`;
 
 export default function Register(): React.JSX.Element {

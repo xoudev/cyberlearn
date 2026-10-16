@@ -23,3 +23,11 @@ export function certificateCountOf(res: {
   if (res.error !== null) throw new Error(res.error.message);
   return res.count ?? 0;
 }
+
+/**
+ * "cyberlearn.fr/verify": where anyone checks a certificate, on the site the
+ * app is pointed at rather than the production address written in.
+ */
+export function verifyPageLabel(siteUrl: string): string {
+  return `${siteUrl.replace(/^https?:\/\//u, "").replace(/\/+$/u, "")}/verify`;
+}

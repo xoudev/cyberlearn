@@ -19,7 +19,7 @@ import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Figure, NumberedFacts, PhasePill, SectionCount } from "@/components/tournament-parts";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
-import { fetchTournamentChallengeApi, submitTournamentFlagApi } from "@/lib/api";
+import { fetchTournamentChallengeApi, SITE_URL, submitTournamentFlagApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { parseLesson } from "@/lib/lesson-blocks";
 import {
@@ -29,8 +29,6 @@ import {
   TOURNAMENT_ACCENT,
   type TournamentChallengeView,
 } from "@/lib/tournaments";
-
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 /** The tournament's rules, in the site's words. */
 const RULES: readonly { text: string }[] = [
