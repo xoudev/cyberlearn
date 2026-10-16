@@ -1,6 +1,7 @@
 /**
  * GET /api/me/export: the day's export is charged for a download, not for an
- * attempt. A build that fails gives the budget back and says so in JSON.
+ * attempt. A build or an audit row that fails gives the budget back and says
+ * so in JSON.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -68,6 +69,21 @@ describe("GET /api/me/export", () => {
     expect(await res.json()).toEqual({ error: "export_failed" });
     expect(m.releaseDataExport).toHaveBeenCalledWith(USER_ID);
     expect(m.auditCreate).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it("gives the budget back and answers 500 in JSON when the audit row cannot be written", async () => {
+    // Built, but not recorded: the file never leaves, so the day is not spent.
+    m.auditCreate.mockRejectedValueOnce(new Error("db unavailable"));
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
+
+    const res = await GET(request());
+
+    expect(res.status).toBe(500);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(res.headers.get("content-disposition")).toBeNull();
+    expect(await res.json()).toEqual({ error: "export_failed" });
+    expect(m.releaseDataExport).toHaveBeenCalledWith(USER_ID);
     logSpy.mockRestore();
   });
 
