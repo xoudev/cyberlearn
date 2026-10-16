@@ -35,20 +35,30 @@ export function countMissions(links: readonly LessonLink[] | null | undefined): 
  * is not held back by the lock: for them the others are "open" instead,
  * readable without being where they are. The site applies the same exception
  * (apps/web/lib/lessons/unlock.ts).
+ *
+ * A mission the placement test waived is "open" too, and opens the one after
+ * it as a completed mission would: the result screen says those levels are
+ * unlocked, and the site unlocks them by the same rule. The reader picks up
+ * at the first mission neither completed nor waived; when every mission left
+ * was waived, at the first of them.
  */
 export type MissionState = "done" | "current" | "open" | "locked";
 
 export function missionStates(
-  missions: Pick<PathMission, "status">[],
+  missions: Pick<PathMission, "status" | "waived">[],
   unlockAll = false,
 ): MissionState[] {
-  let currentAssigned = false;
-  return missions.map((m) => {
-    if (m.status === "COMPLETED") return "done";
-    if (!currentAssigned) {
-      currentAssigned = true;
-      return "current";
-    }
-    return unlockAll ? "open" : "locked";
+  const pending = (m: Pick<PathMission, "status">): boolean => m.status !== "COMPLETED";
+  const fresh = missions.findIndex((m) => pending(m) && !m.waived);
+  const current = fresh >= 0 ? fresh : missions.findIndex(pending);
+  // Whether a mission lets the one after it open: completed or waived.
+  const opensNext = (m: Pick<PathMission, "status" | "waived"> | undefined): boolean =>
+    m !== undefined && (!pending(m) || m.waived);
+
+  return missions.map((m, i) => {
+    if (!pending(m)) return "done";
+    if (i === current) return "current";
+    if (unlockAll || m.waived || opensNext(missions[i - 1])) return "open";
+    return "locked";
   });
 }

@@ -69,6 +69,21 @@ export function masteredPlacementDomains(scores: PlacementScores): PlacementCate
   );
 }
 
+/**
+ * What the result says when it has no path to recommend. "Tu pars de zéro"
+ * only when every domain reads "Débutant": said under three "Intermédiaire"
+ * bars, it contradicted the scores right above it. Between the two, the
+ * reader has a base without mastering a domain. Null once a domain is
+ * mastered: the line about the waivers speaks for itself.
+ */
+export function placementStartCopy(scores: PlacementScores): string | null {
+  if (masteredPlacementDomains(scores).length > 0) return null;
+  const fromScratch = PLACEMENT_CATEGORIES.every(
+    (category) => placementLevelFor(placementScoreOf(scores, category)) === "Débutant",
+  );
+  return fromScratch ? PLACEMENT_COPY.fromScratch : PLACEMENT_COPY.foundation;
+}
+
 /** The questions a set of choices has not answered yet: the test is sent whole. */
 export function unansweredPlacementQuestions(
   questionIds: readonly string[],
@@ -94,12 +109,18 @@ export const PLACEMENT_COPY = {
   title: "Où en es-tu vraiment ?",
   intro: (count: number): string =>
     `${String(count)} questions rapides pour calibrer ton point de départ. Aucun XP n'est attribué, c'est uniquement pour t'orienter.`,
+  // The waivers cover WAIVED_DIFFICULTIES (beginner and intermediate) of every
+  // domain at PLACEMENT_MASTERY_THRESHOLD or more: the two lines say the same
+  // thing, before the test and after it.
   waiverNote:
     "Les niveaux débutant et intermédiaire des domaines maîtrisés seront débloqués automatiquement.",
   resultTitle: "Ton profil, cartographié.",
-  waived: "Les niveaux débutant de tes domaines forts ont été débloqués automatiquement.",
+  waived:
+    "Les niveaux débutant et intermédiaire de tes domaines maîtrisés ont été débloqués automatiquement.",
   recommended:
     "D'après ton profil, ce parcours correspond à ton niveau et tes objectifs. Les prérequis débutant et intermédiaire de tes domaines maîtrisés sont déjà validés.",
   fromScratch:
     "Tu pars de zéro, c'est le meilleur moment. Explore nos parcours pour choisir ton point d'entrée.",
+  foundation:
+    "Tu as déjà des bases. Explore nos parcours pour choisir ton point d'entrée, au niveau qui te correspond.",
 } as const;

@@ -10,7 +10,13 @@ import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
-import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
+import {
+  PUBLISHED_PATH_LESSON,
+  lessonRepository,
+  pathsVisibleTo,
+  prisma,
+  ratingRepository,
+} from "@cyberlearn/db";
 import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
@@ -273,10 +279,17 @@ export default async function PathDetailPage({
   // module. It used to live here alone, as a drawing of a rule nothing
   // enforced - two copies would have drifted the moment one of them changed.
   type NodeState = LockState;
+  // The lessons the placement test waived open as completed ones would.
+  const waivedLessonIds = new Set(
+    await lessonRepository.findWaivedLessonIds(
+      authUser.id,
+      path.lessons.map((pl) => pl.lesson.id),
+    ),
+  );
   const placements = indexPlacements(
     [{ id: path.id, slug: path.slug, title: path.title, lessons: path.lessons }],
     completedLessonIds,
-    { unlockAll: await unlocksEveryLesson(authUser.id) },
+    { unlockAll: await unlocksEveryLesson(authUser.id), waivedLessonIds },
   );
   const nodeStates: NodeState[] = path.lessons.map(
     (pl) => placements.get(pl.lesson.id)?.state ?? "locked",
@@ -305,7 +318,12 @@ export default async function PathDetailPage({
   // used to be the first lesson whatever the progress, so "Continuer" sent a
   // reader at mission 15 back to mission 1. A path with no lesson has nothing
   // to open, and shows no button rather than one that goes nowhere.
-  const resumeSlug = resumeLesson(path.lessons, nodeStates)?.lesson.slug ?? null;
+  const resumeSlug =
+    resumeLesson(
+      path.lessons,
+      nodeStates,
+      path.lessons.map((pl) => waivedLessonIds.has(pl.lesson.id)),
+    )?.lesson.slug ?? null;
   const heroCtaLabel =
     pathCompleted || lessonsComplete
       ? "Revoir le parcours"

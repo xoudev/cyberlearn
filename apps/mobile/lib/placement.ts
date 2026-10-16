@@ -20,6 +20,7 @@ export {
   placementAnswersFrom,
   placementLevelFor,
   placementScoreOf,
+  placementStartCopy,
   strongestPlacementDomain,
   unansweredPlacementQuestions,
   type PlacementCategory,

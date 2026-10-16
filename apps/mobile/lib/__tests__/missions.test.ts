@@ -50,8 +50,15 @@ describe("countMissions", () => {
   });
 });
 
-const path = (...statuses: ("COMPLETED" | "IN_PROGRESS" | null)[]) =>
-  statuses.map((status) => ({ status }));
+type Status = "COMPLETED" | "IN_PROGRESS" | null;
+
+const path = (...statuses: Status[]) => statuses.map((status) => ({ status, waived: false }));
+
+/** A mission per entry: "W" is one the placement test waived, never started. */
+const withWaivers = (...entries: (Status | "W")[]) =>
+  entries.map((entry) =>
+    entry === "W" ? { status: null, waived: true } : { status: entry, waived: false },
+  );
 
 describe("missionStates", () => {
   it("puts the reader on the first mission not completed and locks the rest", () => {
@@ -74,5 +81,46 @@ describe("missionStates", () => {
 
   it("has no current mission once everything is completed", () => {
     expect(missionStates(path("COMPLETED", "COMPLETED"), true)).toEqual(["done", "done"]);
+  });
+
+  it("opens the mission after one completed out of order, as the site does", () => {
+    expect(missionStates(path(null, "COMPLETED", null, null))).toEqual([
+      "current",
+      "done",
+      "open",
+      "locked",
+    ]);
+  });
+
+  // The placement test's result says the waived levels are unlocked.
+  it("opens the waived missions and the one after them, and starts the reader past them", () => {
+    expect(missionStates(withWaivers("W", "W", null, null))).toEqual([
+      "open",
+      "open",
+      "current",
+      "locked",
+    ]);
+  });
+
+  it("opens a waived mission even behind one left to do", () => {
+    expect(missionStates(withWaivers(null, null, "W", null))).toEqual([
+      "current",
+      "locked",
+      "open",
+      "open",
+    ]);
+  });
+
+  it("starts the reader on the first waived mission when nothing else is left", () => {
+    expect(missionStates(withWaivers("COMPLETED", "W", "W"))).toEqual(["done", "current", "open"]);
+  });
+
+  it("shows a waived mission the reader went on to complete as done", () => {
+    expect(
+      missionStates([
+        { status: "COMPLETED", waived: true },
+        { status: null, waived: false },
+      ]),
+    ).toEqual(["done", "current"]);
   });
 });

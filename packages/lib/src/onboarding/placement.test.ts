@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { WAIVED_DIFFICULTIES } from "@cyberlearn/types";
 import {
   PLACEMENT_CATEGORIES,
   PLACEMENT_CATEGORY_LABEL,
@@ -9,6 +10,7 @@ import {
   placementLevelFor,
   placementMinutesFor,
   placementScoreOf,
+  placementStartCopy,
   strongestPlacementDomain,
   unansweredPlacementQuestions,
 } from "./placement.js";
@@ -84,5 +86,34 @@ describe("the placement test's small rules", () => {
       { questionId: "q1", selectedOptionId: "a" },
       { questionId: "q2", selectedOptionId: "c" },
     ]);
+  });
+});
+
+describe("what the result says", () => {
+  it("says the reader starts from scratch only when every domain reads Débutant", () => {
+    expect(placementStartCopy({ devScore: 30, cybersecScore: 30, networkScore: 39 })).toBe(
+      PLACEMENT_COPY.fromScratch,
+    );
+  });
+
+  it("says the reader has a base when a domain reaches Intermédiaire, never from scratch", () => {
+    expect(placementStartCopy({ devScore: 65, cybersecScore: 65, networkScore: 65 })).toBe(
+      PLACEMENT_COPY.foundation,
+    );
+    expect(placementStartCopy({ devScore: 0, cybersecScore: 40, networkScore: 0 })).toBe(
+      PLACEMENT_COPY.foundation,
+    );
+  });
+
+  it("leaves it to the line about the waivers once a domain is mastered", () => {
+    expect(placementStartCopy({ devScore: 70, cybersecScore: 0, networkScore: 0 })).toBeNull();
+  });
+
+  // The server waives WAIVED_DIFFICULTIES: beginner and intermediate.
+  it("names the same levels before the test and after it, the ones the server waives", () => {
+    for (const line of [PLACEMENT_COPY.waiverNote, PLACEMENT_COPY.waived]) {
+      expect(line).toContain("débutant et intermédiaire");
+    }
+    expect(WAIVED_DIFFICULTIES).toEqual(["BEGINNER", "INTERMEDIATE"]);
   });
 });

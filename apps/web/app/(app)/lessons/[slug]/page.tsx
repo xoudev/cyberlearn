@@ -99,6 +99,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
     unlockAll,
+    waivedLessonIds: pathContexts.waivedLessonIds,
   });
   const placement = placements.get(lesson.id);
 

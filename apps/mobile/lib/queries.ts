@@ -8,6 +8,7 @@ import {
   fetchLessonAccessApi,
   fetchMyRankApi,
   fetchPathCoversApi,
+  type LessonAccess,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { readLesson, refreshLesson } from "@/lib/offline";
@@ -591,6 +592,8 @@ export interface PathMission {
   estimatedMinutes: number;
   xpReward: number;
   status: ProgressStatus | null;
+  /** Waived by the placement test: open, and opens the next, as on the site. */
+  waived: boolean;
 }
 
 export interface PathDetail {
@@ -617,9 +620,10 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
     enabled: Boolean(slug),
     queryFn: async (): Promise<PathDetail> => {
       // Signed out, or the server unreachable: the lock stays, as for anyone.
+      const locked: LessonAccess = { unlockAll: false, waivedLessonIds: [] };
       const accessPromise = userId
-        ? fetchLessonAccessApi().catch(() => ({ unlockAll: false }))
-        : Promise.resolve({ unlockAll: false });
+        ? fetchLessonAccessApi().catch(() => locked)
+        : Promise.resolve(locked);
       const pathRes = await supabase
         .from("paths")
         .select(
@@ -668,6 +672,8 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         );
       }
 
+      const access = await accessPromise;
+      const waived = new Set(access.waivedLessonIds);
       // The published lessons only, as the site's path page draws them.
       const missions: PathMission[] = raw.path_lessons
         .map((pl) => {
@@ -682,6 +688,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
             estimatedMinutes: lesson.estimatedMinutes,
             xpReward: lesson.xpReward,
             status: statusByLesson.get(lesson.id) ?? null,
+            waived: waived.has(lesson.id),
           };
         })
         .filter((m): m is PathMission => m !== null)
@@ -700,7 +707,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         missions,
         modules: [...(raw.path_modules ?? [])].sort((a, b) => a.position - b.position),
         completedCount: missions.filter((m) => m.status === "COMPLETED").length,
-        unlockAll: (await accessPromise).unlockAll,
+        unlockAll: access.unlockAll,
       };
     },
   });
