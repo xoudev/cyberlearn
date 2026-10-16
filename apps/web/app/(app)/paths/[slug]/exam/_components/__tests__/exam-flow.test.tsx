@@ -159,6 +159,48 @@ describe("ExamFlow", () => {
     expect(m.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("hands the copy in once at zero, then leaves the retry to the reader", async () => {
+    const option = (id: string) => ({ id, text: id });
+    m.startQuizAttempt.mockResolvedValue({
+      ok: true,
+      attemptId: "a1",
+      questions: [
+        { id: "q1", question: "Première ?", options: [option("a"), option("b")] },
+        { id: "q2", question: "Seconde ?", options: [option("a"), option("b")] },
+      ],
+      startedAt: new Date(NOW),
+    });
+    m.submitQuizAttempt.mockResolvedValue({ ok: false, error: "Soumission impossible." });
+    render(<ExamFlow {...PROPS} questionCount={2} timeLimitMinutes={1} />);
+
+    fireEvent.click(button("Commencer l'examen"));
+    await settle();
+    tick(60 * SECOND);
+    await settle();
+    expect(m.submitQuizAttempt).toHaveBeenCalledTimes(1);
+    expect(m.refresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert").textContent).toBe("Soumission impossible.");
+
+    // The clock stays at zero: no copy sent again, no refresh, every second.
+    tick(10 * SECOND);
+    await settle();
+    expect(m.submitQuizAttempt).toHaveBeenCalledTimes(1);
+    expect(m.refresh).toHaveBeenCalledTimes(1);
+
+    // Sent again by hand, from the first question: time is up.
+    m.submitQuizAttempt.mockResolvedValue({
+      ok: true,
+      score: 0,
+      passed: false,
+      results: [],
+      cooldownUntil: null,
+    });
+    fireEvent.click(button("Terminer l'examen"));
+    await settle();
+    expect(m.submitQuizAttempt).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Seuil non atteint.")).toBeTruthy();
+  });
+
   it("names the day the wait ends on the rules, once in the browser", () => {
     const until = NOW + 30 * 60 * 60 * SECOND;
     render(<ExamFlow {...PROPS} cooldownUntilMs={until} />);

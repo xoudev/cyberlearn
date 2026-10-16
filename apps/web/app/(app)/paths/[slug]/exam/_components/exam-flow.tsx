@@ -181,6 +181,10 @@ export function ExamFlow(props: Props): React.JSX.Element {
   const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(timeLimitMinutes * 60);
   const submittingRef = useRef(false);
+  // The hand-in at zero is tried once: if it fails, "Terminer l'examen" stays to
+  // try again, rather than a request and a refresh every second until the rate
+  // limit refuses (the mock exam guards it the same way).
+  const autoSentRef = useRef(false);
   const resumedRef = useRef(false);
 
   const doSubmit = useCallback(
@@ -219,7 +223,10 @@ export function ExamFlow(props: Props): React.JSX.Element {
     const tick = () => {
       const r = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
       setRemaining(r);
-      if (r <= 0) void doSubmit(true);
+      if (r <= 0 && !autoSentRef.current) {
+        autoSentRef.current = true;
+        void doSubmit(true);
+      }
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -232,8 +239,9 @@ export function ExamFlow(props: Props): React.JSX.Element {
     (anchorMs: number) => {
       setBusy(true);
       setError(null);
-      // A copy handed in leaves the guard up; the next attempt starts without it.
+      // A copy handed in leaves the guards up; the next attempt starts without them.
       submittingRef.current = false;
+      autoSentRef.current = false;
       void (async () => {
         const res = await startQuizAttempt(pathId);
         setBusy(false);
@@ -688,6 +696,7 @@ function TakingScreen(props: {
     answers,
     remaining,
     busy,
+    error,
     onSelect,
     onGoto,
     onPrev,
@@ -695,7 +704,9 @@ function TakingScreen(props: {
     onFinish,
   } = props;
   const q = questions[index];
-  const last = index === questionCount - 1;
+  // Once time is up the copy can be handed in from any question: the one
+  // sent at zero may have failed, and this is the way to send it again.
+  const last = index === questionCount - 1 || remaining <= 0;
   const low = remaining <= 5 * 60;
   const pct = questionCount > 0 ? ((index + 1) / questionCount) * 100 : 0;
 
@@ -763,6 +774,20 @@ function TakingScreen(props: {
                   );
                 })}
               </div>
+              {/* A copy refused or lost on the way used to say nothing here. */}
+              {error && (
+                <p
+                  role="alert"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    color: "var(--color-danger)",
+                    marginTop: 12,
+                  }}
+                >
+                  {error}
+                </p>
+              )}
             </div>
           </div>
         </main>
