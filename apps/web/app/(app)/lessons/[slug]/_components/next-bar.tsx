@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useId } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { CompleteButton } from "./complete-button";
-import { LessonCompleteModal } from "./lesson-complete-modal";
-import type { CompleteLessonResult } from "../_actions/track-progress";
 import { nextBarTarget } from "./next-bar-target";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
@@ -21,33 +17,38 @@ interface NextBarProps {
   } | null;
   /** Where this lesson sits, so the reader can see the path they are walking. */
   placement: { path: { slug: string; title: string }; rank: number; total: number } | null;
-  lessonId: string;
-  lessonTitle: string;
-  xpReward: number;
-  isCompleted: boolean;
+  /** The next lesson waits for this one to be finished (the path's lock, unlock.ts). */
+  nextLocked?: boolean;
 }
 
-export function NextBar({
-  next,
-  placement,
-  lessonId,
-  lessonTitle,
-  xpReward,
-  isCompleted,
-}: NextBarProps): React.ReactElement {
+const ARROW = (
+  <svg viewBox="0 0 14 14" width={12} height={12} fill="none" aria-hidden="true">
+    <path
+      d="M3 7 H11 M8 4 L11 7 L8 10"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * Where the reader goes once the lesson is read: the next lesson of the path,
+ * back to the path, or back to the catalogue.
+ *
+ * It carried a "Marquer terminé" too, drawn under whichever section was on
+ * screen: from the first one it completed the lesson, unread, its quizzes
+ * unanswered, while the toolbar above said an exercise held the way. The
+ * toolbar's "Terminer", at the end of the last section, is the one way to
+ * finish a lesson now.
+ */
+export function NextBar({ next, placement, nextLocked = false }: NextBarProps): React.ReactElement {
   const catColor = next ? categoryMeta(next.category).color : "var(--cosmetic-accent)";
   const diffLabel = next ? difficultyMeta(next.difficulty).label : "";
   const diffColor = next ? difficultyMeta(next.difficulty).color : "var(--color-rarity-rare)";
-  const target = nextBarTarget(next, placement);
-
-  // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
-  const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
-  const router = useRouter();
-
-  function handleClose() {
-    setCompletionResult(null);
-    router.refresh();
-  }
+  const target = nextBarTarget(next, placement, nextLocked);
+  const hintId = useId();
 
   return (
     <>
@@ -178,50 +179,40 @@ export function NextBar({
 
         {/* Actions */}
         <div className="lesson-next-bar__actions">
-          {/* CompleteButton unmounts when isCompleted flips - that's fine, modal state is here */}
-          {!isCompleted && (
-            <div className="lesson-next-bar__complete">
-              <CompleteButton
-                lessonId={lessonId}
-                xpReward={xpReward}
-                variant="ghost"
-                onComplete={setCompletionResult}
-              />
-            </div>
+          {target.hint !== null && (
+            <p id={hintId} className="lesson-next-bar__hint">
+              {target.hint}
+            </p>
           )}
-
-          <Link
-            className="btn btn--sm"
-            href={target.href}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#1F3BFF";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--color-brand-blue)";
-            }}
-          >
-            {target.action}
-            <svg viewBox="0 0 14 14" width={12} height={12} fill="none">
-              <path
-                d="M3 7 H11 M8 4 L11 7 L8 10"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
+          {target.href === null ? (
+            // The next lesson waits for this one: the button says so rather
+            // than lead to a page that sends the reader back to the path map.
+            <button
+              type="button"
+              className="btn btn--sm"
+              disabled
+              aria-describedby={target.hint !== null ? hintId : undefined}
+            >
+              {target.action}
+              {ARROW}
+            </button>
+          ) : (
+            <Link
+              className="btn btn--sm"
+              href={target.href}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#1F3BFF";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--color-brand-blue)";
+              }}
+            >
+              {target.action}
+              {ARROW}
+            </Link>
+          )}
         </div>
       </div>
-
-      {/* Modal rendered outside NextBar's conditional blocks - stays alive until explicitly closed */}
-      {completionResult !== null && (
-        <LessonCompleteModal
-          result={completionResult}
-          lessonTitle={lessonTitle}
-          onClose={handleClose}
-        />
-      )}
     </>
   );
 }

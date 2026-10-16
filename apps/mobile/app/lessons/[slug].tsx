@@ -12,7 +12,7 @@ import {
   Rise,
 } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
-import { CheckIcon } from "@/components/icons";
+import { CheckIcon, LockIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { glossaryPlan } from "@/lib/glossary";
 import { LessonRatingCard } from "@/components/lesson-rating";
@@ -46,7 +46,14 @@ import { useSession } from "@/lib/session";
 type Step =
   | { mode: "read"; section: number }
   | { mode: "quiz"; qIndex: number; picked: number | null; sending: boolean; error: string | null }
-  | { mode: "result"; correctCount: number; reward: CompleteLessonResult | null; saving: boolean };
+  | {
+      mode: "result";
+      correctCount: number;
+      reward: CompleteLessonResult | null;
+      /** Why the server recorded nothing (a lesson still locked in its path), or null. */
+      refusal: string | null;
+      saving: boolean;
+    };
 
 const FIRST_QUESTION: Extract<Step, { mode: "quiz" }> = {
   mode: "quiz",
@@ -120,9 +127,11 @@ export default function LessonReader(): React.JSX.Element {
   const totalSteps = sections.length + (quizzes.length > 0 ? 1 : 0);
 
   async function finishLesson(correctCount: number): Promise<void> {
-    setStep({ mode: "result", correctCount, reward: null, saving: true });
-    const reward = await completeLessonApi(data?.id ?? "");
-    setStep({ mode: "result", correctCount, reward, saving: false });
+    setStep({ mode: "result", correctCount, reward: null, refusal: null, saving: true });
+    const reply = await completeLessonApi(data?.id ?? "");
+    const reward = reply.kind === "recorded" ? reply.result : null;
+    const refusal = reply.kind === "refused" ? reply.message : null;
+    setStep({ mode: "result", correctCount, reward, refusal, saving: false });
     if (reward?.leveledUp) setShowLevelUp(true);
     // Refresh every cached read (dashboard, catalogs, profile, paths).
     void queryClient.invalidateQueries();
@@ -278,6 +287,7 @@ export default function LessonReader(): React.JSX.Element {
           correctCount={step.correctCount}
           total={quizzes.length}
           reward={step.reward}
+          refusal={step.refusal}
           saving={step.saving}
           onReview={() => setStep(FIRST_QUESTION)}
           onRetrySync={() => void finishLesson(step.correctCount)}
@@ -517,6 +527,7 @@ function ResultView({
   correctCount,
   total,
   reward,
+  refusal,
   saving,
   onReview,
   onRetrySync,
@@ -529,6 +540,7 @@ function ResultView({
   correctCount: number;
   total: number;
   reward: CompleteLessonResult | null;
+  refusal: string | null;
   saving: boolean;
   onReview: () => void;
   onRetrySync: () => void;
@@ -539,14 +551,18 @@ function ResultView({
   const { width } = useWindowDimensions();
   const compactLayout = width < 380;
   const xp = reward?.xpGained ?? 0;
-  const syncFailed = !saving && !reward;
+  // Refused: nothing was recorded, and trying again would not change it.
+  const refused = !saving && refusal !== null;
+  const syncFailed = !saving && !reward && !refused;
   const resultMessage = saving
     ? "Synchronisation de ta progression…"
-    : reward?.alreadyCompleted
-      ? "Cette leçon était déjà validée. Ton meilleur résultat reste enregistré."
-      : reward
-        ? "Ta progression et tes récompenses sont enregistrées."
-        : "Le contenu est terminé, mais la progression n’a pas encore été synchronisée.";
+    : refusal !== null
+      ? refusal
+      : reward?.alreadyCompleted
+        ? "Cette leçon était déjà validée. Ton meilleur résultat reste enregistré."
+        : reward
+          ? "Ta progression et tes récompenses sont enregistrées."
+          : "Le contenu est terminé, mais la progression n’a pas encore été synchronisée.";
 
   return (
     <ScrollView
@@ -568,16 +584,20 @@ function ResultView({
               borderRadius: radius.sm,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: `${colors.success}18`,
+              backgroundColor: `${refused ? colors.warning : colors.success}18`,
             }}
           >
-            <CheckIcon color={colors.success} size={22} strokeWidth={2.2} />
+            {refused ? (
+              <LockIcon color={colors.warning} size={22} strokeWidth={2.2} />
+            ) : (
+              <CheckIcon color={colors.success} size={22} strokeWidth={2.2} />
+            )}
           </View>
           <View style={{ gap: 6 }}>
-            <Text variant="micro" style={{ color: colors.success }}>
-              Leçon validée
+            <Text variant="micro" style={{ color: refused ? colors.warning : colors.success }}>
+              {refused ? "Leçon non validée" : "Leçon validée"}
             </Text>
-            <Text variant="h1">Mission accomplie</Text>
+            <Text variant="h1">{refused ? "Pas encore enregistrée" : "Mission accomplie"}</Text>
             <Text variant="bodySm" numberOfLines={2} style={{ maxWidth: 340 }}>
               {lessonTitle}
             </Text>
@@ -667,7 +687,7 @@ function ResultView({
                   color: colors.warning,
                 }}
               >
-                En attente
+                {refused ? "Non acquise" : "En attente"}
               </Text>
             )}
             <Text variant="bodySm">
@@ -675,7 +695,9 @@ function ResultView({
                 ? `Niveau ${reward.newLevel}`
                 : saving
                   ? "Enregistrement"
-                  : "Non synchronisée"}
+                  : refused
+                    ? "Non enregistrée"
+                    : "Non synchronisée"}
             </Text>
           </View>
         </View>
@@ -683,7 +705,7 @@ function ResultView({
         <View
           style={{
             borderRadius: radius.sm,
-            backgroundColor: syncFailed ? `${colors.warning}10` : colors.bgOverlay,
+            backgroundColor: syncFailed || refused ? `${colors.warning}10` : colors.bgOverlay,
             paddingHorizontal: 14,
             paddingVertical: 12,
           }}
@@ -691,7 +713,7 @@ function ResultView({
           <Text
             variant="bodySm"
             accessibilityLiveRegion="polite"
-            style={{ color: syncFailed ? colors.warning : colors.textSecondary }}
+            style={{ color: syncFailed || refused ? colors.warning : colors.textSecondary }}
           >
             {resultMessage}
           </Text>

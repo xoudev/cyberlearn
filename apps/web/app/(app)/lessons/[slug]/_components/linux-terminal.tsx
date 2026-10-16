@@ -27,6 +27,7 @@ import {
 } from "@/lib/linux-terminal/session";
 import { clockText, formatClock, minutesLabel, readTimer } from "@/lib/linux-terminal/timer";
 import { rememberTyped } from "@cyberlearn/lib/terminal/explain";
+import { LINUX_TERMINAL_DEFAULT_TITLE, terminalExerciseKey } from "@cyberlearn/lib/exercises/keys";
 import { cssToken } from "@cyberlearn/ui";
 import { CommandExplanation } from "./command-explanation";
 import { linuxTerminalTheme } from "./terminal-themes";
@@ -307,7 +308,7 @@ const PHASE_LABEL: Record<Phase, string> = {
 export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement {
   const parsed = propsSchema.safeParse(rawProps);
   const props = parsed.success ? parsed.data : {};
-  const title = props.title ?? "Linux · root@cyberlearn";
+  const title = props.title ?? LINUX_TERMINAL_DEFAULT_TITLE;
   const height = props.height ?? 380;
   const files = props.files ?? {};
   const expected = (props.expectedCommands ?? []).map(normalizeCommand);
@@ -632,9 +633,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     if (startedAt !== null && allDone && finishedAt === null) setFinishedAt(Date.now());
   }, [startedAt, allDone, finishedAt]);
 
-  // Done, for the teacher's class view: once, keyed by the exercise's id or title.
+  // Done, for the teacher's class view: once, keyed by the exercise's id or
+  // title, the key the server finds in the lesson (exercises/keys.ts).
   useEffect(() => {
-    if (allDone && total > 0) recordExercise(props.id ?? title, "TERMINAL");
+    if (allDone && total > 0) recordExercise(terminalExerciseKey(props.id, title), "TERMINAL");
   }, [allDone, total, recordExercise, props.id, title]);
 
   // At the limit, the score is kept: it is the result of the exercise, even

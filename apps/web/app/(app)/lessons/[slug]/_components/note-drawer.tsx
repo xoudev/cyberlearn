@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SideDrawer } from "@cyberlearn/ui";
 import { saveNoteAction } from "@/app/(app)/notes/_actions/note-actions";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { NOTE_CONTENT_MAX } from "@/lib/notes/limits";
 
 /**
  * From this width the notes sit beside the lesson instead of over it: there is
@@ -29,7 +30,24 @@ interface NoteDrawerProps {
   onClose: () => void;
 }
 
-type SaveStatus = "idle" | "saving" | "saved";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+/** From this length the footer counts the characters left (90 % of the limit). */
+const COUNT_FROM = Math.floor(NOTE_CONTENT_MAX * 0.9);
+
+const TOO_LONG = `Note trop longue : ${NOTE_CONTENT_MAX.toLocaleString("fr-FR")} caractères au plus.`;
+const SAVE_FAILED = "Enregistrement impossible.";
+const OFFLINE = "Enregistrement impossible. Vérifie ta connexion.";
+
+/** The footer's count near the limit: what is left, or how far past it. */
+export function charactersLeft(length: number): string {
+  const left = NOTE_CONTENT_MAX - length;
+  if (left < 0) {
+    const over = -left;
+    return `${over.toLocaleString("fr-FR")} caractère${over > 1 ? "s" : ""} en trop`;
+  }
+  return `${left.toLocaleString("fr-FR")} caractère${left > 1 ? "s" : ""} restant${left > 1 ? "s" : ""}`;
+}
 
 /** Small formatting-toolbar button. */
 function ToolBtn({
@@ -91,31 +109,84 @@ export function NoteDrawer({
   const [content, setContent] = useState(initialContent);
   const [wordCount, setWordCount] = useState(initialWordCount);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef(initialContent);
+  // Only the latest save speaks: an earlier one answering late must not
+  // overwrite what the footer says about the note as it is now.
+  const latestSave = useRef(0);
+  // Saves sent and not answered yet. Until they are, what is stored is not
+  // known: one of them may still land, with a text the note no longer has.
+  const inFlight = useRef(0);
+  // The note as it is on screen, for an answer that arrives after it changed.
+  const contentRef = useRef(content);
+  contentRef.current = content;
+
+  // A refused save used to fall back to "Sauvegardé auto", and a dropped
+  // request left "Enregistrement…" up for good: the note was lost on reload
+  // without a word. A failure now says so, and can be tried again.
+  const save = useCallback(
+    (text: string) => {
+      const id = ++latestSave.current;
+      // Speaks only for the note on screen: once it has changed, a newer save
+      // is waiting to go or already sent, and that one will say how it went.
+      const current = (): boolean => id === latestSave.current && text === contentRef.current;
+      const fail = (message: string): void => {
+        if (!current()) return;
+        setSaveError(message);
+        setStatus("error");
+      };
+      if (text.length > NOTE_CONTENT_MAX) {
+        fail(TOO_LONG);
+        return;
+      }
+      setStatus("saving");
+      inFlight.current++;
+      saveNoteAction({ lessonId, content: text }).then(
+        (res) => {
+          inFlight.current--;
+          if (!res.ok) {
+            fail(res.error ?? SAVE_FAILED);
+            return;
+          }
+          lastSaved.current = text;
+          if (!current()) return;
+          setWordCount(res.wordCount ?? 0);
+          setSaveError(null);
+          setStatus("saved");
+        },
+        () => {
+          inFlight.current--;
+          fail(OFFLINE);
+        },
+      );
+    },
+    [lessonId],
+  );
 
   // Debounced auto-save whenever the content differs from the last saved value.
   useEffect(() => {
-    if (content === lastSaved.current) return;
+    if (content === lastSaved.current && inFlight.current === 0) {
+      // Back to what is stored, say a too-long note undone: nothing is left to
+      // save, and a failure about a later version no longer applies. Not while
+      // a save is on its way: "A" typed into "AB" and back to "A" while "AB"
+      // is sent ends with "AB" stored, so "A" is saved again.
+      latestSave.current++;
+      setSaveError(null);
+      setStatus((s) => (s === "idle" ? s : "saved"));
+      return;
+    }
     setStatus("saving");
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      void saveNoteAction({ lessonId, content }).then((res) => {
-        if (res.ok) {
-          lastSaved.current = content;
-          setWordCount(res.wordCount ?? 0);
-          setStatus("saved");
-        } else {
-          setStatus("idle");
-        }
-      });
+      save(content);
     }, 700);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [content, lessonId]);
+  }, [content, save]);
 
   // Wrap the current selection with markdown markers (bold, italic, code).
   const surround = useCallback((before: string, after = before) => {
@@ -188,19 +259,63 @@ export function NoteDrawer({
       }
       footer={
         <>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 7,
+              minWidth: 0,
+            }}
+          >
             <span
               aria-hidden="true"
               style={{
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: status === "saving" ? "var(--color-warning)" : "var(--cosmetic-accent)",
+                flexShrink: 0,
+                background:
+                  status === "error"
+                    ? "var(--color-danger)"
+                    : status === "saving"
+                      ? "var(--color-warning)"
+                      : "var(--cosmetic-accent)",
               }}
             />
-            {status === "saving" ? "Enregistrement…" : "Sauvegardé auto"}
+            <span
+              role="status"
+              style={status === "error" ? { color: "var(--color-danger)" } : undefined}
+            >
+              {status === "error"
+                ? saveError
+                : status === "saving"
+                  ? "Enregistrement…"
+                  : "Sauvegardé auto"}
+            </span>
+            {/* Too long is not retried: the note has to be shortened first. */}
+            {status === "error" && saveError !== TOO_LONG ? (
+              <button
+                type="button"
+                onClick={() => {
+                  save(content);
+                }}
+                style={retryBtn}
+              >
+                Réessayer
+              </button>
+            ) : null}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+            {content.length >= COUNT_FROM ? (
+              <span
+                style={
+                  content.length > NOTE_CONTENT_MAX ? { color: "var(--color-danger)" } : undefined
+                }
+              >
+                {charactersLeft(content.length)}
+              </span>
+            ) : null}
             <span>
               {wordCount} mot{wordCount > 1 ? "s" : ""} · MD
             </span>
@@ -329,6 +444,7 @@ export function NoteDrawer({
           setContent(e.target.value);
         }}
         aria-label="Note de la leçon"
+        maxLength={NOTE_CONTENT_MAX}
         placeholder={
           "# Titre de la note\n\nÉcris tes notes en markdown…\n\n- **gras**, *italique*, `code`"
         }
@@ -352,6 +468,18 @@ export function NoteDrawer({
     </SideDrawer>
   );
 }
+
+const retryBtn: React.CSSProperties = {
+  padding: 0,
+  background: "transparent",
+  border: "none",
+  color: "var(--cosmetic-accent)",
+  font: "inherit",
+  letterSpacing: "inherit",
+  textTransform: "inherit",
+  textDecoration: "underline",
+  cursor: "pointer",
+};
 
 const hdrBtn: React.CSSProperties = {
   display: "grid",

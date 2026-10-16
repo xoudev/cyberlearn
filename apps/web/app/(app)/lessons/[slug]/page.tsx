@@ -97,9 +97,10 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
   );
 
-  const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
+  const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
     unlockAll,
-  }).get(lesson.id);
+  });
+  const placement = placements.get(lesson.id);
 
   // The gate is here, before any progress is written: hiding the card on the
   // catalogue would leave the lesson one guessed URL away, and starting it
@@ -109,6 +110,10 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   }
 
   const nextLesson = placement?.next ?? null;
+  // Read off the same placements as this lesson's gate: the next lesson is
+  // open once this one is finished, or for an administrator, or if it was
+  // finished already. Until then the bar says so instead of leading to it.
+  const nextLocked = nextLesson !== null && !isReadable(placements.get(nextLesson.id));
 
   if (!existing && !reviewing) {
     await lessonRepository.upsertProgress({
@@ -126,6 +131,41 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const sections = toc.filter((t) => t.level === 2);
   const mdxSections = splitMdxSections(lesson.contentMdx);
 
+  const stepper = (
+    <LessonStepper
+      lessonId={lesson.id}
+      lessonTitle={lesson.title}
+      xpReward={lesson.xpReward}
+      isCompleted={isCompleted}
+      reviewing={reviewing}
+      sections={sections}
+      note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
+      planExtra={
+        <>
+          <Suspense fallback={null}>
+            <LessonAuthor lessonId={lesson.id} />
+          </Suspense>
+          <LessonGlossaryNote />
+        </>
+      }
+    >
+      {mdxSections.map((src, i) => (
+        // SAFETY: index key is stable - sections don't reorder after page load
+        <SectionPane key={i} index={i}>
+          {/* Each section fails on its own: one bad expression used to take
+            the whole lesson down. See lesson-section.tsx. */}
+          <LessonSection
+            source={src}
+            components={LESSON_MDX_COMPONENTS}
+            options={LESSON_MDX_OPTIONS}
+            lessonSlug={lesson.slug}
+            index={i}
+          />
+        </SectionPane>
+      ))}
+    </LessonStepper>
+  );
+
   return (
     <div className="lesson-page">
       <LessonHeader
@@ -141,49 +181,28 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       />
 
       {/* ── Toolbar + the section on screen ──────────────────────────────── */}
-      <LessonQuizProvider
-        lessonId={lesson.id}
-        userId={authUser.id}
-        initialAnswers={initialQuizAnswers}
-        initialReported={reportedQuizIds}
-      >
-        <LessonStepper
+      {reviewing ? (
+        // No quiz record in review. An answer is written against the progress
+        // row that opening a lesson creates, and a draft creates none: every
+        // answer came back "Leçon introuvable." and held the section shut.
+        // Without the record the quizzes score locally, as in the editor's
+        // preview, and nothing is written.
+        stepper
+      ) : (
+        <LessonQuizProvider
           lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          xpReward={lesson.xpReward}
-          isCompleted={isCompleted}
-          sections={sections}
-          note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
-          planExtra={
-            <>
-              <Suspense fallback={null}>
-                <LessonAuthor lessonId={lesson.id} />
-              </Suspense>
-              <LessonGlossaryNote />
-            </>
-          }
+          userId={authUser.id}
+          initialAnswers={initialQuizAnswers}
+          initialReported={reportedQuizIds}
         >
-          {mdxSections.map((src, i) => (
-            // SAFETY: index key is stable - sections don't reorder after page load
-            <SectionPane key={i} index={i}>
-              {/* Each section fails on its own: one bad expression used to take
-                the whole lesson down. See lesson-section.tsx. */}
-              <LessonSection
-                source={src}
-                components={LESSON_MDX_COMPONENTS}
-                options={LESSON_MDX_OPTIONS}
-                lessonSlug={lesson.slug}
-                index={i}
-              />
-            </SectionPane>
-          ))}
-        </LessonStepper>
-      </LessonQuizProvider>
+          {stepper}
+        </LessonQuizProvider>
+      )}
 
       {/* ── Next bar ─────────────────────────────────────────────────────────
-          Rendered even with no next lesson: the bar carries the "terminer"
-          button, so gating it on a successor left the last lesson of a path
-          with no way to complete it. Not in review: a draft is not something
+          Rendered even with no next lesson: it leads back to the path or the
+          catalogue. A lesson is finished from the toolbar's "Terminer", at
+          the end of its last section. Not in review: a draft is not something
           to finish, rate or ask about. */}
       {!reviewing && (
         <NextBar
@@ -193,10 +212,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               ? { path: placement.path, rank: placement.rank, total: placement.total }
               : null
           }
-          lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          xpReward={lesson.xpReward}
-          isCompleted={isCompleted}
+          nextLocked={nextLocked}
         />
       )}
 

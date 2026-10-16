@@ -128,6 +128,8 @@ describe("submitReviewAction", () => {
     const res = await submitReviewAction(SCHEDULE_ID, 5);
 
     expect(res.success).toBe(false);
+    // The list says so: graded already, in another tab or on the phone.
+    expect(res.error).toBe("Cette révision n'est plus à faire.");
     expect(m.transaction).not.toHaveBeenCalled();
     expect(m.userUpdate).not.toHaveBeenCalled();
   });

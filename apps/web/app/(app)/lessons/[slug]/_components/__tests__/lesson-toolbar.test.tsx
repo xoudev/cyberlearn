@@ -138,6 +138,13 @@ describe("the steps either side", () => {
     toolbar({ currentStep: 3, isPending: true });
     expect(button("Terminer la leçon").disabled).toBe(true);
   });
+
+  it("has nothing to finish in an administrator's preview", () => {
+    // The page says nothing is recorded there: a "Terminer" recorded a completion.
+    toolbar({ currentStep: 3, reviewing: true });
+    expect(screen.queryByRole("button", { name: "Terminer la leçon" })).toBeNull();
+    expect(button("Section suivante").disabled).toBe(true);
+  });
 });
 
 describe("the plan", () => {
@@ -228,5 +235,16 @@ describe("canOpenSection", () => {
 
   it("opens anything once the lesson is done", () => {
     expect(canOpenSection(4, { ...at, isCompleted: true })).toBe(true);
+  });
+
+  it("opens anything in an administrator's preview", () => {
+    expect(canOpenSection(4, { ...at, reviewing: true })).toBe(true);
+  });
+
+  it("opens a section reached before, after going back from it", () => {
+    const back = { currentStep: 0, doneSteps: new Set([0]), isCompleted: false, furthestStep: 2 };
+    expect(canOpenSection(1, back)).toBe(true);
+    expect(canOpenSection(2, back)).toBe(true);
+    expect(canOpenSection(3, back)).toBe(false);
   });
 });

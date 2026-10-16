@@ -24,6 +24,7 @@ import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/li
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
 import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
+import { readCompletionReply, type CompletionReply } from "@/lib/lesson-completion";
 import type { QaQuestion } from "@/lib/lesson-qa";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
@@ -415,15 +416,7 @@ export async function fetchBadgeCollectionApi(): Promise<BadgeCollection> {
 
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
-export interface CompleteLessonResult {
-  alreadyCompleted: boolean;
-  xpGained: number;
-  leveledUp: boolean;
-  newLevel: number;
-  newBadges: { name: string; rarity: string; xpReward: number }[];
-  /** Right answers out of the lesson's quizzes, fixed at completion. */
-  quizScore?: { correct: number; total: number } | null;
-}
+export type { CompleteLessonResult, CompletionReply } from "@/lib/lesson-completion";
 
 export type RatePathReply =
   | { ok: true; avgRating: number | null; ratingsCount: number }
@@ -533,16 +526,17 @@ export async function gradeReviewApi(
   }
 }
 
-export async function completeLessonApi(lessonId: string): Promise<CompleteLessonResult | null> {
+/** Finishes a lesson: recorded, refused with its reason, or not synced (see lesson-completion). */
+export async function completeLessonApi(lessonId: string): Promise<CompletionReply> {
   try {
     const res = await authedFetch("/api/mobile/progress", {
       method: "POST",
       body: JSON.stringify({ lessonId }),
     });
-    const body = (await res.json()) as { ok: boolean; result?: CompleteLessonResult };
-    return body.ok && body.result ? body.result : null;
+    const body: unknown = await res.json();
+    return readCompletionReply(res.status, body);
   } catch {
-    return null;
+    return { kind: "unsynced" };
   }
 }
 

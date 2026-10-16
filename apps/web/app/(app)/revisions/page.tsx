@@ -175,152 +175,147 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             : "Ta session du jour, les leçons en retard depuis le plus longtemps d'abord. Chaque révision consolide ce que tu as appris, et une leçon retenue assez de fois sort du cycle."}
         </p>
 
-        {/* Empty state */}
-        {isEmpty ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-            <div
-              style={{
-                padding: "60px 40px",
-                textAlign: "center",
-                border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
-                background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
-                position: "relative",
-              }}
-            >
+        {/* The list stays mounted across the reload each grade brings, so the
+            reviews graded keep their outcome even once nothing is left due. */}
+        <RevisionsList
+          rows={rows}
+          empty={
+            <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
               <div
                 style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 48,
-                  fontWeight: 800,
-                  color: "var(--cosmetic-accent)",
-                  marginBottom: 16,
-                  filter:
-                    "drop-shadow(0 0 20px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent))",
-                }}
-              >
-                ✓
-              </div>
-              <p
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 14,
-                  color: "var(--color-text-secondary)",
-                  margin: 0,
-                }}
-              >
-                Prochain batch de révisions dans quelques heures.
-              </p>
-            </div>
-
-            {/* Upcoming even when empty */}
-            {upcomingSchedules.length > 0 && (
-              <UpcomingSection schedules={upcomingSchedules} now={now} />
-            )}
-
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <Link
-                href="/lessons"
-                className="btn btn--lg"
-                style={{
+                  padding: "60px 40px",
+                  textAlign: "center",
+                  border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
+                  background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
                   position: "relative",
                 }}
               >
-                Faire une leçon{" "}
-                <span
-                  style={{
-                    color: "var(--cosmetic-accent)",
-                    textShadow:
-                      "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-                  }}
-                >
-                  →
-                </span>
-              </Link>
-              <Link
-                href="/dashboard"
-                className="back-link mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                  textDecoration: "none",
-                  padding: "16px 8px",
-                }}
-              >
-                ← Retour au dashboard
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Review list */}
-            <section style={{ marginBottom: 0 }}>
-              <div className="card" style={{ overflow: "hidden" }}>
-                <RevisionsList rows={rows} />
-
-                {/* Footer */}
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 24px",
-                    borderTop: "1px solid rgba(31,27,71,0.6)",
-                    background: "#050416",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10.5,
-                    color: "var(--color-text-faint)",
-                    letterSpacing: "0.06em",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 48,
+                    fontWeight: 800,
+                    color: "var(--cosmetic-accent)",
+                    marginBottom: 16,
+                    filter:
+                      "drop-shadow(0 0 20px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent))",
                   }}
                 >
-                  <span>
-                    Courbe d&apos;oubli · algorithme SM-2 · {REVIEW_SESSION_SIZE} par jour au plus
-                  </span>
-                  <span>
-                    Total ·{" "}
-                    <b style={{ color: "var(--color-text-secondary)" }}>
-                      ~{String(totalMinutes)} minutes
-                    </b>
-                  </span>
+                  ✓
                 </div>
+                <p
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 14,
+                    color: "var(--color-text-secondary)",
+                    margin: 0,
+                  }}
+                >
+                  Prochain batch de révisions dans quelques heures.
+                </p>
               </div>
-            </section>
 
-            {waiting !== null && (
-              <p
-                style={{
-                  margin: "14px 0 0",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                {waiting}
-              </p>
-            )}
-
-            {/* CTA: grading happens in place now, only the back link remains */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 32 }}>
-              <Link
-                href="/dashboard"
-                className="back-link mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                  textDecoration: "none",
-                  padding: "16px 8px",
-                }}
-              >
-                ← Retour au dashboard
-              </Link>
-            </div>
-
-            {/* Upcoming */}
-            {upcomingSchedules.length > 0 && (
-              <div style={{ marginTop: 56 }}>
+              {/* Upcoming even when empty */}
+              {upcomingSchedules.length > 0 && (
                 <UpcomingSection schedules={upcomingSchedules} now={now} />
+              )}
+
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <Link
+                  href="/lessons"
+                  className="btn btn--lg"
+                  style={{
+                    position: "relative",
+                  }}
+                >
+                  Faire une leçon{" "}
+                  <span
+                    style={{
+                      color: "var(--cosmetic-accent)",
+                      textShadow:
+                        "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
+                    }}
+                  >
+                    →
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="back-link mono-label"
+                  style={{
+                    color: "var(--color-text-muted)",
+                    textDecoration: "none",
+                    padding: "16px 8px",
+                  }}
+                >
+                  ← Retour au dashboard
+                </Link>
               </div>
-            )}
-          </>
-        )}
+            </div>
+          }
+          footer={
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 24px",
+                borderTop: "1px solid rgba(31,27,71,0.6)",
+                background: "#050416",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10.5,
+                color: "var(--color-text-faint)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              <span>
+                Courbe d&apos;oubli · algorithme SM-2 · {REVIEW_SESSION_SIZE} par jour au plus
+              </span>
+              <span>
+                Total ·{" "}
+                <b style={{ color: "var(--color-text-secondary)" }}>
+                  ~{String(totalMinutes)} minutes
+                </b>
+              </span>
+            </div>
+          }
+        >
+          {waiting !== null && (
+            <p
+              style={{
+                margin: "14px 0 0",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.06em",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              {waiting}
+            </p>
+          )}
+
+          {/* CTA: grading happens in place now, only the back link remains */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 32 }}>
+            <Link
+              href="/dashboard"
+              className="back-link mono-label"
+              style={{
+                color: "var(--color-text-muted)",
+                textDecoration: "none",
+                padding: "16px 8px",
+              }}
+            >
+              ← Retour au dashboard
+            </Link>
+          </div>
+
+          {/* Upcoming */}
+          {upcomingSchedules.length > 0 && (
+            <div style={{ marginTop: 56 }}>
+              <UpcomingSection schedules={upcomingSchedules} now={now} />
+            </div>
+          )}
+        </RevisionsList>
       </div>
     </>
   );

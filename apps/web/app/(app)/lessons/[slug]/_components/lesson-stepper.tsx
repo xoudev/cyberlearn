@@ -42,14 +42,14 @@ function exerciseReducer(state: ExerciseState, action: ExerciseAction): Exercise
       return { ...state, required: cloneMap(state.required).set(action.step, req) };
     }
     case "unregister": {
+      // Only the requirement goes: what was done stays done, for the whole
+      // page. A section off screen is unmounted, and a Python challenge or a
+      // playground comes back without its result: forgetting that it was
+      // done held the section again, behind an exercise already passed.
       const req = cloneSet(state.required.get(action.step));
-      const done = cloneSet(state.done.get(action.step));
+      if (!req.has(action.id)) return state;
       req.delete(action.id);
-      done.delete(action.id);
-      return {
-        required: cloneMap(state.required).set(action.step, req),
-        done: cloneMap(state.done).set(action.step, done),
-      };
+      return { ...state, required: cloneMap(state.required).set(action.step, req) };
     }
     case "done": {
       const done = cloneSet(state.done.get(action.step));
@@ -69,6 +69,12 @@ interface LessonStepperProps {
   lessonTitle: string;
   xpReward: number;
   isCompleted: boolean;
+  /**
+   * An administrator previewing a lesson nobody else can open yet. Every
+   * section opens, no exercise holds them, and there is no "Terminer": the
+   * page says nothing is recorded, and finishing would record a completion.
+   */
+  reviewing?: boolean;
   sections: { text: string; id: string }[];
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
@@ -87,6 +93,7 @@ export function LessonStepper({
   lessonTitle,
   xpReward,
   isCompleted,
+  reviewing = false,
   sections,
   planExtra,
   note,
@@ -97,6 +104,9 @@ export function LessonStepper({
   const [doneSteps, setDoneSteps] = useState<ReadonlySet<number>>(() =>
     isCompleted ? new Set(Array.from({ length: totalSteps }, (_el, i) => i)) : new Set<number>(),
   );
+  // The furthest section the reader has had on screen: going back from it
+  // with "Précédente" leaves it open in the plan, where it used to shut.
+  const [furthestStep, setFurthestStep] = useState(0);
   const [exerciseState, dispatchExercise] = useReducer(exerciseReducer, {
     required: new Map<number, Set<string>>(),
     done: new Map<number, Set<string>>(),
@@ -104,6 +114,9 @@ export function LessonStepper({
   const exerciseStateRef = useRef(exerciseState);
   exerciseStateRef.current = exerciseState;
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
+  // Why the server recorded nothing: said at the end of the lesson, where the
+  // completion modal would have shown a lesson finished for 0 XP.
+  const [refusal, setRefusal] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -170,7 +183,7 @@ export function LessonStepper({
   // ── Derived state ─────────────────────────────────────────────────────────────
 
   const stepComp = getStepCompletion(currentStep);
-  const canAdvance = isCompleted || stepComp.isAllComplete;
+  const canAdvance = reviewing || isCompleted || stepComp.isAllComplete;
   const isLastStep = currentStep === totalSteps - 1;
 
   // ── Navigation ────────────────────────────────────────────────────────────────
@@ -181,10 +194,16 @@ export function LessonStepper({
 
   function handleNext() {
     if (!canAdvance) return;
-    if (isLastStep && !isCompleted) {
+    if (isLastStep && !isCompleted && !reviewing) {
+      setRefusal(null);
       startTransition(async () => {
         const res = await completeLesson(lessonId);
-        if (res.alreadyCompleted) {
+        if (res.refusal !== null) {
+          // The page reads the lesson again: a lock it did not know about,
+          // say, shows as the locked lesson.
+          setRefusal(res.refusal);
+          router.refresh();
+        } else if (res.alreadyCompleted) {
           router.refresh();
         } else {
           setCompletionResult(res);
@@ -193,6 +212,7 @@ export function LessonStepper({
       });
     } else if (!isLastStep) {
       setDoneSteps((prev) => new Set([...prev, currentStep]));
+      setFurthestStep((f) => Math.max(f, currentStep + 1));
       setCurrentStep((s) => s + 1);
     }
   }
@@ -204,7 +224,7 @@ export function LessonStepper({
 
   function handleJump(i: number) {
     if (i === currentStep) return;
-    if (canOpenSection(i, { currentStep, doneSteps, isCompleted })) {
+    if (canOpenSection(i, { currentStep, doneSteps, furthestStep, isCompleted, reviewing })) {
       setCurrentStep(i);
     }
   }
@@ -218,7 +238,9 @@ export function LessonStepper({
         currentStep={currentStep}
         totalSteps={totalSteps}
         doneSteps={doneSteps}
+        furthestStep={furthestStep}
         isCompleted={isCompleted}
+        reviewing={reviewing}
         canAdvance={canAdvance}
         pendingCount={stepComp.pendingCount}
         isPending={isPending}
@@ -251,6 +273,13 @@ export function LessonStepper({
         <p className="lesson-pending" role="status">
           <span aria-hidden="true">›</span>
           {pendingMessage(stepComp.pendingCount)}
+        </p>
+      )}
+
+      {refusal !== null && isLastStep && (
+        <p className="lesson-pending" role="alert">
+          <span aria-hidden="true">›</span>
+          {refusal}
         </p>
       )}
 

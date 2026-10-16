@@ -102,6 +102,14 @@ export function LessonHeader({
   );
 }
 
+/**
+ * Closes the title with a full stop, unless it already ends on punctuation of
+ * its own: a title asking a question showed "?." at the top of its page.
+ */
+function closed(text: string): string {
+  return /[.?!…:]$/.test(text) ? text : `${text}.`;
+}
+
 /** The title, its last meaningful word lit in the category's colour. */
 function TitleWithAccent({
   title,
@@ -121,7 +129,8 @@ function TitleWithAccent({
   if (words.length <= 2) {
     return (
       <>
-        {words.slice(0, -1).join(" ")} <em style={accent}>{words[words.length - 1]}.</em>
+        {words.slice(0, -1).join(" ")}{" "}
+        <em style={accent}>{closed(words[words.length - 1] ?? "")}</em>
       </>
     );
   }
@@ -152,7 +161,7 @@ function TitleWithAccent({
   return (
     <>
       {words.slice(0, accentIdx).join(" ")}{" "}
-      <em style={accent}>{words.slice(accentIdx).join(" ")}.</em>
+      <em style={accent}>{closed(words.slice(accentIdx).join(" "))}</em>
     </>
   );
 }

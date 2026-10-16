@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { gradeReview } from "@/lib/revisions/grade-review";
+import { gradeReview, REVIEW_NOT_DUE } from "@/lib/revisions/grade-review";
 import { userFromBearer } from "../_lib/auth";
 
 /**
@@ -23,10 +23,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const result = await gradeReview(user.id, body);
   if (!result.ok) {
     // Not due, not theirs, or malformed: nothing was graded.
-    return NextResponse.json(
-      { ok: false, error: "Cette révision n'est plus à faire." },
-      { status: 409 },
-    );
+    return NextResponse.json({ ok: false, error: REVIEW_NOT_DUE }, { status: 409 });
   }
   return NextResponse.json({
     ok: true,
