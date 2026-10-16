@@ -179,3 +179,39 @@
   line-height: 1.55;
   color: var(--color-brand-turquoise);
 }
+
+/* ── The account's data ─────────────────────────────────────────────────── */
+
+.data {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-strong);
+}
+
+.dataTitle {
+  margin: 0 0 10px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.dataText {
+  margin: 0 0 14px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.dataText:last-child {
+  margin: 16px 0 0;
+}
+
+.mail {
+  color: var(--color-info);
+  text-decoration: none;
+}
+.mail:hover {
+  text-decoration: underline;
+}
