@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import { env } from "@/lib/env";
+import { availabilityLine } from "./availability";
 import "./download.css";
 
 export const metadata: Metadata = {
@@ -180,7 +181,7 @@ function MobileAppPreview(): React.JSX.Element {
       </div>
       <figcaption>
         <span>Écran d’accueil</span>
-        <span>Application Android · v2.3</span>
+        <span>Application Android</span>
       </figcaption>
     </figure>
   );
@@ -203,7 +204,7 @@ export default function DownloadPage(): React.JSX.Element {
           <div className="download-hero__copy">
             <div className="download-kicker">
               <span aria-hidden="true" />
-              <b>{androidAvailable ? "v2.3" : "Aperçu"}</b> · Application mobile · Android
+              <b>{androidAvailable ? "Disponible" : "Aperçu"}</b> · Application mobile · Android
             </div>
             <h1 id="download-title">
               Tout CyberLearn,
@@ -232,7 +233,10 @@ export default function DownloadPage(): React.JSX.Element {
             </div>
             <p className="download-hero__availability">
               <span aria-hidden="true" />
-              Publication Android en cours · Web app disponible sur iPhone
+              {availabilityLine({
+                android: androidAvailable,
+                iosAppStore: Boolean(iosAppStoreUrl),
+              })}
             </p>
           </div>
 
@@ -248,7 +252,7 @@ export default function DownloadPage(): React.JSX.Element {
           </div>
           <div>
             <dt>iPhone</dt>
-            <dd>Web app installable</dd>
+            <dd>{iosAppStoreUrl ? "Application native" : "Web app installable"}</dd>
           </div>
           <div>
             <dt>Compte</dt>
@@ -341,8 +345,9 @@ export default function DownloadPage(): React.JSX.Element {
             </p>
             <h2 id="install-title">Choisis ton téléphone.</h2>
             <p>
-              Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis
-              Safari.
+              {iosAppStoreUrl
+                ? "Android et iPhone disposent chacun de leur application native."
+                : "Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis Safari."}
             </p>
           </div>
 
