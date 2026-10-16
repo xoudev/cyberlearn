@@ -11,9 +11,11 @@ const SEEN_KEY = "cl-welcome-seen";
  * lands on the dashboard. "Seen" is tracked per-browser in localStorage so it
  * never nags on later visits; a per-account flag can replace this later.
  *
- * Its button is the mission card's: the first lesson of the path that leads,
- * or the paths to choose from when there is none. It used to say "Lancer ma
- * première leçon" and open the catalogue, leaving the newcomer to pick one.
+ * Its button is the mission card's: the lesson the leading path offers first
+ * (past the ones the placement test waived), or the paths to choose from when
+ * there is none. It used to say "Lancer ma première leçon" and open the
+ * catalogue, leaving the newcomer to pick one. Web-only: the app greets a
+ * newcomer with its tour instead (docs/MOBILE_PARITY.md).
  */
 export function WelcomeModal({
   cta,
