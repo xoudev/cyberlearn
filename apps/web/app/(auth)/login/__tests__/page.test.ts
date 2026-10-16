@@ -8,7 +8,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const LoginForm = vi.hoisted(() =>
-  vi.fn<(props: { initialError: string | null }) => null>(() => null),
+  vi.fn<
+    (props: {
+      initialError: string | null;
+      initialErrorLink: { href: string; label: string } | null;
+    }) => null
+  >(() => null),
 );
 vi.mock("../login-form", () => ({ LoginForm }));
 vi.mock("../../_components/auth-shell", () => ({
@@ -43,6 +48,29 @@ describe("/login?error=", () => {
     expect(await initialErrorFor("rate_limited")).toBe(
       "Trop de tentatives. Réessaie dans 15 minutes.",
     );
+  });
+
+  it("explains a link that arrived cut short, instead of the generic line", async () => {
+    expect(await initialErrorFor("missing_token")).toBe(
+      "Ce lien est incomplet : copie-le en entier depuis l’e-mail, ou demande-en un nouveau.",
+    );
+  });
+
+  it("tells a spent reset link from a sign-in link, and offers a new one", async () => {
+    expect(await initialErrorFor("recovery_expired")).toBe(
+      "Ce lien de réinitialisation a expiré ou a déjà servi. Demande un nouveau lien.",
+    );
+    expect(LoginForm.mock.lastCall?.[0].initialErrorLink).toEqual({
+      href: "/forgot-password",
+      label: "Demander un nouveau lien",
+    });
+  });
+
+  it("offers no link where there is nowhere to go", async () => {
+    await initialErrorFor("auth_failed");
+    expect(LoginForm.mock.lastCall?.[0].initialErrorLink).toBeNull();
+    await initialErrorFor("toString");
+    expect(LoginForm.mock.lastCall?.[0].initialErrorLink).toBeNull();
   });
 
   it("gives the generic line for a code nobody wrote", async () => {

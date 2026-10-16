@@ -10,7 +10,13 @@ import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { AvatarCropper } from "@/components/avatar-cropper";
 import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import Link from "next/link";
-import { ONBOARDING_AVATAR_CHOICES } from "@cyberlearn/lib/onboarding/avatars";
+import {
+  KEEP_CURRENT_AVATAR,
+  ONBOARDING_AVATAR_CHOICES,
+  avatarToKeep,
+  initialOnboardingChoice,
+} from "@cyberlearn/lib/onboarding/avatars";
+import { AvatarView } from "@/components/avatar-view";
 
 // The app offers the same eight (@cyberlearn/lib/onboarding/avatars).
 const AVATARS = ONBOARDING_AVATAR_CHOICES;
@@ -18,14 +24,25 @@ const AVATARS = ONBOARDING_AVATAR_CHOICES;
 const initialState: SaveAvatarState = {};
 
 interface AvatarFormProps {
+  /** As stored: one of the eight, a GitHub address, an upload or glyph marker. */
   currentAvatarUrl: string | null;
+  /** The same avatar, drawable: an upload marker resolved to a signed URL. */
+  currentAvatarSrc: string | null;
+  displayName: string;
 }
 
-export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactElement {
+export function AvatarForm({
+  currentAvatarUrl,
+  currentAvatarSrc,
+  displayName,
+}: AvatarFormProps): React.ReactElement {
   const [state, formAction, isPending] = useActionState(saveAvatar, initialState);
-  const defaultAvatar =
-    AVATARS.find((a) => a.path === currentAvatarUrl)?.path ?? "/avatars/av-8.svg";
-  const [selected, setSelected] = useState<string>(defaultAvatar);
+  // The avatar the profile already has, if it is none of the eight - GitHub's
+  // photo, or one uploaded here before going on to the goals and coming
+  // back - is offered first and preselected, rather than replaced by "CL".
+  const hasAvatarToKeep = avatarToKeep(currentAvatarUrl) !== null;
+  const [selected, setSelected] = useState<string>(() => initialOnboardingChoice(currentAvatarUrl));
+  const photoSelected = hasAvatarToKeep && selected === KEEP_CURRENT_AVATAR;
 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +197,74 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
 
         <form action={formAction}>
           <input type="hidden" name="avatarUrl" value={selected} />
+
+          {/* The avatar the account already has (GitHub's, or uploaded), to keep */}
+          {hasAvatarToKeep && (
+            <button
+              type="button"
+              aria-pressed={photoSelected}
+              onClick={() => {
+                setSelected(KEEP_CURRENT_AVATAR);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                width: "100%",
+                marginBottom: 10,
+                padding: "10px 14px",
+                background: photoSelected ? "rgba(10,255,212,0.06)" : "var(--color-bg-sunken)",
+                border: `1px solid ${photoSelected ? "var(--color-brand-turquoise)" : "var(--color-border-default)"}`,
+                boxShadow: photoSelected
+                  ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 24px rgba(10,255,212,0.2)"
+                  : "none",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "border-color 120ms ease, background 120ms ease",
+              }}
+            >
+              <AvatarView
+                src={currentAvatarSrc}
+                name={displayName}
+                glyphSize={28}
+                glyphColor="var(--color-brand-turquoise)"
+                style={{
+                  width: 48,
+                  height: 48,
+                  objectFit: "cover",
+                  flexShrink: 0,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "var(--color-bg-elevated)",
+                  color: "var(--color-text-secondary)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 14,
+                }}
+              />
+              <span style={{ display: "grid", gap: 4 }}>
+                <span
+                  className="mono-label mono-label--xs"
+                  style={{
+                    color: photoSelected
+                      ? "var(--color-brand-turquoise)"
+                      : "var(--color-text-muted)",
+                  }}
+                >
+                  TA PHOTO
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Garder ta photo actuelle
+                </span>
+              </span>
+            </button>
+          )}
 
           {/* Avatar grid */}
           <div

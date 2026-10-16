@@ -4,7 +4,6 @@ import * as Sentry from "@sentry/nextjs";
 import { authRedirectSchema } from "@cyberlearn/types";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
-import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 /** Exchanges Supabase PKCE codes from signup, recovery and GitHub OAuth links. */
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -15,9 +14,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       searchParams.get("next") ?? searchParams.get("redirectTo") ?? "/dashboard",
     ).data ?? "/dashboard";
 
-  if (!(await checkAuthRateLimit(request))) {
-    return NextResponse.redirect(new URL("/login?error=rate_limited", origin));
-  }
+  // No rate limit here: the code is single-use and bound to the browser's PKCE
+  // verifier, while a per-IP budget made a class signing in with GitHub from
+  // the school's one address lock each other out.
   if (!code) {
     return NextResponse.redirect(new URL("/login?error=missing_code", origin));
   }
@@ -32,7 +31,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
   if (exchangeError) {
-    return NextResponse.redirect(new URL("/login?error=auth_failed", origin));
+    // A reset link that went through here is not a sign-in link either.
+    const failure = requestedRoute === "/reset-password" ? "recovery_expired" : "auth_failed";
+    return NextResponse.redirect(new URL(`/login?error=${failure}`, origin));
   }
 
   const {

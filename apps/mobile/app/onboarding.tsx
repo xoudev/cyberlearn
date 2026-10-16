@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
+import { isUploadedAvatar } from "@cyberlearn/types";
 import { AuthField } from "@/components/auth-form";
 import { ActionChip, GradientButton } from "@/components/buttons";
 import { MessageInput } from "@/components/forum";
@@ -12,6 +13,7 @@ import { PhotoUploadButton } from "@/components/photo-upload";
 import { Screen } from "@/components/screen";
 import { Card, SectionLabel, Text } from "@/components/ui";
 import {
+  fetchMyAvatarUrl,
   finishOnboardingApi,
   saveOnboardingAvatarApi,
   saveOnboardingGoalsApi,
@@ -21,13 +23,14 @@ import {
 import { useCosmetics } from "@/lib/cosmetics";
 import {
   BIO_MAX,
-  DEFAULT_ONBOARDING_AVATAR,
   DISPLAY_NAME_MAX,
+  KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATAR_CHOICES,
   ONBOARDING_STEPS,
   USERNAME_MAX,
+  avatarToKeep,
   handleInput,
-  isOnboardingAvatar,
+  initialOnboardingChoice,
   type OnboardingStep,
 } from "@/lib/onboarding";
 import { PLACEMENT_COPY, offersPlacementTest } from "@/lib/placement";
@@ -245,15 +248,34 @@ function AvatarStep({
   onDone: () => void;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
-  const [picked, setPicked] = useState<string>(
-    isOnboardingAvatar(initial) ? initial : DEFAULT_ONBOARDING_AVATAR,
-  );
+  const queryClient = useQueryClient();
+  // The avatar the profile already has, if it is none of the eight - GitHub's
+  // photo, or one sent here before going on to the goals and coming back - is
+  // offered first and preselected, as on the site, rather than replaced by "CL".
+  const keep = avatarToKeep(initial);
+  const [picked, setPicked] = useState<string>(initialOnboardingChoice(initial));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOnboardingAvatar(initial)) setPicked(initial);
+    setPicked(initialOnboardingChoice(initial));
   }, [initial]);
+
+  // Drawable: an uploaded photo is a marker only the server can sign.
+  const [signedKeep, setSignedKeep] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isUploadedAvatar(keep)) return;
+    let live = true;
+    void fetchMyAvatarUrl()
+      .then((url) => {
+        if (live) setSignedKeep(url);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [keep]);
+  const keepSrc = isUploadedAvatar(keep) ? signedKeep : keep;
 
   const send = async (): Promise<void> => {
     setSending(true);
@@ -275,6 +297,38 @@ function AvatarStep({
         accessibilityRole="radiogroup"
         style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
       >
+        {keep !== null ? (
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: picked === KEEP_CURRENT_AVATAR }}
+            accessibilityLabel="Garder ta photo actuelle"
+            onPress={() => setPicked(KEEP_CURRENT_AVATAR)}
+            style={{
+              width: "100%",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderWidth: 1,
+              borderColor: picked === KEEP_CURRENT_AVATAR ? theme.accent : colors.borderSubtle,
+              backgroundColor: picked === KEEP_CURRENT_AVATAR ? `${theme.accent}12` : "transparent",
+            }}
+          >
+            <Avatar avatarUrl={keepSrc} displayName={displayName || "?"} size={56} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text
+                variant="micro"
+                style={{ color: picked === KEEP_CURRENT_AVATAR ? theme.accent : colors.textMuted }}
+              >
+                TA PHOTO
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                Garder ta photo actuelle
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
         {ONBOARDING_AVATAR_CHOICES.map((choice) => {
           const selected = picked === choice.path;
           return (
@@ -303,8 +357,15 @@ function AvatarStep({
           );
         })}
       </View>
-      {/* A photo is saved as soon as it is sent, and the sign-up goes on, as on the site. */}
-      <PhotoUploadButton disabled={sending} onUploaded={() => onDone()} />
+      {/* A photo is saved as soon as it is sent, and the sign-up goes on, as on the site.
+          The account is read again, so that coming back from the goals finds the photo. */}
+      <PhotoUploadButton
+        disabled={sending}
+        onUploaded={() => {
+          void queryClient.invalidateQueries({ queryKey: ["onboarding-account"] });
+          onDone();
+        }}
+      />
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
           {error}

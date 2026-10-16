@@ -6,9 +6,10 @@
  */
 
 export {
-  DEFAULT_ONBOARDING_AVATAR,
+  KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATAR_CHOICES,
-  isOnboardingAvatar,
+  avatarToKeep,
+  initialOnboardingChoice,
 } from "@cyberlearn/lib/onboarding/avatars";
 
 export type OnboardingStep = "profile" | "avatar" | "goals";

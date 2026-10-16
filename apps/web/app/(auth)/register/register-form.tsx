@@ -29,7 +29,16 @@ export function RegisterForm(): React.JSX.Element {
     <form className={styles.form} action={action}>
       <label className={styles.field}>
         <span className={styles.label}>Adresse e-mail</span>
-        <input className={styles.input} type="email" name="email" autoComplete="email" required />
+        {/* React empties the form once the action has run: the address comes
+            back from it after a refusal. The passwords do not. */}
+        <input
+          className={styles.input}
+          type="email"
+          name="email"
+          autoComplete="email"
+          required
+          defaultValue={state.email}
+        />
       </label>
       <label className={styles.field}>
         <span className={styles.label}>Mot de passe</span>

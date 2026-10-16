@@ -21,8 +21,21 @@ export type EmailActionType = "magiclink" | "signup" | "recovery" | "invite" | "
 interface MagicLinkEmailProps {
   magicLink: string;
   type?: EmailActionType;
-  /** 6-digit OTP code, shown for the mobile app (which cannot follow the link). */
+  /**
+   * 6-digit OTP code, for the mobile app's password recovery - the one screen
+   * of the app that takes a code (see `showsCode`).
+   */
   code?: string | undefined;
+}
+
+/**
+ * Whether the mail shows its code. Only a recovery mail does: the app verifies
+ * a code on its "Mot de passe oublié" screen and nowhere else. The hook hands
+ * the code over for every kind of mail, and a sign-up confirmation used to
+ * tell a new learner to type it "dans l'app mobile", where no screen takes it.
+ */
+export function showsCode(type: EmailActionType, code: string | undefined): code is string {
+  return type === "recovery" && code !== undefined && code.length > 0;
 }
 
 const SUBJECT: Record<EmailActionType, string> = {
@@ -86,7 +99,7 @@ export function MagicLinkEmail({
               </Button>
             </Section>
 
-            {code ? (
+            {showsCode(type, code) ? (
               <Section style={styles.codeWrap}>
                 <Text style={styles.codeLabel}>Ou entre ce code dans l&apos;app mobile</Text>
                 <Text style={styles.code}>{code}</Text>

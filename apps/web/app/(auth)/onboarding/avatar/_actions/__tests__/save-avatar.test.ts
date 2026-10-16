@@ -38,6 +38,11 @@ describe("saveAvatar", () => {
     });
   });
 
+  it("keeps the photo the profile already has, writing nothing", async () => {
+    await expect(saveAvatar({}, form("current"))).rejects.toThrow("REDIRECT /onboarding/goals");
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("refuses an avatar that is not one of the built-in ones", async () => {
     expect(await saveAvatar({}, form("https://evil.example/a.svg"))).toEqual({
       error: "Avatar invalide.",

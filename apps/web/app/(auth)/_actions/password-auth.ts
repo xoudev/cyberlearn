@@ -2,6 +2,8 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import {
   confirmationResendSchema,
   passwordResetRequestSchema,
@@ -17,9 +19,13 @@ import {
 import { env } from "@/lib/env";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { classifySignUpError, type SignUpFailure } from "@/lib/auth/sign-up-error";
-import { RECOVERY_GRANT_COOKIE } from "@/lib/auth/recovery-grant";
+import {
+  RECOVERY_EXPIRED_MESSAGE,
+  RECOVERY_GRANT_COOKIE,
+  hasRecoveryGrant,
+} from "@/lib/auth/recovery-grant";
 import { verifyCurrentPassword } from "@/lib/auth/verify-password";
-import { checkAuthRateLimit } from "@/lib/rate-limit";
+import { allowAuthAttempt, recordSignInFailure, type AuthAction } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { AuthActionState } from "./auth-action-state";
 
@@ -30,9 +36,31 @@ const SIGN_UP_ERROR_MESSAGES: Record<SignUpFailure, string> = {
   unknown: "Impossible de créer le compte pour le moment. Réessaie dans quelques minutes.",
 };
 
-async function isRateLimited(): Promise<boolean> {
-  const headerStore = await headers();
-  return !(await checkAuthRateLimit({ headers: headerStore }));
+/** What the reset form sends, telling it apart from the settings' password form. */
+const recoveryIntentSchema = z.literal("recovery");
+
+async function isRateLimited(action: AuthAction, email: string): Promise<boolean> {
+  return !(await allowAuthAttempt(action, { headers: await headers() }, email));
+}
+
+/**
+ * Whether Supabase refused the credentials themselves, which is all the
+ * network's sign-in budget counts. An outage (a 5xx, a network failure) or
+ * Supabase's own rate limit says nothing about the password, and must not
+ * lock anybody out on top of it.
+ */
+function isCredentialRefusal(error: { status?: number | undefined }): boolean {
+  const { status } = error;
+  return status !== undefined && status >= 400 && status < 500 && status !== 429;
+}
+
+/**
+ * The address as it was typed, to put back in a form React has reset. Only
+ * when it is a string, and never longer than an address can be.
+ */
+function typedEmail(formData: FormData): { email?: string } {
+  const value = formData.get("email");
+  return typeof value === "string" && value.length > 0 ? { email: value.slice(0, 254) } : {};
 }
 
 export async function signInWithPassword(
@@ -50,19 +78,22 @@ export async function signInWithPassword(
       status: "error",
       message: "Vérifie ton e-mail et ton mot de passe.",
       redirectTo: null,
+      ...typedEmail(formData),
     };
   }
-  if (await isRateLimited()) {
+  const { email } = parsed.data;
+  if (await isRateLimited("sign-in", email)) {
     return {
       status: "error",
       message: "Trop de tentatives. Réessaie dans 15 minutes.",
       redirectTo: null,
+      email,
     };
   }
 
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
+    email,
     password: parsed.data.password,
   });
 
@@ -74,13 +105,17 @@ export async function signInWithPassword(
         status: "unconfirmed",
         message: EMAIL_NOT_CONFIRMED_MESSAGE,
         redirectTo: null,
-        email: parsed.data.email,
+        email,
       };
+    }
+    if (isCredentialRefusal(error)) {
+      await recordSignInFailure({ headers: await headers() }, email);
     }
     return {
       status: "error",
       message: "Adresse e-mail ou mot de passe incorrect.",
       redirectTo: null,
+      email,
     };
   }
 
@@ -99,6 +134,7 @@ export async function signInWithPassword(
       status: "error",
       message: "La session n’a pas pu être initialisée. Réessaie dans un instant.",
       redirectTo: null,
+      email,
     };
   }
 }
@@ -119,20 +155,23 @@ export async function signUpWithPassword(
       message:
         "Utilise au moins 12 caractères avec une lettre et un chiffre, puis confirme le mot de passe.",
       redirectTo: null,
+      ...typedEmail(formData),
     };
   }
-  if (await isRateLimited()) {
+  const { email } = parsed.data;
+  if (await isRateLimited("sign-up", email)) {
     return {
       status: "error",
       message: "Trop de tentatives. Réessaie dans 15 minutes.",
       redirectTo: null,
+      email,
     };
   }
 
   try {
     const supabase = await getSupabaseServerClient();
     const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
+      email,
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/onboarding`,
@@ -144,7 +183,7 @@ export async function signUpWithPassword(
         status: "check_email",
         message: "Un e-mail de vérification vient de partir. Ouvre-le pour activer ton compte.",
         redirectTo: null,
-        email: parsed.data.email,
+        email,
       };
     }
 
@@ -161,6 +200,7 @@ export async function signUpWithPassword(
       status: "error",
       message: SIGN_UP_ERROR_MESSAGES[failure],
       redirectTo: null,
+      email,
     };
   } catch (signUpError) {
     Sentry.captureException(signUpError, { tags: { area: "auth.sign-up" } });
@@ -170,6 +210,7 @@ export async function signUpWithPassword(
     status: "error",
     message: SIGN_UP_ERROR_MESSAGES.unknown,
     redirectTo: null,
+    email,
   };
 }
 
@@ -181,7 +222,7 @@ export async function requestPasswordReset(
   if (!parsed.success) {
     return { status: "error", message: "Adresse e-mail invalide.", redirectTo: null };
   }
-  if (await isRateLimited()) {
+  if (await isRateLimited("password-reset", parsed.data.email)) {
     return {
       status: "error",
       message: "Trop de demandes. Réessaie dans 15 minutes.",
@@ -230,7 +271,7 @@ export async function resendConfirmationEmail(
   if (!parsed.success) {
     return { status: "error", message: "Adresse e-mail invalide.", redirectTo: null };
   }
-  if (await isRateLimited()) {
+  if (await isRateLimited("resend-confirmation", parsed.data.email)) {
     return {
       status: "error",
       message: "Trop de demandes. Réessaie dans 15 minutes.",
@@ -322,9 +363,14 @@ export async function updatePassword(
   // after an emailed recovery link (marked by /auth/confirm); otherwise a
   // stolen session would be enough to lock the owner out for good.
   const cookieStore = await cookies();
-  const hasRecoveryGrant = cookieStore.get(RECOVERY_GRANT_COOKIE)?.value === "1";
+  const granted = hasRecoveryGrant(cookieStore);
 
-  if (!hasRecoveryGrant) {
+  if (!granted) {
+    // The reset form has no field for the current password - it is the one
+    // that was forgotten. Past the window, what it needs is a new link.
+    if (recoveryIntentSchema.safeParse(formData.get("intent")).success) {
+      return { status: "recovery_expired", message: RECOVERY_EXPIRED_MESSAGE, redirectTo: null };
+    }
     const currentPassword = formData.get("currentPassword");
     if (typeof currentPassword !== "string" || currentPassword.length === 0) {
       return {
@@ -352,11 +398,30 @@ export async function updatePassword(
   }
 
   // The grant unlocks a single password update.
-  if (hasRecoveryGrant) cookieStore.delete(RECOVERY_GRANT_COOKIE);
+  if (granted) cookieStore.delete(RECOVERY_GRANT_COOKIE);
 
   return {
     status: "success",
     message: "Mot de passe mis à jour.",
     redirectTo: "/dashboard",
   };
+}
+
+/**
+ * Ends the session a recovery link opened and goes back to "Mot de passe
+ * oublié", for a recovery window that closed before the new password was set.
+ *
+ * The middleware sends a signed-in account away from /forgot-password, so
+ * without signing out first there was no way to ask for a new link: the reset
+ * form asked for the current password, which it has no field for.
+ */
+export async function restartPasswordRecovery(): Promise<never> {
+  try {
+    const supabase = await getSupabaseServerClient();
+    await supabase.auth.signOut({ scope: "local" });
+  } catch (signOutError) {
+    Sentry.captureException(signOutError, { tags: { area: "auth.password-reset" } });
+  }
+  (await cookies()).delete(RECOVERY_GRANT_COOKIE);
+  redirect("/forgot-password");
 }

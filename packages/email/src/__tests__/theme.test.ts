@@ -26,6 +26,11 @@ const RENDERED: [string, React.ReactElement][] = [
     "magic-link",
     MagicLinkEmail({ magicLink: "https://cyberlearn.fr/x", type: "magiclink", code: "483920" }),
   ],
+  // The only kind that shows its code, so the only one that renders its styles.
+  [
+    "magic-link-recovery",
+    MagicLinkEmail({ magicLink: "https://cyberlearn.fr/x", type: "recovery", code: "483920" }),
+  ],
   [
     "ticket-reply",
     TicketReplyEmail({

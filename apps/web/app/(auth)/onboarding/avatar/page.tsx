@@ -3,6 +3,8 @@ import Image from "next/image";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
+import { avatarToKeep } from "@cyberlearn/lib/onboarding/avatars";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { AvatarForm } from "./_components/avatar-form";
 
 export default async function OnboardingAvatarPage(): Promise<React.ReactElement> {
@@ -15,10 +17,16 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { username: true, avatarUrl: true },
+    select: { username: true, displayName: true, avatarUrl: true },
   });
 
   if (!dbUser?.username) redirect("/onboarding");
+
+  // The avatar to keep, drawable: a photo uploaded at this step is stored as
+  // a marker, which only the server can sign. Unsigned, the tile shows the
+  // initials and the step still works.
+  const keep = avatarToKeep(dbUser.avatarUrl);
+  const keepSrc = keep === null ? null : await resolveAvatarSrc(keep).catch(() => null);
 
   return (
     <div
@@ -273,7 +281,11 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
           </div>
         </div>
 
-        <AvatarForm currentAvatarUrl={dbUser.avatarUrl} />
+        <AvatarForm
+          currentAvatarUrl={dbUser.avatarUrl}
+          currentAvatarSrc={keepSrc}
+          displayName={dbUser.displayName}
+        />
       </div>
     </div>
   );

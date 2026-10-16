@@ -205,6 +205,11 @@ export const userRepository = {
    *
    * Its failure is swallowed. An invitation is a courtesy; being unable to
    * redeem one is not a reason to refuse somebody their session.
+   *
+   * The identity's picture (GitHub's, for a linked account) fills an avatar
+   * that is still empty and nothing more. It used to be written at every
+   * sign-in, over whatever the learner had picked at sign-up or uploaded since:
+   * their choice lasted until the next time they signed in.
    */
   async upsertFromAuth(input: {
     id: string;
@@ -212,16 +217,24 @@ export const userRepository = {
     displayName: string;
     avatarUrl: string | null;
   }) {
-    const profile = await prisma.user.upsert({
+    const { avatarUrl: storedAvatar, ...profile } = await prisma.user.upsert({
       where: { id: input.id },
       create: input,
       update: {
         email: input.email,
         lastActiveAt: new Date(),
-        ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
       },
-      select: { username: true, role: true },
+      select: { username: true, role: true, avatarUrl: true },
     });
+
+    // Only when there is something to fill, which is rare once a profile
+    // exists, and guarded in the statement so a choice made in between stands.
+    if (input.avatarUrl && storedAvatar === null) {
+      await prisma.user.updateMany({
+        where: { id: input.id, avatarUrl: null },
+        data: { avatarUrl: input.avatarUrl },
+      });
+    }
 
     try {
       await classRepository.redeemInvitationsForEmail(input.id, input.email);
