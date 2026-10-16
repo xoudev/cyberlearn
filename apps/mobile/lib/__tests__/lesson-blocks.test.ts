@@ -61,7 +61,7 @@ const safe = true;
   question="Port sécurisé ?"
   options={["80", "443"]}
   correct={1}
-  explanation="HTTPS écoute sur le port 443, HTTP sur le \\"80\\"."
+  explanation={"HTTPS écoute sur le port 443, HTTP sur le \\"80\\"."}
 />
 `);
     expect(lesson.quizzes[0]?.explanation).toBe('HTTPS écoute sur le port 443, HTTP sur le "80".');

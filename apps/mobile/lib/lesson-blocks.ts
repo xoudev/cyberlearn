@@ -40,6 +40,7 @@ import {
   parsePutInOrder,
   parseSubnetDrill,
 } from "@cyberlearn/types";
+import { tagAttributes } from "./tag-attributes";
 
 export interface QuizBlock {
   kind: "quiz";
@@ -365,32 +366,37 @@ function extractStringArray(tag: string, re: RegExp): string[] {
   return [];
 }
 
-function extractQuiz(tag: string): QuizBlock | null {
-  const question = /question\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1];
-  const id = /id\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1] ?? `q-${String(Math.random())}`;
-  const correctRaw = /correct\s*=\s*\{\s*(\d+)\s*\}/.exec(tag)?.[1];
-  const optionsRaw = /options\s*=\s*\{(\[[\s\S]*?\])\}/.exec(tag)?.[1];
-  if (!question || !optionsRaw || correctRaw === undefined) return null;
-  let options: string[] = [];
-  try {
-    const parsed: unknown = JSON.parse(optionsRaw);
-    if (Array.isArray(parsed)) options = parsed.map((o) => String(o));
-  } catch {
-    // Tolerant fallback: strip brackets/quotes and split on commas.
-    options = optionsRaw
-      .replace(/^\[|\]$/g, "")
-      .split(/",\s*"/)
-      .map((s) => s.replace(/^\s*"|"\s*$/g, ""));
-  }
-  if (options.length < 2) return null;
-  const explanation = /explanation\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1];
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+/**
+ * A Quiz as the server reads it (extractLessonQuizzes,
+ * @cyberlearn/lib/mdx-quizzes), or null for one it would not score. The server
+ * holds the answer key and fixes the lesson's score over its own quizzes: one
+ * the app skipped would count as wrong, unasked. `seen` holds the ids the
+ * lesson's earlier quizzes took: an answer is stored under its quiz's id.
+ */
+function extractQuiz(tag: string, seen: Set<string>): QuizBlock | null {
+  const attributes = tagAttributes(tag);
+  const id = attributes.get("id");
+  const question = attributes.get("question");
+  // "choices" is the legacy name the component still accepts.
+  const options = attributes.get("options") ?? attributes.get("choices");
+  const correct = attributes.get("correct");
+  const explanation = attributes.get("explanation");
+  if (typeof id !== "string" || id === "" || seen.has(id)) return null;
+  if (!isStringArray(options)) return null;
+  if (typeof correct !== "number" || !Number.isInteger(correct)) return null;
+  if (correct < 0 || correct >= options.length) return null;
+  seen.add(id);
   return {
     kind: "quiz",
     id,
-    question: question.replace(/\\"/g, '"'),
+    question: typeof question === "string" ? question : "",
     options,
-    correct: Number(correctRaw),
-    explanation: explanation ? explanation.replace(/\\"/g, '"') : null,
+    correct,
+    explanation: typeof explanation === "string" && explanation.trim() !== "" ? explanation : null,
   };
 }
 
@@ -620,9 +626,11 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
   let text = mdx.replace(/^---[\s\S]*?---\s*/m, ""); // strip frontmatter if present
   // QuizGroup wrappers: unwrap (inner <Quiz> handled below).
   text = text.replace(/<\/?QuizGroup[^>]*>/g, "\n");
-  // Quiz (self-closing)
-  text = text.replace(/<Quiz[\s\S]*?\/>/g, (tag) => {
-    const quiz = extractQuiz(tag);
+  // Quiz (self-closing). The tag ends at the `/>` outside its strings and
+  // braces: an option may hold a `/>` or a `]}` of its own.
+  const quizIds = new Set<string>();
+  text = replaceSelfClosing(text, "Quiz", (tag) => {
+    const quiz = extractQuiz(tag, quizIds);
     return quiz ? put(quiz) : "\n";
   });
   // Callout (paired)
