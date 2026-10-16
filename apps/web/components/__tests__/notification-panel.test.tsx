@@ -164,6 +164,25 @@ describe("NotificationPanel rows", () => {
     );
   });
 
+  it("dates a notice in the unit its age calls for, not in minutes", async () => {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      notifications: [
+        notice({ createdAt: new Date(Date.now() - 7 * 24 * 3_600_000) }),
+        notice({
+          id: "22222222-2222-4222-8222-222222222222",
+          title: "Hier",
+          createdAt: new Date(Date.now() - 26 * 3_600_000),
+        }),
+      ],
+    });
+    await openPanel();
+    expect(screen.getByText("il y a 1 sem.")).toBeTruthy();
+    expect(screen.getByText("hier")).toBeTruthy();
+    expect(screen.queryByText(/minutes/)).toBeNull();
+  });
+
   it("leaves a read notice with nowhere to go as plain text", async () => {
     await openPanel();
     expect(screen.queryByRole("button", { name: /Déjà lue/ })).toBeNull();

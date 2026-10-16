@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
+import { notificationAge } from "@cyberlearn/lib/social/notification-age";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
@@ -354,12 +355,10 @@ function NotificationRow({
   // No fallback: the record is exhaustive over the enum, so there is no type
   // that can arrive here without an icon.
   const icon = TYPE_ICON[item.type];
-  // new Date() rather than the field: a row pushed by Realtime carries the
-  // date as a string, not as the Date the server action hands over.
-  const dateStr = new Intl.RelativeTimeFormat("fr", { numeric: "auto" }).format(
-    Math.round((new Date(item.createdAt).getTime() - Date.now()) / (1000 * 60)),
-    "minutes",
-  );
+  // The unit follows the gap, as in the app: it used to be minutes whatever
+  // the gap, so last week read "il y a 10 080 minutes". A row pushed by
+  // Realtime carries the date as a string, which the helper reads too.
+  const dateStr = notificationAge(item.createdAt, Date.now());
   const style: React.CSSProperties = {
     background: isUnread
       ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
