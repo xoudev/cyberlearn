@@ -1,8 +1,10 @@
 import React from "react";
 import { Alert, ScrollView, View } from "react-native";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import type { GlossaryTerm } from "@cyberlearn/lib/glossary/terms";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { PressableScale } from "@/components/anim";
 import { FindTheFlawExercise } from "@/components/find-the-flaw";
 import { GitSandboxExercise } from "@/components/git-sandbox";
 import { CryptoWorkshopExercise } from "@/components/crypto-workshop";
@@ -21,6 +23,7 @@ import { TerminalCard } from "@/components/terminal-card";
 import { Text } from "@/components/ui";
 import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import { glossaryHits } from "@/lib/glossary";
+import { inlineTokens } from "@/lib/inline-markdown";
 import type { Block } from "@/lib/lesson-blocks";
 
 // ── Glossary words ───────────────────────────────────────────────────────────
@@ -79,7 +82,12 @@ function withGlossary(
   return out;
 }
 
-// ── Inline markdown (bold / italic / inline code) ────────────────────────────
+// ── Inline markdown (bold / italic / inline code / links) ────────────────────
+
+/** A lesson's link, opened in the browser as the site opens it in a new tab. */
+function openLink(href: string): void {
+  void WebBrowser.openBrowserAsync(href);
+}
 
 function renderInline(
   text: string,
@@ -88,57 +96,60 @@ function renderInline(
   /** The glossary words this block still has to underline, if any. */
   glossary?: Set<string>,
 ): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
-  // Tokenize on **bold**, `code`, *italic* - longest markers first.
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
-  let last = 0;
-  let k = 0;
-  for (const m of text.matchAll(re)) {
-    const idx = m.index ?? 0;
-    if (idx > last)
-      out.push(
-        ...withGlossary(text.slice(last, idx), `${keyBase}-${String(last)}`, theme, glossary),
-      );
-    const tok = m[0];
-    if (tok.startsWith("**")) {
-      out.push(
-        <Text
-          key={`${keyBase}-b${String(k++)}`}
-          style={{ fontFamily: `${fonts.sans}_700Bold`, color: colors.textPrimary, fontSize: 14 }}
-        >
-          {tok.slice(2, -2)}
-        </Text>,
-      );
-    } else if (tok.startsWith("`")) {
-      out.push(
-        <Text
-          key={`${keyBase}-c${String(k++)}`}
-          style={{
-            fontFamily: `${fonts.mono}_400Regular`,
-            fontSize: 12.5,
-            color: theme.terminal.foreground,
-            backgroundColor: theme.terminal.background,
-          }}
-        >
-          {` ${tok.slice(1, -1)} `}
-        </Text>,
-      );
-    } else {
-      out.push(
-        <Text
-          key={`${keyBase}-i${String(k++)}`}
-          style={{ fontStyle: "italic", color: colors.textSecondary, fontSize: 14 }}
-        >
-          {tok.slice(1, -1)}
-        </Text>,
-      );
+  // Cut as lib/inline-markdown.ts says; the glossary reads the same pieces.
+  return inlineTokens(text).flatMap((token, k): React.ReactNode[] => {
+    const key = `${keyBase}-${String(k)}`;
+    switch (token.kind) {
+      case "text":
+        return withGlossary(token.text, key, theme, glossary);
+      case "bold":
+        return [
+          <Text
+            key={key}
+            style={{ fontFamily: `${fonts.sans}_700Bold`, color: colors.textPrimary, fontSize: 14 }}
+          >
+            {token.text}
+          </Text>,
+        ];
+      case "code":
+        return [
+          <Text
+            key={key}
+            style={{
+              fontFamily: `${fonts.mono}_400Regular`,
+              fontSize: 12.5,
+              color: theme.terminal.foreground,
+              backgroundColor: theme.terminal.background,
+            }}
+          >
+            {` ${token.text} `}
+          </Text>,
+        ];
+      case "italic":
+        return [
+          <Text
+            key={key}
+            style={{ fontStyle: "italic", color: colors.textSecondary, fontSize: 14 }}
+          >
+            {token.text}
+          </Text>,
+        ];
+      case "link":
+        return [
+          <Text
+            key={key}
+            accessibilityRole="link"
+            accessibilityHint="Ouvre le lien dans le navigateur"
+            onPress={() => {
+              openLink(token.href);
+            }}
+            style={{ color: theme.accent, textDecorationLine: "underline" }}
+          >
+            {token.text} ↗
+          </Text>,
+        ];
     }
-    last = idx + tok.length;
-  }
-  if (last < text.length) {
-    out.push(...withGlossary(text.slice(last), `${keyBase}-${String(last)}`, theme, glossary));
-  }
-  return out;
+  });
 }
 
 // ── Callout palette ───────────────────────────────────────────────────────────
@@ -671,6 +682,53 @@ export function BlockView({
       );
     case "terminal":
       return <TerminalCard block={block} />;
+    case "link":
+      return (
+        <PressableScale
+          accessibilityRole="link"
+          accessibilityLabel={`${block.label}, lien externe`}
+          accessibilityHint="Ouvre le lien dans le navigateur"
+          onPress={() => {
+            openLink(block.href);
+          }}
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 12,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: colors.borderSubtle,
+            backgroundColor: colors.bgElevated,
+          }}
+        >
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: `${colors.info}33`,
+              backgroundColor: `${colors.info}14`,
+            }}
+          >
+            <Text style={{ color: colors.info, fontSize: 14 }}>↗</Text>
+          </View>
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text variant="body" style={{ fontFamily: `${fonts.sans}_700Bold` }}>
+              {block.label}
+            </Text>
+            {block.description !== null ? (
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                {block.description}
+              </Text>
+            ) : null}
+            <Text variant="micro" numberOfLines={1} style={{ color: colors.textMuted }}>
+              {block.host}
+            </Text>
+          </View>
+        </PressableScale>
+      );
     case "placeholder":
       return (
         <View

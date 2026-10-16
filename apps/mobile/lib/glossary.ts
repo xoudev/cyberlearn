@@ -1,5 +1,6 @@
 import { findGlossaryTerms, type GlossaryHit } from "@cyberlearn/lib/glossary/match";
 import type { Block } from "@/lib/lesson-blocks";
+import { inlineTokens } from "./inline-markdown";
 
 /**
  * The glossary in a lesson, as on the site: each technical word is underlined
@@ -10,16 +11,15 @@ import type { Block } from "@/lib/lesson-blocks";
  * change, say) underlines the same words as the first time.
  */
 
-/** Inline code, bold and italics, as renderInline cuts them. */
-const INLINE_TOKEN = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
-
 /**
  * The text of a block where a glossary word can be underlined: its plain
- * prose, with inline code and emphasis taken out (a line break stands in for
- * each, so no word runs across one).
+ * prose, with inline code, emphasis and links taken out, as renderInline cuts
+ * them (a line break stands in for each, so no word runs across one).
  */
 function plainText(text: string): string {
-  return text.replace(INLINE_TOKEN, "\n");
+  return inlineTokens(text)
+    .map((token) => (token.kind === "text" ? token.text : "\n"))
+    .join("");
 }
 
 function proseOf(block: Block): string | null {
