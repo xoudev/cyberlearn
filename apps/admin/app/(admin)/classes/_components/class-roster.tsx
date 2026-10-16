@@ -12,6 +12,7 @@ import {
 import { Card, EmptyState } from "../../_components/admin-ui";
 import { MemberPicker, type PickableUser } from "./member-picker";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput, useSuccessKey } from "@/lib/form-input";
 
 // Who teaches the class and who is in it, with every way to change both.
 //
@@ -68,6 +69,7 @@ function Teachers({
   pool: { id: string; label: string }[];
 }): React.ReactElement {
   const [state, formAction, pending] = useActionState(assignTeacherAction, {});
+  const formKey = useSuccessKey(state, (s) => s.ok === true);
   const [removing, startRemove] = useTransition();
 
   return (
@@ -111,7 +113,13 @@ function Teachers({
           Aucun compte n&apos;a le rôle Professeur. Change un rôle depuis Utilisateurs.
         </p>
       ) : (
-        <form action={formAction} className="a-form" style={{ marginTop: 16 }}>
+        <form
+          key={formKey}
+          action={formAction}
+          onReset={keepFormInput}
+          className="a-form"
+          style={{ marginTop: 16 }}
+        >
           <input type="hidden" name="classId" value={classId} />
 
           <label className="a-field">
@@ -159,6 +167,15 @@ function Members({
     addMembersAction,
     {},
   );
+  // The pasted list is emptied only when every entry in it found a place: a
+  // refused one stays in the box, to be corrected rather than typed again.
+  const formKey = useSuccessKey(
+    state,
+    (s) =>
+      s.error === undefined &&
+      (s.unknownHandles ?? []).length === 0 &&
+      (s.invalid ?? []).length === 0,
+  );
   const [removing, startRemove] = useTransition();
 
   return (
@@ -204,7 +221,13 @@ function Members({
         <MemberPicker classId={classId} candidates={candidates} />
       </div>
 
-      <form action={formAction} className="a-form" style={{ marginTop: 22 }}>
+      <form
+        key={formKey}
+        action={formAction}
+        onReset={keepFormInput}
+        className="a-form"
+        style={{ marginTop: 22 }}
+      >
         <input type="hidden" name="classId" value={classId} />
 
         <label className="a-field">

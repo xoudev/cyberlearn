@@ -40,8 +40,12 @@ interface MfaResetEmailProps {
   securityUrl: string;
   /** True when a verified factor went, which also closed every open session. */
   sessionsClosed: boolean;
-  /** Shown as the address to write to. */
-  contactEmail: string;
+  /**
+   * Where somebody who asked for nothing tells the team: the site's contact
+   * form. Not an address: the only one this mail used to have to hand was the
+   * one it is sent from, a noreply that nobody reads.
+   */
+  contactUrl: string;
   siteUrl: string;
 }
 
@@ -50,7 +54,7 @@ export function MfaResetEmail({
   resetAt,
   securityUrl,
   sessionsClosed,
-  contactEmail,
+  contactUrl,
   siteUrl,
 }: MfaResetEmailProps): React.ReactElement {
   return (
@@ -97,9 +101,9 @@ export function MfaResetEmail({
 
             <Text style={styles.muted}>
               Tu n&apos;as rien demandé ? Change ton mot de passe tout de suite (ou celui de ton
-              compte GitHub, si tu te connectes avec lui) et écris-nous à{" "}
-              <a href={`mailto:${contactEmail}`} style={styles.footerLink}>
-                {contactEmail}
+              compte GitHub, si tu te connectes avec lui) et préviens-nous depuis{" "}
+              <a href={contactUrl} style={styles.footerLink}>
+                le formulaire de contact
               </a>{" "}
               : quelqu&apos;un a peut-être tenté de prendre la main sur ton compte.
             </Text>

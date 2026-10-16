@@ -10,6 +10,7 @@ import {
   LAST_ADMIN_REFUSAL,
   RECENT_ADMIN_DAYS,
   RECENT_ADMIN_MFA_REFUSAL,
+  banRefusal,
   mfaResetRefusal,
   recentAdminSince,
   roleChangeRefusal,
@@ -75,6 +76,24 @@ describe("mfaResetRefusal", () => {
     expect(
       mfaResetRefusal({ actorId: ME, targetId: SOMEONE, targetRole, wasRecentlyAdmin: false }),
     ).toBeNull();
+  });
+});
+
+describe("banRefusal", () => {
+  // One rule for the account's page and the moderation queue: the queue used
+  // to ban an administrator's account, its own moderator's included.
+  it("refuses banning oneself, whatever the role", () => {
+    expect(banRefusal({ actorId: ME, targetId: ME, targetRole: "ADMIN" })).toMatch(/toi-même/u);
+  });
+
+  it("refuses banning an administrator, and says what to do first", () => {
+    expect(banRefusal({ actorId: ME, targetId: SOMEONE, targetRole: "ADMIN" })).toMatch(
+      /rôle administrateur/u,
+    );
+  });
+
+  it.each(["STUDENT", "TEACHER"] as const)("lets a %s be banned", (targetRole) => {
+    expect(banRefusal({ actorId: ME, targetId: SOMEONE, targetRole })).toBeNull();
   });
 });
 

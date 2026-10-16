@@ -2,6 +2,7 @@
 
 import React, { useActionState, useState } from "react";
 import { deleteUserAction, type DeleteUserState } from "../../../_actions/user-actions";
+import { keepFormInput } from "@/lib/form-input";
 import { Card } from "../../../_components/admin-ui";
 
 /**
@@ -13,15 +14,16 @@ import { Card } from "../../../_components/admin-ui";
  * sorted list is having looked at which row you are on, and typing the address
  * is how you look. The button stays disabled until it matches, and the server
  * checks it again against the row it is about to erase.
+ *
+ * Once it has run there is no page left to answer on: the action goes back to
+ * the list, which says what was done and what is left to do.
  */
 export function DeleteUserForm({
   userId,
   email,
-  displayName,
 }: {
   userId: string;
   email: string;
-  displayName: string;
 }): React.ReactElement {
   const [state, formAction, pending] = useActionState<DeleteUserState, FormData>(
     deleteUserAction,
@@ -29,19 +31,6 @@ export function DeleteUserForm({
   );
   const [typed, setTyped] = useState("");
   const matches = typed.trim().toLowerCase() === email.toLowerCase();
-
-  if (state.ok === true) {
-    return (
-      <Card title="Compte supprimé" pad>
-        <p className="a-form-notice">
-          Le compte de {displayName} et ses données ont été effacés.
-          {state.emailFailed === true && " L'e-mail d'information n'a pas pu être envoyé."}
-          {state.authSurvived === true &&
-            " L'identifiant de connexion a survécu à la suppression : il reste à retirer côté Supabase."}
-        </p>
-      </Card>
-    );
-  }
 
   return (
     <Card title="Zone dangereuse" pad>
@@ -52,7 +41,12 @@ export function DeleteUserForm({
         leçons restent en ligne, détachées du nom. Rien de tout cela ne se récupère.
       </p>
 
-      <form action={formAction} className="a-form" style={{ marginTop: 16 }}>
+      <form
+        action={formAction}
+        onReset={keepFormInput}
+        className="a-form"
+        style={{ marginTop: 16 }}
+      >
         <input type="hidden" name="userId" value={userId} />
 
         <label className="a-field">

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma, JSON_NULL_IN_DB, tournamentRepository } from "@cyberlearn/db";
+import { changedFields } from "@/lib/audit-diff";
 import { requireAdminAction } from "@/lib/auth";
 import { type ChallengeMachine, parseChallengeMachine } from "@cyberlearn/types";
 
@@ -95,13 +96,45 @@ function machineJson(machine: ChallengeMachine): { title?: string; files: Record
     : { title: machine.title, files: machine.files };
 }
 
+// ── Audit ──────────────────────────────────────────────────────────────────────
+//
+// Every change made here is written to the audit log, in the same transaction
+// as the change: none of them used to be, the flag included, while the sign-in
+// screen and /audit both say every console action is logged. A row says who
+// and what; for an edit, which fields moved, by name - the flag's value never
+// goes in, see changedFields.
+
+const TARGET = "Challenge";
+
+/** The columns an edit can change, read before it to say which ones it did. */
+const EDITABLE = {
+  refCode: true,
+  slug: true,
+  title: true,
+  description: true,
+  instructions: true,
+  category: true,
+  difficulty: true,
+  type: true,
+  xpReward: true,
+  timeLimitMin: true,
+  maxAttempts: true,
+  flag: true,
+  machine: true,
+  starterCode: true,
+  orderIndex: true,
+  prerequisiteId: true,
+  attachmentUrl: true,
+  resourceUrl: true,
+} as const;
+
 // ── Create ─────────────────────────────────────────────────────────────────────
 
 export async function createChallengeAction(
   _prev: ChallengeFormState,
   formData: FormData,
 ): Promise<ChallengeFormState> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   const parsed = parseFormData(formData);
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -118,19 +151,30 @@ export async function createChallengeAction(
 
   let createdId: string;
   try {
-    const created = await prisma.challenge.create({
-      data: {
-        ...rest,
-        ...(flag ? { flag } : {}),
-        ...(machine.machine ? { machine: machineJson(machine.machine) } : {}),
-        ...(prerequisiteId ? { prerequisiteId } : {}),
-        starterCode: starterCode ?? null,
-        attachmentUrl: attachmentUrl ?? null,
-        resourceUrl: resourceUrl ?? null,
-      },
-      select: { id: true },
+    createdId = await prisma.$transaction(async (tx) => {
+      const created = await tx.challenge.create({
+        data: {
+          ...rest,
+          ...(flag ? { flag } : {}),
+          ...(machine.machine ? { machine: machineJson(machine.machine) } : {}),
+          ...(prerequisiteId ? { prerequisiteId } : {}),
+          starterCode: starterCode ?? null,
+          attachmentUrl: attachmentUrl ?? null,
+          resourceUrl: resourceUrl ?? null,
+        },
+        select: { id: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "challenge.create",
+          targetType: TARGET,
+          targetId: created.id,
+          metadata: { refCode: rest.refCode, title: rest.title, type: rest.type },
+        },
+      });
+      return created.id;
     });
-    createdId = created.id;
   } catch (err) {
     if (err instanceof Error && err.message.includes("Unique constraint")) {
       return { error: "Un challenge avec ce refCode ou ce slug existe déjà." };
@@ -149,7 +193,7 @@ export async function updateChallengeAction(
   _prev: ChallengeFormState,
   formData: FormData,
 ): Promise<ChallengeFormState> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
 
   const parsed = parseFormData(formData);
@@ -166,19 +210,37 @@ export async function updateChallengeAction(
 
   const { prerequisiteId, flag, starterCode, attachmentUrl, resourceUrl, ...rest } = parsed.data;
 
+  // What the row will hold, written so it compares with what it holds now.
+  const fields = {
+    ...rest,
+    flag: flag ?? null,
+    machine: machine.machine ? machineJson(machine.machine) : null,
+    starterCode: starterCode ?? null,
+    prerequisiteId: prerequisiteId ?? null,
+    attachmentUrl: attachmentUrl ?? null,
+    resourceUrl: resourceUrl ?? null,
+  };
+
   try {
-    await prisma.challenge.update({
-      where: { id },
-      data: {
-        ...rest,
-        flag: flag ?? null,
-        machine: machine.machine ? machineJson(machine.machine) : JSON_NULL_IN_DB,
-        starterCode: starterCode ?? null,
-        prerequisiteId: prerequisiteId ?? null,
-        attachmentUrl: attachmentUrl ?? null,
-        resourceUrl: resourceUrl ?? null,
-      },
+    const outcome = await prisma.$transaction(async (tx) => {
+      const before = await tx.challenge.findUnique({ where: { id }, select: EDITABLE });
+      if (!before) return "missing" as const;
+      await tx.challenge.update({
+        where: { id },
+        data: { ...fields, machine: fields.machine ?? JSON_NULL_IN_DB },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "challenge.update",
+          targetType: TARGET,
+          targetId: id,
+          metadata: { changed: changedFields(before, fields) },
+        },
+      });
+      return "updated" as const;
     });
+    if (outcome === "missing") return { error: "Ce challenge n'existe plus." };
   } catch (err) {
     if (err instanceof Error && err.message.includes("Unique constraint")) {
       return { error: "Un challenge avec ce refCode ou ce slug existe déjà." };
@@ -196,11 +258,22 @@ export async function setChallengeActiveAction(
   id: string,
   isActive: boolean,
 ): Promise<{ error?: string }> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
   if (!z.boolean().safeParse(isActive).success) return { error: "État invalide." };
 
-  await prisma.challenge.update({ where: { id }, data: { isActive } });
+  await prisma.$transaction(async (tx) => {
+    await tx.challenge.update({ where: { id }, data: { isActive } });
+    await tx.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "challenge.active.update",
+        targetType: TARGET,
+        targetId: id,
+        metadata: { isActive },
+      },
+    });
+  });
   revalidatePath("/challenges");
   return {};
 }
@@ -208,8 +281,15 @@ export async function setChallengeActiveAction(
 // ── Delete ─────────────────────────────────────────────────────────────────────
 
 export async function deleteChallengeAction(id: string): Promise<{ error?: string }> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
+
+  const existing = await prisma.challenge.findUnique({
+    where: { id },
+    select: { refCode: true, title: true },
+  });
+  // Already deleted, from another tab: back to the list.
+  if (!existing) redirect("/challenges");
 
   const progress = await prisma.userChallengeProgress.count({ where: { challengeId: id } });
   if (progress > 0) {
@@ -223,7 +303,20 @@ export async function deleteChallengeAction(id: string): Promise<{ error?: strin
     return { error: "Impossible de supprimer : ce défi a servi dans un tournoi. Désactive-le." };
   }
 
-  await prisma.challenge.delete({ where: { id } });
+  // The title goes in the row: once the challenge is gone, the id alone says
+  // nothing to whoever reads the log.
+  await prisma.$transaction(async (tx) => {
+    await tx.challenge.delete({ where: { id } });
+    await tx.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "challenge.delete",
+        targetType: TARGET,
+        targetId: id,
+        metadata: { refCode: existing.refCode, title: existing.title },
+      },
+    });
+  });
   revalidatePath("/challenges");
   redirect("/challenges");
 }
@@ -236,7 +329,7 @@ export async function createHintAction(
   xpCost: number,
   orderIndex: number,
 ): Promise<{ error?: string }> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(challengeId).success) return { error: "ID invalide." };
 
   const validated = z
@@ -249,9 +342,23 @@ export async function createHintAction(
 
   if (!validated.success) return { error: "Données invalides." };
 
+  // A hint's row is logged under its challenge, so /audit?target=<challenge>
+  // shows the hints changing alongside the rest of it.
   try {
-    await prisma.challengeHint.create({
-      data: { challengeId, ...validated.data },
+    await prisma.$transaction(async (tx) => {
+      const hint = await tx.challengeHint.create({
+        data: { challengeId, ...validated.data },
+        select: { id: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "challenge.hint.create",
+          targetType: TARGET,
+          targetId: challengeId,
+          metadata: { hintId: hint.id, xpCost: validated.data.xpCost },
+        },
+      });
     });
   } catch {
     return { error: "Erreur lors de la création de l'indice." };
@@ -266,7 +373,7 @@ export async function updateHintAction(
   content: string,
   xpCost: number,
 ): Promise<{ error?: string }> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(hintId).success) return { error: "ID invalide." };
 
   const validated = z
@@ -279,9 +386,21 @@ export async function updateHintAction(
   if (!validated.success) return { error: "Données invalides." };
 
   try {
-    await prisma.challengeHint.update({
-      where: { id: hintId },
-      data: validated.data,
+    await prisma.$transaction(async (tx) => {
+      const hint = await tx.challengeHint.update({
+        where: { id: hintId },
+        data: validated.data,
+        select: { challengeId: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "challenge.hint.update",
+          targetType: TARGET,
+          targetId: hint.challengeId,
+          metadata: { hintId, xpCost: validated.data.xpCost },
+        },
+      });
     });
   } catch {
     return { error: "Erreur lors de la mise à jour de l'indice." };
@@ -292,11 +411,25 @@ export async function updateHintAction(
 }
 
 export async function deleteHintAction(hintId: string): Promise<{ error?: string }> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
   if (!z.guid().safeParse(hintId).success) return { error: "ID invalide." };
 
   try {
-    await prisma.challengeHint.delete({ where: { id: hintId } });
+    await prisma.$transaction(async (tx) => {
+      const hint = await tx.challengeHint.delete({
+        where: { id: hintId },
+        select: { challengeId: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "challenge.hint.delete",
+          targetType: TARGET,
+          targetId: hint.challengeId,
+          metadata: { hintId },
+        },
+      });
+    });
   } catch {
     return { error: "Erreur lors de la suppression de l'indice." };
   }

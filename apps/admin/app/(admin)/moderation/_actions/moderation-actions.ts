@@ -5,6 +5,7 @@ import { z } from "zod";
 import { banRepository, moderationRepository, prisma } from "@cyberlearn/db";
 import { BAN_DURATIONS, banExpiryFor, isBanDurationKey, moderationNotice } from "@cyberlearn/lib";
 import { sendBanNoticeEmail, sendModerationNoticeEmail } from "@cyberlearn/email";
+import { banRefusal } from "@/lib/account-guards";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
@@ -36,43 +37,74 @@ const resolveSchema = z.object({
   sanction: z.string().optional(),
 });
 
+/**
+ * What the queue is told. `message` is for the moderator, and it is the one
+ * thing that outlives the row: a decided event leaves the queue in the same
+ * response, so the row cannot say it itself.
+ */
+export interface ResolveModerationResult {
+  /** The decision is recorded, by this moderator. */
+  ok: boolean;
+  /** Why nothing changed, or what did not go as asked. */
+  message?: string;
+}
+
 export async function resolveModerationAction(
   eventId: string,
   outcome: "UPHELD" | "OVERTURNED",
   sanction?: string,
-): Promise<{ ok: boolean; sanctionFailed?: boolean }> {
+): Promise<ResolveModerationResult> {
   const admin = await requireAdminAction();
   const parsed = resolveSchema.safeParse({ eventId, outcome, sanction });
-  if (!parsed.success) return { ok: false };
+  if (!parsed.success) return { ok: false, message: "Paramètres invalides." };
 
   // Read before the content is destroyed: afterwards the excerpt is the only
   // copy of what was flagged, and the notice quotes it.
   const subject = await moderationRepository.findSubject(eventId);
+  const author = subject?.user ?? null;
+  // The ban asked for, when there is one and somebody to ban. "none" is not a
+  // duration, so it never gets here.
+  const ban =
+    outcome === "UPHELD" && sanction !== undefined && isBanDurationKey(sanction) && author !== null
+      ? { duration: sanction, author }
+      : null;
+
+  // The account page's refusals, before anything is decided: an administrator
+  // and oneself are not banned from here either. The queue already greys the
+  // choice out; this is for a request that did not come through it.
+  if (ban !== null) {
+    const refusal = banRefusal({
+      actorId: admin.id,
+      targetId: ban.author.id,
+      targetRole: ban.author.role,
+    });
+    if (refusal !== null) return { ok: false, message: `Rien n'a été décidé. ${refusal}` };
+  }
 
   const applied = await moderationRepository.applyOutcome(eventId, outcome, admin.id);
   // Somebody else got there first. Nothing was changed and nothing is logged:
-  // the decision that counts is already recorded under their name.
-  if (!applied.claimed) return { ok: false };
+  // the decision that counts is already recorded under their name. The queue
+  // is read again so the row goes, and the moderator is told why.
+  if (!applied.claimed) {
+    revalidatePath("/moderation");
+    return {
+      ok: false,
+      message: "Déjà traité par quelqu'un d'autre : sa décision est enregistrée, rien n'a changé.",
+    };
+  }
 
   // ── The sanction, when one was asked for ────────────────────────────────
   let sanctionLabel: string | null = null;
-  let sanctionFailed = false;
-  const author = subject?.user ?? null;
+  let message: string | undefined;
 
-  if (
-    outcome === "UPHELD" &&
-    sanction !== undefined &&
-    sanction !== "none" &&
-    isBanDurationKey(sanction) &&
-    author !== null
-  ) {
+  if (ban !== null) {
     const now = new Date();
-    const expiresAt = banExpiryFor(sanction, now);
-    const label = BAN_DURATIONS.find((d) => d.key === sanction)?.label ?? sanction;
+    const expiresAt = banExpiryFor(ban.duration, now);
+    const label = BAN_DURATIONS.find((d) => d.key === ban.duration)?.label ?? ban.duration;
     const reason = `Contenu supprimé par la modération : « ${subject?.excerpt ?? ""} »`;
 
     const issued = await banRepository.issue({
-      userId: author.id,
+      userId: ban.author.id,
       reason: reason.slice(0, 500),
       expiresAt,
       issuedById: admin.id,
@@ -86,8 +118,8 @@ export async function resolveModerationAction(
         await sendBanNoticeEmail({
           apiKey: env.RESEND_API_KEY,
           from: env.RESEND_FROM_EMAIL,
-          to: author.email,
-          displayName: author.displayName || (author.username ?? "toi"),
+          to: ban.author.email,
+          displayName: ban.author.displayName || (ban.author.username ?? "toi"),
           reason: reason.slice(0, 500),
           durationLabel:
             expiresAt === null ? "Ce bannissement est définitif." : `Durée : ${label}.`,
@@ -104,11 +136,14 @@ export async function resolveModerationAction(
         });
       } catch (error) {
         logger.error({ scope: "moderation", err: errorMessage(error) }, "ban notice e-mail failed");
+        message =
+          "Décision enregistrée et auteur banni, mais l'e-mail de bannissement n'a pas pu être envoyé : la personne ne sait pas pourquoi elle ne peut plus se connecter.";
       }
     } else {
       // Already banned. The decision on the content stands; the moderator is
       // told the sanction did not apply rather than left assuming it did.
-      sanctionFailed = true;
+      message =
+        "Décision enregistrée. La sanction n'a pas été appliquée : ce compte est déjà banni.";
     }
   }
 
@@ -163,5 +198,5 @@ export async function resolveModerationAction(
   }
 
   revalidatePath("/moderation");
-  return sanctionFailed ? { ok: true, sanctionFailed: true } : { ok: true };
+  return message === undefined ? { ok: true } : { ok: true, message };
 }

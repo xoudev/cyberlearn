@@ -1,7 +1,13 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import {
+  CRITICAL_TICKET_WHERE,
+  OPEN_TICKET_STATUSES,
+  prisma,
+  ticketRepository,
+} from "@cyberlearn/db";
+import { auditActorName } from "@/lib/audit-export";
 import { roleLabel, roleTone } from "@/lib/roles";
 import { fetchSentryIssues } from "@/lib/sentry-issues";
 import { SentryCard } from "../_components/SentryCard";
@@ -82,8 +88,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     lessonThisMonth,
     certCount,
     certThisWeek,
+    activeTickets,
     openTickets,
     criticalTickets,
+    awaitingTickets,
     userDates,
     lessonDates,
     certDates,
@@ -100,8 +108,14 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     prisma.lesson.count({ where: { status: "PUBLISHED", publishedAt: { gte: oneMonthAgo } } }),
     prisma.certificate.count({ where: { revokedAt: null } }),
     prisma.certificate.count({ where: { revokedAt: null, issuedAt: { gte: oneWeekAgo } } }),
+    // The card counts what its delta counts within: open or in progress. With
+    // OPEN alone, a security report taken in hand read "0" over "1 critique".
+    prisma.contactTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
     prisma.contactTicket.count({ where: { status: "OPEN" } }),
-    prisma.contactTicket.count({ where: { status: "OPEN", theme: { in: ["BUG", "SECURITY"] } } }),
+    // The tickets page's definitions, from the same place: a security report
+    // taken in hand is still critical, here as there.
+    prisma.contactTicket.count({ where: CRITICAL_TICKET_WHERE }),
+    ticketRepository.countAwaitingReply(),
     prisma.user.findMany({
       where: { createdAt: { gte: horizon } },
       select: { createdAt: true },
@@ -123,7 +137,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     prisma.auditLog.findMany({
       take: 8,
       orderBy: { createdAt: "desc" },
-      include: { actor: { select: { username: true, displayName: true } } },
+      include: { actor: { select: { username: true, displayName: true, email: true } } },
     }),
     prisma.user.findMany({
       take: 6,
@@ -196,25 +210,39 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           tone="purple"
         />
         <KpiCard
-          label="Tickets ouverts"
-          value={openTickets.toLocaleString("fr-FR")}
+          label="Tickets actifs"
+          value={activeTickets.toLocaleString("fr-FR")}
           series={weeklySeries(
             ticketDates.map((t) => t.createdAt),
             now,
           )}
           delta={
-            criticalTickets > 0 ? (
-              <>
+            <>
+              {criticalTickets > 0 ? (
                 <b>
-                  {criticalTickets} critique{criticalTickets !== 1 ? "s" : ""}
-                </b>{" "}
-                à traiter
-              </>
-            ) : (
-              <>aucun critique</>
-            )
+                  {criticalTickets} critique{criticalTickets > 1 ? "s" : ""} actif
+                  {criticalTickets > 1 ? "s" : ""}
+                </b>
+              ) : (
+                "aucun critique actif"
+              )}
+              {awaitingTickets > 0 && (
+                <>
+                  {" · "}
+                  <b>
+                    {awaitingTickets} réponse{awaitingTickets > 1 ? "s" : ""} en attente
+                  </b>
+                </>
+              )}
+            </>
           }
-          tone={criticalTickets > 0 ? "danger" : openTickets > 0 ? "warning" : "accent"}
+          tone={
+            criticalTickets > 0
+              ? "danger"
+              : openTickets > 0 || awaitingTickets > 0
+                ? "warning"
+                : "accent"
+          }
         />
       </div>
 
@@ -253,7 +281,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           ) : (
             <div className="a-feed">
               {recentLogs.map((log) => {
-                const actor = log.actor?.username ?? log.actor?.displayName ?? "system";
+                // Named as /audit names it: an erased account is "compte
+                // supprimé", not "@system", and a job that ran alone "système".
+                const actor = log.actor?.username ? `@${log.actor.username}` : auditActorName(log);
                 return (
                   <div
                     key={log.id}
@@ -265,7 +295,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       <span className="a-feed-line" />
                     </span>
                     <div className="a-feed-body">
-                      <b style={{ color: "var(--a-fg)" }}>@{actor}</b>{" "}
+                      <b style={{ color: "var(--a-fg)" }}>{actor}</b>{" "}
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>
                         {log.action}
                       </span>

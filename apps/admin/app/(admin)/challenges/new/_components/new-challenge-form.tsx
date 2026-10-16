@@ -6,6 +6,7 @@ import React, { useActionState, useState } from "react";
 import { createChallengeAction } from "../../_actions/challenge-admin-actions";
 import type { ChallengeFormState } from "../../_actions/challenge-admin-actions";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 
 export interface ChallengeOption {
   id: string;
@@ -83,7 +84,11 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
   const fe = state.fieldErrors ?? {};
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <form
+      action={action}
+      onReset={keepFormInput}
+      style={{ display: "flex", flexDirection: "column", gap: 24 }}
+    >
       {state.error !== undefined && (
         <div
           style={{

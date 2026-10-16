@@ -10,6 +10,7 @@ import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
+import { securityContactUrl } from "@/lib/support-contact";
 
 /**
  * The gestures that get somebody back into their account.
@@ -237,7 +238,7 @@ export async function resetMfaAction(
       }).format(new Date()),
       securityUrl: learnerUrl("/settings/account"),
       sessionsClosed: removed.some((factor) => factor.verified),
-      contactEmail: env.RESEND_FROM_EMAIL,
+      contactUrl: securityContactUrl(),
       siteUrl: learnerSiteUrl(),
     });
   } catch (error) {
@@ -407,9 +408,12 @@ export async function confirmEmailAction(
     userId,
     withoutProfile ? { pendingSignUp: true } : undefined,
   );
-  // The account's page only: a pending sign-up stays on the list it was
-  // confirmed from, with the notice, until that list is read again.
-  revalidatePath(`/users/${userId}`);
+  // Nothing revalidated here, on purpose. Revalidating any path re-renders the
+  // page the action came from, and on the list of pending sign-ups that read
+  // the list again: the confirmed address left it, and its notice - and a
+  // failed audit write - went with the row. The account's page refreshes
+  // itself on success instead (SignInActions); the pending row stays, with
+  // its notice, until the list is read again.
   return {
     ok: true,
     // Without a profile, the account still has to sign in once to get one.

@@ -1,7 +1,7 @@
 import React from "react";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
-import { prisma } from "@cyberlearn/db";
+import { prisma, ticketRepository } from "@cyberlearn/db";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
@@ -20,7 +20,10 @@ const getSidebarCounts = unstable_cache(
       prisma.badge.count(),
       prisma.challenge.count({ where: { isActive: true } }),
       prisma.user.count(),
-      prisma.contactTicket.count({ where: { status: "OPEN" } }),
+      // What the team owes: new tickets, and the ones whose requester wrote
+      // back after an answer - a reply on a ticket in progress changes no
+      // status, so counting OPEN alone never showed it.
+      ticketRepository.countNeedingTeam(),
     ]);
     return { lessons, paths, badges, challenges, users, tickets };
   },

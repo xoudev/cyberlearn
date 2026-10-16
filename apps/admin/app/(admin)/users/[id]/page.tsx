@@ -125,7 +125,7 @@ export default async function AdminUserPage({
         endsLabel: banTimeLeft(active.expiresAt),
         issuedOn: stamp(active.createdAt),
         issuedBy: active.issuedBy?.displayName ?? null,
-        hasAppeal: active.appealTicketId !== null,
+        appealTicketId: active.appealTicketId,
       }
     : null;
 
@@ -277,11 +277,7 @@ export default async function AdminUserPage({
         displayName={user.displayName || handle}
       />
 
-      <DeleteUserForm
-        userId={user.id}
-        email={user.email}
-        displayName={user.displayName || handle}
-      />
+      <DeleteUserForm userId={user.id} email={user.email} />
     </main>
   );
 }

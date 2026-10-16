@@ -6,6 +6,7 @@ import { updatePathAction, type UpdatePathState } from "../actions";
 import { Select } from "@cyberlearn/ui";
 import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
 import { CONTENT_STATUS_OPTIONS } from "@/app/(admin)/_components/content-status";
+import { keepFormInput } from "@/lib/form-input";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -648,7 +649,7 @@ export function EditPathClient({
         </div>
       )}
 
-      <form action={action} style={{ display: "grid", gap: 22 }}>
+      <form action={action} onReset={keepFormInput} style={{ display: "grid", gap: 22 }}>
         {/* Hidden ordered lesson IDs */}
         <input type="hidden" name="lessonIds" value={JSON.stringify(lessons.map((l) => l.id))} />
 

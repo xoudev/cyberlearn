@@ -264,7 +264,10 @@ export const moderationRepository = {
     });
   },
 
-  /** One event, with what is needed to write to the person it is about. */
+  /**
+   * One event, with what is needed to write to the person it is about - and
+   * their role, which decides whether a sanction may be issued from the queue.
+   */
   async findSubject(eventId: string) {
     return prisma.moderationEvent.findUnique({
       where: { id: eventId },
@@ -279,6 +282,7 @@ export const moderationRepository = {
             email: true,
             displayName: true,
             username: true,
+            role: true,
             preferences: { select: { emailNotifications: true } },
           },
         },
@@ -334,7 +338,7 @@ export const moderationRepository = {
         excerpt: true,
         createdAt: true,
         contentId: true,
-        user: { select: { id: true, displayName: true, username: true, email: true } },
+        user: { select: { id: true, displayName: true, username: true, email: true, role: true } },
       },
     });
   },

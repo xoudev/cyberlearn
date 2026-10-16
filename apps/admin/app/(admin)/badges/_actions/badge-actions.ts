@@ -245,7 +245,7 @@ export async function updateBadgeAction(
 // ── Toggle active ──────────────────────────────────────────────────────────────
 
 export async function toggleBadgeActiveAction(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  const admin = await requireAdminAction();
 
   const id = z.guid().safeParse(formData.get("id"));
   if (!id.success) return;
@@ -256,7 +256,21 @@ export async function toggleBadgeActiveAction(formData: FormData): Promise<void>
   });
   if (!badge) return;
 
-  await prisma.badge.update({ where: { id: id.data }, data: { isActive: !badge.isActive } });
+  // Logged like every other change to a badge: switching one off stops it
+  // being awarded, and the log is where the next person looks for who did.
+  const isActive = !badge.isActive;
+  await prisma.$transaction([
+    prisma.badge.update({ where: { id: id.data }, data: { isActive } }),
+    prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "badge.active.update",
+        targetType: "Badge",
+        targetId: id.data,
+        metadata: { isActive },
+      },
+    }),
+  ]);
   revalidatePath("/badges");
 }
 
@@ -272,24 +286,33 @@ export async function deleteBadgeAction(formData: FormData): Promise<void> {
     where: { id: id.data },
     select: { name: true, _count: { select: { userBadges: true } } },
   });
-  if (!badge) return;
+  // Already deleted, from another tab: back to the list.
+  if (!badge) redirect("/badges");
 
-  // Refuse deletion if users have already earned it - deactivate instead
-  if (badge._count.userBadges > 0) return;
+  // Refuse deletion if users have already earned it - deactivate instead.
+  // The page is read again, and says why the button went.
+  if (badge._count.userBadges > 0) {
+    revalidatePath(`/badges/${id.data}/edit`);
+    return;
+  }
 
-  await prisma.badge.delete({ where: { id: id.data } });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "badge.delete",
-      targetType: "Badge",
-      targetId: id.data,
-      metadata: { name: badge.name },
-    },
-  });
+  await prisma.$transaction([
+    prisma.badge.delete({ where: { id: id.data } }),
+    prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "badge.delete",
+        targetType: "Badge",
+        targetId: id.data,
+        metadata: { name: badge.name },
+      },
+    }),
+  ]);
 
   revalidatePath("/badges");
+  // Back to the list: the edit page re-rendered by the revalidation found no
+  // badge, called notFound(), and left the administrator on Next's own 404.
+  redirect("/badges");
 }
 
 // Re-export type alias for backward compat

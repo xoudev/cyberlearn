@@ -14,7 +14,9 @@ import {
   USERS_PAGE_SIZE,
 } from "@/lib/list-params";
 import { ROLE_LABEL } from "@/lib/roles";
+import { readDeletionNotice } from "@/lib/deletion-notice";
 import { USER_COLUMNS, USERS_HEADER } from "../_components/columns";
+import { DeletedAccountNotice } from "../_components/deleted-account-notice";
 import { RoleSelect } from "../_components/role-select";
 import { formatDay, relativeDay } from "../_components/dates";
 import { UsersKpis, UsersTabs } from "../_components/users-head";
@@ -37,7 +39,10 @@ export default async function AdminUsersPage({
   searchParams: Promise<RawParams>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const params = parseUserListParams(await searchParams);
+  const raw = await searchParams;
+  const params = parseUserListParams(raw);
+  // Set by a deletion, which has no page of its own left to answer on.
+  const deletion = readDeletionNotice(raw);
   const [counts, slice] = await Promise.all([
     userRepository.consoleCounts(new Date()),
     userRepository.listForConsole(userQueryOf(params)),
@@ -101,6 +106,7 @@ export default async function AdminUsersPage({
         title={USERS_HEADER.title}
         description={USERS_HEADER.description}
       />
+      {deletion !== null && <DeletedAccountNotice notice={deletion} />}
       <UsersKpis counts={counts} />
       <UsersTabs current="accounts" />
 

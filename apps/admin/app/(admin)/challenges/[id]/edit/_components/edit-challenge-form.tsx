@@ -11,6 +11,7 @@ import {
 import type { ChallengeFormState } from "../../../_actions/challenge-admin-actions";
 import type { ChallengeOption } from "../../../new/_components/new-challenge-form";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 
 interface ChallengeData {
   id: string;
@@ -253,7 +254,11 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
       </div>
 
       {/* Edit form */}
-      <form action={action} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <form
+        action={action}
+        onReset={keepFormInput}
+        style={{ display: "flex", flexDirection: "column", gap: 24 }}
+      >
         {state.error !== undefined && (
           <div
             style={{

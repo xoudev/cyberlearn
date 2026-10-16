@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isTicketOpen, prisma } from "@cyberlearn/db";
 import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
@@ -88,7 +89,10 @@ export default async function AdminTicketPage({
       userAgent: true,
       createdAt: true,
       updatedAt: true,
-      user: { select: { username: true, displayName: true, email: true } },
+      user: { select: { id: true, username: true, displayName: true, email: true } },
+      // Set when the ticket contests a ban: the account it is about, which is
+      // where the ban is lifted.
+      appealFor: { select: { userId: true } },
       messages: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -165,7 +169,29 @@ export default async function AdminTicketPage({
 
           <Card title="Détails" pad>
             <div style={{ display: "grid", gap: 13 }}>
-              <DetailRow label="Demandeur">{requester}</DetailRow>
+              <DetailRow label="Demandeur">
+                {/* The account, one click away: banning, lifting a ban or
+                    unblocking a sign-in all happen on its page. */}
+                {ticket.user !== null ? (
+                  <Link href={`/users/${ticket.user.id}`} style={{ color: "var(--a-accent)" }}>
+                    {requester}
+                  </Link>
+                ) : (
+                  requester
+                )}
+              </DetailRow>
+              {ticket.appealFor !== null && (
+                <DetailRow label="Bannissement contesté">
+                  {/* Lifted or kept from the account's page, which shows the
+                      ban, its reason and the ones before it. */}
+                  <Link
+                    href={`/users/${ticket.appealFor.userId}`}
+                    style={{ color: "var(--a-accent)" }}
+                  >
+                    Voir le bannissement sur le compte
+                  </Link>
+                </DetailRow>
+              )}
               <DetailRow label="Email">
                 {contactEmail ? (
                   <a href={`mailto:${contactEmail}`} style={{ color: "var(--a-accent)" }}>

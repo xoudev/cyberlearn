@@ -162,7 +162,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
         AccountDeletedEmail({
           displayName: "Amélie",
           deletedAt: "21 septembre 2026",
-          contactEmail: "contact@cyberlearn.fr",
+          contactEmail: "privacy@cyberlearn.fr",
           reason: "Demande de l'utilisateur, après vérification de son identité.",
         }),
       );
@@ -173,7 +173,7 @@ export async function renderEmailSample(key: string): Promise<string | null> {
           resetAt: "12 octobre 2026 à 10:42",
           securityUrl: `${SITE}/settings/account`,
           sessionsClosed: true,
-          contactEmail: "contact@cyberlearn.fr",
+          contactUrl: `${SITE}/contact?theme=SECURITY`,
           siteUrl: SITE,
         }),
       );

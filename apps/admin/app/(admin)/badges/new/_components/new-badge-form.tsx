@@ -4,6 +4,7 @@ import React, { useState, useActionState } from "react";
 import Link from "next/link";
 import { createBadgeAction, type CreateBadgeState } from "../../_actions/badge-actions";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 
 export interface LessonOption {
   id: string;
@@ -319,7 +320,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
         </div>
       )}
 
-      <form action={action}>
+      <form action={action} onReset={keepFormInput}>
         <div className="admin-form-grid-2" style={{ gap: 20 }}>
           {/* ── Identity ── */}
           <Field label="Ref Code *" error={state.fieldErrors?.refCode}>

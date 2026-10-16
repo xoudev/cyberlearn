@@ -8,6 +8,7 @@ import {
   updatePromotionAction,
   type ActionState,
 } from "../../_actions/class-actions";
+import { keepFormInput } from "@/lib/form-input";
 import { Card, EmptyState, Tag } from "../../../_components/admin-ui";
 
 /**
@@ -138,7 +139,7 @@ function EstablishmentForm({
         </span>
       </summary>
 
-      <form action={formAction} className="a-form a-disclosure-body">
+      <form action={formAction} onReset={keepFormInput} className="a-form a-disclosure-body">
         <input type="hidden" name="id" value={e.id} />
         <Field name="name" label="Nom" defaultValue={e.name} required />
         <Field
@@ -173,7 +174,7 @@ function PromotionRow({ promotion: p }: { promotion: StructurePromotion }): Reac
         <Tag tone={p.archived ? "neutral" : "accent"}>{p.archived ? "Archivée" : "Active"}</Tag>
       </summary>
 
-      <form action={formAction} className="a-form a-disclosure-body">
+      <form action={formAction} onReset={keepFormInput} className="a-form a-disclosure-body">
         <input type="hidden" name="id" value={p.id} />
         <Field name="name" label="Nom" defaultValue={p.name} required />
         <Field

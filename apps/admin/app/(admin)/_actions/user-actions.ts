@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
   banRepository,
@@ -14,10 +15,12 @@ import {
 } from "@cyberlearn/db";
 import { banExpiryFor, banTimeLeft, isBanDurationKey } from "@cyberlearn/lib";
 import { sendAccountDeletedEmail, sendBanNoticeEmail } from "@cyberlearn/email";
-import { LAST_ADMIN_REFUSAL, roleChangeRefusal } from "@/lib/account-guards";
+import { LAST_ADMIN_REFUSAL, banRefusal, roleChangeRefusal } from "@/lib/account-guards";
 import { requireAdminAction } from "@/lib/auth";
+import { deletedAccountHref } from "@/lib/deletion-notice";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
+import { PRIVACY_CONTACT_EMAIL } from "@/lib/support-contact";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
@@ -101,13 +104,12 @@ const deleteUserSchema = z.object({
   reason: z.string().trim().max(300).optional().or(z.literal("")),
 });
 
+/**
+ * Only a refusal comes back here. A deletion that ran leaves the account's
+ * page, which no longer exists, for the list: see deletedAccountHref.
+ */
 export interface DeleteUserState {
   error?: string;
-  ok?: boolean;
-  /** True when the erasure ran but the notice could not be delivered. */
-  emailFailed?: boolean;
-  /** True when auth.users outlived public.users - a loose end worth naming. */
-  authSurvived?: boolean;
 }
 
 export async function deleteUserAction(
@@ -172,7 +174,8 @@ export async function deleteUserAction(
         timeStyle: "short",
         timeZone: "Europe/Paris",
       }).format(summary.deletedAt),
-      contactEmail: env.RESEND_FROM_EMAIL,
+      // The address the privacy policy publishes: the sender is a noreply.
+      contactEmail: PRIVACY_CONTACT_EMAIL,
       reason: parsed.data.reason === "" ? undefined : parsed.data.reason,
     });
   } catch (error) {
@@ -194,7 +197,9 @@ export async function deleteUserAction(
   }
 
   revalidatePath("/users");
-  return { ok: true, emailFailed, authSurvived: !summary.authIdentityDeleted };
+  // Both warnings travel with the redirect: the auth identity that survived
+  // still has to be removed by hand, and the list is where that is said.
+  redirect(deletedAccountHref({ emailFailed, authSurvived: !summary.authIdentityDeleted }));
 }
 
 // ── Bans ──────────────────────────────────────────────────────────────────────
@@ -244,12 +249,9 @@ export async function banUserAction(
   });
   if (!target) return { error: "Ce compte n'existe plus." };
 
-  // An administrator banning themselves would lock the console's own door from
-  // the inside, with the key on the other side.
-  if (target.id === admin.id) return { error: "Tu ne peux pas te bannir toi-même." };
-  if (target.role === "ADMIN") {
-    return { error: "Retire d'abord le rôle administrateur de ce compte." };
-  }
+  // The same rule the moderation queue applies before its own sanction.
+  const refusal = banRefusal({ actorId: admin.id, targetId: target.id, targetRole: target.role });
+  if (refusal !== null) return { error: refusal };
 
   const now = new Date();
   // No cast: the schema refines with a type predicate, so duration is already

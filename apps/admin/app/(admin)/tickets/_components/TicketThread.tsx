@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef, useTransition } from "react";
+import React, { useState, useTransition } from "react";
+import { keepFormInput } from "@/lib/form-input";
 import { replyToTicketAction } from "../../_actions/ticket-actions";
 
 /**
@@ -41,16 +42,19 @@ export function TicketThread({
    */
   open: boolean;
 }): React.ReactElement {
-  const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // Bumped once a reply is sent: the box starts over empty. Until then it
+  // keeps the draft, a refusal included - a ticket closed in the meantime
+  // must not take the answer someone was writing with it.
+  const [sent, setSent] = useState(0);
 
   const send = (formData: FormData): void => {
     const body = formData.get("body");
     setError(null);
     start(async () => {
       const res = await replyToTicketAction(ticketId, typeof body === "string" ? body : "");
-      if (res.ok) formRef.current?.reset();
+      if (res.ok) setSent((count) => count + 1);
       else setError(res.error ?? "Envoi impossible.");
     });
   };
@@ -92,7 +96,7 @@ export function TicketThread({
           Ce ticket est terminé. Repasse-le en cours pour reprendre la conversation.
         </p>
       ) : (
-        <form ref={formRef} action={send} style={{ display: "grid", gap: 8 }}>
+        <form key={sent} action={send} onReset={keepFormInput} style={{ display: "grid", gap: 8 }}>
           <textarea
             name="body"
             required

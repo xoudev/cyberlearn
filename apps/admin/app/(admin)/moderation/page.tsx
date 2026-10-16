@@ -1,8 +1,11 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { isActionableEvent, moderationRepository, noteReportRepository } from "@cyberlearn/db";
+import { banRefusal } from "@/lib/account-guards";
 import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
+import { ReviewOutcomes } from "./_components/review-outcomes";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -64,7 +67,7 @@ function formatDate(d: Date): string {
  * evidence.
  */
 export default async function AdminModerationPage(): Promise<React.ReactElement> {
-  await requireAdminPage();
+  const viewer = await requireAdminPage();
   const [pending, resolved, counts, reportedNotes] = await Promise.all([
     moderationRepository.listPending(100),
     moderationRepository.listResolved(30),
@@ -100,57 +103,84 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
       </div>
 
       <Card title={`À traiter · ${String(pending.length)}`} pad>
-        {pending.length === 0 ? (
-          <EmptyState
-            title="Rien à traiter"
-            text="Le filtre n'a rien refusé ni signalé depuis la dernière revue."
-          />
-        ) : (
-          <div className="a-mod-queue">
-            {pending.map((event) => {
-              const findings = readFindings(event.findings);
-              return (
-                <div key={event.id} className="a-mod-row">
-                  <div className="a-mod-head">
-                    <Tag tone={event.verdict === "BLOCK" ? "danger" : "warning"}>
-                      {event.verdict === "BLOCK" ? "Refusé" : "Signalé"}
-                    </Tag>
-                    <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
-                      {SURFACE_LABEL[event.surface] ?? event.surface}
-                    </span>
-                    <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
-                      {event.user?.displayName ?? "compte supprimé"}
-                      {event.user?.username !== null &&
-                        event.user?.username !== undefined &&
-                        ` (@${event.user.username})`}
-                      {" · "}
-                      {formatDate(event.createdAt)}
-                      {" · "}
-                      score {event.score}
-                    </span>
-                  </div>
-
-                  {/* As written. A reviewer cannot judge a refusal without
-                      reading what was refused. */}
-                  <pre className="a-mod-excerpt">{event.excerpt}</pre>
-
-                  <div className="a-mod-findings">
-                    {findings.map((f, i) => (
-                      <Tag key={`${f.rule}-${String(i)}`} tone="neutral">
-                        {RULE_LABEL[f.rule] ?? f.rule} · {f.match}
+        {/* Around the queue, and mounted whether or not it is empty: deciding
+            the last row empties it, and what that decision came to still has
+            to be said. */}
+        <ReviewOutcomes>
+          {pending.length === 0 ? (
+            <EmptyState
+              title="Rien à traiter"
+              text="Le filtre n'a rien refusé ni signalé depuis la dernière revue."
+            />
+          ) : (
+            <div className="a-mod-queue">
+              {pending.map((event) => {
+                const findings = readFindings(event.findings);
+                const surface = SURFACE_LABEL[event.surface] ?? event.surface;
+                const author = event.user;
+                const authorName =
+                  author === null
+                    ? "compte supprimé"
+                    : `${author.displayName}${author.username !== null ? ` (@${author.username})` : ""}`;
+                return (
+                  <div key={event.id} className="a-mod-row">
+                    <div className="a-mod-head">
+                      <Tag tone={event.verdict === "BLOCK" ? "danger" : "warning"}>
+                        {event.verdict === "BLOCK" ? "Refusé" : "Signalé"}
                       </Tag>
-                    ))}
-                  </div>
+                      <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
+                        {surface}
+                      </span>
+                      <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
+                        {/* The account, one click away: a repeat author is
+                            dealt with from there, its bans and history in
+                            view. */}
+                        {author === null ? (
+                          authorName
+                        ) : (
+                          <Link href={`/users/${author.id}`} style={{ color: "var(--a-accent)" }}>
+                            {authorName}
+                          </Link>
+                        )}
+                        {" · "}
+                        {formatDate(event.createdAt)}
+                        {" · "}
+                        score {event.score}
+                      </span>
+                    </div>
 
-                  <ReviewButtons
-                    eventId={event.id}
-                    actionable={isActionableEvent(event.surface, event.contentId)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    {/* As written. A reviewer cannot judge a refusal without
+                        reading what was refused. */}
+                    <pre className="a-mod-excerpt">{event.excerpt}</pre>
+
+                    <div className="a-mod-findings">
+                      {findings.map((f, i) => (
+                        <Tag key={`${f.rule}-${String(i)}`} tone="neutral">
+                          {RULE_LABEL[f.rule] ?? f.rule} · {f.match}
+                        </Tag>
+                      ))}
+                    </div>
+
+                    <ReviewButtons
+                      eventId={event.id}
+                      actionable={isActionableEvent(event.surface, event.contentId)}
+                      about={`${surface} de ${authorName}`}
+                      sanctionRefusal={
+                        author === null
+                          ? null
+                          : banRefusal({
+                              actorId: viewer.id,
+                              targetId: author.id,
+                              targetRole: author.role,
+                            })
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ReviewOutcomes>
       </Card>
 
       {resolved.length > 0 && (

@@ -9,6 +9,7 @@ import {
 } from "../../_actions/class-actions";
 import { Card } from "../../../_components/admin-ui";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput, useSuccessKey } from "@/lib/form-input";
 
 /**
  * The three creation forms, built from the console's own kit.
@@ -135,6 +136,8 @@ function ComposeForm({
   blockedBy?: string | undefined;
 }): React.ReactElement {
   const [state, formAction, pending] = useActionState(action, {});
+  // Kept on a refusal, emptied once the row exists, ready for the next one.
+  const formKey = useSuccessKey(state, (s) => s.ok === true);
   const blocked = blockedBy !== undefined;
 
   return (
@@ -144,7 +147,7 @@ function ComposeForm({
       {blocked ? (
         <p className="a-form-notice">{blockedBy}</p>
       ) : (
-        <form action={formAction} className="a-form">
+        <form key={formKey} action={formAction} onReset={keepFormInput} className="a-form">
           {select && (
             <label className="a-field">
               <span className="a-label">{select.label}</span>
