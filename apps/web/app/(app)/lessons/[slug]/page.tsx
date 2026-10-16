@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { requireRequestUser } from "@/lib/auth";
-import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
+import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import {

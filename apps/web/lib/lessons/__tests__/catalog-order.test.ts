@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { availableFirst } from "../catalog-order";
-import { indexPlacements } from "../unlock";
+import { indexPlacements } from "@cyberlearn/lib/paths/unlock";
 
 describe("catalogue availability order", () => {
   it("moves available lessons across pagination boundaries without changing recency within groups", () => {

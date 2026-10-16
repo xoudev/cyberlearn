@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  indexPlacements,
-  isReadable,
-  type PathWithLessons,
-  resumeLesson,
-} from "@/lib/lessons/unlock";
+import { indexPlacements, isReadable, type PathWithLessons, resumeLesson } from "./unlock";
 
 function lesson(id: string) {
   return {

@@ -7,6 +7,11 @@
  * a picture of a rule nothing enforced. This module is that rule, written once
  * so the catalogue, the lesson page and the path map cannot drift apart.
  *
+ * Shared with the app, which kept a rule of its own on its path screen ("the
+ * first mission not completed") and none at all on its catalogue and lesson
+ * screen: the same rule now draws both apps' path maps, and the server applies
+ * it to every completion and quiz answer (apps/web/lib/lessons/access.ts).
+ *
  * A lesson is readable when:
  *   - the reader has already completed it - a lesson never re-locks, which
  *     matters because everything was open until now and some readers are

@@ -9,12 +9,11 @@ import { cardsForCompletion, isReviewableLesson } from "@cyberlearn/lib/revision
 import {
   prisma,
   lessonRepository,
-  lessonsVisibleTo,
   badgeRepository,
   reviewCardRepository,
   userRepository,
 } from "@cyberlearn/db";
-import { pathOpensLesson } from "@/lib/lessons/access";
+import { pathLockOf } from "@/lib/lessons/access";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
@@ -65,40 +64,36 @@ function refused(refusal: string): CompleteLessonResult {
  * a verified identity (server action session or mobile Bearer JWT). Lives
  * outside any "use server" module so it can never be invoked as an action with
  * an arbitrary userId.
+ *
+ * ACCESS is decided here, not by the caller: only a published lesson the
+ * reader may open (the catalogue, or a class's lesson for its members), and
+ * not one still locked in its path. The lesson page used to be the only gate,
+ * and the app's route reached this with any lesson id, so a locked mission
+ * opened from the app's catalogue paid its XP, badges and streak.
  */
 export async function completeLessonForUser(
   userId: string,
   lessonId: string,
 ): Promise<CompleteLessonResult> {
-  // Parallel fetch - lesson, user gamification state, existing progress, all
-  // active badges, whether this account still wants a revision queue, and
-  // whether the lesson's path lets the reader open it.
+  // Parallel fetch - lesson, its path lock, user gamification state, existing
+  // progress, all active badges, and whether this account still wants a
+  // revision queue.
   //
-  // The lesson is read as this reader may open it, like the lesson page reads
-  // it: by id alone, a draft an administrator previews, a class's own lesson
-  // or a lesson still locked in its path could be completed and paid by
-  // anyone who sent its id.
-  const [lesson, user, existing, allBadges, wantsRevisions, pathOpen] = await Promise.all([
-    prisma.lesson.findFirst({
-      where: { id: lessonId, ...lessonsVisibleTo(userId) },
-      select: {
-        xpReward: true,
-        slug: true,
-        title: true,
-        audience: true,
-        category: true,
-        contentMdx: true,
-      },
-    }),
+  // The lesson is read as this reader may open it (findReadableById), like the
+  // lesson page reads it: by id alone, a draft an administrator previews, a
+  // class's own lesson or a lesson still locked in its path could be completed
+  // and paid by anyone who sent its id.
+  const [lesson, lock, user, existing, allBadges, wantsRevisions] = await Promise.all([
+    lessonRepository.findReadableById(lessonId, userId),
+    pathLockOf(userId, lessonId),
     userRepository.findForGamification(userId),
     lessonRepository.findProgress(userId, lessonId),
     badgeRepository.findAllActive(),
     revisionsEnabled(userId),
-    pathOpensLesson(userId, lessonId),
   ]);
 
   if (!lesson || !user) return refused(LESSON_NOT_FOUND);
-  if (!pathOpen) return refused(LESSON_LOCKED);
+  if (lock !== null) return refused(LESSON_LOCKED);
 
   // The quiz score is fixed now, with the completion: right answers out of
   // the quizzes the lesson has at this moment. The catalogue shows it.
