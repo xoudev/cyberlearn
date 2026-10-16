@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import { pageAddress } from "@/app/page-metadata";
 import { env } from "@/lib/env";
-import { availabilityLine } from "./availability";
+import { availabilityLine, installIntro } from "./availability";
 import "./download.css";
 
 export const metadata: Metadata = {
@@ -193,6 +193,7 @@ export default function DownloadPage(): React.JSX.Element {
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
   const iosAppStoreUrl = env.NEXT_PUBLIC_IOS_APP_STORE_URL;
   const androidAvailable = Boolean(androidPlayUrl ?? androidApkUrl);
+  const stores = { android: androidAvailable, iosAppStore: Boolean(iosAppStoreUrl) };
   const androidNotifyUrl =
     "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
 
@@ -234,10 +235,7 @@ export default function DownloadPage(): React.JSX.Element {
             </div>
             <p className="download-hero__availability">
               <span aria-hidden="true" />
-              {availabilityLine({
-                android: androidAvailable,
-                iosAppStore: Boolean(iosAppStoreUrl),
-              })}
+              {availabilityLine(stores)}
             </p>
           </div>
 
@@ -249,7 +247,7 @@ export default function DownloadPage(): React.JSX.Element {
         <dl className="download-stats" aria-label="Informations sur l’application">
           <div>
             <dt>Android</dt>
-            <dd>Application native</dd>
+            <dd>{androidAvailable ? "Application native" : "Publication en cours"}</dd>
           </div>
           <div>
             <dt>iPhone</dt>
@@ -345,11 +343,7 @@ export default function DownloadPage(): React.JSX.Element {
               03 · Installation
             </p>
             <h2 id="install-title">Choisis ton téléphone.</h2>
-            <p>
-              {iosAppStoreUrl
-                ? "Android et iPhone disposent chacun de leur application native."
-                : "Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis Safari."}
-            </p>
+            <p>{installIntro(stores)}</p>
           </div>
 
           <div className="download-install__layout">
