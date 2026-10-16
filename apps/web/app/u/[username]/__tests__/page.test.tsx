@@ -28,7 +28,7 @@ vi.mock("@/app/(app)/_actions/friend-actions", () => ({
 
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
 
-const { default: PublicProfilePage } = await import("../page");
+const { default: PublicProfilePage, generateMetadata } = await import("../page");
 
 const OWNER = "11111111-1111-4111-8111-111111111111";
 const READER = "22222222-2222-4222-8222-222222222222";
@@ -173,5 +173,19 @@ describe("the public profile page", () => {
     db.userRepository.findPublicProfile.mockResolvedValue(null);
 
     await expect(render()).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+  });
+});
+
+describe("the profile's link preview", () => {
+  // "Copier le lien" hands out this address. Its preview used to be the home
+  // page's, title, description and og:url included.
+  it("is the profile's, at the profile's address, read from the address alone", async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
+
+    expect(metadata.title).toBe("@alex");
+    expect(metadata.description).toContain("@alex");
+    expect(metadata.alternates?.canonical).toBe("/u/alex");
+    expect(metadata.openGraph).toMatchObject({ url: "/u/alex", siteName: "CyberLearn" });
+    expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
   });
 });

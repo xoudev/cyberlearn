@@ -1,11 +1,13 @@
 import React from "react";
 import type { Metadata } from "next";
+import { pageAddress } from "@/app/page-metadata";
 import { VerifyForm } from "./_components/verify-form";
 import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = {
   title: "Vérifier un certificat",
   description: "Vérifiez l'authenticité d'un certificat Cyber Learn.",
+  ...pageAddress("/verify"),
 };
 
 const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { pageAddress } from "@/app/page-metadata";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
+  ...pageAddress("/privacy"),
 };
 
 const UPDATE_DATE = "25/07/2026";

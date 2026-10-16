@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { statsRepository, type PublicCatalogPath } from "@cyberlearn/db";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
+import { pageAddress } from "@/app/page-metadata";
 import { resolvePathCovers } from "@/lib/paths/cover";
 import { PublicCatalogue } from "./public-catalogue";
 
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   title: "Catalogue des parcours",
   description:
     "Découvre les parcours CyberLearn en cybersécurité, développement et réseaux avant de créer ton compte.",
-  alternates: { canonical: "/catalogue" },
+  ...pageAddress("/catalogue"),
 };
 
 export default async function CataloguePage(): Promise<React.JSX.Element> {

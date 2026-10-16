@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { GLOSSARY, type GlossaryCategory } from "@cyberlearn/lib/glossary/terms";
+import { pageAddress } from "@/app/page-metadata";
 
 export const metadata: Metadata = {
   title: "Glossaire",
   description:
     "Les mots techniques des leçons CyberLearn, du DNS au rançongiciel, chacun expliqué en une phrase.",
-  alternates: { canonical: "/glossaire" },
+  ...pageAddress("/glossaire"),
 };
 
 /** The order the categories are read in: from the wire up to the law. */

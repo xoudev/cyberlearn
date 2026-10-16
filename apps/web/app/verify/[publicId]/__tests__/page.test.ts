@@ -157,3 +157,34 @@ describe("an unknown certificate", () => {
     expect(meta.title).toBe("Certificat introuvable");
   });
 });
+
+describe("the certificate's link preview", () => {
+  // A holder shares this page's address. Its preview used to inherit the home
+  // page's title, description and og:url, which LinkedIn took as the link.
+  it("names the certificate and gives this page as the address", async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+
+    expect(metadata.title).toBe("Certificat · Camille Martin · Python : des bases à la pratique");
+    expect(metadata.description).toBe(
+      "Certificat CyberLearn du parcours « Python : des bases à la pratique » délivré à Camille Martin. Son authenticité se vérifie sur cette page.",
+    );
+    expect(metadata.alternates?.canonical).toBe(`/verify/${PUBLIC_ID}`);
+    expect(metadata.openGraph).toMatchObject({
+      url: `/verify/${PUBLIC_ID}`,
+      siteName: "CyberLearn",
+    });
+  });
+
+  it("leaves the holder out of the description when the certificate names nobody", async () => {
+    findByPublicId.mockResolvedValue({
+      path: { title: "Réseau" },
+      user: null,
+      holderName: null,
+    });
+    const metadata = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+
+    expect(metadata.description).toBe(
+      "Certificat CyberLearn du parcours « Réseau ». Son authenticité se vérifie sur cette page.",
+    );
+  });
+});

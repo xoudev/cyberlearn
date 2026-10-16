@@ -5,6 +5,7 @@ import Link from "next/link";
 import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
 import { certificateVerifyUrl, linkedInCertificateUrl } from "@cyberlearn/lib/social/portfolio";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { pageAddress } from "@/app/page-metadata";
 import { getRequestUser } from "@/lib/auth";
 import {
   lookupCertificate,
@@ -32,7 +33,17 @@ export async function generateMetadata({
   const lookup = await lookupCertificate(publicId);
   if (lookup.kind !== "found") return { title: "Certificat introuvable" };
   const cert = lookup.certificate;
-  return { title: `Certificat · ${holderNameOf(cert) ?? "Certificat"} · ${cert.path.title}` };
+  // The frozen name printed on the PDF, not the one the account carries now.
+  const holder = holderNameOf(cert);
+  // The link a holder shares, on LinkedIn or anywhere: its preview names the
+  // certificate and leads back here, not to the home page.
+  return {
+    title: `Certificat · ${holder ?? "Certificat"} · ${cert.path.title}`,
+    description: `Certificat CyberLearn du parcours « ${cert.path.title} »${
+      holder === null ? "" : ` délivré à ${holder}`
+    }. Son authenticité se vérifie sur cette page.`,
+    ...pageAddress(`/verify/${encodeURIComponent(publicId)}`),
+  };
 }
 
 // ── Corner brackets ───────────────────────────────────────────────────────────

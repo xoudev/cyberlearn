@@ -6,6 +6,7 @@ import { SplashScreen } from "@/components/splash-screen";
 import "@/components/splash-screen.css";
 import { CookieBanner } from "@/components/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
+import { OPEN_GRAPH_SITE } from "./page-metadata";
 import { SITE_URL } from "./site-url";
 import "./globals.css";
 
@@ -35,22 +36,15 @@ export const metadata: Metadata = {
   // one names what the platform concretely offers.
   description:
     "Plateforme française d'apprentissage : cybersécurité, développement et réseaux. Exercices de code exécutés directement dans le navigateur, parcours progressifs, certificat vérifiable en fin de parcours.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    locale: "fr_FR",
-    url: SITE_URL,
-    siteName: "CyberLearn",
-    title: "CyberLearn · Apprendre la cybersécurité en pratique",
-    description:
-      "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable, en cybersécurité, développement et réseaux.",
-  },
-  twitter: {
-    card: "summary",
-    title: "CyberLearn · Apprendre la cybersécurité en pratique",
-    description:
-      "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable.",
-  },
+  // Only what every page shares. The canonical link and the preview's
+  // address, title and description used to be the home page's, here, and
+  // every page that declared none of its own inherited them: the legal
+  // pages and /verify called themselves duplicates of the home page, and a
+  // shared certificate previewed as the home page. Each page names its own
+  // now (page-metadata.ts); the home page's are in page.tsx. Next fills the
+  // preview's title and description from the page's own.
+  openGraph: OPEN_GRAPH_SITE,
+  twitter: { card: "summary" },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
