@@ -55,6 +55,19 @@ describe("the lesson header", () => {
     expect(screen.getByText("Ce qui écoute sur une machine, et comment le voir.")).toBeTruthy();
   });
 
+  it("adds no full stop to a title that ends on its own punctuation", () => {
+    header({ title: "Bilan du module 4 : que se passe-t-il quand on ouvre une page web ?" });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "Bilan du module 4 : que se passe-t-il quand on ouvre une page web ?",
+    );
+    cleanup();
+    header({ title: "Pourquoi chiffrer !" });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Pourquoi chiffrer !");
+    cleanup();
+    header({ title: "Les bases." });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Les bases.");
+  });
+
   it("gives its length, its XP, its difficulty and how far the reader is, once each", () => {
     header();
     expect(chips()).toEqual(["25 min", "+60 XP", "Intermédiaire", "En cours"]);
