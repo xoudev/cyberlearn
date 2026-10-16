@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
-  findIdBySlug: vi.fn<(slug: string, viewerId: string) => Promise<string | null>>(),
+  findBySlug:
+    vi.fn<(slug: string, viewerId: string) => Promise<{ id: string; contentMdx: string } | null>>(),
   recordCompletion:
     vi.fn<
       (u: string, l: string, e: string, k: "TERMINAL" | "PYTHON") => Promise<{ created: boolean }>
@@ -11,7 +12,7 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  lessonRepository: { findIdBySlug: m.findIdBySlug },
+  lessonRepository: { findBySlug: m.findBySlug },
   exerciseRepository: { recordCompletion: m.recordCompletion },
   prisma: { $transaction: m.transaction },
 }));
@@ -21,26 +22,35 @@ const { EXERCISE_XP, recordExerciseForUser } = await import("../record");
 
 const LESSON = "11111111-1111-4111-8111-111111111111";
 
+/** A lesson with one terminal, keyed by its title, and one Python challenge. */
+const CONTENT = [
+  "## Les logs",
+  "",
+  '<LinuxTerminal title="Trier les logs" expectedCommands={["sort app.log"]} />',
+  "",
+  '<PythonChallenge id="ex-1" tests={[{ input: "solution(1)", expected: "1" }]} />',
+].join("\n");
+
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
+  m.findBySlug.mockResolvedValue({ id: LESSON, contentMdx: CONTENT });
   m.transaction.mockImplementation((fn) => fn({ tag: "tx" }));
   m.creditXp.mockResolvedValue({ xpGained: EXERCISE_XP });
 });
 
 describe("recordExerciseForUser", () => {
   it("records nothing for a lesson this reader may not open", async () => {
-    m.findIdBySlug.mockResolvedValue(null);
+    m.findBySlug.mockResolvedValue(null);
     expect(await recordExerciseForUser("u1", "secret", "ex-1", "PYTHON")).toEqual({
       ok: false,
       created: false,
       xpGained: 0,
     });
     expect(m.recordCompletion).not.toHaveBeenCalled();
-    expect(m.findIdBySlug).toHaveBeenCalledWith("secret", "u1");
+    expect(m.findBySlug).toHaveBeenCalledWith("secret", "u1");
   });
 
   it("pays a little XP the first time, inside a transaction", async () => {
-    m.findIdBySlug.mockResolvedValue(LESSON);
     m.recordCompletion.mockResolvedValue({ created: true });
     expect(await recordExerciseForUser("u1", "linux-grep", "Trier les logs", "TERMINAL")).toEqual({
       ok: true,
@@ -52,7 +62,6 @@ describe("recordExerciseForUser", () => {
   });
 
   it("pays nothing the second time", async () => {
-    m.findIdBySlug.mockResolvedValue(LESSON);
     m.recordCompletion.mockResolvedValue({ created: false });
     expect(await recordExerciseForUser("u1", "linux-grep", "ex-1", "PYTHON")).toEqual({
       ok: true,
@@ -60,5 +69,23 @@ describe("recordExerciseForUser", () => {
       xpGained: 0,
     });
     expect(m.creditXp).not.toHaveBeenCalled();
+  });
+
+  it("records and pays nothing for an exercise the lesson does not have", async () => {
+    // Replayed with made-up identifiers, the action used to pay for each one.
+    for (const id of ["a1", "a2", "a3"]) {
+      expect(await recordExerciseForUser("u1", "linux-grep", id, "PYTHON")).toEqual({
+        ok: false,
+        created: false,
+        xpGained: 0,
+      });
+    }
+    expect(m.recordCompletion).not.toHaveBeenCalled();
+    expect(m.creditXp).not.toHaveBeenCalled();
+  });
+
+  it("does not take a challenge's key for a terminal's", async () => {
+    expect((await recordExerciseForUser("u1", "linux-grep", "ex-1", "TERMINAL")).ok).toBe(false);
+    expect(m.recordCompletion).not.toHaveBeenCalled();
   });
 });
