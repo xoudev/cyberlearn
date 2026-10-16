@@ -6,26 +6,39 @@
  * catalogue. The third case used to borrow the second's words ("Dernière
  * leçon du parcours", "Parcours terminé") and sent its button to `/paths/`,
  * for a lesson that belongs to no path.
+ *
+ * A next lesson still locked (this one is not finished) leads nowhere yet,
+ * and says why. Its button used to lead there anyway, and the lesson page
+ * sent the reader back to the path map without a word: the button looked
+ * broken.
  */
 
 export interface NextBarTarget {
   /** The small line above the title. */
   eyebrow: string;
   title: string;
-  href: string;
+  /** Null while the next lesson is locked: there is nowhere to go yet. */
+  href: string | null;
   action: string;
+  /** Why the button leads nowhere yet; null when it leads somewhere. */
+  hint: string | null;
 }
+
+/** What the bar says while the next lesson waits for this one. */
+export const NEXT_LOCKED_HINT = "Termine cette leçon pour ouvrir la suivante.";
 
 export function nextBarTarget(
   next: { slug: string; title: string } | null,
   placement: { path: { slug: string; title: string } } | null,
+  nextLocked = false,
 ): NextBarTarget {
   if (next !== null) {
     return {
       eyebrow: "Prochaine leçon",
       title: next.title,
-      href: `/lessons/${next.slug}`,
+      href: nextLocked ? null : `/lessons/${next.slug}`,
       action: "Leçon suivante",
+      hint: nextLocked ? NEXT_LOCKED_HINT : null,
     };
   }
   if (placement !== null) {
@@ -34,6 +47,7 @@ export function nextBarTarget(
       title: placement.path.title,
       href: `/paths/${placement.path.slug}`,
       action: "Retour au parcours",
+      hint: null,
     };
   }
   return {
@@ -41,5 +55,6 @@ export function nextBarTarget(
     title: "Choisis ta prochaine leçon dans le catalogue",
     href: "/lessons",
     action: "Retour aux leçons",
+    hint: null,
   };
 }

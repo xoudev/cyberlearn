@@ -32,10 +32,27 @@ describe("the bar under a lesson", () => {
     expect(screen.queryByText(/Marquer terminé|Valider la leçon/)).toBeNull();
   });
 
+  it("does not finish it while the next lesson waits either", () => {
+    render(<NextBar next={NEXT} placement={PLACEMENT} nextLocked />);
+    expect(screen.queryByText(/Marquer terminé|Valider la leçon/)).toBeNull();
+  });
+
   it("leads to the next lesson of the path", () => {
     render(<NextBar next={NEXT} placement={PLACEMENT} />);
     expect(screen.getByRole("link", { name: /Leçon suivante/ }).getAttribute("href")).toBe(
       "/lessons/reseau-ports",
+    );
+  });
+
+  it("says the next lesson waits for this one, rather than lead to it", () => {
+    // The link used to lead there anyway, and the lesson page sent the reader
+    // back to the path map without a word.
+    render(<NextBar next={NEXT} placement={PLACEMENT} nextLocked />);
+    expect(screen.queryByRole("link", { name: /Leçon suivante/ })).toBeNull();
+    const next = screen.getByRole<HTMLButtonElement>("button", { name: /Leçon suivante/ });
+    expect(next.disabled).toBe(true);
+    expect(screen.getByText("Termine cette leçon pour ouvrir la suivante.").id).toBe(
+      next.getAttribute("aria-describedby"),
     );
   });
 });

@@ -97,9 +97,10 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
   );
 
-  const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
+  const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
     unlockAll,
-  }).get(lesson.id);
+  });
+  const placement = placements.get(lesson.id);
 
   // The gate is here, before any progress is written: hiding the card on the
   // catalogue would leave the lesson one guessed URL away, and starting it
@@ -109,6 +110,10 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   }
 
   const nextLesson = placement?.next ?? null;
+  // Read off the same placements as this lesson's gate: the next lesson is
+  // open once this one is finished, or for an administrator, or if it was
+  // finished already. Until then the bar says so instead of leading to it.
+  const nextLocked = nextLesson !== null && !isReadable(placements.get(nextLesson.id));
 
   if (!existing && !reviewing) {
     await lessonRepository.upsertProgress({
@@ -207,6 +212,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               ? { path: placement.path, rank: placement.rank, total: placement.total }
               : null
           }
+          nextLocked={nextLocked}
         />
       )}
 
