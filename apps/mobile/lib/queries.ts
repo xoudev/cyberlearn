@@ -25,7 +25,14 @@ import {
 import { CERTIFICATE_COUNT_COLUMN, certificateCountOf } from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
-import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
+import {
+  countSince,
+  homePaths,
+  learningGoalsOf,
+  monthStart,
+  type HomePath,
+  type HomePaths,
+} from "@/lib/home";
 import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
@@ -208,6 +215,7 @@ export function useDashboard(userId: string | undefined) {
         pathsRes,
         statuses,
         placementRes,
+        prefsRes,
       ] = await Promise.all([
         supabase.from("users").select(ME_COLUMNS).eq("id", uid).single(),
         supabase
@@ -264,6 +272,8 @@ export function useDashboard(userId: string | undefined) {
           .select("devScore,cybersecScore,networkScore")
           .eq("userId", uid)
           .maybeSingle(),
+        // What the reader said they came for at sign-up, as the site weighs it.
+        supabase.from("user_preferences").select("learningGoals").eq("userId", uid).maybeSingle(),
       ]);
 
       const me = meRes.data as MeRow | null;
@@ -353,6 +363,7 @@ export function useDashboard(userId: string | undefined) {
               .slice(0, 20)
               .map((row) => one(row.lessons)?.category)
               .filter((c): c is Category => c !== undefined),
+            goals: learningGoalsOf(prefsRes.data),
           },
           resume?.id ?? null,
         ),

@@ -7,6 +7,7 @@ import { ReviewsDue } from "./_components/reviews-due";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
+import { dashboardDateLabel, monthStartIn } from "@cyberlearn/lib/dashboard/calendar";
 import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
 import { currentLessonId, moduleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
@@ -22,6 +23,7 @@ import {
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { savedLearningAnswers } from "@/lib/paths/suggestions";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -30,12 +32,9 @@ import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 export default function DashboardPage(): React.ReactElement {
   return (
-    <>
-      <WelcomeModal />
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
 
@@ -52,8 +51,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   const now = new Date();
-  /** Midnight on the first of the current month, local time - "ce mois-ci". */
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  /** Midnight on the first of the current month in Paris - "ce mois-ci". */
+  const monthStart = monthStartIn(now);
 
   const [
     dbUser,
@@ -71,6 +70,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     placementResult,
     recentLessons,
     wantsRevisions,
+    learningAnswers,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -150,6 +150,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
       take: 20,
     }),
     revisionsEnabled(authUser.id),
+    // What they said they came for at sign-up, step 3.
+    savedLearningAnswers(authUser.id),
   ]);
 
   const dueReviews = reviewSession.rows.slice(0, 3);
@@ -172,6 +174,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
           }
         : null,
       recentCategories: recentLessons.map((row) => row.lesson.category),
+      goals: learningAnswers.goals ?? [],
     },
   );
 
@@ -226,9 +229,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     resume,
   });
 
-  const dateLabel = capitalize(
-    now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
-  );
+  const dateLabel = dashboardDateLabel(now);
   const heroNotes: React.ReactNode[] = [];
   if (streakDays > 0) {
     heroNotes.push(
@@ -270,6 +271,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   return (
     <div className="page-container">
+      {/* The welcome's button opens what the mission card offers, not a list. */}
+      <WelcomeModal cta={mission.cta} />
       <div className="dash">
         {/* ── Hero: the greeting, and the level ───────────────────────────── */}
         <section className="dash-hero">
@@ -452,8 +455,4 @@ function planMission({
     route: null,
     path: null,
   };
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

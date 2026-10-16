@@ -80,6 +80,17 @@ export function homePaths(
   };
 }
 
+/**
+ * The goals kept from the sign-up's questionnaire, from the reader's
+ * user_preferences row: none without a row, or when the question was skipped.
+ * The ranking weighs the domains among them, as the site's dashboard does.
+ */
+export function learningGoalsOf(row: unknown): string[] {
+  if (typeof row !== "object" || row === null || !("learningGoals" in row)) return [];
+  const goals = row.learningGoals;
+  return Array.isArray(goals) ? goals.filter((g): g is string => typeof g === "string") : [];
+}
+
 /** The lead card's button, as the site words it. */
 export function leadAction(progress: LeadProgress | null): string {
   if (!progress) return "Commencer le parcours";

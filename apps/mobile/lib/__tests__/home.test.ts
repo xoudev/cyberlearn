@@ -4,6 +4,7 @@ import {
   firstName,
   homePaths,
   leadAction,
+  learningGoalsOf,
   monthStart,
   pathsTitle,
   progressIn,
@@ -51,7 +52,7 @@ function path(id: string, overrides: Partial<HomePath> = {}): HomePath {
   };
 }
 
-const NEWCOMER = { level: 1, placement: null, recentCategories: [] };
+const NEWCOMER = { level: 1, placement: null, recentCategories: [], goals: [] };
 
 describe("progressIn", () => {
   it("counts the missions done and finds the next one in path order", () => {
@@ -81,6 +82,12 @@ describe("homePaths", () => {
 
   it("shows a path not started as a poster, without progress", () => {
     expect(homePaths([path("a")], new Set(), NEWCOMER).leadProgress).toBeNull();
+  });
+
+  it("leads with the domain the reader named at sign-up, as the site does", () => {
+    const paths = [path("a", { category: "DEV" }), path("b", { category: "NETWORK" })];
+    expect(homePaths(paths, new Set(), NEWCOMER).lead?.id).toBe("a");
+    expect(homePaths(paths, new Set(), { ...NEWCOMER, goals: ["NETWORK"] }).lead?.id).toBe("b");
   });
 
   it("has nothing to lead with when every path is finished", () => {
@@ -135,6 +142,22 @@ describe("wording", () => {
     expect([start.getFullYear(), start.getMonth(), start.getDate(), start.getHours()]).toEqual([
       2026, 8, 1, 0,
     ]);
+  });
+});
+
+describe("learningGoalsOf", () => {
+  it("reads the goals kept from the sign-up", () => {
+    expect(learningGoalsOf({ learningGoals: ["NETWORK", "CAREER"] })).toEqual([
+      "NETWORK",
+      "CAREER",
+    ]);
+  });
+
+  it("has none without a row, a column, or anything but text", () => {
+    expect(learningGoalsOf(null)).toEqual([]);
+    expect(learningGoalsOf({})).toEqual([]);
+    expect(learningGoalsOf({ learningGoals: null })).toEqual([]);
+    expect(learningGoalsOf({ learningGoals: ["DEV", 3] })).toEqual(["DEV"]);
   });
 });
 
