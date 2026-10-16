@@ -1,6 +1,6 @@
 import { prisma } from "../prisma.js";
 import { CATALOGUE_LESSON } from "./lesson.repository.js";
-import { CATALOGUE_PATH } from "./path.repository.js";
+import { CATALOGUE_PATH, PUBLISHED_PATH_LESSON } from "./path.repository.js";
 
 export interface LandingStats {
   /** Categories with at least one published lesson. */
@@ -66,10 +66,14 @@ export const statsRepository = {
    * The paths shown as cards on the landing. Ordered by how much they have been
    * rated, then by age, so the strip reflects the real catalogue rather than an
    * invented one.
+   *
+   * CATALOGUE_PATH rather than "published", like the figures above: a path a
+   * teacher built for one class is published, and a visitor must not read its
+   * title on the platform's front page.
    */
   async findFeaturedPaths(take = 3): Promise<FeaturedPath[]> {
     const paths = await prisma.path.findMany({
-      where: { status: "PUBLISHED" },
+      where: CATALOGUE_PATH,
       orderBy: [{ ratingsCount: "desc" }, { publishedAt: "asc" }],
       take,
       select: {
@@ -78,7 +82,12 @@ export const statsRepository = {
         description: true,
         category: true,
         difficulty: true,
-        lessons: { select: { lesson: { select: { xpReward: true } } } },
+        // Its missions as the path page counts them: a draft or an archived
+        // lesson still linked to it is neither a lesson to announce nor XP.
+        lessons: {
+          where: PUBLISHED_PATH_LESSON,
+          select: { lesson: { select: { xpReward: true } } },
+        },
       },
     });
 
@@ -93,9 +102,13 @@ export const statsRepository = {
     }));
   },
 
+  /**
+   * The public catalogue of paths, for visitors. The catalogue only: a class's
+   * path is published and still none of a visitor's business.
+   */
   async findPublicCatalog(): Promise<PublicCatalogPath[]> {
     const paths = await prisma.path.findMany({
-      where: { status: "PUBLISHED" },
+      where: CATALOGUE_PATH,
       orderBy: [{ publishedAt: "desc" }, { title: "asc" }],
       select: {
         slug: true,
@@ -110,7 +123,10 @@ export const statsRepository = {
         avgRating: true,
         ratingsCount: true,
         coverImageUrl: true,
-        lessons: { select: { lesson: { select: { xpReward: true } } } },
+        lessons: {
+          where: PUBLISHED_PATH_LESSON,
+          select: { lesson: { select: { xpReward: true } } },
+        },
       },
     });
 

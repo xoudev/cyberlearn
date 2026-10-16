@@ -1,5 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { missionStates } from "../missions";
+import { countMissions, missionStates } from "../missions";
+
+describe("countMissions", () => {
+  it("counts a path's published lessons", () => {
+    expect(
+      countMissions([{ lessons: { status: "PUBLISHED" } }, { lessons: [{ status: "PUBLISHED" }] }]),
+    ).toBe(2);
+  });
+
+  it("leaves out a draft, an archived lesson and one RLS kept from the reader", () => {
+    // The link stays when a lesson is archived or imported as a draft; the
+    // site counts neither (PUBLISHED_PATH_LESSON), and the card did.
+    expect(
+      countMissions([
+        { lessons: { status: "PUBLISHED" } },
+        { lessons: { status: "DRAFT" } },
+        { lessons: { status: "ARCHIVED" } },
+        { lessons: null },
+        { lessons: [] },
+      ]),
+    ).toBe(1);
+  });
+
+  it("reads a path without links as empty", () => {
+    expect(countMissions(null)).toBe(0);
+    expect(countMissions([])).toBe(0);
+  });
+});
 
 const path = (...statuses: ("COMPLETED" | "IN_PROGRESS" | null)[]) =>
   statuses.map((status) => ({ status }));

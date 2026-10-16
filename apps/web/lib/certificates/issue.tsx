@@ -10,6 +10,7 @@ import {
   badgeRepository,
   certificateRepository,
   notificationRepository,
+  PUBLISHED_PATH_LESSON,
   pathRepository,
   prisma,
   userRepository,
@@ -53,7 +54,12 @@ async function generateCertificatePdf(
     }),
     prisma.path.findUnique({
       where: { id: pathId },
-      select: { title: true, _count: { select: { lessons: true } } },
+      // The lessons the learner finished, the path's published ones: the
+      // certificate states how many, and a draft still linked is not one.
+      select: {
+        title: true,
+        _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
+      },
     }),
   ]);
   if (!user || !path) return null;

@@ -28,6 +28,7 @@ import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { inScope, scopeFitsUrl, statusScope, type StatusFilter } from "@/lib/lesson-status";
+import { countMissions, type LessonLink } from "@/lib/missions";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
@@ -115,7 +116,7 @@ interface RawPath {
   description: string;
   category: Category;
   difficulty: Difficulty;
-  path_lessons: { lessonId: string }[] | null;
+  path_lessons: LessonLink[] | null;
 }
 
 async function fetchPathStatuses(userId: string | undefined): Promise<Map<string, ProgressStatus>> {
@@ -136,7 +137,7 @@ function toPathCards(rows: RawPath[], statuses: Map<string, ProgressStatus>): Pa
     description: p.description,
     category: p.category,
     difficulty: p.difficulty,
-    missions: p.path_lessons?.length ?? 0,
+    missions: countMissions(p.path_lessons),
     status: statuses.get(p.id) ?? null,
   }));
 }
@@ -357,7 +358,7 @@ export function usePaths(userId: string | undefined) {
       const [pathsRes, statuses] = await Promise.all([
         supabase
           .from("paths")
-          .select("id,slug,title,description,category,difficulty,path_lessons(lessonId)")
+          .select("id,slug,title,description,category,difficulty,path_lessons(lessons(status))")
           .eq("status", "PUBLISHED")
           .order("title"),
         fetchPathStatuses(userId),

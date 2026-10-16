@@ -18,7 +18,7 @@ function raw(
     estimatedHours: 4,
     refCode,
     avgRating: null,
-    path_lessons: Array.from({ length: lessons }, (_, i) => ({ lessonId: `${slug}-${String(i)}` })),
+    path_lessons: Array.from({ length: lessons }, () => ({ lessons: { status: "PUBLISHED" } })),
   };
 }
 
@@ -35,6 +35,21 @@ describe("toGuidePaths", () => {
     const [first] = toGuidePaths(ROWS);
     expect(first?.lessonCount).toBe(12);
     expect(first).not.toHaveProperty("path_lessons");
+  });
+
+  it("leaves out a draft or an archived lesson still linked, as the site's guide does", () => {
+    const [p] = toGuidePaths([
+      {
+        ...raw("reseau", "NETWORK", "BEGINNER", "CL-PATH-010", 2),
+        path_lessons: [
+          { lessons: { status: "PUBLISHED" } },
+          { lessons: { status: "DRAFT" } },
+          { lessons: { status: "ARCHIVED" } },
+          { lessons: [{ status: "PUBLISHED" }] },
+        ],
+      },
+    ]);
+    expect(p?.lessonCount).toBe(2);
   });
 
   it("reads a path without lesson rows as empty", () => {

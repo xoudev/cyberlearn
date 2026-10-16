@@ -9,7 +9,7 @@ import { indexPlacements, type LockState, resumeLesson } from "@/lib/lessons/unl
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
-import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
+import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
 import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
@@ -200,6 +200,11 @@ export default async function PathDetailPage({
       },
       lessons: {
         orderBy: { position: "asc" },
+        // Its published lessons only, as the lesson page reads the path: a
+        // draft or an archived lesson still linked here was a mission the map
+        // offered and the lesson page answered with a 404, and one the path
+        // could never be finished without.
+        where: PUBLISHED_PATH_LESSON,
         include: {
           lesson: {
             select: {
@@ -225,14 +230,15 @@ export default async function PathDetailPage({
   const diff = difficultyMeta(path.difficulty);
   const trackLabel = path.track === "CAREER" ? "Métier" : "Compétence";
 
-  // Fetch user's completed lessons for this path
+  // Fetch user's completed lessons for this path, among the missions drawn
+  // below: one finished before it was archived is not one of them.
   const completedLessonIds = new Set(
     (
       await prisma.userLessonProgress.findMany({
         where: {
           userId: authUser.id,
           status: "COMPLETED",
-          lesson: { pathLessons: { some: { pathId: path.id } } },
+          lesson: { status: "PUBLISHED", pathLessons: { some: { pathId: path.id } } },
         },
         select: { lessonId: true },
       })

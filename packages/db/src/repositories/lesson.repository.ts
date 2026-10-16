@@ -270,11 +270,15 @@ export const lessonRepository = {
     return lesson?.id ?? null;
   },
 
-  /** The title and the text of lessons, for a module's revision sheet. */
+  /**
+   * The title and the text of lessons, for a module's revision sheet. Published
+   * ones only: the sheet is handed to learners, and a draft's or an archived
+   * lesson's "à retenir" is not theirs to read.
+   */
   async findRecapSources(ids: readonly string[]) {
     if (ids.length === 0) return [];
     return prisma.lesson.findMany({
-      where: { id: { in: [...ids] } },
+      where: { id: { in: [...ids] }, status: "PUBLISHED" },
       select: { id: true, title: true, contentMdx: true },
     });
   },
