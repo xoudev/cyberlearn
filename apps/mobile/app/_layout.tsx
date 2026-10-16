@@ -21,6 +21,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
+import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
 import { useReducedMotionPreference } from "@/lib/accessibility";
@@ -34,6 +35,10 @@ import { supabase } from "@/lib/supabase";
 import { useActiveBan } from "@/lib/use-active-ban";
 
 void SplashScreen.preventAutoHideAsync();
+
+// The same French messages as the site for any schema the app runs itself;
+// what /api/mobile/* returns is already worded by the site's server.
+configureZodLocale();
 
 const queryClient = new QueryClient({
   defaultOptions: {

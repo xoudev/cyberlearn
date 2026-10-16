@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authoredEnum } from "./authored-enum.js";
 import { lessonRefCodeSchema, pathRefCodeSchema } from "./ref-code.schema.js";
 
 /**
@@ -27,9 +28,9 @@ export const pathManifestSchema = z
       .max(100),
     title: z.string().trim().min(3).max(200),
     description: z.string().trim().min(10).max(1000),
-    category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
-    track: z.enum(["SKILL", "CAREER"]).default("SKILL"),
-    difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
+    category: authoredEnum(["DEV", "CYBERSEC", "NETWORK"]),
+    track: authoredEnum(["SKILL", "CAREER"]).default("SKILL"),
+    difficulty: authoredEnum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
     estimatedHours: z.number().int().positive().max(500),
     modules: z.array(pathModuleManifestSchema).min(1),
   })

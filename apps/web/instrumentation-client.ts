@@ -1,6 +1,11 @@
+import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import * as Sentry from "@sentry/nextjs";
 import { SENTRY_DATA_COLLECTION } from "@/lib/sentry/data-collection";
 import { filterBreadcrumb, scrubEvent } from "@/lib/sentry/scrub-event";
+
+// Zod's French messages in the browser too, before hydration: a few client
+// components run a schema and show its message (a lesson's broken terminal).
+configureZodLocale();
 
 Sentry.init({
   // Spread DSN only when defined; exactOptionalPropertyTypes rejects `string | undefined`.

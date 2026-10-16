@@ -1,3 +1,4 @@
+import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -70,6 +71,28 @@ describe("validateMdxContent - batch awareness", () => {
 
     expect(result.valid).toBe(true);
     expect(result.warnings.some((w) => w.includes("fourni par le lot"))).toBe(false);
+  });
+});
+
+describe("validateMdxContent - frontmatter errors", () => {
+  it("names the accepted values of a category or difficulty it does not know", async () => {
+    // As the console's instrumentation sets it: the locale words an enum for a
+    // form, without its values, and a file has no options on screen.
+    configureZodLocale();
+    const result = await validateMdxContent(
+      mdx("CL-LSN-002-V01")
+        .replace("category: DEV", "category: SECURITY")
+        .replace("difficulty: BEGINNER", "difficulty: HARD"),
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual([
+      { field: "category", message: "Valeur attendue : DEV, CYBERSEC ou NETWORK." },
+      {
+        field: "difficulty",
+        message: "Valeur attendue : BEGINNER, INTERMEDIATE, ADVANCED ou EXPERT.",
+      },
+    ]);
   });
 });
 
