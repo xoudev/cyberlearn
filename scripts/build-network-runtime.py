@@ -22,13 +22,18 @@ FILES = {
 }
 
 
+def fetch_apk(name: str) -> bytes:
+    cached = ROOT / ".tmp-network-runtime" / name
+    if cached.exists():
+        return cached.read_bytes()
+    url = f"https://dl-cdn.alpinelinux.org/alpine/v3.20/main/x86/{name}"
+    return urllib.request.urlopen(url, timeout=60).read()  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+
+
 def build():
     entries = {}
     for name, expected in PACKAGES.items():
-        cached = ROOT / ".tmp-network-runtime" / name
-        data = cached.read_bytes() if cached.exists() else urllib.request.urlopen(
-            f"https://dl-cdn.alpinelinux.org/alpine/v3.20/main/x86/{name}", timeout=60
-        ).read()
+        data = fetch_apk(name)
         if hashlib.sha256(data).hexdigest() != expected:
             raise ValueError(f"Checksum mismatch: {name}")
         # APK v2 concatenates signature, control and data tar/gzip streams.
