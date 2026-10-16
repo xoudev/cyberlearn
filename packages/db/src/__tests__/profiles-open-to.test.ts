@@ -2,6 +2,9 @@
  * userRepository.profilesOpenTo: which names on a page may link to a profile.
  * The rule is findPublicProfile's (public, one's own, or an accepted friend's),
  * so a link never lands on the 404 a closed profile gives. Prisma is mocked.
+ *
+ * userRepository.isProfileOpenTo: the same rule for one address, asked by
+ * /u/<username>'s layout without reading the profile itself.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,8 +13,8 @@ import { userRepository } from "../repositories/user.repository.js";
 // Hoisted above the import: the repository reads the mocked client.
 const { mockPrisma } = vi.hoisted(() => ({
   mockPrisma: {
-    user: { findMany: vi.fn() },
-    friendship: { findMany: vi.fn() },
+    user: { findMany: vi.fn(), findUnique: vi.fn() },
+    friendship: { findMany: vi.fn(), findUnique: vi.fn() },
   },
 }));
 
@@ -26,6 +29,7 @@ const NO_PREFS = "55555555-5555-4555-8555-555555555555";
 beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.friendship.findMany.mockResolvedValue([]);
+  mockPrisma.friendship.findUnique.mockResolvedValue(null);
 });
 
 describe("profilesOpenTo", () => {
@@ -76,5 +80,57 @@ describe("profilesOpenTo", () => {
     const open = await userRepository.profilesOpenTo(ME, []);
     expect(open.size).toBe(0);
     expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("isProfileOpenTo", () => {
+  function owner(id: string, publicProfile: boolean | null): void {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id,
+      preferences: publicProfile === null ? null : { publicProfile },
+    });
+  }
+
+  it("reads the id and the setting only, never the profile", async () => {
+    owner(OPEN, true);
+
+    expect(await userRepository.isProfileOpenTo("ouvert", null)).toBe(true);
+    expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+      where: { username: "ouvert" },
+      select: { id: true, preferences: { select: { publicProfile: true } } },
+    });
+    // A public profile needs no friendship to open.
+    expect(mockPrisma.friendship.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("opens a profile with no preferences row, the default being public", async () => {
+    owner(NO_PREFS, null);
+    expect(await userRepository.isProfileOpenTo("neuf", null)).toBe(true);
+  });
+
+  it("answers no for an address with nobody behind it", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    expect(await userRepository.isProfileOpenTo("inconnu", ME)).toBe(false);
+  });
+
+  it("keeps a private profile shut to a stranger, signed in or not", async () => {
+    owner(STRANGER, false);
+    expect(await userRepository.isProfileOpenTo("prive", null)).toBe(false);
+    expect(await userRepository.isProfileOpenTo("prive", ME)).toBe(false);
+  });
+
+  it("keeps a private profile shut to somebody who has only asked", async () => {
+    owner(FRIEND, false);
+    mockPrisma.friendship.findUnique.mockResolvedValue({ status: "PENDING" });
+    expect(await userRepository.isProfileOpenTo("ami", ME)).toBe(false);
+  });
+
+  it("opens a private profile to its owner and to an accepted friend", async () => {
+    owner(ME, false);
+    expect(await userRepository.isProfileOpenTo("moi", ME)).toBe(true);
+
+    owner(FRIEND, false);
+    mockPrisma.friendship.findUnique.mockResolvedValue({ status: "ACCEPTED" });
+    expect(await userRepository.isProfileOpenTo("ami", ME)).toBe(true);
   });
 });

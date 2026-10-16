@@ -252,6 +252,9 @@ describe("friendships (integration, real DB)", () => {
     if (!configured) return;
     expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
     expect(await userRepository.findPublicProfile(carolHandle)).toBeNull();
+    // The layout's light check says the same.
+    expect(await userRepository.isProfileOpenTo(carolHandle, bob)).toBe(false);
+    expect(await userRepository.isProfileOpenTo(carolHandle, null)).toBe(false);
   });
 
   it("keeps a private profile shut to somebody who has only asked", async () => {
@@ -272,9 +275,11 @@ describe("friendships (integration, real DB)", () => {
     await friendshipRepository.accept(carol, bob);
 
     expect(await userRepository.findPublicProfile(carolHandle, bob)).not.toBeNull();
+    expect(await userRepository.isProfileOpenTo(carolHandle, bob)).toBe(true);
     // And shuts again when the friendship ends.
     await friendshipRepository.remove(bob, carol);
     expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
+    expect(await userRepository.isProfileOpenTo(carolHandle, bob)).toBe(false);
   });
 
   it("opens a private profile to its owner, and leaves a public one open", async () => {

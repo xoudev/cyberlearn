@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const db = vi.hoisted(() => ({
-  userRepository: { findPublicProfile: vi.fn() },
+  userRepository: { findPublicProfile: vi.fn(), isProfileOpenTo: vi.fn() },
   friendshipRepository: { between: vi.fn() },
   cosmeticRepository: { findLoadout: vi.fn() },
 }));
@@ -73,6 +73,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth.getActiveBan.mockResolvedValue(null);
   db.userRepository.findPublicProfile.mockResolvedValue(profile());
+  db.userRepository.isProfileOpenTo.mockResolvedValue(true);
   db.friendshipRepository.between.mockResolvedValue(null);
   db.cosmeticRepository.findLoadout.mockResolvedValue(EMPTY_LOADOUT);
 });
@@ -196,11 +197,14 @@ describe("the public profile page", () => {
     auth.getRequestUser.mockResolvedValue(null);
     const meta = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
     expect(meta.title).toBe("@alex");
+    // The layout's light check, not the profile: the title is not worth a full read.
+    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledWith("alex", null);
+    expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
   });
 
   it("does not title a 404 with the handle it hides", async () => {
     auth.getRequestUser.mockResolvedValue(null);
-    db.userRepository.findPublicProfile.mockResolvedValue(null);
+    db.userRepository.isProfileOpenTo.mockResolvedValue(false);
     await expect(
       generateMetadata({ params: Promise.resolve({ username: "fermé" }) }),
     ).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { findProfileFor, profileReaderId } from "@/lib/profile/public-profile-read";
+import { profileOpensFor, profileReaderId } from "@/lib/profile/public-profile-read";
 import { AppShell } from "@/components/app-shell";
 import "./public-profile.css";
 
@@ -24,8 +24,9 @@ import "./public-profile.css";
  * streamed. The skeleton opens a Suspense boundary, so a notFound() from the
  * page behind it came after the response had started as a 200: an unknown or
  * closed profile answered "200, page introuvable", which crawlers index and
- * link checkers take for a live address. The page reads the same cached
- * lookup, so it costs no second query.
+ * link checkers take for a live address. The question asked is the light one
+ * (profileOpensFor), not the profile: this layout is also what Next runs when
+ * it prefetches a profile link, and the full read stays in the page.
  */
 export default async function PublicProfileLayout({
   children,
@@ -35,7 +36,7 @@ export default async function PublicProfileLayout({
   params: Promise<{ username: string }>;
 }): Promise<React.JSX.Element> {
   const { username } = await params;
-  if ((await findProfileFor(username)) === null) notFound();
+  if (!(await profileOpensFor(username))) notFound();
 
   const readerId = await profileReaderId();
   if (readerId !== null) {

@@ -15,7 +15,11 @@ import {
   skillLines,
 } from "@cyberlearn/lib/social/portfolio";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
-import { findProfileFor, profileReaderId } from "@/lib/profile/public-profile-read";
+import {
+  findProfileFor,
+  profileOpensFor,
+  profileReaderId,
+} from "@/lib/profile/public-profile-read";
 import { scopedCosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
@@ -37,21 +41,22 @@ interface Props {
 /**
  * The tab says "@handle" only for a profile the reader may open. It used to
  * say it for any address, so a closed profile's 404 still confirmed, in its
- * title, that the account existed.
+ * title, that the account existed. It asks the layout's light, cached check
+ * rather than reading the profile: the handle in the address is the one the
+ * lookup matched.
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  // The layout's cached lookup, reused here: a closed or missing profile 404s
-  // in generateMetadata too, so the tab never confirms, in its title, that an
-  // account the reader may not open exists. For a profile the reader may open,
-  // the preview is the shared link's own - title, description and og:url - not
-  // the home page's.
-  const user = await findProfileFor(username);
-  if (!user) notFound();
-  const handle = user.username ?? username;
+  // The layout's light, cached check, reused here: a closed or missing profile
+  // 404s in generateMetadata too, so the tab never confirms, in its title, that
+  // an account the reader may not open exists. No profile is read - the handle
+  // in the address is the one the check matched. For a profile the reader may
+  // open, the preview is the shared link's own - title, description and og:url -
+  // not the home page's.
+  if (!(await profileOpensFor(username))) notFound();
   return {
-    title: `@${handle}`,
-    description: `Le profil de @${handle} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
+    title: `@${username}`,
+    description: `Le profil de @${username} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
     ...pageAddress(`/u/${encodeURIComponent(username)}`),
   };
 }
@@ -103,7 +108,9 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   // not appear. A banned account counts as signed out: every button would
   // send it to /banned. The viewer also decides whether a private profile
   // opens at all: a friend gets in, everybody else gets the same 404 as a
-  // name that does not exist. Both reads are the layout's, cached.
+  // name that does not exist. The reader is the layout's read, cached; the
+  // profile is read here only, behind the skeleton, so a prefetched link
+  // never pays for it.
   const viewerId = await profileReaderId();
 
   const user = await findProfileFor(username);
