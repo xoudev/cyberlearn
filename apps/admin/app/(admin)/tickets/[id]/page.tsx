@@ -8,6 +8,7 @@ import { TicketThread } from "../_components/TicketThread";
 import { STATUS_META, THEME_META } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Ticket" };
 
@@ -71,7 +72,7 @@ export default async function AdminTicketPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const ticket = await prisma.contactTicket.findUnique({
     where: { id },

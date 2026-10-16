@@ -8,6 +8,7 @@ import { HintsManager } from "./_components/hints-manager";
 import type { ChallengeOption } from "../../new/_components/new-challenge-form";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Éditer le challenge" };
 
@@ -17,7 +18,7 @@ interface Props {
 
 export default async function EditChallengePage({ params }: Props): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const [challenge, allChallenges] = await Promise.all([
     prisma.challenge.findUnique({

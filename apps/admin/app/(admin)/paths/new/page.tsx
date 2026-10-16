@@ -1,10 +1,13 @@
 import React from "react";
+import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../_components/content-status";
 import { NewPathClient } from "./_components/NewPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Nouveau parcours" };
 
 export const dynamic = "force-dynamic";
 

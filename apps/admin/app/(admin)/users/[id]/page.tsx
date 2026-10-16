@@ -8,6 +8,7 @@ import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import { banRepository, userRepository } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
+import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
@@ -48,7 +49,7 @@ export default async function AdminUserPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   const viewer = await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const user = await prisma.user.findUnique({
     where: { id },

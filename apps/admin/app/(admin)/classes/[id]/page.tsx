@@ -7,6 +7,7 @@ import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Classe" };
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function AdminClassPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const [klass, teacherPool, directory, invitations] = await Promise.all([
     classRepository.findById(id),

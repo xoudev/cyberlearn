@@ -1,5 +1,4 @@
 import React from "react";
-import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@cyberlearn/db";
@@ -7,9 +6,9 @@ import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
 
-export const metadata: Metadata = {
-  title: { default: "Admin · Cyber Learn", template: "%s · Admin" },
-};
+// No metadata here: the title and its "%s · Admin" template are the root
+// layout's. Declared again on this segment, the default went through the
+// root's template and the tab read "Admin · Cyber Learn · Admin".
 
 // Sidebar counts are informative badges - a 30s cache keeps every navigation
 // from paying six count queries while staying fresh enough for admin work.

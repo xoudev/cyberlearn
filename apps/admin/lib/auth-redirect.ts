@@ -35,6 +35,23 @@ export function isMfaPath(pathname: string): boolean {
   return pathname === "/mfa" || pathname.startsWith("/mfa/");
 }
 
+/**
+ * Where a session whose account is not ADMIN is sent: a screen that says so
+ * and signs it out. The console used to answer such a session with a 404 on
+ * every page, /login and both TOTP screens included - an administrator
+ * demoted while signed in kept a session that no page would let go of, and
+ * only clearing the cookies got them out.
+ */
+export const ACCESS_DENIED_PATH = "/access-denied";
+
+/**
+ * Reachable with any session, whatever its TOTP step: an account that is not
+ * ADMIN may never have enrolled a factor, and must still be shown the way out.
+ */
+export function isAccessDeniedPath(pathname: string): boolean {
+  return pathname === ACCESS_DENIED_PATH;
+}
+
 /** Any origin will do: only the path of a relative destination is read. */
 const PARSE_BASE = "https://console.invalid";
 
@@ -42,13 +59,21 @@ const PARSE_BASE = "https://console.invalid";
  * A destination the console can send somebody to after signing in: a local
  * path that passes `authRedirectSchema` (no other origin, no control character,
  * no backslash), and not one of the sign-in steps themselves, which would only
- * send the admin round again. Anything else is the dashboard.
+ * send the admin round again, nor the access-denied screen, which is nobody's
+ * destination. Anything else is the dashboard.
  */
 export function safeAdminRedirect(value: unknown): string {
   const parsed = authRedirectSchema.safeParse(value ?? ADMIN_HOME);
   if (!parsed.success) return ADMIN_HOME;
   const { pathname } = new URL(parsed.data, PARSE_BASE);
-  if (pathname === "/" || isPublicPath(pathname) || isMfaPath(pathname)) return ADMIN_HOME;
+  if (
+    pathname === "/" ||
+    isPublicPath(pathname) ||
+    isMfaPath(pathname) ||
+    isAccessDeniedPath(pathname)
+  ) {
+    return ADMIN_HOME;
+  }
   return parsed.data;
 }
 

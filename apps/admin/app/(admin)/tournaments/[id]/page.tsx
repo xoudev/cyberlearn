@@ -1,7 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { z } from "zod";
 import { tournamentRepository } from "@cyberlearn/db";
 import {
   dateToParisLocal,
@@ -19,6 +18,7 @@ import { TournamentForm } from "../_components/tournament-form";
 import { tournamentOptions } from "../_components/tournament-options";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerUrl } from "@/lib/learner-url";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Tournoi" };
 
@@ -47,8 +47,7 @@ function siteLink(id: string): string | null {
  */
 export default async function AdminTournamentPage({ params }: Props): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
-  if (!z.guid().safeParse(id).success) notFound();
+  const id = routeIdOrNotFound((await params).id);
   const [edited, tournament, options] = await Promise.all([
     tournamentRepository.findForConsole(id),
     tournamentRepository.findById(id),

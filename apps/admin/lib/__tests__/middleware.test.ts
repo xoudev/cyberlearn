@@ -128,6 +128,24 @@ describe("the console's front door", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  // A session whose account is not ADMIN is sent there by the pages, and may
+  // never have enrolled a factor: sending it to /mfa/setup would only bring it
+  // back, and the screen is where its sign-out button is.
+  it("lets any session reach the access-denied screen, second factor or not", async () => {
+    auth.user = { id: "u1" };
+    const response = await middleware(request("/access-denied"));
+    expect(response.headers.get("location")).toBeNull();
+
+    auth.assurance = { currentLevel: "aal1", nextLevel: "aal2" };
+    const unverified = await middleware(request("/access-denied"));
+    expect(unverified.headers.get("location")).toBeNull();
+  });
+
+  it("still sends an anonymous visit to the access-denied screen to /login", async () => {
+    const response = await middleware(request("/access-denied"));
+    expect(target(response)).toBe("/login");
+  });
+
   it("lets a verified session through, under a nonce-based policy", async () => {
     auth.user = { id: "u1" };
     auth.assurance = { currentLevel: "aal2", nextLevel: "aal2" };
