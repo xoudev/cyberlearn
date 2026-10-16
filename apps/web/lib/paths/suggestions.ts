@@ -1,4 +1,4 @@
-import { prisma } from "@cyberlearn/db";
+import { PUBLISHED_PATH_LESSON, prisma } from "@cyberlearn/db";
 import { suggestPaths, type PathSuggestion } from "@cyberlearn/lib/paths/suggest";
 import {
   goalSchema,
@@ -31,7 +31,9 @@ export async function suggestionsFor(
       estimatedHours: true,
       refCode: true,
       avgRating: true,
-      _count: { select: { lessons: true } },
+      // Its missions, as both guides and the path page count them: a draft or
+      // an archived lesson still linked to the path is not one.
+      _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
     },
   });
   const paths: SuggestedPath[] = rows.map((p) =>

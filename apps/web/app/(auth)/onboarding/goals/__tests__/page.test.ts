@@ -17,6 +17,7 @@ const prefsFindUnique = vi.fn();
 const pathFindMany = vi.fn();
 const upsert = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
+  PUBLISHED_PATH_LESSON: { lesson: { status: "PUBLISHED" } },
   prisma: {
     user: { findUnique: userFindUnique },
     userPreferences: { findUnique: prefsFindUnique, upsert },

@@ -12,6 +12,7 @@ import {
   PUBLISHED_PATH_LESSON,
   pathRepository,
 } from "../repositories/path.repository.js";
+import { searchRepository } from "../repositories/search.repository.js";
 import { statsRepository } from "../repositories/stats.repository.js";
 
 // Hoisted above the imports: the repositories read the mocked client.
@@ -21,6 +22,7 @@ const { mockPrisma } = vi.hoisted(() => ({
     pathLesson: { findMany: vi.fn() },
     userLessonProgress: { count: vi.fn() },
     lesson: { findMany: vi.fn() },
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -43,6 +45,7 @@ beforeEach(() => {
   mockPrisma.pathLesson.findMany.mockResolvedValue([]);
   mockPrisma.userLessonProgress.count.mockResolvedValue(0);
   mockPrisma.lesson.findMany.mockResolvedValue([]);
+  mockPrisma.$queryRaw.mockResolvedValue([]);
 });
 
 describe("the public lists of paths", () => {
@@ -84,6 +87,16 @@ describe("the public lists of paths", () => {
     await statsRepository.findPublicCatalog();
     const [args] = mockPrisma.path.findMany.mock.calls[0] ?? [];
     expect(args).toMatchObject({ select: { lessons: { where: PUBLISHED_PATH_LESSON } } });
+  });
+
+  it("counts a search card's lessons over its published lessons", async () => {
+    // The path pre-filter matches one path; the lessons and notes match none.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: PATH }]);
+    await searchRepository.search(USER, "reseau");
+    const [args] = mockPrisma.path.findMany.mock.calls[0] ?? [];
+    expect(args).toMatchObject({
+      select: { _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } } },
+    });
   });
 });
 

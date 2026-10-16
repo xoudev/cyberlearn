@@ -2,7 +2,7 @@ import type { Category, Difficulty } from "@prisma/client";
 import { FOLD_ACCENTED, FOLD_PLAIN, foldText } from "@cyberlearn/lib";
 import { prisma } from "../prisma.js";
 import { lessonsVisibleTo } from "./lesson.repository.js";
-import { pathsVisibleTo } from "./path.repository.js";
+import { PUBLISHED_PATH_LESSON, pathsVisibleTo } from "./path.repository.js";
 
 /**
  * One search across the three things a signed-in reader actually looks for:
@@ -145,7 +145,8 @@ export const searchRepository = {
               category: true,
               difficulty: true,
               estimatedHours: true,
-              _count: { select: { lessons: true } },
+              // The path's missions, as its page and the guides count them.
+              _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
             },
           }),
       lessonIds.length === 0

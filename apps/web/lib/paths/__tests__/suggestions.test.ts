@@ -4,6 +4,7 @@ const findMany = vi.fn();
 const prefsFindUnique = vi.fn();
 const upsert = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
+  PUBLISHED_PATH_LESSON: { lesson: { status: "PUBLISHED" } },
   prisma: {
     path: { findMany },
     userPreferences: { findUnique: prefsFindUnique, upsert },
@@ -124,6 +125,18 @@ describe("suggestionsFor", () => {
     await suggestionsFor({ goals: ["DEV"], level: "NEW" });
     const [args] = findMany.mock.calls[0] as [{ where: unknown }];
     expect(args.where).toEqual({ status: "PUBLISHED", audience: "CATALOGUE" });
+  });
+
+  it("counts a path's published lessons, as both guides and the path page do", async () => {
+    findMany.mockResolvedValue([]);
+    await suggestionsFor({ goals: ["DEV"], level: "NEW" });
+    // A draft or an archived lesson still linked is no mission: counted, the
+    // reason promised more missions than the path page draws.
+    // SAFETY: suggestionsFor makes one findMany call with one args object.
+    const [args] = findMany.mock.calls[0] as [{ select: { _count: unknown } }];
+    expect(args.select._count).toEqual({
+      select: { lessons: { where: { lesson: { status: "PUBLISHED" } } } },
+    });
   });
 
   it("suggests from those paths, with the lesson count in the reason", async () => {
