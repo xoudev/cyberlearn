@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
-import { signedInRoute } from "@/lib/recovery";
+import { clearRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { supabase } from "@/lib/supabase";
 
 export default function MfaChallenge(): React.JSX.Element {
@@ -72,6 +72,15 @@ export default function MfaChallenge(): React.JSX.Element {
     void verify(code);
   }
 
+  // The root gate sends a signed-out session from here to the sign-in screen
+  // (lib/session-gate). A recovery started for this account ends with it, and
+  // a sign-out the server could not record still ends the session here.
+  async function switchAccount(): Promise<void> {
+    clearRecoveryPending();
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  }
+
   return (
     <AuthFormScreen
       eyebrow="Double authentification"
@@ -100,7 +109,7 @@ export default function MfaChallenge(): React.JSX.Element {
         loading={busy}
         disabled={!factorId}
       />
-      <AuthTextLink label="Utiliser un autre compte" onPress={() => void supabase.auth.signOut()} />
+      <AuthTextLink label="Utiliser un autre compte" onPress={() => void switchAccount()} />
     </AuthFormScreen>
   );
 }

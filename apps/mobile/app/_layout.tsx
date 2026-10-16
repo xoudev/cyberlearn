@@ -31,6 +31,7 @@ import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
 import { isRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
+import { type AssuranceAssessment, assuranceView, sessionGateRedirect } from "@/lib/session-gate";
 import { supabase } from "@/lib/supabase";
 import { useActiveBan } from "@/lib/use-active-ban";
 
@@ -90,25 +91,37 @@ function RootNavigator(): React.JSX.Element {
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
-  const [assessedAccessToken, setAssessedAccessToken] = useState<string | null>(null);
-  const [mfaRequired, setMfaRequired] = useState(false);
-  const assuranceChecking = Boolean(session && assessedAccessToken !== session.access_token);
+  const [assessment, setAssessment] = useState<AssuranceAssessment | null>(null);
+  // The loader waits for the first check of an account only; a new token of
+  // the same account (a refresh, a verified code) is checked again behind the
+  // screens already mounted (lib/session-gate).
+  const {
+    pending: assurancePending,
+    stale: assuranceStale,
+    mfaRequired,
+  } = assuranceView(
+    session ? { userId: session.user.id, accessToken: session.access_token } : null,
+    assessment,
+  );
 
   useEffect(() => {
     let active = true;
     if (!session) {
-      setMfaRequired(false);
-      setAssessedAccessToken(null);
+      setAssessment(null);
       return () => {
         active = false;
       };
     }
 
+    const userId = session.user.id;
     const accessToken = session.access_token;
     void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
       if (!active) return;
-      setMfaRequired(error ? true : data.nextLevel === "aal2" && data.currentLevel !== "aal2");
-      setAssessedAccessToken(accessToken);
+      setAssessment({
+        userId,
+        accessToken,
+        mfaRequired: error ? true : data.nextLevel === "aal2" && data.currentLevel !== "aal2",
+      });
     });
     return () => {
       active = false;
@@ -116,27 +129,36 @@ function RootNavigator(): React.JSX.Element {
   }, [session?.access_token]);
 
   // Session gate: authenticated users with an enrolled TOTP factor must reach
-  // AAL2 before any application screen or query is mounted.
+  // AAL2 before any application screen or query is mounted. It routes on a
+  // current answer only: a stale one may be the code that was just verified.
   useEffect(() => {
-    if (initializing || assuranceChecking) return;
-    const inAuth = segments[0] === "(auth)";
-    const inMfaChallenge = pathname === "/mfa";
-    if (!session && !inAuth) {
-      router.replace("/login");
-    } else if (session && mfaRequired && !inMfaChallenge) {
-      router.replace("/mfa");
-    } else if (session && !mfaRequired && inAuth) {
-      // Home, or the new password when the session came from the recovery code.
-      router.replace(signedInRoute());
-    }
-  }, [session, initializing, assuranceChecking, mfaRequired, segments, pathname, router]);
+    if (initializing || assurancePending || assuranceStale) return;
+    const target = sessionGateRedirect({
+      hasSession: Boolean(session),
+      mfaRequired,
+      inAuth: segments[0] === "(auth)",
+      pathname,
+    });
+    // Home, or the new password when the session came from the recovery code.
+    if (target === "signed-in") router.replace(signedInRoute());
+    else if (target) router.replace(target);
+  }, [
+    session,
+    initializing,
+    assurancePending,
+    assuranceStale,
+    mfaRequired,
+    segments,
+    pathname,
+    router,
+  ]);
 
   // On first authentication: make sure a public.users row exists, and send an
   // account that has not finished signing up to the step it is at, as the
   // site does (no handle: the first step; no completion flag: the avatar).
   useEffect(() => {
     const user = session?.user;
-    if (!user || assuranceChecking || mfaRequired) return;
+    if (!user || assurancePending || mfaRequired) return;
     let active = true;
     void (async () => {
       await ensureUserRow(user.id, user.email ?? "", user.email?.split("@")[0] ?? "Apprenti");
@@ -153,12 +175,12 @@ function RootNavigator(): React.JSX.Element {
     return () => {
       active = false;
     };
-  }, [session?.user.id, assuranceChecking, mfaRequired, router]);
+  }, [session?.user.id, assurancePending, mfaRequired, router]);
 
   // Ban gate: a banned account sees one screen, /banned, as on the site. The
   // server refuses it anyway; this is so the app says why. Read after MFA, like
   // everything else the account owns.
-  const signedIn = Boolean(session && !mfaRequired && !assuranceChecking);
+  const signedIn = Boolean(session && !mfaRequired && !assurancePending);
   const banQuery = useActiveBan(signedIn ? session?.user.id : undefined);
   const ban = banQuery.data;
   useEffect(() => {
@@ -168,7 +190,7 @@ function RootNavigator(): React.JSX.Element {
     else if (!ban && onBanned) router.replace("/home");
   }, [signedIn, ban, pathname, router]);
 
-  if (initializing || assuranceChecking || (signedIn && banQuery.isLoading)) {
+  if (initializing || assurancePending || (signedIn && banQuery.isLoading)) {
     return <BrandedLoader label="Connexion sécurisée" />;
   }
 
