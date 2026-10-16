@@ -1,6 +1,7 @@
 import { extractLessonQuizzes, type LessonQuiz } from "@cyberlearn/lib/mdx-quizzes";
 import { lessonQuizRepository, lessonRepository, type RecordedQuizAnswer } from "@cyberlearn/db";
 import { pathLockOf } from "@/lib/lessons/access";
+import { lockedLessonError } from "@/lib/lessons/lock-message";
 
 export type QuizAnswerResult =
   | {
@@ -41,12 +42,7 @@ export async function recordQuizAnswer(
     pathLockOf(userId, lessonId),
   ]);
   if (!lesson || !progress) return { ok: false, error: "Leçon introuvable." };
-  if (lock !== null) {
-    return {
-      ok: false,
-      error: `Cette leçon est verrouillée : termine d'abord la précédente du parcours « ${lock.title} ».`,
-    };
-  }
+  if (lock !== null) return { ok: false, error: lockedLessonError(lock.title) };
 
   const quiz = extractLessonQuizzes(lesson.contentMdx).find((q) => q.id === quizId);
   if (!quiz || selected >= quiz.options.length) {

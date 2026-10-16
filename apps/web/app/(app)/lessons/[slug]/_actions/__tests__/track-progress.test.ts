@@ -60,6 +60,7 @@ vi.mock("@cyberlearn/db", () => ({
 }));
 
 import { completeLesson } from "../track-progress";
+import { completeLessonForUser } from "@/lib/lessons/complete";
 
 // Mutable XP the tx mock reads/writes so creditXp's read-modify-write sees the
 // evolving total (lesson credit 90→110, then badge credit 110→160).
@@ -276,12 +277,10 @@ describe("completeLesson - who may complete what", () => {
 
     expect(m.pathLockOf).toHaveBeenCalledWith("u1", LESSON_ID);
     expect(result).toMatchObject({ alreadyCompleted: false, xpGained: 0, newBadges: [] });
-    // Not an empty result the app would announce as a completion worth 0 XP.
-    expect(result.refusal).toBe("Termine d'abord la leçon précédente du parcours.");
     expect(m.transaction).not.toHaveBeenCalled();
   });
 
-  it("pays nothing for a lesson the reader may not open, and says why", async () => {
+  it("pays nothing for a lesson the reader may not open", async () => {
     // A draft, an archived lesson, or a class's own lesson for someone outside it.
     m.findReadableById.mockResolvedValueOnce(null);
 
@@ -289,17 +288,51 @@ describe("completeLesson - who may complete what", () => {
 
     expect(m.findReadableById).toHaveBeenCalledWith(LESSON_ID, "u1");
     expect(result.xpGained).toBe(0);
-    expect(result.refusal).toBe("Leçon introuvable.");
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("completeLessonForUser - a refusal is not a result", () => {
+  // The app's route answers with what this returns: an empty result here
+  // became `{ ok: true }` there, and the app announced a completion that was
+  // never recorded.
+  it("refuses a lesson locked in its path, naming the path", async () => {
+    m.pathLockOf.mockResolvedValueOnce({ slug: "python-bases", title: "Python : les bases" });
+
+    expect(await completeLessonForUser("u1", LESSON_ID)).toEqual({
+      ok: false,
+      refused: "locked",
+      error:
+        "Cette leçon est verrouillée : termine d'abord la précédente du parcours « Python : les bases ».",
+    });
     expect(m.transaction).not.toHaveBeenCalled();
   });
 
-  it("completes it once its path lets the reader open it", async () => {
-    // Default mocks: the lesson is readable and nothing locks it.
-    const result = await completeLesson(LESSON_ID);
+  it("refuses a lesson the reader may not open", async () => {
+    m.findReadableById.mockResolvedValueOnce(null);
 
-    expect(result.xpGained).toBe(70);
-    expect(result.refusal).toBeNull();
-    expect(m.transaction).toHaveBeenCalled();
+    expect(await completeLessonForUser("u1", LESSON_ID)).toEqual({
+      ok: false,
+      refused: "unreadable",
+      error: "Leçon introuvable.",
+    });
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("refuses an account with no row to credit", async () => {
+    m.findForGamification.mockResolvedValueOnce(null);
+
+    expect(await completeLessonForUser("u1", LESSON_ID)).toMatchObject({
+      ok: false,
+      refused: "no-account",
+    });
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("wraps a recorded completion in ok", async () => {
+    const outcome = await completeLessonForUser("u1", LESSON_ID);
+
+    expect(outcome).toMatchObject({ ok: true, result: { alreadyCompleted: false, xpGained: 70 } });
   });
 });
 

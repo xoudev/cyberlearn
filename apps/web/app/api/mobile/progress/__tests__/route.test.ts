@@ -1,89 +1,114 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CompleteLessonResult } from "@/lib/lessons/complete";
+import type { CompleteLessonOutcome, CompleteLessonResult } from "@/lib/lessons/complete";
 
-/**
- * The app finishing a lesson. It lists every lesson, the path lock aside, so
- * it can finish one the flow refuses: the refusal has to reach it as one, not
- * as a completion worth 0 XP that it announces as saved.
- */
-
-const userFromBearer =
-  vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>();
-const completeLessonForUser =
-  vi.fn<(userId: string, lessonId: string) => Promise<CompleteLessonResult>>();
-
-vi.mock("../../_lib/auth", () => ({ userFromBearer: (r: Request) => userFromBearer(r) }));
-vi.mock("@/lib/request-logger", () => ({
-  requestLogger: () => Promise.resolve({ error: vi.fn() }),
+const m = vi.hoisted(() => ({
+  userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
+  completeLessonForUser: vi.fn<(u: string, l: string) => Promise<CompleteLessonOutcome>>(),
+  logError: vi.fn(),
 }));
-vi.mock("@/lib/lessons/complete", () => ({
-  completeLessonForUser: (u: string, l: string) => completeLessonForUser(u, l),
+
+vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
+vi.mock("@/lib/lessons/complete", () => ({ completeLessonForUser: m.completeLessonForUser }));
+vi.mock("@/lib/request-logger", () => ({
+  requestLogger: () => Promise.resolve({ error: m.logError }),
 }));
 
 const { POST } = await import("../route");
 
-const LESSON = "11111111-1111-4111-8111-111111111111";
+const URL = "https://cyberlearn.fr/api/mobile/progress";
+const LESSON_ID = "11111111-1111-4111-8111-111111111111";
 
-const DONE: CompleteLessonResult = {
+const RESULT: CompleteLessonResult = {
   alreadyCompleted: false,
   xpGained: 20,
   leveledUp: false,
-  newLevel: 2,
+  newLevel: 3,
   newBadges: [],
-  quizScore: { correct: 2, total: 3 },
-  refusal: null,
+  quizScore: null,
 };
 
-function request(body: string): NextRequest {
-  return new NextRequest("https://cyberlearn.fr/api/mobile/progress", { method: "POST", body });
+function post(body: unknown): NextRequest {
+  return new NextRequest(URL, {
+    method: "POST",
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  });
 }
 
 beforeEach(() => {
-  userFromBearer.mockReset();
-  completeLessonForUser.mockReset();
-  userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+  for (const fn of Object.values(m)) fn.mockReset();
+  m.userFromBearer.mockResolvedValue({ id: "user-1", email: null });
 });
 
 describe("POST /api/mobile/progress", () => {
-  it("refuses a caller with no valid token, and completes nothing", async () => {
-    userFromBearer.mockResolvedValue(null);
-    expect((await POST(request(JSON.stringify({ lessonId: LESSON })))).status).toBe(401);
-    expect(completeLessonForUser).not.toHaveBeenCalled();
+  it("refuses a caller the gate turns away, without completing anything", async () => {
+    m.userFromBearer.mockResolvedValue(null);
+    expect((await POST(post({ lessonId: LESSON_ID }))).status).toBe(401);
+    expect(m.completeLessonForUser).not.toHaveBeenCalled();
   });
 
-  it("refuses a lesson id that is not one", async () => {
-    expect((await POST(request(JSON.stringify({ lessonId: "lesson" })))).status).toBe(400);
-    expect(completeLessonForUser).not.toHaveBeenCalled();
+  it("refuses a body that is not a lesson id", async () => {
+    expect((await POST(post({ lessonId: "lesson-1" }))).status).toBe(400);
+    expect((await POST(post("{"))).status).toBe(400);
+    expect(m.completeLessonForUser).not.toHaveBeenCalled();
   });
 
-  it("completes as the token's user and answers the result", async () => {
-    completeLessonForUser.mockResolvedValue(DONE);
-    const res = await POST(request(JSON.stringify({ lessonId: LESSON, userId: "someone-else" })));
+  it("returns the completion for the reward screen", async () => {
+    m.completeLessonForUser.mockResolvedValue({ ok: true, result: RESULT });
+
+    const res = await POST(post({ lessonId: LESSON_ID }));
+
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, result: DONE });
-    expect(completeLessonForUser).toHaveBeenCalledWith("user-1", LESSON);
+    expect(await res.json()).toEqual({ ok: true, result: RESULT });
+    expect(m.completeLessonForUser).toHaveBeenCalledWith("user-1", LESSON_ID);
   });
 
-  it("says why a lesson still locked in its path was not completed", async () => {
-    completeLessonForUser.mockResolvedValue({
-      ...DONE,
-      xpGained: 0,
-      quizScore: null,
-      refusal: "Termine d'abord la leçon précédente du parcours.",
-    });
-    const res = await POST(request(JSON.stringify({ lessonId: LESSON })));
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({
+  it("answers a locked lesson with ok false and the path to finish first", async () => {
+    // The app reads ok false as "not synchronised": a completion that was
+    // never recorded no longer shows as "+0 XP, Niveau 1, enregistrée".
+    const error =
+      "Cette leçon est verrouillée : termine d'abord la précédente du parcours « Python : les bases ».";
+    m.completeLessonForUser.mockResolvedValue({ ok: false, refused: "locked", error });
+
+    const res = await POST(post({ lessonId: LESSON_ID }));
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, error });
+  });
+
+  it("answers a lesson the reader may not open with ok false", async () => {
+    m.completeLessonForUser.mockResolvedValue({
       ok: false,
-      error: "Termine d'abord la leçon précédente du parcours.",
+      refused: "unreadable",
+      error: "Leçon introuvable.",
     });
+
+    const res = await POST(post({ lessonId: LESSON_ID }));
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ ok: false, error: "Leçon introuvable." });
   });
 
-  it("answers a 500 when the completion fails, without its details", async () => {
-    completeLessonForUser.mockRejectedValue(new Error("connection reset"));
-    const res = await POST(request(JSON.stringify({ lessonId: LESSON })));
+  it("answers an account with no row to credit with ok false", async () => {
+    m.completeLessonForUser.mockResolvedValue({
+      ok: false,
+      refused: "no-account",
+      error: "Compte introuvable.",
+    });
+
+    const res = await POST(post({ lessonId: LESSON_ID }));
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ ok: false, error: "Compte introuvable." });
+  });
+
+  it("logs a failure without handing it to the client", async () => {
+    m.completeLessonForUser.mockRejectedValue(new Error("connection reset"));
+
+    const res = await POST(post({ lessonId: LESSON_ID }));
+
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({ ok: false, error: "Enregistrement impossible." });
+    expect(m.logError).toHaveBeenCalledTimes(1);
   });
 });

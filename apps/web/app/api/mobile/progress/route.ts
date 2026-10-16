@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { completeLessonForUser } from "@/lib/lessons/complete";
+import { completeLessonForUser, type CompletionRefusal } from "@/lib/lessons/complete";
 import { userFromBearer } from "../_lib/auth";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
@@ -10,16 +10,22 @@ const schema = z.object({
   lessonId: z.guid(),
 });
 
+/** The status of each refusal: a lesson locked in its path is forbidden, the rest not found. */
+const REFUSAL_STATUS: Record<CompletionRefusal, number> = {
+  locked: 403,
+  unreadable: 404,
+  "no-account": 404,
+};
+
 /**
  * Mark a lesson COMPLETED for the authenticated mobile user, through the same
  * guarded flow as the web action (XP ledger anti-replay, streak, badges,
  * quests, certificates). Returns the CompleteLessonResult so the app can play
  * its reward animations (+XP, level-up, new badges).
  *
- * A completion the flow refuses (a lesson still locked in its path, one the
- * reader may not open) is a 409 carrying the reason: the app lists every
- * lesson, so it can reach one the site would not have opened, and it shows
- * the reason where it would otherwise say the progress is saved.
+ * A refused completion is `ok: false`, with what to tell the learner. Every
+ * version of the app reads that as "not synchronised"; an `ok: true` around an
+ * empty result made it announce a completion that was never recorded.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);
@@ -39,11 +45,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const result = await completeLessonForUser(user.id, parsed.data.lessonId);
-    if (result.refusal !== null) {
-      return NextResponse.json({ ok: false, error: result.refusal }, { status: 409 });
+    const outcome = await completeLessonForUser(user.id, parsed.data.lessonId);
+    if (!outcome.ok) {
+      return NextResponse.json(
+        { ok: false, error: outcome.error },
+        { status: REFUSAL_STATUS[outcome.refused] },
+      );
     }
-    return NextResponse.json({ ok: true, result });
+    return NextResponse.json({ ok: true, result: outcome.result });
   } catch (err) {
     const log = await requestLogger();
     log.error({ scope: "mobile/progress", err: errorMessage(err) }, "completion error");
