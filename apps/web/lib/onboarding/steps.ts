@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { ONBOARDING_AVATARS } from "@cyberlearn/lib/onboarding/avatars";
+import { KEEP_CURRENT_AVATAR, ONBOARDING_AVATARS } from "@cyberlearn/lib/onboarding/avatars";
 import { onboardingSchema } from "@cyberlearn/types";
 import { parseLearningAnswers, saveLearningAnswers } from "@/lib/paths/suggestions";
 import { markOnboardingComplete } from "./finalize";
@@ -86,15 +86,19 @@ export async function saveOnboardingProfile(
   return { ok: true };
 }
 
-const avatarSchema = z.enum(ONBOARDING_AVATARS);
+const avatarSchema = z.union([z.enum(ONBOARDING_AVATARS), z.literal(KEEP_CURRENT_AVATAR)]);
 
-/** Step 2: one of the built-in avatars. */
+/**
+ * Step 2: one of the built-in avatars, or the photo the profile already has
+ * (KEEP_CURRENT_AVATAR), which leaves the row as it is.
+ */
 export async function saveOnboardingAvatar(
   userId: string,
   avatarUrl: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = avatarSchema.safeParse(avatarUrl);
   if (!parsed.success) return { ok: false, error: "Avatar invalide." };
+  if (parsed.data === KEEP_CURRENT_AVATAR) return { ok: true };
 
   await prisma.user.update({
     where: { id: userId },

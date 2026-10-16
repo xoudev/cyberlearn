@@ -29,3 +29,32 @@ export const DEFAULT_ONBOARDING_AVATAR: OnboardingAvatar = "/avatars/av-8.svg";
 export function isOnboardingAvatar(value: string | null): value is OnboardingAvatar {
   return ONBOARDING_AVATARS.some((path) => path === value);
 }
+
+/**
+ * What the avatar step sends to keep the photo the profile already has
+ * (see `identityPhoto`) rather than pick one of the eight. The server writes
+ * nothing for it.
+ */
+export const KEEP_CURRENT_AVATAR = "current";
+
+/**
+ * The photo the avatar step offers first, and preselects: the picture of the
+ * identity the account signed up with - GitHub's - which the first step has
+ * just shown. The step used to preselect "CL" whenever the avatar was not one
+ * of the eight, so continuing without a second look replaced that photo.
+ *
+ * Null for one of the eight, a glyph, an uploaded file (a marker, not an
+ * address) or nothing.
+ */
+export function identityPhoto(stored: string | null): string | null {
+  return stored?.startsWith("https://") ? stored : null;
+}
+
+/**
+ * What the avatar step starts on, on the site and in the app: the one of the
+ * eight in use, else the photo to keep, else "CL".
+ */
+export function initialOnboardingChoice(stored: string | null): string {
+  if (isOnboardingAvatar(stored)) return stored;
+  return identityPhoto(stored) !== null ? KEEP_CURRENT_AVATAR : DEFAULT_ONBOARDING_AVATAR;
+}

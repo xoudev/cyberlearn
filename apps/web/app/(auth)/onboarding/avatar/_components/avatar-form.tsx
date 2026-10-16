@@ -10,7 +10,12 @@ import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { AvatarCropper } from "@/components/avatar-cropper";
 import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import Link from "next/link";
-import { ONBOARDING_AVATAR_CHOICES } from "@cyberlearn/lib/onboarding/avatars";
+import {
+  KEEP_CURRENT_AVATAR,
+  ONBOARDING_AVATAR_CHOICES,
+  identityPhoto,
+  initialOnboardingChoice,
+} from "@cyberlearn/lib/onboarding/avatars";
 
 // The app offers the same eight (@cyberlearn/lib/onboarding/avatars).
 const AVATARS = ONBOARDING_AVATAR_CHOICES;
@@ -23,9 +28,11 @@ interface AvatarFormProps {
 
 export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactElement {
   const [state, formAction, isPending] = useActionState(saveAvatar, initialState);
-  const defaultAvatar =
-    AVATARS.find((a) => a.path === currentAvatarUrl)?.path ?? "/avatars/av-8.svg";
-  const [selected, setSelected] = useState<string>(defaultAvatar);
+  // A GitHub account arrives with its photo, which step 1 has just shown: it
+  // is offered first and preselected, rather than replaced by "CL".
+  const photo = identityPhoto(currentAvatarUrl);
+  const [selected, setSelected] = useState<string>(() => initialOnboardingChoice(currentAvatarUrl));
+  const photoSelected = photo !== null && selected === KEEP_CURRENT_AVATAR;
 
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +187,63 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
 
         <form action={formAction}>
           <input type="hidden" name="avatarUrl" value={selected} />
+
+          {/* The photo the account already has (GitHub's), to keep */}
+          {photo !== null && (
+            <button
+              type="button"
+              aria-pressed={photoSelected}
+              onClick={() => {
+                setSelected(KEEP_CURRENT_AVATAR);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                width: "100%",
+                marginBottom: 10,
+                padding: "10px 14px",
+                background: photoSelected ? "rgba(10,255,212,0.06)" : "var(--color-bg-sunken)",
+                border: `1px solid ${photoSelected ? "var(--color-brand-turquoise)" : "var(--color-border-default)"}`,
+                boxShadow: photoSelected
+                  ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 24px rgba(10,255,212,0.2)"
+                  : "none",
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "border-color 120ms ease, background 120ms ease",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- the identity's photo, shown as step 1 shows it */}
+              <img
+                src={photo}
+                alt=""
+                width={48}
+                height={48}
+                style={{ width: 48, height: 48, objectFit: "cover", flexShrink: 0 }}
+              />
+              <span style={{ display: "grid", gap: 4 }}>
+                <span
+                  className="mono-label mono-label--xs"
+                  style={{
+                    color: photoSelected
+                      ? "var(--color-brand-turquoise)"
+                      : "var(--color-text-muted)",
+                  }}
+                >
+                  TA PHOTO
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Garder ta photo actuelle
+                </span>
+              </span>
+            </button>
+          )}
 
           {/* Avatar grid */}
           <div

@@ -21,13 +21,14 @@ import {
 import { useCosmetics } from "@/lib/cosmetics";
 import {
   BIO_MAX,
-  DEFAULT_ONBOARDING_AVATAR,
   DISPLAY_NAME_MAX,
+  KEEP_CURRENT_AVATAR,
   ONBOARDING_AVATAR_CHOICES,
   ONBOARDING_STEPS,
   USERNAME_MAX,
   handleInput,
-  isOnboardingAvatar,
+  identityPhoto,
+  initialOnboardingChoice,
   type OnboardingStep,
 } from "@/lib/onboarding";
 import { PLACEMENT_COPY, offersPlacementTest } from "@/lib/placement";
@@ -245,14 +246,15 @@ function AvatarStep({
   onDone: () => void;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
-  const [picked, setPicked] = useState<string>(
-    isOnboardingAvatar(initial) ? initial : DEFAULT_ONBOARDING_AVATAR,
-  );
+  // A GitHub account arrives with its photo: offered first and preselected,
+  // as on the site, rather than replaced by "CL".
+  const photo = identityPhoto(initial);
+  const [picked, setPicked] = useState<string>(initialOnboardingChoice(initial));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOnboardingAvatar(initial)) setPicked(initial);
+    setPicked(initialOnboardingChoice(initial));
   }, [initial]);
 
   const send = async (): Promise<void> => {
@@ -275,6 +277,38 @@ function AvatarStep({
         accessibilityRole="radiogroup"
         style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
       >
+        {photo !== null ? (
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: picked === KEEP_CURRENT_AVATAR }}
+            accessibilityLabel="Garder ta photo actuelle"
+            onPress={() => setPicked(KEEP_CURRENT_AVATAR)}
+            style={{
+              width: "100%",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderWidth: 1,
+              borderColor: picked === KEEP_CURRENT_AVATAR ? theme.accent : colors.borderSubtle,
+              backgroundColor: picked === KEEP_CURRENT_AVATAR ? `${theme.accent}12` : "transparent",
+            }}
+          >
+            <Avatar avatarUrl={photo} displayName={displayName || "?"} size={56} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text
+                variant="micro"
+                style={{ color: picked === KEEP_CURRENT_AVATAR ? theme.accent : colors.textMuted }}
+              >
+                TA PHOTO
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                Garder ta photo actuelle
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
         {ONBOARDING_AVATAR_CHOICES.map((choice) => {
           const selected = picked === choice.path;
           return (
