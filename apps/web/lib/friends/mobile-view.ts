@@ -16,6 +16,8 @@ export interface MobileFriend {
   /** Ready to draw: a glyph, a preset path, a signed URL, or null. */
   avatar: string | null;
   since: string;
+  /** Whether the name may open their profile: false on a private one the reader is shut out of. */
+  profileOpen: boolean;
 }
 
 export interface MobileFriendLists {
@@ -41,6 +43,7 @@ function toMobileFriend(entry: FriendEntry): MobileFriend {
     xpTotal: entry.person.xpTotal,
     avatar: entry.avatarSrc,
     since: entry.createdAt.toISOString(),
+    profileOpen: entry.profileOpen,
   };
 }
 

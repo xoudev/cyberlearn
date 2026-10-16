@@ -82,7 +82,9 @@ function Row({
       <AvatarView src={edge.avatarSrc} name={name} className="fp-avatar" glyphSize={16} />
 
       <span className="fp-identity">
-        {person.username !== null ? (
+        {/* A pending request opens nothing: a private profile on the other side
+            of one is a name, not a link to a 404. */}
+        {person.username !== null && edge.profileOpen ? (
           <Link href={`/u/${person.username}`} className="fp-name" onClick={onClose}>
             {name}
           </Link>

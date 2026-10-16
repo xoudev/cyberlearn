@@ -3,6 +3,7 @@ import {
   friendshipRepository,
   notificationRepository,
   prisma,
+  userRepository,
   type FriendEdge,
 } from "@cyberlearn/db";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
@@ -43,6 +44,12 @@ export interface FriendActionResult {
 export interface FriendEntry extends FriendEdge {
   /** Ready for an `<img src>`, or a glyph marker, or null. */
   avatarSrc: string | null;
+  /**
+   * Whether the reader would be let into this person's profile. A pending
+   * request opens nothing, so a private profile on the other side of one is a
+   * name to show, not a link to a 404.
+   */
+  profileOpen: boolean;
 }
 
 export interface FriendLists {
@@ -96,8 +103,18 @@ export async function listFriendsFor(userId: string): Promise<FriendLists> {
   // All three lists in one round-trip, rather than three or - worse - one per
   // row. The lists can hold a hundred and twenty people.
   const all = [...incoming, ...friends, ...outgoing];
-  const resolved = await resolveAvatarSrcMany(all.map((e) => e.person.avatarUrl));
-  const entries = all.map((edge, i) => ({ ...edge, avatarSrc: resolved[i] ?? null }));
+  const [resolved, open] = await Promise.all([
+    resolveAvatarSrcMany(all.map((e) => e.person.avatarUrl)),
+    userRepository.profilesOpenTo(
+      userId,
+      all.map((e) => e.person.id),
+    ),
+  ]);
+  const entries = all.map((edge, i) => ({
+    ...edge,
+    avatarSrc: resolved[i] ?? null,
+    profileOpen: open.has(edge.person.id),
+  }));
 
   return {
     incoming: entries.slice(0, incoming.length),
