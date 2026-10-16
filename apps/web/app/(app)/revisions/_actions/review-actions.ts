@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRequestUser } from "@/lib/auth";
-import { gradeReview } from "@/lib/revisions/grade-review";
+import { gradeReview, REVIEW_NOT_DUE } from "@/lib/revisions/grade-review";
 
 export interface SubmitReviewResult {
   success: boolean;
+  /** Why nothing was graded, worded for the reader. */
+  error?: string;
   /** Null once the lesson is held and leaves the cycle. */
   nextReviewAt?: Date | null;
   /** XP credited by this review (0 when the lesson was forgotten). */
@@ -24,8 +26,10 @@ export async function submitReviewAction(
 ): Promise<SubmitReviewResult> {
   const authUser = await requireRequestUser();
   const result = await gradeReview(authUser.id, { scheduleId, quality });
-  if (!result.ok) return { success: false };
+  if (!result.ok) return { success: false, error: REVIEW_NOT_DUE };
 
+  // The page comes back without the graded review (it is no longer due); the
+  // list keeps it for the session, with its outcome (revisions-list.tsx).
   revalidatePath("/revisions");
   revalidatePath("/dashboard");
   return {

@@ -16,6 +16,7 @@ const gradeReview =
 vi.mock("../../_lib/auth", () => ({ userFromBearer: (r: Request) => userFromBearer(r) }));
 vi.mock("@/lib/revisions/grade-review", () => ({
   gradeReview: (u: string, i: unknown) => gradeReview(u, i),
+  REVIEW_NOT_DUE: "Cette révision n'est plus à faire.",
 }));
 
 const { POST } = await import("../route");

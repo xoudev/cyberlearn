@@ -8,6 +8,13 @@ const reviewGradeSchema = z.object({
   quality: z.union([z.literal(1), z.literal(3), z.literal(5)]),
 });
 
+/**
+ * What a refused grade tells the reader, on the site and in the app: not due,
+ * not theirs or malformed, nothing was graded. Most often it was graded already,
+ * in another tab or on the phone.
+ */
+export const REVIEW_NOT_DUE = "Cette révision n'est plus à faire.";
+
 export type GradeReviewResult =
   | {
       ok: true;
