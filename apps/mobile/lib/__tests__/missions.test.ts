@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { countMissions, missionStates } from "../missions";
+import { countMissions, missionStates, publishedLesson } from "../missions";
+
+describe("publishedLesson", () => {
+  const lesson = (status: string) => ({ id: "l1", slug: "l1", title: "L1", status });
+
+  it("hands back a published lesson, embedded alone or as a list", () => {
+    expect(publishedLesson(lesson("PUBLISHED"))).toEqual(lesson("PUBLISHED"));
+    expect(publishedLesson([lesson("PUBLISHED")])).toEqual(lesson("PUBLISHED"));
+  });
+
+  it("drops a draft or an archived lesson, which RLS still shows an administrator", () => {
+    // The path page and the home card read the lessons through this: the
+    // site's PUBLISHED_PATH_LESSON draws neither as a mission.
+    expect(publishedLesson(lesson("DRAFT"))).toBeNull();
+    expect(publishedLesson([lesson("ARCHIVED")])).toBeNull();
+  });
+
+  it("reads a lesson RLS kept from the reader as none", () => {
+    expect(publishedLesson(null)).toBeNull();
+    expect(publishedLesson(undefined)).toBeNull();
+    expect(publishedLesson([])).toBeNull();
+  });
+});
 
 describe("countMissions", () => {
   it("counts a path's published lessons", () => {
