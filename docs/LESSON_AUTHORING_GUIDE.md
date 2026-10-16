@@ -1682,6 +1682,7 @@ compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
 | Deux `~` sur une même ligne d'un `<Diagram>` | Transformés en texte barré avant Mermaid | Reformuler sans tilde (« répertoire personnel ») |
 | `question="... \"texte\" ..."` | Dans un attribut entre guillemets, `\"` ferme l'attribut : la leçon ne compile plus | Des apostrophes dans le texte, ou reformuler |
 | `options={["un \"texte\""]}` | Correct : dans une expression, ce sont des chaînes JavaScript | Rien à changer |
+| `options={["dans C:\Windows\System32"]}`, `"grep \d+"`, `"\bmot\b"` | Dans une chaîne JavaScript, `\W` ou `\d` ne veulent rien dire : la barre oblique inverse disparaît (« C:WindowsSystem32 ») ; `\b` devient un caractère invisible. L'enregistrement est refusé | `C:\\Windows\\System32`, `\\d`, `\\b`. Restent tels quels : `\\`, `\n`, `\t`, `\r`, le guillemet de la chaîne, `\${` dans un gabarit. Entre guillemets (`question="C:\Windows"`), rien à doubler |
 | Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `\n` dans la chaîne |
 | Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
 
