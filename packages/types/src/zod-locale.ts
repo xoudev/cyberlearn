@@ -17,7 +17,8 @@ import { z } from "zod";
  * Each app calls `configureZodLocale` once at start-up: the site from its
  * server and browser instrumentation (the mobile app's forms show what
  * /api/mobile/* returns, which the site's server words), the console from its
- * server instrumentation, the mobile app from its root layout. Zod keeps the
+ * server and browser instrumentation (its lesson editors run the components'
+ * parsers in the browser), the mobile app from its root layout. Zod keeps the
  * setting on globalThis, so every schema, built before or after the call,
  * reads the same one.
  */

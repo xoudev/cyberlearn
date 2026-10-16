@@ -7,9 +7,8 @@ import * as Sentry from "@sentry/nextjs";
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
-    // The forms only show what the actions return, and nothing on the
-    // console's client runs a Zod schema, so the server is the only place
-    // that needs it.
+    // For what the actions return; instrumentation-client.ts sets it for the
+    // lesson editors, which run the components' parsers in the browser.
     const { configureZodLocale } = await import("@cyberlearn/types/zod-locale");
     configureZodLocale();
   }
