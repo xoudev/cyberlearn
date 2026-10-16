@@ -195,9 +195,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       )}
 
       {/* ── Next bar ─────────────────────────────────────────────────────────
-          Rendered even with no next lesson: the bar carries the "terminer"
-          button, so gating it on a successor left the last lesson of a path
-          with no way to complete it. Not in review: a draft is not something
+          Rendered even with no next lesson: it leads back to the path or the
+          catalogue. A lesson is finished from the toolbar's "Terminer", at
+          the end of its last section. Not in review: a draft is not something
           to finish, rate or ask about. */}
       {!reviewing && (
         <NextBar
@@ -207,10 +207,6 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               ? { path: placement.path, rank: placement.rank, total: placement.total }
               : null
           }
-          lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          xpReward={lesson.xpReward}
-          isCompleted={isCompleted}
         />
       )}
 

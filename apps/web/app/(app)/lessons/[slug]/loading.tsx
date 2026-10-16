@@ -124,9 +124,6 @@ export default function LessonDetailLoading(): React.ReactElement {
           <Skeleton w="54%" h={18} />
         </div>
         <div className="lesson-next-bar__actions">
-          <div className="lesson-next-bar__complete">
-            <Skeleton w={168} h={38} />
-          </div>
           <Skeleton w={150} h={34} />
         </div>
       </div>

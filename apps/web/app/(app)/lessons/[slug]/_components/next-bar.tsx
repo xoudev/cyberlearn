@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { CompleteButton } from "./complete-button";
-import { LessonCompleteModal } from "./lesson-complete-modal";
-import type { CompleteLessonResult } from "../_actions/track-progress";
 import { nextBarTarget } from "./next-bar-target";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 
@@ -21,33 +17,23 @@ interface NextBarProps {
   } | null;
   /** Where this lesson sits, so the reader can see the path they are walking. */
   placement: { path: { slug: string; title: string }; rank: number; total: number } | null;
-  lessonId: string;
-  lessonTitle: string;
-  xpReward: number;
-  isCompleted: boolean;
 }
 
-export function NextBar({
-  next,
-  placement,
-  lessonId,
-  lessonTitle,
-  xpReward,
-  isCompleted,
-}: NextBarProps): React.ReactElement {
+/**
+ * Where the reader goes once the lesson is read: the next lesson of the path,
+ * back to the path, or back to the catalogue.
+ *
+ * It carried a "Marquer terminé" too, drawn under whichever section was on
+ * screen: from the first one it completed the lesson, unread, its quizzes
+ * unanswered, while the toolbar above said an exercise held the way. The
+ * toolbar's "Terminer", at the end of the last section, is the one way to
+ * finish a lesson now.
+ */
+export function NextBar({ next, placement }: NextBarProps): React.ReactElement {
   const catColor = next ? categoryMeta(next.category).color : "var(--cosmetic-accent)";
   const diffLabel = next ? difficultyMeta(next.difficulty).label : "";
   const diffColor = next ? difficultyMeta(next.difficulty).color : "var(--color-rarity-rare)";
   const target = nextBarTarget(next, placement);
-
-  // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
-  const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
-  const router = useRouter();
-
-  function handleClose() {
-    setCompletionResult(null);
-    router.refresh();
-  }
 
   return (
     <>
@@ -178,18 +164,6 @@ export function NextBar({
 
         {/* Actions */}
         <div className="lesson-next-bar__actions">
-          {/* CompleteButton unmounts when isCompleted flips - that's fine, modal state is here */}
-          {!isCompleted && (
-            <div className="lesson-next-bar__complete">
-              <CompleteButton
-                lessonId={lessonId}
-                xpReward={xpReward}
-                variant="ghost"
-                onComplete={setCompletionResult}
-              />
-            </div>
-          )}
-
           <Link
             className="btn btn--sm"
             href={target.href}
@@ -213,15 +187,6 @@ export function NextBar({
           </Link>
         </div>
       </div>
-
-      {/* Modal rendered outside NextBar's conditional blocks - stays alive until explicitly closed */}
-      {completionResult !== null && (
-        <LessonCompleteModal
-          result={completionResult}
-          lessonTitle={lessonTitle}
-          onClose={handleClose}
-        />
-      )}
     </>
   );
 }
