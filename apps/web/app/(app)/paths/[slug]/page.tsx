@@ -11,6 +11,7 @@ import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { isCertifiablePath } from "@cyberlearn/lib/paths/certificate";
 import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
+import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
 import { PathRating } from "./_components/path-rating";
@@ -29,8 +30,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const path = await prisma.path.findUnique({ where: { slug }, select: { title: true } });
-  return { title: path?.title ?? "Parcours" };
+  return { title: (await visiblePathTitle(slug)) ?? "Parcours" };
 }
 
 // ── Design meta maps ────────────────────────────────────────────────────────────
