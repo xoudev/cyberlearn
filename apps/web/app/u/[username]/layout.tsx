@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { getActiveBan, getRequestUser } from "@/lib/auth";
+import { notFound } from "next/navigation";
+import { findProfileFor, profileReaderId } from "@/lib/profile/public-profile-read";
 import { AppShell } from "@/components/app-shell";
 import "./public-profile.css";
 
@@ -17,16 +18,28 @@ import "./public-profile.css";
  * in the frame the page will be drawn in. Not under (app): that layout sends
  * anybody signed out to the login, and a profile is a page a stranger can
  * open. A banned account reads it as a stranger does, since the app the shell
- * leads into is closed to it.
+ * leads into is closed to it (profileReaderId).
+ *
+ * Whether there is a profile to show is also asked here, before anything is
+ * streamed. The skeleton opens a Suspense boundary, so a notFound() from the
+ * page behind it came after the response had started as a 200: an unknown or
+ * closed profile answered "200, page introuvable", which crawlers index and
+ * link checkers take for a live address. The page reads the same cached
+ * lookup, so it costs no second query.
  */
 export default async function PublicProfileLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ username: string }>;
 }): Promise<React.JSX.Element> {
-  const viewer = await getRequestUser();
-  if (viewer !== null && (await getActiveBan()) === null) {
-    return <AppShell userId={viewer.id}>{children}</AppShell>;
+  const { username } = await params;
+  if ((await findProfileFor(username)) === null) notFound();
+
+  const readerId = await profileReaderId();
+  if (readerId !== null) {
+    return <AppShell userId={readerId}>{children}</AppShell>;
   }
 
   return (

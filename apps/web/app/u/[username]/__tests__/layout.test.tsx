@@ -15,6 +15,13 @@ const auth = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/auth", () => auth);
 
+const db = vi.hoisted(() => ({
+  userRepository: {
+    findPublicProfile: vi.fn<(username: string, viewerId: string | null) => Promise<unknown>>(),
+  },
+}));
+vi.mock("@cyberlearn/db", () => db);
+
 vi.mock("@/components/app-shell", () => ({
   AppShell: ({ userId, children }: { userId: string; children: React.ReactNode }) =>
     React.createElement("x-shell", { "data-user": userId }, children),
@@ -24,15 +31,19 @@ const { default: PublicProfileLayout } = await import("../layout");
 
 const READER = "22222222-2222-4222-8222-222222222222";
 
-async function render(): Promise<string> {
+async function render(username = "alex"): Promise<string> {
   return renderToStaticMarkup(
-    await PublicProfileLayout({ children: React.createElement("x-page", null, "profil") }),
+    await PublicProfileLayout({
+      children: React.createElement("x-page", null, "profil"),
+      params: Promise.resolve({ username }),
+    }),
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   auth.getActiveBan.mockResolvedValue(null);
+  db.userRepository.findPublicProfile.mockResolvedValue({ id: "owner", username: "alex" });
 });
 
 describe("the public profile's frame", () => {
@@ -61,5 +72,23 @@ describe("the public profile's frame", () => {
 
     expect(html).not.toContain("x-shell");
     expect(html).toContain('class="pp-standalone"');
+  });
+
+  it("answers an unknown or closed profile with the 404 before anything is streamed", async () => {
+    // From the layout, above the skeleton's Suspense boundary: thrown from the
+    // page, behind it, the 404 arrived after a 200 had gone out.
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    db.userRepository.findPublicProfile.mockResolvedValue(null);
+
+    await expect(render("inconnu")).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+    expect(db.userRepository.findPublicProfile).toHaveBeenCalledWith("inconnu", READER);
+  });
+
+  it("looks a profile up for a banned account as for a stranger", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    auth.getActiveBan.mockResolvedValue({ id: "ban" });
+    await render();
+
+    expect(db.userRepository.findPublicProfile).toHaveBeenCalledWith("alex", null);
   });
 });

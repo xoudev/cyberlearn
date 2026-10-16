@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
-import { cosmeticRepository, friendshipRepository, userRepository } from "@cyberlearn/db";
+import { cosmeticRepository, friendshipRepository } from "@cyberlearn/db";
 import { computeLevel, friendshipView, type FriendshipView } from "@cyberlearn/lib";
 import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -15,7 +15,7 @@ import {
   skillLines,
 } from "@cyberlearn/lib/social/portfolio";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
-import { getRequestUser } from "@/lib/auth";
+import { findProfileFor, profileReaderId } from "@/lib/profile/public-profile-read";
 import { scopedCosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
@@ -34,14 +34,24 @@ interface Props {
   params: Promise<{ username: string }>;
 }
 
+/**
+ * The tab says "@handle" only for a profile the reader may open. It used to
+ * say it for any address, so a closed profile's 404 still confirmed, in its
+ * title, that the account existed.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  // From the address alone: no lookup, so a private profile gives away
-  // nothing more than the address already does. The preview is the shared
-  // link's, not the home page's.
+  // The layout's cached lookup, reused here: a closed or missing profile 404s
+  // in generateMetadata too, so the tab never confirms, in its title, that an
+  // account the reader may not open exists. For a profile the reader may open,
+  // the preview is the shared link's own - title, description and og:url - not
+  // the home page's.
+  const user = await findProfileFor(username);
+  if (!user) notFound();
+  const handle = user.username ?? username;
   return {
-    title: `@${username}`,
-    description: `Le profil de @${username} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
+    title: `@${handle}`,
+    description: `Le profil de @${handle} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
     ...pageAddress(`/u/${encodeURIComponent(username)}`),
   };
 }
@@ -89,14 +99,14 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const { username } = await params;
 
   // Signed out is an ordinary way to read a public profile, so the viewer is
-  // optional here - getRequestUser rather than requireRequestUser - and the
-  // friend buttons simply do not appear. It is read before the profile
-  // because it also decides whether a private one opens at all: a friend gets
-  // in, everybody else gets the same 404 as a name that does not exist.
-  const viewer = await getRequestUser();
-  const viewerId = viewer?.id ?? null;
+  // optional here - not requireRequestUser - and the friend buttons simply do
+  // not appear. A banned account counts as signed out: every button would
+  // send it to /banned. The viewer also decides whether a private profile
+  // opens at all: a friend gets in, everybody else gets the same 404 as a
+  // name that does not exist. Both reads are the layout's, cached.
+  const viewerId = await profileReaderId();
 
-  const user = await userRepository.findPublicProfile(username, viewerId);
+  const user = await findProfileFor(username);
   if (!user) notFound();
 
   // Reaching a private page means being let in, so the page says so. Telling
