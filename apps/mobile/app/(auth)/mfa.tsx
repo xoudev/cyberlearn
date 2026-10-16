@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
+import { leaveMfaChallenge } from "@/lib/mfa";
 import { clearRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { supabase } from "@/lib/supabase";
 
@@ -73,12 +74,17 @@ export default function MfaChallenge(): React.JSX.Element {
   }
 
   // The root gate sends a signed-out session from here to the sign-in screen
-  // (lib/session-gate). A recovery started for this account ends with it, and
-  // a sign-out the server could not record still ends the session here.
+  // (lib/session-gate), and a recovery started for this account ends with it.
+  // A sign-out that failed left the session, and the gate keeps it here: the
+  // screen says so rather than ignore the tap (lib/mfa, leaveMfaChallenge).
   async function switchAccount(): Promise<void> {
+    setError(null);
+    const failure = await leaveMfaChallenge(supabase.auth);
+    if (failure) {
+      setError(failure);
+      return;
+    }
     clearRecoveryPending();
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
   }
 
   return (
