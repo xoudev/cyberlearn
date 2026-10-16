@@ -6,14 +6,17 @@ import Svg, { Path, Polygon } from "react-native-svg";
 import { SvgCssUri } from "react-native-svg/css";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
+import { SITE_URL } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 
-const WEB_ORIGIN = "https://cyberlearn.fr";
-
-/** Resolve a stored asset path ("/badges/x.svg") to an absolute URL. */
+/**
+ * Resolve a stored asset path ("/badges/x.svg") to an absolute URL, on the
+ * site the app is pointed at: the production address written in left the
+ * icons of badges created on a staging or local site blank.
+ */
 function absolute(url: string): string {
   if (url.startsWith("http")) return url;
-  return `${WEB_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+  return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 // Glyph avatars are stored as "__glyph:<name>"; paths mirror the web profile.

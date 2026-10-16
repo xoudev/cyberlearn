@@ -32,7 +32,12 @@ import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
-export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
+// The one copy of the site's address in the app, without a trailing slash so
+// every "<SITE_URL>/path" holds a single one.
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr").replace(
+  /\/+$/u,
+  "",
+);
 
 function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
   // A multipart body sets its own Content-Type, boundary included.

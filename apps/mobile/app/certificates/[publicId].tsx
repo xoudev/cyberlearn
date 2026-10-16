@@ -3,13 +3,14 @@ import * as WebBrowser from "expo-web-browser";
 import React from "react";
 import { Pressable, Share, View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
+import { certificateVerifyUrl } from "@cyberlearn/lib/social/portfolio";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PopIn, PressableScale, Rise } from "@/components/anim";
 import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, Divider, Text } from "@/components/ui";
-
-const VERIFY_BASE = "https://cyberlearn.fr/verify";
+import { SITE_URL } from "@/lib/api";
+import { verifyPageLabel } from "@/lib/certificates";
 
 export default function CertificateDetail(): React.JSX.Element {
   const router = useRouter();
@@ -19,7 +20,10 @@ export default function CertificateDetail(): React.JSX.Element {
     score?: string;
     date?: string;
   }>();
-  const verifyUrl = `${VERIFY_BASE}/${publicId ?? ""}`;
+  // The site the app is pointed at (SITE_URL), not the production address
+  // written in: a build aimed at a local or staging site sent "Vérifier" and
+  // "Partager" to a production page where the certificate does not exist.
+  const verifyUrl = certificateVerifyUrl(SITE_URL, publicId ?? "");
 
   return (
     <Screen>
@@ -99,7 +103,7 @@ export default function CertificateDetail(): React.JSX.Element {
               variant="micro"
               style={{ color: colors.textDisabled, textAlign: "center", maxWidth: 240 }}
             >
-              Vérifiable par n&apos;importe qui sur cyberlearn.fr/verify
+              Vérifiable par n&apos;importe qui sur {verifyPageLabel(SITE_URL)}
             </Text>
           </Card>
         </View>

@@ -10,42 +10,51 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * The real code is on the PDF, which is what gets printed and handed over.
  */
 
-const findUnique = vi.fn();
-vi.mock("@cyberlearn/db", () => ({ prisma: { certificate: { findUnique } } }));
+const findByPublicId = vi.fn();
+const findByPublicIdPrefix = vi.fn();
+vi.mock("@cyberlearn/db", () => ({
+  certificateRepository: { findByPublicId, findByPublicIdPrefix },
+}));
 const getRequestUser = vi.fn();
 vi.mock("@/lib/auth", () => ({ getRequestUser: () => getRequestUser() as unknown }));
 vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
   },
+  redirect: (to: string) => {
+    throw new Error(`NEXT_REDIRECT ${to}`);
+  },
 }));
 
-const { default: CertVerifyPage } = await import("../page");
+const { default: CertVerifyPage, generateMetadata } = await import("../page");
 
 const PUBLIC_ID = "22222222-2222-4222-8222-222222222222";
 const HASH = "ab12".repeat(16);
 
 const HOLDER = "33333333-3333-4333-8333-333333333333";
 
+const CERT = {
+  id: "11111111-1111-4111-8111-111111111111",
+  publicId: PUBLIC_ID,
+  userId: HOLDER,
+  holderName: "Camille Martin",
+  issuedAt: new Date("2026-09-20T10:00:00Z"),
+  expiresAt: null,
+  score: 86,
+  lessonCount: 12,
+  sha256Hash: HASH,
+  revokedAt: null,
+  revokedReason: null,
+  user: { displayName: "Camille Martin", username: "camille" },
+  path: { title: "Python : des bases à la pratique", _count: { lessons: 12 } },
+};
+
 beforeEach(() => {
-  findUnique.mockReset();
+  findByPublicId.mockReset();
+  findByPublicIdPrefix.mockReset();
   getRequestUser.mockReset();
   getRequestUser.mockResolvedValue(null);
-  findUnique.mockResolvedValue({
-    id: "11111111-1111-4111-8111-111111111111",
-    publicId: PUBLIC_ID,
-    userId: HOLDER,
-    holderName: "Camille Martin",
-    issuedAt: new Date("2026-09-20T10:00:00Z"),
-    expiresAt: null,
-    score: 86,
-    passThreshold: 70,
-    sha256Hash: HASH,
-    revokedAt: null,
-    revokedReason: null,
-    user: { displayName: "Camille Martin", username: "camille" },
-    path: { title: "Python : des bases à la pratique", lessons: [{ lessonId: "a" }] },
-  });
+  findByPublicId.mockResolvedValue(CERT);
 });
 
 async function renderPage(): Promise<string> {
@@ -96,5 +105,55 @@ describe("the certificate verification page", () => {
     const html = await renderPage();
     expect(html).not.toContain("Télécharger le PDF");
     expect(html).not.toContain("linkedin.com");
+  });
+});
+
+describe("what the page vouches for", () => {
+  it("is the name printed on the PDF, not the one the holder chose since", async () => {
+    findByPublicId.mockResolvedValue({
+      ...CERT,
+      user: { displayName: "Usurpateur", username: "camille" },
+    });
+    const html = await renderPage();
+    expect(html).toContain("Camille Martin");
+    expect(html).not.toContain("Usurpateur");
+    const meta = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+    expect(meta.title).toBe("Certificat · Camille Martin · Python : des bases à la pratique");
+  });
+
+  it("is the lesson count printed on the PDF, not the path's current one", async () => {
+    findByPublicId.mockResolvedValue({
+      ...CERT,
+      lessonCount: 12,
+      path: { title: "Python : des bases à la pratique", _count: { lessons: 15 } },
+    });
+    const html = await renderPage();
+    expect(html).toContain("12 / 12");
+    expect(html).not.toContain("15 / 15");
+  });
+
+  it("says an erased account's certificate belongs to a deleted user", async () => {
+    findByPublicId.mockResolvedValue({
+      ...CERT,
+      userId: null,
+      holderName: "Utilisateur supprimé",
+      user: null,
+    });
+    expect(await renderPage()).toContain("Utilisateur supprimé");
+  });
+
+  it("shows the number printed on the PDF", async () => {
+    const html = await renderPage();
+    expect(html).toContain("CL-2026-22222222");
+    expect(html).not.toContain("CYL-");
+  });
+});
+
+describe("an unknown certificate", () => {
+  it("is not found, and says so in its title", async () => {
+    findByPublicId.mockResolvedValue(null);
+    await expect(renderPage()).rejects.toThrow("NEXT_NOT_FOUND");
+    const meta = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+    expect(meta.title).toBe("Certificat introuvable");
   });
 });

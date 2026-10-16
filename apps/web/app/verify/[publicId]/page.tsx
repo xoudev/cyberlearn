@@ -2,14 +2,26 @@ import React from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
 import { certificateVerifyUrl, linkedInCertificateUrl } from "@cyberlearn/lib/social/portfolio";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { getRequestUser } from "@/lib/auth";
+import {
+  lookupCertificate,
+  requireCertificate,
+  type VerifiedCertificate,
+} from "@/lib/certificates/lookup";
 import { ShareCertificateButton } from "./_components/share-certificate-button";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/**
+ * The name the page vouches for: the one printed on the PDF, kept with the row
+ * at issuance. The account's current name came first, so a holder who renamed
+ * themselves had the site attest the certificate under any name they liked.
+ * An erased account's row says "Utilisateur supprimé".
+ */
+function holderNameOf(cert: VerifiedCertificate): string | null {
+  return cert.holderName ?? cert.user?.displayName ?? null;
+}
 
 export async function generateMetadata({
   params,
@@ -17,18 +29,10 @@ export async function generateMetadata({
   params: Promise<{ publicId: string }>;
 }): Promise<Metadata> {
   const { publicId } = await params;
-  if (!UUID_RE.test(publicId)) return { title: "Certificat introuvable" };
-  const cert = await prisma.certificate.findUnique({
-    where: { publicId },
-    select: {
-      path: { select: { title: true } },
-      user: { select: { displayName: true } },
-      holderName: true,
-    },
-  });
-  if (!cert) return { title: "Certificat introuvable" };
-  const holderDisplay = cert.user?.displayName ?? cert.holderName ?? "Certificat";
-  return { title: `Certificat · ${holderDisplay} · ${cert.path.title}` };
+  const lookup = await lookupCertificate(publicId);
+  if (lookup.kind !== "found") return { title: "Certificat introuvable" };
+  const cert = lookup.certificate;
+  return { title: `Certificat · ${holderNameOf(cert) ?? "Certificat"} · ${cert.path.title}` };
 }
 
 // ── Corner brackets ───────────────────────────────────────────────────────────
@@ -41,23 +45,9 @@ export default async function CertVerifyPage({
   params: Promise<{ publicId: string }>;
 }): Promise<React.ReactElement> {
   const { publicId } = await params;
-
-  if (!UUID_RE.test(publicId)) notFound();
-
-  const cert = await prisma.certificate.findUnique({
-    where: { publicId },
-    include: {
-      user: { select: { displayName: true, username: true } },
-      path: {
-        select: {
-          title: true,
-          lessons: { select: { lessonId: true } },
-        },
-      },
-    },
-  });
-
-  if (!cert) notFound();
+  // The layout already answered an unknown certificate with a 404 and a short
+  // number with a redirect; this reads the same cached row.
+  const cert = await requireCertificate(publicId);
 
   const isRevoked = cert.revokedAt !== null;
   const issuedStr = new Intl.DateTimeFormat("fr-FR", {
@@ -77,11 +67,15 @@ export default async function CertVerifyPage({
         year: "numeric",
       }).format(cert.revokedAt)
     : null;
-  const lessonCount = cert.path.lessons.length;
+  // The count the PDF printed, kept at issuance; the path's current one only
+  // for a row written before that, which the migration filled in anyway.
+  const lessonCount = cert.lessonCount ?? cert.path._count.lessons;
   // The whole hash, in groups of 16 so it can be compared by eye. The old
   // formatting left a separator dangling after the last group.
   const hashGrouped = (cert.sha256Hash.match(/.{1,16}/g) ?? []).join(" · ");
-  const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
+  // The number printed on the PDF, derived from the public id. The page used
+  // to show its own, built on the internal id, which matched nothing on paper.
+  const certCode = certificateCode(cert.publicId, cert.issuedAt);
   // Canonical issuer host: same source as the verify URL (no hardcoded .app).
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
   const issuerHost = siteUrl.replace(/^https?:\/\//, "");
@@ -477,7 +471,7 @@ export default async function CertVerifyPage({
                 margin: "0 0 8px",
               }}
             >
-              {cert.user?.displayName ?? cert.holderName ?? "Utilisateur supprimé"}
+              {holderNameOf(cert) ?? "Utilisateur supprimé"}
             </h1>
             {cert.user?.username != null && (
               <div

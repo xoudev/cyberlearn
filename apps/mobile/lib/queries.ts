@@ -21,6 +21,7 @@ import {
   fetchSupportThreadApi,
   fetchSupportTicketsApi,
 } from "@/lib/api";
+import { CERTIFICATE_COUNT_COLUMN, certificateCountOf } from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
@@ -238,9 +239,10 @@ export function useDashboard(userId: string | undefined) {
           .select("id", { count: "exact", head: true })
           .eq("userId", uid)
           .gte("earnedAt", since),
+        // On a granted column: `id` is not one, and the refusal read as 0.
         supabase
           .from("certificates")
-          .select("id", { count: "exact", head: true })
+          .select(CERTIFICATE_COUNT_COLUMN, { count: "exact", head: true })
           .eq("userId", uid)
           .is("revokedAt", null),
         // The catalogue issues certificates; a class's own path does not.
@@ -360,7 +362,7 @@ export function useDashboard(userId: string | undefined) {
           longestStreak: me.longestStreak,
           badgesThisMonth: badgesMonthRes.count ?? 0,
           badgeTotal: badgeTotalRes.count ?? 0,
-          certificateCount: certificatesRes.count ?? 0,
+          certificateCount: certificateCountOf(certificatesRes),
           certifiablePaths: certifiableRes.count ?? 0,
         },
       };

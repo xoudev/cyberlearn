@@ -1306,6 +1306,7 @@ model Certificate {
   expiresAt     DateTime?
   score         Int? // Final quiz score (%) at issuance; null for legacy / path-completion-only certs
   passThreshold Int? // Snapshot of the quiz pass threshold at issuance
+  lessonCount   Int? // Snapshot of the path's lesson count at issuance (the PDF's "Missions")
   sha256Hash    String    @unique // Hash of content for tamper detection
   pdfStorageKey String // Path in Supabase Storage
   revokedAt     DateTime?

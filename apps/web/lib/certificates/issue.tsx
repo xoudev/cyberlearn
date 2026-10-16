@@ -107,6 +107,10 @@ async function generateCertificatePdf(
     publicId,
     userId,
     pathId,
+    // What the PDF prints, kept with the row: the verification page shows
+    // these, not the account's name or the path as they are later.
+    holderName: user.displayName,
+    lessonCount: path._count.lessons,
     issuedAt,
     sha256Hash,
     pdfStorageKey: storageKey,

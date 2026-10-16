@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../prisma.js";
+import { certificateRepository } from "../repositories/certificate.repository.js";
 
 const USER_A_EMAIL = "idor-cert-a@test.cyberlearn.internal";
 const USER_B_EMAIL = "idor-cert-b@test.cyberlearn.internal";
@@ -20,15 +21,19 @@ const TEST_PASSWORD = "TestPassword123!";
 describe("Certificate IDOR - ownership query filter (integration)", () => {
   let adminClient: SupabaseClient;
   let configured = false;
+  let supabaseUrl: string;
+  let supabaseAnonKey: string;
   let userAId: string;
   let userBId: string;
   let pathId: string;
   let certBId: string;
+  let certBPublicId: string;
 
   beforeAll(async () => {
-    const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
+    supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
+    supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] ?? "";
     const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
-    if (!supabaseUrl || !serviceRoleKey) return;
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) return;
 
     adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -92,9 +97,24 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
       },
     });
     certBId = cert.id;
+    certBPublicId = cert.publicId;
 
     configured = true;
   });
+
+  async function signInAs(email: string): Promise<SupabaseClient> {
+    const signer = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await signer.auth.signInWithPassword({
+      email,
+      password: TEST_PASSWORD,
+    });
+    if (error || !data.session) throw new Error(`Sign in failed: ${error?.message}`);
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+    });
+  }
 
   afterAll(async () => {
     if (!configured) return;
@@ -122,6 +142,27 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
     });
     expect(result).not.toBeNull();
     expect(result?.pdfStorageKey).toMatch(/^certificates\/test-/);
+  });
+
+  // The app's home screen counts the holder's certificates through the Data
+  // API (apps/mobile/lib/queries.ts). It counted on `id`, which the column
+  // grants leave out: every count was refused and drawn as 0.
+  it("the holder counts their certificates through the Data API, on a granted column", async () => {
+    if (!configured) return;
+    const clientB = await signInAs(USER_B_EMAIL);
+    const counted = await clientB
+      .from("certificates")
+      .select("publicId", { count: "exact", head: true })
+      .eq("userId", userBId)
+      .is("revokedAt", null);
+    expect(counted.error).toBeNull();
+    expect(counted.count).toBe(1);
+  });
+
+  it("finds a certificate by the start of its public id, as the PDF prints it", async () => {
+    if (!configured) return;
+    const found = await certificateRepository.findByPublicIdPrefix(certBPublicId.slice(0, 8));
+    expect(found.map((c) => c.publicId)).toContain(certBPublicId);
   });
 
   it("revoked certificate is not accessible even by owner", async () => {

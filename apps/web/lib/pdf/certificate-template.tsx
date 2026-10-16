@@ -1,5 +1,7 @@
 import React from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
+import { certificateVerifyUrl } from "@cyberlearn/lib/social/portfolio";
 import { LOGO_DATA_URL } from "./logo-data";
 
 /**
@@ -219,7 +221,10 @@ export function CertificateDocument({
     day: "numeric",
   });
   const verifyHost = appUrl.replace(/^https?:\/\//, "");
-  const certCode = `CL-${String(issuedAt.getFullYear())}-${publicId.slice(0, 6).toUpperCase()}`;
+  // The number the verification page and the holder's list show too, and the
+  // whole address: the one cut to eight characters led to "introuvable".
+  const certCode = certificateCode(publicId, issuedAt);
+  const verifyAddress = certificateVerifyUrl(appUrl, publicId).replace(/^https?:\/\//, "");
 
   return (
     <Document title={`Certificat · ${pathTitle}`} author="CyberLearn" subject={pathTitle}>
@@ -318,10 +323,7 @@ export function CertificateDocument({
             <View style={styles.stripDiv} />
             <View style={styles.stripSeg}>
               <Text style={styles.stripText}>
-                Vérifier :{" "}
-                <Text style={styles.stripUrl}>
-                  {verifyHost}/verify/{publicId.slice(0, 8)}
-                </Text>
+                Vérifier : <Text style={styles.stripUrl}>{verifyAddress}</Text>
               </Text>
             </View>
           </View>

@@ -9,6 +9,7 @@ import {
   AuthNotice,
   AuthTextLink,
 } from "@/components/auth-form";
+import { SITE_URL } from "@/lib/api";
 import {
   RECOVERY_COPY,
   clearRecoveryPending,
@@ -18,7 +19,6 @@ import {
 } from "@/lib/recovery";
 import { supabase } from "@/lib/supabase";
 
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(/\/$/, "");
 const RESET_REDIRECT_URL = `${SITE_URL}/auth/callback?next=/reset-password`;
 
 /**

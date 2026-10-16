@@ -4,9 +4,9 @@ import {
 } from "@cyberlearn/lib/auth/email-confirmation";
 import React, { useState } from "react";
 import { AuthError, AuthNotice, AuthTextLink } from "@/components/auth-form";
+import { SITE_URL } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(/\/$/, "");
 /** Where the link lands, as for the mail sent at sign-up. */
 const EMAIL_REDIRECT_URL = `${SITE_URL}/auth/callback?next=/onboarding`;
 
