@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { placementTestFor } from "@/lib/onboarding/placement";
 import { PlacementTestForm } from "./_components/placement-test-form";
+import { OnboardingSignOut } from "../../_components/onboarding-sign-out";
 
 export default async function PlacementQuestionsPage(): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
@@ -111,9 +112,12 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
         >
           cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "var(--color-text-faint)" }}>/</span>
-        <span>TEST DE PLACEMENT</span>
+        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
+          /
+        </span>
+        <span className="onboarding-bar__label">TEST DE PLACEMENT</span>
         <span
+          className="onboarding-bar__label"
           style={{
             marginLeft: "auto",
             display: "inline-flex",
@@ -135,6 +139,7 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
           />
           SESSION ACTIVE
         </span>
+        <OnboardingSignOut />
       </header>
 
       <div

@@ -3483,6 +3483,18 @@ button.notif-row:hover {
     padding: 44px 32px 120px;
   }
 }
+/* The top bar of the onboarding pages drawn by hand: below 768px it has no
+   room for the step's labels and "Se déconnecter" together, and the button
+   was pushed off the right edge. The labels are decoration; the way out is
+   not. !important because the labels carry inline display styles. */
+@media (max-width: 767px) {
+  .onboarding-bar__label {
+    display: none !important;
+  }
+  .onboarding-bar__signout {
+    margin-left: auto;
+  }
+}
 
 /* Login page - responsive split */
 

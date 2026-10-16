@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import "./onboarding-shell.css";
 import { ProgressBar } from "@/components/progress-bar";
+import { OnboardingSignOut } from "./onboarding-sign-out";
 
 const STEPS = ["Identité", "Avatar", "Objectif"] as const;
 
@@ -39,6 +40,9 @@ export function OnboardingShell({
         </span>
         <span className="ob-shell__slash">/</span>
         <span className="ob-shell__crumb">Onboarding · {stepName}</span>
+        <span className="ob-shell__signout">
+          <OnboardingSignOut />
+        </span>
       </header>
 
       <main className="ob-shell__body">

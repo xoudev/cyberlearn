@@ -4,8 +4,22 @@ import { prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "./_components/onboarding-form";
+import { OnboardingSignOut } from "./_components/onboarding-sign-out";
+import { profileStepView } from "@/lib/onboarding/profile-step";
 
-export default async function OnboardingPage(): Promise<React.ReactElement> {
+/**
+ * Step 1: the handle, the name shown and the bio.
+ *
+ * Once a handle exists the step is done and the page moves on to the avatar,
+ * unless the reader came back on purpose ("← Retour" on step 2 sends
+ * `?edit=1`): then the form shows again, filled with what they wrote, as the
+ * app's onboarding does when going back.
+ */
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
@@ -15,10 +29,11 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { username: true, displayName: true, avatarUrl: true },
+    select: { username: true, displayName: true, bio: true, avatarUrl: true },
   });
 
-  if (dbUser?.username) redirect("/onboarding/avatar");
+  const view = profileStepView(dbUser, await searchParams);
+  if (view === "done") redirect("/onboarding/avatar");
 
   return (
     <div
@@ -114,9 +129,12 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
         >
           cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "var(--color-text-faint)" }}>/</span>
-        <span>CONFIGURATION · NOUVEL OPÉRATEUR</span>
+        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
+          /
+        </span>
+        <span className="onboarding-bar__label">CONFIGURATION · NOUVEL OPÉRATEUR</span>
         <span
+          className="onboarding-bar__label"
           style={{
             marginLeft: "auto",
             display: "inline-flex",
@@ -138,6 +156,7 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
           />
           SYNC EN DIRECT
         </span>
+        <OnboardingSignOut />
       </header>
 
       {/* ── Centered content ──────────────────────────────────────────────── */}
@@ -276,9 +295,9 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
 
         {/* Form panel */}
         <OnboardingForm
-          initialDisplayName={
-            dbUser?.displayName && dbUser.displayName !== "Utilisateur" ? dbUser.displayName : ""
-          }
+          initialUsername={view.username}
+          initialDisplayName={view.displayName}
+          initialBio={view.bio}
           avatarUrl={dbUser?.avatarUrl ?? null}
         />
       </div>

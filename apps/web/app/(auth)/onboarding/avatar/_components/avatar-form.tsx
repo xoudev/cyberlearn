@@ -17,6 +17,7 @@ import {
   initialOnboardingChoice,
 } from "@cyberlearn/lib/onboarding/avatars";
 import { AvatarView } from "@/components/avatar-view";
+import { EDIT_PROFILE_QUERY } from "@/lib/onboarding/profile-step";
 
 // The app offers the same eight (@cyberlearn/lib/onboarding/avatars).
 const AVATARS = ONBOARDING_AVATAR_CHOICES;
@@ -425,9 +426,10 @@ export function AvatarForm({
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 12 }}>
+            {/* Step 1 again, filled: without ?edit=1 it moves straight back here. */}
             <Link
               className="mono-label mono-label--md card card--ghost"
-              href="/onboarding"
+              href={`/onboarding?${EDIT_PROFILE_QUERY}`}
               style={{
                 flex: "0 0 auto",
                 height: 52,
