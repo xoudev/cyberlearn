@@ -5,7 +5,8 @@
   "description": "Shared TypeScript types and Zod validation schemas",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./zod-locale": "./src/zod-locale.ts"
   },
   "scripts": {
     "build": "tsc",

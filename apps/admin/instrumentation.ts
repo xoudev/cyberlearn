@@ -1,5 +1,5 @@
 // Next.js instrumentation file: Sentry SDK init for server + edge runtimes,
-// and Zod's French messages for the server actions (lib/zod-locale.ts).
+// and Zod's French messages for the server actions (@cyberlearn/types/zod-locale).
 // See: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
 import * as Sentry from "@sentry/nextjs";
@@ -7,7 +7,10 @@ import * as Sentry from "@sentry/nextjs";
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
-    const { configureZodLocale } = await import("./lib/zod-locale");
+    // The forms only show what the actions return, and nothing on the
+    // console's client runs a Zod schema, so the server is the only place
+    // that needs it.
+    const { configureZodLocale } = await import("@cyberlearn/types/zod-locale");
     configureZodLocale();
   }
   if (process.env.NEXT_RUNTIME === "edge") {

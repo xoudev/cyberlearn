@@ -1,13 +1,14 @@
 /**
  * The console's forms show Zod's message when an action does not word one
- * itself. Once the locale is set, that message is French, for every schema,
- * including the ones built before the setting.
+ * itself. Once the shared locale is set, as the console's instrumentation does,
+ * that message is French, for every schema, including the ones built before
+ * the setting.
  */
 
+import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "../lesson-limits";
-import { configureZodLocale } from "../zod-locale";
 
 const description = z.string().max(LESSON_LIMITS.descriptionMax);
 const slug = z.string().regex(LESSON_SLUG, LESSON_SLUG_HINT);
@@ -17,8 +18,7 @@ describe("configureZodLocale", () => {
     configureZodLocale();
     const issue = description.safeParse("x".repeat(LESSON_LIMITS.descriptionMax + 1)).error
       ?.issues[0];
-    expect(issue?.message).toMatch(/^Trop grand/u);
-    expect(issue?.message).toContain(String(LESSON_LIMITS.descriptionMax));
+    expect(issue?.message).toBe(`${String(LESSON_LIMITS.descriptionMax)} caractères au plus.`);
   });
 
   it("leaves a message the schema words itself alone", () => {

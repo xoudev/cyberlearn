@@ -658,7 +658,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     return (
       <div role="note" className="linux-terminal linux-terminal--broken">
         Ce terminal Linux est mal configuré dans la leçon :{" "}
-        {parsed.error.issues[0]?.message ?? "propriétés invalides"}.
+        {parsed.error.issues[0]?.message ?? "propriétés invalides."}
       </div>
     );
   }
