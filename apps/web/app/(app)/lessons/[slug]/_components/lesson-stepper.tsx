@@ -114,6 +114,9 @@ export function LessonStepper({
   const exerciseStateRef = useRef(exerciseState);
   exerciseStateRef.current = exerciseState;
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
+  // Why the server recorded nothing: said at the end of the lesson, where the
+  // completion modal would have shown a lesson finished for 0 XP.
+  const [refusal, setRefusal] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -192,9 +195,15 @@ export function LessonStepper({
   function handleNext() {
     if (!canAdvance) return;
     if (isLastStep && !isCompleted && !reviewing) {
+      setRefusal(null);
       startTransition(async () => {
         const res = await completeLesson(lessonId);
-        if (res.alreadyCompleted) {
+        if (res.refusal !== null) {
+          // The page reads the lesson again: a lock it did not know about,
+          // say, shows as the locked lesson.
+          setRefusal(res.refusal);
+          router.refresh();
+        } else if (res.alreadyCompleted) {
           router.refresh();
         } else {
           setCompletionResult(res);
@@ -264,6 +273,13 @@ export function LessonStepper({
         <p className="lesson-pending" role="status">
           <span aria-hidden="true">›</span>
           {pendingMessage(stepComp.pendingCount)}
+        </p>
+      )}
+
+      {refusal !== null && isLastStep && (
+        <p className="lesson-pending" role="alert">
+          <span aria-hidden="true">›</span>
+          {refusal}
         </p>
       )}
 

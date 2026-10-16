@@ -284,11 +284,16 @@ describe("completeLesson - what the reader may open", () => {
   it("records nothing for a lesson this reader cannot open (a draft, another class's)", async () => {
     m.lessonFindFirst.mockResolvedValue(null);
     const result = await completeLesson(LESSON_ID);
-    expect(result).toMatchObject({ alreadyCompleted: false, xpGained: 0, newBadges: [] });
+    expect(result).toMatchObject({
+      alreadyCompleted: false,
+      xpGained: 0,
+      newBadges: [],
+      refusal: "Leçon introuvable.",
+    });
     expect(m.transaction).not.toHaveBeenCalled();
   });
 
-  it("records nothing for a lesson still locked in its path", async () => {
+  it("records nothing for a lesson still locked in its path, and says why", async () => {
     // Two lessons, this one second, the first not finished.
     m.findPathContexts.mockResolvedValue({
       paths: [
@@ -306,6 +311,8 @@ describe("completeLesson - what the reader may open", () => {
     });
     const result = await completeLesson(LESSON_ID);
     expect(result.xpGained).toBe(0);
+    // Not an empty result the app would announce as a completion worth 0 XP.
+    expect(result.refusal).toBe("Termine d'abord la leçon précédente du parcours.");
     expect(m.transaction).not.toHaveBeenCalled();
   });
 
@@ -326,6 +333,7 @@ describe("completeLesson - what the reader may open", () => {
     });
     const result = await completeLesson(LESSON_ID);
     expect(result.xpGained).toBe(70);
+    expect(result.refusal).toBeNull();
   });
 });
 

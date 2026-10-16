@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stubMatchMedia } from "@/test/match-media";
 
@@ -241,5 +241,32 @@ describe("an administrator's preview", () => {
     expect(next().disabled).toBe(true);
     fireEvent.click(next());
     expect(completeLesson).not.toHaveBeenCalled();
+  });
+});
+
+describe("finishing the lesson", () => {
+  it("says why the server recorded nothing, instead of a lesson validated for 0 XP", async () => {
+    const { completeLesson } = await import("../../_actions/track-progress");
+    vi.mocked(completeLesson).mockResolvedValueOnce({
+      alreadyCompleted: false,
+      xpGained: 0,
+      leveledUp: false,
+      newLevel: 1,
+      newBadges: [],
+      quizScore: null,
+      refusal: "Termine d'abord la leçon précédente du parcours.",
+    });
+    render(<Lesson />);
+    fireEvent.click(next());
+    fireEvent.click(next());
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Terminer la leçon" }));
+      await Promise.resolve();
+    });
+    expect(completeLesson).toHaveBeenCalledWith("lesson");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Termine d'abord la leçon précédente du parcours.",
+    );
+    expect(screen.queryByText("// leçon validée")).toBeNull();
   });
 });
