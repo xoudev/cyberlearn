@@ -5,7 +5,8 @@ import { attributeValue, type MdNode } from "./attributes.js";
 
 /**
  * The exercises of a lesson that pay a little XP once done (a LinuxTerminal,
- * a PythonChallenge), read from its MDX without running any of it.
+ * a PythonChallenge, a component that renders one), read from its MDX
+ * without running any of it.
  *
  * The browser is the judge of whether an exercise is done, but not of which
  * exercises exist: the server used to pay for any identifier it was sent, so
@@ -22,9 +23,27 @@ export interface LessonExercise {
   key: string;
 }
 
-const KIND_OF: Readonly<Record<string, ExerciseKind>> = {
-  LinuxTerminal: "TERMINAL",
-  PythonChallenge: "PYTHON",
+function text(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * The components a recordable exercise is written as, and the key each is
+ * recorded under, from its attributes. A component that renders an exercise
+ * itself belongs here too, keyed as it hands the key down: otherwise its
+ * exercise is one the lesson does not have, and finishing it pays nothing.
+ */
+const RECORDABLE: Readonly<
+  Record<
+    string,
+    { kind: ExerciseKind; key: (attrs: Record<string, unknown>) => string | undefined }
+  >
+> = {
+  LinuxTerminal: { kind: "TERMINAL", key: (a) => terminalExerciseKey(text(a.id), text(a.title)) },
+  PythonChallenge: { kind: "PYTHON", key: (a) => text(a.id) },
+  // Two machines on one cable: the target's LinuxTerminal is the exercise,
+  // given the lab's id. The attacker's has nothing to check, and records nothing.
+  TwoMachineLab: { kind: "TERMINAL", key: (a) => text(a.id) },
 };
 
 function stripFrontmatter(mdx: string): string {
@@ -32,10 +51,6 @@ function stripFrontmatter(mdx: string): string {
 }
 
 const processor = createProcessor({ remarkPlugins: [remarkGfm] });
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
-}
 
 /** Every recordable exercise of a lesson, nested ones included. Empty if it does not parse. */
 export function extractLessonExercises(mdx: string): LessonExercise[] {
@@ -48,25 +63,29 @@ export function extractLessonExercises(mdx: string): LessonExercise[] {
   const found: LessonExercise[] = [];
   const visit = (node: unknown): void => {
     if (typeof node !== "object" || node === null) return;
+    // SAFETY: an mdast node of the tree processor.parse returned, or one of
+    // its children: an object with a type, and a name, attributes and
+    // children when it is an MDX element.
     const n = node as MdNode;
-    const kind =
+    const recordable =
       (n.type === "mdxJsxFlowElement" || n.type === "mdxJsxTextElement") &&
       typeof n.name === "string"
-        ? KIND_OF[n.name]
+        ? RECORDABLE[n.name]
         : undefined;
-    if (kind !== undefined) {
+    if (recordable !== undefined) {
       const attrs: Record<string, unknown> = {};
       for (const a of n.attributes ?? []) {
+        // SAFETY: an element's attribute, an mdxJsxAttribute (a name and a
+        // value) or an mdxJsxExpressionAttribute (a spread, without a name).
         const attr = a as { type?: string; name?: string };
         if (attr.type === "mdxJsxAttribute" && typeof attr.name === "string") {
           attrs[attr.name] = attributeValue(a);
         }
       }
-      const key =
-        kind === "TERMINAL"
-          ? terminalExerciseKey(text(attrs.id), text(attrs.title))
-          : text(attrs.id);
-      if (key !== undefined && key.trim() !== "") found.push({ kind, key: key.trim() });
+      const key = recordable.key(attrs);
+      if (key !== undefined && key.trim() !== "") {
+        found.push({ kind: recordable.kind, key: key.trim() });
+      }
     }
     for (const child of n.children ?? []) visit(child);
   };

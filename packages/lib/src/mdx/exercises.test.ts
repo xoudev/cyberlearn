@@ -42,6 +42,23 @@ describe("extractLessonExercises", () => {
     expect(extractLessonExercises('<PythonChallenge title="Sans id" tests={[]} />')).toEqual([]);
   });
 
+  it("keys a component that renders an exercise itself as it hands the key down", () => {
+    // TwoMachineLab renders the target machine's LinuxTerminal with its own id:
+    // without it here, finishing that terminal paid nothing.
+    expect(extractLessonExercises('<TwoMachineLab id="blueteam-13-two-machine-lab" />')).toEqual([
+      { kind: "TERMINAL", key: "blueteam-13-two-machine-lab" },
+    ]);
+    expect(
+      lessonHasExercise(
+        '<TwoMachineLab id="blueteam-13-two-machine-lab" />',
+        "TERMINAL",
+        terminalExerciseKey("blueteam-13-two-machine-lab", "app01 · 10.77.0.2"),
+      ),
+    ).toBe(true);
+    // Without an id it renders no exercise, and has none to pay for.
+    expect(extractLessonExercises("<TwoMachineLab />")).toEqual([]);
+  });
+
   it("finds nothing in a lesson that does not parse", () => {
     expect(extractLessonExercises("<LinuxTerminal id=")).toEqual([]);
   });
