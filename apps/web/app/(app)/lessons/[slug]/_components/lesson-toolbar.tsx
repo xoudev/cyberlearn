@@ -16,19 +16,21 @@ export interface SectionProgress {
   currentStep: number;
   doneSteps: ReadonlySet<number>;
   isCompleted: boolean;
+  /** An administrator's preview: nothing to earn, so nothing is held shut. */
+  reviewing?: boolean;
 }
 
 /**
  * Whether the reader may open a section other than the one on screen: one
- * they have finished or already passed, or any once the lesson is done. A
- * section ahead stays shut until the ones before it are read, so that their
- * exercises are not skipped.
+ * they have finished or already passed, or any once the lesson is done, or
+ * any in an administrator's preview. A section ahead stays shut until the ones
+ * before it are read, so that their exercises are not skipped.
  */
 export function canOpenSection(
   index: number,
-  { currentStep, doneSteps, isCompleted }: SectionProgress,
+  { currentStep, doneSteps, isCompleted, reviewing = false }: SectionProgress,
 ): boolean {
-  return isCompleted || index < currentStep || doneSteps.has(index);
+  return isCompleted || reviewing || index < currentStep || doneSteps.has(index);
 }
 
 /** What holds the reader in a section: the toolbar's "next" and the end of the section say it. */
@@ -80,6 +82,7 @@ export function LessonToolbar({
   totalSteps,
   doneSteps,
   isCompleted,
+  reviewing = false,
   canAdvance,
   pendingCount,
   isPending,
@@ -97,12 +100,13 @@ export function LessonToolbar({
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
 
   const isLastStep = currentStep === totalSteps - 1;
-  const finishing = isLastStep && !isCompleted;
-  const nextDisabled = isPending || !canAdvance || (isLastStep && isCompleted);
+  // Nothing to finish in a preview: the last section ends the reading.
+  const finishing = isLastStep && !isCompleted && !reviewing;
+  const nextDisabled = isPending || !canAdvance || (isLastStep && !finishing);
   const pendingNotice = !canAdvance && pendingCount > 0 ? pendingMessage(pendingCount) : undefined;
   const sectionName = sections[currentStep]?.text ?? "";
   const progress = `${String(((currentStep + 1) / totalSteps) * 100)}%`;
-  const progressState = { currentStep, doneSteps, isCompleted };
+  const progressState = { currentStep, doneSteps, isCompleted, reviewing };
 
   return (
     <>

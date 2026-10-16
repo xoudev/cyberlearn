@@ -7,13 +7,15 @@ const m = vi.hoisted(() => ({
   preferencesFindUnique: vi.fn<() => Promise<{ spacedRepetition: boolean } | null>>(() =>
     Promise.resolve(null),
   ),
-  lessonFindUnique: vi.fn(),
+  lessonFindFirst: vi.fn(),
   findForGamification: vi.fn(),
   findProgress: vi.fn(),
   findAllActive: vi.fn(),
   findUserBadgeIds: vi.fn(),
   findCriterionFacts: vi.fn(),
   findQuizAnswers: vi.fn(),
+  findPathContexts: vi.fn(),
+  findRoleById: vi.fn(),
   enqueueCards: vi.fn<(...args: unknown[]) => Promise<number>>(() => Promise.resolve(0)),
   transaction: vi.fn(),
   tx: {
@@ -36,21 +38,25 @@ vi.mock("@/lib/certificates/check-and-issue", () => ({
   checkAndIssueCertificates: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@cyberlearn/db", () => ({
+  // What the lesson page reads a lesson through: published, and the
+  // catalogue's or the reader's class's. Kept recognisable for the assertion
+  // on the completion's own read.
+  lessonsVisibleTo: (userId: string) => ({ status: "PUBLISHED", visibleTo: userId }),
   prisma: {
-    lesson: { findUnique: m.lessonFindUnique },
+    lesson: { findFirst: m.lessonFindFirst },
     // Read by revisionsEnabled, which decides whether completing a lesson also
     // schedules its first review. Null is an account that has expressed no
     // preference, which the helper treats as the schema default: on.
     userPreferences: { findUnique: m.preferencesFindUnique },
     $transaction: m.transaction,
   },
-  lessonRepository: { findProgress: m.findProgress },
+  lessonRepository: { findProgress: m.findProgress, findPathContexts: m.findPathContexts },
   badgeRepository: {
     findAllActive: m.findAllActive,
     findUserBadgeIds: m.findUserBadgeIds,
     findCriterionFacts: m.findCriterionFacts,
   },
-  userRepository: { findForGamification: m.findForGamification },
+  userRepository: { findForGamification: m.findForGamification, findRoleById: m.findRoleById },
   lessonQuizRepository: { findForLesson: m.findQuizAnswers },
   reviewCardRepository: { enqueueForLesson: m.enqueueCards },
 }));
@@ -74,7 +80,7 @@ const XP_BADGE = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.lessonFindUnique.mockResolvedValue({ xpReward: 20, slug: "sql-injection", category: "DEV" });
+  m.lessonFindFirst.mockResolvedValue({ xpReward: 20, slug: "sql-injection", category: "DEV" });
   m.findForGamification.mockResolvedValue({
     xpTotal: 90,
     level: computeLevel(90).level,
@@ -84,6 +90,9 @@ beforeEach(() => {
     lastActiveAt: new Date("2026-01-01T12:00:00Z"),
   });
   m.findProgress.mockResolvedValue(null); // first completion
+  // In no path, read by a learner: nothing locks it.
+  m.findPathContexts.mockResolvedValue({ paths: [], completedLessonIds: [] });
+  m.findRoleById.mockResolvedValue({ role: "STUDENT" });
   m.findAllActive.mockResolvedValue([XP_BADGE]);
   m.findUserBadgeIds.mockResolvedValue(new Set());
   m.findCriterionFacts.mockResolvedValue({
@@ -262,6 +271,64 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
   });
 });
 
+describe("completeLesson - what the reader may open", () => {
+  it("reads the lesson as this reader may open it, not by its id alone", async () => {
+    await completeLesson(LESSON_ID);
+    expect(m.lessonFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: LESSON_ID, status: "PUBLISHED", visibleTo: "u1" },
+      }),
+    );
+  });
+
+  it("records nothing for a lesson this reader cannot open (a draft, another class's)", async () => {
+    m.lessonFindFirst.mockResolvedValue(null);
+    const result = await completeLesson(LESSON_ID);
+    expect(result).toMatchObject({ alreadyCompleted: false, xpGained: 0, newBadges: [] });
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("records nothing for a lesson still locked in its path", async () => {
+    // Two lessons, this one second, the first not finished.
+    m.findPathContexts.mockResolvedValue({
+      paths: [
+        {
+          id: "p1",
+          slug: "reseau",
+          title: "Réseau",
+          lessons: [
+            { position: 0, lesson: { id: "first" } },
+            { position: 1, lesson: { id: LESSON_ID } },
+          ],
+        },
+      ],
+      completedLessonIds: [],
+    });
+    const result = await completeLesson(LESSON_ID);
+    expect(result.xpGained).toBe(0);
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("completes it once the lesson before it is finished", async () => {
+    m.findPathContexts.mockResolvedValue({
+      paths: [
+        {
+          id: "p1",
+          slug: "reseau",
+          title: "Réseau",
+          lessons: [
+            { position: 0, lesson: { id: "first" } },
+            { position: 1, lesson: { id: LESSON_ID } },
+          ],
+        },
+      ],
+      completedLessonIds: ["first"],
+    });
+    const result = await completeLesson(LESSON_ID);
+    expect(result.xpGained).toBe(70);
+  });
+});
+
 /** The `data` a mocked Prisma write was first called with. */
 function dataOf(fn: { mock: { calls: unknown[][] } }): Record<string, unknown> {
   // SAFETY: both writes checked here are called with a single `{ data }` argument.
@@ -276,7 +343,7 @@ describe("completeLesson - the quiz score", () => {
   ].join("\n\n");
 
   beforeEach(() => {
-    m.lessonFindUnique.mockResolvedValue({
+    m.lessonFindFirst.mockResolvedValue({
       xpReward: 20,
       slug: "listes",
       category: "DEV",
@@ -312,7 +379,7 @@ describe("completeLesson - the quiz score", () => {
   });
 
   it("leaves it empty for a lesson without quizzes", async () => {
-    m.lessonFindUnique.mockResolvedValue({
+    m.lessonFindFirst.mockResolvedValue({
       xpReward: 20,
       slug: "texte",
       category: "DEV",
@@ -358,7 +425,7 @@ describe("completeLesson - the review cards", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
-    m.lessonFindUnique.mockResolvedValue(lesson());
+    m.lessonFindFirst.mockResolvedValue(lesson());
     m.findQuizAnswers.mockResolvedValue([
       { quizId: "q-1", selected: 0, correct: true },
       { quizId: "q-2", selected: 0, correct: false },
@@ -405,7 +472,7 @@ describe("completeLesson - the review cards", () => {
     ["a project", { slug: "fondamentaux-le-rendu", title: "Projet final : le rendu" }],
     ["a class lesson", { audience: "CLASS" }],
   ])("enqueues nothing for %s", async (_label, overrides) => {
-    m.lessonFindUnique.mockResolvedValue(lesson(overrides));
+    m.lessonFindFirst.mockResolvedValue(lesson(overrides));
     await completeLesson(LESSON_ID);
     expect(enqueued()).toEqual([]);
   });

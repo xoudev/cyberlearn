@@ -126,6 +126,41 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const sections = toc.filter((t) => t.level === 2);
   const mdxSections = splitMdxSections(lesson.contentMdx);
 
+  const stepper = (
+    <LessonStepper
+      lessonId={lesson.id}
+      lessonTitle={lesson.title}
+      xpReward={lesson.xpReward}
+      isCompleted={isCompleted}
+      reviewing={reviewing}
+      sections={sections}
+      note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
+      planExtra={
+        <>
+          <Suspense fallback={null}>
+            <LessonAuthor lessonId={lesson.id} />
+          </Suspense>
+          <LessonGlossaryNote />
+        </>
+      }
+    >
+      {mdxSections.map((src, i) => (
+        // SAFETY: index key is stable - sections don't reorder after page load
+        <SectionPane key={i} index={i}>
+          {/* Each section fails on its own: one bad expression used to take
+            the whole lesson down. See lesson-section.tsx. */}
+          <LessonSection
+            source={src}
+            components={LESSON_MDX_COMPONENTS}
+            options={LESSON_MDX_OPTIONS}
+            lessonSlug={lesson.slug}
+            index={i}
+          />
+        </SectionPane>
+      ))}
+    </LessonStepper>
+  );
+
   return (
     <div className="lesson-page">
       <LessonHeader
@@ -141,44 +176,23 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       />
 
       {/* ── Toolbar + the section on screen ──────────────────────────────── */}
-      <LessonQuizProvider
-        lessonId={lesson.id}
-        userId={authUser.id}
-        initialAnswers={initialQuizAnswers}
-        initialReported={reportedQuizIds}
-      >
-        <LessonStepper
+      {reviewing ? (
+        // No quiz record in review. An answer is written against the progress
+        // row that opening a lesson creates, and a draft creates none: every
+        // answer came back "Leçon introuvable." and held the section shut.
+        // Without the record the quizzes score locally, as in the editor's
+        // preview, and nothing is written.
+        stepper
+      ) : (
+        <LessonQuizProvider
           lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          xpReward={lesson.xpReward}
-          isCompleted={isCompleted}
-          sections={sections}
-          note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
-          planExtra={
-            <>
-              <Suspense fallback={null}>
-                <LessonAuthor lessonId={lesson.id} />
-              </Suspense>
-              <LessonGlossaryNote />
-            </>
-          }
+          userId={authUser.id}
+          initialAnswers={initialQuizAnswers}
+          initialReported={reportedQuizIds}
         >
-          {mdxSections.map((src, i) => (
-            // SAFETY: index key is stable - sections don't reorder after page load
-            <SectionPane key={i} index={i}>
-              {/* Each section fails on its own: one bad expression used to take
-                the whole lesson down. See lesson-section.tsx. */}
-              <LessonSection
-                source={src}
-                components={LESSON_MDX_COMPONENTS}
-                options={LESSON_MDX_OPTIONS}
-                lessonSlug={lesson.slug}
-                index={i}
-              />
-            </SectionPane>
-          ))}
-        </LessonStepper>
-      </LessonQuizProvider>
+          {stepper}
+        </LessonQuizProvider>
+      )}
 
       {/* ── Next bar ─────────────────────────────────────────────────────────
           Rendered even with no next lesson: the bar carries the "terminer"

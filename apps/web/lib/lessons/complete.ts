@@ -9,10 +9,12 @@ import { cardsForCompletion, isReviewableLesson } from "@cyberlearn/lib/revision
 import {
   prisma,
   lessonRepository,
+  lessonsVisibleTo,
   badgeRepository,
   reviewCardRepository,
   userRepository,
 } from "@cyberlearn/db";
+import { pathOpensLesson } from "@/lib/lessons/access";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
@@ -52,10 +54,16 @@ export async function completeLessonForUser(
   lessonId: string,
 ): Promise<CompleteLessonResult> {
   // Parallel fetch - lesson, user gamification state, existing progress, all
-  // active badges, and whether this account still wants a revision queue.
-  const [lesson, user, existing, allBadges, wantsRevisions] = await Promise.all([
-    prisma.lesson.findUnique({
-      where: { id: lessonId },
+  // active badges, whether this account still wants a revision queue, and
+  // whether the lesson's path lets the reader open it.
+  //
+  // The lesson is read as this reader may open it, like the lesson page reads
+  // it: by id alone, a draft an administrator previews, a class's own lesson
+  // or a lesson still locked in its path could be completed and paid by
+  // anyone who sent its id.
+  const [lesson, user, existing, allBadges, wantsRevisions, pathOpen] = await Promise.all([
+    prisma.lesson.findFirst({
+      where: { id: lessonId, ...lessonsVisibleTo(userId) },
       select: {
         xpReward: true,
         slug: true,
@@ -69,9 +77,10 @@ export async function completeLessonForUser(
     lessonRepository.findProgress(userId, lessonId),
     badgeRepository.findAllActive(),
     revisionsEnabled(userId),
+    pathOpensLesson(userId, lessonId),
   ]);
 
-  if (!lesson || !user) return EMPTY_COMPLETE_RESULT;
+  if (!lesson || !user || !pathOpen) return EMPTY_COMPLETE_RESULT;
 
   // The quiz score is fixed now, with the completion: right answers out of
   // the quizzes the lesson has at this moment. The catalogue shows it.

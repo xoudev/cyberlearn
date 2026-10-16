@@ -69,6 +69,12 @@ interface LessonStepperProps {
   lessonTitle: string;
   xpReward: number;
   isCompleted: boolean;
+  /**
+   * An administrator previewing a lesson nobody else can open yet. Every
+   * section opens, no exercise holds them, and there is no "Terminer": the
+   * page says nothing is recorded, and finishing would record a completion.
+   */
+  reviewing?: boolean;
   sections: { text: string; id: string }[];
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
@@ -87,6 +93,7 @@ export function LessonStepper({
   lessonTitle,
   xpReward,
   isCompleted,
+  reviewing = false,
   sections,
   planExtra,
   note,
@@ -170,7 +177,7 @@ export function LessonStepper({
   // ── Derived state ─────────────────────────────────────────────────────────────
 
   const stepComp = getStepCompletion(currentStep);
-  const canAdvance = isCompleted || stepComp.isAllComplete;
+  const canAdvance = reviewing || isCompleted || stepComp.isAllComplete;
   const isLastStep = currentStep === totalSteps - 1;
 
   // ── Navigation ────────────────────────────────────────────────────────────────
@@ -181,7 +188,7 @@ export function LessonStepper({
 
   function handleNext() {
     if (!canAdvance) return;
-    if (isLastStep && !isCompleted) {
+    if (isLastStep && !isCompleted && !reviewing) {
       startTransition(async () => {
         const res = await completeLesson(lessonId);
         if (res.alreadyCompleted) {
@@ -204,7 +211,7 @@ export function LessonStepper({
 
   function handleJump(i: number) {
     if (i === currentStep) return;
-    if (canOpenSection(i, { currentStep, doneSteps, isCompleted })) {
+    if (canOpenSection(i, { currentStep, doneSteps, isCompleted, reviewing })) {
       setCurrentStep(i);
     }
   }
@@ -219,6 +226,7 @@ export function LessonStepper({
         totalSteps={totalSteps}
         doneSteps={doneSteps}
         isCompleted={isCompleted}
+        reviewing={reviewing}
         canAdvance={canAdvance}
         pendingCount={stepComp.pendingCount}
         isPending={isPending}

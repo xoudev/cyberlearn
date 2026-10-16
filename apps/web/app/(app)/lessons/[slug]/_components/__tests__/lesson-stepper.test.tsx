@@ -53,9 +53,11 @@ function Exercise(): React.ReactElement {
 
 function Lesson({
   isCompleted = false,
+  reviewing = false,
   withExercise = false,
 }: {
   isCompleted?: boolean;
+  reviewing?: boolean;
   withExercise?: boolean;
 }): React.ReactElement {
   return (
@@ -64,6 +66,7 @@ function Lesson({
       lessonTitle="Leçon"
       xpReward={50}
       isCompleted={isCompleted}
+      reviewing={reviewing}
       sections={SECTIONS}
       note={{ content: "", wordCount: 0 }}
       planExtra={<p>Écrit par Ada</p>}
@@ -186,5 +189,29 @@ describe("what keeps the reader in a section", () => {
     expect(screen.getByText("Leçon complétée")).toBeTruthy();
     // Nothing after the last section of a lesson already done.
     expect(next().disabled).toBe(true);
+  });
+});
+
+describe("an administrator's preview", () => {
+  it("holds no section for its exercises, and opens any from the plan", () => {
+    render(<Lesson reviewing withExercise />);
+    expect(next().disabled).toBe(false);
+    expect(screen.queryByRole("status")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Plan de la leçon" }));
+    const plan = screen.getByRole("dialog", { name: "Plan de la leçon" });
+    fireEvent.click(within(plan).getByRole("button", { name: /Troisième/ }));
+    expect(screen.getByText("Troisième section")).toBeTruthy();
+  });
+
+  it("records nothing: no completion at the end of the last section", async () => {
+    const { completeLesson } = await import("../../_actions/track-progress");
+    render(<Lesson reviewing />);
+    fireEvent.click(next());
+    fireEvent.click(next());
+    expect(screen.getByText("Troisième section")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Terminer la leçon" })).toBeNull();
+    expect(next().disabled).toBe(true);
+    fireEvent.click(next());
+    expect(completeLesson).not.toHaveBeenCalled();
   });
 });
