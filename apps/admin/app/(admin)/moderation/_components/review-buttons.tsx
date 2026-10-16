@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { resolveModerationAction } from "../_actions/moderation-actions";
+import { useReportOutcome } from "./review-outcomes";
 
 /**
  * Two decisions, and a sanction that rides along with one of them.
@@ -27,17 +28,36 @@ import { resolveModerationAction } from "../_actions/moderation-actions";
  * is what the author is told and what a sanction hangs off. It just must not
  * be drawn as "rétablir" and "supprimer", which is what it was, and which did
  * nothing at all on that surface while reporting success.
+ *
+ * What a decision came to is said above the queue, not here: see
+ * ReviewOutcomes. `about` names the content there, once this row is gone.
+ *
+ * `sanctionRefusal` is set when the author is not someone the console bans -
+ * an administrator, or the moderator themselves - and the ban lengths are
+ * then offered greyed out, with the reason under them. The action refuses it
+ * too.
  */
 export function ReviewButtons({
   eventId,
   actionable,
+  about,
+  sanctionRefusal,
 }: {
   eventId: string;
   actionable: boolean;
+  about: string;
+  sanctionRefusal: string | null;
 }): React.ReactElement {
   const [pending, start] = useTransition();
   const [sanction, setSanction] = useState("none");
-  const [failed, setFailed] = useState(false);
+  const report = useReportOutcome();
+
+  const decide = (outcome: "UPHELD" | "OVERTURNED", chosen?: string): void => {
+    start(async () => {
+      const result = await resolveModerationAction(eventId, outcome, chosen);
+      if (result.message !== undefined) report(about, result.message);
+    });
+  };
 
   return (
     <div className="a-row-actions" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
@@ -45,9 +65,7 @@ export function ReviewButtons({
         type="button"
         disabled={pending}
         onClick={() => {
-          start(async () => {
-            await resolveModerationAction(eventId, "OVERTURNED");
-          });
+          decide("OVERTURNED");
         }}
         className="a-btn a-btn--ghost a-btn--sm"
       >
@@ -64,6 +82,7 @@ export function ReviewButtons({
           ...BAN_DURATIONS.map((duration) => ({
             value: duration.key,
             label: `Bannir · ${duration.label.toLowerCase()}`,
+            disabled: sanctionRefusal !== null,
           })),
         ]}
         onChange={setSanction}
@@ -88,10 +107,7 @@ export function ReviewButtons({
           ) {
             return;
           }
-          start(async () => {
-            const result = await resolveModerationAction(eventId, "UPHELD", sanction);
-            setFailed(result.sanctionFailed === true);
-          });
+          decide("UPHELD", sanction);
         }}
         className="a-btn a-btn--danger a-btn--sm"
       >
@@ -105,10 +121,8 @@ export function ReviewButtons({
         </span>
       )}
 
-      {failed && (
-        <span className="a-field-hint" style={{ color: "var(--a-warning)" }}>
-          Contenu supprimé. La sanction n&apos;a pas été appliquée : ce compte est déjà banni.
-        </span>
+      {sanctionRefusal !== null && (
+        <span className="a-field-hint">Pas de sanction depuis la file : {sanctionRefusal}</span>
       )}
     </div>
   );

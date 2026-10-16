@@ -117,7 +117,7 @@ const RENDERED: [string, React.ReactElement][] = [
       resetAt: "12 octobre",
       securityUrl: "https://cyberlearn.fr/settings/account",
       sessionsClosed: true,
-      contactEmail: "contact@cyberlearn.fr",
+      contactUrl: "https://cyberlearn.fr/contact?theme=SECURITY",
       siteUrl: "https://cyberlearn.fr",
     }),
   ],

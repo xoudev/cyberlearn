@@ -29,20 +29,29 @@ export async function updateTicketStatusAction(
     return { ok: false, error: "Paramètres invalides." };
   }
 
-  await prisma.contactTicket.update({
-    where: { id: input.data.ticketId },
-    data: { status: input.data.status },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "ticket.status.update",
-      targetType: "ContactTicket",
-      targetId: input.data.ticketId,
-      metadata: { status: input.data.status },
-    },
-  });
+  // Together or not at all, and a failure said under the control rather than
+  // thrown: a thrown error took the administrator off the ticket to the
+  // console's error page.
+  try {
+    await prisma.$transaction([
+      prisma.contactTicket.update({
+        where: { id: input.data.ticketId },
+        data: { status: input.data.status },
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "ticket.status.update",
+          targetType: "ContactTicket",
+          targetId: input.data.ticketId,
+          metadata: { status: input.data.status },
+        },
+      }),
+    ]);
+  } catch (error) {
+    logger.error({ scope: "tickets", err: errorMessage(error) }, "status update failed");
+    return { ok: false, error: "Le statut n'a pas pu être changé. Rien n'a été modifié." };
+  }
 
   revalidatePath("/tickets");
   revalidatePath(`/tickets/${input.data.ticketId}`);

@@ -6,6 +6,7 @@ import {
   updateClassAction,
   type ActionState,
 } from "../_actions/class-actions";
+import { keepFormInput } from "@/lib/form-input";
 import { Card } from "../../_components/admin-ui";
 
 /**
@@ -41,7 +42,7 @@ export function ClassDetailsForm({
           <span className="mono a-disclosure-meta">{slug}</span>
         </summary>
 
-        <form action={formAction} className="a-form a-disclosure-body">
+        <form action={formAction} onReset={keepFormInput} className="a-form a-disclosure-body">
           <input type="hidden" name="id" value={classId} />
 
           <label className="a-field">

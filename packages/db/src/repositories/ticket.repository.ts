@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import type { TicketStatus } from "@prisma/client";
+import type { Prisma, TicketStatus, TicketTheme } from "@prisma/client";
 
 /**
  * Tickets, and the conversation on them.
@@ -35,7 +35,94 @@ export function isTicketOpen(status: TicketStatus): boolean {
 /** Why a message was refused, so each caller can say so in its own words. */
 export type AddMessageResult = { ok: true } | { ok: false; reason: "NOT_FOUND" | "TERMINAL" };
 
+/**
+ * The themes whose tickets the console calls critical while they are open.
+ *
+ * One definition for every screen that counts them. The overview counted only
+ * OPEN ones and the tickets page OPEN and IN_PROGRESS, so a security report
+ * taken in hand read "aucun critique" on one and "1" on the other.
+ */
+export const CRITICAL_TICKET_THEMES = ["BUG", "SECURITY"] as const satisfies readonly TicketTheme[];
+
+/** A bug or a security report that is not over yet. */
+export function isCriticalTicket(ticket: { status: TicketStatus; theme: TicketTheme }): boolean {
+  return (
+    isTicketOpen(ticket.status) &&
+    (CRITICAL_TICKET_THEMES as readonly TicketTheme[]).includes(ticket.theme)
+  );
+}
+
+/** The same rule as a filter, for a count. */
+export const CRITICAL_TICKET_WHERE = {
+  status: { in: [...OPEN_TICKET_STATUSES] },
+  theme: { in: [...CRITICAL_TICKET_THEMES] },
+} satisfies Prisma.ContactTicketWhereInput;
+
+/**
+ * Whether the requester wrote last on a ticket the team has taken in hand.
+ *
+ * A requester's reply changes no status - only the team's does, OPEN to
+ * IN_PROGRESS - so "toujours bloqué" on a ticket in progress used to land in
+ * the thread with nothing in the console to say so: same status, same place in
+ * the list, no count anywhere. This is that signal. An OPEN ticket is already
+ * the team's to answer, follow-up or not, so it is not counted twice.
+ *
+ * `lastMessageFromStaff` is null for a ticket with no reply in its thread yet.
+ */
+export function awaitsTeamReply(ticket: {
+  status: TicketStatus;
+  lastMessageFromStaff: boolean | null;
+}): boolean {
+  return ticket.status === "IN_PROGRESS" && ticket.lastMessageFromStaff === false;
+}
+
+/** The tickets the team owes something: new ones, and the ones answered back. */
+export function needsTeam(ticket: {
+  status: TicketStatus;
+  lastMessageFromStaff: boolean | null;
+}): boolean {
+  return ticket.status === "OPEN" || awaitsTeamReply(ticket);
+}
+
+/** The latest turn of a thread, which says who spoke last. */
+export const LAST_TICKET_MESSAGE = {
+  orderBy: { createdAt: "desc" },
+  take: 1,
+  select: { fromStaff: true, createdAt: true },
+} satisfies Prisma.ContactTicket$messagesArgs;
+
+async function countAwaitingReply(): Promise<number> {
+  // In memory over the tickets in progress, a handful at a time: "the last
+  // message is the requester's" is not a filter Prisma can say.
+  const inProgress = await prisma.contactTicket.findMany({
+    where: { status: "IN_PROGRESS" },
+    select: { status: true, messages: LAST_TICKET_MESSAGE },
+  });
+  return inProgress.filter((ticket) =>
+    awaitsTeamReply({
+      status: ticket.status,
+      lastMessageFromStaff: ticket.messages[0]?.fromStaff ?? null,
+    }),
+  ).length;
+}
+
 export const ticketRepository = {
+  /** Tickets in progress whose requester wrote last: see awaitsTeamReply. */
+  countAwaitingReply,
+
+  /**
+   * What the console's sidebar counts: every ticket the team owes something,
+   * new ones and the ones answered back, so a reply on a ticket in progress
+   * shows up where the team looks first.
+   */
+  async countNeedingTeam(): Promise<number> {
+    const [open, awaiting] = await Promise.all([
+      prisma.contactTicket.count({ where: { status: "OPEN" } }),
+      countAwaitingReply(),
+    ]);
+    return open + awaiting;
+  },
+
   /** Someone's own tickets, most recently touched first. */
   async findForUser(userId: string) {
     return prisma.contactTicket.findMany({

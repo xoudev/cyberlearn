@@ -11,7 +11,7 @@ const m = vi.hoisted(() => ({
   deleteFactor: vi.fn(),
   resetPasswordForEmail: vi.fn(),
   resend: vi.fn(),
-  sendMfaResetEmail: vi.fn(),
+  sendMfaResetEmail: vi.fn<(options: Record<string, unknown>) => Promise<void>>(),
   heldAdminRoleSince: vi.fn(),
 }));
 
@@ -38,8 +38,10 @@ vi.mock("@cyberlearn/lib/logger", () => ({
   logger: { error: vi.fn() },
   errorMessage: (error: unknown) => String(error),
 }));
+// The sender as production has it: a noreply, which must never be the address
+// a mail asks its reader to write to.
 vi.mock("@/lib/env", () => ({
-  env: { RESEND_API_KEY: "re_test", RESEND_FROM_EMAIL: "contact@cyberlearn.fr" },
+  env: { RESEND_API_KEY: "re_test", RESEND_FROM_EMAIL: "noreply@cyberlearn.fr" },
 }));
 vi.mock("@/lib/learner-url", () => ({
   learnerUrl: (path: string) => `https://cyberlearn.fr${path}`,
@@ -190,12 +192,23 @@ describe("resetMfaAction", () => {
         to: account(LEARNER, "STUDENT").email,
         securityUrl: "https://cyberlearn.fr/settings/account",
         sessionsClosed: true,
+        contactUrl:
+          "https://cyberlearn.fr/contact?theme=SECURITY&subject=Double+authentification+retir%C3%A9e+sans+ma+demande",
       }),
     );
     expect(result).toMatchObject({ ok: true, emailFailed: false, auditFailed: false });
     // Whatever the sign-in method: a GitHub account has no password.
     expect(result.notice).toMatch(/comme d'habitude, sans code/u);
     expect(result.notice).not.toMatch(/mot de passe/u);
+  });
+
+  it("never hands out the sender as the address to write to", async () => {
+    // The sender is noreply@ in every documented setup. The owner of an
+    // account unlocked behind their back writes to the contact form instead.
+    await resetMfaAction({}, typed(LEARNER));
+    const { from, ...rest } = m.sendMfaResetEmail.mock.calls[0]?.[0] ?? {};
+    expect(from).toBe("noreply@cyberlearn.fr");
+    expect(JSON.stringify(rest)).not.toContain("noreply");
   });
 
   it("reports the reset done when only the audit write fails, and still tells the learner", async () => {
@@ -307,7 +320,14 @@ describe("address confirmation", () => {
     m.auditCreate.mockRejectedValue(new Error("audit_logs unavailable"));
     const result = await confirmEmailAction({}, form({ userId: LEARNER }));
     expect(result).toMatchObject({ ok: true, auditFailed: true });
-    expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
+  });
+
+  it("revalidates nothing, so the pending row it came from keeps its notice", async () => {
+    // Any revalidation re-renders the calling page: on the pending list that
+    // read the list again, the confirmed row left it, and the notice - with a
+    // failed audit write - left with it.
+    await confirmEmailAction({}, form({ userId: LEARNER }));
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("says when no auth identity stands behind the profile", async () => {

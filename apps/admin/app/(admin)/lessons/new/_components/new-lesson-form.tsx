@@ -11,6 +11,7 @@ import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import { refreshLessonPreviewAction } from "../../_actions/preview-actions";
 import { CoverUploadField } from "../../_components/cover-upload-field";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -176,7 +177,7 @@ export function NewLessonForm({
         </div>
       )}
 
-      <form action={action} style={{ display: "grid", gap: 22 }}>
+      <form action={action} onReset={keepFormInput} style={{ display: "grid", gap: 22 }}>
         {/* Hidden MDX content */}
         <input type="hidden" name="contentMdx" value={mdx} />
 

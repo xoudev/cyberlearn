@@ -15,7 +15,7 @@ const BASE = {
   resetAt: "12 octobre 2026 à 10:42",
   securityUrl: "https://cyberlearn.fr/settings/account",
   sessionsClosed: true,
-  contactEmail: "contact@cyberlearn.fr",
+  contactUrl: "https://cyberlearn.fr/contact?theme=SECURITY",
   siteUrl: "https://cyberlearn.fr",
 };
 
@@ -48,7 +48,11 @@ describe("MfaResetEmail - rendered HTML", () => {
     const html = await render(MfaResetEmail(BASE));
     expect(html).toContain("rien demandé");
     expect(html).toContain("Change ton mot de passe");
-    expect(html).toContain("mailto:contact@cyberlearn.fr");
+    // The contact form, not an address: the only one at hand was the sender,
+    // a noreply nobody reads.
+    expect(html).toContain('href="https://cyberlearn.fr/contact?theme=SECURITY"');
+    expect(html).toContain("formulaire de contact");
+    expect(html).not.toContain("mailto:");
   });
 
   it("explains the sign-out only when sessions were really closed", async () => {
@@ -62,7 +66,7 @@ describe("MfaResetEmail - rendered HTML", () => {
     const html = await render(MfaResetEmail(BASE));
     const hrefs = [...html.matchAll(/href="([^"]*)"/gu)].map((m) => m[1] ?? "");
     for (const href of hrefs) {
-      expect([BASE.securityUrl, BASE.siteUrl, `mailto:${BASE.contactEmail}`]).toContain(href);
+      expect([BASE.securityUrl, BASE.siteUrl, BASE.contactUrl]).toContain(href);
     }
   });
 });

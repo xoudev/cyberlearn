@@ -151,8 +151,10 @@ export async function replyAsRequester(
   const parsed = replySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Écris un message avant d'envoyer." };
 
-  // A reply notifies the team; filing is capped by the contact form's budget,
-  // replying by the same one as the other writes that notify somebody.
+  // A reply reaches the team through the console - counted in its sidebar and
+  // marked "Réponse en attente" on a ticket in progress (awaitsTeamReply), not
+  // by a mail. Filing is capped by the contact form's budget, replying by the
+  // same one as the other writes that notify somebody.
   const limit = await checkNotifyingWrite(userId);
   if (!limit.success) {
     return { ok: false, error: "Beaucoup d'envois d'un coup : réessaie dans un moment." };

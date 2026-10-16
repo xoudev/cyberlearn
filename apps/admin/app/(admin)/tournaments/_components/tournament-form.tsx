@@ -11,6 +11,7 @@ import {
   type TournamentPhase,
   type TournamentTeamScope,
 } from "@cyberlearn/lib/challenges/tournament";
+import { keepFormInput } from "@/lib/form-input";
 import { Card } from "../../_components/admin-ui";
 import type { TournamentFormState } from "../_actions/tournament-actions";
 
@@ -83,7 +84,12 @@ export function TournamentForm({
   }
 
   return (
-    <form action={formAction} className="a-form" style={{ display: "grid", gap: 18 }}>
+    <form
+      action={formAction}
+      onReset={keepFormInput}
+      className="a-form"
+      style={{ display: "grid", gap: 18 }}
+    >
       <Card title="Le tournoi" pad>
         <div className="a-form">
           <label className="a-field">

@@ -268,5 +268,11 @@ export {
   ticketRepository,
   OPEN_TICKET_STATUSES,
   isTicketOpen,
+  CRITICAL_TICKET_THEMES,
+  CRITICAL_TICKET_WHERE,
+  LAST_TICKET_MESSAGE,
+  awaitsTeamReply,
+  isCriticalTicket,
+  needsTeam,
   type AddMessageResult,
 } from "./repositories/ticket.repository.js";

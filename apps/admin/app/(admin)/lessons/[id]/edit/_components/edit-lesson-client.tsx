@@ -8,6 +8,7 @@ import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { CONTENT_STATUS_OPTIONS } from "../../../../_components/content-status";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ export function EditLessonClient({
         </div>
       )}
 
-      <form action={action} style={{ display: "grid", gap: 22 }}>
+      <form action={action} onReset={keepFormInput} style={{ display: "grid", gap: 22 }}>
         <input type="hidden" name="contentMdx" value={mdx} />
 
         {/* Row 1: refCode + slug */}

@@ -43,6 +43,30 @@ export function roleChangeRefusal(input: {
   return null;
 }
 
+/**
+ * Refuses a ban the console must not issue, from the account's page and from
+ * the moderation queue alike.
+ *
+ * On oneself: an administrator banning themselves would lock the console's
+ * own door from the inside, with the key on the other side. On another
+ * administrator: a ban does not reach the console, so it would only take the
+ * site away from someone who still holds every key to it - the role is what
+ * has to go first, deliberately, on the users list.
+ *
+ * The queue used to skip both: a flagged message written by an administrator,
+ * the moderator's own included, could get its author banned by a choice in a
+ * dropdown that the account's page refuses.
+ */
+export function banRefusal(input: {
+  actorId: string;
+  targetId: string;
+  targetRole: UserRole;
+}): string | null {
+  if (input.actorId === input.targetId) return "Tu ne peux pas te bannir toi-même.";
+  if (input.targetRole === "ADMIN") return "Retire d'abord le rôle administrateur de ce compte.";
+  return null;
+}
+
 /** The sentence for a demotion the repository refused. */
 export const LAST_ADMIN_REFUSAL =
   "C'est le dernier administrateur. Donne d'abord le rôle Admin à un autre compte.";

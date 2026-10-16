@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useActionState } from "react";
+import Link from "next/link";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 import { banUserAction, liftBanAction, type BanUserState } from "../../../_actions/user-actions";
 import { Card, Tag } from "../../../_components/admin-ui";
 
@@ -30,7 +32,8 @@ export function BanForm({
     endsLabel: string;
     issuedOn: string;
     issuedBy: string | null;
-    hasAppeal: boolean;
+    /** The ticket contesting this ban, when one was opened. */
+    appealTicketId: string | null;
   } | null;
   history: { id: string; reason: string; issuedOn: string; outcome: string }[];
 }): React.ReactElement {
@@ -45,6 +48,18 @@ export function BanForm({
 
   return (
     <Card title={active ? "Bannissement en cours" : "Bannissement"} pad>
+      {/* Above both branches, not inside the form that sent it: a ban that
+          went through re-renders this card as "Bannissement en cours", and the
+          warning used to leave with the form it was written under. It goes
+          once the ban does. */}
+      {active !== null && banState.ok === true && banState.emailFailed === true && (
+        <p className="a-form-error" style={{ marginBottom: 14 }}>
+          Le compte est banni, mais l&apos;e-mail d&apos;information n&apos;a pas pu être envoyé :
+          la personne ne sait ni qu&apos;elle est bannie ni pourquoi. Préviens-la par un autre
+          moyen.
+        </p>
+      )}
+
       {active ? (
         <>
           <div className="a-defrow">
@@ -60,8 +75,12 @@ export function BanForm({
           </div>
           <div className="a-defrow">
             <span className="a-defrow-label">Appel</span>
-            {active.hasAppeal ? (
-              <Tag tone="warning">Un appel est ouvert</Tag>
+            {active.appealTicketId !== null ? (
+              // The appeal is read and answered on its ticket: one click there,
+              // and the ticket links back here to lift the ban.
+              <Link href={`/tickets/${active.appealTicketId}`} className="a-row-link">
+                <Tag tone="warning">Un appel est ouvert · lire</Tag>
+              </Link>
             ) : (
               <span className="mono a-field-hint">Aucun</span>
             )}
@@ -71,7 +90,12 @@ export function BanForm({
             {active.reason}
           </p>
 
-          <form action={liftAction} className="a-form" style={{ marginTop: 16 }}>
+          <form
+            action={liftAction}
+            onReset={keepFormInput}
+            className="a-form"
+            style={{ marginTop: 16 }}
+          >
             <input type="hidden" name="userId" value={userId} />
             <label className="a-field">
               <span className="a-label">
@@ -91,7 +115,7 @@ export function BanForm({
           </form>
         </>
       ) : (
-        <form action={banAction} className="a-form">
+        <form action={banAction} onReset={keepFormInput} className="a-form">
           <input type="hidden" name="userId" value={userId} />
 
           <label className="a-field">
@@ -129,12 +153,6 @@ export function BanForm({
           </button>
 
           {banState.error !== undefined && <p className="a-form-error">{banState.error}</p>}
-          {banState.ok === true && banState.emailFailed === true && (
-            <p className="a-form-error">
-              Le compte est banni, mais l&apos;e-mail d&apos;information n&apos;a pas pu être
-              envoyé.
-            </p>
-          )}
         </form>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   confirmEmailAction,
   resendConfirmationAction,
@@ -41,6 +42,14 @@ export function SignInActions({
     confirmEmailAction,
     {},
   );
+  const router = useRouter();
+  // The action revalidates nothing, so that the list of pending sign-ups keeps
+  // the row it was confirmed from. Here the page is read again once it worked:
+  // the address shows as confirmed and these buttons go, and this component,
+  // which stays mounted, keeps the notice.
+  useEffect(() => {
+    if (confirmState.ok === true) router.refresh();
+  }, [confirmState, router]);
 
   return (
     <div className="a-form" style={{ marginTop: 16 }}>

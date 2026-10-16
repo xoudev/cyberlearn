@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { keepFormInput } from "@/lib/form-input";
 import { signInAdminWithPassword } from "./actions";
 import { initialAdminAuthState } from "./auth-state";
 
@@ -17,6 +18,7 @@ export function AdminLoginForm({
 }): React.JSX.Element {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [state, action, pending] = useActionState(signInAdminWithPassword, initialAdminAuthState);
 
   useEffect(() => {
@@ -30,7 +32,16 @@ export function AdminLoginForm({
   const error = state.status === "error" ? state.message : initialError;
 
   return (
-    <form className="a-auth-form" action={action}>
+    <form
+      className="a-auth-form"
+      action={action}
+      onReset={(event) => {
+        // After a refused sign-in the address stays, as it would anywhere
+        // else; the password alone is typed again.
+        keepFormInput(event);
+        if (passwordRef.current !== null) passwordRef.current.value = "";
+      }}
+    >
       <input type="hidden" name="redirectTo" value={redirectTo} />
       <label className="a-field">
         <span className="a-label">Adresse e-mail</span>
@@ -47,6 +58,7 @@ export function AdminLoginForm({
         <span className="a-label">Mot de passe</span>
         <span className="a-input-wrap">
           <input
+            ref={passwordRef}
             className="a-input a-input--reveal"
             type={showPassword ? "text" : "password"}
             name="password"

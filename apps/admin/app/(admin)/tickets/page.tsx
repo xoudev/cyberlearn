@@ -1,7 +1,15 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import {
+  awaitsTeamReply,
+  isCriticalTicket,
+  isTicketOpen,
+  LAST_TICKET_MESSAGE,
+  needsTeam,
+  prisma,
+  type TicketStatus,
+} from "@cyberlearn/db";
 import { KpiCard, PageHeader, Tag, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { TicketStatusSelect } from "./_components/TicketStatusSelect";
@@ -10,6 +18,17 @@ import { STATUS_META, THEME_META } from "./ticket-meta";
 import { requireAdminPage } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Tickets" };
+
+/** The facet value of a ticket whose requester wrote last. */
+const AWAITING = "AWAITING";
+
+/** How the tickets the team owes nothing on are ordered: in progress before finished. */
+const STATUS_RANK: Record<TicketStatus, number> = {
+  OPEN: 0,
+  IN_PROGRESS: 1,
+  RESOLVED: 2,
+  CLOSED: 3,
+};
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -22,8 +41,7 @@ function formatDate(d: Date): string {
 
 export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const tickets = await prisma.contactTicket.findMany({
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+  const read = await prisma.contactTicket.findMany({
     select: {
       id: true,
       subject: true,
@@ -33,22 +51,37 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
       jiraIssueKey: true,
       jiraIssueUrl: true,
       createdAt: true,
+      updatedAt: true,
       user: { select: { username: true, displayName: true } },
+      messages: LAST_TICKET_MESSAGE,
     },
   });
 
+  // What the team owes first - new tickets, and the ones answered back - the
+  // most recently touched on top; then the rest by status. A reply moves
+  // updatedAt, so a ticket somebody just wrote on rises instead of staying
+  // where it was opened.
+  const tickets = read
+    .map((t) => {
+      const follow = { status: t.status, lastMessageFromStaff: t.messages[0]?.fromStaff ?? null };
+      return { ...t, awaiting: awaitsTeamReply(follow), owed: needsTeam(follow) };
+    })
+    .sort(
+      (a, b) =>
+        Number(b.owed) - Number(a.owed) ||
+        (a.owed ? 0 : STATUS_RANK[a.status] - STATUS_RANK[b.status]) ||
+        b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
+
   const openCount = tickets.filter((t) => t.status === "OPEN").length;
   const inProgressCount = tickets.filter((t) => t.status === "IN_PROGRESS").length;
+  const awaitingCount = tickets.filter((t) => t.awaiting).length;
   const resolvedCount = tickets.length - openCount - inProgressCount;
-  const criticalCount = tickets.filter(
-    (t) =>
-      (t.status === "OPEN" || t.status === "IN_PROGRESS") &&
-      (t.theme === "BUG" || t.theme === "SECURITY"),
-  ).length;
+  const criticalCount = tickets.filter(isCriticalTicket).length;
 
   const rows: GridRow[] = tickets.map((t) => {
     const theme = THEME_META[t.theme] ?? { label: t.theme, tone: "neutral" as Tone };
-    const isActive = t.status === "OPEN" || t.status === "IN_PROGRESS";
+    const isActive = isTicketOpen(t.status);
     const userLabel = t.user?.username
       ? `@${t.user.username}`
       : (t.user?.displayName ?? t.email ?? "anonyme");
@@ -57,7 +90,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
     return {
       id: t.id,
       search: `${t.subject} ${userLabel} ${theme.label} ${status.label}`.toLowerCase(),
-      facets: [t.status, t.theme],
+      facets: [t.status, t.theme, t.awaiting ? AWAITING : ""],
       sort: [
         t.subject.toLowerCase(),
         t.theme,
@@ -117,7 +150,10 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           {formatDate(t.createdAt)}
         </span>,
         isActive ? (
-          <TicketStatusSelect key="st" ticketId={t.id} currentStatus={t.status} />
+          <span key="st" style={{ display: "inline-grid", gap: 6, justifyItems: "start" }}>
+            <TicketStatusSelect ticketId={t.id} currentStatus={t.status} />
+            {t.awaiting && <Tag tone="warning">Réponse en attente</Tag>}
+          </span>
         ) : (
           <span
             key="st"
@@ -155,7 +191,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
       <PageHeader
         crumbs={[{ label: "Support" }]}
         title="Tickets"
-        description="Signalements du formulaire de contact. Les bugs et alertes sécurité encore ouverts sont considérés critiques."
+        description="Signalements du formulaire de contact. Les bugs et alertes sécurité ouverts ou en cours sont considérés critiques. Un ticket en cours dont le demandeur a répondu remonte en tête, marqué « Réponse en attente »."
       />
 
       <div className="a-kpi-grid">
@@ -168,6 +204,16 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           label="En cours"
           value={String(inProgressCount)}
           tone={inProgressCount > 0 ? "warning" : "accent"}
+          delta={
+            awaitingCount > 0 ? (
+              <>
+                dont{" "}
+                <b>
+                  {awaitingCount} réponse{awaitingCount > 1 ? "s" : ""} en attente
+                </b>
+              </>
+            ) : undefined
+          }
         />
         <KpiCard label="Résolus / fermés" value={String(resolvedCount)} />
         <KpiCard
@@ -203,6 +249,10 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
               value,
               label: meta.label,
             })),
+          },
+          {
+            label: "Suivi",
+            options: [{ value: AWAITING, label: "Réponse en attente" }],
           },
         ]}
         searchPlaceholder="Rechercher un sujet, un utilisateur…"

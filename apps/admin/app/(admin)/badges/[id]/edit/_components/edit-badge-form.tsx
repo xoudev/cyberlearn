@@ -9,6 +9,7 @@ import {
 } from "../../../_actions/badge-actions";
 import type { LessonOption, PathOption } from "../../../new/_components/new-badge-form";
 import { Select } from "@cyberlearn/ui";
+import { keepFormInput } from "@/lib/form-input";
 
 interface BadgeData {
   id: string;
@@ -349,7 +350,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
       )}
 
       {/* Edit form */}
-      <form action={action}>
+      <form action={action} onReset={keepFormInput}>
         <input type="hidden" name="id" value={badge.id} />
 
         <div className="admin-form-grid-2" style={{ gap: 20 }}>
