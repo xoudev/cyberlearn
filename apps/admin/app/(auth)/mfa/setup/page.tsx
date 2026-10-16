@@ -1,3 +1,4 @@
+import React from "react";
 import { redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { ACCESS_DENIED_PATH, safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
