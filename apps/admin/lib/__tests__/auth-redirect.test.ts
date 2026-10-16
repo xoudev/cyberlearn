@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACCESS_DENIED_PATH,
   ADMIN_HOME,
+  isAccessDeniedPath,
   isMfaPath,
   isPublicPath,
   returnPathOf,
@@ -37,6 +39,19 @@ describe("safeAdminRedirect", () => {
     expect(safeAdminRedirect("/mfa")).toBe(ADMIN_HOME);
     expect(safeAdminRedirect("/mfa/setup")).toBe(ADMIN_HOME);
   });
+
+  it("refuses the access-denied screen, which is nobody's destination", () => {
+    expect(safeAdminRedirect(ACCESS_DENIED_PATH)).toBe(ADMIN_HOME);
+    expect(safeAdminRedirect("/access-denied?from=%2Fusers")).toBe(ADMIN_HOME);
+  });
+});
+
+describe("isAccessDeniedPath", () => {
+  it("names the access-denied screen and nothing else", () => {
+    expect(isAccessDeniedPath("/access-denied")).toBe(true);
+    expect(isAccessDeniedPath("/access-denied/more")).toBe(false);
+    expect(isAccessDeniedPath("/users")).toBe(false);
+  });
 });
 
 describe("withReturnPath", () => {
@@ -70,6 +85,10 @@ describe("returnPathOf", () => {
     expect(returnPathOf(new URL(`${CONSOLE}/mfa/setup?next=%2Faudit`))).toBe("/audit");
     expect(returnPathOf(new URL(`${CONSOLE}/login?redirectTo=%2Fpaths`))).toBe("/paths");
     expect(returnPathOf(new URL(`${CONSOLE}/mfa`))).toBe(ADMIN_HOME);
+  });
+
+  it("does not bring a fresh sign-in back to the access-denied screen", () => {
+    expect(returnPathOf(new URL(`${CONSOLE}/access-denied`))).toBe(ADMIN_HOME);
   });
 });
 

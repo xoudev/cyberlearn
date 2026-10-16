@@ -1,9 +1,12 @@
 import type React from "react";
+import type { Metadata } from "next";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { PageHeader, Tag } from "../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../_components/content-status";
 import { NewLessonForm } from "./_components/new-lesson-form";
+
+export const metadata: Metadata = { title: "Nouvelle leçon" };
 
 // The form is a client component and cannot check anything itself; the page
 // in front of it does, as every console page does (see requireAdminPage).

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../../_components/admin-ui";
@@ -6,6 +7,9 @@ import { EditBadgeForm } from "./_components/edit-badge-form";
 import type { LessonOption, PathOption } from "../../new/_components/new-badge-form";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
+
+export const metadata: Metadata = { title: "Éditer le badge" };
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +19,7 @@ export default async function EditBadgePage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const [badge, lessons, paths] = await Promise.all([
     prisma.badge.findUnique({

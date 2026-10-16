@@ -2,6 +2,7 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import {
+  isAccessDeniedPath,
   isMfaPath,
   isPublicPath,
   type LoginError,
@@ -216,7 +217,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return toLogin(hasSessionCookie(request) ? "session_expired" : undefined);
   }
 
-  if (!isMfaPath(pathname)) {
+  // The access-denied screen takes any session: the account it is shown to
+  // is not ADMIN, may have no factor at all, and sending it to enrol one
+  // would only bring it back here.
+  if (!isMfaPath(pathname) && !isAccessDeniedPath(pathname)) {
     const assurance = await withTimeout(supabase.auth.mfa.getAuthenticatorAssuranceLevel());
     if (!assurance || assurance.error) return toMfa("/mfa");
     if (assurance.data.currentLevel !== "aal2") {

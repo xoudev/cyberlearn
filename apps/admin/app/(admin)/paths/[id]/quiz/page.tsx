@@ -5,6 +5,7 @@ import { GhostLink, PageHeader } from "../../../_components/admin-ui";
 import { QuizManager } from "./_components/quiz-manager";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Quiz du parcours" };
 
@@ -19,7 +20,7 @@ export default async function PathQuizPage({
   params: Promise<{ id: string }>;
 }): Promise<React.JSX.Element> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const path = await prisma.path.findUnique({
     where: { id },

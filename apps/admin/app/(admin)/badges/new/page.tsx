@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../_components/admin-ui";
 import { NewBadgeForm } from "./_components/new-badge-form";
 
 import { requireAdminPage } from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Nouveau badge" };
 
 export const dynamic = "force-dynamic";
 

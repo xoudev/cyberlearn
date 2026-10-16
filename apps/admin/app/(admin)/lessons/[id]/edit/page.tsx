@@ -9,6 +9,7 @@ import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Éditer la leçon" };
 
@@ -18,7 +19,7 @@ export default async function EditLessonPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const lesson = await prisma.lesson.findUnique({
     where: { id },

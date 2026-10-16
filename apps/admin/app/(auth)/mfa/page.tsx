@@ -1,6 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
-import { safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
+import { ACCESS_DENIED_PATH, safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminAuthShell } from "../auth-shell";
 import { AdminMfaChallenge } from "./admin-mfa-challenge";
@@ -19,7 +19,9 @@ export default async function AdminMfaPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(withReturnPath("/login", "redirectTo", next));
   const role = await userRepository.findRoleById(user.id);
-  if (role?.role !== "ADMIN") notFound();
+  // Not an administrator: no code to type here, but a screen that says so
+  // and signs the session out, rather than a 404 with no way back.
+  if (role?.role !== "ADMIN") redirect(ACCESS_DENIED_PATH);
 
   const factors = await supabase.auth.mfa.listFactors();
   if (factors.error || factors.data.totp.length === 0) {

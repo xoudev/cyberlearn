@@ -60,6 +60,15 @@ portal, and the native mobile application.
   (`loginErrorSchema`); any other value gets a generic line.
 - Both TOTP screens offer **Annuler et se déconnecter**. The enrolment starts
   from a button, so it runs once even under React's development double effects.
+- A session whose account is not `ADMIN` is sent to `/access-denied`: by every
+  page, action and route handler (`requireAdminAction` reads the role before
+  it asks about the second factor) and by both TOTP screens. In practice this
+  is an administrator demoted while signed in, since the sign-in form refuses
+  any other account and a role change closes no session. The screen says the
+  console is reserved to administrators and offers **Se déconnecter**; the
+  middleware lets any session reach it, second factor or not, and an account
+  that is `ADMIN` again is sent on to the dashboard. These requests used to get
+  a 404 everywhere, `/login` included, with no way to sign out.
 
 ### Lost authenticator
 

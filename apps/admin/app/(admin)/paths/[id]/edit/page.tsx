@@ -7,6 +7,7 @@ import { CONTENT_STATUS } from "../../../_components/content-status";
 import { EditPathClient } from "./_components/EditPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
+import { routeIdOrNotFound } from "@/lib/route-id";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
 export const metadata: Metadata = { title: "Éditer le parcours" };
@@ -17,7 +18,7 @@ export default async function EditPathPage({
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
   await requireAdminPage();
-  const { id } = await params;
+  const id = routeIdOrNotFound((await params).id);
 
   const [path, availableLessons, ratings] = await Promise.all([
     prisma.path.findUnique({
