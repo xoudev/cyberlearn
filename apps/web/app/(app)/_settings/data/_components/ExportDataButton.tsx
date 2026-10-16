@@ -33,7 +33,9 @@ export function ExportDataButton(): React.JSX.Element {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error("Erreur lors de l'export. Réessaie plus tard.");
+      // The route gives back the day's export when it fails to build it, so
+      // trying again soon is real advice rather than a 24-hour refusal.
+      toast.error("L'export n'a pas pu être préparé. Réessaie dans un moment.");
       console.error("[export] error:", err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);

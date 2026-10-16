@@ -338,10 +338,8 @@ export async function checkHintReveal(userId: string): Promise<RateLimitResult> 
   return toResult(await limiter.limit(userId));
 }
 
-/** 1 data export per user per 24 hours. */
-export async function checkDataExport(userId: string): Promise<RateLimitResult> {
-  if (IS_DEV) return PASS_THROUGH;
-  const limiter = getLimiter(
+function dataExportLimiter(): Ratelimit | null {
+  return getLimiter(
     "export",
     (r) =>
       new Ratelimit({
@@ -350,8 +348,34 @@ export async function checkDataExport(userId: string): Promise<RateLimitResult> 
         prefix: "rl:export",
       }),
   );
+}
+
+/** 1 data export per user per 24 hours. */
+export async function checkDataExport(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = dataExportLimiter();
   if (!limiter) return PASS_THROUGH;
   return toResult(await limiter.limit(userId));
+}
+
+/**
+ * Gives back the export a failed attempt used up. The budget is taken before
+ * the export is built, so that a flood of requests is turned away before it
+ * costs a query; an export that then fails to build has delivered nothing, and
+ * charging for it locked the account holder out of their data for a day.
+ *
+ * Never throws: it runs on a path that is already answering with an error.
+ */
+export async function releaseDataExport(userId: string): Promise<void> {
+  if (IS_DEV) return;
+  const limiter = dataExportLimiter();
+  if (!limiter) return;
+  try {
+    await limiter.resetUsedTokens(userId);
+  } catch (error) {
+    const log = await requestLogger();
+    log.error({ scope: "rate-limit", err: errorMessage(error) }, "export budget not released");
+  }
 }
 
 /** 3 deletion requests per user per 24 hours. */

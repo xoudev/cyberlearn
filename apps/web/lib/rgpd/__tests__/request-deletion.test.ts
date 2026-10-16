@@ -17,7 +17,7 @@ vi.stubEnv("IP_SALT", "request-deletion-test-salt-that-is-at-least-32-chars");
 
 const { mockPrisma, mockSendDeletionConfirmEmail } = vi.hoisted(() => {
   const mockPrisma = {
-    accountDeletionToken: { create: vi.fn() },
+    accountDeletionToken: { create: vi.fn(), deleteMany: vi.fn() },
     auditLog: { create: vi.fn() },
   };
   const mockSendDeletionConfirmEmail = vi.fn();
@@ -49,6 +49,7 @@ const META = { ip: "1.2.3.4", userAgent: "Mozilla/5.0" };
 
 beforeEach(() => {
   mockPrisma.accountDeletionToken.create.mockResolvedValue({});
+  mockPrisma.accountDeletionToken.deleteMany.mockResolvedValue({ count: 1 });
   mockPrisma.auditLog.create.mockResolvedValue({});
   mockSendDeletionConfirmEmail.mockResolvedValue(undefined);
 });
@@ -163,5 +164,37 @@ describe("requestDeletion - email failure", () => {
     expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
 
     logSpy.mockRestore();
+  });
+
+  it("removes the token it stored, so the settings do not show a request as pending", async () => {
+    mockSendDeletionConfirmEmail.mockRejectedValueOnce(new Error("timeout"));
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
+
+    await requestDeletion(USER, META);
+
+    const created = mockPrisma.accountDeletionToken.create.mock.calls[0] as [
+      { data: { tokenHash: string } },
+    ];
+    expect(mockPrisma.accountDeletionToken.deleteMany).toHaveBeenCalledWith({
+      where: { tokenHash: created[0].data.tokenHash },
+    });
+
+    logSpy.mockRestore();
+  });
+
+  it("still reports the e-mail failure when the token cannot be removed", async () => {
+    mockSendDeletionConfirmEmail.mockRejectedValueOnce(new Error("timeout"));
+    mockPrisma.accountDeletionToken.deleteMany.mockRejectedValueOnce(new Error("db down"));
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
+
+    const result = await requestDeletion(USER, META);
+    expect(result).toEqual({ success: false, error: "email_failed" });
+
+    logSpy.mockRestore();
+  });
+
+  it("keeps the token when the e-mail went out", async () => {
+    await requestDeletion(USER, META);
+    expect(mockPrisma.accountDeletionToken.deleteMany).not.toHaveBeenCalled();
   });
 });
