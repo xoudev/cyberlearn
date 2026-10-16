@@ -22,5 +22,5 @@ export function certificateFilename(pathTitle: string): string {
     .trim()
     .slice(0, 80)
     .trim();
-  return safeTitle ? `CyberLearn - ${safeTitle}.pdf` : "CyberLearn - Certificate.pdf";
+  return safeTitle ? `CyberLearn - ${safeTitle}.pdf` : "CyberLearn - Certificat.pdf";
 }

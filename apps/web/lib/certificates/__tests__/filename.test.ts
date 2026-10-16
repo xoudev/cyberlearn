@@ -36,6 +36,6 @@ describe("certificateFilename", () => {
 
   it("caps the title, and falls back when nothing is left of it", () => {
     expect(certificateFilename("a".repeat(120))).toBe(`CyberLearn - ${"a".repeat(80)}.pdf`);
-    expect(certificateFilename("🔐 !!")).toBe("CyberLearn - Certificate.pdf");
+    expect(certificateFilename("🔐 !!")).toBe("CyberLearn - Certificat.pdf");
   });
 });
