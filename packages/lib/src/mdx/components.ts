@@ -308,6 +308,23 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     ],
   },
 
+  {
+    name: "TwoMachineLab",
+    label: "Deux machines Linux reliées",
+    family: "terminal",
+    description:
+      "Deux vraies machines Linux (attackbox et app01) reliées par un câble Ethernet en mémoire dans l'onglet : scan, connexion SSH et élévation de privilèges.",
+    guide: "5.4c TwoMachineLab - Deux machines Linux reliées",
+    examples: [
+      {
+        label: "Labo",
+        snippet: '<TwoMachineLab id="two-machines-1" />\n',
+        description:
+          "attackbox (10.77.0.1) et app01 (10.77.0.2) · preuves vérifiées dans /mnt/proofs",
+      },
+    ],
+  },
+
   // ── Médias et schémas ──────────────────────────────────────────────────────
   {
     name: "LessonVideo",

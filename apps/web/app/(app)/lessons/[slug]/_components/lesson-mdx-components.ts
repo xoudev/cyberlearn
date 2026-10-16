@@ -3,6 +3,7 @@ import { Quiz } from "./quiz";
 import { CodePlayground } from "./code-playground";
 import { SimulatedTerminal } from "./simulated-terminal";
 import { LinuxTerminal } from "./linux-terminal";
+import { TwoMachineLab } from "./two-machine-lab";
 import { LessonVideo } from "./lesson-video";
 import { LessonImage } from "./lesson-image";
 import { ExternalLink } from "./external-link";
@@ -44,6 +45,7 @@ export const LESSON_MDX_COMPONENTS = {
   CodePlayground,
   SimulatedTerminal,
   LinuxTerminal,
+  TwoMachineLab,
   LessonVideo,
   LessonImage,
   ExternalLink,

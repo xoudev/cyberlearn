@@ -329,3 +329,20 @@ at the `3.20.10` release each package above was built from.
    lesson exercise before committing, and re-run the probes this file's
    "What is in it" section describes (a breakpoint stop, `next` still being
    the one that must not be relied on).
+
+## Opt-in SSH network archive (`<TwoMachineLab>`)
+
+Built by `scripts/build-network-runtime.py` from checksum-pinned Alpine 3.20
+x86 packages (`dropbear-2024.85-r0`, `dropbear-dbclient-2024.85-r0`,
+`musl-1.2.5-r3`, `zlib-1.3.2-r0`) and extracted only when `<TwoMachineLab>`
+boots its two isolated Linux VMs (`attackbox` and `app01`).
+
+**Served at**: `/runtimes/v86/network-tools.tar.gz`
+
+| File | Source | Size | SHA-256 |
+|------|--------|------|---------|
+| `network-tools.tar.gz` | `scripts/build-network-runtime.py` (Alpine 3.20 `x86`) | 799 895 B | `6ace926393ea54840b71ec8f3dea1782aedc7569d23ef2186fbfd27f0b0018f4` |
+
+See `LICENSE-dropbear.txt`, `LICENSE-musl.txt`, and `LICENSE-zlib.txt` in
+`apps/web/public/runtimes/v86/`.
+

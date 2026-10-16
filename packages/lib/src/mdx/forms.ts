@@ -436,6 +436,10 @@ const FORMS: readonly ComponentForm[] = [
     ],
   },
   {
+    name: "TwoMachineLab",
+    fields: [idField()],
+  },
+  {
     name: "LessonVideo",
     fields: [
       {

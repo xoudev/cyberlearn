@@ -167,6 +167,8 @@ Deux terminaux. Le premier est simulé : il ne connaît que les commandes de son
 
 <LinuxTerminal title="Ranger un dossier" files={{ "rapport_v3.txt": "Rapport trimestriel, version finale.\n", "notes.txt": "Idées pour la prochaine réunion.\n", "brouillon.tmp": "texte temporaire\n", "vieux/ancien-rapport.txt": "Rapport de l'an dernier.\n" }} expectedCommands={["mkdir docs", "mv rapport_v3.txt docs/rapport.txt"]} checks={[{ "label": "Le dossier docs existe", "path": "docs", "expect": "dir" }, { "label": "Le rapport est dans docs, sous son nouveau nom", "path": "docs/rapport.txt", "expect": "file", "contains": "Rapport trimestriel" }, { "label": "Le brouillon est supprimé", "path": "brouillon.tmp", "expect": "absent" }]} hints={["mkdir docs crée le dossier.", "mv déplace et renomme en une seule commande.", "rm brouillon.tmp supprime sans confirmation : relis avant d'appuyer sur Entrée."]} />
 
+<TwoMachineLab id="two-machines-vitrine" />
+
 ## médias, liens et schémas
 
 Une vidéo, une image avec sa légende, un lien externe en carte puis en ligne, et trois schémas Mermaid : un flux, une séquence, un graphe de branches.

@@ -76,6 +76,10 @@ check_file "${V86}/terminfo-linux"           "b70a4941416eb703a01b5a06fd1c914880
 # lessons that ask for it. Rebuild with: bash scripts/build-devtools-runtime.sh
 check_file "${V86}/devtools.tar.gz"          "5a9339f61c005b8b2d52e4b43e85bb12684ef12ae97d263c48ac6708b93f01d8" "v86/devtools.tar.gz"
 
+# Opt-in SSH server/client archive (dropbear, dbclient, dropbearkey + musl/zlib),
+# extracted at boot for TwoMachineLab. Rebuild with: python scripts/build-network-runtime.py
+check_file "${V86}/network-tools.tar.gz"     "6ace926393ea54840b71ec8f3dea1782aedc7569d23ef2186fbfd27f0b0018f4" "v86/network-tools.tar.gz"
+
 # ── sql.js 1.14.2 (SQLite in WebAssembly, the SQL lessons' real database) ────
 # Update with download-runtimes.sh (SQLJS_VERSION)
 SQLJS="${RUNTIMES}/sqljs"
