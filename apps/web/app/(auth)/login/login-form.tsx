@@ -20,9 +20,12 @@ function GitHubIcon(): React.JSX.Element {
 export function LoginForm({
   redirectTo,
   initialError,
+  initialErrorLink = null,
 }: {
   redirectTo: string;
   initialError: string | null;
+  /** Where to go next from the error a link landed with, such as a new reset link. */
+  initialErrorLink?: { href: string; label: string } | null;
 }): React.JSX.Element {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +41,11 @@ export function LoginForm({
   }, [router, state]);
 
   const error = oauthError ?? (state.status === "error" ? state.message : initialError);
+  // Only while the error shown is still the one the page opened with.
+  const errorLink =
+    oauthError === null && state.status !== "error" && initialError !== null
+      ? initialErrorLink
+      : null;
 
   async function signInWithGitHub(): Promise<void> {
     setOauthPending(true);
@@ -81,6 +89,8 @@ export function LoginForm({
         <input type="hidden" name="redirectTo" value={redirectTo} />
         <label className={styles.field}>
           <span className={styles.label}>Adresse e-mail</span>
+          {/* React empties the form once the action has run: the address comes
+              back from it, so a wrong password does not cost the address too. */}
           <input
             className={styles.input}
             type="email"
@@ -89,6 +99,7 @@ export function LoginForm({
             inputMode="email"
             required
             placeholder="toi@exemple.fr"
+            defaultValue={state.email}
           />
         </label>
 
@@ -115,6 +126,11 @@ export function LoginForm({
         </label>
 
         {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
+        {errorLink ? (
+          <Link className={styles.link} href={errorLink.href}>
+            {errorLink.label}
+          </Link>
+        ) : null}
 
         <button className={styles.submit} type="submit" disabled={pending || oauthPending}>
           {pending ? "Vérification…" : "Se connecter"}

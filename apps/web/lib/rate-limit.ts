@@ -16,67 +16,177 @@ import { requestLogger } from "@/lib/request-logger";
 // a slow site.
 const REDIS_RETRY = { retries: 1, backoff: () => 100 };
 
-// ── Legacy auth limiter (fail-open, keeps auth/confirm + auth/callback working) ──
+// ── Auth limiters (fail-open, one budget per action) ────────────────────────
 
-function buildRedis(): Redis | null {
+function buildAuthRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token || !url.startsWith("https://")) return null;
   return new Redis({ url, token, retry: REDIS_RETRY });
 }
 
-const _legacyRedis = buildRedis();
+/** The steps a person goes through before holding a session, each with its own budget. */
+export type AuthAction = "sign-in" | "sign-up" | "resend-confirmation" | "password-reset";
 
-const authRateLimit = _legacyRedis
-  ? new Ratelimit({
-      redis: _legacyRedis,
-      limiter: Ratelimit.slidingWindow(5, "15 m"),
-      prefix: "rl:web:auth",
-    })
-  : null;
+/**
+ * What each action may do in a quarter of an hour.
+ *
+ * All of them used to share one budget of five per IP address, and the links
+ * of the e-mails (/auth/confirm, /auth/callback) spent from it too. A class
+ * signs in from the school's single public address: the sixth pupil of the
+ * quarter-hour was told "Trop de tentatives", whatever they were doing and
+ * however right their password.
+ *
+ * So two budgets per action. The one per address typed is the tight one: it
+ * is what stands between a script and one account's password, or between one
+ * mailbox and a flood of mail. It is keyed on the network as well, so that
+ * somebody elsewhere cannot lock a learner out by failing on their address.
+ * The one per network only stops a single source from spraying through many
+ * accounts, and it is sized for a classroom - thirty-odd people signing up,
+ * mistyping, asking for the mail again - with room to spare.
+ *
+ * A sign-in spends from them only when the password is refused: somebody who
+ * types the right one has not spent anything.
+ */
+export const AUTH_BUDGETS: Readonly<
+  Record<AuthAction, { readonly perAddress: number; readonly perNetwork: number }>
+> = {
+  "sign-in": { perAddress: 5, perNetwork: 100 },
+  "sign-up": { perAddress: 5, perNetwork: 100 },
+  "resend-confirmation": { perAddress: 3, perNetwork: 100 },
+  "password-reset": { perAddress: 3, perNetwork: 100 },
+};
+
+interface AuthLimiters {
+  address: Ratelimit;
+  network: Ratelimit;
+}
+
+function buildAuthLimiters(redis: Redis): Record<AuthAction, AuthLimiters> {
+  const pair = (action: AuthAction): AuthLimiters => ({
+    address: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(AUTH_BUDGETS[action].perAddress, "15 m"),
+      prefix: `rl:web:auth:${action}:address`,
+    }),
+    network: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(AUTH_BUDGETS[action].perNetwork, "15 m"),
+      prefix: `rl:web:auth:${action}:network`,
+    }),
+  });
+  return {
+    "sign-in": pair("sign-in"),
+    "sign-up": pair("sign-up"),
+    "resend-confirmation": pair("resend-confirmation"),
+    "password-reset": pair("password-reset"),
+  };
+}
+
+const _authRedis = buildAuthRedis();
+const authLimiters = _authRedis ? buildAuthLimiters(_authRedis) : null;
 
 // This check runs before the password is verified, so whatever it costs is
 // paid by every sign-in attempt - the refused ones as much as the accepted
 // ones. A second spent here is a second on the login screen.
 const AUTH_LIMIT_TIMEOUT_MS = 1_000;
 
-export async function checkAuthRateLimit(request: { headers: Headers }): Promise<boolean> {
-  // Authentication must remain available when Redis is missing or temporarily
-  // unreachable. The limiter is a defense-in-depth control; Supabase still
-  // validates credentials and applies its own abuse protections.
-  if (!authRateLimit) return true;
-
-  const forwarded = request.headers.get("x-forwarded-for");
-  const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-
+/**
+ * Capped as well as retry-bounded: a request that neither resolves nor rejects
+ * would hang the sign-in indefinitely, and the answer we would eventually get
+ * is one we are prepared to do without.
+ */
+async function withAuthTimeout<T>(work: Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const hashedIp = pseudonymize(rawIp);
-    // Capped as well as retry-bounded: a request that neither resolves nor
-    // rejects would hang the sign-in indefinitely, and the answer we would
-    // eventually get is one we are prepared to do without.
-    const { success } = await Promise.race([
-      authRateLimit.limit(hashedIp),
+    return await Promise.race([
+      work,
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           reject(new Error(`auth rate limit timed out after ${String(AUTH_LIMIT_TIMEOUT_MS)}ms`));
         }, AUTH_LIMIT_TIMEOUT_MS);
       }),
     ]);
-    return success;
-  } catch (error) {
-    // Still fail-open - but say so. Swallowing this in silence is how a
-    // limiter that answers nobody went unnoticed: it never blocked anyone, it
-    // never raised anything, it only made signing in slow.
-    const log = await requestLogger();
-    log.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
-    return true;
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
 }
 
-// ── New per-action limiters (fail-open when Redis unconfigured) ──
+/** Both keys pseudonymized: neither the address nor the IP is stored as typed. */
+function authKeys(headers: Headers, email: string): { address: string; network: string } {
+  const forwarded = headers.get("x-forwarded-for");
+  const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
+  return {
+    address: pseudonymize(`${rawIp}\n${email.trim().toLowerCase()}`),
+    network: pseudonymize(rawIp),
+  };
+}
+
+async function logFailOpen(error: unknown): Promise<void> {
+  // Still fail-open - but say so. Swallowing this in silence is how a
+  // limiter that answers nobody went unnoticed: it never blocked anyone, it
+  // never raised anything, it only made signing in slow.
+  const log = await requestLogger();
+  log.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
+}
+
+/**
+ * Whether `action` may go ahead for `email` from the network `request` comes
+ * from.
+ *
+ * Spends one unit of both budgets, except for a sign-in, which only reads
+ * them: its refusals are counted afterwards, by `recordSignInFailure`.
+ *
+ * Authentication must remain available when Redis is missing or temporarily
+ * unreachable. The limiter is a defense-in-depth control; Supabase still
+ * validates credentials and applies its own abuse protections.
+ */
+export async function allowAuthAttempt(
+  action: AuthAction,
+  request: { headers: Headers },
+  email: string,
+): Promise<boolean> {
+  if (!authLimiters) return true;
+  const limiters = authLimiters[action];
+  try {
+    const keys = authKeys(request.headers, email);
+    if (action === "sign-in") {
+      const [address, network] = await withAuthTimeout(
+        Promise.all([
+          limiters.address.getRemaining(keys.address),
+          limiters.network.getRemaining(keys.network),
+        ]),
+      );
+      return address.remaining > 0 && network.remaining > 0;
+    }
+    const [address, network] = await withAuthTimeout(
+      Promise.all([limiters.address.limit(keys.address), limiters.network.limit(keys.network)]),
+    );
+    return address.success && network.success;
+  } catch (error) {
+    await logFailOpen(error);
+    return true;
+  }
+}
+
+/** Counts a refused password against the address and the network it came from. */
+export async function recordSignInFailure(
+  request: { headers: Headers },
+  email: string,
+): Promise<void> {
+  if (!authLimiters) return;
+  const limiters = authLimiters["sign-in"];
+  try {
+    const keys = authKeys(request.headers, email);
+    await withAuthTimeout(
+      Promise.all([limiters.address.limit(keys.address), limiters.network.limit(keys.network)]),
+    );
+  } catch (error) {
+    await logFailOpen(error);
+  }
+}
+
+// ── Per-user and per-form limiters (fail-open when Redis unconfigured) ──
 
 // NODE_ENV=development → bypass (no Redis required locally).
 // Other environments: real path runs; if Redis is unconfigured, falls back to fail-open.

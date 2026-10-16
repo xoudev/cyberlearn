@@ -17,6 +17,15 @@ portal, and the native mobile application.
   `email_not_confirmed` once the password has matched, and the resend answers
   the same sentence whether or not an account waits at that address. On the
   site the action is rate-limited like the other auth actions.
+- On the site, each auth action has its own budget per quarter-hour
+  (`AUTH_BUDGETS` in `apps/web/lib/rate-limit.ts`): a tight one per address
+  typed and network (5 refused passwords, 5 sign-ups, 3 confirmation mails,
+  3 reset mails), and one per network sized for a class behind the school's
+  single public address (100). A sign-in spends from them only when the
+  password is refused. The links of the e-mails (`/auth/confirm`,
+  `/auth/callback`) are not rate-limited: their token is single-use. The
+  limiter fails open when Upstash is missing or does not answer within a
+  second.
 - Password recovery sends one e-mail carrying both a link and a code. The link
   opens `cyberlearn.fr/auth/confirm`, which verifies it and drops a 15-minute
   recovery cookie before `/reset-password`. The code is for the native app: it
@@ -28,6 +37,16 @@ portal, and the native mobile application.
   `recovery` entry is under 15 minutes old (`bearerHasRecoveryGrant`). A
   stolen session alone must still supply the current password. With TOTP
   enabled, both require AAL2 first.
+- Past those 15 minutes, `/reset-password` says so instead of asking for the
+  current password, and offers **Demander un nouveau lien**
+  (`restartPasswordRecovery`), which closes the session the link opened and
+  goes to `/forgot-password` - the middleware keeps a signed-in account away
+  from that page. A reset link that is spent or cut short lands on
+  `/login?error=recovery_expired` or `missing_token`, which say so and point
+  to a new link.
+- Only the recovery mail shows its code: the app takes a code on its
+  "Mot de passe oublié" screen and nowhere else (`showsCode` in
+  `packages/email/src/templates/magic-link.tsx`).
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
   and mobile route gates require AAL2 before mounting protected application UI.
   `/mfa` sends a session with no verified factor (`nextLevel !== "aal2"`) on to
@@ -116,7 +135,9 @@ ago; the console says so instead of failing.
 
 A sign-up whose address was never confirmed has no row in `users` yet: the
 profile is created at the first sign-in (`userRepository.upsertFromAuth`),
-and a password sign-in needs the confirmed address. Such accounts are listed
+and a password sign-in needs the confirmed address. Later sign-ins refresh
+the address and the last activity; the identity's picture (GitHub's) fills
+the avatar only while it is empty, so a learner's choice stands. Such accounts are listed
 on `admin.cyberlearn.fr/users/pending`, read from Supabase Auth through the
 service role (`auth.admin.listUsers`, a thousand at a time, up to twenty
 thousand accounts), keeping those unconfirmed and without a profile. The two

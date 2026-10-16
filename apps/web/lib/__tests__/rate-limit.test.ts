@@ -69,6 +69,25 @@ vi.mock("@upstash/ratelimit", () => {
     });
   };
 
+  // Reads the window without spending from it, like Ratelimit#getRemaining.
+  (Ratelimit.prototype as { getRemaining: (id: string) => Promise<unknown> }).getRemaining =
+    function (this: { limit_: number; prefix_: string }, identifier: string): Promise<unknown> {
+      if (rejectNextLimit) {
+        rejectNextLimit = false;
+        return Promise.reject(new Error("Redis unavailable"));
+      }
+      if (hangNextLimit) {
+        hangNextLimit = false;
+        return new Promise(() => undefined);
+      }
+      const count = counters.get(`${this.prefix_}:${identifier}`) ?? 0;
+      return Promise.resolve({
+        remaining: Math.max(0, this.limit_ - count),
+        limit: this.limit_,
+        reset: Date.now() + 600_000,
+      });
+    };
+
   // Static factory - encodes limit into an object the constructor reads
   (
     Ratelimit as unknown as { slidingWindow: (limit: number, window: string) => { limit: number } }
@@ -88,7 +107,9 @@ const {
   checkQaSubmission,
   checkHintReveal,
   checkDataExport,
-  checkAuthRateLimit,
+  allowAuthAttempt,
+  recordSignInFailure,
+  AUTH_BUDGETS,
 } = await import("@/lib/rate-limit");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -249,14 +270,89 @@ describe("fail-open - Upstash not configured", () => {
   });
 });
 
-describe("checkAuthRateLimit - Redis outage", () => {
+/** A request from one network, as the auth actions receive it. */
+function from(ip: string): { headers: Headers } {
+  return { headers: new Headers({ "x-forwarded-for": `${ip}, 10.0.0.1` }) };
+}
+
+function address(): string {
+  return `${uid()}@example.fr`;
+}
+
+describe("auth budgets - a class behind one public address", () => {
+  it("lets a whole class sign up, each with an address of their own", async () => {
+    const school = from(uid());
+    for (let pupil = 0; pupil < 35; pupil++) {
+      expect(await allowAuthAttempt("sign-up", school, address())).toBe(true);
+    }
+  });
+
+  it("does not spend the sign-in budget on passwords that were right", async () => {
+    const school = from(uid());
+    const email = address();
+    for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress * 3; i++) {
+      expect(await allowAuthAttempt("sign-in", school, email)).toBe(true);
+    }
+  });
+
+  it("refuses an address after five refused passwords, and only that address", async () => {
+    const school = from(uid());
+    const email = address();
+    for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress; i++) {
+      expect(await allowAuthAttempt("sign-in", school, email)).toBe(true);
+      await recordSignInFailure(school, email);
+    }
+    expect(await allowAuthAttempt("sign-in", school, email)).toBe(false);
+    // The pupil at the next desk is not locked out by somebody else's typos.
+    expect(await allowAuthAttempt("sign-in", school, address())).toBe(true);
+  });
+
+  it("does not let failures elsewhere lock somebody's address", async () => {
+    const email = address();
+    const elsewhere = from(uid());
+    for (let i = 0; i < AUTH_BUDGETS["sign-in"].perAddress; i++) {
+      await recordSignInFailure(elsewhere, email);
+    }
+    expect(await allowAuthAttempt("sign-in", elsewhere, email)).toBe(false);
+    expect(await allowAuthAttempt("sign-in", from(uid()), email)).toBe(true);
+  });
+
+  it("keeps one budget per action", async () => {
+    const school = from(uid());
+    const email = address();
+    for (let i = 0; i < AUTH_BUDGETS["sign-up"].perAddress; i++) {
+      await allowAuthAttempt("sign-up", school, email);
+    }
+    expect(await allowAuthAttempt("sign-up", school, email)).toBe(false);
+    expect(await allowAuthAttempt("password-reset", school, email)).toBe(true);
+    expect(await allowAuthAttempt("resend-confirmation", school, email)).toBe(true);
+    expect(await allowAuthAttempt("sign-in", school, email)).toBe(true);
+  });
+
+  it("caps the mail an address can be sent again", async () => {
+    const school = from(uid());
+    const email = address();
+    for (let i = 0; i < AUTH_BUDGETS["resend-confirmation"].perAddress; i++) {
+      expect(await allowAuthAttempt("resend-confirmation", school, email)).toBe(true);
+    }
+    expect(await allowAuthAttempt("resend-confirmation", school, email)).toBe(false);
+  });
+
+  it("still stops one network spraying through many accounts", async () => {
+    const source = from(uid());
+    for (let i = 0; i < AUTH_BUDGETS["sign-in"].perNetwork; i++) {
+      await recordSignInFailure(source, address());
+    }
+    expect(await allowAuthAttempt("sign-in", source, address())).toBe(false);
+  });
+});
+
+describe("auth budgets - Redis outage", () => {
   it("allows authentication when the configured Redis request rejects", async () => {
     rejectNextLimit = true;
     const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
 
-    const allowed = await checkAuthRateLimit({
-      headers: new Headers({ "x-forwarded-for": "203.0.113.8" }),
-    });
+    const allowed = await allowAuthAttempt("sign-up", from("203.0.113.8"), address());
 
     expect(allowed).toBe(true);
     expect(logError).toHaveBeenCalled();
@@ -271,13 +367,23 @@ describe("checkAuthRateLimit - Redis outage", () => {
     const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
 
     const startedAt = Date.now();
-    const allowed = await checkAuthRateLimit({
-      headers: new Headers({ "x-forwarded-for": "203.0.113.9" }),
-    });
+    const allowed = await allowAuthAttempt("sign-in", from("203.0.113.9"), address());
     const elapsed = Date.now() - startedAt;
 
     expect(allowed).toBe(true);
     expect(elapsed).toBeLessThan(2_000);
+    expect(logError).toHaveBeenCalled();
+    logError.mockRestore();
+  });
+
+  it("does not hold a refused password's answer either", async () => {
+    hangNextLimit = true;
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
+
+    const startedAt = Date.now();
+    await recordSignInFailure(from("203.0.113.10"), address());
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000);
     expect(logError).toHaveBeenCalled();
     logError.mockRestore();
   });

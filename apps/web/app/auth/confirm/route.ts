@@ -6,7 +6,6 @@ import { authRedirectSchema } from "@cyberlearn/types";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { RECOVERY_GRANT_COOKIE, RECOVERY_GRANT_MAX_AGE_SECONDS } from "@/lib/auth/recovery-grant";
-import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "signup",
@@ -41,9 +40,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const requestedRoute =
     authRedirectSchema.safeParse(searchParams.get("next") ?? "/dashboard").data ?? "/dashboard";
 
-  if (!(await checkAuthRateLimit(request))) {
-    return NextResponse.redirect(new URL("/login?error=rate_limited", origin));
-  }
+  // No rate limit here: the token is single-use and verifyOtp refuses a wrong
+  // one, while a per-IP budget made a class clicking its confirmation links
+  // from the school's one address lock each other out.
   if (!tokenHash || !type) {
     return NextResponse.redirect(new URL("/login?error=missing_token", origin));
   }
@@ -58,7 +57,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const { error: verifyError } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
   if (verifyError) {
-    return NextResponse.redirect(new URL("/login?error=auth_failed", origin));
+    // A spent or lapsed reset link is not a sign-in link: /login says so, and
+    // offers a new one.
+    const code = type === "recovery" ? "recovery_expired" : "auth_failed";
+    return NextResponse.redirect(new URL(`/login?error=${code}`, origin));
   }
 
   const {
