@@ -41,7 +41,7 @@ function text(value: unknown): string | undefined {
 export function extractLessonExercises(mdx: string): LessonExercise[] {
   let tree: MdNode;
   try {
-    tree = processor.parse(stripFrontmatter(mdx)) as unknown as MdNode;
+    tree = processor.parse(stripFrontmatter(mdx));
   } catch {
     return [];
   }
