@@ -1,7 +1,9 @@
 "use client";
 
 import "@xterm/xterm/css/xterm.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { NetworkMachineContext } from "@/lib/linux-terminal/network-context";
+import type { NetworkEndpoint } from "@/lib/linux-terminal/network";
 import { z } from "zod";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import {
@@ -125,8 +127,9 @@ export type LinuxTerminalProps = z.input<typeof propsSchema>;
 
 // ── The emulator, as much of it as this component uses ───────────────────────
 
-interface V86Emulator {
+interface V86Emulator extends NetworkEndpoint {
   add_listener(event: "serial0-output-byte", listener: (byte: number) => void): void;
+  add_listener(event: "net0-send", listener: (frame: Uint8Array) => void): void;
   serial0_send(data: string): void;
   create_file(path: string, data: Uint8Array): Promise<void>;
   /** Rejects for a directory as for a missing path. */
@@ -305,6 +308,9 @@ const PHASE_LABEL: Record<Phase, string> = {
 };
 
 export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement {
+  const networkMachine = useContext(NetworkMachineContext);
+  const networkMachineRef = useRef(networkMachine);
+  const detachNetworkRef = useRef<(() => void) | null>(null);
   const parsed = propsSchema.safeParse(rawProps);
   const props = parsed.success ? parsed.data : {};
   const title = props.title ?? "Linux · root@cyberlearn";
@@ -378,7 +384,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     (emulator: V86Emulator, term: TerminalType) => {
       const decoder = new TextDecoder();
       let tail = "";
-      let stage: "boot" | "setup" | "devtools" | "live" = "boot";
+      let stage: "boot" | "setup" | "devtools" | "network" | "live" = "boot";
       let pending: number[] = [];
       let flushing = false;
       // The live output, decoded, to see the prompt come back: that is when
@@ -409,6 +415,20 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         ]);
         if (bashBytes) await emulator.create_file(BASH_FILE, bashBytes);
         if (bashBytes && terminfo) await emulator.create_file(TERMINFO_FILE, terminfo);
+        if (networkMachineRef.current) {
+          if (!bashBytes) throw new Error("SSH lab requires bash");
+          const response = await fetch(`${RUNTIME}/network-tools.tar.gz`);
+          if (!response.ok || !response.body) throw new Error("SSH runtime unavailable");
+          const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+          const archive = new Uint8Array(await new Response(stream).arrayBuffer());
+          await emulator.create_file(".network-tools.tar", archive);
+          stage = "network";
+          // Only the fixed guest script supplied by TwoMachineLab is executed.
+          emulator.serial0_send(
+            `${installBashCommand(terminfo !== null)}; tar xf /mnt/.network-tools.tar -C / && rm /mnt/.network-tools.tar && sh /mnt/lab-setup.sh && printf 'CL_NETWORK_READY\\n'\n`,
+          );
+          return;
+        }
         stage = "live";
         setPhase("ready");
         term.focus();
@@ -460,6 +480,17 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         }
         tail = (tail + decoder.decode(new Uint8Array([byte]), { stream: true })).slice(-200);
         if (!endsWithPrompt(tail)) return;
+        if (stage === "network") {
+          if (!tail.includes("CL_NETWORK_READY\r\n")) {
+            setPhase("error");
+            return;
+          }
+          stage = "live";
+          setPhase("ready");
+          term.focus();
+          emulator.serial0_send("clear\n");
+          return;
+        }
         tail = "";
         if (stage === "boot") {
           stage = "setup";
@@ -565,6 +596,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         autostart: true,
       });
       emulatorRef.current = emulator;
+      const machine = networkMachineRef.current;
+      if (machine) detachNetworkRef.current = machine.network.attach(machine.role, emulator);
       prepare(emulator, term);
     } catch {
       setPhase("error");
@@ -572,6 +605,8 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   }, [prepare]);
 
   const stop = useCallback((): void => {
+    detachNetworkRef.current?.();
+    detachNetworkRef.current = null;
     const emulator = emulatorRef.current;
     emulatorRef.current = null;
     if (emulator) void emulator.destroy().catch(() => undefined);

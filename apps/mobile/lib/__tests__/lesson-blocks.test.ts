@@ -183,6 +183,22 @@ flowchart LR
     ]);
   });
 
+  it("replaces TwoMachineLab with a desktop-only placeholder card", () => {
+    const lesson = parseLesson(`
+## Réseau isolé
+
+<TwoMachineLab id="blueteam-13-two-machine-lab" />
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "placeholder",
+        label:
+          "Deux machines Linux reliées : scan, SSH et élévation de privilèges. Ouvre cette leçon sur le site depuis un ordinateur pour réaliser le lab ; les consignes et la correction restent lisibles ici.",
+      },
+    ]);
+  });
+
   it("shows the code of a playground written as starterCode", () => {
     const lesson = parseLesson(
       [

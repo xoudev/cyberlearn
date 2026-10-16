@@ -663,6 +663,24 @@ tourne sur nos serveurs.
 
 ---
 
+### 5.4c TwoMachineLab - Deux machines Linux reliées
+
+Deux vraies machines Linux (`attackbox` en `10.77.0.1` et `app01` en `10.77.0.2`) reliées par un câble Ethernet en mémoire dans l'onglet : scan de ports, connexion SSH (Dropbear) et élévation de privilèges par binaire `setuid`.
+
+```mdx
+<TwoMachineLab id="two-machines-1" />
+```
+
+| Prop | Rôle |
+| --- | --- |
+| `id` | Identifiant unique de l'exercice dans la leçon (obligatoire, 1 à 80 caractères) |
+
+- Chaque machine installe un paquet SSH léger (`network-tools.tar.gz` : `dropbear`, `dbclient`, `dropbearkey`) au démarrage et configure son interface `eth0` sans passerelle par défaut ni accès extérieur.
+- Les preuves sont vérifiées dans `/mnt/proofs/user.txt` et `/mnt/proofs/root.txt` sur `app01`.
+- Sur l'app mobile, une fiche renvoie au site pour réaliser le lab (voir `docs/MOBILE_PARITY.md`).
+
+---
+
 ### 5.5 LessonVideo - Vidéo pédagogique
 
 Intègre une vidéo hébergée sur Supabase Storage (ou toute URL `.mp4`/`.webm`).

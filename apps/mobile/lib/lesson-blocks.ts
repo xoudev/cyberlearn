@@ -999,6 +999,13 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
   // docs/MOBILE_PARITY.md). Here it reads as the same card, the commands and
   // hints the lesson asks for, so the lesson still says what to practise.
   text = text.replace(/<LinuxTerminal[\s\S]*?\/>/g, terminalToBlock);
+  text = replaceSelfClosing(text, "TwoMachineLab", () =>
+    put({
+      kind: "placeholder",
+      label:
+        "Deux machines Linux reliées : scan, SSH et élévation de privilèges. Ouvre cette leçon sur le site depuis un ordinateur pour réaliser le lab ; les consignes et la correction restent lisibles ici.",
+    }),
+  );
   // Diagram → its caption and the diagram told in words: the drawing is the
   // site's (docs/MOBILE_PARITY.md). Self-closing first: it has no source, and
   // the paired pattern would otherwise run on to the next </Diagram>.

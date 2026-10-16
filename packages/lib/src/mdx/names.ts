@@ -11,6 +11,7 @@ export const LESSON_COMPONENT_NAMES = [
   "CodePlayground",
   "SimulatedTerminal",
   "LinuxTerminal",
+  "TwoMachineLab",
   "LessonVideo",
   "LessonImage",
   "ExternalLink",

@@ -391,6 +391,12 @@ Installé avec le bit setuid par le ticket 482, pour que le support le lance san
 
 Cinq corrections, cinq contrôles qui ne trouvent plus rien. C'est cela, la vérification : on ne croit pas que c'est corrigé, on rejoue ce qui avait trouvé la faiblesse. Il reste, dans la vraie vie, ce que la machine ne peut pas vérifier : le mot de passe de la base doit être renouvelé, l'historique purgé, la copie supprimée du rebond, et, si un autre compte doit lire les sauvegardes, un groupe dédié plutôt qu'un `777`.
 
+## deux machines reliées : du rebond à la cible
+
+Dans un audit interne, les deux rôles se jouent souvent entre deux machines distinctes : un poste d'audit (`attackbox`, `10.77.0.1`) et le serveur audité (`app01`, `10.77.0.2`), reliés sur le même segment réseau isolé. Démarre les deux machines ci-dessous, lis `/mnt/mission.txt` sur `attackbox`, ouvre une session SSH vers `app01` avec le compte de maintenance fourni, repère le binaire `setuid` laissé dans `/usr/local/bin/backup` et dépose les deux preuves dans `/mnt/proofs/user.txt` et `/mnt/proofs/root.txt` sur `app01`.
+
+<TwoMachineLab id="blueteam-13-two-machine-lab" />
+
 ## les pièges
 
 - **Corriger pendant l'audit.** Tu détruis la preuve, tu casses peut-être un service que personne n'a prévenu, et tu ne sais plus ce qui était réglé avant toi. L'auditeur constate, l'administrateur corrige.
