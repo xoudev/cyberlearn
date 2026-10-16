@@ -174,3 +174,16 @@ describe("FriendsPanel rows", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible pour l'instant/);
   });
 });
+
+describe("FriendsPanel loading", () => {
+  it("says a failed load in the panel, instead of throwing to the site's error screen", async () => {
+    m.getFriendsAction.mockRejectedValueOnce(new Error("db down"));
+    render(<FriendsPanel initialRequestCount={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Chargement impossible/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+    expect(await screen.findByText("Alex")).toBeTruthy();
+    expect(screen.queryByText(/Chargement impossible/)).toBeNull();
+  });
+});

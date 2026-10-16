@@ -190,3 +190,32 @@ describe("NotificationPanel rows", () => {
     expect(screen.getByText("Déjà lue")).toBeTruthy();
   });
 });
+
+describe("NotificationPanel failures", () => {
+  it("says a failed load in the panel, instead of throwing to the site's error screen", async () => {
+    m.getNotificationsAction.mockRejectedValueOnce(new Error("db down"));
+    render(<NotificationPanel initialUnreadCount={2} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "2 notifications non lues" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Chargement impossible/);
+    // Not "nothing to read": nothing could be read.
+    expect(screen.queryByText("Aucune notification")).toBeNull();
+  });
+
+  it("keeps the notices unread when marking them all fails, and says so", async () => {
+    m.markAllNotificationsReadAction.mockRejectedValueOnce(new Error("network"));
+    await openPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Tout lire" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible de tout marquer/);
+    expect(screen.getByRole("button", { name: "2 notifications non lues" })).toBeTruthy();
+  });
+
+  it("leaves a notice unread when marking it fails, without an error screen", async () => {
+    m.markNotificationReadAction.mockRejectedValueOnce(new Error("network"));
+    await openPanel();
+    fireEvent.click(screen.getByRole("button", { name: /Maintenance ce soir/ }));
+    await vi.waitFor(() => {
+      expect(m.markNotificationReadAction).toHaveBeenCalled();
+    });
+    expect(screen.getByRole("button", { name: /Maintenance ce soir/ })).toBeTruthy();
+  });
+});
