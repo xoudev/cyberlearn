@@ -65,6 +65,17 @@ describe("progressIn", () => {
   it("has no next mission once all are done", () => {
     expect(progressIn(path("p"), new Set(["p-1", "p-2", "p-3"])).next).toBeNull();
   });
+
+  it("passes over the missions the placement test waived, as the path screen does", () => {
+    const progress = progressIn(path("p"), new Set(["p-1"]), new Set(["p-2"]));
+    expect(progress.next?.title).toBe("Trois");
+    // A waiver is not a completion: the count stays what was done.
+    expect(progress.completed).toBe(1);
+    // Only waived missions left: the first of them, rather than nothing.
+    expect(progressIn(path("p"), new Set(["p-1"]), new Set(["p-2", "p-3"])).next?.title).toBe(
+      "Deux",
+    );
+  });
 });
 
 describe("homePaths", () => {
@@ -116,6 +127,26 @@ describe("homePaths", () => {
       "p-3",
     );
     expect(resumed.leadRoute?.nodes.map((n) => n.state)).toEqual(["done", "todo", "now"]);
+  });
+
+  it("points the route and the next mission past the waived ones, as the site's dashboard", () => {
+    const result = homePaths(
+      [path("p", { status: "IN_PROGRESS" })],
+      new Set(["p-1"]),
+      NEWCOMER,
+      null,
+      new Set(["p-2"]),
+    );
+    expect(result.leadProgress?.next?.title).toBe("Trois");
+    expect(result.leadRoute?.nodes.map((n) => [n.title, n.state])).toEqual([
+      ["Un", "done"],
+      ["Deux", "todo"],
+      ["Trois", "now"],
+    ]);
+    // Nothing done yet, but placed past the first mission: the route says so.
+    const fresh = homePaths([path("p")], new Set(), NEWCOMER, null, new Set(["p-1"]));
+    expect(fresh.leadProgress).toBeNull();
+    expect(fresh.leadRoute?.nodes.map((n) => n.state)).toEqual(["todo", "now", "todo"]);
   });
 });
 

@@ -17,6 +17,7 @@ import {
   CATALOGUE_PATH,
   leaderboardRepository,
   PUBLISHED_PATH_LESSON,
+  lessonRepository,
   pathsVisibleTo,
   prisma,
   reviewRepository,
@@ -211,21 +212,25 @@ async function DashboardContent(): Promise<React.ReactElement> {
       })
     : null;
   const leadLessonIds = leadDetail?.lessons.map((pl) => pl.lesson.id) ?? [];
-  const completedInLead = new Set(
+  // And which the placement test waived: the mission passes over them, as
+  // "Commencer" on the path's page does. (An empty list costs no query.)
+  const [completedInLead, waivedInLead] = await Promise.all([
     leadLessonIds.length > 0
-      ? (
-          await prisma.userLessonProgress.findMany({
+      ? prisma.userLessonProgress
+          .findMany({
             where: { userId: authUser.id, status: "COMPLETED", lessonId: { in: leadLessonIds } },
             select: { lessonId: true },
           })
-        ).map((row) => row.lessonId)
-      : [],
-  );
+          .then((rows) => new Set(rows.map((row) => row.lessonId)))
+      : new Set<string>(),
+    lessonRepository.findWaivedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
+  ]);
 
   const resume = inProgressRows[0]?.lesson ?? null;
   const mission = planMission({
     lead: lead && leadDetail ? { ...lead, ...leadDetail } : null,
     completedInLead,
+    waivedInLead,
     resume,
   });
 
@@ -363,18 +368,23 @@ interface ResumeLesson {
  * What the card offers.
  *
  * A lesson left open wins: it is what the reader was doing. Otherwise the next
- * lesson of the path that leads. A path with nothing left offers its page, for
- * the exam; a reader with no path at all is sent to choose one. The route
+ * lesson of the path that leads, passing over the ones the placement test
+ * waived (`nextLesson`, the rule the path page and the app's home tab read
+ * too). A path with nothing left offers its page, for the exam; a reader with
+ * no path at all is sent to choose one. The route
  * beside the text is always the leading path's module, centred on the lesson
  * offered when it belongs to that path.
  */
 function planMission({
   lead,
   completedInLead,
+  waivedInLead,
   resume,
 }: {
   lead: LeadPath | null;
   completedInLead: ReadonlySet<string>;
+  /** The lead's lessons waived by the placement test. */
+  waivedInLead: ReadonlySet<string>;
   resume: ResumeLesson | null;
 }): MissionCardProps {
   const minutesAndXp = (lesson: { estimatedMinutes: number; xpReward: number }): string =>
@@ -387,13 +397,24 @@ function planMission({
       title: pl.lesson.title,
       moduleId: pl.moduleId,
     }));
-    const route = moduleRoute(routeLessons, lead.modules, completedInLead, resume?.id ?? null);
+    const route = moduleRoute(
+      routeLessons,
+      lead.modules,
+      completedInLead,
+      resume?.id ?? null,
+      waivedInLead,
+    );
     const path = {
       completed: completedInLead.size,
       total: routeLessons.length,
       href: `/paths/${lead.slug}`,
     };
-    const current = currentLessonId(routeLessons, completedInLead, resume?.id ?? null);
+    const current = currentLessonId(
+      routeLessons,
+      completedInLead,
+      resume?.id ?? null,
+      waivedInLead,
+    );
     const resumeInLead = resume !== null && routeLessons.some((l) => l.id === resume.id);
     const lesson = resume ?? lead.lessons.find((pl) => pl.lesson.id === current)?.lesson ?? null;
 

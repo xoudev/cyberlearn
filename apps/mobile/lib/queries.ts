@@ -202,6 +202,11 @@ export function useDashboard(userId: string | undefined) {
       // board's rules, so an account off the board read "#1". A failure leaves
       // the home screen up without a rank.
       const rankPromise = fetchMyRankApi().catch(() => null);
+      // The lessons the placement test waived, which the next mission passes
+      // over as on the site. Without the server, none: the plain rule.
+      const waivedPromise = fetchLessonAccessApi()
+        .then((access) => new Set(access.waivedLessonIds))
+        .catch(() => new Set<string>());
       const [
         meRes,
         completedRes,
@@ -280,6 +285,7 @@ export function useDashboard(userId: string | undefined) {
       if (!me) throw new Error("Profil introuvable");
 
       const rank = await rankPromise;
+      const waived = await waivedPromise;
 
       // Embeds cast via `unknown` (no generated Supabase types); `one()` handles
       // the array-or-object runtime shape.
@@ -366,6 +372,7 @@ export function useDashboard(userId: string | undefined) {
             goals: learningGoalsOf(prefsRes.data),
           },
           resume?.id ?? null,
+          waived,
         ),
         stats: {
           completedThisMonth,

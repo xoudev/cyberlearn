@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentLessonId, moduleRoute, type RouteLesson } from "../module-route";
+import { currentLessonId, moduleRoute, nextLesson, type RouteLesson } from "../module-route";
 
 const MODULES = [
   { id: "m1", position: 1, title: "Comment fonctionne un ordinateur" },
@@ -20,6 +20,29 @@ const LESSONS: RouteLesson[] = [
   lesson(7, "m2"),
 ];
 
+describe("nextLesson", () => {
+  it("is the first lesson not completed", () => {
+    expect(nextLesson(LESSONS, new Set(["l1", "l2"]))?.id).toBe("l3");
+  });
+
+  it("passes over the lessons the placement test waived", () => {
+    // A reader placed past the beginner lessons starts after them, as the
+    // path page's "Commencer" does, not at the first lesson.
+    expect(nextLesson(LESSONS, new Set(), new Set(["l1", "l2", "l3"]))?.id).toBe("l4");
+    expect(nextLesson(LESSONS, new Set(["l4"]), new Set(["l1", "l2", "l3"]))?.id).toBe("l5");
+  });
+
+  it("offers the first waived lesson when every lesson left was waived", () => {
+    const waived = new Set(["l5", "l6", "l7"]);
+    expect(nextLesson(LESSONS, new Set(["l1", "l2", "l3", "l4"]), waived)?.id).toBe("l5");
+  });
+
+  it("is null once every lesson is completed, waived or not", () => {
+    const all = new Set(LESSONS.map((l) => l.id));
+    expect(nextLesson(LESSONS, all, new Set(["l1"]))).toBeNull();
+  });
+});
+
 describe("currentLessonId", () => {
   it("keeps the lesson offered when it is in the path", () => {
     expect(currentLessonId(LESSONS, new Set(["l1"]), "l5")).toBe("l5");
@@ -29,6 +52,12 @@ describe("currentLessonId", () => {
     // A lesson resumed from a class, say: the route still has to point somewhere.
     expect(currentLessonId(LESSONS, new Set(["l1", "l2"]), "elsewhere")).toBe("l3");
     expect(currentLessonId(LESSONS, new Set(["l1", "l2"]), null)).toBe("l3");
+  });
+
+  it("skips the waived lessons when nothing is offered", () => {
+    expect(currentLessonId(LESSONS, new Set(), null, new Set(["l1", "l2"]))).toBe("l3");
+    // A lesson left open still wins, even a waived one: it is what is on screen.
+    expect(currentLessonId(LESSONS, new Set(), "l1", new Set(["l1", "l2"]))).toBe("l1");
   });
 
   it("has nothing to point at once every lesson is done", () => {
@@ -67,6 +96,15 @@ describe("moduleRoute", () => {
     // Re-reading a finished lesson: it is the one on screen, so it is "now".
     const route = moduleRoute(LESSONS, MODULES, new Set(["l1", "l2"]), "l2");
     expect(route?.nodes.map((n) => n.state)).toEqual(["done", "now", "todo"]);
+  });
+
+  it("centres on the first lesson not waived, the waived ones still to come", () => {
+    const route = moduleRoute(LESSONS, MODULES, new Set(), null, new Set(["l1", "l2", "l3"]));
+    expect(route?.label).toBe("Module 02 · Le terminal");
+    expect(route?.nodes.map((n) => n.state)).toEqual(["now", "todo", "todo", "todo"]);
+
+    const first = moduleRoute(LESSONS, MODULES, new Set(), null, new Set(["l2"]));
+    expect(first?.nodes.map((n) => n.state)).toEqual(["now", "todo", "todo"]);
   });
 
   it("returns null for an empty path", () => {
