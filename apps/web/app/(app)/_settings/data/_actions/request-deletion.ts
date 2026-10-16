@@ -8,7 +8,7 @@ import { checkAccountDeletionRequest } from "@/lib/rate-limit";
 import { requestDeletion } from "@/lib/rgpd/request-deletion";
 
 const formSchema = z.object({
-  confirmation: z.literal("SUPPRIMER", { error: "Vous devez taper SUPPRIMER pour confirmer." }),
+  confirmation: z.literal("SUPPRIMER", { error: "Tape SUPPRIMER pour confirmer." }),
 });
 
 export interface RequestDeletionState {
@@ -32,7 +32,7 @@ export async function requestDeletionAction(
   if (!rl.success) {
     const minutes = Math.ceil(rl.retryAfterSeconds / 60);
     return {
-      error: `Trop de demandes. Réessayez dans ${String(minutes)} minute${minutes > 1 ? "s" : ""}.`,
+      error: `Trop de demandes. Réessaie dans ${String(minutes)} minute${minutes > 1 ? "s" : ""}.`,
     };
   }
 
@@ -53,7 +53,7 @@ export async function requestDeletionAction(
   );
 
   if (!result.success) {
-    return { error: "Erreur lors de l'envoi. Réessayez ou contactez privacy@cyberlearn.fr." };
+    return { error: "Erreur lors de l'envoi. Réessaie, ou écris à privacy@cyberlearn.fr." };
   }
 
   // No page to revalidate: the settings drawer asks for its data again.

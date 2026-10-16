@@ -79,10 +79,10 @@ export function DeleteAccountSection({
           }}
         >
           {[
-            "Vos données personnelles (profil, préférences, progression)",
-            "Vos contributions Q&A et notes (anonymisées)",
-            "Vos logs d'audit (pseudonymisés)",
-            "Vous serez immédiatement déconnecté",
+            "Tes données personnelles (profil, préférences, progression)",
+            "Tes contributions Q&A et notes (anonymisées)",
+            "Tes logs d'audit (pseudonymisés)",
+            "Tu seras immédiatement déconnecté·e",
           ].map((item) => (
             <li
               key={item}
@@ -110,7 +110,7 @@ export function DeleteAccountSection({
             }}
           >
             <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>·</span>
-            Vos certificats restent vérifiables publiquement, mais ne portent plus votre nom
+            Tes certificats restent vérifiables publiquement, mais ne portent plus ton nom
           </li>
         </ul>
 
@@ -130,11 +130,11 @@ export function DeleteAccountSection({
             }}
           >
             <span>
-              Vous avez{" "}
+              Tu as{" "}
               <b>
                 {certificateCount} certificat{certificateCount > 1 ? "s" : ""}
               </b>
-              . Téléchargez-les avant la suppression.
+              . Télécharge-les avant la suppression.
             </span>
             <Link
               href="/certificates"
@@ -157,7 +157,7 @@ export function DeleteAccountSection({
             marginBottom: 6,
           }}
         >
-          Pour confirmer, tapez{" "}
+          Pour confirmer, tape{" "}
           <b style={{ color: "var(--color-danger)", letterSpacing: "0.12em" }}>SUPPRIMER</b>
         </label>
         <input
@@ -319,8 +319,8 @@ export function DeleteAccountSection({
             margin: "0 0 12px",
           }}
         >
-          Conformément à l&apos;article 17 du RGPD (droit à l&apos;effacement), vous pouvez
-          supprimer votre compte et toutes les données associées de manière permanente.
+          Conformément à l&apos;article 17 du RGPD (droit à l&apos;effacement), tu peux supprimer
+          ton compte et toutes les données associées de manière permanente.
         </p>
 
         {/* Info / status row */}
@@ -340,7 +340,7 @@ export function DeleteAccountSection({
           {isPending ? (
             <>
               <span style={{ color: "var(--color-danger)" }}>
-                Email envoyé · vérifiez votre boite de réception
+                E-mail envoyé · regarde ta boîte de réception
               </span>
               <span style={{ color: "var(--color-border-subtle)" }}>·</span>
               <span>

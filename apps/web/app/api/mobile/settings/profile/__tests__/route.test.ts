@@ -54,10 +54,10 @@ describe("POST /api/mobile/settings/profile", () => {
   });
 
   it("passes missing fields as nothing, and relays a refusal with 409", async () => {
-    m.updateProfileFor.mockResolvedValue({ error: "Profil invalide. Vérifiez les champs." });
+    m.updateProfileFor.mockResolvedValue({ error: "Profil invalide. Vérifie les champs." });
     const res = await POST(post(JSON.stringify({})));
     expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ ok: false, error: "Profil invalide. Vérifiez les champs." });
+    expect(await res.json()).toEqual({ ok: false, error: "Profil invalide. Vérifie les champs." });
     expect(m.updateProfileFor).toHaveBeenCalledWith("user-1", {
       displayName: null,
       bio: null,

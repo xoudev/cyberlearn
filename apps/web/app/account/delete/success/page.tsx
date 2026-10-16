@@ -171,8 +171,8 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
               margin: "0 0 10px",
             }}
           >
-            Votre compte a été supprimé conformément à votre demande. Merci d&apos;avoir utilisé
-            Cyber Learn.
+            Ton compte a été supprimé, comme tu l&apos;as demandé. Merci d&apos;avoir utilisé Cyber
+            Learn.
           </p>
 
           <p
@@ -183,8 +183,8 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
               margin: "0 0 24px",
             }}
           >
-            Vos certificats restent vérifiables publiquement à leur URL d&apos;origine, mais ne
-            portent plus votre nom.
+            Tes certificats restent vérifiables publiquement à leur URL d&apos;origine, mais ne
+            portent plus ton nom.
           </p>
 
           {/* Info row */}
