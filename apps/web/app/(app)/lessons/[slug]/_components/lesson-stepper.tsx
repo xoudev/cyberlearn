@@ -42,14 +42,14 @@ function exerciseReducer(state: ExerciseState, action: ExerciseAction): Exercise
       return { ...state, required: cloneMap(state.required).set(action.step, req) };
     }
     case "unregister": {
+      // Only the requirement goes: what was done stays done, for the whole
+      // page. A section off screen is unmounted, and a Python challenge or a
+      // playground comes back without its result: forgetting that it was
+      // done held the section again, behind an exercise already passed.
       const req = cloneSet(state.required.get(action.step));
-      const done = cloneSet(state.done.get(action.step));
+      if (!req.has(action.id)) return state;
       req.delete(action.id);
-      done.delete(action.id);
-      return {
-        required: cloneMap(state.required).set(action.step, req),
-        done: cloneMap(state.done).set(action.step, done),
-      };
+      return { ...state, required: cloneMap(state.required).set(action.step, req) };
     }
     case "done": {
       const done = cloneSet(state.done.get(action.step));
@@ -104,6 +104,9 @@ export function LessonStepper({
   const [doneSteps, setDoneSteps] = useState<ReadonlySet<number>>(() =>
     isCompleted ? new Set(Array.from({ length: totalSteps }, (_el, i) => i)) : new Set<number>(),
   );
+  // The furthest section the reader has had on screen: going back from it
+  // with "Précédente" leaves it open in the plan, where it used to shut.
+  const [furthestStep, setFurthestStep] = useState(0);
   const [exerciseState, dispatchExercise] = useReducer(exerciseReducer, {
     required: new Map<number, Set<string>>(),
     done: new Map<number, Set<string>>(),
@@ -200,6 +203,7 @@ export function LessonStepper({
       });
     } else if (!isLastStep) {
       setDoneSteps((prev) => new Set([...prev, currentStep]));
+      setFurthestStep((f) => Math.max(f, currentStep + 1));
       setCurrentStep((s) => s + 1);
     }
   }
@@ -211,7 +215,7 @@ export function LessonStepper({
 
   function handleJump(i: number) {
     if (i === currentStep) return;
-    if (canOpenSection(i, { currentStep, doneSteps, isCompleted, reviewing })) {
+    if (canOpenSection(i, { currentStep, doneSteps, furthestStep, isCompleted, reviewing })) {
       setCurrentStep(i);
     }
   }
@@ -225,6 +229,7 @@ export function LessonStepper({
         currentStep={currentStep}
         totalSteps={totalSteps}
         doneSteps={doneSteps}
+        furthestStep={furthestStep}
         isCompleted={isCompleted}
         reviewing={reviewing}
         canAdvance={canAdvance}

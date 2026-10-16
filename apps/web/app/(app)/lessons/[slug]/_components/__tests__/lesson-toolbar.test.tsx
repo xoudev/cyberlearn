@@ -240,4 +240,11 @@ describe("canOpenSection", () => {
   it("opens anything in an administrator's preview", () => {
     expect(canOpenSection(4, { ...at, reviewing: true })).toBe(true);
   });
+
+  it("opens a section reached before, after going back from it", () => {
+    const back = { currentStep: 0, doneSteps: new Set([0]), isCompleted: false, furthestStep: 2 };
+    expect(canOpenSection(1, back)).toBe(true);
+    expect(canOpenSection(2, back)).toBe(true);
+    expect(canOpenSection(3, back)).toBe(false);
+  });
 });

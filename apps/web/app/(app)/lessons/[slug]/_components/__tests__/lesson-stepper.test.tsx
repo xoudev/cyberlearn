@@ -172,6 +172,34 @@ describe("what keeps the reader in a section", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  it("keeps an exercise done when the reader comes back to its section", () => {
+    // The section is unmounted off screen, and a Python challenge comes back
+    // without its result: "Précédente" used to hold the section again.
+    render(<Lesson withExercise />);
+    fireEvent.click(screen.getByRole("button", { name: "Réussir" }));
+    fireEvent.click(next());
+    fireEvent.click(screen.getByRole("button", { name: "Section précédente" }));
+    expect(screen.getByText("Première section")).toBeTruthy();
+    expect(next().disabled).toBe(false);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("leaves the section the reader went back from open in the plan", () => {
+    render(<Lesson />);
+    fireEvent.click(next());
+    fireEvent.click(screen.getByRole("button", { name: "Section précédente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Plan de la leçon" }));
+    const plan = screen.getByRole("dialog", { name: "Plan de la leçon" });
+    const second = within(plan).getByRole<HTMLButtonElement>("button", { name: /Deuxième/ });
+    expect(second.disabled).toBe(false);
+    // Not one never reached.
+    expect(
+      within(plan).getByRole<HTMLButtonElement>("button", { name: /Troisième/ }).disabled,
+    ).toBe(true);
+    fireEvent.click(second);
+    expect(screen.getByText("Deuxième section")).toBeTruthy();
+  });
+
   it("lets a finished lesson be read in any order", () => {
     render(<Lesson isCompleted withExercise />);
     expect(next().disabled).toBe(false);

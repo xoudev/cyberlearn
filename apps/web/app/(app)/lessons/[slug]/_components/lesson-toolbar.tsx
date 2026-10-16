@@ -15,6 +15,12 @@ import { NoteDrawer } from "./note-drawer";
 export interface SectionProgress {
   currentStep: number;
   doneSteps: ReadonlySet<number>;
+  /**
+   * The furthest section the reader has had on screen. Going back from it
+   * with "Précédente" used to shut it in the plan: it was neither behind the
+   * section on screen nor marked done.
+   */
+  furthestStep?: number;
   isCompleted: boolean;
   /** An administrator's preview: nothing to earn, so nothing is held shut. */
   reviewing?: boolean;
@@ -22,15 +28,17 @@ export interface SectionProgress {
 
 /**
  * Whether the reader may open a section other than the one on screen: one
- * they have finished or already passed, or any once the lesson is done, or
- * any in an administrator's preview. A section ahead stays shut until the ones
- * before it are read, so that their exercises are not skipped.
+ * they have finished, passed or already reached, or any once the lesson is
+ * done, or any in an administrator's preview. A section ahead stays shut
+ * until the ones before it are read, so that their exercises are not skipped.
  */
 export function canOpenSection(
   index: number,
-  { currentStep, doneSteps, isCompleted, reviewing = false }: SectionProgress,
+  { currentStep, doneSteps, furthestStep = 0, isCompleted, reviewing = false }: SectionProgress,
 ): boolean {
-  return isCompleted || reviewing || index < currentStep || doneSteps.has(index);
+  return (
+    isCompleted || reviewing || index < currentStep || index <= furthestStep || doneSteps.has(index)
+  );
 }
 
 /** What holds the reader in a section: the toolbar's "next" and the end of the section say it. */
@@ -81,6 +89,7 @@ export function LessonToolbar({
   currentStep,
   totalSteps,
   doneSteps,
+  furthestStep = 0,
   isCompleted,
   reviewing = false,
   canAdvance,
@@ -106,7 +115,7 @@ export function LessonToolbar({
   const pendingNotice = !canAdvance && pendingCount > 0 ? pendingMessage(pendingCount) : undefined;
   const sectionName = sections[currentStep]?.text ?? "";
   const progress = `${String(((currentStep + 1) / totalSteps) * 100)}%`;
-  const progressState = { currentStep, doneSteps, isCompleted, reviewing };
+  const progressState = { currentStep, doneSteps, furthestStep, isCompleted, reviewing };
 
   return (
     <>
