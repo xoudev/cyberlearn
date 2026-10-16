@@ -1,5 +1,6 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { PROTECTED_ROUTE_PREFIXES } from "@/lib/protected-routes";
 import { REQUEST_ID_HEADER, requestIdFor } from "@/lib/request-id";
 
 // ─── Security headers (ADR-002) ────────────────────────────────────────────
@@ -188,28 +189,6 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/apple-icon.png"
   );
 }
-
-const PROTECTED_ROUTE_PREFIXES = [
-  "/dashboard",
-  "/lessons",
-  "/paths",
-  "/challenges",
-  "/review",
-  "/revisions",
-  "/notes",
-  "/badges",
-  "/certificates",
-  "/forum",
-  "/leaderboard",
-  "/locker",
-  "/my-class",
-  "/profile",
-  "/support",
-  "/wrapped",
-  "/duels",
-  "/tournaments",
-  "/onboarding",
-] as const;
 
 export function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTE_PREFIXES.some(

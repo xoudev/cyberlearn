@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { pageAddress } from "@/app/page-metadata";
 
 export const metadata: Metadata = {
   title: "Conditions Générales d’Utilisation",
+  ...pageAddress("/legal/terms"),
 };
 
 const EFFECTIVE_DATE = "1er janvier 2025";

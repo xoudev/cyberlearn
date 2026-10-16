@@ -19,6 +19,7 @@ import { getRequestUser } from "@/lib/auth";
 import { scopedCosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { pageAddress } from "@/app/page-metadata";
 import { AvatarView } from "@/components/avatar-view";
 import { CopyButton } from "@/components/copy-button";
 import { Crumb } from "@/components/crumb";
@@ -35,7 +36,14 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  return { title: `@${username}` };
+  // From the address alone: no lookup, so a private profile gives away
+  // nothing more than the address already does. The preview is the shared
+  // link's, not the home page's.
+  return {
+    title: `@${username}`,
+    description: `Le profil de @${username} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
+    ...pageAddress(`/u/${encodeURIComponent(username)}`),
+  };
 }
 
 // ── Shared bits ───────────────────────────────────────────────────────────────

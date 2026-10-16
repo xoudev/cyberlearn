@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PublicNavbar } from "@/app/_components/public-navbar";
+import { pageAddress } from "@/app/page-metadata";
 import { env } from "@/lib/env";
+import { availabilityLine, installIntro } from "./availability";
 import "./download.css";
 
 export const metadata: Metadata = {
   title: "Télécharger l'application",
   description:
     "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
-  alternates: { canonical: "/download" },
+  ...pageAddress("/download"),
 };
 
 function AndroidIcon(): React.JSX.Element {
@@ -180,7 +182,7 @@ function MobileAppPreview(): React.JSX.Element {
       </div>
       <figcaption>
         <span>Écran d’accueil</span>
-        <span>Application Android · v2.3</span>
+        <span>Application Android</span>
       </figcaption>
     </figure>
   );
@@ -191,6 +193,7 @@ export default function DownloadPage(): React.JSX.Element {
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
   const iosAppStoreUrl = env.NEXT_PUBLIC_IOS_APP_STORE_URL;
   const androidAvailable = Boolean(androidPlayUrl ?? androidApkUrl);
+  const stores = { android: androidAvailable, iosAppStore: Boolean(iosAppStoreUrl) };
   const androidNotifyUrl =
     "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
 
@@ -203,7 +206,7 @@ export default function DownloadPage(): React.JSX.Element {
           <div className="download-hero__copy">
             <div className="download-kicker">
               <span aria-hidden="true" />
-              <b>{androidAvailable ? "v2.3" : "Aperçu"}</b> · Application mobile · Android
+              <b>{androidAvailable ? "Disponible" : "Aperçu"}</b> · Application mobile · Android
             </div>
             <h1 id="download-title">
               Tout CyberLearn,
@@ -232,7 +235,7 @@ export default function DownloadPage(): React.JSX.Element {
             </div>
             <p className="download-hero__availability">
               <span aria-hidden="true" />
-              Publication Android en cours · Web app disponible sur iPhone
+              {availabilityLine(stores)}
             </p>
           </div>
 
@@ -244,11 +247,11 @@ export default function DownloadPage(): React.JSX.Element {
         <dl className="download-stats" aria-label="Informations sur l’application">
           <div>
             <dt>Android</dt>
-            <dd>Application native</dd>
+            <dd>{androidAvailable ? "Application native" : "Publication en cours"}</dd>
           </div>
           <div>
             <dt>iPhone</dt>
-            <dd>Web app installable</dd>
+            <dd>{iosAppStoreUrl ? "Application native" : "Web app installable"}</dd>
           </div>
           <div>
             <dt>Compte</dt>
@@ -340,10 +343,7 @@ export default function DownloadPage(): React.JSX.Element {
               03 · Installation
             </p>
             <h2 id="install-title">Choisis ton téléphone.</h2>
-            <p>
-              Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis
-              Safari.
-            </p>
+            <p>{installIntro(stores)}</p>
           </div>
 
           <div className="download-install__layout">

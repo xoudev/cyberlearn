@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { pageAddress } from "@/app/page-metadata";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
+  ...pageAddress("/legal"),
 };
 
 const UPDATE_DATE = "23/05/2026";

@@ -1,13 +1,12 @@
 import React from "react";
-import { PublicNavbar } from "@/app/_components/public-navbar";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import "@/app/(app)/paths/_components/paths-catalog-v2.css";
 import "./catalogue.css";
 
 /**
- * The public catalogue while it loads, drawn on the page's own classes
- * (catalogue.css and the paths' paths-catalog-v2.css): the public navbar,
- * which is static and drawn as is, the crumb, the hero and its two counts,
+ * The catalogue while it loads, drawn on the page's own classes (catalogue.css
+ * and the paths' paths-catalog-v2.css), inside the frame the layout draws (the
+ * app's shell, or the public navbar): the crumb, the hero and its two counts,
  * the category pills and the search box, the result count, and six path cards
  * (.pc2-discover of .game-card: cover, title, description, stats, button).
  */
@@ -37,10 +36,8 @@ function PathCardSkeleton({ title }: { title: string }): React.ReactElement {
 
 export default function CatalogueLoading(): React.ReactElement {
   return (
-    <div className="public-catalogue" aria-busy="true" aria-label="Chargement du catalogue">
-      <PublicNavbar />
-
-      <main className="public-catalogue__main" aria-hidden="true">
+    <div className="public-catalogue__main" aria-busy="true" aria-label="Chargement du catalogue">
+      <div aria-hidden="true">
         <div className="public-catalogue__crumb">
           <Skeleton w={210} h={10} style={{ margin: "2px 0" }} />
         </div>
@@ -121,7 +118,7 @@ export default function CatalogueLoading(): React.ReactElement {
             ))}
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }
