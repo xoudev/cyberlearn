@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authoredEnum } from "./authored-enum.js";
 import { lessonRefCodeSchema } from "./ref-code.schema.js";
 
 export const importLessonMetadataSchema = z.object({
@@ -10,8 +11,8 @@ export const importLessonMetadataSchema = z.object({
     .max(100),
   title: z.string().trim().min(3).max(200),
   description: z.string().trim().min(10).max(500),
-  category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
-  difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
+  category: authoredEnum(["DEV", "CYBERSEC", "NETWORK"]),
+  difficulty: authoredEnum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.number().int().positive().max(600),
   xpReward: z.number().int().nonnegative().max(10000),
   coverImageUrl: z.url().nullable().optional(),

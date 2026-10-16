@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -179,6 +180,20 @@ describe("lessonSyncOverview", () => {
       { file: "a.mdx", refCode: "CL-LSN-001-V01", title: "Listes et tuples" },
     ]);
     expect(o.unreadable[0]?.file).toBe("b.mdx");
+  });
+
+  it("says which values a category it cannot read may take", async () => {
+    // As the console's instrumentation sets it, wording an enum for a form.
+    configureZodLocale();
+    write("a.mdx", file("CL-LSN-001-V01").replace("category: DEV", "category: SECURITY"));
+    m.findMany.mockResolvedValue([]);
+    const o = await lessonSyncOverview(dir);
+    expect(o.unreadable).toEqual([
+      {
+        file: "a.mdx",
+        message: "Frontmatter invalide : category Valeur attendue : DEV, CYBERSEC ou NETWORK.",
+      },
+    ]);
   });
 
   it("reads every lesson of the repository: one it cannot read is never imported", async () => {

@@ -57,6 +57,7 @@ function ownMessage(issue: RawIssue): string | undefined {
       return invalidFormat(issue);
     case "invalid_value":
       // An enum's values are the code's, not the learner's: never list them.
+      // A file written by hand names them itself (schemas/authored-enum.ts).
       return issue.values.length > 1 ? "Choisis une des options proposées." : "Valeur invalide.";
     case "not_multiple_of":
     case "unrecognized_keys":

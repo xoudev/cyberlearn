@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { authoredEnum } from "./authored-enum.js";
 import { challengeMachineSchema } from "./challenge-machine.schema.js";
 
 /**
@@ -32,15 +33,15 @@ export const challengeFileSchema = z
     description: z.string().trim().min(1).max(1000),
     /** Markdown, shown above the machine. */
     instructions: z.string().trim().min(1).max(20_000),
-    category: z.enum(["CYBERSEC", "DEV", "NETWORK"]),
-    difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
+    category: authoredEnum(["CYBERSEC", "DEV", "NETWORK"]),
+    difficulty: authoredEnum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
     // Kept modest: the flag is the learner's own, but the machine is in their
     // browser, and a determined learner can read it there.
     xpReward: z.number().int().min(1).max(300),
     maxAttempts: z.number().int().min(1).max(100),
     orderIndex: z.number().int().min(0),
     /** The refCode of a challenge to solve first. */
-    prerequisite: z.string().regex(CHALLENGE_REF_CODE).optional(),
+    prerequisite: z.string().regex(CHALLENGE_REF_CODE, "refCode au format CL-CHG-001").optional(),
     machine: challengeMachineSchema,
     hints: z.array(hintSchema).max(5).default([]),
   })
