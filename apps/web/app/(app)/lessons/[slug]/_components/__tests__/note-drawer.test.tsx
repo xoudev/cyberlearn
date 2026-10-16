@@ -18,7 +18,10 @@ const saveNoteAction = vi.hoisted(() =>
 );
 vi.mock("@/app/(app)/notes/_actions/note-actions", () => ({ saveNoteAction }));
 
-const { NoteDrawer, NOTES_DOCKED_QUERY, NOTE_DRAWER_WIDTH } = await import("../note-drawer");
+const { NoteDrawer, NOTES_DOCKED_QUERY, NOTE_DRAWER_WIDTH, charactersLeft } = await import(
+  "../note-drawer"
+);
+const { NOTE_CONTENT_MAX } = await import("@/lib/notes/limits");
 
 let media: MatchMediaStub;
 
@@ -97,6 +100,67 @@ describe("the note drawer", () => {
     expect(within(drawer()).getByText("3 mots · MD")).toBeTruthy();
   });
 
+  it("says a refused save failed, and saves again on demand", async () => {
+    vi.useFakeTimers();
+    saveNoteAction.mockResolvedValueOnce({ ok: false, error: "Enregistrement impossible." });
+    render(<Notes />);
+    fireEvent.change(editor(), { target: { value: "Début de note" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(within(drawer()).getByRole("status").textContent).toBe("Enregistrement impossible.");
+    expect(within(drawer()).queryByText("Sauvegardé auto")).toBeNull();
+
+    saveNoteAction.mockResolvedValueOnce({ ok: true, wordCount: 3 });
+    await act(async () => {
+      fireEvent.click(within(drawer()).getByRole("button", { name: "Réessayer" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(saveNoteAction).toHaveBeenCalledTimes(2);
+    expect(within(drawer()).getByText("Sauvegardé auto")).toBeTruthy();
+    expect(within(drawer()).queryByRole("button", { name: "Réessayer" })).toBeNull();
+  });
+
+  it("does not stay on « Enregistrement… » when the request never answers", async () => {
+    vi.useFakeTimers();
+    saveNoteAction.mockRejectedValueOnce(new Error("Failed to fetch"));
+    render(<Notes />);
+    fireEvent.change(editor(), { target: { value: "Début de note" } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(within(drawer()).getByRole("status").textContent).toBe(
+      "Enregistrement impossible. Vérifie ta connexion.",
+    );
+    expect(within(drawer()).getByRole("button", { name: "Réessayer" })).toBeTruthy();
+  });
+
+  it("stops at the server's limit, and refuses a note past it without sending it", async () => {
+    vi.useFakeTimers();
+    render(<Notes />);
+    expect(editor().maxLength).toBe(NOTE_CONTENT_MAX);
+    // A toolbar button writes past maxLength, which only stops the keyboard.
+    fireEvent.change(editor(), { target: { value: "x".repeat(NOTE_CONTENT_MAX + 2) } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(saveNoteAction).not.toHaveBeenCalled();
+    expect(within(drawer()).getByRole("status").textContent).toMatch(/^Note trop longue/);
+    expect(within(drawer()).getByText("2 caractères en trop")).toBeTruthy();
+    expect(within(drawer()).queryByRole("button", { name: "Réessayer" })).toBeNull();
+
+    // Undone back to the stored note: the failure no longer applies.
+    fireEvent.change(editor(), { target: { value: "Début" } });
+    expect(within(drawer()).getByText("Sauvegardé auto")).toBeTruthy();
+  });
+
+  it("counts the characters left near the limit only", () => {
+    render(<Notes />);
+    expect(within(drawer()).queryByText(/restants?$/)).toBeNull();
+    fireEvent.change(editor(), { target: { value: "x".repeat(NOTE_CONTENT_MAX - 1) } });
+    expect(within(drawer()).getByText("1 caractère restant")).toBeTruthy();
+  });
+
   it("keeps the note it was typing when closed and opened again", () => {
     render(<Notes />);
     fireEvent.change(editor(), { target: { value: "Encore là" } });
@@ -172,5 +236,14 @@ describe("over the page or beside it", () => {
     expect(css).toMatch(
       new RegExp(`\\.side-drawer--docked\\.lesson-notes \\{\\s*top: ${String(NAVBAR_HEIGHT)}px;`),
     );
+  });
+});
+
+describe("charactersLeft", () => {
+  it("counts down to the limit, then past it", () => {
+    expect(charactersLeft(NOTE_CONTENT_MAX - 2)).toBe("2 caractères restants");
+    expect(charactersLeft(NOTE_CONTENT_MAX - 1)).toBe("1 caractère restant");
+    expect(charactersLeft(NOTE_CONTENT_MAX)).toBe("0 caractère restant");
+    expect(charactersLeft(NOTE_CONTENT_MAX + 1)).toBe("1 caractère en trop");
   });
 });
