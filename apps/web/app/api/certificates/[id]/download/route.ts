@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
+import { certificateFilename } from "@/lib/certificates/filename";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 import { requestLogger } from "@/lib/request-logger";
@@ -12,7 +14,10 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const { id } = await params;
+  // The id column is a uuid: anything else made Postgres throw, answered 500.
+  const parsed = z.guid().safeParse((await params).id);
+  if (!parsed.success) return new Response(null, { status: 404 });
+  const id = parsed.data;
 
   // getUser() validates the JWT server-side; getSession() only reads the cookie
   const supabase = await getSupabaseServerClient();
@@ -36,11 +41,7 @@ export async function GET(
     return new Response(null, { status: 404 });
   }
 
-  const safeTitle = cert.path.title
-    .replace(/[^a-zA-Z0-9 \-_]/g, "")
-    .trim()
-    .slice(0, 80);
-  const filename = safeTitle ? `CyberLearn - ${safeTitle}.pdf` : "CyberLearn - Certificate.pdf";
+  const filename = certificateFilename(cert.path.title);
 
   const adminClient = createSupabaseAdminClient();
   const { data, error } = await adminClient.storage
