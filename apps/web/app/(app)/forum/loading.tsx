@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 import { ForumHeaderSkeleton, TopicRowSkeleton } from "./_components/forum-skeleton";
 import "./forum.css";
 

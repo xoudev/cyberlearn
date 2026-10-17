@@ -13,7 +13,13 @@ import { stubMatchMedia } from "@/test/match-media";
  * previous one had ended, halfway down or past its end.
  */
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+/** The address's query as Next's useSearchParams reads it. */
+const nav = vi.hoisted(() => ({ search: "" }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(nav.search),
+}));
 vi.mock("../../_actions/track-progress", () => ({ completeLesson: vi.fn() }));
 vi.mock("@/app/(app)/notes/_actions/note-actions", () => ({ saveNoteAction: vi.fn() }));
 vi.mock("@/components/ui/sidebar", () => ({
@@ -55,10 +61,12 @@ function Lesson({
   isCompleted = false,
   reviewing = false,
   withExercise = false,
+  initialStep = 0,
 }: {
   isCompleted?: boolean;
   reviewing?: boolean;
   withExercise?: boolean;
+  initialStep?: number;
 }): React.ReactElement {
   return (
     <LessonStepper
@@ -68,12 +76,14 @@ function Lesson({
       isCompleted={isCompleted}
       reviewing={reviewing}
       sections={SECTIONS}
+      initialStep={initialStep}
       note={{ content: "", wordCount: 0 }}
       planExtra={<p>Écrit par Ada</p>}
     >
       {SECTIONS.map((s, i) => (
         <SectionPane key={s.id} index={i}>
           <p>{s.text} section</p>
+          <p id={`quiz-${s.id}`}>Question de la section</p>
           {withExercise && i === 0 && <Exercise />}
         </SectionPane>
       ))}
@@ -87,6 +97,8 @@ let reducedMotion = false;
 beforeEach(() => {
   scrollIntoView.mockClear();
   reducedMotion = false;
+  nav.search = "";
+  window.history.replaceState(null, "", "/lessons/lecon");
   // jsdom implements neither.
   Element.prototype.scrollIntoView = scrollIntoView;
   stubMatchMedia((query) => query.includes("reduce") && reducedMotion);
@@ -268,5 +280,61 @@ describe("finishing the lesson", () => {
       "Termine d'abord la leçon précédente du parcours.",
     );
     expect(screen.queryByText("// leçon validée")).toBeNull();
+  });
+});
+
+describe("a passage asked for (?section=, from a review question)", () => {
+  /** Follows a link to this address: the browser's address and what Next reads of it. */
+  function follow(href: string): void {
+    window.history.replaceState(null, "", href);
+    nav.search = window.location.search;
+  }
+
+  it("opens on its section, and takes the request off the address", () => {
+    follow("/lessons/lecon?section=2#quiz-deuxieme");
+    render(<Lesson isCompleted initialStep={1} />);
+    expect(screen.getByText("Deuxième section")).toBeTruthy();
+    // Opening the lesson does not move the page: the browser lands on the question.
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("");
+    expect(window.location.hash).toBe("#quiz-deuxieme");
+  });
+
+  it("opens it again, at the question, when the same link is followed after moving on", () => {
+    follow("/lessons/lecon?section=2#quiz-deuxieme");
+    const { rerender } = render(<Lesson isCompleted initialStep={1} />);
+    // The address once the request is taken off, as Next reads it.
+    nav.search = window.location.search;
+    rerender(<Lesson isCompleted initialStep={1} />);
+    fireEvent.click(next());
+    expect(screen.getByText("Troisième section")).toBeTruthy();
+    scrollIntoView.mockClear();
+
+    // The same "Revoir ce passage", from the review window over the lesson.
+    follow("/lessons/lecon?section=2#quiz-deuxieme");
+    rerender(<Lesson isCompleted initialStep={1} />);
+
+    expect(screen.getByText("Deuxième section")).toBeTruthy();
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById("quiz-deuxieme"));
+    expect(window.location.search).toBe("");
+  });
+
+  it("opens another section of the lesson on screen", () => {
+    const { rerender } = render(<Lesson isCompleted />);
+    fireEvent.click(next());
+    fireEvent.click(next());
+    expect(screen.getByText("Troisième section")).toBeTruthy();
+
+    follow("/lessons/lecon?section=1#quiz-premiere");
+    rerender(<Lesson isCompleted />);
+    expect(screen.getByText("Première section")).toBeTruthy();
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(document.getElementById("quiz-premiere"));
+  });
+
+  it("is not met on a lesson the reader has not finished", () => {
+    follow("/lessons/lecon?section=3");
+    render(<Lesson />);
+    expect(screen.getByText("Première section")).toBeTruthy();
   });
 });

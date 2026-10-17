@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CATALOGUE_LESSON, prisma, ratingRepository } from "@cyberlearn/db";
 import { Card, EmptyState, GhostLink, PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
+import { PATH_CRUMBS } from "../../_components/path-columns";
 import { EditPathClient } from "./_components/EditPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -81,7 +82,7 @@ export default async function EditPathPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Parcours", href: "/paths" }]}
+        crumbs={PATH_CRUMBS}
         title={path.title}
         description={
           <>

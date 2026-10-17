@@ -8,6 +8,7 @@ import {
   type ProfileActionState,
 } from "../../../_actions/profile-actions";
 import { Card } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 
 /**
  * What the account shows of itself, and the console's corrections to it.
@@ -73,7 +74,7 @@ export function ProfileForm({
   ];
 
   return (
-    <Card title="Profil" pad>
+    <Card title={USER_CARDS.profile} pad>
       <div className="a-defrow" style={{ padding: "0 0 12px" }}>
         <span className="a-defrow-label">Avatar</span>
         <span className="mono a-field-hint">{avatarLabel}</span>

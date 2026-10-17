@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../_components/content-status";
+import { NEW_PATH_HEADER } from "../_components/path-columns";
 import { NewPathClient } from "./_components/NewPathClient";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -43,8 +44,8 @@ export default async function NewPathPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Parcours", href: "/paths" }]}
-        title="Créer un parcours"
+        crumbs={NEW_PATH_HEADER.crumbs}
+        title={NEW_PATH_HEADER.title}
         description={<Tag tone={CONTENT_STATUS.DRAFT.tone}>Brouillon · non publié</Tag>}
       />
       <NewPathClient availableLessons={lessons} nextRefCode={nextRefCode} />

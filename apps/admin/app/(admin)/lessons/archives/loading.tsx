@@ -6,7 +6,7 @@ import { ARCHIVES_HEADER, LESSON_COLUMNS, lessonFacetCount } from "../_component
 /** The archived lessons while they load: the same grid as the working list, without its status filter. */
 export default function ArchivedLessonsLoading(): React.ReactElement {
   return (
-    <main className="a-page">
+    <main className="a-page" aria-busy="true">
       <PageHeader
         crumbs={ARCHIVES_HEADER.crumbs}
         title={ARCHIVES_HEADER.title}

@@ -21,6 +21,12 @@ import {
  * from the page.
  */
 
+/** The working list's header; the page adds its count to the title. */
+export const LESSONS_HEADER = {
+  crumbs: [{ label: "Contenu" }] as const satisfies readonly [Crumb],
+  title: "Leçons",
+};
+
 /** The archives' header, which its loading state shows as it is. */
 export const ARCHIVES_HEADER = {
   crumbs: [

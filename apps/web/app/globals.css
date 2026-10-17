@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@cyberlearn/ui/tokens.css";
 @import "@cyberlearn/ui/dialogs.css";
+@import "@cyberlearn/ui/skeleton.css";
 
 /* The page vocabulary: the names the page stylesheets and the CSS modules
    use (--fg-primary, --border, --brand-turquoise, --font-body, --dur-base),
@@ -873,8 +874,60 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
-/* Skeleton shimmer moved to a scoped, co-located stylesheet:
-   apps/web/components/ui/skeleton.css (.cl-skel / .cl-skel-card). */
+/* ─── Loading roots ──────────────────────────────────────────────────────── */
+/* The shimmer itself (.cl-skel / .cl-skel-card) is the shared one, in
+   @cyberlearn/ui/skeleton.css.
+
+   A page that loads shows its shape, not its colours. A skeleton is drawn on
+   its page's own classes, so it would inherit an accent border, a glow, a
+   tinted wash or a coloured bar: inside a loading root (aria-busy="true"),
+   every border takes the neutral hairline, nothing casts a shadow, and only
+   the shimmer blocks keep a background image. The site's alone: the console
+   draws its skeletons from neutral blocks, and its grid is aria-busy while it
+   refreshes, when a focused search box has to keep its ring. */
+/* The accents themselves take a neutral tone in a loading root, so a dash,
+   a dot or a mark drawn in one (often by a pseudo-element) goes neutral too.
+   The aliases are restated: :root resolved them already. */
+[aria-busy="true"] {
+  --color-brand-turquoise: var(--color-border-default);
+  --color-brand-blue: var(--color-border-default);
+  --brand-turquoise: var(--color-border-default);
+  --brand-blue: var(--color-border-default);
+  --cosmetic-accent: var(--color-border-default);
+  --cosmetic-frame-accent: var(--color-border-default);
+  --cosmetic-frame-glow: transparent;
+  --teal: var(--color-border-default);
+  --amber: var(--color-border-default);
+  --warning: var(--color-border-default);
+  --red: var(--color-border-default);
+  --danger: var(--color-border-default);
+  --color-success: var(--color-border-default);
+  --color-warning: var(--color-border-default);
+  --color-danger: var(--color-border-default);
+  --color-info: var(--color-border-default);
+  --color-rarity-common: var(--color-border-default);
+  --color-rarity-rare: var(--color-border-default);
+  --color-rarity-epic: var(--color-border-default);
+  --color-rarity-legendary: var(--color-border-default);
+  --color-category-cybersec: var(--color-border-default);
+  --color-category-dev: var(--color-border-default);
+  --color-category-network: var(--color-border-default);
+}
+[aria-busy="true"],
+[aria-busy="true"] *,
+[aria-busy="true"] *::before,
+[aria-busy="true"] *::after {
+  border-color: var(--color-border-subtle) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+[aria-busy="true"],
+[aria-busy="true"] *:not(.cl-skel),
+[aria-busy="true"] *::before,
+[aria-busy="true"] *::after {
+  background-image: none !important;
+}
 
 /* ─── Syntax highlighting theme (rehype-highlight / highlight.js) ────────── */
 /* Matches the design-system.md code block spec */
@@ -1489,6 +1542,16 @@ article.lesson-content > blockquote p code {
     color 150ms ease,
     background-color 150ms ease,
     border-color 150ms ease;
+}
+/* An entry that opens a window rather than a page (sidebar-nav.tsx,
+   DialogNavItem): a button, drawn as the links are. */
+button.sidebar-nav-item {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
 }
 .sidebar-nav-item:hover {
   color: var(--color-text-primary);
@@ -2399,7 +2462,8 @@ button.notif-row:hover {
   color: var(--color-text-primary);
   font-weight: 700;
 }
-.dash-hero-sub a {
+.dash-hero-sub a,
+.dash-hero-sub .dash-hero-link {
   color: inherit;
   text-decoration: none;
   border-bottom: 1px solid var(--color-border-default);
@@ -2407,7 +2471,18 @@ button.notif-row:hover {
     color 150ms ease,
     border-color 150ms ease;
 }
-.dash-hero-sub a:hover {
+/* The day's recall opens a window: a button, read as the links beside it. */
+.dash-hero-sub .dash-hero-link {
+  padding: 0;
+  font: inherit;
+  background: none;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  cursor: pointer;
+}
+.dash-hero-sub a:hover,
+.dash-hero-sub .dash-hero-link:hover {
   color: var(--color-text-primary);
   border-color: var(--cosmetic-accent);
 }
@@ -2726,73 +2801,32 @@ button.notif-row:hover {
   color: var(--cosmetic-accent);
 }
 
-/* Revisions: rows, not boxes */
-.dash-rev-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.dash-rev {
-  display: grid;
-  grid-template-columns: 8px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 16px;
-  padding: 13px 12px;
-  margin: 0 -12px;
-  border-top: 1px solid var(--color-border-subtle);
-  color: inherit;
-  text-decoration: none;
-  transition: background-color 150ms ease;
-}
-.dash-rev-list > li:first-child .dash-rev {
-  border-top: 0;
-}
-.dash-rev:hover {
-  background-color: rgba(42, 37, 96, 0.22);
-}
-.dash-rev-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
-}
-.dash-rev-title {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.dash-rev-title small {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-.dash-rev-due {
-  font-size: 12.5px;
-  color: var(--color-rarity-legendary);
-  white-space: nowrap;
-}
-.dash-rev-due--late {
-  color: var(--color-category-cybersec);
-}
-.dash-rev-min {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-.dash-rev-note,
-.dash-rev-empty {
+/* The day's recall: where it stands and the button that opens it, no count. */
+.dash-rev-note {
   margin: 4px 0 0;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--color-text-faint);
 }
-.dash-rev-empty {
-  color: var(--color-text-muted);
+.dash-recall {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.dash-recall[data-state="todo"] {
+  border-left: 2px solid var(--cosmetic-accent);
+}
+.dash-recall-text {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
 }
 
 /* The week: two cards */
@@ -3197,12 +3231,6 @@ button.notif-row:hover {
   }
   .dash-now {
     padding: 22px 20px;
-  }
-  .dash-rev {
-    grid-template-columns: 8px minmax(0, 1fr) auto;
-  }
-  .dash-rev-min {
-    display: none;
   }
   .dash-sec-count {
     display: none;

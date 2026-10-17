@@ -1,6 +1,12 @@
-import { sourceKey, type MockRef, type MockSource } from "../exam/mock.js";
+import {
+  clientQuestions,
+  sourceKey,
+  type MockQuestion,
+  type MockRef,
+  type MockSource,
+} from "../exam/mock.js";
 import { dayKey } from "../gamification/day.js";
-import { quizOptionOrder, quizOrderSeed } from "../quiz/option-order.js";
+import { quizOptionOrder, quizOrderSeed, seededRandom } from "../quiz/option-order.js";
 import { checkDuelAnswer } from "../social/duel.js";
 
 /**
@@ -24,7 +30,11 @@ import { checkDuelAnswer } from "../social/duel.js";
  *   (orphanCards).
  * - A day's session is six cards at most, the most overdue first, two at most
  *   from the same lesson (pickSessionCards), each with its options in an
- *   order of that day (drawReviewSession).
+ *   order of that day (drawReviewSession). Handed in, it earns
+ *   REVIEW_SESSION_XP once.
+ * - "Réviser ce module" asks six questions at most from the module's lessons
+ *   the learner finished, on demand, without cards, XP or anything stored
+ *   (drawModuleReview).
  *
  * Days are the platform's calendar days (gamification/day.ts). A due date is
  * stored as the start of its day, as an activity day is (dayStart): a card due
@@ -58,6 +68,13 @@ export const CARD_SESSION_SIZE = 6;
 
 /** Cards from the same lesson in a session, at most. */
 export const CARD_SESSION_PER_LESSON = 2;
+
+/**
+ * XP for a day's session, once it is handed in, whatever the score: what is
+ * paid is coming back each day, and a question missed is the one that needed
+ * asking. Credited once a day (claimSessionXp in the repository).
+ */
+export const REVIEW_SESSION_XP = 15;
 
 /** The column is a smallint. */
 const MAX_LAPSES = 32_767;
@@ -325,17 +342,107 @@ export interface ReviewDrawRef extends MockRef {
 }
 
 /**
+ * The order a review question's options are shown in on `day`: the lesson's
+ * own shuffle for this learner (quiz/option-order.ts), seeded with the day as
+ * well. A new order each day the question comes back, so the place of the
+ * right answer cannot be remembered instead of the answer; the same order all
+ * day, in the day's session and in a module's review alike; an option that
+ * refers to the others ("Aucune des trois") keeps its place.
+ */
+export function reviewOptionOrder(
+  options: readonly string[],
+  userId: string,
+  lessonId: string,
+  quizId: string,
+  day: string,
+): number[] {
+  return quizOptionOrder(options, `${quizOrderSeed(userId, lessonId, quizId)}:${day}`);
+}
+
+/**
+ * The questions of a draw as the learner is shown them: options in the drawn
+ * order, no answer key, `index` the drawn index an answer is sent with. A
+ * question gone from its lesson, or whose options changed since the draw, is
+ * left out.
+ */
+export function reviewQuestions(
+  draw: readonly MockRef[],
+  sources: ReadonlyMap<string, MockSource>,
+): MockQuestion[] {
+  return clientQuestions(draw, sources);
+}
+
+/**
+ * Whether every question of a session that can still be asked has its answer,
+ * at least one being asked: the session is then done. A question gone from
+ * its lesson since the draw is not waited for, or the session could never be
+ * handed in.
+ */
+export function isSessionAnswered(
+  draw: readonly MockRef[],
+  sources: ReadonlyMap<string, MockSource>,
+  answers: Readonly<Record<string, number>>,
+): boolean {
+  const askable = reviewQuestions(draw, sources);
+  return askable.length > 0 && askable.every((q) => answers[String(q.index)] !== undefined);
+}
+
+/**
+ * "Réviser ce module": CARD_SESSION_SIZE questions at most out of `sources`,
+ * the quizzes of the module's lessons the learner finished, in a shuffled
+ * order, CARD_SESSION_PER_LESSON at most from one lesson, each with its
+ * options in the day's order (reviewOptionOrder).
+ *
+ * Nothing is stored and nothing is earned: the same learner, module (`scope`)
+ * and day draw the same questions, and a question's option order depends on
+ * the question and the day alone, so an answer is checked by working that
+ * order out again, whatever was drawn around it.
+ */
+export function drawModuleReview(
+  sources: readonly MockSource[],
+  userId: string,
+  scope: string,
+  day: string,
+  size: number = CARD_SESSION_SIZE,
+  perLesson: number = CARD_SESSION_PER_LESSON,
+): MockRef[] {
+  const random = seededRandom(`${userId}:${scope}:${day}`);
+  const shuffled = [...sources];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const a = shuffled[i];
+    const b = shuffled[j];
+    if (a === undefined || b === undefined) continue;
+    shuffled[i] = b;
+    shuffled[j] = a;
+  }
+  const picked: MockSource[] = [];
+  const fromLesson = new Map<string, number>();
+  for (const source of shuffled) {
+    if (picked.length >= size) break;
+    const taken = fromLesson.get(source.lessonId) ?? 0;
+    if (taken >= perLesson) continue;
+    fromLesson.set(source.lessonId, taken + 1);
+    picked.push(source);
+  }
+  return picked.map((source) => ({
+    lessonId: source.lessonId,
+    quizId: source.quizId,
+    domain: source.domain,
+    order: reviewOptionOrder(source.options, userId, source.lessonId, source.quizId, day),
+  }));
+}
+
+/**
  * A day's session out of the cards due, among those whose question the
  * lesson still has (`sources`, keyed by sourceKey, the domain being the
  * lesson's title) and that are not stale that day (isStale): a card the
  * thirty-day rule retires is never asked, whether its retirement was written
  * yet or not.
  *
- * Each card's options come in the lesson's own shuffle (quiz/option-order.ts)
- * seeded with the day as well: a new order each time the card comes back, so
- * the place of the right answer cannot be remembered instead of the answer;
- * an option that refers to the others ("Aucune des trois") keeps its place;
- * and the same day draws the same order twice.
+ * Each card's options come in the day's order (reviewOptionOrder): a new
+ * order each time the card comes back, and the same day draws the same order
+ * twice.
  */
 export function drawReviewSession(
   due: readonly DueCard[],
@@ -350,14 +457,13 @@ export function drawReviewSession(
   return pickSessionCards(askable).flatMap((card): ReviewDrawRef[] => {
     const source = sources.get(sourceKey(card.lessonId, card.quizId));
     if (source === undefined) return [];
-    const seed = `${quizOrderSeed(userId, card.lessonId, card.quizId)}:${day}`;
     return [
       {
         cardId: card.id,
         lessonId: card.lessonId,
         quizId: card.quizId,
         domain: source.domain,
-        order: quizOptionOrder(source.options, seed),
+        order: reviewOptionOrder(source.options, userId, card.lessonId, card.quizId, day),
       },
     ];
   });

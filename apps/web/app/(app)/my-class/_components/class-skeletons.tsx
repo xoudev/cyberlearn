@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /**
  * The class pages while they load, drawn on their own classes (globals.css:

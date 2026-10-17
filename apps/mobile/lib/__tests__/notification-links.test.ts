@@ -119,6 +119,14 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/onboarding")).toBeNull();
   });
 
+  it("opens the revisions for the daily reminder, which opens the recall on the site", () => {
+    expect(inAppRouteFor("/dashboard?rappel=1")).toEqual({ pathname: "/revisions" });
+    // The older reminders pointed at the site's revisions page.
+    expect(inAppRouteFor("/revisions")).toEqual({ pathname: "/revisions" });
+    expect(inAppRouteFor("/dashboard")).toBeNull();
+    expect(inAppRouteFor("/dashboard?settings=preferences")).toBeNull();
+  });
+
   it("opens the certificates sub-tab of the profile, for new notices and old ones", () => {
     expect(inAppRouteFor("/certificates")).toEqual({
       pathname: "/profile",

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../../_components/admin-ui";
 import { toggleBadgeActiveAction } from "../../_actions/badge-actions";
+import { BADGE_CRUMBS } from "../../_components/badge-columns";
 import { EditBadgeForm } from "./_components/edit-badge-form";
 import type { LessonOption, PathOption } from "../../new/_components/new-badge-form";
 
@@ -58,7 +59,7 @@ export default async function EditBadgePage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Badges", href: "/badges" }]}
+        crumbs={BADGE_CRUMBS}
         title={badge.name}
         description={
           <>

@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { Card, PageHeader, Tag } from "../_components/admin-ui";
+import { SETTINGS_CARDS, SETTINGS_HEADER } from "./_components/settings-head";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -62,14 +63,14 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Système" }]}
-        title="Paramètres"
-        description="Configuration du runtime, variables d'environnement et volumétrie de la base de données."
+        crumbs={SETTINGS_HEADER.crumbs}
+        title={SETTINGS_HEADER.title}
+        description={SETTINGS_HEADER.description}
       />
 
       <div className="admin-settings-grid">
         <Card
-          title="Variables d'environnement"
+          title={SETTINGS_CARDS.env}
           action={
             <Tag tone={allEnvOk ? "accent" : "danger"}>
               {allEnvOk ? "Complètes" : "Incomplètes"}
@@ -85,7 +86,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
           ))}
         </Card>
 
-        <Card title="Base de données">
+        <Card title={SETTINGS_CARDS.database}>
           {stats.map((s) => (
             <DefRow key={s.label} label={s.label}>
               <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--a-accent)" }}>
@@ -96,7 +97,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
         </Card>
 
         <div style={{ gridColumn: "1 / -1" }}>
-          <Card title="Informations plateforme">
+          <Card title={SETTINGS_CARDS.platform}>
             {[
               { label: "Version Node.js", val: process.version },
               { label: "Environnement", val: process.env.NODE_ENV },

@@ -1,16 +1,15 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /**
  * The dashboard while it loads, drawn on the page's own classes (the `.dash-*`
  * rules in globals.css): the greeting and the level ring, the mission card
- * with its module route, the revisions due beside the week's quests and
+ * with its module route, the day's recall beside the week's quests and
  * streak, and the line saying where the reader stands. Shared by `loading.tsx`
  * (route navigation) and the page's `<Suspense>` fallback.
  */
 
 const QUESTS = [0, 1, 2, 3];
-const REVIEWS = [0, 1, 2];
 const ROUTE_NODES = [0, 1, 2, 3, 4, 5, 6];
 const FIGURES = [
   { value: 22, label: 104, detail: 68 },
@@ -87,33 +86,22 @@ function Mission(): React.ReactElement {
   );
 }
 
-function Reviews(): React.ReactElement {
+function Recall(): React.ReactElement {
   return (
     <section className="dash-sec">
       <div className="dash-sec-head">
-        <Skeleton w={190} h={17} />
+        <Skeleton w={150} h={17} />
         <div className="dash-sec-count">
-          <Skeleton w={110} h={12} />
+          <Skeleton w={70} h={12} />
         </div>
-        <Skeleton w={80} h={13} style={{ marginLeft: "auto" }} />
       </div>
-      <ul className="dash-rev-list">
-        {REVIEWS.map((i) => (
-          <li key={i}>
-            <div className="dash-rev">
-              <Skeleton w={8} h={8} radius="circle" />
-              <div>
-                <Skeleton w="68%" h={14} style={{ marginBottom: 6 }} />
-                <Skeleton w={110} h={11} />
-              </div>
-              <Skeleton w={78} h={12} />
-              <div className="dash-rev-min">
-                <Skeleton w={42} h={12} />
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="dash-recall">
+        <div className="dash-recall-text">
+          <Skeleton w="92%" h={14} style={{ marginBottom: 6 }} />
+          <Skeleton w="60%" h={14} />
+        </div>
+        <Skeleton w={96} h={30} />
+      </div>
       <Skeleton w="82%" h={12} style={{ marginTop: 4 }} />
     </section>
   );
@@ -220,7 +208,7 @@ export function DashboardSkeleton(): React.ReactElement {
         <Hero />
         <Mission />
         <div className="dash-cols">
-          <Reviews />
+          <Recall />
           <Week />
         </div>
         <Standing />

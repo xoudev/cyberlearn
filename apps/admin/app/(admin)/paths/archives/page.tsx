@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { GhostLink, PageHeader } from "../../_components/admin-ui";
+import { PATH_ARCHIVES_HEADER } from "../_components/path-columns";
 import { PathsGrid } from "../_components/paths-grid";
 import { listPaths } from "@/lib/services/path-list.service";
 
@@ -15,9 +16,9 @@ export default async function ArchivedPathsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Parcours", href: "/paths" }]}
-        title={`Parcours archivés (${String(rows.length)})`}
-        description="Invisibles sur le site et dans l'app. Les progressions et les certificats déjà délivrés sont conservés. Change le statut d'un parcours pour le remettre en brouillon : il retourne dans la liste des parcours."
+        crumbs={PATH_ARCHIVES_HEADER.crumbs}
+        title={`${PATH_ARCHIVES_HEADER.title} (${String(rows.length)})`}
+        description={PATH_ARCHIVES_HEADER.description}
         actions={<GhostLink href="/paths">Retour aux parcours</GhostLink>}
       />
 

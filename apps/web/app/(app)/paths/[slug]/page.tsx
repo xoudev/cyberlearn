@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileDown } from "lucide-react";
+import { FileDown, RotateCcw } from "lucide-react";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState, resumeLesson } from "@cyberlearn/lib/paths/unlock";
@@ -29,6 +29,8 @@ import { averageLine, formatAverage } from "@cyberlearn/lib/content/rating";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
+import { RappelButton } from "@/components/rappel/rappel-button";
+import { moduleRappelValue } from "@/components/rappel/rappel-query";
 import { builtInPathCover, resolvePathCovers } from "@/lib/paths/cover";
 
 export async function generateMetadata({
@@ -435,6 +437,11 @@ export default async function PathDetailPage({
               const s = nodeStates[index];
               return s === "completed" || s === "unlocked";
             });
+            // Its review asks about the lessons finished: none, nothing to offer.
+            const reviewable = mod.indices.some((index) => {
+              const id = path.lessons[index]?.lesson.id;
+              return id !== undefined && completedLessonIds.has(id);
+            });
             return (
               <React.Fragment key={mod.key}>
                 <div className={`cp-gate${gateDone ? " cp-gate--done" : ""}`}>
@@ -458,6 +465,16 @@ export default async function PathDetailPage({
                       <FileDown size={14} strokeWidth={1.75} aria-hidden="true" />
                       Fiche PDF
                     </a>
+                    {reviewable && (
+                      <RappelButton
+                        value={moduleRappelValue(path.slug, mod.number)}
+                        className="btn btn--ghost btn--sm"
+                        title="Quelques questions des leçons faites de ce module, corrigées une à une, sans XP"
+                      >
+                        <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
+                        Réviser ce module · 2 min
+                      </RappelButton>
+                    )}
                     <span className="cp-gate__count">
                       <b>{mod.indices.length}</b> missions
                     </span>

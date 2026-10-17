@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma, quizRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../../_components/admin-ui";
+import { PATH_CRUMBS, PATH_QUIZ_HEADER } from "../../_components/path-columns";
 import { QuizManager } from "./_components/quiz-manager";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -48,13 +49,9 @@ export default async function PathQuizPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[
-          { label: "Contenu" },
-          { label: "Parcours", href: "/paths" },
-          { label: path.title, href: `/paths/${path.id}/edit` },
-        ]}
-        title="Quiz final"
-        description="Il conditionne l'émission du certificat de ce parcours."
+        crumbs={[...PATH_CRUMBS, { label: path.title, href: `/paths/${path.id}/edit` }]}
+        title={PATH_QUIZ_HEADER.title}
+        description={PATH_QUIZ_HEADER.description}
         actions={<GhostLink href={`/paths/${path.id}/edit`}>Retour au parcours</GhostLink>}
       />
       <QuizManager

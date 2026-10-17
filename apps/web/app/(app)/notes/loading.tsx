@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /**
  * The note library while it loads. NotesLibrary lays itself out with inline

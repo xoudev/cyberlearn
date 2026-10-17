@@ -129,7 +129,7 @@ describe("the console palette", () => {
     for (const rarity of ["common", "rare", "epic", "legendary"]) {
       expect(palette.get(`--a-rarity-${rarity}`)).toBe(`var(--color-rarity-${rarity})`);
     }
-    const badges = readFileSync(join(ADMIN, "badges", "page.tsx"), "utf8");
+    const badges = readFileSync(join(ADMIN, "badges", "(list)", "page.tsx"), "utf8");
     expect(badges).toContain('RARE: { color: "var(--a-rarity-rare)"');
     expect(badges).not.toMatch(/tone: "info", label: "Rare"/u);
   });

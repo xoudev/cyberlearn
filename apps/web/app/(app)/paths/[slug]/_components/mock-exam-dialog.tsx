@@ -7,7 +7,7 @@
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useTransition } from "react";
 import { ModalShell } from "@cyberlearn/ui";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 import { useQueryDialog } from "@/hooks/use-query-dialog";
 import type { MockOverview } from "@/lib/exam/mock-exam";
 import { mockOverviewAction } from "../mock-exam/_actions/mock-exam-actions";

@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 
 /**
  * The lessons catalogue below its breadcrumb while it loads, drawn on the

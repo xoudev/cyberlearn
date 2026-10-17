@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../_components/admin-ui";
+import { NEW_BADGE_HEADER } from "../_components/badge-columns";
 import { NewBadgeForm } from "./_components/new-badge-form";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -30,8 +31,8 @@ export default async function NewBadgePage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Badges", href: "/badges" }]}
-        title="Créer un badge"
+        crumbs={NEW_BADGE_HEADER.crumbs}
+        title={NEW_BADGE_HEADER.title}
         actions={<GhostLink href="/badges">Retour aux badges</GhostLink>}
       />
       <NewBadgeForm lessons={lessons} paths={paths} />

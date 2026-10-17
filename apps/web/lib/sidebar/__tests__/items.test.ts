@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isActiveHref, sidebarGroups } from "../items";
 
-const BASE = { hasClasses: false, showRevisions: true, dueReviews: 0 };
+const BASE = { hasClasses: false, showRevisions: true };
 
 function labels(input: typeof BASE): string[] {
   return sidebarGroups(input).flatMap((group) => group.items.map((item) => item.label));
@@ -28,15 +28,19 @@ describe("sidebarGroups", () => {
     expect(labels({ ...BASE, showRevisions: false })).not.toContain("Révisions");
   });
 
-  it("counts the revisions due, and nothing when none are", () => {
-    const due = sidebarGroups({ ...BASE, dueReviews: 3 })
+  it("opens the day's recall in its window, and counts nothing waiting", () => {
+    const revisions = sidebarGroups(BASE)
       .flatMap((g) => g.items)
-      .find((i) => i.href === "/revisions");
-    expect(due?.count).toBe(3);
-    const none = sidebarGroups(BASE)
+      .find((i) => i.label === "Révisions");
+    expect(revisions?.opens).toEqual({ query: "rappel", value: "1" });
+    expect(revisions?.count).toBeNull();
+  });
+
+  it("counts nothing anywhere", () => {
+    const counts = sidebarGroups({ ...BASE, hasClasses: true })
       .flatMap((g) => g.items)
-      .find((i) => i.href === "/revisions");
-    expect(none?.count).toBeNull();
+      .map((i) => i.count);
+    expect(counts.every((count) => count === null)).toBe(true);
   });
 
   it("shows the classes only to somebody who has one", () => {

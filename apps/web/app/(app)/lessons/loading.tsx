@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@cyberlearn/ui";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 
 /**

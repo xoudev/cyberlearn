@@ -1,6 +1,9 @@
 @import "@cyberlearn/ui/tokens.css";
 @import "@cyberlearn/ui/dialogs.css";
 @import "./admin-ui.css";
+/* After admin-ui.css: a shimmer laid on a control's class (the search box of
+   a loading grid) paints over that class's fill. */
+@import "@cyberlearn/ui/skeleton.css";
 
 /* ─── Base reset ─────────────────────────────────────────── */
 *,
@@ -60,36 +63,6 @@ body::before {
 }
 
 /* ─── Keyframes ─────────────────────────────────────────── */
-
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -800px 0;
-  }
-  100% {
-    background-position: 800px 0;
-  }
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--a-border) 0%,
-    var(--a-border) 30%,
-    var(--a-border-2) 50%,
-    var(--a-border) 70%,
-    var(--a-border) 100%
-  );
-  background-size: 800px 100%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
-  border-radius: 6px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer {
-    animation: none;
-    background: var(--a-border);
-  }
-}
 
 @keyframes blink {
   0%,
@@ -204,32 +177,6 @@ body::before {
   }
 }
 
-/* Stats grid: 2-col mobile → 4-col desktop */
-.admin-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-@media (min-width: 768px) {
-  .admin-stats-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-  }
-}
-
-/* Dashboard 2-col (activity log + recent users): stacked mobile */
-.admin-2col-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-}
-@media (min-width: 1024px) {
-  .admin-2col-grid {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  }
-}
-
 /* Settings 2-col */
 .admin-settings-grid {
   display: grid;
@@ -241,12 +188,6 @@ body::before {
   .admin-settings-grid {
     grid-template-columns: 1fr 1fr;
   }
-}
-
-/* Table scroll wrapper */
-.admin-table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Form 2-col grid: 1-col mobile → 2-col desktop */

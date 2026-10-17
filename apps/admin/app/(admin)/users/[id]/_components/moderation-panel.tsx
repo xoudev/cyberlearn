@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { moderationRepository, noteReportRepository } from "@cyberlearn/db";
 import { NOTE_REPORT_REASON_LABELS } from "@cyberlearn/lib/notes/report-reasons";
 import { Card, Tag, type Tone } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 import { SURFACE_LABEL } from "../../../moderation/surface-labels";
 import { formatDay } from "../../_components/dates";
 
@@ -56,7 +57,7 @@ export function ModerationPanel({
 }): React.ReactElement {
   return (
     <Card
-      title="Modération"
+      title={USER_CARDS.moderation}
       action={
         <span style={{ display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
           <Link href="/moderation" className="a-btn a-btn--ghost a-btn--sm">

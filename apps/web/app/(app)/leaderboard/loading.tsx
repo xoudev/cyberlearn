@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonCard } from "@cyberlearn/ui";
 import "./_components/leaderboard.css";
 import styles from "./_components/leaderboard.module.css";
 
