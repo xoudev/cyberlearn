@@ -2,6 +2,7 @@ import React from "react";
 import type { HeldBadge, XpLedgerRow } from "@cyberlearn/db";
 import { XP_SOURCE_LABEL, grantableBadges, signedXp } from "@/lib/gamification-corrections";
 import { Card, Tag } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 import {
   BadgeGrantForm,
   BadgeRevokeForm,
@@ -56,7 +57,7 @@ export function GamificationPanel({
   activeBadges: { id: string; name: string; xpReward: number }[];
 }): React.ReactElement {
   return (
-    <Card title="XP, série et badges" pad>
+    <Card title={USER_CARDS.gamification} pad>
       <div className="a-stack-tight">
         <details className="a-disclosure">
           <summary className="a-disclosure-head">

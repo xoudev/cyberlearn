@@ -99,7 +99,7 @@ export function streakCorrectionOutcome(result: StreakCorrectionResult): Outcome
     parts.push(`gels ${String(before.streakFreezes)} → ${String(after.streakFreezes)}`);
   }
   const alive = movedToToday
-    ? " Aujourd'hui compte comme jour actif : la prochaine activité, aujourd'hui ou demain, la prolonge."
+    ? " Aujourd'hui compte comme jour actif : la série tient jusqu'à demain, et une activité demain la prolonge."
     : "";
   return { ok: true, notice: `Série corrigée : ${parts.join(", ")}.${alive}` };
 }
