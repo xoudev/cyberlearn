@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { userRepository } from "@cyberlearn/db";
+import { userRepository, type ProfileAccess } from "@cyberlearn/db";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
 
 /**
@@ -20,19 +20,31 @@ export const profileReaderId = cache(async (): Promise<string | null> => {
 });
 
 /**
- * Whether /u/<username> opens for its reader: false when there is no such
+ * How /u/<username> opens for its reader: "closed" when there is no such
  * account or it is closed to them - the two are not told apart, on purpose
- * (findPublicProfile).
+ * (findPublicProfile) - otherwise "public", or "private" for a profile its
+ * owner closed that the reader was let into (their own, or a friend's).
+ *
+ * The light check (profileAccess), not the profile: the layout asks it before
+ * anything is streamed and generateMetadata asks it too, for the 404 and for
+ * whether search engines may index the page. Cached for the request.
+ */
+export const profileAccessFor = cache(
+  async (username: string): Promise<ProfileAccess> =>
+    userRepository.profileAccess(username, await profileReaderId()),
+);
+
+/**
+ * Whether /u/<username> opens for its reader (profileAccessFor, not closed).
  *
  * The segment's layout asks it before anything is streamed, which is what
  * turns a missing profile into a real 404 rather than a 200 carrying the
- * not-found page. It is the light check (isProfileOpenTo), not the profile:
- * the layout sits above the skeleton, so it is what a prefetched profile link
- * runs, and a leaderboard prefetches fifty of them. Cached for the request:
- * generateMetadata asks too.
+ * not-found page. It is the light check, not the profile: the layout sits
+ * above the skeleton, so it is what a prefetched profile link runs, and a
+ * leaderboard prefetches fifty of them.
  */
-export const profileOpensFor = cache(async (username: string) =>
-  userRepository.isProfileOpenTo(username, await profileReaderId()),
+export const profileOpensFor = cache(
+  async (username: string): Promise<boolean> => (await profileAccessFor(username)) !== "closed",
 );
 
 /**

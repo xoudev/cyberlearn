@@ -1090,6 +1090,8 @@ model LessonAnswer {
   upvoteRecords LessonAnswerUpvote[]
 
   @@index([questionId, isHidden])
+  /// A public profile counts its owner's answers.
+  @@index([userId])
   @@map("lesson_answers")
 }
 
@@ -2010,6 +2012,8 @@ model ChallengeWriteup {
 
   @@unique([challengeId, userId])
   @@index([challengeId, isHidden])
+  /// A public profile counts its owner's solutions.
+  @@index([userId])
   @@map("challenge_writeups")
 }
 

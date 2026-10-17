@@ -2,12 +2,9 @@ import React from "react";
 import Link from "next/link";
 import { dayKey, nextMilestone } from "@cyberlearn/lib";
 import { streakRepository, type StreakOverview } from "@cyberlearn/db";
-import {
-  STREAK_COPY,
-  streakCalendar,
-  WEEKDAY_LABELS,
-} from "@cyberlearn/lib/gamification/streak-calendar";
+import { STREAK_COPY } from "@cyberlearn/lib/gamification/streak-calendar";
 import { streakWeek } from "@cyberlearn/lib/gamification/streak-week";
+import { ActivityHeatmap } from "./activity-heatmap";
 
 /**
  * The streak, one card for the dashboard and the profile.
@@ -106,7 +103,6 @@ function StreakYear({
   overview: StreakOverview;
   today: string;
 }): React.ReactElement {
-  const { cells, monthLabels } = streakCalendar(overview.activity, today);
   const next = nextMilestone(overview.currentStreak);
   const toGo = next === null ? 0 : next - overview.currentStreak;
 
@@ -147,49 +143,7 @@ function StreakYear({
         </div>
       </div>
 
-      <div className="dash-heat-head">
-        <span>{STREAK_COPY.lastYear}</span>
-        <span className="dash-heat-legend" aria-hidden="true">
-          {STREAK_COPY.less}
-          {[0, 1, 2, 3].map((level) => (
-            <i key={level} className="dash-heat-cell" data-level={level} />
-          ))}
-          {STREAK_COPY.more}
-        </span>
-      </div>
-      {/* A scrolling box takes keyboard focus; named, it announces what it
-          holds instead of reading the month labels one by one. */}
-      <div className="dash-heat" role="region" aria-label="Activité des douze derniers mois">
-        <div className="dash-heat-months">
-          <span className="dash-heat-gutter" aria-hidden="true" />
-          <div aria-hidden="true">
-            {monthLabels.map((month, w) => (
-              <span key={`m${String(w)}`}>{month}</span>
-            ))}
-          </div>
-        </div>
-        <div className="dash-heat-body">
-          <div className="dash-heat-days" aria-hidden="true">
-            {WEEKDAY_LABELS.map((label, r) => (
-              <span key={`d${String(r)}`}>{label}</span>
-            ))}
-          </div>
-          <div className="dash-heat-grid">
-            {cells.map((cell) =>
-              cell.future ? (
-                <i key={cell.key} className="dash-heat-cell dash-heat-cell--future" />
-              ) : (
-                <i
-                  key={cell.key}
-                  className="dash-heat-cell"
-                  data-level={cell.level}
-                  title={`${cell.key} · ${String(cell.count)}`}
-                />
-              ),
-            )}
-          </div>
-        </div>
-      </div>
+      <ActivityHeatmap activity={overview.activity} today={today} />
     </div>
   );
 }

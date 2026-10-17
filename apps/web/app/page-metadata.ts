@@ -51,3 +51,22 @@ export function pageAddress(
     openGraph: { ...OPEN_GRAPH_SITE, ...preview, url: path },
   };
 }
+
+/**
+ * pageAddress for a page that draws its own preview, an opengraph-image file
+ * beside it (a public profile's card). The site's emblem is left out: Next
+ * fills og:image from the page's file only when the page's own openGraph
+ * names no images, so spreading the emblem in would hide the card. The large
+ * card is asked for, the picture being a wide one.
+ */
+export function pageAddressWithOwnImage(
+  path: string,
+  preview: PreviewText = {},
+): Pick<Metadata, "alternates" | "openGraph" | "twitter"> {
+  const { type, locale, siteName } = OPEN_GRAPH_SITE;
+  return {
+    alternates: { canonical: path },
+    openGraph: { type, locale, siteName, ...preview, url: path },
+    twitter: { card: "summary_large_image" },
+  };
+}

@@ -6,8 +6,9 @@ import "./public-profile.css";
  * A public profile while it loads, drawn on the page's own classes
  * (public-profile.css) and in the frame the layout gives it, the app's shell
  * or the page alone: the breadcrumb, the player card (the hexagonal avatar,
- * the identity, the level block), the stats strip of three lg stat tiles,
- * then the badges, the skills and the recent lessons, at their real sizes.
+ * the identity, the level block), the stats strip of five lg stat tiles,
+ * the year of activity, then the badges, the skills and the recent lessons,
+ * at their real sizes.
  * The eyebrow is a bare bar: .pg-eyebrow would print its "// " before it.
  */
 
@@ -102,9 +103,9 @@ export default function PublicProfileLoading(): React.ReactElement {
           </div>
         </div>
 
-        {/* Stats strip: three lg stat tiles */}
+        {/* Stats strip: five lg stat tiles */}
         <div className="pp-stats card">
-          {[96, 120, 116].map((label, i) => (
+          {[96, 120, 116, 124, 104].map((label, i) => (
             <div key={label} className="stat-tile stat-tile--lg">
               <Skeleton w={label} h={10} style={{ margin: "2px 0" }} />
               <Skeleton w={i === 0 ? 130 : 70} h={38} />
@@ -112,6 +113,19 @@ export default function PublicProfileLoading(): React.ReactElement {
             </div>
           ))}
         </div>
+
+        {/* A year of activity: the figures, then the calendar */}
+        <section className="pp-section">
+          <SectionLabelSkeleton eyebrow={110} title={320} />
+          <div className="card pp-year">
+            <div className="pp-year__figs">
+              <Skeleton w={210} h={18} />
+              <Skeleton w={170} h={18} />
+            </div>
+            <Skeleton h={10} w={240} style={{ marginBottom: 10 }} />
+            <Skeleton h={112} />
+          </div>
+        </section>
 
         {/* Badges */}
         <section className="pp-section">

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
   listDuelsFor: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  duelRecordFor: vi.fn<(userId: string) => Promise<unknown>>(),
   duelSetupFor: vi.fn<(userId: string) => Promise<unknown>>(),
   createDuel: vi.fn<(userId: string, input: unknown) => Promise<{ ok: boolean }>>(),
   duelViewFor: vi.fn<(userId: string, id: unknown) => Promise<unknown>>(),
@@ -16,6 +17,7 @@ vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("../../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("@/lib/social/duels", () => ({
   listDuelsFor: m.listDuelsFor,
+  duelRecordFor: m.duelRecordFor,
   duelSetupFor: m.duelSetupFor,
   createDuel: m.createDuel,
   duelViewFor: m.duelViewFor,
@@ -46,15 +48,18 @@ describe("/api/mobile/duels", () => {
     expect(m.answerDuel).not.toHaveBeenCalled();
   });
 
-  it("lists the duels with what the form needs, and creates one", async () => {
+  it("lists the duels with the record over all of them and what the form needs", async () => {
     m.listDuelsFor.mockResolvedValue([{ id: "d1" }]);
+    m.duelRecordFor.mockResolvedValue({ win: 31, loss: 4, draw: 2, live: 1, wait: 0 });
     m.duelSetupFor.mockResolvedValue({ friends: [{ id: "f", name: "Alex" }], paths: [] });
     expect(await (await list.GET(new NextRequest(BASE))).json()).toEqual({
       ok: true,
       duels: [{ id: "d1" }],
+      record: { win: 31, loss: 4, draw: 2, live: 1, wait: 0 },
       friends: [{ id: "f", name: "Alex" }],
       paths: [],
     });
+    expect(m.duelRecordFor).toHaveBeenCalledWith("u1");
     m.createDuel.mockResolvedValue({ ok: true });
     expect((await list.POST(post(BASE, { opponentId: "f", pathId: "p" }))).status).toBe(200);
     expect(m.createDuel).toHaveBeenCalledWith("u1", { opponentId: "f", pathId: "p" });

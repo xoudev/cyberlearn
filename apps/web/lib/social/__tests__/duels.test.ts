@@ -14,6 +14,8 @@ const m = vi.hoisted(() => ({
   listFor: vi.fn<(userId: string) => Promise<unknown[]>>(),
   listAnswers: vi.fn<(duelId: string) => Promise<unknown[]>>(),
   recordAnswer: vi.fn<(input: unknown) => Promise<boolean>>(),
+  listOverdueFor: vi.fn<(userId: string, now: Date) => Promise<unknown[]>>(),
+  recordFor: vi.fn<(userId: string, now: Date) => Promise<unknown>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -29,14 +31,15 @@ vi.mock("@cyberlearn/db", () => ({
     listFor: m.listFor,
     listAnswers: m.listAnswers,
     recordAnswer: m.recordAnswer,
+    listOverdueFor: m.listOverdueFor,
+    recordFor: m.recordFor,
   },
 }));
 vi.mock("@/lib/exam/mock-exam", () => ({ loadSources: m.loadSources }));
 vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.checkNotifyingWrite }));
 
-const { answerDuel, createDuel, duelViewFor, listDuelsFor, respondToDuel } = await import(
-  "../duels"
-);
+const { answerDuel, createDuel, duelRecordFor, duelViewFor, listDuelsFor, respondToDuel } =
+  await import("../duels");
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -270,5 +273,31 @@ describe("listDuelsFor", () => {
       other: { name: "Alex" },
       questionCount: 5,
     });
+  });
+});
+
+describe("duelRecordFor", () => {
+  it("settles the reader's overdue duels, then counts every duel in the database", async () => {
+    const now = new Date("2026-10-17T12:00:00Z");
+    m.listOverdueFor.mockResolvedValue([
+      duelRow({ status: "ACTIVE", expiresAt: new Date("2026-10-17T11:00:00Z") }),
+      duelRow({ id: "lapsed", status: "PENDING", expiresAt: new Date("2026-10-17T10:00:00Z") }),
+    ]);
+    m.listAnswers.mockResolvedValue([
+      { userId: ME, index: 0, selected: 0, correct: true, answeredAt: now },
+    ]);
+    m.recordFor.mockResolvedValue({ win: 7, loss: 2, draw: 1, live: 0, wait: 0 });
+
+    expect(await duelRecordFor(ME, now)).toEqual({ win: 7, loss: 2, draw: 1, live: 0, wait: 0 });
+    expect(m.transition).toHaveBeenCalledWith(DUEL, "ACTIVE", {
+      status: "FINISHED",
+      finishedAt: now,
+      winnerId: ME,
+    });
+    expect(m.transition).toHaveBeenCalledWith("lapsed", "PENDING", { status: "EXPIRED" });
+    expect(m.recordFor).toHaveBeenCalledWith(ME, now);
+    // Settled before counted: the count reads the duels as they now stand.
+    const settledAt = m.transition.mock.invocationCallOrder.at(-1) ?? 0;
+    expect(m.recordFor.mock.invocationCallOrder[0]).toBeGreaterThan(settledAt);
   });
 });

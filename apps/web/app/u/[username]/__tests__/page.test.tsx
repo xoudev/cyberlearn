@@ -8,9 +8,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const db = vi.hoisted(() => ({
-  userRepository: { findPublicProfile: vi.fn(), isProfileOpenTo: vi.fn() },
+  userRepository: { findPublicProfile: vi.fn(), profileAccess: vi.fn() },
   friendshipRepository: { between: vi.fn() },
   cosmeticRepository: { findLoadout: vi.fn() },
+  streakRepository: { getOverview: vi.fn() },
+  duelRepository: { recordFor: vi.fn(), recordBetween: vi.fn(), findOpenBetween: vi.fn() },
+  profileRepository: { badgeCandidates: vi.fn(), pathsOf: vi.fn(), contributionsOf: vi.fn() },
 }));
 vi.mock("@cyberlearn/db", () => db);
 
@@ -60,8 +63,11 @@ function profile(overrides: { publicProfile?: boolean } = {}): Record<string, un
     certificates: [],
     challengeProgress: [],
     lessonsByCategory: [],
+    counts: { badges: 0, lessons: 0, challenges: 0, certificates: 0, paths: 0 },
   };
 }
+
+const NO_CONTRIBUTIONS = { posts: 0, topics: 0, answers: 0, acceptedAnswers: 0, writeups: 0 };
 
 async function render(): Promise<string> {
   return renderToStaticMarkup(
@@ -73,9 +79,16 @@ beforeEach(() => {
   vi.clearAllMocks();
   auth.getActiveBan.mockResolvedValue(null);
   db.userRepository.findPublicProfile.mockResolvedValue(profile());
-  db.userRepository.isProfileOpenTo.mockResolvedValue(true);
+  db.userRepository.profileAccess.mockResolvedValue("public");
   db.friendshipRepository.between.mockResolvedValue(null);
   db.cosmeticRepository.findLoadout.mockResolvedValue(EMPTY_LOADOUT);
+  db.streakRepository.getOverview.mockResolvedValue(null);
+  db.duelRepository.recordFor.mockResolvedValue({ win: 0, loss: 0, draw: 0, live: 0, wait: 0 });
+  db.duelRepository.recordBetween.mockResolvedValue({ win: 0, loss: 0, draw: 0 });
+  db.duelRepository.findOpenBetween.mockResolvedValue(null);
+  db.profileRepository.badgeCandidates.mockResolvedValue([]);
+  db.profileRepository.pathsOf.mockResolvedValue([]);
+  db.profileRepository.contributionsOf.mockResolvedValue(NO_CONTRIBUTIONS);
 });
 
 describe("the public profile page", () => {
@@ -198,13 +211,24 @@ describe("the public profile page", () => {
     const meta = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
     expect(meta.title).toBe("@alex");
     // The layout's light check, not the profile: the title is not worth a full read.
-    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledWith("alex", null);
+    expect(db.userRepository.profileAccess).toHaveBeenCalledWith("alex", null);
     expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
+  });
+
+  it("keeps a private profile out of search engines, and only a private one", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    db.userRepository.profileAccess.mockResolvedValue("private");
+    const closed = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
+    expect(closed.robots).toEqual({ index: false, follow: false });
+
+    db.userRepository.profileAccess.mockResolvedValue("public");
+    const open = await generateMetadata({ params: Promise.resolve({ username: "bob" }) });
+    expect(open.robots).toBeUndefined();
   });
 
   it("does not title a 404 with the handle it hides", async () => {
     auth.getRequestUser.mockResolvedValue(null);
-    db.userRepository.isProfileOpenTo.mockResolvedValue(false);
+    db.userRepository.profileAccess.mockResolvedValue("closed");
     await expect(
       generateMetadata({ params: Promise.resolve({ username: "fermé" }) }),
     ).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
@@ -230,5 +254,150 @@ describe("the profile's link preview", () => {
     expect(metadata.description).toContain("@alex");
     expect(metadata.alternates?.canonical).toBe("/u/alex");
     expect(metadata.openGraph).toMatchObject({ url: "/u/alex", siteName: "CyberLearn" });
+  });
+
+  it("leaves the picture to the profile's own card, drawn wide", async () => {
+    // Next fills og:image from opengraph-image.tsx only when the page's own
+    // openGraph names no images: the site's emblem would have hidden the card.
+    auth.getRequestUser.mockResolvedValue(null);
+    const metadata = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
+
+    expect(metadata.openGraph).not.toHaveProperty("images");
+    expect(metadata.twitter).toEqual({ card: "summary_large_image" });
+  });
+});
+
+describe("the profile's content", () => {
+  it("prints the counted figures, not the length of the bounded lists", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    db.userRepository.findPublicProfile.mockResolvedValue({
+      ...profile(),
+      badges: [
+        {
+          id: "ub-1",
+          earnedAt: new Date("2026-05-01T00:00:00Z"),
+          badge: { name: "Premier pas", rarity: "COMMON", iconUrl: "/b.svg" },
+        },
+      ],
+      counts: { badges: 17, lessons: 48, challenges: 35, certificates: 0, paths: 2 },
+    });
+    const html = await render();
+
+    expect(html).toMatch(/Leçons terminées<\/div>.*?48/s);
+    expect(html).toMatch(/Défis résolus<\/div>.*?35/s);
+    expect(html).toContain("trophées · 17");
+    expect(html).toContain("et 16 autres");
+  });
+
+  it("shows a year of activity and the rarest badges, with how many hold them", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    db.streakRepository.getOverview.mockResolvedValue({
+      currentStreak: 3,
+      longestStreak: 21,
+      freezes: 0,
+      active: true,
+      daysThisYear: 64,
+      activity: { "2026-10-01": 2 },
+    });
+    db.userRepository.findPublicProfile.mockResolvedValue({
+      ...profile(),
+      badges: [
+        {
+          id: "ub-1",
+          earnedAt: new Date("2026-05-01T00:00:00Z"),
+          badge: { name: "Légende", rarity: "LEGENDARY", iconUrl: "/l.svg" },
+        },
+      ],
+      counts: { badges: 1, lessons: 0, challenges: 0, certificates: 0, paths: 0 },
+    });
+    db.profileRepository.badgeCandidates.mockResolvedValue([
+      {
+        id: "ub-1",
+        name: "Légende",
+        rarity: "LEGENDARY",
+        iconUrl: "/l.svg",
+        earnedAt: new Date("2026-05-01T00:00:00Z"),
+        holders: 3,
+      },
+    ]);
+    const html = await render();
+
+    expect(html).toContain("<b>64</b> jours actifs cette année");
+    expect(html).toContain("dash-heat-grid");
+    expect(html).toContain('aria-label="Ses badges les plus rares"');
+    expect(html).toContain("Détenu par 3 personnes");
+    expect(db.streakRepository.getOverview).toHaveBeenCalledWith(OWNER);
+  });
+
+  it("draws the paths with their bars, and the contributions and duels", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    db.profileRepository.pathsOf.mockResolvedValue([
+      {
+        slug: "linux",
+        title: "Linux",
+        category: "DEV",
+        completed: false,
+        done: 3,
+        total: 12,
+        completedAt: null,
+      },
+    ]);
+    db.profileRepository.contributionsOf.mockResolvedValue({
+      ...NO_CONTRIBUTIONS,
+      posts: 4,
+      topics: 1,
+    });
+    db.duelRepository.recordFor.mockResolvedValue({ win: 5, loss: 2, draw: 0, live: 1, wait: 1 });
+    const html = await render();
+
+    expect(html).toContain('aria-label="Linux : 25 %"');
+    expect(html).toContain("25 % · 3 / 12 missions");
+    expect(html).toContain("messages au forum");
+    expect(html).toContain("dont 1 sujet ouvert");
+    expect(html).toContain("victoires");
+    // A visitor sees results, not the duels its owner has going on.
+    expect(html).not.toContain("en attente");
+  });
+
+  it("shows the head-to-head to a friend, from the friend's seat", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    db.friendshipRepository.between.mockResolvedValue({
+      status: "ACCEPTED",
+      requestedById: READER,
+    });
+    db.duelRepository.recordBetween.mockResolvedValue({ win: 3, loss: 2, draw: 1 });
+    const html = await render();
+
+    expect(html).toContain("Face à face.");
+    expect(html).toContain("Tu mènes 3 à 2.");
+    expect(html).toContain("1 égalité");
+    expect(db.duelRepository.recordBetween).toHaveBeenCalledWith(READER, OWNER);
+    expect(html).toMatch(/<a[^>]*href="\/duels\?ami=[^"]+"[^>]*>Défier<\/a>/);
+  });
+
+  it("points a friend at the duel going on rather than a new one", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    db.friendshipRepository.between.mockResolvedValue({
+      status: "ACCEPTED",
+      requestedById: READER,
+    });
+    db.duelRepository.findOpenBetween.mockResolvedValue({ id: "duel-1" });
+    const html = await render();
+
+    expect(html).toContain('href="/duels/duel-1"');
+    expect(html).toContain("Voir le duel en cours");
+  });
+
+  it.each([
+    ["a stranger signed out", null, null],
+    ["a reader who only asked", READER, { status: "PENDING", requestedById: READER }],
+    ["the owner", OWNER, null],
+  ])("shows no head-to-head to %s", async (_who, reader, friendship) => {
+    auth.getRequestUser.mockResolvedValue(reader === null ? null : { id: reader });
+    db.friendshipRepository.between.mockResolvedValue(friendship);
+    const html = await render();
+
+    expect(html).not.toContain("Face à face");
+    expect(db.duelRepository.recordBetween).not.toHaveBeenCalled();
   });
 });

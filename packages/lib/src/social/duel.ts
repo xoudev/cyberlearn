@@ -232,7 +232,12 @@ export interface DuelRecordLine {
 }
 
 /** The record's words; what is still open shows only when there is some. */
-const RECORD: { outcome: DuelOutcome; word: string; invariable: boolean; always: boolean }[] = [
+const RECORD: {
+  outcome: keyof DuelRecordCounts;
+  word: string;
+  invariable: boolean;
+  always: boolean;
+}[] = [
   { outcome: "win", word: "victoire", invariable: false, always: true },
   { outcome: "loss", word: "défaite", invariable: false, always: true },
   { outcome: "draw", word: "égalité", invariable: false, always: true },
@@ -241,20 +246,78 @@ const RECORD: { outcome: DuelOutcome; word: string; invariable: boolean; always:
 ];
 
 /**
- * The reader's record over their duels: wins, losses and draws always, the
- * duels going on and the invitations waiting when there are some. Declined
- * and expired duels count for nothing.
+ * How many duels ended each way, and how many are still open. The site counts
+ * them in the database over every duel somebody played (duelRepository.recordFor),
+ * so a record no longer stops at the twenty duels a list shows.
  */
-export function duelRecord(duels: readonly ReaderDuel[]): DuelRecordLine[] {
-  const outcomes = duels.map(outcomeOf);
+export interface DuelRecordCounts {
+  win: number;
+  loss: number;
+  draw: number;
+  /** Accepted and still being played. */
+  live: number;
+  /** Sent or received, waiting for an answer. */
+  wait: number;
+}
+
+/** A record's results only: what a visitor sees on somebody's profile. */
+export type DuelResultCounts = Pick<DuelRecordCounts, "win" | "loss" | "draw">;
+
+/** The counts behind duelRecord, over the duels at hand. */
+export function duelRecordCounts(duels: readonly ReaderDuel[]): DuelRecordCounts {
+  const counts: DuelRecordCounts = { win: 0, loss: 0, draw: 0, live: 0, wait: 0 };
+  for (const duel of duels) {
+    const outcome = outcomeOf(duel);
+    if (outcome === "declined" || outcome === "expired") continue;
+    counts[outcome] += 1;
+  }
+  return counts;
+}
+
+/**
+ * A record in words: wins, losses and draws always, the duels going on and
+ * the invitations waiting when there are some. A record with results only
+ * (a profile's) has nothing open, so it shows the three results.
+ */
+export function duelRecordLines(
+  counts: DuelResultCounts & Partial<DuelRecordCounts>,
+): DuelRecordLine[] {
   return RECORD.flatMap((row) => {
-    const n = outcomes.filter((outcome) => outcome === row.outcome).length;
+    const n = counts[row.outcome] ?? 0;
     if (!row.always && n === 0) return [];
     // French plural: an s past one ("0 victoire", "2 victoires").
     return [
       { outcome: row.outcome, n, word: row.invariable || n <= 1 ? row.word : `${row.word}s` },
     ];
   });
+}
+
+/**
+ * The reader's record over their duels: wins, losses and draws always, the
+ * duels going on and the invitations waiting when there are some. Declined
+ * and expired duels count for nothing.
+ */
+export function duelRecord(duels: readonly ReaderDuel[]): DuelRecordLine[] {
+  return duelRecordLines(duelRecordCounts(duels));
+}
+
+/** Who leads between two friends, from the reader's seat: their finished duels only. */
+export interface HeadToHead extends DuelResultCounts {
+  /** The duel going on between them, if any: "Défier" would be refused. */
+  openDuelId: string | null;
+}
+
+/**
+ * The head-to-head in a sentence, from the reader's seat: "Tu mènes 3 à 2.",
+ * "Alex mène 2 à 1.", "À égalité, 1 victoire chacun.", or that nothing is
+ * settled yet. Draws are shown beside it, not in it.
+ */
+export function headToHeadVerdict(record: DuelResultCounts, otherName: string): string {
+  const { win, loss, draw } = record;
+  if (win + loss + draw === 0) return "Aucun duel terminé entre vous pour l'instant.";
+  if (win > loss) return `Tu mènes ${String(win)} à ${String(loss)}.`;
+  if (loss > win) return `${otherName} mène ${String(loss)} à ${String(win)}.`;
+  return `À égalité, ${String(win)} victoire${win > 1 ? "s" : ""} chacun.`;
 }
 
 /** What opening a duel does: play when it is the reader's turn, look otherwise. */
