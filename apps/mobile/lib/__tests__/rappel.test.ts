@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   emptyRun,
   firstOpen,
+  justHandedIn,
   moduleAnswerBody,
   moduleReviewable,
   moduleReviewPath,
@@ -167,6 +168,29 @@ describe("withVerdict", () => {
     expect(withVerdict(view({ verdicts: [verdict(0)] }), verdict(0), null).verdicts).toHaveLength(
       1,
     );
+  });
+});
+
+describe("justHandedIn: when XP, streak and quests moved on the server", () => {
+  const done = view({ status: "done", result: { correct: 2, total: 2, xp: 15 } });
+
+  it("sees the hand-in by the last answer's reply", () => {
+    const before = view({ verdicts: [verdict(0)] });
+    expect(
+      justHandedIn(before, withVerdict(before, verdict(1), { correct: 2, total: 2, xp: 15 })),
+    ).toBe(true);
+  });
+
+  it("sees it in a recall read back after a refusal, the reply lost or answered on the site", () => {
+    expect(justHandedIn(view({ verdicts: [verdict(0)] }), done)).toBe(true);
+  });
+
+  it("moves nothing for an answer that is not the last, or a recall already done", () => {
+    expect(justHandedIn(view(), withVerdict(view(), verdict(0), null))).toBe(false);
+    expect(justHandedIn(done, done)).toBe(false);
+    // Done at the first read: handed in before this screen, nothing to refresh here.
+    expect(justHandedIn(undefined, done)).toBe(false);
+    expect(justHandedIn(view(), undefined)).toBe(false);
   });
 });
 

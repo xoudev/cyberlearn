@@ -119,6 +119,25 @@ export function withVerdict(
   return result === null ? { ...view, verdicts } : { ...view, verdicts, status: "done", result };
 }
 
+/**
+ * Whether the day's recall was handed in between two reads of it: the moment
+ * its XP, the streak and its quest moved on the server. Seen whichever way
+ * the screen learns it: the last answer's reply, or the recall read back
+ * after a refusal (the last answer recorded but its reply lost, or given on
+ * the site). A recall already done at the first read moved nothing here.
+ */
+export function justHandedIn(
+  before: RecallView | undefined,
+  after: RecallView | undefined,
+): boolean {
+  return (
+    before !== undefined &&
+    before.status !== "done" &&
+    after?.mode === "daily" &&
+    after.status === "done"
+  );
+}
+
 // ── A run, question by question ───────────────────────────────────────────────
 
 /**

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { BackButton } from "@/components/buttons";
 import { RecallFlow, RecallHeader } from "@/components/recall-flow";
@@ -8,7 +8,13 @@ import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { answerDailyRecallApi } from "@/lib/api";
 import { dailyRecallKey, useDailyRecall } from "@/lib/queries";
-import { withVerdict, type RecallResult, type RecallVerdict, type RecallView } from "@/lib/rappel";
+import {
+  justHandedIn,
+  withVerdict,
+  type RecallResult,
+  type RecallVerdict,
+  type RecallView,
+} from "@/lib/rappel";
 import { useSession } from "@/lib/session";
 
 /**
@@ -30,19 +36,26 @@ export default function Revisions(): React.JSX.Element {
   const userId = session?.user.id;
   const { data, isLoading, refetch } = useDailyRecall(userId);
 
+  // Handed in, by the last answer here or read back after a refusal (its
+  // reply lost, or answered on the site): XP, level, streak and its weekly
+  // quest moved on the server, and the home tab does not refetch on focus.
+  const seen = useRef<RecallView | undefined>(undefined);
+  useEffect(() => {
+    if (justHandedIn(seen.current, data)) {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["streak", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["quests", userId] });
+    }
+    seen.current = data;
+  }, [data, queryClient, userId]);
+
   const onAnswered = (verdict: RecallVerdict, result: RecallResult | null): void => {
     // The home tab's card reads the same query: it says "fait aujourd'hui"
     // as soon as the last answer hands the recall in.
     queryClient.setQueryData<RecallView>(dailyRecallKey(userId), (old) =>
       old === undefined ? old : withVerdict(old, verdict, result),
     );
-    if (result !== null) {
-      // XP, level, streak and its weekly quest moved on the server.
-      void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
-      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
-      void queryClient.invalidateQueries({ queryKey: ["streak", userId] });
-      void queryClient.invalidateQueries({ queryKey: ["quests", userId] });
-    }
   };
 
   return (
