@@ -7,16 +7,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { AvatarView } from "@/components/avatar-view";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import { useQueryDialog } from "@/hooks/use-query-dialog";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { isActiveHref, sidebarGroups, type SidebarIcon } from "@/lib/sidebar/items";
+import {
+  isActiveHref,
+  sidebarGroups,
+  type SidebarIcon,
+  type SidebarItem,
+} from "@/lib/sidebar/items";
 
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
   hasClasses: boolean;
   /** False once someone has switched spaced repetition off in their settings. */
   showRevisions: boolean;
-  /** Revisions due right now. */
-  dueReviews: number;
   level: number;
   rankName: string;
   displayName: string;
@@ -175,14 +179,68 @@ function SignOutButton({ onClick }: { onClick: () => void }): React.ReactElement
   );
 }
 
+/** What an entry shows: its icon, its label, and its count when it has one. */
+function NavItemInside({ item }: { item: SidebarItem }): React.ReactElement {
+  return (
+    <>
+      <span className="sidebar-nav-icon">
+        <NavIcon name={item.icon} />
+      </span>
+      <span className="sidebar-label sidebar-nav-text">{item.label}</span>
+      {item.count !== null && (
+        <span
+          className="sidebar-label sidebar-nav-count"
+          aria-label={`${String(item.count)} à faire`}
+        >
+          {item.count}
+        </span>
+      )}
+    </>
+  );
+}
+
+/**
+ * An entry that opens a window over the page rather than leading to one: the
+ * day's recall, under "Révisions". A button, since nothing is navigated to;
+ * on a phone the drawer closes so the window is not drawn behind it.
+ */
+function DialogNavItem({
+  item,
+  opens,
+  collapsed,
+  active,
+}: {
+  item: SidebarItem;
+  opens: { query: string; value: string };
+  collapsed: boolean;
+  active: boolean;
+}): React.ReactElement {
+  const dialog = useQueryDialog(opens.query);
+  const { isMobile, setOpenMobile } = useSidebar();
+  return (
+    <button
+      type="button"
+      title={collapsed ? item.label : undefined}
+      aria-current={active ? "page" : undefined}
+      className="sidebar-nav-item"
+      onClick={() => {
+        if (isMobile) setOpenMobile(false);
+        dialog.open(opens.value);
+      }}
+    >
+      <NavItemInside item={item} />
+    </button>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 /**
  * The sidebar: the pages of the site in three groups, and the account block.
  *
  * Folded, it keeps the icons and loses the words; on a phone it is the drawer
- * the navbar's button opens, always unfolded. The one count it shows is the
- * revisions due, because that is the one number that asks for something.
+ * the navbar's button opens, always unfolded. It counts nothing: "Révisions"
+ * opens the day's recall without saying how much waits behind it.
  *
  * The account block is who is signed in, a link to their profile and the way
  * out. The small links it used to carry are gone: news and settings are in
@@ -191,7 +249,6 @@ function SignOutButton({ onClick }: { onClick: () => void }): React.ReactElement
 export function SidebarNav({
   hasClasses,
   showRevisions,
-  dueReviews,
   level,
   rankName,
   displayName,
@@ -212,7 +269,7 @@ export function SidebarNav({
     void handleSignOut();
   };
 
-  const groups = sidebarGroups({ hasClasses, showRevisions, dueReviews });
+  const groups = sidebarGroups({ hasClasses, showRevisions });
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -235,6 +292,17 @@ export function SidebarNav({
             )}
             {group.items.map((item) => {
               const active = isActiveHref(pathname, item.href);
+              if (item.opens !== undefined) {
+                return (
+                  <DialogNavItem
+                    key={item.href}
+                    item={item}
+                    opens={item.opens}
+                    collapsed={collapsed}
+                    active={active}
+                  />
+                );
+              }
               return (
                 <Link
                   key={item.href}
@@ -243,18 +311,7 @@ export function SidebarNav({
                   aria-current={active ? "page" : undefined}
                   className="sidebar-nav-item"
                 >
-                  <span className="sidebar-nav-icon">
-                    <NavIcon name={item.icon} />
-                  </span>
-                  <span className="sidebar-label sidebar-nav-text">{item.label}</span>
-                  {item.count !== null && (
-                    <span
-                      className="sidebar-label sidebar-nav-count"
-                      aria-label={`${String(item.count)} à faire`}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+                  <NavItemInside item={item} />
                 </Link>
               );
             })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { RED } from "@cyberlearn/ui";
+import { quizAnchor } from "@cyberlearn/lib/revisions/passage";
 import React, { useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
@@ -121,6 +122,8 @@ export function Quiz({
 
   return (
     <section
+      // "Revoir ce passage" lands here from a review question (revisions/passage.ts).
+      id={quizAnchor(id)}
       className="cl-quiz card card--sunken"
       aria-label={questionNumber !== undefined ? `Question ${String(questionNumber)}` : "Question"}
       style={{

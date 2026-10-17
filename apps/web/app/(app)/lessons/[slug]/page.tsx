@@ -6,6 +6,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
+import { sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
 import {
   friendshipRepository,
   lessonQuizRepository,
@@ -36,10 +37,16 @@ export const metadata: Metadata = { title: "Leçon" };
 
 interface Props {
   params: Promise<{ slug: string }>;
+  /** `section`: the section to open on, from 1 ("Revoir ce passage", revisions/passage.ts). */
+  searchParams: Promise<{ section?: string | string[] }>;
 }
 
-export default async function LessonPage({ params }: Props): Promise<React.ReactElement> {
+export default async function LessonPage({
+  params,
+  searchParams,
+}: Props): Promise<React.ReactElement> {
   const { slug } = await params;
+  const { section: sectionParam } = await searchParams;
 
   const authUser = await requireRequestUser();
 
@@ -131,6 +138,13 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const toc = extractToc(lesson.contentMdx);
   const sections = toc.filter((t) => t.level === 2);
   const mdxSections = splitMdxSections(lesson.contentMdx);
+  // A link back to a passage opens its section, where the reader may open
+  // any section already: a lesson they finished (canOpenSection), or an
+  // administrator's preview. Anywhere else the lesson starts at its start.
+  // With the lesson already on screen, the stepper meets the request itself:
+  // it keeps its state across this page's renders.
+  const initialStep =
+    isCompleted || reviewing ? sectionFromQuery(sectionParam, Math.max(1, sections.length)) : 0;
 
   const stepper = (
     <LessonStepper
@@ -140,6 +154,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       isCompleted={isCompleted}
       reviewing={reviewing}
       sections={sections}
+      initialStep={initialStep}
       note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
       planExtra={
         <>

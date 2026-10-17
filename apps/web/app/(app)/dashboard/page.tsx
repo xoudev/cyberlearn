@@ -1,9 +1,8 @@
 import React, { Suspense } from "react";
-import Link from "next/link";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { LevelRing } from "./_components/level-ring";
 import { MissionCard, type MissionCardProps } from "./_components/mission-card";
-import { ReviewsDue } from "./_components/reviews-due";
+import { DailyRecallCard } from "./_components/daily-recall-card";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
@@ -20,10 +19,11 @@ import {
   lessonRepository,
   pathsVisibleTo,
   prisma,
-  reviewRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { dailyRecallState } from "@/lib/revisions/daily-recall";
+import { RappelButton } from "@/components/rappel/rappel-button";
 import { savedLearningAnswers } from "@/lib/paths/suggestions";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
@@ -43,7 +43,7 @@ export default function DashboardPage(): React.ReactElement {
  * The dashboard answers one question: what do I do now?
  *
  * So it has one strong card, the mission, with the module it sits in drawn
- * beside it; under it the revisions due and the week; and at the bottom, in
+ * beside it; under it the day's recall and the week; and at the bottom, in
  * one line, where the reader stands. The level is a ring in the header, the
  * streak a flame beside the greeting. Nothing is numbered, nothing pretends
  * to be a terminal.
@@ -58,7 +58,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const [
     dbUser,
     inProgressRows,
-    reviewSession,
+    recallState,
     completedTotal,
     completedThisMonth,
     badgeRows,
@@ -95,9 +95,10 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { lastAccessedAt: "desc" },
       take: 1,
     }),
-    // The day's session, as the page and the sidebar count it: five at most,
-    // of the lessons still published.
-    reviewRepository.findSession(authUser.id, now),
+    // The day's recall: to do, done, or nothing to ask, as the window will
+    // find it (drawn here on the day's first visit with a card due). Never a
+    // count.
+    dailyRecallState(authUser.id, now),
     prisma.userLessonProgress.count({ where: { userId: authUser.id, status: "COMPLETED" } }),
     prisma.userLessonProgress.count({
       where: { userId: authUser.id, status: "COMPLETED", completedAt: { gte: monthStart } },
@@ -155,8 +156,6 @@ async function DashboardContent(): Promise<React.ReactElement> {
     savedLearningAnswers(authUser.id),
   ]);
 
-  const dueReviews = reviewSession.rows.slice(0, 3);
-  const dueTotal = reviewSession.rows.length;
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
   const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const firstName = (dbUser?.displayName ?? "Opérateur").split(" ")[0] ?? "Opérateur";
@@ -249,14 +248,11 @@ async function DashboardContent(): Promise<React.ReactElement> {
       </span>,
     );
   }
-  if (wantsRevisions && dueTotal > 0) {
+  if (wantsRevisions && recallState === "todo") {
     heroNotes.push(
-      <Link key="reviews" href="/revisions">
-        <b>
-          {dueTotal} révision{dueTotal > 1 ? "s" : ""}
-        </b>{" "}
-        {dueTotal > 1 ? "t'attendent" : "t'attend"}
-      </Link>,
+      <RappelButton key="recall" className="dash-hero-link">
+        <b>Ton rappel du jour</b> t&apos;attend
+      </RappelButton>,
     );
   }
   if (heroNotes.length === 0) {
@@ -311,7 +307,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
         {/* ── What is due, and the week ────────────────────────────────────── */}
         <div className={`dash-cols${wantsRevisions ? "" : " dash-cols--single"}`}>
-          {wantsRevisions && <ReviewsDue rows={dueReviews} dueTotal={dueTotal} now={now} />}
+          {wantsRevisions && <DailyRecallCard state={recallState} />}
 
           <section className="dash-sec" aria-labelledby="dash-week-title">
             <div className="dash-sec-head">
