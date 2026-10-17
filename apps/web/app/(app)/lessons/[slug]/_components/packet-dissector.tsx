@@ -1,7 +1,7 @@
 "use client";
 
 import { ACCENT, MONO, RED } from "@cyberlearn/ui";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   buildFrame,
   fieldAt,
@@ -11,6 +11,9 @@ import {
   type PacketLayer,
 } from "@cyberlearn/lib/network/packet";
 import { parsePacketDissector } from "@cyberlearn/types";
+import { useElementWidth } from "@/hooks/use-element-width";
+import { bytesPerRow, endsHalfRow, rowStarts } from "./dump-rows";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <PacketDissector>: a frame as a hex dump, where a click on a byte says which
@@ -20,8 +23,6 @@ import { parsePacketDissector } from "@cyberlearn/types";
  * With `find`, the lesson asks for fields one at a time: the learner clicks a
  * byte of each. A wrong byte still names its own field, so a miss teaches too.
  */
-
-const BYTES_PER_ROW = 16;
 
 const LAYER_COLORS: Record<PacketLayer, string> = {
   eth: "var(--color-info)",
@@ -52,6 +53,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
   const [selected, setSelected] = useState<number | null>(null);
   const [found, setFound] = useState<string[]>([]);
   const [miss, setMiss] = useState<string | null>(null);
+  // Sixteen bytes a row, or eight where the dump is too narrow for sixteen.
+  const dumpRef = useRef<HTMLDivElement>(null);
+  const perRow = bytesPerRow(useElementWidth(dumpRef));
 
   if (!parsed.ok) {
     return (
@@ -91,12 +95,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
     }
   };
 
-  const rows: number[][] = [];
-  for (let at = 0; at < frame.bytes.length; at += BYTES_PER_ROW) {
-    rows.push(
-      Array.from({ length: Math.min(BYTES_PER_ROW, frame.bytes.length - at) }, (_, i) => at + i),
-    );
-  }
+  const rows = rowStarts(frame.bytes.length, perRow).map((at) =>
+    Array.from({ length: Math.min(perRow, frame.bytes.length - at) }, (_, i) => at + i),
+  );
 
   return (
     <section
@@ -117,9 +118,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          DÉCORTIQUER UN PAQUET
-        </span>
+        <span style={labKicker(ACCENT)}>DÉCORTIQUER UN PAQUET</span>
         {dissector.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {dissector.title}
@@ -166,7 +165,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 background: tint(span.layer, 14),
                 color: "var(--color-text-primary)",
                 fontFamily: MONO,
-                fontSize: 11,
+                fontSize: LAB_LABEL_SIZE,
                 cursor: "pointer",
               }}
             >
@@ -176,11 +175,12 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           ))}
         </div>
 
+        {/* A rule around the dump, not a second card in the lab's card. */}
         <div
-          className="card card--sunken"
+          ref={dumpRef}
           role="grid"
           aria-label="Octets de la trame"
-          style={{ overflowX: "auto" }}
+          style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}
         >
           <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
             {rows.map((row) => (
@@ -224,7 +224,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                           fontFamily: MONO,
                           fontSize: 13,
                           cursor: "pointer",
-                          marginRight: offset % BYTES_PER_ROW === 7 ? 8 : 0,
+                          marginRight: endsHalfRow(offset, perRow) ? 8 : 0,
                         }}
                       >
                         {hex[offset]}
@@ -264,7 +264,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 style={{
                   margin: 0,
                   fontFamily: MONO,
-                  fontSize: 11,
+                  fontSize: LAB_LABEL_SIZE,
                   color: LAYER_COLORS[field.layer],
                 }}
               >

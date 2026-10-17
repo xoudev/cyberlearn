@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { stubResizeObserver } from "@/test/resize-observer";
 import { HexEditor } from "../hex-editor";
 
 /**
@@ -11,7 +12,10 @@ import { HexEditor } from "../hex-editor";
  * away, and the questions are read as a learner answers.
  */
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const BROKEN_PNG =
   "00 00 4e 47 0d 0a 1a 0a 00 00 00 0d 49 48 44 52 00 00 00 01 00 00 00 01 08 02 00 00 00 " +
@@ -44,6 +48,22 @@ const writeByte = (offset: number, value: string): void => {
 };
 
 describe("HexEditor", () => {
+  it("prints sixteen bytes a row where they fit, and eight in a narrow dump", () => {
+    const cells = (row: HTMLElement): number => within(row).getAllByRole("gridcell").length;
+
+    const wide = render(<HexEditor {...PROPS} />);
+    expect(screen.getAllByRole("row").map(cells)).toEqual([16, 16, 16, 3]);
+    wide.unmount();
+
+    stubResizeObserver(343);
+    render(<HexEditor {...PROPS} />);
+    const rows = screen.getAllByRole("row");
+    expect(rows.map(cells)).toEqual([8, 8, 8, 8, 8, 8, 3]);
+    // Each row spells its own eight characters, offset 32 to 39 here.
+    expect(rows[4]?.textContent).toContain("00000020");
+    expect(rows[4]?.textContent).toContain("tComment");
+  });
+
   it("shows the bytes, their characters, and no known signature while the header is broken", () => {
     render(<HexEditor {...PROPS} />);
     expect(screen.getByText("photo.png · 51 octets")).toBeTruthy();
