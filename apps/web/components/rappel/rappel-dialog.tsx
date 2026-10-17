@@ -4,12 +4,13 @@
 // the address in the browser; each answer is sent as it is picked and its
 // verdict shown in place.
 
-import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { startTransition, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ModalShell } from "@cyberlearn/ui";
 import { rightAnswersWord } from "@cyberlearn/lib/social/duel";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import type {
+  RecallAnswerResult,
   RecallQuestion,
   RecallResult,
   RecallVerdict,
@@ -321,8 +322,9 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
     if (view === null || question === null) return;
     setError(null);
     start(async () => {
+      let res: RecallAnswerResult | null;
       try {
-        const res =
+        res =
           view.mode === "module" && view.module !== null
             ? await answerModuleReviewAction({
                 path: view.module.path,
@@ -334,6 +336,19 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
                 selected,
               })
             : await answerDailyRecallAction({ index: question.index, selected });
+      } catch {
+        res = null;
+      }
+      // Past an await, React no longer counts a state update as part of the
+      // transition. Committed on its own, it would show the next question
+      // while `pending` still locks its options, and a pick made in between is
+      // lost. Marked again, every update below lands in the one commit that
+      // ends the transition.
+      startTransition(() => {
+        if (res === null) {
+          setError(SEND_FAILED);
+          return;
+        }
         if (!res.ok) {
           setError(res.error);
           if (view.mode === "daily") {
@@ -353,11 +368,10 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
           setCurrent(firstOpen(left, verdicts));
           return;
         }
-        setVerdicts((prev) => [...prev.filter((v) => v.index !== res.verdict.index), res.verdict]);
-        if (res.result !== null) setResult(res.result);
-      } catch {
-        setError(SEND_FAILED);
-      }
+        const { verdict: given, result: handedIn } = res;
+        setVerdicts((prev) => [...prev.filter((v) => v.index !== given.index), given]);
+        if (handedIn !== null) setResult(handedIn);
+      });
     });
   };
 

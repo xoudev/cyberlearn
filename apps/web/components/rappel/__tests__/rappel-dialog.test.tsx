@@ -1,13 +1,8 @@
 // @vitest-environment jsdom
-import React from "react";
-import { cleanup, configure, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import React, { Profiler } from "react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RecallAnswerResult, RecallView } from "@/lib/revisions/daily-recall";
-
-// Each case walks several server round trips (open, answer, read back) through
-// the lazy window. Beside the other suites in CI that ran past the default
-// second of findBy and waitFor, while it takes a fraction of it alone.
-configure({ asyncUtilTimeout: 5_000 });
 
 /**
  * The review window: one question at a time, the verdict with the
@@ -72,6 +67,15 @@ function verdict(index: number, selected: number, correctIndex: number) {
     explanation: index === 0 ? "6, c'est lecture et écriture." : null,
     passage: PASSAGE,
   };
+}
+
+/** A server answer that comes back only when the test resolves it. */
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
 }
 
 beforeEach(() => {
@@ -295,6 +299,53 @@ describe("RappelDialog, a module's review", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /chgrp/u }));
     fireEvent.click(await screen.findByRole("button", { name: "Voir le bilan" }));
+    expect(screen.getByRole("status").textContent).toContain("1 bonne réponse sur 1");
+  });
+
+  it("never shows the next question locked, however late the refusal comes back", async () => {
+    // The refusal lands when the test says so, and every commit is looked at
+    // as it lands. The question taking the place of the one set aside must
+    // never be on screen with its options still locked: a pick made then was
+    // lost, and the review stuck short of its end on a loaded CI runner.
+    const refusal = deferred<RecallAnswerResult>();
+    m.openModuleReviewAction.mockResolvedValue(
+      view({
+        mode: "module",
+        title: "Module 02 · Les droits",
+        module: { path: "linux-fondamentaux", number: 2 },
+      }),
+    );
+    m.answerModuleReviewAction
+      .mockReturnValueOnce(refusal.promise)
+      .mockResolvedValueOnce({ ok: true, verdict: verdict(1, 1, 1), result: null });
+    const lockedOnScreen: boolean[] = [];
+    render(
+      <Profiler
+        id="rappel"
+        onRender={() => {
+          // Called within the commit, once the page holds what it drew.
+          const option = screen.queryByRole("button", { name: /chgrp/u });
+          if (option !== null) lockedOnScreen.push(option.hasAttribute("disabled"));
+        }}
+      >
+        <RappelDialog value="module-2-linux-fondamentaux" onClose={vi.fn()} />
+      </Profiler>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /rwx --- ---/u }));
+    // On its way: the question stays, and takes no second answer.
+    expect(screen.getByRole("button", { name: /rw- --- ---/u }).hasAttribute("disabled")).toBe(
+      true,
+    );
+
+    refusal.resolve({ ok: false, error: "Cette question n'est plus disponible." });
+    expect(await screen.findByText("Quelle commande change le groupe ?")).toBeTruthy();
+    expect(lockedOnScreen.length).toBeGreaterThan(0);
+    expect(lockedOnScreen).not.toContain(true);
+
+    fireEvent.click(screen.getByRole("button", { name: /chgrp/u }));
+    fireEvent.click(await screen.findByRole("button", { name: "Voir le bilan" }));
+    expect(m.answerModuleReviewAction).toHaveBeenCalledTimes(2);
     expect(screen.getByRole("status").textContent).toContain("1 bonne réponse sur 1");
   });
 });
