@@ -5,6 +5,7 @@ import {
   emptyBoardLabel,
   hasPodium,
   leaderboardPath,
+  rowAvatarName,
   topListEyebrow,
   topListRows,
 } from "../leaderboard";
@@ -56,5 +57,21 @@ describe("the podium and the top list", () => {
   it("stops the list at the 25th row, under the podium as without it", () => {
     expect(topListRows(board(50))).toEqual(board(25).slice(3));
     expect(topListRows(board(2))).toHaveLength(2);
+  });
+});
+
+describe("a row's avatar without a picture", () => {
+  const named = { displayName: "Alex Martin", username: "alex", isCurrentUser: false };
+
+  it("takes its initials from the display name, then the handle without its @", () => {
+    expect(rowAvatarName(named)).toBe("Alex Martin");
+    expect(rowAvatarName({ ...named, displayName: null })).toBe("alex");
+    expect(rowAvatarName({ ...named, displayName: "" })).toBe("alex");
+  });
+
+  it("names an anonymous row, and the reader's own, as the row does", () => {
+    const nobody = { displayName: null, username: null };
+    expect(rowAvatarName({ ...nobody, isCurrentUser: false })).toBe("Anonyme");
+    expect(rowAvatarName({ ...nobody, isCurrentUser: true })).toBe("Toi");
   });
 });

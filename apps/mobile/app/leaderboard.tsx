@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, Switch, View, type ViewStyle } fro
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";
 import { FriendMark } from "@/components/friends";
+import { Avatar } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -19,6 +20,7 @@ import {
   PERIOD_CHIPS,
   emptyBoardLabel,
   hasPodium,
+  rowAvatarName,
   topListEyebrow,
   topListRows,
   type LeaderboardPeriod,
@@ -321,23 +323,44 @@ function PodiumStep({
 }): React.JSX.Element {
   const medal = MEDAL[place - 1] ?? colors.accent;
   const height = place === 1 ? 86 : place === 2 ? 64 : 50;
+  const avatarSize = place === 1 ? 56 : 48;
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          borderWidth: 2,
-          borderColor: medal,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: `${medal}14`,
-        }}
-      >
-        <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 16, color: medal }}>
-          {place}
-        </Text>
+      {/* The player's picture, the place on a medal at its corner. */}
+      <View style={{ width: avatarSize, height: avatarSize }}>
+        <Avatar
+          key={entry.avatarSrc ?? "initials"}
+          avatarUrl={entry.avatarSrc ?? null}
+          displayName={rowAvatarName(entry)}
+          size={avatarSize}
+          color={medal}
+        />
+        <View
+          style={{
+            position: "absolute",
+            right: -4,
+            bottom: -2,
+            minWidth: 20,
+            height: 20,
+            paddingHorizontal: 4,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: medal,
+            borderWidth: 2,
+            borderColor: colors.bgBase,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: `${fonts.sans}_800ExtraBold`,
+              fontSize: 11,
+              lineHeight: 14,
+              color: colors.bgBase,
+            }}
+          >
+            {place}
+          </Text>
+        </View>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", maxWidth: 110 }}>
         <Text
@@ -423,6 +446,8 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
         {member.promotion ? "▲" : member.relegation ? "▼" : ""}
         {member.rank}
       </Text>
+      {/* Initials only, as on the site's ladder: the league's avatars are not signed. */}
+      <Avatar avatarUrl={null} displayName={rowAvatarName(member)} size={28} />
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
         <Text
           variant="h3"
@@ -490,6 +515,12 @@ function GlobalRow({
       >
         {entry.rank}
       </Text>
+      <Avatar
+        key={entry.avatarSrc ?? "initials"}
+        avatarUrl={entry.avatarSrc ?? null}
+        displayName={rowAvatarName(entry)}
+        size={30}
+      />
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
         <Text
           variant="h3"
