@@ -3,11 +3,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
+import { ExportDataButton } from "@/app/(app)/_settings/data/_components/ExportDataButton";
 import { BanNotice } from "./_components/ban-notice";
 import styles from "./banned.module.css";
 import "../standalone-page.css";
 
 export const metadata: Metadata = { title: "Compte suspendu" };
+
+const PRIVACY_CONTACT = "privacy@cyberlearn.fr";
 
 /**
  * Where a banned account lands, and the only page it can open.
@@ -63,6 +66,28 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
           alreadyAcknowledged={ban.acknowledgedAt !== null}
           alreadyAppealed={ban.appealTicketId !== null}
         />
+
+        {/* A ban closes the site, not the rights over what it holds (RGPD art.
+            15, 17 and 20). The settings that carry them are behind the ban
+            gate, so this is their only door: the export route does not look
+            at bans, and a deletion goes through privacy@, as /privacy says. */}
+        <section className={styles.data} aria-labelledby="banned-data-title">
+          <h2 id="banned-data-title" className={styles.dataTitle}>
+            Tes données
+          </h2>
+          <p className={styles.dataText}>
+            Le bannissement ne touche pas à tes droits sur tes données. Tu peux en télécharger une
+            copie complète, au format JSON, une fois par jour.
+          </p>
+          <ExportDataButton />
+          <p className={styles.dataText}>
+            Pour supprimer ton compte, écris à{" "}
+            <a href={`mailto:${PRIVACY_CONTACT}`} className={styles.mail}>
+              {PRIVACY_CONTACT}
+            </a>{" "}
+            depuis l&apos;adresse associée à ton compte. La réponse arrive sous un mois au plus.
+          </p>
+        </section>
       </section>
     </main>
   );

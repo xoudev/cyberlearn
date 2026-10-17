@@ -82,7 +82,9 @@ function Row({
       <AvatarView src={edge.avatarSrc} name={name} className="fp-avatar" glyphSize={16} />
 
       <span className="fp-identity">
-        {person.username !== null ? (
+        {/* A pending request opens nothing: a private profile on the other side
+            of one is a name, not a link to a 404. */}
+        {person.username !== null && edge.profileOpen ? (
           <Link href={`/u/${person.username}`} className="fp-name" onClick={onClose}>
             {name}
           </Link>
@@ -158,6 +160,7 @@ export function FriendsPanel({
   const [lists, setLists] = useState<FriendLists>(EMPTY);
   const [loaded, setLoaded] = useState(false);
   const [waiting, setWaiting] = useState(initialRequestCount);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -165,15 +168,28 @@ export function FriendsPanel({
 
   useClickOutside(open, panelRef, buttonRef, setOpen);
 
+  // An error thrown inside a transition goes to the nearest error boundary,
+  // which for the navbar is the site's own: a database hiccup on opening the
+  // panel used to replace the whole page, and whatever was typed on it. It
+  // is said in the panel instead, and closing and reopening it tries again.
+  const load = useCallback(() => {
+    startTransition(async () => {
+      setFailed(false);
+      try {
+        const next = await getFriendsAction();
+        setLists(next);
+        setWaiting(next.incoming.length);
+        setLoaded(true);
+      } catch {
+        setFailed(true);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (!open || loaded) return;
-    startTransition(async () => {
-      const next = await getFriendsAction();
-      setLists(next);
-      setWaiting(next.incoming.length);
-      setLoaded(true);
-    });
-  }, [open, loaded]);
+    load();
+  }, [open, loaded, load]);
 
   /**
    * Drops somebody from every list at once.
@@ -241,6 +257,15 @@ export function FriendsPanel({
           </div>
 
           {!loaded && isPending && <p className="fp-note">Chargement…</p>}
+
+          {!loaded && !isPending && failed && (
+            <p className="fp-note" role="alert">
+              Chargement impossible pour l&apos;instant.{" "}
+              <button type="button" className="btn btn--ghost btn--sm" onClick={load}>
+                Réessayer
+              </button>
+            </p>
+          )}
 
           {empty && (
             <p className="fp-note">

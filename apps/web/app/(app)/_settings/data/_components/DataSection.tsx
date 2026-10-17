@@ -93,8 +93,8 @@ export function DataSection({ data }: { data: DataSectionData }): React.JSX.Elem
               margin: "0 0 12px",
             }}
           >
-            Conformément à l&apos;article 20 du RGPD (droit à la portabilité), vous pouvez
-            télécharger l&apos;ensemble de vos données au format JSON.
+            Conformément à l&apos;article 20 du RGPD (droit à la portabilité), tu peux télécharger
+            l&apos;ensemble de tes données au format JSON.
           </p>
 
           {/* Info row */}

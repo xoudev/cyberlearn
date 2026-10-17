@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useRef, useState } from "react";
 import { TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
@@ -6,7 +7,7 @@ import { ActionChip, GradientButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
-import { acknowledgeBanApi, appealBanApi } from "@/lib/api";
+import { acknowledgeBanApi, appealBanApi, SITE_URL } from "@/lib/api";
 import { APPEAL_MAX_LENGTH, appealProblem, banDurationLabel } from "@/lib/ban";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -177,6 +178,27 @@ export default function Banned(): React.JSX.Element {
             }}
           />
         )}
+
+        {/* A ban closes the app, not the rights over what it holds (RGPD art.
+            15, 17 and 20). The export and the deletion live on the site
+            (docs/MOBILE_PARITY.md), whose /banned page offers the download;
+            a deletion goes through privacy@, as the privacy page says. */}
+        <Card style={{ gap: 8 }}>
+          <Text variant="micro">Tes données</Text>
+          <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+            Le bannissement ne touche pas à tes droits sur tes données. Tu peux en télécharger une
+            copie sur le site, une fois connecté·e. Pour supprimer ton compte, écris à
+            privacy@cyberlearn.fr depuis l&apos;adresse associée à ton compte : la réponse arrive
+            sous un mois au plus.
+          </Text>
+          <View style={{ alignSelf: "flex-start" }}>
+            <ActionChip
+              label="Mes données sur le site"
+              tone="neutral"
+              onPress={() => void WebBrowser.openBrowserAsync(`${SITE_URL}/banned`)}
+            />
+          </View>
+        </Card>
 
         <View style={{ alignSelf: "flex-start" }}>
           <ActionChip

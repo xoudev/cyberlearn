@@ -44,7 +44,7 @@ export async function updateProfileFor(
     bio: input.bio ?? undefined,
   });
   if (!parsed.success) {
-    return { error: "Profil invalide. Vérifiez les champs." };
+    return { error: "Profil invalide. Vérifie les champs." };
   }
 
   const { displayName, bio } = parsed.data;

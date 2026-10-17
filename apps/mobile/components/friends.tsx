@@ -8,7 +8,13 @@ import { Avatar } from "@/components/media";
 import { Text } from "@/components/ui";
 import { acceptFriendApi, removeFriendApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
-import { removeLabel, unfriendAlert, type Friend, type FriendListKind } from "@/lib/friends";
+import {
+  profileTarget,
+  removeLabel,
+  unfriendAlert,
+  type Friend,
+  type FriendListKind,
+} from "@/lib/friends";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 
 /**
@@ -47,7 +53,7 @@ export function FriendMark({ size = 13 }: { size?: number }): React.JSX.Element 
 /**
  * One person in a friends list, with what the site's panel offers on the
  * same row: accept or refuse a request, take one back, or end a friendship.
- * The name opens their profile when they have a handle to point at. Ending a
+ * The name opens their profile when it would open for the reader. Ending a
  * friendship asks first, as on the site: nobody is told, and undoing it takes
  * a new request the other person has to accept.
  */
@@ -88,9 +94,10 @@ export function FriendRow({
   };
 
   const username = friend.username;
+  const target = profileTarget(friend);
   const openProfile =
-    username !== null
-      ? () => router.push({ pathname: "/u/[username]", params: { username } })
+    target !== null
+      ? () => router.push({ pathname: "/u/[username]", params: { username: target } })
       : undefined;
 
   return (

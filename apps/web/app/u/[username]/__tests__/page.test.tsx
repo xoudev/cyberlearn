@@ -8,13 +8,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const db = vi.hoisted(() => ({
-  userRepository: { findPublicProfile: vi.fn() },
+  userRepository: { findPublicProfile: vi.fn(), isProfileOpenTo: vi.fn() },
   friendshipRepository: { between: vi.fn() },
   cosmeticRepository: { findLoadout: vi.fn() },
 }));
 vi.mock("@cyberlearn/db", () => db);
 
-const auth = vi.hoisted(() => ({ getRequestUser: vi.fn<() => Promise<{ id: string } | null>>() }));
+const auth = vi.hoisted(() => ({
+  getRequestUser: vi.fn<() => Promise<{ id: string } | null>>(),
+  getActiveBan: vi.fn<() => Promise<{ id: string } | null>>(),
+}));
 vi.mock("@/lib/auth", () => auth);
 
 vi.mock("@/lib/avatar/storage", () => ({
@@ -68,7 +71,9 @@ async function render(): Promise<string> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  auth.getActiveBan.mockResolvedValue(null);
   db.userRepository.findPublicProfile.mockResolvedValue(profile());
+  db.userRepository.isProfileOpenTo.mockResolvedValue(true);
   db.friendshipRepository.between.mockResolvedValue(null);
   db.cosmeticRepository.findLoadout.mockResolvedValue(EMPTY_LOADOUT);
 });
@@ -168,6 +173,43 @@ describe("the public profile page", () => {
     expect(html).toContain('data-accent="accent-turquoise"');
   });
 
+  it("offers a banned account nothing, since every button would send it to /banned", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    auth.getActiveBan.mockResolvedValue({ id: "ban" });
+    const html = await render();
+
+    expect(html).not.toContain("Ajouter en ami");
+    expect(html).not.toContain("Défier en duel");
+    // Read as a stranger reads it: a private profile does not open either.
+    expect(db.userRepository.findPublicProfile).toHaveBeenCalledWith("alex", null);
+    expect(db.friendshipRepository.between).not.toHaveBeenCalled();
+  });
+
+  it("does not offer a banned owner the settings they cannot open", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: OWNER });
+    auth.getActiveBan.mockResolvedValue({ id: "ban" });
+    const html = await render();
+
+    expect(html).not.toContain("Modifier mon profil");
+  });
+
+  it("titles the tab with the handle of a profile the reader may open", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    const meta = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
+    expect(meta.title).toBe("@alex");
+    // The layout's light check, not the profile: the title is not worth a full read.
+    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledWith("alex", null);
+    expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
+  });
+
+  it("does not title a 404 with the handle it hides", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    db.userRepository.isProfileOpenTo.mockResolvedValue(false);
+    await expect(
+      generateMetadata({ params: Promise.resolve({ username: "fermé" }) }),
+    ).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+  });
+
   it("answers a profile it may not open with the 404", async () => {
     auth.getRequestUser.mockResolvedValue(null);
     db.userRepository.findPublicProfile.mockResolvedValue(null);
@@ -178,14 +220,15 @@ describe("the public profile page", () => {
 
 describe("the profile's link preview", () => {
   // "Copier le lien" hands out this address. Its preview used to be the home
-  // page's, title, description and og:url included.
-  it("is the profile's, at the profile's address, read from the address alone", async () => {
+  // page's, title, description and og:url included; now it is the profile's
+  // own, for a profile the reader may open.
+  it("is the profile's, at the profile's address", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
     const metadata = await generateMetadata({ params: Promise.resolve({ username: "alex" }) });
 
     expect(metadata.title).toBe("@alex");
     expect(metadata.description).toContain("@alex");
     expect(metadata.alternates?.canonical).toBe("/u/alex");
     expect(metadata.openGraph).toMatchObject({ url: "/u/alex", siteName: "CyberLearn" });
-    expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
   });
 });

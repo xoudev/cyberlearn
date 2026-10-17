@@ -28,7 +28,7 @@ export function AccountDeletionConfirmEmail({
   return (
     <Html>
       <EmailHead />
-      <Preview>Confirmez la suppression de votre compte Cyber Learn</Preview>
+      <Preview>Confirme la suppression de ton compte Cyber Learn</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
           <Section style={styles.logoSection}>
@@ -41,22 +41,22 @@ export function AccountDeletionConfirmEmail({
             <Text style={styles.paragraph}>Bonjour {displayName},</Text>
 
             <Text style={styles.paragraph}>
-              Vous avez demandé la suppression définitive de votre compte Cyber Learn. Cette action
-              est <strong style={{ color: "#F5F5FA" }}>irréversible</strong>.
+              Tu as demandé la suppression définitive de ton compte Cyber Learn. Cette action est{" "}
+              <strong style={{ color: "#F5F5FA" }}>irréversible</strong>.
             </Text>
 
             <Text style={styles.paragraph}>
-              Si vous confirmez, les éléments suivants seront supprimés ou anonymisés :
+              Si tu confirmes, les éléments suivants seront supprimés ou anonymisés :
             </Text>
 
             <Text style={styles.listItem}>
-              · Vos données personnelles (profil, préférences, progression)
+              · Tes données personnelles (profil, préférences, progression)
             </Text>
             <Text style={styles.listItem}>
-              · Vos certificats seront conservés en mode anonyme pour la vérification publique
+              · Tes certificats seront conservés en mode anonyme pour la vérification publique
             </Text>
-            <Text style={styles.listItem}>· Vos contributions Q&A et notes seront anonymisées</Text>
-            <Text style={styles.listItem}>· Vos logs d'audit seront pseudonymisés</Text>
+            <Text style={styles.listItem}>· Tes contributions Q&A et notes seront anonymisées</Text>
+            <Text style={styles.listItem}>· Tes logs d'audit seront pseudonymisés</Text>
             <Text style={styles.listItem}>· Cette action ne peut pas être annulée</Text>
 
             <Section style={styles.buttonWrap}>
@@ -68,8 +68,8 @@ export function AccountDeletionConfirmEmail({
             <Hr style={styles.hr} />
 
             <Text style={styles.muted}>
-              Ce lien expire dans <strong style={{ color: "#F5F5FA" }}>1 heure</strong>. Si vous
-              n'avez pas demandé cette suppression, ignorez ce mail - aucune action ne sera prise.
+              Ce lien expire dans <strong style={{ color: "#F5F5FA" }}>1 heure</strong>. Si tu n'as
+              pas demandé cette suppression, ignore ce mail - aucune action ne sera prise.
             </Text>
           </Section>
 
@@ -115,7 +115,7 @@ export async function sendDeletionConfirmEmail({
     // Each request sends its own link and each link expires. Grouped, the only
     // one visible is the newest - which is right - but the older rows are then
     // dead links somebody can still open from the thread.
-    subject: stampedSubject("Confirmez la suppression de votre compte Cyber Learn", new Date()),
+    subject: stampedSubject("Confirme la suppression de ton compte Cyber Learn", new Date()),
     html,
   });
   if (error) throw new Error(`Resend error: ${error.message}`);

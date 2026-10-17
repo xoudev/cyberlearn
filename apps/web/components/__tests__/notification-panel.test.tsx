@@ -164,10 +164,63 @@ describe("NotificationPanel rows", () => {
     );
   });
 
+  it("dates a notice in the unit its age calls for, not in minutes", async () => {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      notifications: [
+        notice({ createdAt: new Date(Date.now() - 7 * 24 * 3_600_000) }),
+        notice({
+          id: "22222222-2222-4222-8222-222222222222",
+          title: "Hier",
+          createdAt: new Date(Date.now() - 26 * 3_600_000),
+        }),
+      ],
+    });
+    await openPanel();
+    expect(screen.getByText("il y a 1 sem.")).toBeTruthy();
+    expect(screen.getByText("hier")).toBeTruthy();
+    expect(screen.queryByText(/minutes/)).toBeNull();
+  });
+
   it("leaves a read notice with nowhere to go as plain text", async () => {
     await openPanel();
     expect(screen.queryByRole("button", { name: /Déjà lue/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /Déjà lue/ })).toBeNull();
     expect(screen.getByText("Déjà lue")).toBeTruthy();
+  });
+});
+
+describe("NotificationPanel failures", () => {
+  it("says a failed load in the panel, instead of throwing to the site's error screen", async () => {
+    m.getNotificationsAction.mockRejectedValueOnce(new Error("db down"));
+    render(<NotificationPanel initialUnreadCount={2} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "2 notifications non lues" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Chargement impossible/);
+    // Not "nothing to read": nothing could be read.
+    expect(screen.queryByText("Aucune notification")).toBeNull();
+  });
+
+  it("keeps the notices unread when marking them all fails, and says so", async () => {
+    m.markAllNotificationsReadAction.mockRejectedValueOnce(new Error("network"));
+    await openPanel();
+    // Disabled while the panel's load is still settling: a click then is lost.
+    const markAll = screen.getByRole<HTMLButtonElement>("button", { name: "Tout lire" });
+    await vi.waitFor(() => {
+      expect(markAll.disabled).toBe(false);
+    });
+    fireEvent.click(markAll);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible de tout marquer/);
+    expect(screen.getByRole("button", { name: "2 notifications non lues" })).toBeTruthy();
+  });
+
+  it("leaves a notice unread when marking it fails, without an error screen", async () => {
+    m.markNotificationReadAction.mockRejectedValueOnce(new Error("network"));
+    await openPanel();
+    fireEvent.click(screen.getByRole("button", { name: /Maintenance ce soir/ }));
+    await vi.waitFor(() => {
+      expect(m.markNotificationReadAction).toHaveBeenCalled();
+    });
+    expect(screen.getByRole("button", { name: /Maintenance ce soir/ })).toBeTruthy();
   });
 });

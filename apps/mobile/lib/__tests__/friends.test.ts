@@ -9,6 +9,7 @@ import {
   profileCategory,
   profileEyebrow,
   profileRarity,
+  profileTarget,
   removeLabel,
   shortDay,
   showsFriendMark,
@@ -30,6 +31,15 @@ describe("ending a friendship", () => {
     expect(alert.buttons[0]?.onPress).toBeUndefined();
     alert.buttons[1]?.onPress?.();
     expect(removed).toBe(1);
+  });
+});
+
+describe("a name in the friends lists", () => {
+  it("opens the profile only when the server says it would open", () => {
+    expect(profileTarget({ username: "alex", profileOpen: true })).toBe("alex");
+    // Private, and only a request between them: "Profil introuvable" behind the tap.
+    expect(profileTarget({ username: "sam", profileOpen: false })).toBeNull();
+    expect(profileTarget({ username: null, profileOpen: true })).toBeNull();
   });
 });
 

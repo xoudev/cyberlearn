@@ -19,6 +19,7 @@ const m = vi.hoisted(() => ({
   findUser: vi.fn<(args: unknown) => Promise<unknown>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
   notifyingWrite: vi.fn<(userId: string) => Promise<{ success: boolean }>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, ids: readonly string[]) => Promise<Set<string>>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -32,6 +33,7 @@ vi.mock("@cyberlearn/db", () => ({
   },
   notificationRepository: { create: m.createNotification },
   prisma: { user: { findUnique: m.findUser } },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.notifyingWrite }));
@@ -61,6 +63,7 @@ beforeEach(() => {
     username: "alex",
     preferences: { publicProfile: true },
   });
+  m.profilesOpenTo.mockImplementation((_viewer, ids) => Promise.resolve(new Set(ids)));
 });
 
 describe("requestFriendship", () => {
@@ -207,8 +210,27 @@ describe("listFriendsFor", () => {
         xpTotal: 420,
         avatar: "https://signed/a",
         since: "2026-09-20T10:00:00.000Z",
+        profileOpen: true,
       },
     ]);
     expect(JSON.stringify(app)).not.toContain("__upload:");
+  });
+
+  it("says, per row, whether the reader would be let into the profile", async () => {
+    // A private profile behind a pending request opens nothing: the reader is
+    // still a stranger to it, so its name must not lead to a 404.
+    m.listIncoming.mockResolvedValue([edge("a", null)]);
+    m.listFriends.mockResolvedValue([edge("b", null)]);
+    m.listOutgoing.mockResolvedValue([edge("c", null)]);
+    m.resolveAvatarSrcMany.mockResolvedValue([null, null, null]);
+    m.profilesOpenTo.mockResolvedValue(new Set(["b"]));
+
+    const lists = await listFriendsFor(ME);
+    expect(m.profilesOpenTo).toHaveBeenCalledTimes(1);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith(ME, ["a", "b", "c"]);
+    expect(lists.incoming[0]?.profileOpen).toBe(false);
+    expect(lists.friends[0]?.profileOpen).toBe(true);
+    expect(lists.outgoing[0]?.profileOpen).toBe(false);
+    expect(toMobileFriendLists(lists).incoming[0]?.profileOpen).toBe(false);
   });
 });

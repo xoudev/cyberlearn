@@ -5,22 +5,22 @@ const MESSAGES: Record<string, { text: string; accent: string }> = {
   missing: { text: "Lien invalide ou expiré.", accent: "var(--color-warning)" },
   invalid: { text: "Lien invalide ou expiré.", accent: "var(--color-warning)" },
   expired: {
-    text: "Ce lien de confirmation a expiré. Si vous souhaitez toujours supprimer votre compte, renouvelez la demande depuis vos paramètres.",
+    text: "Ce lien de confirmation a expiré. Si tu veux toujours supprimer ton compte, refais la demande depuis tes paramètres.",
     accent: "var(--color-warning)",
   },
   used: { text: "Ce lien a déjà été utilisé.", accent: "var(--color-warning)" },
   internal: {
-    text: "Une erreur est survenue lors de la suppression. Contactez privacy@cyberlearn.fr si le problème persiste.",
+    text: "Une erreur est survenue lors de la suppression. Écris à privacy@cyberlearn.fr si le problème persiste.",
     accent: "var(--color-danger)",
   },
   auth_cleanup_failed: {
-    text: "Vos données ont été supprimées de notre base, mais nous n'avons pas pu finaliser la suppression côté authentification. Notre équipe a été notifiée. Contactez privacy@cyberlearn.fr pour confirmer la clôture complète.",
+    text: "Tes données ont été supprimées de notre base, mais nous n'avons pas pu finaliser la suppression côté authentification. Notre équipe a été prévenue. Écris à privacy@cyberlearn.fr pour confirmer la clôture complète.",
     accent: "var(--color-danger)",
   },
 };
 
 const DEFAULT: { text: string; accent: string } = {
-  text: "Une erreur est survenue. Veuillez réessayer ou contacter le support.",
+  text: "Une erreur est survenue. Réessaie, ou écris au support.",
   accent: "var(--color-danger)",
 };
 

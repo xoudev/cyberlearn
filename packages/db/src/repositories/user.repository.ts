@@ -115,6 +115,21 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
 
 const WEEK_MS = 7 * 86_400_000;
 
+/**
+ * Whether this reader may open this person's profile: a public one, their
+ * own, or an accepted friend's. The one rule behind findPublicProfile and
+ * isProfileOpenTo, so the light check and the full read never disagree.
+ */
+async function profileOpensTo(
+  owner: { id: string; preferences: { publicProfile: boolean } | null },
+  viewerId: string | null,
+): Promise<boolean> {
+  if (owner.preferences?.publicProfile !== false) return true;
+  if (viewerId === null) return false;
+  if (viewerId === owner.id) return true;
+  return (await friendshipRepository.between(viewerId, owner.id))?.status === "ACCEPTED";
+}
+
 export const userRepository = {
   /**
    * Changes an account's role, and never leaves the console without an
@@ -365,13 +380,7 @@ export const userRepository = {
       },
     });
     if (!user) return null;
-    let allowed = user.preferences?.publicProfile !== false;
-    if (!allowed && viewerId !== null) {
-      allowed =
-        viewerId === user.id ||
-        (await friendshipRepository.between(viewerId, user.id))?.status === "ACCEPTED";
-    }
-    if (!allowed) return null;
+    if (!(await profileOpensTo(user, viewerId))) return null;
 
     // The skills line counts lessons finished by category: a count per
     // category, rather than every row of a long progress.
@@ -384,6 +393,25 @@ export const userRepository = {
       ...user,
       lessonsByCategory: counted.map((row) => ({ category: row.category, count: row._count._all })),
     };
+  },
+
+  /**
+   * Whether findPublicProfile would return something for this reader, without
+   * reading the profile: the id and the "profil public" setting, then the
+   * friendship only for a private one.
+   *
+   * For /u/<username>'s layout, which has to answer the 404 before anything is
+   * streamed and so runs above the skeleton - which is also where Next stops
+   * when it prefetches a link. Every profile link on a screen (the leaderboard,
+   * the forum) prefetches, so the layout's question has to stay this cheap;
+   * the full read stays in the page, behind the skeleton.
+   */
+  async isProfileOpenTo(username: string, viewerId: string | null): Promise<boolean> {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true, preferences: { select: { publicProfile: true } } },
+    });
+    return owner !== null && (await profileOpensTo(owner, viewerId));
   },
 
   /**

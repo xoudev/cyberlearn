@@ -88,6 +88,13 @@ vi.mock("@upstash/ratelimit", () => {
       });
     };
 
+  // Hands the window's spent tokens back, like Ratelimit#resetUsedTokens.
+  (Ratelimit.prototype as { resetUsedTokens: (id: string) => Promise<void> }).resetUsedTokens =
+    function (this: { limit_: number; prefix_: string }, identifier: string): Promise<void> {
+      counters.delete(`${this.prefix_}:${identifier}`);
+      return Promise.resolve();
+    };
+
   // Static factory - encodes limit into an object the constructor reads
   (
     Ratelimit as unknown as { slidingWindow: (limit: number, window: string) => { limit: number } }
@@ -107,6 +114,7 @@ const {
   checkQaSubmission,
   checkHintReveal,
   checkDataExport,
+  releaseDataExport,
   allowAuthAttempt,
   recordSignInFailure,
   AUTH_BUDGETS,
@@ -194,6 +202,22 @@ describe("checkDataExport - 1 / 24h", () => {
     const r = await checkDataExport(userId);
     expect(r.success).toBe(false);
     expect(r.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it("gives the export back once released, so a failed build does not cost the day", async () => {
+    const userId = uid();
+    await checkDataExport(userId);
+    await releaseDataExport(userId);
+    const r = await checkDataExport(userId);
+    expect(r.success).toBe(true);
+  });
+
+  it("releases only the account it is given", async () => {
+    const userId = uid();
+    await checkDataExport(userId);
+    await releaseDataExport(uid());
+    const r = await checkDataExport(userId);
+    expect(r.success).toBe(false);
   });
 });
 

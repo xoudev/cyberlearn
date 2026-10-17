@@ -60,6 +60,18 @@ export async function requestDeletion(
   } catch (err) {
     const log = await requestLogger();
     log.error({ scope: "rgpd", err: errorMessage(err) }, "sendDeletionConfirmEmail failed");
+    // The token is what the settings read as "a request is pending": left in
+    // place, it told the account holder an e-mail had gone out and hid the
+    // button to ask again for an hour, when nothing had been sent. A link
+    // nobody received is no request at all, so it goes.
+    try {
+      await prisma.accountDeletionToken.deleteMany({ where: { tokenHash } });
+    } catch (cleanupErr) {
+      log.error(
+        { scope: "rgpd", err: errorMessage(cleanupErr) },
+        "unsent deletion token could not be removed",
+      );
+    }
     return { success: false, error: "email_failed" };
   }
 

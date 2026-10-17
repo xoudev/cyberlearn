@@ -21,6 +21,29 @@ import {
 
 export type { ForumActionResult };
 
+/**
+ * The page a write refreshes: a forum page - /forum, a section, a thread -
+ * and nothing else. It comes from the browser like the rest of the input, and
+ * passed straight to revalidatePath it let any signed-in account have any
+ * path of the site's cache revalidated through an edit or a hide. Section and
+ * thread slugs are [a-z0-9-] (slugify in the forum repository).
+ */
+const forumPath = z
+  .string()
+  .max(200)
+  .regex(/^\/forum(?:\/[a-z0-9-]{1,80}){0,2}$/u);
+
+const editSchema = z.object({ postId: z.string(), content: z.string(), path: forumPath });
+const hideSchema = z.object({ postId: z.string(), path: forumPath });
+const moderateSchema = z.object({
+  topicId: z.guid(),
+  locked: z.boolean().optional(),
+  pinned: z.boolean().optional(),
+  path: forumPath,
+});
+
+const INVALID: ForumActionResult = { ok: false, error: "Requête invalide." };
+
 export async function createTopicAction(input: {
   categorySlug: string;
   title: string;
@@ -44,7 +67,12 @@ export async function editPostAction(input: {
   path: string;
 }): Promise<ForumActionResult> {
   const user = await requireRequestUser();
-  return editForumPost(user.id, { postId: input.postId, content: input.content }, input.path);
+  // The id and the text are the service's to judge (and to word a refusal
+  // for); the shape and the page to refresh are checked here.
+  const parsed = editSchema.safeParse(input);
+  if (!parsed.success) return INVALID;
+  const { postId, content, path } = parsed.data;
+  return editForumPost(user.id, { postId, content }, path);
 }
 
 export async function hidePostAction(input: {
@@ -52,7 +80,9 @@ export async function hidePostAction(input: {
   path: string;
 }): Promise<ForumActionResult> {
   const user = await requireRequestUser();
-  return hideForumPost(user.id, input.postId, input.path);
+  const parsed = hideSchema.safeParse(input);
+  if (!parsed.success) return INVALID;
+  return hideForumPost(user.id, parsed.data.postId, parsed.data.path);
 }
 
 /** Closing a thread and holding one at the top are administrator's work. */
@@ -64,13 +94,20 @@ export async function moderateTopicAction(input: {
 }): Promise<ForumActionResult> {
   const user = await requireRequestUser();
   if (!(await isForumAdmin(user.id))) return { ok: false, error: "Action réservée." };
-  if (!z.guid().safeParse(input.topicId).success) {
-    return { ok: false, error: "Sujet introuvable." };
+  const parsed = moderateSchema.safeParse(input);
+  if (!parsed.success) {
+    // A topic id that is not one says what it always said; anything else -
+    // a flag that is not a boolean, a page outside the forum - is a forged
+    // call, refused before it reaches Prisma as a 500.
+    return parsed.error.issues.some((issue) => issue.path[0] === "topicId")
+      ? { ok: false, error: "Sujet introuvable." }
+      : INVALID;
   }
+  const { topicId, locked, pinned, path } = parsed.data;
 
-  if (input.locked !== undefined) await forumRepository.setLocked(input.topicId, input.locked);
-  if (input.pinned !== undefined) await forumRepository.setPinned(input.topicId, input.pinned);
+  if (locked !== undefined) await forumRepository.setLocked(topicId, locked);
+  if (pinned !== undefined) await forumRepository.setPinned(topicId, pinned);
 
-  revalidatePath(input.path);
+  revalidatePath(path);
   return { ok: true };
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
+import { notificationAge } from "@cyberlearn/lib/social/notification-age";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
@@ -67,6 +68,10 @@ function badgeRarityFromMeta(item: NotificationItem): BadgeRarity {
   return "COMMON";
 }
 
+const LOAD_FAILED = "Chargement impossible pour l'instant. Referme et rouvre pour réessayer.";
+const MARK_ALL_FAILED =
+  "Impossible de tout marquer comme lu pour l'instant. Réessaie dans un moment.";
+
 interface NotificationPanelProps {
   initialUnreadCount: number;
   userId: string;
@@ -80,6 +85,10 @@ export function NotificationPanel({
   const [unread, setUnread] = useState(initialUnreadCount);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // What went wrong, said in the panel. An error thrown inside a transition
+  // goes to the nearest error boundary, which for the navbar is the site's
+  // own: a passing failure used to replace the whole page with it.
+  const [failure, setFailure] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -99,12 +108,19 @@ export function NotificationPanel({
   useEffect(() => {
     if (!open || loaded) return;
     startTransition(async () => {
-      const res = await getNotificationsAction();
-      if (res.success && res.notifications) {
-        setItems(res.notifications);
-        setUnread(res.unreadCount ?? 0);
-        setLoaded(true);
+      setFailure(null);
+      try {
+        const res = await getNotificationsAction();
+        if (res.success && res.notifications) {
+          setItems(res.notifications);
+          setUnread(res.unreadCount ?? 0);
+          setLoaded(true);
+          return;
+        }
+      } catch {
+        // Said below, like a refusal. Reopening the panel tries again.
       }
+      setFailure(LOAD_FAILED);
     });
   }, [open, loaded]);
 
@@ -142,7 +158,14 @@ export function NotificationPanel({
 
   const handleMarkRead = useCallback((id: string) => {
     startTransition(async () => {
-      await markNotificationReadAction(id);
+      try {
+        const res = await markNotificationReadAction(id);
+        if (!res.success) return;
+      } catch {
+        // The notice stays unread, which is the truth; the next opening reads
+        // it again. Following its link still works.
+        return;
+      }
       setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
       setUnread((c) => Math.max(0, c - 1));
     });
@@ -150,7 +173,14 @@ export function NotificationPanel({
 
   const handleMarkAllRead = useCallback(() => {
     startTransition(async () => {
-      await markAllNotificationsReadAction();
+      setFailure(null);
+      try {
+        const res = await markAllNotificationsReadAction();
+        if (!res.success) throw new Error("refused");
+      } catch {
+        setFailure(MARK_ALL_FAILED);
+        return;
+      }
       setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date() })));
       setUnread(0);
     });
@@ -270,6 +300,23 @@ export function NotificationPanel({
             )}
           </div>
 
+          {failure !== null && (
+            <p
+              role="alert"
+              style={{
+                margin: 0,
+                padding: "12px 18px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                lineHeight: 1.5,
+                color: "var(--color-danger)",
+                borderBottom: "1px solid var(--color-border-subtle)",
+              }}
+            >
+              {failure}
+            </p>
+          )}
+
           {/* List */}
           {isPending && !loaded ? (
             <div
@@ -283,7 +330,7 @@ export function NotificationPanel({
             >
               Chargement…
             </div>
-          ) : items.length === 0 ? (
+          ) : !loaded && failure === LOAD_FAILED ? null : items.length === 0 ? (
             <div style={{ padding: "40px 18px", textAlign: "center" }}>
               <svg
                 width="32"
@@ -354,12 +401,10 @@ function NotificationRow({
   // No fallback: the record is exhaustive over the enum, so there is no type
   // that can arrive here without an icon.
   const icon = TYPE_ICON[item.type];
-  // new Date() rather than the field: a row pushed by Realtime carries the
-  // date as a string, not as the Date the server action hands over.
-  const dateStr = new Intl.RelativeTimeFormat("fr", { numeric: "auto" }).format(
-    Math.round((new Date(item.createdAt).getTime() - Date.now()) / (1000 * 60)),
-    "minutes",
-  );
+  // The unit follows the gap, as in the app: it used to be minutes whatever
+  // the gap, so last week read "il y a 10 080 minutes". A row pushed by
+  // Realtime carries the date as a string, which the helper reads too.
+  const dateStr = notificationAge(item.createdAt, Date.now());
   const style: React.CSSProperties = {
     background: isUnread
       ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"

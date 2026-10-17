@@ -130,8 +130,14 @@ export function BanNotice({
             </button>
           </div>
         </form>
-      ) : (
-        <div className={styles.actions}>
+      ) : null}
+
+      {/* Signing out is offered whatever became of the appeal, as in the app.
+          It used to sit beside "Faire appel" only, so once an appeal was sent
+          the account was stuck signed in: every page leads back here, and
+          here had no way out short of clearing the cookies. */}
+      <div className={styles.actions}>
+        {!sent && !appealOpen && (
           <button
             type="button"
             className={styles.primary}
@@ -141,21 +147,21 @@ export function BanNotice({
           >
             Faire appel
           </button>
-          <button
-            type="button"
-            className={styles.ghost}
-            onClick={() => {
-              void createSupabaseBrowserClient()
-                .auth.signOut()
-                .then(() => {
-                  router.push("/login");
-                });
-            }}
-          >
-            Se déconnecter
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          type="button"
+          className={styles.ghost}
+          onClick={() => {
+            void createSupabaseBrowserClient()
+              .auth.signOut()
+              .then(() => {
+                router.push("/login");
+              });
+          }}
+        >
+          Se déconnecter
+        </button>
+      </div>
     </>
   );
 }

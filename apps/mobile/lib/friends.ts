@@ -24,6 +24,8 @@ export interface Friend {
   /** Ready to draw: a glyph, a preset path, a signed URL, or null. */
   avatar: string | null;
   since: string;
+  /** Whether the reader would be let into their profile (false: private, and not a friend). */
+  profileOpen: boolean;
 }
 
 export interface FriendLists {
@@ -99,6 +101,16 @@ export interface PublicProfile {
   skills: ProfileSkill[];
   certificates: ProfileCertificate[];
   challenges: ProfileChallenge[];
+}
+
+/**
+ * The handle a row's name opens, or null when it opens nothing: no handle, or
+ * a private profile the reader is not let into - somebody who has only sent a
+ * request is still a stranger to it, and a tap on a name that lands on
+ * "Profil introuvable" is worse than a name that is not a button.
+ */
+export function profileTarget(friend: Pick<Friend, "username" | "profileOpen">): string | null {
+  return friend.profileOpen ? friend.username : null;
 }
 
 /** The undo button on a row: the same call, three different words, as on the site. */

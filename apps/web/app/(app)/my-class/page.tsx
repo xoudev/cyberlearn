@@ -7,8 +7,10 @@ import {
   friendshipRepository,
   lessonsVisibleTo,
   prisma,
+  userRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { classmateIdentity, studentIdentity } from "@/lib/classes/roster-names";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
 import { StudentWork, type StudentWorkItem } from "./_components/student-work";
@@ -95,6 +97,17 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   // The exercises each student finished inside lessons (the real terminal,
   // the Python challenges), as the pages verified them: shown, not rewarded.
   const exercisesByUser = await exerciseRepository.countByUsers(rosterMemberIds);
+  // Whose profile the teacher's roster may link to: teaching a class opens no
+  // closed profile. Only the taught rosters need it.
+  const taughtMemberIds = [
+    ...new Set(
+      taughtClassIds.flatMap((id) => (rosters.get(id)?.members ?? []).map((m) => m.user.id)),
+    ),
+  ];
+  const openToReader =
+    taughtMemberIds.length === 0
+      ? new Set<string>()
+      : await userRepository.profilesOpenTo(authUser.id, taughtMemberIds);
 
   const now = Date.now();
   const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
@@ -220,6 +233,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   const establishments = buildTaught(
     taught,
     rosters,
+    openToReader,
     completedByUser,
     exercisesByUser,
     workByClass,
@@ -297,21 +311,13 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
                   name: t.teacher.displayName || (t.teacher.username ?? "Sans nom"),
                   subject: t.subject,
                 }))}
-                people={roster.members.map((mem) => {
-                  const visible = mem.user.preferences?.publicProfile !== false;
-                  return {
-                    id: mem.user.id,
-                    name: visible
-                      ? mem.user.displayName || (mem.user.username ?? "Sans nom")
-                      : "Anonyme",
-                    username: visible ? mem.user.username : null,
-                    visible,
-                    isFriend: visible && friendIds.has(mem.user.id),
-                    level: mem.user.level,
-                    xpTotal: mem.user.xpTotal,
-                    completed: completedByUser.get(mem.user.id) ?? 0,
-                  };
-                })}
+                people={roster.members.map((mem) => ({
+                  id: mem.user.id,
+                  ...classmateIdentity(mem.user, authUser.id, friendIds),
+                  level: mem.user.level,
+                  xpTotal: mem.user.xpTotal,
+                  completed: completedByUser.get(mem.user.id) ?? 0,
+                }))}
               />
             );
           })}
@@ -333,6 +339,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
 function buildTaught(
   taught: Awaited<ReturnType<typeof classRepository.findForTeacher>>,
   rosters: Map<string, Awaited<ReturnType<typeof classRepository.findMembersVisibleTo>>>,
+  openToReader: ReadonlySet<string>,
   completedByUser: Map<string, number>,
   exercisesByUser: Map<string, number>,
   workByClass: Map<string, ClassWorkItem[]>,
@@ -361,8 +368,7 @@ function buildTaught(
         assignmentOptions: assignmentOptionsByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
           id: m.user.id,
-          name: m.user.displayName || (m.user.username ?? "Sans nom"),
-          username: m.user.username,
+          ...studentIdentity(m.user, openToReader),
           level: m.user.level,
           completed: completedByUser.get(m.user.id) ?? 0,
           exercises: exercisesByUser.get(m.user.id) ?? 0,

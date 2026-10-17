@@ -37,13 +37,19 @@ const { FriendsPanel } = await import("../friends-panel");
 const ALEX = "11111111-1111-4111-8111-111111111111";
 const SAM = "22222222-2222-4222-8222-222222222222";
 
-function entry(id: string, displayName: string, status: "PENDING" | "ACCEPTED"): FriendEntry {
+function entry(
+  id: string,
+  displayName: string,
+  status: "PENDING" | "ACCEPTED",
+  profileOpen = true,
+): FriendEntry {
   return {
     id: `edge-${id}`,
     status,
     requestedById: id,
     createdAt: new Date("2026-10-01T10:00:00.000Z"),
     avatarSrc: null,
+    profileOpen,
     person: {
       id,
       username: displayName.toLowerCase(),
@@ -149,10 +155,35 @@ describe("FriendsPanel rows", () => {
     expect(within(row).getByText("Retirer de tes amis ?")).toBeTruthy();
   });
 
+  it("links a name only when the profile would open for the reader", async () => {
+    // Sam's profile is private and Sam has only asked: the page would be a 404.
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [entry(SAM, "Sam", "PENDING", false)],
+      friends: [entry(ALEX, "Alex", "ACCEPTED")],
+      outgoing: [],
+    });
+    await openPanel();
+    expect(screen.getByText("Sam").closest("a")).toBeNull();
+    expect(screen.getByText("Alex").closest("a")?.getAttribute("href")).toBe("/u/alex");
+  });
+
   it("says so when the call itself fails", async () => {
     m.removeFriendAction.mockRejectedValue(new Error("network"));
     await openPanel();
     fireEvent.click(within(rowOf("Sam")).getByRole("button", { name: "Refuser" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible pour l'instant/);
+  });
+});
+
+describe("FriendsPanel loading", () => {
+  it("says a failed load in the panel, instead of throwing to the site's error screen", async () => {
+    m.getFriendsAction.mockRejectedValueOnce(new Error("db down"));
+    render(<FriendsPanel initialRequestCount={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Chargement impossible/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+    expect(await screen.findByText("Alex")).toBeTruthy();
+    expect(screen.queryByText(/Chargement impossible/)).toBeNull();
   });
 });
