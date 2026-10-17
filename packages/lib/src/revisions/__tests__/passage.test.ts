@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passageHref, quizAnchor, sectionFromQuery } from "../passage.js";
+import { passageHref, quizAnchor, SECTION_PARAM, sectionFromQuery } from "../passage.js";
 
 /**
  * "Revoir ce passage": the link from a review question back to the lesson,
@@ -21,6 +21,11 @@ describe("passageHref", () => {
 
   it("names the anchor the quiz carries on the page", () => {
     expect(quizAnchor("q-6")).toBe("quiz-q-6");
+  });
+
+  it("asks for the section in the parameter the lesson page reads", () => {
+    const url = new URL(passageHref("linux-permissions", 0, "q-1"), "https://cyberlearn.fr");
+    expect(url.searchParams.get(SECTION_PARAM)).toBe("1");
   });
 });
 

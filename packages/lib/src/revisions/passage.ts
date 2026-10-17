@@ -7,10 +7,15 @@
  * the question into view: the quiz carries that id
  * (apps/web/app/(app)/lessons/[slug]/_components/quiz.tsx). The page opens
  * the section only where the reader may already open it, on a lesson they
- * finished; a card or a module's review only ever asks about one.
+ * finished; a card or a module's review only ever asks about one. With the
+ * lesson already on screen, its stepper opens the section and takes the
+ * parameter off the address (lesson-stepper.tsx).
  *
  * Pure: the site writes the link, the app will read the same section number.
  */
+
+/** The parameter of the lesson's address that asks for a section. */
+export const SECTION_PARAM = "section";
 
 /** The id a quiz carries on the lesson page, for a link to land on it. */
 export function quizAnchor(quizId: string): string {
@@ -22,7 +27,7 @@ export function quizAnchor(quizId: string): string {
  * is in when it is known (`section` from 0), the question itself.
  */
 export function passageHref(slug: string, section: number | null, quizId: string): string {
-  const query = section === null ? "" : `?section=${String(section + 1)}`;
+  const query = section === null ? "" : `?${SECTION_PARAM}=${String(section + 1)}`;
   return `/lessons/${encodeURIComponent(slug)}${query}#${encodeURIComponent(quizAnchor(quizId))}`;
 }
 
