@@ -2,6 +2,7 @@
 
 import React, { useSyncExternalStore } from "react";
 import { getPythonRuntime, type PythonRuntimeState } from "@/lib/python/runtime";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * What the page's Python is doing, said out loud.
@@ -20,7 +21,7 @@ export function usePythonRuntimeState(): PythonRuntimeState {
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 11,
+  fontSize: LAB_LABEL_SIZE,
   letterSpacing: "0.04em",
   lineHeight: 1.5,
 };
@@ -110,7 +111,7 @@ export function DraftControls({
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       {restored && (
-        <span style={{ ...MONO, fontSize: 10, color: "var(--color-text-muted)" }}>
+        <span style={{ ...MONO, fontSize: LAB_LABEL_SIZE, color: "var(--color-text-muted)" }}>
           Brouillon retrouvé
         </span>
       )}
@@ -120,7 +121,7 @@ export function DraftControls({
         title="Revenir au code de départ"
         style={{
           ...MONO,
-          fontSize: 10,
+          fontSize: LAB_LABEL_SIZE,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           padding: "4px 8px",

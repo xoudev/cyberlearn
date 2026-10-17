@@ -7,10 +7,16 @@ import { LAB_LABEL_SIZE, LAB_MONO_SIZE, labKicker } from "../lab-text";
  * A lab's labels were 10 and 11px, the kicker of its head included: the size
  * of a footnote, on the parts a learner reads to know what to do. They are
  * 12px now, the monospace content 13px, and the labs are read here for any
- * size that slipped back under the floor.
+ * size that slipped back under the floor. The terminals and the editors are
+ * labs too: their window's title, their status line, their hints, the
+ * explanation of a command, the draft's controls. An icon drawn at a share of
+ * the label it leads (the ▶ of a run button, in `em`) is not text and is not
+ * counted.
  */
 
 const LABS = [
+  "code-playground.tsx",
+  "command-explanation.tsx",
   "crypto-workshop.tsx",
   "find-the-flaw.tsx",
   "firewall-lab.tsx",
@@ -18,6 +24,7 @@ const LABS = [
   "hex-editor.tsx",
   "incident-story.tsx",
   "jwt-lab.tsx",
+  "linux-terminal.tsx",
   "log-hunt.tsx",
   "match-pairs.tsx",
   "network-lab.tsx",
@@ -28,6 +35,9 @@ const LABS = [
   "photo-osint.tsx",
   "php-lab.tsx",
   "put-in-order.tsx",
+  "python-challenge.tsx",
+  "python-status.tsx",
+  "simulated-terminal.tsx",
   "sql-injection-lab.tsx",
   "sql-playground.tsx",
   "sql-result-table.tsx",

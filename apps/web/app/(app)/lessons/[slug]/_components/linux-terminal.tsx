@@ -34,6 +34,7 @@ import { cssToken } from "@cyberlearn/ui";
 import { CommandExplanation } from "./command-explanation";
 import { linuxTerminalTheme } from "./terminal-themes";
 import { useExerciseRecord } from "./use-exercise-record";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 /**
  * A real Linux in the lesson: v86, an x86 emulator in WebAssembly, boots a
@@ -49,7 +50,7 @@ import { useExerciseRecord } from "./use-exercise-record";
 /** A typed line, offered for an explanation. */
 const CHIP: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 11,
+  fontSize: LAB_MONO_SIZE,
   padding: "3px 8px",
   border: "1px solid var(--color-border-default)",
   background: "transparent",
@@ -716,8 +717,9 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          gap: 14,
+          gap: "8px 14px",
           padding: "11px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
@@ -737,7 +739,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             color: "var(--cosmetic-accent)",
             letterSpacing: "0.04em",
             flex: 1,
@@ -766,7 +768,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: allDone ? "var(--cosmetic-accent)" : "var(--color-text-faint)",
@@ -781,7 +783,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
             onClick={restart}
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               background: "transparent",
@@ -984,7 +986,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--color-text-muted)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -1026,7 +1028,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           <div
             style={{
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--cosmetic-accent)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
