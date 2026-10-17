@@ -43,7 +43,7 @@ const VARIANTS: Record<
   },
 };
 
-interface CalloutProps {
+export interface CalloutProps {
   // MDX authors pass an arbitrary string; unknown/casing variants fall back to "info".
   type?: string;
   title?: string;

@@ -1,5 +1,9 @@
+import { createElement, type ComponentProps, type ComponentType, type ReactElement } from "react";
+import type { LessonComponentName } from "@cyberlearn/lib/mdx-check";
+import { lessonComponentWidth } from "@cyberlearn/lib/mdx-components";
 import { CodeBlock } from "./code-block";
-import { Quiz } from "./quiz";
+import type { Quiz } from "./quiz";
+import { QuizBlock } from "./quiz-block";
 import { CodePlayground } from "./code-playground";
 import { SimulatedTerminal } from "./simulated-terminal";
 import { LinuxTerminal } from "./linux-terminal";
@@ -31,6 +35,37 @@ import { HexEditor } from "./hex-editor";
 import { IncidentStory } from "./incident-story";
 import { JwtLab } from "./jwt-lab";
 import { PasswordLab } from "./password-lab";
+import { lessonBlockAttributes } from "./lesson-block";
+
+/**
+ * A component in its block (lesson-block.ts): a size container, as wide as
+ * the registry says (`width` in @cyberlearn/lib/mdx-components). `inline`
+ * names the props with which the component flows in a sentence or beside one,
+ * an inline link or a floated image: those stay bare, since a block there would
+ * break the paragraph (a <div> cannot sit in a <p>) or contain the float.
+ *
+ * A plain function, run on the server: what it returns is what the page gets.
+ * That is why the Quiz has a block of its own making (quiz-block.tsx).
+ */
+function inLessonBlock<P extends object>(
+  name: LessonComponentName,
+  Component: ComponentType<P>,
+  inline?: (props: P) => boolean,
+): (props: P) => ReactElement {
+  const attributes = lessonBlockAttributes(name, lessonComponentWidth(name));
+  function LessonBlock(props: P): ReactElement {
+    const element = createElement(Component, props);
+    return inline?.(props) === true ? element : createElement("div", attributes, element);
+  }
+  LessonBlock.displayName = `LessonBlock(${name})`;
+  return LessonBlock;
+}
+
+const QUIZ_WIDTH = lessonComponentWidth("Quiz");
+
+function QuizInBlock(props: ComponentProps<typeof Quiz>): ReactElement {
+  return createElement(QuizBlock, { ...props, blockWidth: QUIZ_WIDTH });
+}
 
 /**
  * What a lesson's MDX may name, bound to what draws it. One entry per name in
@@ -38,39 +73,41 @@ import { PasswordLab } from "./password-lab";
  * code. Its own module because two pages render lessons with it: the lesson
  * page, and the editor's preview (app/preview), which has to draw a draft
  * exactly as the lesson page would, or it is not a preview.
+ *
+ * Each component comes in its block; `pre`, part of the prose, does not.
  */
 export const LESSON_MDX_COMPONENTS = {
   pre: CodeBlock,
-  Quiz,
-  CodePlayground,
-  SimulatedTerminal,
-  LinuxTerminal,
-  TwoMachineLab,
-  LessonVideo,
-  LessonImage,
-  ExternalLink,
-  Callout,
-  Diagram,
-  QuizGroup,
-  PythonChallenge,
-  FindTheFlaw,
-  PhishingEmail,
-  SqlPlayground,
-  SqlInjectionLab,
-  GitSandbox,
-  PhotoOsint,
-  NetworkLab,
-  StepAnimation,
-  PhpLab,
-  SubnetDrill,
-  PacketDissector,
-  PutInOrder,
-  MatchPairs,
-  CryptoWorkshop,
-  FirewallLab,
-  LogHunt,
-  HexEditor,
-  IncidentStory,
-  JwtLab,
-  PasswordLab,
+  Quiz: QuizInBlock,
+  CodePlayground: inLessonBlock("CodePlayground", CodePlayground),
+  SimulatedTerminal: inLessonBlock("SimulatedTerminal", SimulatedTerminal),
+  LinuxTerminal: inLessonBlock("LinuxTerminal", LinuxTerminal),
+  TwoMachineLab: inLessonBlock("TwoMachineLab", TwoMachineLab),
+  LessonVideo: inLessonBlock("LessonVideo", LessonVideo),
+  LessonImage: inLessonBlock("LessonImage", LessonImage, (props) => props.variant === "inline"),
+  ExternalLink: inLessonBlock("ExternalLink", ExternalLink, (props) => props.variant === "link"),
+  Callout: inLessonBlock("Callout", Callout),
+  Diagram: inLessonBlock("Diagram", Diagram),
+  QuizGroup: inLessonBlock("QuizGroup", QuizGroup),
+  PythonChallenge: inLessonBlock("PythonChallenge", PythonChallenge),
+  FindTheFlaw: inLessonBlock("FindTheFlaw", FindTheFlaw),
+  PhishingEmail: inLessonBlock("PhishingEmail", PhishingEmail),
+  SqlPlayground: inLessonBlock("SqlPlayground", SqlPlayground),
+  SqlInjectionLab: inLessonBlock("SqlInjectionLab", SqlInjectionLab),
+  GitSandbox: inLessonBlock("GitSandbox", GitSandbox),
+  PhotoOsint: inLessonBlock("PhotoOsint", PhotoOsint),
+  NetworkLab: inLessonBlock("NetworkLab", NetworkLab),
+  StepAnimation: inLessonBlock("StepAnimation", StepAnimation),
+  PhpLab: inLessonBlock("PhpLab", PhpLab),
+  SubnetDrill: inLessonBlock("SubnetDrill", SubnetDrill),
+  PacketDissector: inLessonBlock("PacketDissector", PacketDissector),
+  PutInOrder: inLessonBlock("PutInOrder", PutInOrder),
+  MatchPairs: inLessonBlock("MatchPairs", MatchPairs),
+  CryptoWorkshop: inLessonBlock("CryptoWorkshop", CryptoWorkshop),
+  FirewallLab: inLessonBlock("FirewallLab", FirewallLab),
+  LogHunt: inLessonBlock("LogHunt", LogHunt),
+  HexEditor: inLessonBlock("HexEditor", HexEditor),
+  IncidentStory: inLessonBlock("IncidentStory", IncidentStory),
+  JwtLab: inLessonBlock("JwtLab", JwtLab),
+  PasswordLab: inLessonBlock("PasswordLab", PasswordLab),
 };

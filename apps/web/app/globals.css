@@ -978,9 +978,9 @@ aside[data-state="collapsed"] .sidebar-nav-item {
 
 /* The lesson's typography is for the prose an author writes, and stops at a
    component's edge. MDX puts each block of prose (p, ul, h2...) and each
-   component's root straight under the article (SectionPane and LessonSection
-   add no element), so `article.lesson-content > p` is a paragraph of the
-   lesson and a lab's own <p> is not. These rules used to match every element
+   component's block (.lesson-block, below) straight under the article
+   (SectionPane and LessonSection add no element), so `article.lesson-content
+   > p` is a paragraph of the lesson and a lab's own <p> is not. These rules used to match every element
    of the article with !important, which beat the components' inline styles:
    a lab's 14px line came out at 16px with an 18px margin, its lists grew "›"
    markers, the quiz question shrank to 16px.
@@ -999,11 +999,87 @@ article.lesson-content {
 }
 
 /* The measure. The prose an author writes reads in a column of about seventy
-   characters, centred in the article; a component, whose root is a child of
-   the article too but none of these, keeps the article's width. */
+   characters, centred in the article; a component sits in its block, below,
+   in the same measure or wider. */
 article.lesson-content > :is(p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote, table, hr, dl) {
   max-width: 720px;
   margin-inline: auto;
+}
+
+/* ─── A component's block (lesson-mdx-components.ts, lesson-block.ts) ──────
+   Each component of a lesson comes in a block, a size container: inside it a
+   component lays itself out by the width it is given (`@container
+   lesson-block`, `cqi`), not by the screen's, which could mean 1150px of
+   article or half of that with the notes docked. The block sits in the
+   prose's measure or wide, as the registry says (`width`,
+   @cyberlearn/lib/mdx-components); wide stops at 1200px, what the article
+   reaches in focus mode.
+
+   A container is its own formatting context: a component's margins no longer
+   met the paragraphs' around it but added up to them, 18px under a paragraph
+   and 24px over a Callout making 42px. So the block spaces itself among the
+   prose, its margins collapsing with the paragraphs' as the component's used
+   to, and the component's own top and bottom margins are set aside. They are
+   inline styles, which only !important reaches; nothing else of the
+   component is touched. */
+.lesson-block {
+  container: lesson-block / inline-size;
+  min-width: 0;
+  margin-block: 28px;
+  margin-inline: auto;
+}
+.lesson-block > * {
+  margin-block: 0 !important;
+}
+.lesson-block[data-width="prose"] {
+  max-width: 720px;
+}
+.lesson-block[data-width="wide"] {
+  max-width: 1200px;
+}
+.lesson-block:is([data-component="Callout"], [data-component="ExternalLink"]) {
+  margin-block: 24px;
+}
+/* A question opens with room above it, as it did, and the section goes on
+   right under it. */
+.lesson-block:is([data-component="Quiz"], [data-component="QuizGroup"]) {
+  margin-block: 56px 0;
+}
+
+/* What a screen measures grows with its block: a 380px terminal was a
+   letterbox in a 1150px block, and an editor showed ten lines of code in a box
+   five times as wide. Never shorter than it was, so a phone keeps what it
+   had. Outside a lesson (a challenge's machine) a screen keeps its fixed
+   height. An author's `height` prop, written inline, wins in both. */
+.linux-terminal__screen {
+  height: 380px;
+}
+.sim-terminal__screen {
+  height: 320px;
+}
+.code-playground__editor {
+  height: 220px;
+}
+.python-challenge__editor {
+  height: 240px;
+}
+.php-lab__preview {
+  height: 220px;
+}
+.lesson-block .linux-terminal__screen {
+  height: clamp(380px, 42cqi, 560px);
+}
+.lesson-block .sim-terminal__screen {
+  height: clamp(320px, 36cqi, 480px);
+}
+.lesson-block .code-playground__editor {
+  height: clamp(220px, 30cqi, 420px);
+}
+.lesson-block .python-challenge__editor {
+  height: clamp(240px, 32cqi, 440px);
+}
+.lesson-block .php-lab__preview {
+  height: clamp(220px, 32cqi, 400px);
 }
 
 article.lesson-content > p {
@@ -3607,8 +3683,9 @@ button.notif-row:hover {
 /* One centred column (lessons/[slug]/page.tsx): a compact header, the lesson's
    toolbar stuck under the navbar, the article, then the next lesson, the
    rating and the questions. In the article, the prose keeps a reading measure
-   (article.lesson-content > p and its kin, above) and a component keeps the
-   article's width. The plan and the notes are drawers opened from the
+   (article.lesson-content > p and its kin, above) and a component sits in its
+   block, in that measure or wide (.lesson-block). The plan and the notes are
+   drawers opened from the
    toolbar. The editor's preview (app/preview) draws on the same classes. */
 .lesson-page {
   max-width: 1440px;

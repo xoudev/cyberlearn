@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * The lesson's typography (globals.css) is for the prose an author writes. MDX
- * puts each paragraph, list or heading, and each component's root, straight
+ * puts each paragraph, list or heading, and each component's block, straight
  * under the article, so a rule that starts at `article.lesson-content >` stops
  * at a component's edge. The rules used to match every element of the article
  * with !important, which beat the components' own inline styles: a lab's
@@ -72,5 +72,42 @@ describe("the lesson's typography", () => {
     expect(pre?.body).toMatch(/padding: 0;/u);
     expect(pre?.body).toMatch(/background: none;/u);
     expect(pre?.body).not.toMatch(/border(?:-left)?:/u);
+  });
+});
+
+/**
+ * A component's block (lesson-mdx-components.ts): the container its
+ * component lays itself out by, in the prose's measure or wide. Being a
+ * container, it stops the component's margins from meeting the prose's, so it
+ * takes the spacing over: the component's top and bottom margins, and nothing
+ * else of it, are set aside.
+ */
+const blockRules = rulesOf(sheet).filter((rule) =>
+  rule.selectors.some((s) => s.startsWith(".lesson-block")),
+);
+
+describe("a component's block", () => {
+  it("is a size container, named for the components' container queries", () => {
+    const block = blockRules.find((rule) => rule.selectors.includes(".lesson-block"));
+    expect(block?.body).toMatch(/container: lesson-block \/ inline-size;/u);
+    expect(block?.body).toMatch(/margin-inline: auto;/u);
+  });
+
+  it("sits in the prose's measure, or wide up to the article's width in focus mode", () => {
+    const prose = blockRules.find((rule) =>
+      rule.selectors.includes('.lesson-block[data-width="prose"]'),
+    );
+    const wide = blockRules.find((rule) =>
+      rule.selectors.includes('.lesson-block[data-width="wide"]'),
+    );
+    expect(prose?.body).toMatch(/max-width: 720px;/u);
+    expect(wide?.body).toMatch(/max-width: 1200px;/u);
+  });
+
+  it("forces nothing on its component but the top and bottom margins", () => {
+    const forced = blockRules
+      .filter((rule) => rule.body.includes("!important"))
+      .map((rule) => [rule.selectors.join(", "), rule.body.trim()]);
+    expect(forced).toEqual([[".lesson-block > *", "margin-block: 0 !important;"]]);
   });
 });
