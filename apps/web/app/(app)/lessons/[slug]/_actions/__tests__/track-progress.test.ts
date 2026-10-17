@@ -277,6 +277,8 @@ describe("completeLesson - who may complete what", () => {
 
     expect(m.pathLockOf).toHaveBeenCalledWith("u1", LESSON_ID);
     expect(result).toMatchObject({ alreadyCompleted: false, xpGained: 0, newBadges: [] });
+    // The lesson page tells the reader why nothing was recorded.
+    expect(result.refusal).toContain("Python : les bases");
     expect(m.transaction).not.toHaveBeenCalled();
   });
 
@@ -288,6 +290,7 @@ describe("completeLesson - who may complete what", () => {
 
     expect(m.findReadableById).toHaveBeenCalledWith(LESSON_ID, "u1");
     expect(result.xpGained).toBe(0);
+    expect(result.refusal).toBe("Leçon introuvable.");
     expect(m.transaction).not.toHaveBeenCalled();
   });
 });
