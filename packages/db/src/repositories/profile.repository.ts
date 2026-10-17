@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { PUBLISHED_PATH_LESSON } from "./path.repository.js";
 
@@ -17,8 +18,26 @@ import { PUBLISHED_PATH_LESSON } from "./path.repository.js";
  */
 const RAREST_CANDIDATES = 24;
 
-/** The paths a profile lists, going on and finished together. */
+/**
+ * The paths a profile lists: this many going on, and as many finished. Read
+ * apart, so neither kind crowds the other out (pathsOf).
+ */
 const PROFILE_PATHS = 12;
+
+/** A path on a profile: its state, and its missions counted. */
+const PATH_ROW = {
+  status: true,
+  completedAt: true,
+  path: {
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      category: true,
+      _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
+    },
+  },
+} as const satisfies Prisma.UserPathProgressSelect;
 
 export interface BadgeCandidate {
   id: string;
@@ -94,30 +113,31 @@ export const profileRepository = {
    * (CATALOGUE_PATH keeps them off every public list for the same reason).
    * A mission is a published lesson of the path (PUBLISHED_PATH_LESSON), the
    * rule the path's own page counts with.
+   *
+   * The paths going on and the ones finished are two reads, each bounded:
+   * one read ordered by completion put every path going on first, so
+   * somebody with a dozen of them showed none finished, and the timeline,
+   * which takes the finished ones most recent first, lost them all. The
+   * finished ones come most recent first, so their head is the timeline's.
    */
   async pathsOf(userId: string): Promise<ProfilePathRow[]> {
-    const rows = await prisma.userPathProgress.findMany({
-      where: {
-        userId,
-        status: { in: ["IN_PROGRESS", "COMPLETED"] },
-        path: { audience: "CATALOGUE" },
-      },
-      orderBy: [{ completedAt: { sort: "desc", nulls: "first" } }, { startedAt: "desc" }],
-      take: PROFILE_PATHS,
-      select: {
-        status: true,
-        completedAt: true,
-        path: {
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            category: true,
-            _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
-          },
-        },
-      },
-    });
+    const [going, completed] = await Promise.all([
+      prisma.userPathProgress.findMany({
+        where: { userId, status: "IN_PROGRESS", path: { audience: "CATALOGUE" } },
+        orderBy: { startedAt: "desc" },
+        take: PROFILE_PATHS,
+        select: PATH_ROW,
+      }),
+      prisma.userPathProgress.findMany({
+        where: { userId, status: "COMPLETED", path: { audience: "CATALOGUE" } },
+        // Postgres puts nulls first in a descending sort: a completion without
+        // a date goes last rather than ahead of every dated one.
+        orderBy: [{ completedAt: { sort: "desc", nulls: "last" } }, { startedAt: "desc" }],
+        take: PROFILE_PATHS,
+        select: PATH_ROW,
+      }),
+    ]);
+    const rows = [...going, ...completed];
     if (rows.length === 0) return [];
 
     const finished = await prisma.pathLesson.groupBy({

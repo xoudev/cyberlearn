@@ -911,6 +911,8 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@index([userId])
+  /// A public profile counts the holders of its owner's rarest badges.
+  @@index([badgeId])
   @@map("user_badges")
 }
 

@@ -206,30 +206,33 @@ describe("profileRepository", () => {
 
   it("reads the catalogue paths with their missions done and in all", async () => {
     const completedAt = new Date("2026-06-01T00:00:00Z");
-    mockPrisma.userPathProgress.findMany.mockResolvedValue([
-      {
-        status: "IN_PROGRESS",
-        completedAt: null,
-        path: {
-          id: "p-1",
-          slug: "linux",
-          title: "Linux",
-          category: "DEV",
-          _count: { lessons: 12 },
+    mockPrisma.userPathProgress.findMany
+      .mockResolvedValueOnce([
+        {
+          status: "IN_PROGRESS",
+          completedAt: null,
+          path: {
+            id: "p-1",
+            slug: "linux",
+            title: "Linux",
+            category: "DEV",
+            _count: { lessons: 12 },
+          },
         },
-      },
-      {
-        status: "COMPLETED",
-        completedAt,
-        path: {
-          id: "p-2",
-          slug: "reseau",
-          title: "Réseau",
-          category: "NETWORK",
-          _count: { lessons: 8 },
+      ])
+      .mockResolvedValueOnce([
+        {
+          status: "COMPLETED",
+          completedAt,
+          path: {
+            id: "p-2",
+            slug: "reseau",
+            title: "Réseau",
+            category: "NETWORK",
+            _count: { lessons: 8 },
+          },
         },
-      },
-    ]);
+      ]);
     mockPrisma.pathLesson.groupBy.mockResolvedValue([{ pathId: "p-1", _count: { _all: 5 } }]);
 
     expect(await profileRepository.pathsOf(OWNER)).toEqual([
@@ -252,14 +255,22 @@ describe("profileRepository", () => {
         completedAt,
       },
     ]);
-    // A class's path is the class's: never on a profile.
+    // A class's path is the class's: never on a profile. The paths going on
+    // and the finished ones are read apart, each bounded, so a dozen going on
+    // cannot push every finished one off the list and out of the timeline.
+    expect(mockPrisma.userPathProgress.findMany).toHaveBeenCalledTimes(2);
     expect(mockPrisma.userPathProgress.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          userId: OWNER,
-          status: { in: ["IN_PROGRESS", "COMPLETED"] },
-          path: { audience: "CATALOGUE" },
-        },
+        where: { userId: OWNER, status: "IN_PROGRESS", path: { audience: "CATALOGUE" } },
+        orderBy: { startedAt: "desc" },
+        take: 12,
+      }),
+    );
+    expect(mockPrisma.userPathProgress.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: OWNER, status: "COMPLETED", path: { audience: "CATALOGUE" } },
+        orderBy: [{ completedAt: { sort: "desc", nulls: "last" } }, { startedAt: "desc" }],
+        take: 12,
       }),
     );
     expect(mockPrisma.pathLesson.groupBy).toHaveBeenCalledWith({
