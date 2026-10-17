@@ -5,6 +5,7 @@ import {
   type MockRef,
   type MockSource,
 } from "../exam/mock.js";
+import { levelLabel } from "../gamification/level-label.js";
 
 /**
  * Quiz duels between friends: the same five questions, drawn from a path's
@@ -155,6 +156,16 @@ export interface ChallengeableFriend {
 
 /** What a friend already in a duel with the reader shows in place of a choice. */
 export const FRIEND_IN_DUEL_LABEL = "Duel en cours";
+
+/** Under the friends when every one of them is already in a duel with the reader. */
+export const ALL_FRIENDS_IN_DUEL_NOTE =
+  "Tu as déjà un duel en cours avec chacun de tes amis : il se règle en un jour au plus.";
+
+/** "@alex · Niv. 4": who a friend is, under their name, in a challenge form. */
+export function challengeFriendMeta(friend: { username: string | null; level: number }): string {
+  const level = levelLabel(friend.level);
+  return friend.username === null ? level : `@${friend.username} · ${level}`;
+}
 
 /** Whether a friend can be challenged now: not while a duel between the two is open. */
 export function canChallengeFriend(friend: ChallengeableFriend): boolean {

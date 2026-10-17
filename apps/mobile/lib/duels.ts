@@ -58,6 +58,22 @@ export interface DuelView extends DuelSummary {
   readerAnswers: DuelAnswerView[];
 }
 
+/**
+ * The site's DuelFriend (apps/web/lib/social/duels.ts): a friend with their
+ * avatar, their handle and their level, as the site's "Défier" window shows
+ * them; one already in a duel with the reader comes with that duel, and
+ * cannot be picked.
+ */
+export interface DuelFriend {
+  id: string;
+  name: string;
+  username: string | null;
+  /** Signed by the site when uploaded, a glyph marker, or null. */
+  avatarSrc: string | null;
+  level: number;
+  openDuelId: string | null;
+}
+
 export interface DuelBoard {
   duels: DuelSummary[];
   /**
@@ -65,11 +81,7 @@ export interface DuelBoard {
    * from before it, which only sent the duels listed.
    */
   record?: DuelRecordCounts;
-  /**
-   * The site's DuelFriend, in the fields the screen uses: a friend already in
-   * a duel with the reader comes with that duel, and cannot be picked.
-   */
-  friends: { id: string; name: string; openDuelId?: string | null }[];
+  friends: DuelFriend[];
   paths: { id: string; title: string }[];
 }
 

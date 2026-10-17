@@ -4,7 +4,9 @@ import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {
+  ALL_FRIENDS_IN_DUEL_NOTE,
   canChallengeFriend,
+  challengeFriendMeta,
   challengeTarget,
   duelActionLabel,
   duelRecordLines,
@@ -17,6 +19,7 @@ import {
 } from "@cyberlearn/lib/social/duel";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { Avatar } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
@@ -28,6 +31,7 @@ import {
   invitationMeta,
   outcomeTone,
   type DuelBoard,
+  type DuelFriend,
   type DuelSummary,
 } from "@/lib/duels";
 
@@ -49,12 +53,13 @@ const RULES: { title: string; text: string }[] = [
 
 /**
  * Duels: the site's /duels in the app. The reader's record, the rules, the
- * invitations waiting, a form to challenge a friend on a path (the friend
- * named in ?ami= picked, a friend already in a duel with the reader shown
- * but not offered, as in the site's "Défier" window), and every duel going
- * on or settled, each with its outcome in a word and its small print; a duel
- * opens on its own screen. The site draws the form as a window over its
- * page; here it stays on the screen, the native pattern.
+ * invitations waiting, a form to challenge a friend on a path (each friend
+ * with their avatar, handle and level, the one named in ?ami= picked, one
+ * already in a duel with the reader not offered but leading to that duel, as
+ * in the site's "Défier" window), and every duel going on or settled, each
+ * with its outcome in a word and its small print; a duel opens on its own
+ * screen. The site draws the form as a window over its page; here it stays
+ * on the screen, the native pattern.
  */
 export default function DuelsScreen(): React.JSX.Element {
   const { ami } = useLocalSearchParams<{ ami?: string }>();
@@ -194,28 +199,24 @@ function DuelsBody({
         ) : (
           <Card style={{ gap: 10 }}>
             <Text variant="bodySm">Ami</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {board.friends.map((f) =>
-                canChallengeFriend(f) ? (
-                  <Choice
-                    key={f.id}
-                    label={f.name}
-                    picked={friend === f.id}
-                    onPress={() => {
-                      setFriend(f.id);
-                    }}
-                  />
-                ) : (
-                  <Choice
-                    key={f.id}
-                    label={`${f.name} · ${FRIEND_IN_DUEL_LABEL}`}
-                    picked={false}
-                    disabled
-                    onPress={() => undefined}
-                  />
-                ),
-              )}
+            <View style={{ gap: 6 }}>
+              {board.friends.map((f) => (
+                <FriendChoice
+                  key={f.id}
+                  friend={f}
+                  picked={friend === f.id}
+                  onPick={() => {
+                    setFriend(f.id);
+                  }}
+                  onOpenDuel={open}
+                />
+              ))}
             </View>
+            {board.friends.some(canChallengeFriend) ? null : (
+              <Text variant="bodySm" style={{ color: colors.textMuted }}>
+                {ALL_FRIENDS_IN_DUEL_NOTE}
+              </Text>
+            )}
             <Text variant="bodySm">Parcours</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {board.paths.map((p) => (
@@ -414,38 +415,98 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
   );
 }
 
+/**
+ * A friend in the challenge form, as a card of the site's "Défier" window:
+ * the avatar, the name, the handle and the level, picked like a radio button.
+ * A friend already in a duel with the reader cannot be picked: the row says
+ * so, and opens that duel.
+ */
+function FriendChoice({
+  friend,
+  picked,
+  onPick,
+  onOpenDuel,
+}: {
+  friend: DuelFriend;
+  picked: boolean;
+  onPick: () => void;
+  onOpenDuel: (duelId: string) => void;
+}): React.JSX.Element {
+  const { theme } = useCosmetics();
+  const meta = challengeFriendMeta(friend);
+  const duelId = canChallengeFriend(friend) ? null : friend.openDuelId;
+  return (
+    <Pressable
+      onPress={
+        duelId !== null
+          ? () => {
+              onOpenDuel(duelId);
+            }
+          : onPick
+      }
+      accessibilityRole={duelId !== null ? "link" : "radio"}
+      accessibilityState={duelId !== null ? undefined : { selected: picked }}
+      accessibilityLabel={
+        duelId !== null
+          ? `${friend.name}, ${meta}. ${FRIEND_IN_DUEL_LABEL} : voir le duel`
+          : `${friend.name}, ${meta}`
+      }
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        minHeight: 44,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderStyle: duelId !== null ? "dashed" : "solid",
+        borderColor: picked ? colors.accent : colors.borderDefault,
+      }}
+    >
+      <Avatar avatarUrl={friend.avatarSrc} displayName={friend.name} size={32} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text
+          variant="bodySm"
+          numberOfLines={1}
+          style={{ color: picked ? colors.accent : colors.textPrimary }}
+        >
+          {friend.name}
+        </Text>
+        <Text variant="mono" numberOfLines={1} style={{ fontSize: 10.5, color: colors.textMuted }}>
+          {meta}
+        </Text>
+        {duelId !== null ? (
+          <Text variant="mono" style={{ fontSize: 10.5, color: theme.accent }}>
+            {`${FRIEND_IN_DUEL_LABEL} · Voir le duel →`}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 function Choice({
   label,
   picked,
-  disabled = false,
   onPress,
 }: {
   label: string;
   picked: boolean;
-  /** Shown but not offered: a friend already in a duel with the reader. */
-  disabled?: boolean;
   onPress: () => void;
 }): React.JSX.Element {
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
       accessibilityRole="radio"
-      accessibilityState={{ selected: picked, disabled }}
+      accessibilityState={{ selected: picked }}
       style={{
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderWidth: 1,
-        borderStyle: disabled ? "dashed" : "solid",
         borderColor: picked ? colors.accent : colors.borderDefault,
       }}
     >
-      <Text
-        variant="bodySm"
-        style={{
-          color: picked ? colors.accent : disabled ? colors.textMuted : colors.textSecondary,
-        }}
-      >
+      <Text variant="bodySm" style={{ color: picked ? colors.accent : colors.textSecondary }}>
         {label}
       </Text>
     </Pressable>

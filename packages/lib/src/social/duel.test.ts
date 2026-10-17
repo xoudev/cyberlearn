@@ -8,6 +8,7 @@ import {
   VERDICT_LABEL,
   VERDICT_OUTCOME,
   canChallengeFriend,
+  challengeFriendMeta,
   challengeTarget,
   checkDuelAnswer,
   deadlineLabel,
@@ -159,6 +160,13 @@ describe("challengeTarget", () => {
   it("starts on nobody when nobody can be challenged", () => {
     expect(challengeTarget([{ id: "busy", openDuelId: "d1" }], "busy")).toBeNull();
     expect(challengeTarget([], null)).toBeNull();
+  });
+});
+
+describe("challengeFriendMeta", () => {
+  it("names a friend by their handle and level, the level alone without a handle", () => {
+    expect(challengeFriendMeta({ username: "alex", level: 4 })).toBe("@alex · Niv. 4");
+    expect(challengeFriendMeta({ username: null, level: 7 })).toBe("Niv. 7");
   });
 });
 

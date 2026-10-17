@@ -8,9 +8,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useId, useState, useTransition } from "react";
 import { ModalShell, Select } from "@cyberlearn/ui";
-import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
 import {
+  ALL_FRIENDS_IN_DUEL_NOTE,
   canChallengeFriend,
+  challengeFriendMeta,
   challengeTarget,
   FRIEND_IN_DUEL_LABEL,
 } from "@cyberlearn/lib/social/duel";
@@ -22,12 +23,6 @@ import { createDuelAction, duelSetupAction } from "../_actions/duel-actions";
 import { wantedFriend } from "./duel-query";
 
 type Load = { kind: "loading" } | { kind: "failed" } | { kind: "ready"; setup: DuelSetup };
-
-/** "@alex · Niv. 4": who a friend is beside their name. */
-function friendMeta(friend: DuelFriend): string {
-  const level = levelLabel(friend.level);
-  return friend.username === null ? level : `@${friend.username} · ${level}`;
-}
 
 /** The avatar, the name and the line under it, as every card of the grid draws them. */
 function Identity({ friend }: { friend: DuelFriend }): React.JSX.Element {
@@ -41,7 +36,7 @@ function Identity({ friend }: { friend: DuelFriend }): React.JSX.Element {
       />
       <span className="dlc-card__who">
         <span className="dlc-card__name">{friend.name}</span>
-        <span className="dlc-card__meta">{friendMeta(friend)}</span>
+        <span className="dlc-card__meta">{challengeFriendMeta(friend)}</span>
       </span>
     </>
   );
@@ -222,11 +217,7 @@ export default function ChallengeDialog({ value, onClose }: QueryDialogProps): R
               );
             })}
           </ul>
-          {anyFree ? null : (
-            <p className="dlc-note">
-              Tu as déjà un duel en cours avec chacun de tes amis : il se règle en un jour au plus.
-            </p>
-          )}
+          {anyFree ? null : <p className="dlc-note">{ALL_FRIENDS_IN_DUEL_NOTE}</p>}
         </fieldset>
 
         <div className="cls-field">
