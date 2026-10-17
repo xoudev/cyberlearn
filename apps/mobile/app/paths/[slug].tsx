@@ -18,6 +18,8 @@ import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@cyberlearn/lib/content/rating";
 import { useSession } from "@/lib/session";
 import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
+import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
+import { moduleReviewable } from "@/lib/rappel";
 
 export default function PathDetail(): React.JSX.Element {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -46,6 +48,12 @@ export default function PathDetail(): React.JSX.Element {
               params: { slug: slug ?? "", module: String(module), title: data.title },
             })
           }
+          onOpenReview={(module) =>
+            router.push({
+              pathname: "/paths/module-review",
+              params: { slug: data.slug, module: String(module), title: data.title },
+            })
+          }
           onOpenMockExam={() =>
             router.push({ pathname: "/mock-exam/[slug]", params: { slug: data.slug } })
           }
@@ -61,6 +69,7 @@ function PathBody({
   userId,
   onOpenLesson,
   onOpenSheet,
+  onOpenReview,
   onOpenMockExam,
   onRated,
 }: {
@@ -68,6 +77,8 @@ function PathBody({
   userId: string | undefined;
   onOpenLesson: (slug: string) => void;
   onOpenSheet: (module: number) => void;
+  /** "Réviser ce module": a few questions of the module's finished lessons. */
+  onOpenReview: (module: number) => void;
   onOpenMockExam: () => void;
   onRated: () => void;
 }): React.JSX.Element {
@@ -188,18 +199,38 @@ function PathBody({
                         {moduleStart.description}
                       </Text>
                     ) : null}
-                    <Pressable
-                      onPress={() => {
-                        onOpenSheet(moduleStart.number);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
-                      style={{ alignSelf: "flex-start", marginTop: 4 }}
+                    <View
+                      style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 18, rowGap: 4 }}
                     >
-                      <Text variant="micro" style={{ color: colors.accent }}>
-                        FICHE DE RÉVISION ›
-                      </Text>
-                    </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          onOpenSheet(moduleStart.number);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
+                        style={{ marginTop: 4 }}
+                      >
+                        <Text variant="micro" style={{ color: colors.accent }}>
+                          FICHE DE RÉVISION ›
+                        </Text>
+                      </Pressable>
+                      {/* Its review asks about the lessons finished: none, nothing to offer. */}
+                      {moduleReviewable(data.missions, moduleStart.indices) ? (
+                        <Pressable
+                          onPress={() => {
+                            onOpenReview(moduleStart.number);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Réviser le ${moduleLabel(moduleStart).toLowerCase()} en deux minutes`}
+                          accessibilityHint={MODULE_REVIEW_HINT}
+                          style={{ marginTop: 4 }}
+                        >
+                          <Text variant="micro" style={{ color: colors.accent }}>
+                            {MODULE_REVIEW_ACTION.toUpperCase()} ›
+                          </Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
                     <OfflineToggle
                       pathSlug={data.slug}
                       pathTitle={data.title}

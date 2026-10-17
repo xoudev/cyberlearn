@@ -22,6 +22,7 @@ import {
   setDeviceNotificationsEnabled,
 } from "@/lib/device-notifications";
 import {
+  dailyRecallKey,
   DEFAULT_PREFS,
   PREFERENCE_NOT_SAVED,
   updateLeaderboardVisibility,
@@ -129,9 +130,10 @@ export default function Reglages(): React.JSX.Element {
       await undoChange(key, before);
       return;
     }
-    // The revisions screen and the home card read the same switch.
+    // The day's recall (the Révisions screen and the home card) reads the
+    // same switch, on the server.
     if (key === "spacedRepetition") {
-      await queryClient.invalidateQueries({ queryKey: ["revisions", userId] });
+      await queryClient.invalidateQueries({ queryKey: dailyRecallKey(userId) });
     }
     // The friends board says whether the reader is on their friends' boards.
     if (key === "friendsLeaderboard") {

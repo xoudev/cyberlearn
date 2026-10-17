@@ -17,7 +17,7 @@
  * decision worth testing on its own.
  */
 
-export type DashboardSectionKey = "paths" | "resume" | "reviews" | "progress";
+export type DashboardSectionKey = "paths" | "resume" | "recall" | "progress";
 
 export interface DashboardSection {
   key: DashboardSectionKey;
@@ -28,17 +28,21 @@ export interface DashboardSection {
 export interface DashboardSectionInput {
   /** A lesson left half-finished, worth offering to resume. */
   hasResume: boolean;
-  /** How many revisions are due right now. */
-  dueReviews: number;
+  /**
+   * The day's recall is offered: spaced repetition is on. The section says
+   * to do, done or nothing today, and keeps its place from one day to the
+   * next; it never counts what waits, so it takes no number.
+   */
+  hasRecall: boolean;
 }
 
 /** The order, once and for all. Parcours first is the whole point. */
-const ORDER: DashboardSectionKey[] = ["paths", "resume", "reviews", "progress"];
+const ORDER: DashboardSectionKey[] = ["paths", "resume", "recall", "progress"];
 
 export function planSections(input: DashboardSectionInput): DashboardSection[] {
   const shown = ORDER.filter((key) => {
     if (key === "resume") return input.hasResume;
-    if (key === "reviews") return input.dueReviews > 0;
+    if (key === "recall") return input.hasRecall;
     // The parcours and the progress band always have something to say: one
     // offers what to do next, the other is the reader's own record.
     return true;
