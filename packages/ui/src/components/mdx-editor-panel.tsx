@@ -42,12 +42,37 @@ import { parseLessonBlocks } from "@cyberlearn/lib/mdx-blocks";
 import { BlockEditor } from "./block-editor/block-editor";
 import { MDX_EDITOR_THEME, mdxEditorTheme } from "./mdx-editor-theme";
 import { MdxPreviewFrame, PaneButton, type MdxEditorPreview } from "./mdx-preview-frame";
+import { inLessonOrder, LESSON_CHECK_OWNER, type MdxProblem, problemMarkers } from "./mdx-problems";
 import { inlineTokens, innerText, parseStringProps, stripImportDeclarations } from "./mdx-source";
 
 export { useLessonPreview } from "./mdx-preview-frame";
 export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
+export type { MdxProblem } from "./mdx-problems";
 
 type EditorInstance = Parameters<OnMount>[0];
+
+/**
+ * The part of Monaco's namespace the markers use. Its own types do not
+ * resolve in this package (monaco-editor is @monaco-editor/react's dependency,
+ * not this one's), so the two members are typed here.
+ */
+interface MarkerApi {
+  editor: {
+    setModelMarkers: (
+      model: unknown,
+      owner: string,
+      markers: (ReturnType<typeof problemMarkers>[number] & { severity: number })[],
+    ) => void;
+  };
+  MarkerSeverity: { Error: number };
+}
+
+/** What tells two lists of problems apart: the same problems are the same list. */
+function signatureOf(problems: readonly MdxProblem[] | undefined): string {
+  return (problems ?? [])
+    .map((p) => `${String(p.line)}:${String(p.column)}:${p.message}`)
+    .join("\n");
+}
 
 // ── Dynamic import - Monaco has no SSR support ─────────────────────────────────
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
@@ -974,15 +999,37 @@ export interface MdxEditorPanelProps {
   onChange: (v: string) => void;
   /** The site's rendering of the draft, when the app provides it (useLessonPreview). */
   preview?: MdxEditorPreview;
+  /**
+   * What the last save refused, each at its line and column: marked in the
+   * editor and listed above it. The site's preview, when it answers for a
+   * later draft, replaces them with what it found.
+   */
+  problems?: readonly MdxProblem[] | undefined;
 }
 
 export function MdxEditorPanel({
   value,
   onChange,
   preview,
+  problems,
 }: MdxEditorPanelProps): React.ReactElement {
   const editorRef = useRef<EditorInstance | null>(null);
+  const monacoRef = useRef<MarkerApi | null>(null);
+  /** Where to go once Monaco is there, when a problem is opened from the block view. */
+  const pendingReveal = useRef<MdxProblem | null>(null);
+  const [mounts, setMounts] = useState(0);
   const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // The problems on show: the last save's, until the preview answers for a
+  // later draft. Compared by content, so a list rebuilt on every render of
+  // the page does not count as a new one.
+  const [shown, setShown] = useState<readonly MdxProblem[]>(problems ?? []);
+  const [savedSignature, setSavedSignature] = useState(() => signatureOf(problems));
+  const signature = signatureOf(problems);
+  if (signature !== savedSignature) {
+    setSavedSignature(signature);
+    setShown(problems ?? []);
+  }
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
@@ -1010,9 +1057,56 @@ export function MdxEditorPanel({
   const lineCount = value.split("\n").length;
   const charCount = value.length;
 
-  const handleMount = useCallback<OnMount>((editor) => {
-    editorRef.current = editor;
+  const revealProblem = useCallback((problem: MdxProblem) => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    ed.revealLineInCenter(problem.line);
+    ed.setPosition({ lineNumber: problem.line, column: problem.column });
+    ed.focus();
   }, []);
+
+  const handleMount = useCallback<OnMount>(
+    (editor, monaco) => {
+      editorRef.current = editor;
+      // Monaco's namespace, read through MarkerApi: its own type does not resolve here.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      monacoRef.current = monaco;
+      // Re-runs the markers' effect: a new editor has a new model.
+      setMounts((n) => n + 1);
+      const pending = pendingReveal.current;
+      pendingReveal.current = null;
+      if (pending !== null) revealProblem(pending);
+    },
+    [revealProblem],
+  );
+
+  // The problems as Monaco markers, under the text they point at.
+  useEffect(() => {
+    const model = editorRef.current?.getModel();
+    const monaco = monacoRef.current;
+    if (!model || !monaco) return;
+    const markers = problemMarkers(shown, model.getLineCount(), (line) =>
+      model.getLineContent(line),
+    ).map((marker) => ({ ...marker, severity: monaco.MarkerSeverity.Error }));
+    monaco.editor.setModelMarkers(model, LESSON_CHECK_OWNER, markers);
+  }, [shown, mounts, editorMode]);
+
+  const openProblem = useCallback(
+    (problem: MdxProblem) => {
+      if (editorMode === "code") {
+        revealProblem(problem);
+        return;
+      }
+      // The block view has no lines: the code view opens, and goes there
+      // once Monaco has mounted.
+      pendingReveal.current = problem;
+      setBlocksProblem(null);
+      setEditorMode("code");
+    },
+    [editorMode, revealProblem],
+  );
+
+  const listed = useMemo(() => inLessonOrder(shown), [shown]);
   // Defined at each mount, not once per page: the cursor is the accent equipped
   // now, read under the panel (mdx-editor-theme.ts).
   const handleBefore = useCallback<BeforeMount>((monaco) => {
@@ -1633,6 +1727,55 @@ export function MdxEditorPanel({
         </p>
       )}
 
+      {listed.length > 0 && (
+        <div
+          role="region"
+          aria-label="Problèmes du contenu"
+          style={{
+            maxHeight: 112,
+            overflowY: "auto",
+            padding: "6px 14px",
+            borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
+            background: "rgba(255,77,109,0.07)",
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          <b style={{ color: DANGER, fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em" }}>
+            À CORRIGER · {listed.length}
+          </b>
+          <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0 }}>
+            {listed.map((problem, index) => (
+              <li
+                key={`${String(problem.line)}:${String(problem.column)}:${String(index)}`}
+                style={{ display: "flex", gap: 8, alignItems: "baseline" }}
+              >
+                <button
+                  type="button"
+                  title={`Aller à la ligne ${String(problem.line)}, colonne ${String(problem.column)}`}
+                  onClick={() => {
+                    openProblem(problem);
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    padding: "0 6px",
+                    border: `1px solid ${BORDER}`,
+                    background: "transparent",
+                    color: "var(--color-text-secondary)",
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    cursor: "pointer",
+                  }}
+                >
+                  L{problem.line}:{problem.column}
+                </button>
+                <span style={{ color: "var(--color-text-primary)" }}>{problem.message}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── Editor + Preview ──────────────────────────────────────────── */}
       <div
         style={{
@@ -1700,6 +1843,7 @@ export function MdxEditorPanel({
               onQuick={() => {
                 setPreviewMode("quick");
               }}
+              onProblems={setShown}
             />
           ) : (
             <div
