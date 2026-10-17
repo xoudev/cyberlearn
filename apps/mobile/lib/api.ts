@@ -603,6 +603,14 @@ export interface LeaderboardEntry {
    * from a server older than the friend marks.
    */
   isFriend?: boolean;
+  /**
+   * The row's picture, ready to draw: a signed URL, a built-in path or a glyph
+   * marker, signed by the server as on the site. Null on an anonymised row,
+   * absent from a server older than the avatars; both draw the initials. The
+   * stored `avatarUrl` the server also sends is never read: an uploaded photo
+   * there is a key in a private bucket the app may not open.
+   */
+  avatarSrc?: string | null;
 }
 
 export interface PodEntry {

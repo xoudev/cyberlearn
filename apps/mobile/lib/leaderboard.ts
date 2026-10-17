@@ -48,6 +48,19 @@ export function answeredPeriod(value: unknown): LeaderboardPeriod {
   return isLeaderboardPeriod(value) ? value : "all";
 }
 
+/**
+ * The name a row's avatar takes its initials from, when it has no picture to
+ * draw: the display name, else the handle without its "@" (which would draw
+ * "@A"), else what the row is called when it names nobody.
+ */
+export function rowAvatarName(entry: {
+  displayName: string | null;
+  username: string | null;
+  isCurrentUser: boolean;
+}): string {
+  return entry.displayName || entry.username || (entry.isCurrentUser ? "Toi" : "Anonyme");
+}
+
 /** The podium's places. */
 const PODIUM_PLACES = 3;
 /** Where the top list stops, counted from the first row. */

@@ -9,6 +9,7 @@ import {
 import { userFromBearer } from "../_lib/auth";
 
 import { errorMessage } from "@cyberlearn/lib/logger";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { requestLogger } from "@/lib/request-logger";
 
 /** The rows the app shows: its podium and its top list. */
@@ -31,6 +32,8 @@ const periodSchema = z.enum(LEADERBOARD_PERIODS).catch("all");
  * shape and become the period's when one is asked for (each row's xpTotal is
  * then the XP earned since it opened, as on the site). `period`,
  * `periodSince` and `totalPlayers` are new; an older build reads past them.
+ *
+ * So is each row's `avatarSrc`, on both boards: see withAvatarSrc.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);
@@ -75,12 +78,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const [entries, friendsEntries] = await withAvatarSrc(board.entries, friendsBoard.entries);
+
     return NextResponse.json({
       ok: true,
-      entries: board.entries,
+      entries,
       userRank: board.userRank,
       league,
-      friendsBoard,
+      friendsBoard: { ...friendsBoard, entries: friendsEntries },
       period,
       periodSince: start === null ? null : leaderboardPeriodSince(period, start),
       totalPlayers: board.totalPlayers,
@@ -121,4 +126,34 @@ async function publicBoard(
     userRank: board.standing?.rank ?? 0,
     totalPlayers: board.total,
   };
+}
+
+/** A board row as the app receives it: the stored value kept, its picture signed. */
+type AppBoardRow = LeaderboardEntry & { avatarSrc: string | null };
+
+/**
+ * Each row's picture, ready for the app to draw, for both boards in one
+ * signing round-trip.
+ *
+ * `avatarUrl` is the stored value: an uploaded photo there is a key in the
+ * private avatars bucket, which no client may open (ADR-003). `avatarSrc` is
+ * what the site draws from it (boards.ts): a short-lived signed URL, a
+ * built-in path or a glyph marker. `avatarUrl` stays, as every field of this
+ * response does, for the builds already installed.
+ *
+ * A row the repository anonymised has no stored avatar left, so its
+ * `avatarSrc` is null too: nothing is signed that the row does not already
+ * show.
+ */
+async function withAvatarSrc(
+  publicRows: readonly LeaderboardEntry[],
+  friendsRows: readonly LeaderboardEntry[],
+): Promise<[AppBoardRow[], AppBoardRow[]]> {
+  const all = [...publicRows, ...friendsRows];
+  const signed = await resolveAvatarSrcMany(all.map((e) => e.avatarUrl));
+  const rows = all.map((entry, i) => ({
+    ...entry,
+    avatarSrc: entry.avatarUrl === null ? null : (signed[i] ?? null),
+  }));
+  return [rows.slice(0, publicRows.length), rows.slice(publicRows.length)];
 }
