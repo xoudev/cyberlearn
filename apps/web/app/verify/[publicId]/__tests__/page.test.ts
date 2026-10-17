@@ -186,6 +186,28 @@ describe("a revoked certificate", () => {
     expect(html).toContain("CL-2026-22222222");
     expect(html).toContain("Camille Martin");
   });
+
+  it("says it is revoked in its tab title and its link preview, under the same address", async () => {
+    findByPublicId.mockResolvedValue(REVOKED);
+    const metadata = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+    expect(metadata.title).toBe(
+      "Certificat révoqué · Camille Martin · Python : des bases à la pratique",
+    );
+    expect(metadata.description).toBe(
+      "Ce certificat CyberLearn du parcours « Python : des bases à la pratique », délivré à Camille Martin, a été révoqué : il ne vaut plus preuve de complétion.",
+    );
+    expect(metadata.description).not.toContain("authenticité");
+    expect(metadata.alternates?.canonical).toBe(`/verify/${PUBLIC_ID}`);
+    expect(metadata.openGraph).toMatchObject({ url: `/verify/${PUBLIC_ID}` });
+  });
+
+  it("leaves the holder out of the revoked preview when the certificate names nobody", async () => {
+    findByPublicId.mockResolvedValue({ ...REVOKED, holderName: null, user: null });
+    const metadata = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
+    expect(metadata.description).toBe(
+      "Ce certificat CyberLearn du parcours « Python : des bases à la pratique » a été révoqué : il ne vaut plus preuve de complétion.",
+    );
+  });
 });
 
 describe("an unknown certificate", () => {
@@ -235,6 +257,7 @@ describe("the certificate's link preview", () => {
       path: { title: "Réseau" },
       user: null,
       holderName: null,
+      revokedAt: null,
     });
     const metadata = await generateMetadata({ params: Promise.resolve({ publicId: PUBLIC_ID }) });
 

@@ -40,12 +40,24 @@ export async function generateMetadata({
   // built from the stored id, not the one typed: Postgres matches a uuid
   // whatever its case, so /verify/ABCD… and /verify/abcd… show the same
   // certificate, and both must name the one address.
+  const address = pageAddress(`/verify/${cert.publicId.toLowerCase()}`);
+  // A preview fetched after the console revoked it must not still present a
+  // valid certificate, in a browser tab or under a link shared before.
+  if (cert.revokedAt !== null) {
+    return {
+      title: `Certificat révoqué · ${holder ?? "Certificat"} · ${cert.path.title}`,
+      description: `Ce certificat CyberLearn du parcours « ${cert.path.title} »${
+        holder === null ? "" : `, délivré à ${holder},`
+      } a été révoqué : il ne vaut plus preuve de complétion.`,
+      ...address,
+    };
+  }
   return {
     title: `Certificat · ${holder ?? "Certificat"} · ${cert.path.title}`,
     description: `Certificat CyberLearn du parcours « ${cert.path.title} »${
       holder === null ? "" : ` délivré à ${holder}`
     }. Son authenticité se vérifie sur cette page.`,
-    ...pageAddress(`/verify/${cert.publicId.toLowerCase()}`),
+    ...address,
   };
 }
 
