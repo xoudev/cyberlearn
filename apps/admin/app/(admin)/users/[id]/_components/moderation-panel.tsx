@@ -22,16 +22,37 @@ const REPORT_STATUS: Record<NoteReportRow["status"], { label: string; tone: Tone
 };
 
 /**
+ * A section's heading: the whole count, and when the list below stops short
+ * of it, how many of them it shows. Support reads the number as a total.
+ */
+function heading(
+  label: string,
+  total: number,
+  shown: number,
+  latest: "derniers" | "dernières",
+): string {
+  return total > shown
+    ? `${label} · ${String(total)}, les ${String(shown)} ${latest} ci-dessous`
+    : `${label} · ${String(total)}`;
+}
+
+/**
  * What the platform flagged in this account's writing, and what recipients
  * reported about the notes it shared. Read only: both are judged in their
  * queues, which this links to.
  */
 export function ModerationPanel({
   events,
+  eventTotal,
   noteReports,
+  noteReportTotal,
 }: {
+  /** The latest ones only. */
   events: ModerationRow[];
+  eventTotal: number;
+  /** The latest ones only. */
   noteReports: NoteReportRow[];
+  noteReportTotal: number;
 }): React.ReactElement {
   return (
     <Card
@@ -49,7 +70,7 @@ export function ModerationPanel({
     >
       <div className="a-card-pad">
         <h3 className="a-subhead" style={{ marginTop: 0 }}>
-          Contenus signalés par le filtre · {events.length}
+          {heading("Contenus signalés par le filtre", eventTotal, events.length, "derniers")}
         </h3>
         {events.length === 0 ? (
           <p className="a-field-hint">Rien de signalé.</p>
@@ -86,7 +107,9 @@ export function ModerationPanel({
           </div>
         )}
 
-        <h3 className="a-subhead">Notes signalées · {noteReports.length}</h3>
+        <h3 className="a-subhead">
+          {heading("Notes signalées", noteReportTotal, noteReports.length, "dernières")}
+        </h3>
         {noteReports.length === 0 ? (
           <p className="a-field-hint">Aucune de ses notes partagées n&apos;a été signalée.</p>
         ) : (

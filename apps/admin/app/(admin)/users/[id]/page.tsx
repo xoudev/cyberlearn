@@ -94,7 +94,9 @@ export default async function AdminUserPage({
     wasRecentlyAdmin,
     tickets,
     moderationEvents,
+    moderationTotal,
     noteReports,
+    noteReportTotal,
     auditRows,
     paths,
     exams,
@@ -108,7 +110,9 @@ export default async function AdminUserPage({
     userRepository.heldAdminRoleSince(user.id, recentAdminSince(now)),
     ticketRepository.findForUser(user.id),
     moderationRepository.findForUser(user.id, RECENT_ROWS),
+    moderationRepository.countForUser(user.id),
     noteReportRepository.againstAuthor(user.id, RECENT_ROWS),
+    noteReportRepository.countAgainstAuthor(user.id),
     auditLogRepository.recentForUser(user.id, RECENT_ROWS),
     pathRepository.findProgressForConsole(user.id),
     quizRepository.latestAttemptsForConsole(user.id),
@@ -260,7 +264,12 @@ export default async function AdminUserPage({
 
           <TicketsPanel tickets={tickets} />
 
-          <ModerationPanel events={moderationEvents} noteReports={noteReports} />
+          <ModerationPanel
+            events={moderationEvents}
+            eventTotal={moderationTotal}
+            noteReports={noteReports}
+            noteReportTotal={noteReportTotal}
+          />
 
           <AuditPanel userId={user.id} rows={auditRows} />
 

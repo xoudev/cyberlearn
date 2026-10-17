@@ -94,6 +94,11 @@ export const noteReportRepository = {
     });
   },
 
+  /** How many reports were filed against an author's notes, all told. */
+  async countAgainstAuthor(authorId: string): Promise<number> {
+    return prisma.noteReport.count({ where: { note: { userId: authorId } } });
+  },
+
   /** Notes with at least one open report. */
   async countOpenNotes(): Promise<number> {
     const rows = await prisma.noteReport.groupBy({ by: ["noteId"], where: { status: "OPEN" } });
