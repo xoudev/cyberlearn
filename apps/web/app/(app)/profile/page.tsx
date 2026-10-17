@@ -153,11 +153,16 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   // Every tab's content is read here, so that a tab switches in place: the
   // badge collection (the same service as the app's Collection sub-tab,
   // /api/mobile/badges) and every certificate, the revoked ones included.
-  const [user, certs, classes, collection] = await Promise.all([
-    userRepository.findProfile(authUser.id),
+  // The collection awards the badges earned but never given, and credits
+  // their XP: the profile is read once it is done, so that the XP, the level
+  // and the badge count agree with the Badges tab.
+  const [{ collection, user }, certs, classes] = await Promise.all([
+    buildBadgeCollection(authUser.id).then(async (built) => ({
+      collection: built,
+      user: await userRepository.findProfile(authUser.id),
+    })),
     certificateRepository.listForUser(authUser.id),
     classRepository.findForMember(authUser.id),
-    buildBadgeCollection(authUser.id),
   ]);
 
   if (!user) notFound();
