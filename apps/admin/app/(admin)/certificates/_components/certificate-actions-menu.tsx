@@ -18,6 +18,11 @@ import {
  * the row under the pointer is not always the one meant, and both gestures
  * reach the holder. The reason sits in a fold that costs nothing until it is
  * opened, so a page of valid certificates stays a page of rows.
+ *
+ * Both forms share one outcome. A refusal on a row another administrator just
+ * changed comes back with the row redrawn in its real state, so the other
+ * form is the one showing: the sentence has to follow it, and the next
+ * gesture, from either form, replaces it.
  */
 export function CertificateActionsMenu({
   certificateId,
@@ -34,19 +39,21 @@ export function CertificateActionsMenu({
   pathTitle: string;
   revoked: boolean;
 }): React.ReactElement {
-  const [revokeState, revokeAction, revokePending] = useActionState<
-    CertificateActionState,
-    FormData
-  >(revokeCertificateAction, {});
-  const [reinstateState, reinstateAction, reinstatePending] = useActionState<
-    CertificateActionState,
-    FormData
-  >(reinstateCertificateAction, {});
+  const [state, action, pending] = useActionState<CertificateActionState, FormData>(
+    runCertificateAction,
+    {},
+  );
+  const refusal =
+    state.error !== undefined ? (
+      <p className="a-form-error" role="alert">
+        {state.error}
+      </p>
+    ) : null;
 
   if (revoked) {
     return (
       <form
-        action={reinstateAction}
+        action={action}
         onSubmit={(event) => {
           // Cancelling the native submit also cancels the action: React only
           // runs a form's action for a submit nobody prevented.
@@ -56,66 +63,73 @@ export function CertificateActionsMenu({
         }}
         style={{ display: "grid", gap: 8, minWidth: 180 }}
       >
+        <input type="hidden" name="intent" value="reinstate" />
         <input type="hidden" name="certificateId" value={certificateId} />
         <button
           type="submit"
-          disabled={reinstatePending}
+          disabled={pending}
           className="a-btn a-btn--ghost a-btn--sm"
           style={{ justifySelf: "start" }}
         >
-          {reinstatePending ? "Rétablissement…" : "Rétablir"}
+          {pending ? "Rétablissement…" : "Rétablir"}
         </button>
-        {reinstateState.error !== undefined && (
-          <p className="a-form-error" role="alert">
-            {reinstateState.error}
-          </p>
-        )}
+        {refusal}
       </form>
     );
   }
 
   return (
-    <details className="a-disclosure" style={{ minWidth: 180, maxWidth: 320 }}>
-      <summary className="a-disclosure-head">
-        <span className="a-disclosure-title">Révoquer…</span>
-      </summary>
-      <form
-        action={revokeAction}
-        onReset={keepFormInput}
-        onSubmit={(event) => {
-          if (!window.confirm(revocationQuestion(code, holder, pathTitle))) {
-            event.preventDefault();
-          }
-        }}
-        className="a-form a-disclosure-body"
-        style={{ paddingTop: 12 }}
-      >
-        <input type="hidden" name="certificateId" value={certificateId} />
-        <label className="a-field">
-          <span className="a-label">Motif</span>
-          <textarea
-            name="reason"
-            required
-            minLength={5}
-            maxLength={500}
-            rows={3}
-            className="a-textarea"
-            placeholder="Examen final passé par une autre personne."
-          />
-          <span className="a-field-hint">
-            Obligatoire. Repris dans la notification du titulaire et sur la page publique de
-            vérification.
-          </span>
-        </label>
-        <button type="submit" disabled={revokePending} className="a-btn a-btn--danger a-btn--sm">
-          {revokePending ? "Révocation…" : "Révoquer le certificat"}
-        </button>
-        {revokeState.error !== undefined && (
-          <p className="a-form-error" role="alert">
-            {revokeState.error}
-          </p>
-        )}
-      </form>
-    </details>
+    <div style={{ display: "grid", gap: 8, minWidth: 180, maxWidth: 320 }}>
+      <details className="a-disclosure">
+        <summary className="a-disclosure-head">
+          <span className="a-disclosure-title">Révoquer…</span>
+        </summary>
+        <form
+          action={action}
+          onReset={keepFormInput}
+          onSubmit={(event) => {
+            if (!window.confirm(revocationQuestion(code, holder, pathTitle))) {
+              event.preventDefault();
+            }
+          }}
+          className="a-form a-disclosure-body"
+          style={{ paddingTop: 12 }}
+        >
+          <input type="hidden" name="intent" value="revoke" />
+          <input type="hidden" name="certificateId" value={certificateId} />
+          <label className="a-field">
+            <span className="a-label">Motif</span>
+            <textarea
+              name="reason"
+              required
+              minLength={5}
+              maxLength={500}
+              rows={3}
+              className="a-textarea"
+              placeholder="Examen final passé par une autre personne."
+            />
+            <span className="a-field-hint">
+              Obligatoire. Repris dans la notification du titulaire et sur la page publique de
+              vérification.
+            </span>
+          </label>
+          <button type="submit" disabled={pending} className="a-btn a-btn--danger a-btn--sm">
+            {pending ? "Révocation…" : "Révoquer le certificat"}
+          </button>
+        </form>
+      </details>
+      {/* Outside the fold: a refused reinstatement redraws the row here, folded. */}
+      {refusal}
+    </div>
   );
+}
+
+/** Sends each form to its own action; both report into the one outcome above. */
+function runCertificateAction(
+  prev: CertificateActionState,
+  formData: FormData,
+): Promise<CertificateActionState> {
+  return formData.get("intent") === "reinstate"
+    ? reinstateCertificateAction(prev, formData)
+    : revokeCertificateAction(prev, formData);
 }

@@ -123,16 +123,29 @@ describe("revokeCertificateAction", () => {
     );
     expect(result).toEqual({ error: "Ce certificat n'existe plus." });
     expect(m.revoke).not.toHaveBeenCalled();
+    // The list drops the row instead of offering it again.
+    expect(m.revalidatePath).toHaveBeenCalledWith("/certificates");
   });
 
-  it("says so when it was revoked in the meantime, and revalidates nothing", async () => {
+  it("says so when it was revoked in the meantime, and redraws the row as it now stands", async () => {
     m.revoke.mockResolvedValue({ ok: false, reason: "ALREADY_REVOKED" });
     const result = await revokeCertificateAction(
       {},
       form({ certificateId: CERT, reason: "Fraude avérée" }),
     );
     expect(result).toEqual({ error: "Ce certificat est déjà révoqué." });
-    expect(m.revalidatePath).not.toHaveBeenCalled();
+    expect(m.revalidatePath).toHaveBeenCalledWith("/certificates");
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${HOLDER}`);
+  });
+
+  it("says the certificate is gone when it went between the read and the write", async () => {
+    m.revoke.mockResolvedValue({ ok: false, reason: "NOT_FOUND" });
+    const result = await revokeCertificateAction(
+      {},
+      form({ certificateId: CERT, reason: "Fraude avérée" }),
+    );
+    expect(result).toEqual({ error: "Ce certificat n'existe plus." });
+    expect(m.revalidatePath).toHaveBeenCalledWith("/certificates");
   });
 
   it("says a failure under the form rather than throwing to the error page", async () => {
@@ -143,6 +156,8 @@ describe("revokeCertificateAction", () => {
     );
     expect(result.error).toMatch(/a échoué/u);
     expect(m.loggerError).toHaveBeenCalled();
+    // Nothing changed: there is nothing to redraw.
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("revalidates no account page for an erased holder", async () => {
@@ -169,11 +184,29 @@ describe("reinstateCertificateAction", () => {
     });
   });
 
-  it("says so when the certificate is not revoked", async () => {
+  it("says so when the certificate is not revoked, and redraws the row as it now stands", async () => {
     m.reinstate.mockResolvedValue({ ok: false, reason: "NOT_REVOKED" });
     const result = await reinstateCertificateAction({}, form({ certificateId: CERT }));
     expect(result).toEqual({ error: "Ce certificat n'est pas révoqué." });
-    expect(m.revalidatePath).not.toHaveBeenCalled();
+    expect(m.revalidatePath).toHaveBeenCalledWith("/certificates");
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${HOLDER}`);
+  });
+
+  it("says so when the certificate is gone, and drops it from the list", async () => {
+    m.findForConsole.mockResolvedValue(null);
+    const result = await reinstateCertificateAction({}, form({ certificateId: CERT }));
+    expect(result).toEqual({ error: "Ce certificat n'existe plus." });
+    expect(m.reinstate).not.toHaveBeenCalled();
+    expect(m.revalidatePath).toHaveBeenCalledWith("/certificates");
+  });
+
+  it("ignores which form sent it: the intent field is not part of the input", async () => {
+    m.findForConsole.mockResolvedValue({ ...ROW, revokedAt: new Date(), revokedReason: "Erreur" });
+    const result = await reinstateCertificateAction(
+      {},
+      form({ intent: "reinstate", certificateId: CERT }),
+    );
+    expect(result).toEqual({ ok: true });
   });
 
   it("refuses an id that is not one", async () => {

@@ -36,7 +36,11 @@ const revokeSchema = z.object({
 
 const reinstateSchema = z.object({ certificateId: z.guid() });
 
-/** The pages that show the certificate in the console. */
+/**
+ * The pages that show the certificate in the console. Redrawn after a refusal
+ * on the row's state too: when another administrator got there first, the
+ * row would otherwise keep offering a gesture that can no longer succeed.
+ */
 function revalidateCertificate(userId: string | null): void {
   revalidatePath("/certificates");
   if (userId !== null) revalidatePath(`/users/${userId}`);
@@ -62,7 +66,10 @@ export async function revokeCertificateAction(
   }
 
   const cert = await certificateRepository.findForConsole(parsed.data.certificateId);
-  if (cert === null) return { error: GONE };
+  if (cert === null) {
+    revalidateCertificate(null);
+    return { error: GONE };
+  }
 
   let result: RevokeCertificateResult;
   try {
@@ -81,11 +88,10 @@ export async function revokeCertificateAction(
     logger.error({ scope: "certificates", err: errorMessage(error) }, "revocation failed");
     return { error: "La révocation a échoué. Rien n'a été modifié." };
   }
+  revalidateCertificate(cert.userId);
   if (!result.ok) {
     return { error: result.reason === "NOT_FOUND" ? GONE : "Ce certificat est déjà révoqué." };
   }
-
-  revalidateCertificate(cert.userId);
   return { ok: true };
 }
 
@@ -103,7 +109,10 @@ export async function reinstateCertificateAction(
   if (!parsed.success) return { error: "Paramètres invalides." };
 
   const cert = await certificateRepository.findForConsole(parsed.data.certificateId);
-  if (cert === null) return { error: GONE };
+  if (cert === null) {
+    revalidateCertificate(null);
+    return { error: GONE };
+  }
 
   let result: ReinstateCertificateResult;
   try {
@@ -120,10 +129,9 @@ export async function reinstateCertificateAction(
     logger.error({ scope: "certificates", err: errorMessage(error) }, "reinstatement failed");
     return { error: "Le rétablissement a échoué. Rien n'a été modifié." };
   }
+  revalidateCertificate(cert.userId);
   if (!result.ok) {
     return { error: result.reason === "NOT_FOUND" ? GONE : "Ce certificat n'est pas révoqué." };
   }
-
-  revalidateCertificate(cert.userId);
   return { ok: true };
 }
