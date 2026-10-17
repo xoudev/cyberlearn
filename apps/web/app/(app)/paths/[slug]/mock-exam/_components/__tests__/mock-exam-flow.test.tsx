@@ -8,11 +8,15 @@ import type { MockOverview } from "@/lib/exam/mock-exam";
 const m = vi.hoisted(() => ({
   startMockExamAction: vi.fn<(pathId: unknown) => Promise<unknown>>(),
   submitMockExamAction: vi.fn<(attemptId: unknown, answers: unknown) => Promise<unknown>>(),
+  replace: vi.fn<(href: string) => void>(),
 }));
 
 vi.mock("../../_actions/mock-exam-actions", () => ({
   startMockExamAction: m.startMockExamAction,
   submitMockExamAction: m.submitMockExamAction,
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: m.replace }),
 }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -28,7 +32,8 @@ const { MockExamFlow } = await import("../mock-exam-flow");
  * The mock exam as a learner goes through it, once the window on the path's
  * page has sent them here: the exam started as the page opens, the questions
  * by module with the clock, the copy handed in, the score by module, the
- * advice and the correction; and the copy handed in by itself at zero.
+ * advice and the correction; and the copy handed in by itself at zero. The
+ * page brought back without the window's ?go=1 starts nothing.
  */
 
 afterEach(() => {
@@ -36,12 +41,18 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** The page as the window's "Commencer" opens it: the exam starts on its own. */
-async function open(overview: MockOverview = OVERVIEW): Promise<void> {
+/** Draws the page at an address, as the router would bring it there. */
+async function openAt(address: string, overview: MockOverview = OVERVIEW): Promise<void> {
+  window.history.replaceState(null, "", address);
   render(<MockExamFlow overview={overview} />);
   await act(async () => {
     await Promise.resolve();
   });
+}
+
+/** The page as the window's "Commencer" opens it: the exam starts on its own. */
+async function open(overview: MockOverview = OVERVIEW): Promise<void> {
+  await openAt("/paths/linux/mock-exam?go=1", overview);
 }
 
 const OVERVIEW: MockOverview = {
@@ -67,6 +78,7 @@ const QUESTIONS = [
 beforeEach(() => {
   m.startMockExamAction.mockReset();
   m.submitMockExamAction.mockReset();
+  m.replace.mockReset();
   m.startMockExamAction.mockResolvedValue({
     ok: true,
     attemptId: "a1",
@@ -113,7 +125,6 @@ beforeEach(() => {
 
 describe("MockExamFlow", () => {
   it("starts the exam as the page opens, once, and takes ?go=1 off the address", async () => {
-    window.history.replaceState(null, "", "/paths/linux/mock-exam?go=1");
     await open();
     expect(m.startMockExamAction).toHaveBeenCalledTimes(1);
     expect(m.startMockExamAction).toHaveBeenCalledWith("p1");
@@ -121,6 +132,19 @@ describe("MockExamFlow", () => {
     // A reload now lands on the window on the path's page, not on a new paper.
     expect(window.location.pathname).toBe("/paths/linux/mock-exam");
     expect(window.location.search).toBe("");
+    expect(m.replace).not.toHaveBeenCalled();
+  });
+
+  it("starts nothing when brought back without ?go=1, and goes to the window", async () => {
+    // Back or Forward to the page once the exam ran: the router restores it
+    // from its cache, and the redirect never sees it.
+    await openAt("/paths/linux/mock-exam");
+    expect(m.startMockExamAction).not.toHaveBeenCalled();
+    expect(m.replace).toHaveBeenCalledWith("/paths/linux?mock=1");
+    expect(screen.getByRole("status").textContent).toContain(
+      "Retour à la présentation de l'examen…",
+    );
+    expect(screen.queryByText("0 / 2 répondues")).toBeNull();
   });
 
   it("runs the exam by module, hands the copy in, and reads the score by module", async () => {

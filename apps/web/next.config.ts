@@ -112,12 +112,22 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       // The mock exam's presentation is a window over its path (?mock=1); its
-      // page runs the exam, started by the window's button (?go=1). Reached
-      // any other way (a bookmark, an old link), it opens the window rather
-      // than the clock.
+      // page runs the exam, started by the window's button (?go=1). Loaded
+      // any other way (a bookmark, an old link, a reload), it opens the window
+      // rather than the clock.
+      //
+      // A document load only. Once the exam runs, ?go=1 is off the address
+      // (mock-exam-flow.tsx), and the router sends its requests to that
+      // address: a server action's POST (the hand-in, the restart), marked by
+      // its Next-Action header, and a refresh of the page, marked by RSC.
+      // Redirected, they would run under the path's page instead.
       {
         source: "/paths/:slug/mock-exam",
-        missing: [{ type: "query", key: "go" }],
+        missing: [
+          { type: "query", key: "go" },
+          { type: "header", key: "next-action" },
+          { type: "header", key: "rsc" },
+        ],
         destination: "/paths/:slug?mock=1",
         permanent: false,
       },

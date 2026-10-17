@@ -5,6 +5,7 @@
 // server's (../_actions/mock-exam-actions.ts).
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ANSWER_WORD,
@@ -32,7 +33,7 @@ import { StickyRail } from "@/components/sticky-rail";
 import { addressWith } from "@/hooks/use-query-dialog";
 import type { MockOverview } from "@/lib/exam/mock-exam";
 import { startMockExamAction, submitMockExamAction } from "../_actions/mock-exam-actions";
-import { MOCK_GO } from "./mock-address";
+import { MOCK_GO, mockWindowHref } from "./mock-address";
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -67,14 +68,21 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+/** Whether the address carries ?go=1, the window's "Commencer". */
+function startedByWindow(): boolean {
+  return new URLSearchParams(window.location.search).has(MOCK_GO);
+}
+
 /**
  * Takes ?go=1 off the address once the exam is under way: a reload, or the
  * address bookmarked or shared, lands on the window on the path's page
- * (next.config.ts redirects the page without it) rather than drawing another
- * paper. Through the History API, which Next follows without a request.
+ * (next.config.ts redirects a page load without it) rather than drawing
+ * another paper. Through the History API, which Next follows without a
+ * request; the hand-in then posts to the address without it, which the
+ * redirect leaves alone.
  */
 function leaveGo(): void {
-  if (!new URLSearchParams(window.location.search).has(MOCK_GO)) return;
+  if (!startedByWindow()) return;
   window.history.replaceState(null, "", addressWith(window.location.href, MOCK_GO, null));
 }
 
@@ -83,17 +91,20 @@ function leaveGo(): void {
 /**
  * Between the window's "Commencer" and the paper: the paper being drawn (or
  * the attempt still running taken up again), or why it could not be, with
- * the way to try again and the way back.
+ * the way to try again and the way back. Or, for a page brought back without
+ * ?go=1, the way to the window while the router takes the reader there.
  */
 function Opening({
   overview,
   busy,
   error,
+  leaving,
   onRetry,
 }: {
   overview: MockOverview;
   busy: boolean;
   error: string | null;
+  leaving: boolean;
   onRetry: () => void;
 }): React.ReactElement {
   return (
@@ -112,7 +123,7 @@ function Opening({
       ) : (
         <p className="mkx-open__wait" role="status">
           <span className="mkx-live__dot" aria-hidden="true" />
-          Préparation de ta copie…
+          {leaving ? "Retour à la présentation de l'examen…" : "Préparation de ta copie…"}
         </p>
       )}
       <div className="mkx-cta">
@@ -651,15 +662,18 @@ function Result({
  * (handed in by itself at zero), then the score by module, what to go back
  * to, and each question with its answer. What the exam covers and the
  * attempts already made are shown before, in the window on the path's page
- * (mock-exam-intro.tsx), whose "Commencer" leads here: the exam starts as the
- * page opens, once. The focus follows the stage, to the paper's name when it
- * opens and to the verdict when the copy is handed in.
+ * (mock-exam-intro.tsx), whose "Commencer" leads here with ?go=1: the exam
+ * starts as the page opens, once. Without it, nothing starts and the reader
+ * goes to the window. The focus follows the stage, to the paper's name when
+ * it opens and to the verdict when the copy is handed in.
  */
 export function MockExamFlow({ overview }: { overview: MockOverview }): React.ReactElement {
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>({ kind: "opening" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(overview.ready);
+  const [leaving, setLeaving] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const submitting = useRef(false);
   // The hand-in at zero is tried once: if it fails, the buttons stay to try
@@ -702,11 +716,21 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
   }, [overview.pathId]);
 
   // The window's "Commencer" (or "Reprendre") led here: the exam starts now.
+  // Read from the address as the page opens, not from the server's props: Back
+  // or Forward to this page (?go=1 already off) restores it from the router's
+  // cache, with no request for the redirect to answer, and it must not draw a
+  // paper and start the clock without a click. It goes to the window instead,
+  // as a page load would.
   useEffect(() => {
     if (opened.current || !overview.ready) return;
     opened.current = true;
+    if (!startedByWindow()) {
+      setLeaving(true);
+      router.replace(mockWindowHref(overview.pathSlug));
+      return;
+    }
     void start();
-  }, [overview.ready, start]);
+  }, [overview.ready, overview.pathSlug, router, start]);
 
   const submit = useCallback(async (): Promise<void> => {
     if (stage.kind !== "running" || submitting.current) return;
@@ -782,5 +806,13 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
     );
   }
 
-  return <Opening overview={overview} busy={busy} error={error} onRetry={() => void start()} />;
+  return (
+    <Opening
+      overview={overview}
+      busy={busy}
+      error={error}
+      leaving={leaving}
+      onRetry={() => void start()}
+    />
+  );
 }
