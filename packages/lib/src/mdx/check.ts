@@ -1,4 +1,5 @@
 import { evaluate } from "@mdx-js/mdx";
+import { escapeProblem } from "./escapes.js";
 import { quizProblem } from "./quizzes.js";
 import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
@@ -122,8 +123,11 @@ export type LessonMdxCheck =
       section: string;
       /** In French, for the person who wrote it. */
       message: string;
-      /** "quiz" when the lesson renders but a quiz could not be scored. */
-      kind?: "quiz";
+      /**
+       * "quiz" when the lesson renders but a quiz could not be scored, "text"
+       * when it renders but shows a string other than the one written.
+       */
+      kind?: "quiz" | "text";
     };
 
 /** Stands in for every component: rendering is not the question, props are. */
@@ -239,12 +243,18 @@ export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
   }
 
   // Every section renders. Then the quizzes: each answer is stored under its
-  // quiz's id, so the ids must exist and be unique across the lesson.
+  // quiz's id, so the ids must exist and be unique across the lesson. And the
+  // text between braces: a backslash JavaScript drops would render without
+  // a word of warning (see escapes.ts).
   const seenQuizIds = new Set<string>();
   for (const source of sections) {
     const problem = quizProblem(source, seenQuizIds);
     if (problem !== null) {
       return { ok: false, section: headingOf(source), message: problem, kind: "quiz" };
+    }
+    const lost = escapeProblem(source);
+    if (lost !== null) {
+      return { ok: false, section: headingOf(source), message: lost, kind: "text" };
     }
   }
   return { ok: true };
@@ -471,6 +481,7 @@ function explain(error: unknown): string {
 export function describeLessonMdxProblem(check: Extract<LessonMdxCheck, { ok: false }>): string {
   const where =
     check.section === "introduction" ? "L'introduction" : `La section « ${check.section} »`;
-  if (check.kind === "quiz") return `${where} : ${check.message} Rien n'a été enregistré.`;
+  // It renders, but not as it should: "ne s'afficherait pas" would be untrue.
+  if (check.kind !== undefined) return `${where} : ${check.message} Rien n'a été enregistré.`;
   return `${where} ne s'afficherait pas, donc rien n'a été enregistré. ${check.message}`;
 }
