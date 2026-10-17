@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { SPACED_REPETITION_SETTING } from "@cyberlearn/lib/settings/notifications";
 import { InfoTip } from "@/components/info-tip";
 import { Switch, ToggleRow } from "../../_components/SettingsControls";
 import { SettingsCard } from "../../_components/SettingsPrimitives";
@@ -39,24 +40,14 @@ export function RevisionsForm({ initial }: { initial: boolean }): React.JSX.Elem
   return (
     <SettingsCard title="Révisions">
       <ToggleRow
-        name="Répétition espacée"
-        desc={
-          on
-            ? "Les leçons terminées reviennent à réviser, cinq par jour au plus, et tu es prévenu quand c'est le moment."
-            : "Coupée. Rien ne revient à réviser et plus aucune notification de révision ne part."
-        }
+        name={SPACED_REPETITION_SETTING.name}
+        desc={on ? SPACED_REPETITION_SETTING.descOn : SPACED_REPETITION_SETTING.descOff}
         info={
-          <InfoTip title="Répétition espacée">
-            Chaque jour demande cinq révisions au plus, les leçons en retard depuis le plus
-            longtemps d&apos;abord ; une leçon retenue assez de fois sort du cycle. Couper la
-            répétition espacée retire l&apos;onglet Révisions, la section du tableau de bord et les
-            rappels. Ce que tu avais déjà à réviser n&apos;est pas supprimé : si tu la réactives, tu
-            retrouves ta file là où elle s&apos;était arrêtée.
-          </InfoTip>
+          <InfoTip title={SPACED_REPETITION_SETTING.name}>{SPACED_REPETITION_SETTING.info}</InfoTip>
         }
         last
       >
-        <Switch on={on} label="Répétition espacée" onClick={flip} disabled={pending} />
+        <Switch on={on} label={SPACED_REPETITION_SETTING.name} onClick={flip} disabled={pending} />
       </ToggleRow>
       {error !== null && (
         <p

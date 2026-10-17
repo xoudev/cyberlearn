@@ -76,6 +76,12 @@ interface LessonStepperProps {
    */
   reviewing?: boolean;
   sections: { text: string; id: string }[];
+  /**
+   * The section to open on, from 0: the one a "Revoir ce passage" link asks
+   * for (`?section=`), which the page passes only where every section may be
+   * opened already (a finished lesson, an administrator's preview).
+   */
+  initialStep?: number;
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
   /** The reader's note on the lesson, as saved. */
@@ -95,18 +101,20 @@ export function LessonStepper({
   isCompleted,
   reviewing = false,
   sections,
+  initialStep = 0,
   planExtra,
   note,
 }: LessonStepperProps): React.ReactElement {
   const totalSteps = Math.max(1, sections.length);
+  const firstStep = Math.min(Math.max(0, initialStep), totalSteps - 1);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(firstStep);
   const [doneSteps, setDoneSteps] = useState<ReadonlySet<number>>(() =>
     isCompleted ? new Set(Array.from({ length: totalSteps }, (_el, i) => i)) : new Set<number>(),
   );
   // The furthest section the reader has had on screen: going back from it
   // with "Précédente" leaves it open in the plan, where it used to shut.
-  const [furthestStep, setFurthestStep] = useState(0);
+  const [furthestStep, setFurthestStep] = useState(firstStep);
   const [exerciseState, dispatchExercise] = useReducer(exerciseReducer, {
     required: new Map<number, Set<string>>(),
     done: new Map<number, Set<string>>(),

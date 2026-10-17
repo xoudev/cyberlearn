@@ -64,6 +64,8 @@ describe("the surfaces that have to obey it", () => {
     "app/(app)/dashboard/page.tsx",
     // The page itself.
     "app/(app)/revisions/page.tsx",
+    // The day's recall, its window and the app's route.
+    "lib/revisions/daily-recall.ts",
   ];
 
   it.each(SURFACES)("%s reads the shared helper rather than the column", (file) => {
@@ -72,14 +74,14 @@ describe("the surfaces that have to obey it", () => {
   });
 
   it("the reminder cron requires both switches, not just the e-mail one", () => {
-    // The cron reads the queue through the repository, and the repository's
-    // reminder query is where both switches have to be: reading
-    // reviewReminders alone would keep mailing about a queue the reader has
-    // said they do not want to have at all.
+    // The cron reads the review cards through the repository, and the
+    // repository's reminder query is where both switches have to be: reading
+    // reviewReminders alone would keep notifying about a recall the reader
+    // has said they do not want to have at all.
     const cron = readFileSync(join(WEB, "app/api/cron/review-reminders/route.ts"), "utf8");
-    expect(cron).toContain("reviewRepository.findReminders");
+    expect(cron).toContain("reviewCardRepository.findReminders");
     const repository = readFileSync(
-      join(WEB, "../../packages/db/src/repositories/review.repository.ts"),
+      join(WEB, "../../packages/db/src/repositories/review-card.repository.ts"),
       "utf8",
     );
     const reminders = repository.slice(repository.indexOf("async findReminders"));

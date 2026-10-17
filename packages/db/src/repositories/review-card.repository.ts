@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { dayKey } from "@cyberlearn/lib/gamification/day";
 import {
   answerCard,
   dayStart,
@@ -59,6 +60,16 @@ export interface DueCardRow {
  */
 function staleWhere(now: Date): Prisma.ReviewCardWhereInput {
   return { everCorrect: true, dueAt: { lt: staleBefore(now) } };
+}
+
+const REVIEW_LESSON = { id: true, slug: true, title: true, contentMdx: true } as const;
+
+/** A lesson as a review question is read from it. */
+export interface ReviewLessonRow {
+  id: string;
+  slug: string;
+  title: string;
+  contentMdx: string;
 }
 
 const SESSION = {
@@ -277,5 +288,109 @@ export const reviewCardRepository = {
       data: { xpCredited: true },
     });
     return count === 1;
+  },
+
+  /**
+   * Records one answer of the learner's session, once: the shown option
+   * picked for the drawn question `index`. False, and nothing written, when
+   * that question has an answer already, the session was handed in, or it is
+   * not the learner's. One conditional statement, so two tabs answering the
+   * same question at once record one answer, and two answering different
+   * questions record both.
+   */
+  async answerInSession(
+    userId: string,
+    id: string,
+    index: number,
+    selected: number,
+    db: Db = prisma,
+  ): Promise<boolean> {
+    const key = String(index);
+    const count = await db.$executeRaw`
+      UPDATE "review_sessions"
+      SET "answers" = jsonb_set("answers", ARRAY[${key}::text], to_jsonb(${selected}::int), true)
+      WHERE "id" = ${id}::uuid
+        AND "userId" = ${userId}::uuid
+        AND "completedAt" IS NULL
+        AND ("answers" -> ${key}::text) IS NULL`;
+    return count === 1;
+  },
+
+  /** Whether the learner has a card due on the day of `now`, as findDue reads them. */
+  async hasDue(userId: string, now: Date): Promise<boolean> {
+    const card = await prisma.reviewCard.findFirst({
+      where: {
+        userId,
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+      },
+      select: { id: true },
+    });
+    return card !== null;
+  },
+
+  /**
+   * Who to remind on the day of `now`: the learners with a card due, as
+   * findDue reads them, who keep the feature and its reminder on (no
+   * preferences row keeps both defaults), and whose session of the day is not
+   * handed in yet.
+   */
+  async findReminders(now: Date): Promise<string[]> {
+    const rows = await prisma.reviewCard.findMany({
+      where: {
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+        user: {
+          // Two switches, and both have to be on: spacedRepetition turns the
+          // feature off, reviewReminders only this reminder.
+          OR: [
+            { preferences: { is: null } },
+            { preferences: { is: { spacedRepetition: true, reviewReminders: true } } },
+          ],
+          reviewSessions: {
+            none: { day: dayStart(dayKey(now)), completedAt: { not: null } },
+          },
+        },
+      },
+      distinct: ["userId"],
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId);
+  },
+
+  /**
+   * The lessons still published among these, with what a review question is
+   * read from: its quizzes (contentMdx), and its slug and title to name it
+   * and lead back to it.
+   */
+  async findLessons(lessonIds: readonly string[]): Promise<ReviewLessonRow[]> {
+    if (lessonIds.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: { id: { in: [...new Set(lessonIds)] }, status: "PUBLISHED" },
+      select: REVIEW_LESSON,
+    });
+  },
+
+  /**
+   * The lessons among these that the learner finished and that are still
+   * published: what "Réviser ce module" asks about.
+   */
+  async findCompletedLessons(
+    userId: string,
+    lessonIds: readonly string[],
+  ): Promise<ReviewLessonRow[]> {
+    if (lessonIds.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: {
+        id: { in: [...new Set(lessonIds)] },
+        status: "PUBLISHED",
+        progress: { some: { userId, status: "COMPLETED" } },
+      },
+      select: REVIEW_LESSON,
+    });
   },
 };

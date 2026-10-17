@@ -11,8 +11,11 @@ import { reviewCardRepository } from "../repositories/review-card.repository.js"
 
 const { mockPrisma } = vi.hoisted(() => ({
   mockPrisma: {
+    $executeRaw: vi.fn(),
+    lesson: { findMany: vi.fn() },
     reviewCard: {
       createMany: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
       updateMany: vi.fn(),
@@ -273,5 +276,109 @@ describe("sessions", () => {
     });
     mockPrisma.reviewSession.updateMany.mockResolvedValueOnce({ count: 0 });
     expect(await reviewCardRepository.claimSessionXp("s1")).toBe(false);
+  });
+});
+
+describe("answerInSession", () => {
+  /** The SQL text and the values a tagged $executeRaw call was made with. */
+  function rawCall(call = 0): { sql: string; values: unknown[] } {
+    const [strings, ...values] = mockPrisma.$executeRaw.mock.calls[call] ?? [];
+    // SAFETY: a tagged template's first argument is its strings array.
+    return { sql: (strings as readonly string[]).join("?"), values };
+  }
+
+  it("writes the answer only where the question has none and the session is still open", async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    expect(await reviewCardRepository.answerInSession(USER, "s1", 3, 2)).toBe(true);
+    const { sql, values } = rawCall();
+    expect(values).toEqual(["3", 2, "s1", USER, "3"]);
+    expect(sql).toContain('"completedAt" IS NULL');
+    expect(sql).toContain('("answers" -> ?::text) IS NULL');
+    expect(sql).toContain('"userId" = ?::uuid');
+  });
+
+  it("is false when nothing was written: answered already, handed in, or not the learner's", async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(0);
+    expect(await reviewCardRepository.answerInSession(USER, "s1", 0, 1)).toBe(false);
+  });
+
+  it("writes through the transaction it is given", async () => {
+    const tx = { $executeRaw: vi.fn().mockResolvedValue(1) };
+    // SAFETY: the fake has the one method answerInSession calls.
+    const db = tx as unknown as Prisma.TransactionClient;
+    expect(await reviewCardRepository.answerInSession(USER, "s1", 0, 1, db)).toBe(true);
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("hasDue", () => {
+  it("looks for one card due today, as findDue reads them", async () => {
+    mockPrisma.reviewCard.findFirst.mockResolvedValueOnce({ id: "c1" });
+    expect(await reviewCardRepository.hasDue(USER, NOW)).toBe(true);
+    expect(argOf(mockPrisma.reviewCard.findFirst)).toEqual({
+      where: {
+        userId: USER,
+        retiredAt: null,
+        dueAt: { lte: day("2026-10-11") },
+        NOT: { everCorrect: true, dueAt: { lt: day("2026-09-11") } },
+        lesson: { status: "PUBLISHED" },
+      },
+      select: { id: true },
+    });
+    mockPrisma.reviewCard.findFirst.mockResolvedValueOnce(null);
+    expect(await reviewCardRepository.hasDue(USER, NOW)).toBe(false);
+  });
+});
+
+describe("findReminders", () => {
+  it("reminds each learner with a card due once, if both switches are on and today is not done", async () => {
+    mockPrisma.reviewCard.findMany.mockResolvedValue([{ userId: "u1" }, { userId: "u2" }]);
+    expect(await reviewCardRepository.findReminders(NOW)).toEqual(["u1", "u2"]);
+    expect(argOf(mockPrisma.reviewCard.findMany)).toEqual({
+      where: {
+        retiredAt: null,
+        dueAt: { lte: day("2026-10-11") },
+        NOT: { everCorrect: true, dueAt: { lt: day("2026-09-11") } },
+        lesson: { status: "PUBLISHED" },
+        user: {
+          OR: [
+            { preferences: { is: null } },
+            { preferences: { is: { spacedRepetition: true, reviewReminders: true } } },
+          ],
+          reviewSessions: { none: { day: day("2026-10-11"), completedAt: { not: null } } },
+        },
+      },
+      distinct: ["userId"],
+      select: { userId: true },
+    });
+  });
+});
+
+describe("review lessons", () => {
+  it("reads the published lessons asked for, each once", async () => {
+    mockPrisma.lesson.findMany.mockResolvedValue([]);
+    await reviewCardRepository.findLessons([LESSON, LESSON]);
+    expect(argOf(mockPrisma.lesson.findMany)).toEqual({
+      where: { id: { in: [LESSON] }, status: "PUBLISHED" },
+      select: { id: true, slug: true, title: true, contentMdx: true },
+    });
+  });
+
+  it("reads only the lessons the learner finished, for a module's review", async () => {
+    mockPrisma.lesson.findMany.mockResolvedValue([]);
+    await reviewCardRepository.findCompletedLessons(USER, [LESSON]);
+    expect(argOf(mockPrisma.lesson.findMany)).toMatchObject({
+      where: {
+        id: { in: [LESSON] },
+        status: "PUBLISHED",
+        progress: { some: { userId: USER, status: "COMPLETED" } },
+      },
+    });
+  });
+
+  it("asks nothing of the database for no lesson", async () => {
+    expect(await reviewCardRepository.findLessons([])).toEqual([]);
+    expect(await reviewCardRepository.findCompletedLessons(USER, [])).toEqual([]);
+    expect(mockPrisma.lesson.findMany).not.toHaveBeenCalled();
   });
 });

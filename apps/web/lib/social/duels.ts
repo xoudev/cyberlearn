@@ -6,8 +6,7 @@ import {
   pathsVisibleTo,
   prisma,
 } from "@cyberlearn/db";
-import { sourceKey, type MockRef, type MockSource } from "@cyberlearn/lib/exam/mock";
-import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
+import type { MockRef, MockSource } from "@cyberlearn/lib/exam/mock";
 import {
   checkDuelAnswer,
   DUEL_QUESTIONS,
@@ -25,6 +24,7 @@ import {
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { loadSources } from "@/lib/exam/mock-exam";
+import { sourcesFor } from "@/lib/exam/quiz-sources";
 import { checkNotifyingWrite } from "@/lib/rate-limit";
 
 /**
@@ -125,31 +125,6 @@ function readRefs(value: unknown): MockRef[] {
     }
     return [{ lessonId: ref.lessonId, quizId: ref.quizId, domain: ref.domain, order: ref.order }];
   });
-}
-
-/** The quizzes of the lessons a duel drew from, as they are now. */
-async function sourcesFor(refs: readonly MockRef[]): Promise<Map<string, MockSource>> {
-  const ids = [...new Set(refs.map((ref) => ref.lessonId))];
-  if (ids.length === 0) return new Map();
-  const lessons = await prisma.lesson.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, contentMdx: true },
-  });
-  const map = new Map<string, MockSource>();
-  for (const lesson of lessons) {
-    for (const quiz of extractLessonQuizzes(lesson.contentMdx)) {
-      map.set(sourceKey(lesson.id, quiz.id), {
-        lessonId: lesson.id,
-        quizId: quiz.id,
-        domain: "",
-        question: quiz.question,
-        options: quiz.options,
-        correct: quiz.correct,
-        explanation: quiz.explanation,
-      });
-    }
-  }
-  return map;
 }
 
 function toRows(

@@ -1,6 +1,7 @@
 import { createProcessor } from "@mdx-js/mdx";
 import remarkGfm from "remark-gfm";
 import { attributeValue, type MdNode } from "./attributes.js";
+import { splitMdxSections } from "./split-sections.js";
 
 /**
  * The quizzes of a lesson, read from its MDX without running any of it.
@@ -96,6 +97,21 @@ export function extractLessonQuizzes(mdx: string): LessonQuiz[] {
     });
   }
   return quizzes;
+}
+
+/**
+ * The section of a lesson each of its quizzes is in, from 0, as the lesson
+ * page cuts it (splitMdxSections, one section a step), by quiz id. A section
+ * that does not parse lists none. "Revoir ce passage" opens the lesson there.
+ */
+export function quizSections(mdx: string): Map<string, number> {
+  const sections = new Map<string, number>();
+  for (const [index, section] of splitMdxSections(mdx).entries()) {
+    for (const quiz of extractLessonQuizzes(section)) {
+      if (!sections.has(quiz.id)) sections.set(quiz.id, index);
+    }
+  }
+  return sections;
 }
 
 /**

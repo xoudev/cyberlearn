@@ -722,6 +722,12 @@
 .pd2 .cp-gate__side--l {
   justify-content: flex-end;
 }
+/* The module's sheet, its review and its count: they go to a second line
+   rather than past the column's edge. */
+.pd2 .cp-gate__side:not(.cp-gate__side--l) {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
 .pd2 .cp-gate__rule {
   flex: 1;
   height: 1px;

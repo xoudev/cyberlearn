@@ -7,6 +7,8 @@
  * other things that are not pages of the site already are.
  */
 
+import { DAILY_RAPPEL, RAPPEL_QUERY } from "@/components/rappel/rappel-query";
+
 export type SidebarIcon =
   | "dashboard"
   | "route"
@@ -30,6 +32,12 @@ export interface SidebarItem {
   icon: SidebarIcon;
   /** A number worth acting on, drawn next to the label; none otherwise. */
   count: number | null;
+  /**
+   * A window the entry opens over the page instead of leading to `href`
+   * (`?<query>=<value>`, components/query-dialogs.ts). `href` still says
+   * which pages the entry owns.
+   */
+  opens?: { query: string; value: string };
 }
 
 export interface SidebarGroup {
@@ -44,8 +52,6 @@ export interface SidebarInput {
   hasClasses: boolean;
   /** False once spaced repetition is switched off in the settings. */
   showRevisions: boolean;
-  /** Revisions due right now: the one count that calls for an action. */
-  dueReviews: number;
 }
 
 export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
@@ -54,11 +60,14 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
     { href: "/lessons", label: "Leçons", icon: "book", count: null },
   ];
   if (input.showRevisions) {
+    // The day's recall, in its window. No count: what waits beyond today's
+    // few questions is not a number anybody should be shown.
     learn.push({
       href: "/revisions",
       label: "Révisions",
       icon: "review",
-      count: input.dueReviews > 0 ? input.dueReviews : null,
+      count: null,
+      opens: { query: RAPPEL_QUERY, value: DAILY_RAPPEL },
     });
   }
   learn.push(

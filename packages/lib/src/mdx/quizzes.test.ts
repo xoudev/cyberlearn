@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkLessonMdx, describeLessonMdxProblem } from "./check.js";
-import { extractLessonQuizzes, quizProblem } from "./quizzes.js";
+import { extractLessonQuizzes, quizProblem, quizSections } from "./quizzes.js";
 
 /**
  * The answer key, read from the lesson on the server.
@@ -106,5 +106,42 @@ describe("quizProblem, asked before a lesson is saved", () => {
     expect(describeLessonMdxProblem(r)).toBe(
       "La section « Deux » : Deux quiz portent l'identifiant « q-1 ». La réponse d'un élève est enregistrée sous cet identifiant : chaque quiz d'une leçon a le sien. Rien n'a été enregistré.",
     );
+  });
+});
+
+describe("quizSections", () => {
+  const mdx = [
+    "---",
+    "title: Une leçon",
+    "---",
+    "",
+    "Une introduction avant la première section.",
+    "",
+    "## Un",
+    "",
+    '<Quiz id="q-1" question="A" options={["a", "b"]} correct={0} />',
+    "",
+    "## Deux",
+    "",
+    "Du texte.",
+    "",
+    "## Trois",
+    "",
+    '<Quiz id="q-3" question="C" options={["a", "b"]} correct={1} />',
+  ].join("\n");
+
+  it("finds the section each quiz is in, as the lesson page cuts them", () => {
+    expect(quizSections(mdx)).toEqual(
+      new Map([
+        ["q-1", 0],
+        ["q-3", 2],
+      ]),
+    );
+  });
+
+  it("lists nothing from a section that does not parse, and keeps the others", () => {
+    const broken = `${mdx}\n\n## Quatre\n\n<Quiz id="q-4" question={`;
+    expect(quizSections(broken).get("q-3")).toBe(2);
+    expect(quizSections(broken).has("q-4")).toBe(false);
   });
 });

@@ -26,8 +26,8 @@ export const NOTIFICATION_SETTINGS: readonly NotificationSetting[] = [
   {
     key: "reviewReminders",
     name: "Rappels de révision",
-    desc: "Une notification quand des leçons attendent une révision.",
-    info: "Une fois par jour au plus, dans la cloche, quand la répétition espacée te ramène des leçons à revoir. Aucun email ne part pour ça.",
+    desc: "Une notification quand ton rappel du jour est prêt.",
+    info: "Une fois par jour au plus, dans la cloche, quand des questions de tes leçons reviennent au rappel du jour et qu'il n'est pas encore fait. Aucun email ne part pour ça.",
     available: true,
   },
   {
@@ -62,6 +62,9 @@ export const SHOWN_NOTIFICATION_SETTINGS: readonly NotificationSetting[] =
 /** The spaced-repetition switch, which lives with the preferences on the site. */
 export const SPACED_REPETITION_SETTING = {
   name: "Répétition espacée",
-  descOn: "Les leçons terminées reviennent à réviser, et tu es prévenu quand c'est le moment.",
-  descOff: "Coupée. Rien ne revient à réviser et plus aucune notification de révision ne part.",
+  descOn:
+    "Les questions ratées dans tes leçons reviennent au rappel du jour, six au plus, et tu es prévenu quand il est prêt.",
+  descOff: "Coupée. Aucune question ne revient et plus aucun rappel ne part.",
+  /** The longer explanation behind the (i). */
+  info: "Chaque jour, le rappel pose six questions au plus, celles que tu as ratées dans tes leçons d'abord, en boîtes de Leitner : une bonne réponse fait revenir la question plus tard (1, 3, 7 puis 21 jours), puis la retire ; une erreur la ramène au lendemain. Le rappel fait rapporte 15 XP et compte pour ta série. Couper la répétition espacée retire le rappel du jour, son entrée Révisions, sa carte du tableau de bord et ses notifications ; « Réviser ce module », sur la page d'un parcours, reste là, sans XP. Rien n'est supprimé : réactivée, elle reprend où elle s'était arrêtée.",
 } as const;

@@ -50,7 +50,8 @@
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
 | `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
-| `/revisions` · `/review` | Révisions espacées SM-2 |
+| `/revisions` · `/review` | Ancienne file SM-2, plus reliée, retirée ensuite |
+| `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
@@ -71,7 +72,7 @@
 
 | Route | Description |
 |---|---|
-| `/api/cron/review-reminders` | Cron - rappels de révision SM-2 (quotidien) |
+| `/api/cron/review-reminders` | Cron - rappel du jour prêt, sans nombre (quotidien) |
 | `/api/cron/streak-reset` | Cron - reset du streak à minuit |
 | `/api/cron/season-rollover` | Cron - clôture de saison, promotions et relégations |
 | `/api/cron/keep-alive` | Cron - maintien en vie des free tiers ([détail](infra/keep-alive.md)) |
@@ -88,6 +89,7 @@
 | `/api/mobile/my-class` | Travail donné à l'élève |
 | `/api/mobile/loadout` | Cosmétiques équipés |
 | `/api/mobile/password` | Changement de mot de passe |
+| `/api/mobile/review-cards` | Rappel du jour (GET, POST d'une réponse) ; `?path=&module=` pour réviser un module |
 
 ---
 
@@ -105,12 +107,12 @@
 - Génération de **waivers** après le test : accès direct aux leçons avancées si score suffisant
 
 #### Dashboard
-- En-tête : la date, le prénom, la série et les révisions dues, le niveau en anneau avec l'XP et le rang
+- En-tête : la date, le prénom, la série et « Ton rappel du jour t'attend » tant qu'il est à faire, le niveau en anneau avec l'XP et le rang
 - La mission : la leçon en cours, sinon la prochaine du parcours en tête (classement `featured-paths`, à partir du niveau, du test de placement et des derniers domaines travaillés), avec le module en cours dessiné leçon par leçon (`module-route`)
-- Révisions SM-2 dues du jour, en lignes
+- Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
-- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; seul le nombre de révisions dues y est compté
+- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; rien n'y est compté, « Révisions » ouvre le rappel du jour
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)
@@ -158,19 +160,21 @@
   nombre réel de joueurs classés et la place du lecteur, même au-delà des
   cent lignes ; un nom public mène au profil, avec son avatar
 
-#### Révisions (Spaced Repetition SM-2)
-- Algorithme SuperMemo-2 : `easeFactor`, `intervalDays`, `repetitions`, `nextReviewAt`
-- ReviewSchedule créé à chaque complétion de leçon
-- Page `/revisions` : la session du jour, cinq leçons au plus parmi celles dont `nextReviewAt ≤ now`, les plus en retard d'abord ; le reste attend son tour (`reviewRepository`, règles dans `@cyberlearn/lib/revisions/session`)
-- Seules les leçons encore publiées reviennent ; une leçon retenue assez de fois (prochain intervalle ≥ 60 jours) sort du cycle
-- Cron quotidien pour les rappels par notification, au compte de la session
-- En préparation, à côté de la file SM-2 qu'elles remplaceront : les cartes de révision, une question de quiz par carte (tables `review_cards` et `review_sessions`, lecture de ses propres lignes seulement, écriture par le serveur). Une leçon terminée, sur le site ou dans l'app, met en file les questions ratées (dues le lendemain) et la dernière réussie (due une semaine plus tard), sauf les bilans de module, les projets et les leçons de classe ; même interrupteur `spacedRepetition`. Boîtes de Leitner : une bonne réponse fait monter la carte (revue 1, 3, 7 puis 21 jours plus tard) puis la retire, une erreur la renvoie à la première boîte ; une carte réussie au moins une fois (colonne `everCorrect`) et en retard de plus de 30 jours sort d'elle-même, et aucune séance ne la tire entre-temps ; une carte dont la question a quitté la leçon sort aussi, mais pas sur une leçon lue sans aucun quiz (MDX illisible). Une séance par jour, six cartes au plus, deux au plus par leçon, l'ordre des options tiré pour le jour. Règles dans `@cyberlearn/lib/revisions/cards`, lectures et écritures dans `reviewCardRepository` ; aucun écran ne les montre encore. Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne). À reprendre quand la file SM-2 sera retirée : les leçons de classe n'ont pas de cartes, alors que l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) promet aux enseignants « progression, XP, révisions » ; corriger cet en-tête, ou revoir l'exclusion avec le PO
+#### Révisions : « Rappel du jour » (cartes de Leitner) et « Réviser ce module »
+- Les cartes de révision, une question de quiz par carte (tables `review_cards` et `review_sessions`, lecture de ses propres lignes seulement, écriture par le serveur). Une leçon terminée, sur le site ou dans l'app, met en file les questions ratées (dues le lendemain) et la dernière réussie (due une semaine plus tard), sauf les bilans de module, les projets et les leçons de classe ; interrupteur `spacedRepetition`. Boîtes de Leitner : une bonne réponse fait monter la carte (revue 1, 3, 7 puis 21 jours plus tard) puis la retire, une erreur la renvoie à la première boîte ; une carte réussie au moins une fois (colonne `everCorrect`) et en retard de plus de 30 jours sort d'elle-même, et aucune séance ne la tire entre-temps ; une carte dont la question a quitté la leçon sort aussi, mais pas sur une leçon lue sans aucun quiz (MDX illisible). Règles dans `@cyberlearn/lib/revisions/cards`, lectures et écritures dans `reviewCardRepository`
+- **Rappel du jour** : une fenêtre par-dessus la page (`?rappel=1`, `components/rappel/rappel-dialog.tsx`), ouverte depuis l'entrée Révisions de la barre latérale, la carte « Rappel du jour » du tableau de bord et la notification de rappel. Une séance par jour, tirée à la première ouverture et gardée avec l'ordre des options (six cartes au plus, deux au plus par leçon, les plus en retard d'abord) ; c'est à ce moment que les cartes périmées et orphelines sont retirées. Une question à la fois, chaque réponse corrigée sur le serveur et définitive (tirage et vérification de `social/duel.ts`, écriture conditionnelle `answerInSession`), qui déplace sa carte ; puis l'explication de l'auteur et « Revoir ce passage », qui ouvre la leçon sur la section de la question (`?section=N#quiz-<id>`, `@cyberlearn/lib/revisions/passage`, la section ouverte seulement sur une leçon terminée). Fermée en cours de route, la séance reprend à la question suivante. La dernière réponse rend la séance : 15 XP une seule fois (`REVIEW_SESSION_XP`, journal d'XP source `REVIEW`), le jour compté pour la série et sa quête hebdomadaire. Aucun compteur d'attente nulle part : ni dans la barre latérale, ni sur le tableau de bord (« à faire », « fait aujourd'hui » ou « rien aujourd'hui »), ni dans la notification. Service partagé `apps/web/lib/revisions/daily-recall.ts`, actions `(app)/_rappel/_actions`
+- **Réviser ce module · 2 min** : sur la page d'un parcours, dans l'en-tête de chaque module dont une leçon est terminée, à côté de « Fiche PDF » ; la même fenêtre (`?rappel=module-<n>-<parcours>`), six questions au plus des leçons terminées du module, corrigées une à une sur le serveur, sans XP, sans carte déplacée et sans rien enregistrer : le tirage est le même toute la journée et l'ordre des options d'une question se recalcule pour la vérifier. Disponible même répétition espacée coupée
+- L'app passe par `GET/POST /api/mobile/review-cards` (le même service) ; ses écrans viennent ensuite (`docs/MOBILE_PARITY.md`)
+- Cron quotidien `review-reminders` : une notification « Ton rappel du jour est prêt », sans nombre, vers `/dashboard?rappel=1`, à qui a une carte due, garde les deux interrupteurs et n'a pas encore fait le rappel du jour ; une fois par jour au plus
+- Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
+- Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
+- L'ancienne file SM-2 tourne encore à côté, jusqu'à son retrait : `ReviewSchedule` créé à chaque complétion, page `/revisions` (plus reliée depuis la barre latérale ni le tableau de bord) et route `/api/mobile/review` pour l'app installée (`reviewRepository`, `@cyberlearn/lib/revisions/session`)
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
 - Statistiques : niveau, XP, streak, badges, certificats
 - Édition : displayName, bio, avatar
-- Préférences : répétition espacée ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
+- Préférences : répétition espacée (le rappel du jour) ; notifications : rappels de révision (dans la cloche, sans email), avis par email (modération, travail de classe) ; l'alerte de série et les nouveautés produit ne sont pas proposées tant que rien ne les envoie (`SHOWN_NOTIFICATION_SETTINGS`)
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
 #### Notifications

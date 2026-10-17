@@ -348,6 +348,68 @@ describe("reviewCardRepository (integration, real DB)", () => {
     });
   });
 
+  it("records each answer of a session once, and none once it is handed in", async () => {
+    if (!configured) return;
+    const draw = [
+      { cardId: "a", lessonId, quizId: "q-1", domain: "Une leçon", order: [1, 0] },
+      { cardId: "b", lessonId, quizId: "q-2", domain: "Une leçon", order: [0, 1] },
+    ];
+    const session = await reviewCardRepository.createSession(learner, "2026-10-13", draw);
+    // Two tabs answering two questions at once: both answers are kept.
+    const both = await Promise.all([
+      reviewCardRepository.answerInSession(learner, session.id, 0, 1),
+      reviewCardRepository.answerInSession(learner, session.id, 1, 0),
+    ]);
+    expect(both).toEqual([true, true]);
+    // A question answered stays answered; nobody else answers for the learner.
+    expect(await reviewCardRepository.answerInSession(learner, session.id, 0, 0)).toBe(false);
+    expect(await reviewCardRepository.answerInSession(randomUUID(), session.id, 2, 0)).toBe(false);
+    expect((await reviewCardRepository.findSession(learner, "2026-10-13"))?.answers).toEqual({
+      "0": 1,
+      "1": 0,
+    });
+
+    const at = new Date("2026-10-13T08:00:00Z");
+    expect(await reviewCardRepository.completeSession(session.id, { "0": 1, "1": 0 }, at)).toBe(
+      true,
+    );
+    expect(await reviewCardRepository.answerInSession(learner, session.id, 2, 0)).toBe(false);
+  });
+
+  it("reminds a learner with a card due until the day's session is handed in", async () => {
+    if (!configured) return;
+    const reminded = randomUUID();
+    await prisma.user.create({
+      data: { id: reminded, email: `rc-remind-${suffix}@t.internal`, displayName: "Rappel" },
+    });
+    await reviewCardRepository.enqueueForLesson(reminded, lessonId, [
+      { quizId: "q-1", box: 1, dueAt: new Date("2026-10-19T00:00:00Z"), everCorrect: false },
+    ]);
+    const now = new Date("2026-10-20T06:00:00Z");
+    try {
+      expect(await reviewCardRepository.findReminders(now)).toContain(reminded);
+      expect(await reviewCardRepository.hasDue(reminded, now)).toBe(true);
+
+      const session = await reviewCardRepository.createSession(reminded, "2026-10-20", []);
+      expect(await reviewCardRepository.findReminders(now)).toContain(reminded);
+      await reviewCardRepository.completeSession(session.id, {}, now);
+      expect(await reviewCardRepository.findReminders(now)).not.toContain(reminded);
+      // The next day's reminder is the next day's session's.
+      expect(await reviewCardRepository.findReminders(new Date("2026-10-21T06:00:00Z"))).toContain(
+        reminded,
+      );
+
+      await prisma.userPreferences.create({
+        data: { userId: reminded, reviewReminders: false },
+      });
+      expect(
+        await reviewCardRepository.findReminders(new Date("2026-10-21T06:00:00Z")),
+      ).not.toContain(reminded);
+    } finally {
+      await prisma.user.delete({ where: { id: reminded } });
+    }
+  });
+
   it("goes when the account goes", async () => {
     if (!configured) return;
     const gone = randomUUID();
