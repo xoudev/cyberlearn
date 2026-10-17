@@ -26,6 +26,7 @@ import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { averageLine, formatAverage } from "@cyberlearn/lib/content/rating";
+import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
 import { barsOf, DiffBars } from "@/app/_components/path-catalog-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
@@ -469,10 +470,10 @@ export default async function PathDetailPage({
                       <RappelButton
                         value={moduleRappelValue(path.slug, mod.number)}
                         className="btn btn--ghost btn--sm"
-                        title="Quelques questions des leçons faites de ce module, corrigées une à une, sans XP"
+                        title={MODULE_REVIEW_HINT}
                       >
                         <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
-                        Réviser ce module · 2 min
+                        {MODULE_REVIEW_ACTION}
                       </RappelButton>
                     )}
                     <span className="cp-gate__count">

@@ -5,7 +5,9 @@ import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier"
 import {
   fetchChallengeApi,
   fetchChallengesApi,
+  fetchDailyRecallApi,
   fetchLessonAccessApi,
+  fetchModuleReviewApi,
   fetchLessonLocksApi,
   fetchMyRankApi,
   fetchPathCoversApi,
@@ -46,7 +48,6 @@ import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { inScope, scopeFitsUrl, statusScope, type StatusFilter } from "@/lib/lesson-status";
 import { countMissions, publishedLesson, type LessonLink } from "@/lib/missions";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
-import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
   GUIDE_PATH_COLUMNS,
   toGuidePaths,
@@ -1139,40 +1140,38 @@ export async function updateLeaderboardVisibility(
   if (error) throw new Error(error.message);
 }
 
-// ── Révisions (SM-2) ──────────────────────────────────────────────────────────
+// ── Rappel du jour et Réviser ce module ───────────────────────────────────────
+// Through the site's route (/api/mobile/review-cards), never read under RLS:
+// the draw, the check of each answer and the XP are the site's service.
 
-export interface RevisionsData {
-  /** UserPreferences.spacedRepetition: an absent row means on, as on the site. */
-  enabled: boolean;
-  items: ReviewItem[];
+/** The day's recall: the Révisions screen and the home tab's card share this query. */
+export function dailyRecallKey(userId: string | undefined): readonly unknown[] {
+  return ["rappel", userId];
 }
 
-export function useRevisions(userId: string | undefined) {
+/**
+ * The day's recall, drawn on the server on its first opening of the day, as
+ * the site's dashboard draws it. Spaced repetition switched off in the
+ * settings comes back as `status: "off"`.
+ */
+export function useDailyRecall(userId: string | undefined) {
   return useQuery({
-    queryKey: ["revisions", userId],
+    queryKey: dailyRecallKey(userId),
     enabled: Boolean(userId),
-    queryFn: async (): Promise<RevisionsData> => {
-      const uid = userId as string; // gated by `enabled`
-      const [prefs, schedules] = await Promise.all([
-        supabase
-          .from("user_preferences")
-          .select("spacedRepetition")
-          .eq("userId", uid)
-          .maybeSingle(),
-        supabase
-          .from("review_schedules")
-          .select(REVIEW_COLUMNS)
-          .eq("userId", uid)
-          .order("nextReviewAt", { ascending: true }),
-      ]);
-      if (schedules.error) throw new Error(schedules.error.message);
-      const pref = prefs.data as { spacedRepetition: boolean } | null;
-      return {
-        enabled: pref?.spacedRepetition !== false,
-        // SAFETY: the columns selected above, in RawReviewRow's shape.
-        items: toReviewItems((schedules.data ?? []) as unknown as RawReviewRow[]),
-      };
-    },
+    queryFn: fetchDailyRecallApi,
+  });
+}
+
+/** "Réviser ce module": six questions at most from the module's lessons finished. */
+export function useModuleReview(
+  userId: string | undefined,
+  slug: string | undefined,
+  moduleNumber: number,
+) {
+  return useQuery({
+    queryKey: ["module-review", slug, moduleNumber, userId],
+    enabled: Boolean(userId && slug) && Number.isInteger(moduleNumber) && moduleNumber > 0,
+    queryFn: () => fetchModuleReviewApi(slug as string, moduleNumber), // gated by `enabled`
   });
 }
 

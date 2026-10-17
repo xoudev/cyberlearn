@@ -41,6 +41,7 @@ import {
   useLessonLock,
 } from "@/lib/queries";
 import { QuizReportControl } from "@/components/quiz-report";
+import { passageSection } from "@/lib/rappel";
 import { letterOf, optionOrderFor, scoreOf, type RecordedAnswer } from "@/lib/quiz";
 import { useSession } from "@/lib/session";
 
@@ -65,7 +66,13 @@ const FIRST_QUESTION: Extract<Step, { mode: "quiz" }> = {
 };
 
 export default function LessonReader(): React.JSX.Element {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  // `section` and `quiz`: "Revoir ce passage" from the day's recall or a
+  // module's review (lib/rappel.ts, passageRoute).
+  const { slug, section, quiz } = useLocalSearchParams<{
+    slug: string;
+    section?: string;
+    quiz?: string;
+  }>();
   const router = useRouter();
   const { session } = useSession();
   const queryClient = useQueryClient();
@@ -87,6 +94,19 @@ export default function LessonReader(): React.JSX.Element {
   const [reported, setReported] = useState<ReadonlySet<string>>(new Set());
 
   const parsed = useMemo(() => (data ? parseLesson(data.contentMdx) : null), [data]);
+
+  // A link back to a passage opens the section the question is in, where the
+  // reader may open any section already, a lesson they finished, as on the
+  // site; anywhere else the lesson starts at its start. Once, on the lesson's
+  // first reading: the reader moves on from there.
+  const [passageOpened, setPassageOpened] = useState(false);
+  useEffect(() => {
+    if (passageOpened || !data || !parsed) return;
+    setPassageOpened(true);
+    if (data.status !== "COMPLETED") return;
+    const target = passageSection(parsed.sections, { section, quiz });
+    if (target !== null) setStep({ mode: "read", section: target });
+  }, [passageOpened, data, parsed, section, quiz]);
 
   // A lesson still locked in its path sends the reader to the path, as the
   // site's lesson page does, whether it was opened from the catalogue, the

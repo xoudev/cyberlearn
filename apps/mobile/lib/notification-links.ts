@@ -94,8 +94,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // screen here can open: they land on the list, with the new ones.
   if (/^\/api\/certificates\/[^/]+\/download$/u.test(path)) return certificates();
   // The daily reminder opens the day's recall, a window over the site's
-  // dashboard (?rappel=1). Here it opens the revisions screen, until the app
-  // has a screen of its own for the recall.
+  // dashboard (?rappel=1), a screen of its own here: Révisions (/revisions),
+  // where the older reminders, which pointed at the site's revisions page,
+  // land as well. Read before the query is cut off below.
   if (path === "/dashboard" && /[?&]rappel=/u.test(actionUrl)) return { pathname: "/revisions" };
   switch (path) {
     case "/lessons":

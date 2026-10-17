@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { recallAnswerReplySchema, recallReplySchema } from "@cyberlearn/types";
+import type { RecallAnswerResult, RecallView } from "@/lib/revisions/daily-recall";
 
 /** /api/mobile/review-cards: the app's day's recall and module review, through the site's service. */
 
@@ -140,5 +142,51 @@ describe("POST /api/mobile/review-cards", () => {
     const res = await POST(post(JSON.stringify({ index: 0, selected: 1 })));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ ok: false, error: "Tu as déjà répondu à cette question." });
+  });
+});
+
+describe("what the app reads of the replies", () => {
+  // Typed by the service, parsed with the app's schemas (@cyberlearn/types):
+  // a field the service renames or drops fails here, not on a phone.
+  const view: RecallView = {
+    mode: "daily",
+    status: "done",
+    day: "2026-10-17",
+    title: "Rappel du jour",
+    module: null,
+    questions: [
+      {
+        index: 0,
+        lessonId: LESSON,
+        quizId: "q-1",
+        lessonTitle: "Les permissions",
+        question: "Que donne chmod 600 ?",
+        options: ["rwx --- ---", "rw- --- ---"],
+      },
+    ],
+    verdicts: [VERDICT],
+    result: { correct: 1, total: 1, xp: 15 },
+  };
+
+  it("parses the day's recall as the app does", async () => {
+    m.openDailyRecall.mockResolvedValue(view);
+    const reply: unknown = await (await GET(get())).json();
+    expect(recallReplySchema.safeParse(reply).success).toBe(true);
+  });
+
+  it("parses a verdict and a refusal as the app does", async () => {
+    const answered: RecallAnswerResult = { ok: true, verdict: VERDICT, result: view.result };
+    m.answerDailyRecall.mockResolvedValue(answered);
+    const reply: unknown = await (
+      await POST(post(JSON.stringify({ index: 0, selected: 1 })))
+    ).json();
+    expect(recallAnswerReplySchema.safeParse(reply).success).toBe(true);
+
+    const refusal: RecallAnswerResult = { ok: false, error: "Ce rappel n'est plus celui du jour." };
+    m.answerDailyRecall.mockResolvedValue(refusal);
+    const refused: unknown = await (
+      await POST(post(JSON.stringify({ index: 0, selected: 1 })))
+    ).json();
+    expect(recallAnswerReplySchema.safeParse(refused).success).toBe(true);
   });
 });

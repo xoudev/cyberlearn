@@ -1,3 +1,4 @@
+import { groupIntoModules, type ModuleGroup, type ModuleRef } from "@cyberlearn/lib/paths/modules";
 import { indexPlacements, resumeIndex } from "@cyberlearn/lib/paths/unlock";
 import type { PathMission } from "@/lib/queries";
 
@@ -77,4 +78,24 @@ export function missionStates(
     if (state === "locked") return "locked";
     return i === current ? "current" : "open";
   });
+}
+
+/**
+ * Where the path screen draws a module's header: before the first mission of
+ * each group, as the site's path page draws a gate before each. Every group
+ * has one, the path's own modules and the untitled ones alike (blocks of six
+ * for a path without modules, a class's path among them, and the lessons no
+ * module claims): the revision sheet and "Réviser ce module" hang there.
+ * Keyed by the index of that first mission.
+ */
+export function moduleStarts(
+  missions: readonly { moduleId: string | null }[],
+  modules: readonly ModuleRef[],
+): Map<number, ModuleGroup> {
+  const starts = new Map<number, ModuleGroup>();
+  for (const group of groupIntoModules(missions, modules)) {
+    const first = group.indices[0];
+    if (first !== undefined) starts.set(first, group);
+  }
+  return starts;
 }
