@@ -314,7 +314,7 @@ describe("the settings drawer", () => {
     await screen.findByText("section:data nom:Ada");
     expect(document.activeElement).not.toBe(gear);
 
-    // A link inside it (the certificates, from the deletion of the account).
+    // A link inside it, to another page.
     nav.pathname = "/profile";
     view.rerender(<Site page={<p>certificats</p>} />);
     expect(screen.queryByRole("dialog")).toBeNull();
