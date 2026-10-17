@@ -6,6 +6,7 @@ import { Card, GhostLink, KpiCard, Monogram, PageHeader, Tag } from "../../_comp
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
 import {
   auditLogRepository,
+  badgeRepository,
   banRepository,
   certificateRepository,
   lessonProgressRepository,
@@ -16,10 +17,12 @@ import {
   quizRepository,
   ticketRepository,
   userRepository,
+  xpLedgerRepository,
 } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { isUploadedAvatar } from "@cyberlearn/types";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
+import { RECENT_LEDGER_ROWS } from "@/lib/gamification-corrections";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { avatarLabel } from "@/lib/user-record";
@@ -107,6 +110,9 @@ export default async function AdminUserPage({
     lessonCounts,
     certificates,
     placementResetAt,
+    ledger,
+    heldBadges,
+    activeBadges,
   ] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
@@ -125,6 +131,9 @@ export default async function AdminUserPage({
     certificateRepository.findAllForConsole(user.id),
     // Only an account without a result can have been asked to sit it again.
     user.placementResult === null ? placementRepository.lastResetAt(user.id) : null,
+    xpLedgerRepository.recentForUser(user.id, RECENT_LEDGER_ROWS),
+    badgeRepository.heldForConsole(user.id),
+    badgeRepository.findAllActive(),
   ]);
 
   const stamp = (date: Date): string =>
@@ -199,8 +208,6 @@ export default async function AdminUserPage({
           tone="purple"
         />
       </div>
-      {/* The four figures above, corrected by hand: folded until needed. */}
-      <GamificationPanel userId={user.id} handle={handle} />
 
       <div className="a-split">
         <div className="a-stack" style={{ alignContent: "start" }}>
@@ -275,6 +282,16 @@ export default async function AdminUserPage({
             lessons={lessons}
             lessonCounts={lessonCounts}
             now={now}
+          />
+
+          {/* The four figures at the top of the page, corrected by hand. */}
+          <GamificationPanel
+            userId={user.id}
+            handle={handle}
+            standing={user}
+            ledger={ledger}
+            held={heldBadges}
+            activeBadges={activeBadges}
           />
 
           <CertificatesPanel certificates={certificates} />

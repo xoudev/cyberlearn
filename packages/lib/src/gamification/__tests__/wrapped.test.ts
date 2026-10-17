@@ -91,6 +91,24 @@ describe("assembleWrapped - XP buckets", () => {
     expect(out.xp.bestMonthKey).toBe("2026-01");
     expect(out.xp.bestMonthXp).toBe(12000);
   });
+
+  it("reads 0 for a year that XP taken back brings below zero", () => {
+    // Earned in 2025, taken back from the console in 2026: the correction is
+    // a negative line in the year it was made.
+    const out = assembleWrapped(
+      baseInputs({
+        xpEntries: [
+          { amount: 800, createdAt: at("2025-06-10") },
+          { amount: 100, createdAt: at("2026-02-10") },
+          { amount: -800, createdAt: at("2026-03-10") },
+        ],
+      }),
+    );
+    expect(out.xp.thisYear).toBe(0);
+    expect(out.xp.lastYear).toBe(800);
+    expect(out.xp.deltaPct).toBe(-100);
+    expect(out.xp.bestMonthKey).toBe("2026-02");
+  });
 });
 
 describe("assembleWrapped - lessons + domain", () => {

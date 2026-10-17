@@ -138,7 +138,13 @@ export const streakRepository = {
           action: STREAK_CORRECTION_ACTION,
           targetType: "User",
           targetId: userId,
-          metadata: { reason: options.reason, before, after, movedToToday },
+          // Spread into plain objects: an interface is not a JSON value to Prisma.
+          metadata: {
+            reason: options.reason,
+            before: { ...before },
+            after: { ...after },
+            movedToToday,
+          },
         },
       });
 

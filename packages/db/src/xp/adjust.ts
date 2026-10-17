@@ -71,7 +71,14 @@ export async function adjustXp(input: AdjustXpInput): Promise<AdjustXpResult> {
         action: XP_ADJUSTMENT_ACTION,
         targetType: "User",
         targetId: userId,
-        metadata: { delta, applied: credit.xpGained, reason, before, after },
+        // Spread into plain objects: an interface is not a JSON value to Prisma.
+        metadata: {
+          delta,
+          applied: credit.xpGained,
+          reason,
+          before: { ...before },
+          after: { ...after },
+        },
       },
     });
 

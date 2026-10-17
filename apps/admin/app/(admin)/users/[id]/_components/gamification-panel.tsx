@@ -1,6 +1,6 @@
 import React from "react";
-import { badgeRepository, userRepository, xpLedgerRepository } from "@cyberlearn/db";
-import { RECENT_LEDGER_ROWS, XP_SOURCE_LABEL, signedXp } from "@/lib/gamification-corrections";
+import type { HeldBadge, XpLedgerRow } from "@cyberlearn/db";
+import { XP_SOURCE_LABEL, grantableBadges, signedXp } from "@/lib/gamification-corrections";
 import { Card, Tag } from "../../../_components/admin-ui";
 import {
   BadgeGrantForm,
@@ -21,38 +21,42 @@ function count(value: number, one: string, many: string): string {
 
 /**
  * What an account earned, corrected by hand: its XP, its streak, its badges.
- * Every figure here is also in the cards at the top of the page; this is
- * where support answers "my streak vanished" or "that badge never came"
- * without resetting the whole account.
+ * The figures are the cards at the top of the page; this is where support
+ * answers "my streak vanished" or "that badge never came" without resetting
+ * the whole account. Read by the page, like every panel of the record; the
+ * corrections are the client islands.
  *
- * Read here rather than handed down by the page, so the page only mounts it.
  * Each gesture is folded until needed: the page is read far more often than
  * anything on it is corrected. The XP ledger comes last, unfolded on demand,
  * so a correction can be checked against what the total is made of.
  */
-export async function GamificationPanel({
+export function GamificationPanel({
   userId,
   handle,
+  standing,
+  ledger,
+  held,
+  activeBadges,
 }: {
   userId: string;
   /** How the confirmations name the account. */
   handle: string;
-}): Promise<React.ReactElement | null> {
-  const [standing, ledger, held, active] = await Promise.all([
-    userRepository.findForGamification(userId),
-    xpLedgerRepository.recentForUser(userId, RECENT_LEDGER_ROWS),
-    badgeRepository.heldForConsole(userId),
-    badgeRepository.findAllActive(),
-  ]);
-  if (!standing) return null;
-
-  const heldIds = new Set(held.map((badge) => badge.badgeId));
-  const grantable = active
-    .filter((badge) => !heldIds.has(badge.id))
-    .map((badge) => ({ id: badge.id, name: badge.name, xpReward: badge.xpReward }));
-
+  standing: {
+    xpTotal: number;
+    level: number;
+    streakDays: number;
+    longestStreak: number;
+    streakFreezes: number;
+  };
+  /** The latest lines of the XP ledger, newest first. */
+  ledger: XpLedgerRow[];
+  /** The badges the account holds, newest first. */
+  held: HeldBadge[];
+  /** Every active badge, those held included. */
+  activeBadges: { id: string; name: string; xpReward: number }[];
+}): React.ReactElement {
   return (
-    <Card title="Corrections · XP, série, badges" pad>
+    <Card title="XP, série et badges" pad>
       <div className="a-stack-tight">
         <details className="a-disclosure">
           <summary className="a-disclosure-head">
@@ -109,7 +113,11 @@ export async function GamificationPanel({
                 </table>
               </div>
             )}
-            <BadgeGrantForm userId={userId} handle={handle} badges={grantable} />
+            <BadgeGrantForm
+              userId={userId}
+              handle={handle}
+              badges={grantableBadges(activeBadges, held)}
+            />
             <BadgeRevokeForm
               userId={userId}
               handle={handle}
@@ -128,7 +136,7 @@ export async function GamificationPanel({
             <span className="mono a-disclosure-meta">
               {ledger.length === 0
                 ? "aucune ligne"
-                : `${count(ledger.length, "dernière ligne", "dernières lignes")}`}
+                : count(ledger.length, "dernière ligne", "dernières lignes")}
             </span>
           </summary>
           <div className="a-disclosure-body">

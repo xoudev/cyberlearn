@@ -9,6 +9,13 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computeLevel } from "@cyberlearn/lib";
+import {
+  BADGE_GRANT_ACTION,
+  BADGE_REVOKE_ACTION,
+  badgeRepository,
+} from "../repositories/badge.repository.js";
+import { STREAK_CORRECTION_ACTION, streakRepository } from "../repositories/streak.repository.js";
+import { adjustXp, XP_ADJUSTMENT_ACTION } from "../xp/adjust.js";
 
 interface FakeUser {
   id: string;
@@ -40,18 +47,27 @@ const { db } = vi.hoisted(() => ({
   },
 }));
 
-type Where = { id?: string; xpTotal?: { gte: number } };
+interface Where {
+  id?: string;
+  xpTotal?: { gte: number };
+}
 type Data = Record<string, unknown>;
 
-/** Applies a Prisma-style update to the fake user. */
+/** Applies a Prisma-style update to the fake user: a set, or an `increment`. */
 function apply(user: FakeUser, data: Data): void {
+  // SAFETY: the keys are the code under test's column names, which FakeUser
+  // mirrors; the fake only needs to write them by name.
+  const fields = user as unknown as Record<string, unknown>;
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === "object" && value !== null && "increment" in value) {
-      const step = (value as { increment: number }).increment;
-      (user as unknown as Record<string, number>)[key] =
-        (user as unknown as Record<string, number>)[key]! + step;
+      const { increment } = value;
+      const current = fields[key];
+      if (typeof current !== "number" || typeof increment !== "number") {
+        throw new Error(`cannot increment ${key}`);
+      }
+      fields[key] = current + increment;
     } else {
-      (user as unknown as Record<string, unknown>)[key] = value;
+      fields[key] = value;
     }
   }
 }
@@ -135,17 +151,11 @@ const tx = {
   },
 };
 
+// Hoisted above the imports: `tx` is only read when a transaction runs, by
+// then initialised.
 vi.mock("../prisma.js", () => ({
   prisma: { $transaction: (run: (client: typeof tx) => Promise<unknown>) => run(tx) },
 }));
-
-const { adjustXp, XP_ADJUSTMENT_ACTION } = await import("../xp/adjust.js");
-const { badgeRepository, BADGE_GRANT_ACTION, BADGE_REVOKE_ACTION } = await import(
-  "../repositories/badge.repository.js"
-);
-const { streakRepository, STREAK_CORRECTION_ACTION } = await import(
-  "../repositories/streak.repository.js"
-);
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const ADMIN = "99999999-9999-4999-8999-999999999999";

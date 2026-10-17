@@ -32,6 +32,15 @@ export const XP_SOURCE_LABEL: Record<XpSource, string> = {
   ADJUSTMENT: "Correction",
 };
 
+/** The active badges an account does not hold yet: what can be granted to it. */
+export function grantableBadges<B extends { id: string }>(
+  active: readonly B[],
+  held: readonly { badgeId: string }[],
+): B[] {
+  const heldIds = new Set(held.map((badge) => badge.badgeId));
+  return active.filter((badge) => !heldIds.has(badge.id));
+}
+
 const number = new Intl.NumberFormat("fr-FR");
 
 /** "+1 200 XP" or "−50 XP", with a real minus sign. */

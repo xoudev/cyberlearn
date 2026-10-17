@@ -74,6 +74,7 @@ const CONSOLE_PROFILE = {
   xpTotal: true,
   streakDays: true,
   longestStreak: true,
+  streakFreezes: true,
   createdAt: true,
   lastActiveAt: true,
   preferences: {
