@@ -381,6 +381,14 @@ function IntroView({
           <Note tone={colors.success}>Parcours validé : ton certificat est dans ton profil.</Note>
         );
       break;
+    case "revoked":
+      action = (
+        <Note tone={colors.warning}>
+          Parcours validé, mais ton certificat a été révoqué. Le motif est sous Certificats, dans
+          ton profil.
+        </Note>
+      );
+      break;
     case "cooldown":
       action = (
         <Note tone={colors.warning}>

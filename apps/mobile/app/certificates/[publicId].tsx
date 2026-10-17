@@ -10,16 +10,30 @@ import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, Divider, Text } from "@/components/ui";
 import { SITE_URL } from "@/lib/api";
-import { verifyPageLabel } from "@/lib/certificates";
+import { revocationLine, verifyPageLabel } from "@/lib/certificates";
+import { useCertificateStanding } from "@/lib/queries";
+import { useSession } from "@/lib/session";
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
 
 export default function CertificateDetail(): React.JSX.Element {
   const router = useRouter();
+  const { session } = useSession();
   const { publicId, title, score, date } = useLocalSearchParams<{
     publicId: string;
     title?: string;
     score?: string;
     date?: string;
   }>();
+  // Read here rather than handed over: a path's final card opens this screen
+  // with the id alone. Until it answers, the certificate shows as it was issued.
+  const { data: standing } = useCertificateStanding(session?.user.id, publicId);
+  const revocation = standing ? revocationLine(standing, fmtDate) : null;
+  const revoked = revocation !== null;
+  const frame = revoked ? colors.danger : colors.accent;
   // The site the app is pointed at (SITE_URL), not the production address
   // written in: a build aimed at a local or staging site sent "Vérifier" and
   // "Partager" to a production page where the certificate does not exist.
@@ -36,11 +50,18 @@ export default function CertificateDetail(): React.JSX.Element {
         <View
           style={{
             borderWidth: 1,
-            borderColor: colors.accent,
+            borderColor: frame,
             padding: 3,
           }}
         >
-          <Card style={{ alignItems: "center", gap: 12, paddingVertical: 30 }}>
+          <Card
+            style={{
+              alignItems: "center",
+              gap: 12,
+              paddingVertical: 30,
+              opacity: revoked ? 0.85 : 1,
+            }}
+          >
             <PopIn>
               <View
                 style={{ width: 74, height: 80, alignItems: "center", justifyContent: "center" }}
@@ -68,8 +89,8 @@ export default function CertificateDetail(): React.JSX.Element {
                 </Text>
               </View>
             </PopIn>
-            <Text variant="micro" style={{ color: colors.accent, letterSpacing: 2 }}>
-              Certificat de réussite
+            <Text variant="micro" style={{ color: frame, letterSpacing: 2 }}>
+              {revoked ? "Certificat révoqué" : "Certificat de réussite"}
             </Text>
             <Text variant="h1" style={{ textAlign: "center" }}>
               {title ?? "Parcours certifié"}
@@ -86,6 +107,14 @@ export default function CertificateDetail(): React.JSX.Element {
                 </Text>
               ) : null}
             </View>
+            {revocation !== null ? (
+              <Text
+                variant="mono"
+                style={{ color: colors.danger, textAlign: "center", maxWidth: 280 }}
+              >
+                {revocation}
+              </Text>
+            ) : null}
             <Divider style={{ alignSelf: "stretch", marginVertical: 8 }} />
             <Text variant="micro">Code de vérification</Text>
             <Text
@@ -111,21 +140,25 @@ export default function CertificateDetail(): React.JSX.Element {
 
       <Rise index={1} style={{ marginTop: 16 }}>
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <PressableScale
-            onPress={() => {
-              void Share.share({ message: `Mon certificat CyberLearn : ${verifyUrl}` });
-            }}
-            style={{
-              flex: 1,
-              height: 46,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: colors.borderDefault,
-            }}
-          >
-            <Text variant="micro">Partager</Text>
-          </PressableScale>
+          {/* Nothing to share once revoked, as on the site; the page still
+              says what happened, for whoever already has the link. */}
+          {revoked ? null : (
+            <PressableScale
+              onPress={() => {
+                void Share.share({ message: `Mon certificat CyberLearn : ${verifyUrl}` });
+              }}
+              style={{
+                flex: 1,
+                height: 46,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: colors.borderDefault,
+              }}
+            >
+              <Text variant="micro">Partager</Text>
+            </PressableScale>
+          )}
           <PressableScale
             onPress={() => void WebBrowser.openBrowserAsync(verifyUrl)}
             style={{

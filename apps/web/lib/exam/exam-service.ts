@@ -55,7 +55,13 @@ export interface ExamStatus {
   hasQuiz: boolean;
   lessonsComplete: boolean;
   pathCompleted: boolean;
+  /** The certificate that still stands; null once the console revoked it. */
   certPublicId: string | null;
+  /**
+   * The console revoked the path's certificate: the path stays completed, so
+   * the final step says the certificate is revoked rather than available.
+   */
+  certRevoked: boolean;
   questionCount: number;
   passThreshold: number;
   timeLimitMinutes: number;
@@ -105,18 +111,22 @@ export async function examStatus(userId: string, pathId: string): Promise<ExamSt
     }
   }
 
+  // Read whether revoked or not: a revoked certificate is still the path's,
+  // and the final step has to say so instead of offering one.
   const cert = pathCompleted
     ? await prisma.certificate.findFirst({
-        where: { userId, pathId, revokedAt: null },
-        select: { publicId: true },
+        where: { userId, pathId },
+        select: { publicId: true, revokedAt: true },
       })
     : null;
+  const certRevoked = cert?.revokedAt != null;
 
   return {
     hasQuiz: quiz !== null,
     lessonsComplete,
     pathCompleted,
-    certPublicId: cert?.publicId ?? null,
+    certPublicId: cert && !certRevoked ? cert.publicId : null,
+    certRevoked,
     questionCount: quiz?.questionsToDraw ?? 0,
     passThreshold: quiz?.passThreshold ?? 70,
     timeLimitMinutes: EXAM_TIME_LIMIT_MINUTES,

@@ -1431,6 +1431,7 @@ enum NotificationType {
   DUEL_INVITE
   DUEL_RESULT
   TOURNAMENT_ANNOUNCED
+  CERTIFICATE_REVOKED
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.

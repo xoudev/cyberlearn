@@ -177,4 +177,69 @@ describe("Certificate IDOR - ownership query filter (integration)", () => {
     });
     expect(result).toBeNull();
   });
+
+  // The app shows a revoked certificate with its reason, as the site does
+  // (20261017140000_certificate_revocation grants the column).
+  it("the holder reads why their certificate was revoked, through the Data API", async () => {
+    if (!configured) return;
+    const clientB = await signInAs(USER_B_EMAIL);
+    const read = await clientB
+      .from("certificates")
+      .select("publicId,revokedAt,revokedReason")
+      .eq("publicId", certBPublicId);
+    expect(read.error).toBeNull();
+    expect(read.data?.[0]?.revokedReason).toBe("test revocation");
+  });
+
+  it("another account reads no one else's revocation", async () => {
+    if (!configured) return;
+    const clientA = await signInAs(USER_A_EMAIL);
+    const read = await clientA
+      .from("certificates")
+      .select("publicId,revokedReason")
+      .eq("publicId", certBPublicId);
+    expect(read.error).toBeNull();
+    expect(read.data).toEqual([]);
+  });
+
+  it("revokes once from the console, however many times it is asked", async () => {
+    if (!configured) return;
+    await prisma.certificate.update({
+      where: { id: certBId },
+      data: { revokedAt: null, revokedReason: null },
+    });
+    const notice = { title: "Certificat révoqué : test", body: "Motif : test", actionUrl: "/x" };
+    const first = await certificateRepository.revoke({
+      id: certBId,
+      reason: "Premier motif",
+      actorId: userAId,
+      now: new Date(),
+      notice,
+    });
+    const second = await certificateRepository.revoke({
+      id: certBId,
+      reason: "Second motif",
+      actorId: userAId,
+      now: new Date(),
+      notice,
+    });
+    expect(first).toEqual({ ok: true });
+    expect(second).toEqual({ ok: false, reason: "ALREADY_REVOKED" });
+
+    const row = await prisma.certificate.findUnique({
+      where: { id: certBId },
+      select: { revokedReason: true },
+    });
+    expect(row?.revokedReason).toBe("Premier motif");
+    const traces = await prisma.auditLog.count({
+      where: { targetType: "Certificate", targetId: certBId },
+    });
+    expect(traces).toBe(1);
+    const notices = await prisma.notification.count({
+      where: { userId: userBId, type: "CERTIFICATE_REVOKED" },
+    });
+    expect(notices).toBe(1);
+
+    await prisma.auditLog.deleteMany({ where: { targetType: "Certificate", targetId: certBId } });
+  });
 });

@@ -30,6 +30,7 @@ export const NOTIFICATION_TYPES = [
   "DUEL_INVITE",
   "DUEL_RESULT",
   "TOURNAMENT_ANNOUNCED",
+  "CERTIFICATE_REVOKED",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -61,6 +62,7 @@ const META: Record<NotificationType, NotificationMeta> = {
   DUEL_INVITE: { icon: "⚔", color: colors.accent },
   DUEL_RESULT: { icon: "⚑", color: colors.warning },
   TOURNAMENT_ANNOUNCED: { icon: "🏆", color: colors.accent },
+  CERTIFICATE_REVOKED: { icon: "⊘", color: colors.danger },
 };
 
 const FALLBACK: NotificationMeta = { icon: "•", color: colors.textSecondary };

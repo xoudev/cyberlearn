@@ -15,6 +15,11 @@ interface BossNodeProps {
   pathCompleted: boolean;
   /** Issued certificate id (download enabled), or null. */
   certificateId: string | null;
+  /**
+   * The console revoked the issued certificate: the path stays completed, but
+   * the PDF route answers 404 and the verification page says it is revoked.
+   */
+  certificateRevoked?: boolean;
   doneLessons: number;
   totalLessons: number;
 }
@@ -83,6 +88,7 @@ const ArrowIcon = (
  * certificate card + QuizPanel (exam gate) + ClaimCertificatePanel into one node
  * driven by the same props, preserving every state / link / action:
  *  - pathCompleted              → validated; download PDF when certificateId set
+ *  - pathCompleted + revoked    → validated, certificate revoked; to /certificates
  *  - lessonsComplete + hasQuiz  → "Passer l'examen final →" (Link to /exam)
  *  - lessonsComplete + no quiz  → claim button (claimCertificateAction)
  *  - lessons incomplete         → locked + requirement chip (amber)
@@ -94,6 +100,7 @@ export function BossNode({
   lessonsComplete,
   pathCompleted,
   certificateId,
+  certificateRevoked = false,
   doneLessons,
   totalLessons,
 }: BossNodeProps): React.JSX.Element {
@@ -105,7 +112,18 @@ export function BossNode({
   let sub: string;
   let body: React.ReactNode;
 
-  if (pathCompleted) {
+  if (pathCompleted && certificateRevoked) {
+    // The download would answer 404: the page that lists the certificate
+    // shows it revoked, with the reason.
+    eyebrow = "// Certificat · révoqué";
+    sub =
+      "Tu as validé ce parcours, mais ton certificat a été révoqué. Le motif est sur ta page Certificats.";
+    body = (
+      <Link className="cp-boss__cta" href="/certificates">
+        Voir mes certificats {ArrowIcon}
+      </Link>
+    );
+  } else if (pathCompleted) {
     eyebrow = "// Récompense · débloquée";
     sub = "Tu as validé ce parcours. Ton certificat vérifiable est disponible.";
     body = certificateId ? (

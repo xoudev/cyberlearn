@@ -138,8 +138,31 @@ describe("examStatus", () => {
     expect(await examStatus("user-1", PATH)).toMatchObject({
       pathCompleted: true,
       certPublicId: "cert-1",
+      certRevoked: false,
     });
     expect(m.findLatestAttempt).not.toHaveBeenCalled();
+  });
+
+  it("says a completed path's certificate was revoked, and hands no certificate to open", async () => {
+    m.findProgress.mockResolvedValue({ status: "COMPLETED" });
+    m.certFindFirst.mockResolvedValue({ publicId: "cert-1", revokedAt: new Date() });
+    expect(await examStatus("user-1", PATH)).toMatchObject({
+      pathCompleted: true,
+      certPublicId: null,
+      certRevoked: true,
+    });
+    // The revoked row is read, not filtered out: otherwise it reads as no certificate at all.
+    expect(m.certFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-1", pathId: PATH } }),
+    );
+  });
+
+  it("reports no revocation on a path not completed yet", async () => {
+    expect(await examStatus("user-1", PATH)).toMatchObject({
+      certPublicId: null,
+      certRevoked: false,
+    });
+    expect(m.certFindFirst).not.toHaveBeenCalled();
   });
 });
 

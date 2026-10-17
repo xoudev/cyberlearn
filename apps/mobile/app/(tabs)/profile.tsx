@@ -16,6 +16,7 @@ import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
 import { fetchFriendsApi, fetchMyAvatarUrl, SITE_URL } from "@/lib/api";
+import { revocationLine, validCertificates } from "@/lib/certificates";
 import { RARITY_COLOR } from "@/lib/db";
 import { PROFILE_SUB_TABS, profileSubFrom, type ProfileSub } from "@/lib/profile-tabs";
 import { useProfile } from "@/lib/queries";
@@ -177,7 +178,7 @@ export default function Profil(): React.JSX.Element {
           <StatCell value={level.level} label="Niveau" accent={colors.accent} />
           <StatCell value={badges.length} label="Badges" />
           <StatCell value={completed} label="Leçons" />
-          <StatCell value={certificates.length} label="Certifs" />
+          <StatCell value={validCertificates(certificates).length} label="Certifs" />
         </View>
       </Rise>
 
@@ -238,36 +239,51 @@ export default function Profil(): React.JSX.Element {
       ) : sub === "Certificats" ? (
         certificates.length > 0 ? (
           <View style={{ gap: 10 }}>
-            {certificates.map((c) => (
-              <PressableScale
-                key={c.publicId}
-                onPress={() =>
-                  router.push({
-                    pathname: "/certificates/[publicId]",
-                    params: {
-                      publicId: c.publicId,
-                      title: c.pathTitle,
-                      ...(c.score != null ? { score: String(c.score) } : {}),
-                      date: fmtDate(c.issuedAt),
-                    },
-                  })
-                }
-              >
-                <Card
-                  accent={colors.info}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            {certificates.map((c) => {
+              // A revoked certificate stays listed, dimmed, with its reason,
+              // as on the site's /certificates: its notice leads here.
+              const revocation = revocationLine(c, fmtDate);
+              return (
+                <PressableScale
+                  key={c.publicId}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/certificates/[publicId]",
+                      params: {
+                        publicId: c.publicId,
+                        title: c.pathTitle,
+                        ...(c.score != null ? { score: String(c.score) } : {}),
+                        date: fmtDate(c.issuedAt),
+                      },
+                    })
+                  }
                 >
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text variant="h3">{c.pathTitle}</Text>
-                    <Text variant="mono" style={{ color: colors.textMuted, fontSize: 11 }}>
-                      {c.score != null ? `Score ${c.score}% · ` : ""}
-                      {fmtDate(c.issuedAt)}
-                    </Text>
-                  </View>
-                  <ChevronRight color={colors.textMuted} size={15} />
-                </Card>
-              </PressableScale>
-            ))}
+                  <Card
+                    accent={revocation === null ? colors.info : colors.danger}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                      opacity: revocation === null ? 1 : 0.75,
+                    }}
+                  >
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text variant="h3">{c.pathTitle}</Text>
+                      <Text variant="mono" style={{ color: colors.textMuted, fontSize: 11 }}>
+                        {c.score != null ? `Score ${c.score}% · ` : ""}
+                        {fmtDate(c.issuedAt)}
+                      </Text>
+                      {revocation !== null ? (
+                        <Text variant="mono" style={{ color: colors.danger, fontSize: 11 }}>
+                          {revocation}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <ChevronRight color={colors.textMuted} size={15} />
+                  </Card>
+                </PressableScale>
+              );
+            })}
           </View>
         ) : (
           <EmptyState

@@ -40,6 +40,7 @@ function status(overrides: Partial<ExamStatus> = {}): ExamStatus {
     lessonsComplete: true,
     pathCompleted: false,
     certPublicId: null,
+    certRevoked: false,
     questionCount: 20,
     passThreshold: 70,
     timeLimitMinutes: 30,

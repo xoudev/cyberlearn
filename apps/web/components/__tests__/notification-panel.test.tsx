@@ -140,6 +140,30 @@ describe("NotificationPanel rows", () => {
     expect(screen.queryByText("Certificat émis")).toBeNull();
   });
 
+  it("leads a revoked certificate's notice to the certificates page, with a mark of its own", async () => {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      notifications: [
+        notice({
+          id: "66666666-6666-4666-8666-666666666666",
+          type: "CERTIFICATE_REVOKED",
+          title: "Certificat révoqué : Réseau",
+          body: "Ton certificat du parcours « Réseau » n'est plus valide. Motif : fraude.",
+          actionUrl: "/certificates",
+        }),
+      ],
+    });
+    render(<NotificationPanel initialUnreadCount={1} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "1 notifications non lues" }));
+    const link = await screen.findByRole("link", { name: /Certificat révoqué : Réseau/ });
+
+    expect(link.getAttribute("href")).toBe("/certificates");
+    expect(link.hasAttribute("data-router-link")).toBe(true);
+    expect(link.textContent).toContain("🚫");
+    expect(link.textContent).not.toContain("📜");
+  });
+
   it("marks the notice read and closes the panel when it is followed", async () => {
     await openPanel();
     fireEvent.click(screen.getByRole("link", { name: /Révision recommandée/ }));
