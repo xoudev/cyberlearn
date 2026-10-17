@@ -604,10 +604,14 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
+/* Like the trophy card, the card can hold two links: the body opens the path,
+   the button the next mission or the exam. The glyph column belongs to the
+   body's link, so it sits in the room the card's left padding keeps. */
 .pc2-root .active-card {
   position: relative;
-  display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  padding-left: 132px;
   min-width: 0;
   background:
     radial-gradient(
@@ -622,8 +626,6 @@
     0 0 30px -16px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
   --bk-color: var(--brand-turquoise);
   --k-color: var(--cosmetic-accent);
-  text-decoration: none;
-  color: inherit;
   transition:
     transform var(--dur-base),
     box-shadow var(--dur-base);
@@ -635,7 +637,11 @@
     0 18px 40px -22px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .pc2-root .active-card__glyph {
-  position: relative;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 132px;
   display: grid;
   place-items: center;
   border-right: 1px solid var(--border);
@@ -656,8 +662,19 @@
   mask-image: radial-gradient(ellipse at center, black 10%, transparent 80%);
 }
 .pc2-root .active-card__body {
-  padding: 20px 22px 18px;
+  display: block;
+  flex: 1;
+  padding: 20px 22px 0;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+/* Alone in the card, the body keeps the bottom padding the foot otherwise has. */
+.pc2-root .active-card__body:last-child {
+  padding-bottom: 18px;
+}
+.pc2-root .active-card__foot {
+  padding: 0 22px 18px;
 }
 .pc2-root .active-card__top {
   display: flex;
@@ -687,6 +704,7 @@
   color: var(--fg-primary);
   margin: 0 0 12px;
   text-wrap: balance;
+  transition: color var(--dur-base);
 }
 .pc2-root .active-card__stats {
   display: flex;
@@ -741,14 +759,25 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--brand-blue);
-}
-.pc2-root .active-card:hover .active-card__cta {
-  color: var(--brand-blue-hover);
+  text-decoration: none;
 }
 .pc2-root .active-card__cta svg {
   transition: transform var(--dur-base);
 }
-.pc2-root .active-card:hover .active-card__cta svg {
+/* Each link lights up on its own, so the pointer on the body never points at
+   the mission. A button that opens the path is part of the body's link. */
+.pc2-root .active-card__body:hover .active-card__title,
+.pc2-root .active-card__body:focus-visible .active-card__title {
+  color: var(--brand-turquoise);
+}
+.pc2-root .active-card__body:hover .active-card__cta,
+.pc2-root .active-card__foot .active-card__cta:hover,
+.pc2-root .active-card__foot .active-card__cta:focus-visible {
+  color: var(--brand-blue-hover);
+}
+.pc2-root .active-card__body:hover .active-card__cta svg,
+.pc2-root .active-card__foot .active-card__cta:hover svg,
+.pc2-root .active-card__foot .active-card__cta:focus-visible svg {
   transform: translateX(3px);
 }
 
@@ -1045,7 +1074,7 @@
   display: none;
 }
 .pc2-root .game-card:hover .game-card__img,
-.pc2-root .active-card:hover .active-card__img {
+.pc2-root .active-card__body:hover .active-card__img {
   transform: scale(1.04);
 }
 /* bottom-right is the only free corner of the cover: __cat is top-left,
@@ -1247,7 +1276,7 @@
     grid-template-columns: 1fr;
   }
   .pc2-root .active-card {
-    grid-template-columns: 1fr;
+    padding-left: 0;
   }
   .pc2-root .active-card__glyph {
     display: none;
