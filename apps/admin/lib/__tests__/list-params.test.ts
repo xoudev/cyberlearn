@@ -4,9 +4,12 @@ import { dayParam, parisDayEnd, parisDayStart, rawParams, sortParam } from "../g
 import {
   auditFilterOf,
   auditListSearch,
+  certificateListSearch,
+  certificateQueryOf,
   lessonListSearch,
   lessonQueryOf,
   parseAuditListParams,
+  parseCertificateListParams,
   parseLessonListParams,
   parsePendingListParams,
   parseUserListParams,
@@ -14,6 +17,7 @@ import {
   userListSearch,
   userQueryOf,
   withKnownAction,
+  withKnownPath,
 } from "../list-params";
 
 /**
@@ -187,6 +191,66 @@ describe("the lesson lists' parameters", () => {
     expect(parseLessonListParams({}, "active").sort).toBeUndefined();
     expect(parseLessonListParams({ sort: "-completions" }, "active").sort).toBeUndefined();
     expect(parseLessonListParams({ category: "dev" }, "active").category).toBeUndefined();
+  });
+});
+
+describe("the certificate list's parameters", () => {
+  const PATH = "55555555-5555-4555-8555-555555555555";
+
+  it("opens on the newest certificates, page 1, with no filter", () => {
+    const params = parseCertificateListParams({});
+    expect(params).toEqual({
+      q: "",
+      path: undefined,
+      status: undefined,
+      sort: { key: "issued", dir: "desc" },
+      page: 1,
+    });
+    expect(certificateListSearch(params)).toEqual({});
+  });
+
+  it("reads a search, a path, a state, a sort and a page", () => {
+    const params = parseCertificateListParams({
+      q: " CL-2026-1A2B3C4D ",
+      path: PATH,
+      status: "revoked",
+      sort: "holder",
+      page: "2",
+    });
+    expect(certificateListSearch(params)).toEqual({
+      q: "CL-2026-1A2B3C4D",
+      path: PATH,
+      status: "revoked",
+      sort: "holder",
+      page: "2",
+    });
+    expect(certificateQueryOf(params)).toEqual({
+      q: "CL-2026-1A2B3C4D",
+      pathId: PATH,
+      status: "revoked",
+      sort: { key: "holder", dir: "asc" },
+      page: 2,
+      pageSize: 25,
+    });
+  });
+
+  it("ignores what it does not know, rather than failing", () => {
+    expect(
+      parseCertificateListParams({ path: "réseau", status: "expired", sort: "-hash" }),
+    ).toMatchObject({ path: undefined, status: undefined, sort: { key: "issued", dir: "desc" } });
+  });
+
+  it("keeps a path filter only when that path has issued a certificate", () => {
+    const params = parseCertificateListParams({ path: PATH });
+    expect(withKnownPath(params, [PATH]).path).toBe(PATH);
+    expect(withKnownPath(params, []).path).toBeUndefined();
+  });
+
+  it("keeps the default sort out of the URL", () => {
+    expect(certificateListSearch(parseCertificateListParams({ sort: "-issued" }))).toEqual({});
+    expect(certificateListSearch(parseCertificateListParams({ sort: "issued" }))).toEqual({
+      sort: "issued",
+    });
   });
 });
 

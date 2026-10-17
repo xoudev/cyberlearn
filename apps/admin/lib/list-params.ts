@@ -3,6 +3,9 @@ import type {
   AuditFilter,
   AuditQuery,
   Category,
+  ConsoleCertificateQuery,
+  ConsoleCertificateSort,
+  ConsoleCertificateStatus,
   ConsoleLessonFolder,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
@@ -29,9 +32,9 @@ import {
 } from "./grid-params";
 
 /**
- * The filters of the console's three server-side lists (accounts, audit log,
- * lessons): read from the URL, written back into its links, and turned into
- * the repository's query.
+ * The filters of the console's server-side lists (accounts, audit log,
+ * lessons, certificates): read from the URL, written back into its links, and
+ * turned into the repository's query.
  *
  * Each list has a parse, which never fails, and a search, which is the
  * opposite: the parameters a link to the same list carries, with the defaults
@@ -282,5 +285,86 @@ export function lessonQueryOf(
     sort: params.sort,
     page: params.page,
     pageSize: LESSONS_PAGE_SIZE,
+  };
+}
+
+// ─── Certificates ───────────────────────────────────────────────────────────
+
+export const CERTIFICATES_PAGE_SIZE = 25;
+
+export const CERTIFICATE_STATUS_VALUES = [
+  "active",
+  "revoked",
+] as const satisfies readonly ConsoleCertificateStatus[];
+
+export const CERTIFICATE_SORT_KEYS = [
+  "holder",
+  "path",
+  "score",
+  "issued",
+] as const satisfies readonly ConsoleCertificateSort[];
+
+/** The newest certificates first. */
+export const DEFAULT_CERTIFICATE_SORT: GridSort<ConsoleCertificateSort> = {
+  key: "issued",
+  dir: "desc",
+};
+
+export interface CertificateListParams {
+  q: string;
+  /** A path's id. */
+  path: string | undefined;
+  status: ConsoleCertificateStatus | undefined;
+  sort: GridSort<ConsoleCertificateSort>;
+  page: number;
+}
+
+export function parseCertificateListParams(raw: RawParams): CertificateListParams {
+  return {
+    q: searchParam(raw),
+    path: valid(z.guid(), first(raw, "path")),
+    status: oneOf(raw, "status", CERTIFICATE_STATUS_VALUES),
+    sort: sortParam(raw, CERTIFICATE_SORT_KEYS) ?? DEFAULT_CERTIFICATE_SORT,
+    page: pageParam(raw),
+  };
+}
+
+/**
+ * The path filter kept only when that path has issued a certificate: the
+ * filter offers no other, and one it cannot show is a mistyped URL, which
+ * shows the whole list rather than nothing.
+ */
+export function withKnownPath(
+  params: CertificateListParams,
+  known: readonly string[],
+): CertificateListParams {
+  return params.path !== undefined && !known.includes(params.path)
+    ? { ...params, path: undefined }
+    : params;
+}
+
+export function certificateListSearch(params: CertificateListParams): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (params.q !== "") out.q = params.q;
+  if (params.path !== undefined) out.path = params.path;
+  if (params.status !== undefined) out.status = params.status;
+  if (
+    params.sort.key !== DEFAULT_CERTIFICATE_SORT.key ||
+    params.sort.dir !== DEFAULT_CERTIFICATE_SORT.dir
+  ) {
+    out.sort = sortValue(params.sort.key, params.sort.dir);
+  }
+  if (params.page > 1) out.page = String(params.page);
+  return out;
+}
+
+export function certificateQueryOf(params: CertificateListParams): ConsoleCertificateQuery {
+  return {
+    q: params.q,
+    pathId: params.path,
+    status: params.status,
+    sort: params.sort,
+    page: params.page,
+    pageSize: CERTIFICATES_PAGE_SIZE,
   };
 }

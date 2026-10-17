@@ -88,6 +88,15 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M14.5 13 C14.5 11 12.5 10.5 11.5 10.5" />
         </svg>
       );
+    case "certificate":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <rect x="2" y="2.5" width="12" height="8.5" />
+          <path d="M4.5 5.5 H11.5 M4.5 8 H8.5" />
+          <circle cx="11" cy="11.5" r="1.8" />
+          <path d="M10 13 L9.5 15 L11 14.3 L12.5 15 L12 13" />
+        </svg>
+      );
     case "ticket":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -172,6 +181,7 @@ export function AdminSidebar({
     { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
     { label: "Tournois", href: "/tournaments", icon: "flag" },
     { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
+    { label: "Certificats", href: "/certificates", icon: "certificate" },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
     { label: "Modération", href: "/moderation", icon: "shield" },
   ];

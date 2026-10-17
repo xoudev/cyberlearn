@@ -103,7 +103,19 @@ export {
   PUBLISHED_PATH_LESSON,
   pathsVisibleTo,
 } from "./repositories/path.repository.js";
-export { certificateRepository } from "./repositories/certificate.repository.js";
+export {
+  certificateRepository,
+  consoleCertificateWhere,
+  CERTIFICATE_AUDIT_ACTION,
+  type CertificateNotice,
+  type ConsoleCertificateDetail,
+  type ConsoleCertificateQuery,
+  type ConsoleCertificateRow,
+  type ConsoleCertificateSort,
+  type ConsoleCertificateStatus,
+  type ReinstateCertificateResult,
+  type RevokeCertificateResult,
+} from "./repositories/certificate.repository.js";
 export { exerciseRepository } from "./repositories/exercise.repository.js";
 export { writeupRepository } from "./repositories/writeup.repository.js";
 export { mockExamRepository } from "./repositories/mock-exam.repository.js";

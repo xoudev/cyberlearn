@@ -27,6 +27,7 @@ const DATABASE_TYPES = [
   "DUEL_INVITE",
   "DUEL_RESULT",
   "TOURNAMENT_ANNOUNCED",
+  "CERTIFICATE_REVOKED",
 ];
 
 describe("notificationMeta", () => {
