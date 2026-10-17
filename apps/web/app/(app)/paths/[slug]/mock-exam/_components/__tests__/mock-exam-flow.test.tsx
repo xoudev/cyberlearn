@@ -8,11 +8,15 @@ import type { MockOverview } from "@/lib/exam/mock-exam";
 const m = vi.hoisted(() => ({
   startMockExamAction: vi.fn<(pathId: unknown) => Promise<unknown>>(),
   submitMockExamAction: vi.fn<(attemptId: unknown, answers: unknown) => Promise<unknown>>(),
+  replace: vi.fn<(href: string) => void>(),
 }));
 
 vi.mock("../../_actions/mock-exam-actions", () => ({
   startMockExamAction: m.startMockExamAction,
   submitMockExamAction: m.submitMockExamAction,
+}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: m.replace }),
 }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
@@ -25,15 +29,31 @@ vi.mock("next/link", () => ({
 const { MockExamFlow } = await import("../mock-exam-flow");
 
 /**
- * The mock exam as a learner goes through it: the overview, the questions by
- * module with the clock, the copy handed in, the score by module, the advice
- * and the correction; and the copy handed in by itself at zero.
+ * The mock exam as a learner goes through it, once the window on the path's
+ * page has sent them here: the exam started as the page opens, the questions
+ * by module with the clock, the copy handed in, the score by module, the
+ * advice and the correction; and the copy handed in by itself at zero. The
+ * page brought back without the window's ?go=1 starts nothing.
  */
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
+
+/** Draws the page at an address, as the router would bring it there. */
+async function openAt(address: string, overview: MockOverview = OVERVIEW): Promise<void> {
+  window.history.replaceState(null, "", address);
+  render(<MockExamFlow overview={overview} />);
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
+/** The page as the window's "Commencer" opens it: the exam starts on its own. */
+async function open(overview: MockOverview = OVERVIEW): Promise<void> {
+  await openAt("/paths/linux/mock-exam?go=1", overview);
+}
 
 const OVERVIEW: MockOverview = {
   pathId: "p1",
@@ -58,6 +78,7 @@ const QUESTIONS = [
 beforeEach(() => {
   m.startMockExamAction.mockReset();
   m.submitMockExamAction.mockReset();
+  m.replace.mockReset();
   m.startMockExamAction.mockResolvedValue({
     ok: true,
     attemptId: "a1",
@@ -103,27 +124,31 @@ beforeEach(() => {
 });
 
 describe("MockExamFlow", () => {
-  it("shows what the exam covers and the attempts already made", () => {
-    render(<MockExamFlow overview={OVERVIEW} />);
-    const modules = within(screen.getByRole("list", { name: "Les modules couverts" })).getAllByRole(
-      "listitem",
+  it("starts the exam as the page opens, once, and takes ?go=1 off the address", async () => {
+    await open();
+    expect(m.startMockExamAction).toHaveBeenCalledTimes(1);
+    expect(m.startMockExamAction).toHaveBeenCalledWith("p1");
+    expect(screen.getByText("0 / 2 répondues")).toBeTruthy();
+    // A reload now lands on the window on the path's page, not on a new paper.
+    expect(window.location.pathname).toBe("/paths/linux/mock-exam");
+    expect(window.location.search).toBe("");
+    expect(m.replace).not.toHaveBeenCalled();
+  });
+
+  it("starts nothing when brought back without ?go=1, and goes to the window", async () => {
+    // Back or Forward to the page once the exam ran: the router restores it
+    // from its cache, and the redirect never sees it.
+    await openAt("/paths/linux/mock-exam");
+    expect(m.startMockExamAction).not.toHaveBeenCalled();
+    expect(m.replace).toHaveBeenCalledWith("/paths/linux?mock=1");
+    expect(screen.getByRole("status").textContent).toContain(
+      "Retour à la présentation de l'examen…",
     );
-    expect(modules.map((li) => li.textContent)).toEqual([
-      "Les fichiers3 questions",
-      "Les droits3 questions",
-    ]);
-    expect(screen.getByRole("region", { name: "Tes examens blancs" }).textContent).toContain(
-      "50 %",
-    );
+    expect(screen.queryByText("0 / 2 répondues")).toBeNull();
   });
 
   it("runs the exam by module, hands the copy in, and reads the score by module", async () => {
-    render(<MockExamFlow overview={OVERVIEW} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
-      await Promise.resolve();
-    });
-    expect(m.startMockExamAction).toHaveBeenCalledWith("p1");
+    await open();
     expect(screen.getByText("0 / 2 répondues")).toBeTruthy();
     expect(screen.getByText("10:00")).toBeTruthy();
     expect(screen.getByText("2 questions sans réponse.")).toBeTruthy();
@@ -160,16 +185,32 @@ describe("MockExamFlow", () => {
     expect(within(correction).getByText("Que fait ls ?").closest("details")?.open).toBe(false);
   });
 
+  it("draws another paper in place from the result", async () => {
+    await open();
+    await act(async () => {
+      const [handIn] = screen.getAllByRole("button", { name: "Rendre la copie" });
+      if (handIn === undefined) throw new Error("no hand-in button");
+      fireEvent.click(handIn);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      const [restart] = screen.getAllByRole("button", {
+        name: "Recommencer avec d'autres questions",
+      });
+      if (restart === undefined) throw new Error("no restart button");
+      fireEvent.click(restart);
+      await Promise.resolve();
+    });
+    expect(m.startMockExamAction).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("0 / 2 répondues")).toBeTruthy();
+  });
+
   it("does not carry a failed hand-in's error onto the result", async () => {
     m.submitMockExamAction.mockResolvedValueOnce({
       ok: false,
       error: "Trop d'envois. Réessaie dans un moment.",
     });
-    render(<MockExamFlow overview={OVERVIEW} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
-      await Promise.resolve();
-    });
+    await open();
     const handIn = async (): Promise<void> => {
       await act(async () => {
         const [button] = screen.getAllByRole("button", { name: "Rendre la copie" });
@@ -196,11 +237,7 @@ describe("MockExamFlow", () => {
       timeLimitMinutes: 1,
       questions: QUESTIONS,
     });
-    render(<MockExamFlow overview={OVERVIEW} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
-      await Promise.resolve();
-    });
+    await open();
     await act(async () => {
       vi.advanceTimersByTime(61_000);
       await Promise.resolve();
@@ -219,11 +256,7 @@ describe("MockExamFlow", () => {
       questions: QUESTIONS,
     });
     m.submitMockExamAction.mockResolvedValue({ ok: false, error: "Trop de tentatives." });
-    render(<MockExamFlow overview={OVERVIEW} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Commencer l'examen blanc" }));
-      await Promise.resolve();
-    });
+    await open();
     // Past zero, then five more ticks of the clock: still a single request.
     for (const ms of [61_000, 1000, 1000, 1000, 1000, 1000]) {
       await act(async () => {
@@ -236,19 +269,36 @@ describe("MockExamFlow", () => {
     expect(handIn).toBeTruthy();
   });
 
-  it("says so when the path has too few questions", () => {
-    render(<MockExamFlow overview={{ ...OVERVIEW, ready: false }} />);
-    expect(screen.queryByRole("button", { name: "Commencer l'examen blanc" })).toBeNull();
+  it("says why the exam could not start, and tries again on demand", async () => {
+    m.startMockExamAction
+      .mockResolvedValueOnce({ ok: false, error: "Trop de tentatives. Réessaie plus tard." })
+      .mockRejectedValueOnce(new Error("network"));
+    await open();
+    expect(screen.getByRole("alert").textContent).toBe("Trop de tentatives. Réessaie plus tard.");
+    expect(screen.getByRole("link", { name: "Retour au parcours" }).getAttribute("href")).toBe(
+      "/paths/linux",
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Impossible de lancer l'examen pour l'instant. Réessaie dans un moment.",
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+      await Promise.resolve();
+    });
+    expect(m.startMockExamAction).toHaveBeenCalledTimes(3);
+    expect(screen.getByText("0 / 2 répondues")).toBeTruthy();
+  });
+
+  it("starts nothing on a path with too few questions, and says so", async () => {
+    await open({ ...OVERVIEW, ready: false });
+    expect(m.startMockExamAction).not.toHaveBeenCalled();
     expect(
       screen.getByText("Ce parcours n'a pas encore assez de questions pour un examen blanc."),
     ).toBeTruthy();
-  });
-
-  it("says so when no module of the path has a quiz", () => {
-    render(
-      <MockExamFlow overview={{ ...OVERVIEW, domains: [], questionCount: 0, ready: false }} />,
-    );
-    expect(screen.queryByRole("list", { name: "Les modules couverts" })).toBeNull();
-    expect(screen.getByText("Aucun module de ce parcours n'a encore de quiz.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Réessayer" })).toBeNull();
   });
 });

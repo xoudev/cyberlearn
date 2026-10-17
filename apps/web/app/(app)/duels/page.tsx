@@ -1,41 +1,36 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import React from "react";
-import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
-import { duelRecordFor, duelSetupFor, listDuelsFor } from "@/lib/social/duels";
+import { friendshipRepository } from "@cyberlearn/db";
+import { requireRequestUser } from "@/lib/auth";
+import { duelRecordFor, listDuelsFor } from "@/lib/social/duels";
 import { DuelsBoard } from "./_components/duels-board";
+import { duelsAddressFor } from "./_components/ami-address";
 
 export const metadata: Metadata = { title: "Duels" };
 
 interface Props {
-  searchParams: Promise<{ ami?: string }>;
+  searchParams: Promise<{ ami?: string | string[] }>;
 }
 
 /**
  * The reader's duels, their record over every duel (not only the ones
- * listed), their friends and the paths they can duel on, drawn by DuelsBoard.
+ * listed) and how many friends they can challenge, drawn by DuelsBoard. The
+ * challenge itself is a window over the page (?duel=, challenge-dialog.tsx),
+ * which reads the friends and the paths when it opens.
  */
 export default async function DuelsPage({ searchParams }: Props): Promise<React.ReactElement> {
   const user = await requireRequestUser();
+  // The old address of the form with a friend picked, still in links and
+  // bookmarks: the window, with that friend picked.
   const { ami } = await searchParams;
-  const [duels, record, setup, profile] = await Promise.all([
+  if (ami !== undefined) redirect(duelsAddressFor(ami));
+
+  const [duels, record, friendIds] = await Promise.all([
     listDuelsFor(user.id),
     duelRecordFor(user.id),
-    duelSetupFor(user.id),
-    getSharedUserProfile(),
+    friendshipRepository.friendIds(user.id),
   ]);
-  const readerName =
-    [profile?.displayName, duels[0]?.reader.name].find(
-      (name) => name !== undefined && name !== "",
-    ) ?? "";
 
-  return (
-    <DuelsBoard
-      duels={duels}
-      record={record}
-      friends={setup.friends}
-      paths={setup.paths}
-      initialFriend={ami ?? null}
-      readerName={readerName}
-    />
-  );
+  return <DuelsBoard duels={duels} record={record} friendCount={friendIds.size} />;
 }

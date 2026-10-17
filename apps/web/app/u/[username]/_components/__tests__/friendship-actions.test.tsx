@@ -67,7 +67,7 @@ describe("FriendshipActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
     expect(m.sendFriendRequestAction).toHaveBeenCalledWith(TARGET);
     expect(await screen.findByRole("button", { name: "Ami ✓" })).toBeTruthy();
-    expect(duelLink()?.getAttribute("href")).toBe(`/duels?ami=${TARGET}`);
+    expect(duelLink()?.getAttribute("href")).toBe(`/duels?duel=${TARGET}`);
   });
 
   it("shows a friendship as a state, with its ending behind a menu that asks first", async () => {

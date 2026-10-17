@@ -20,6 +20,7 @@ import {
 import { visiblePathTitle } from "@/lib/paths/visible-title";
 import { BossNode } from "./_components/boss-node";
 import { BriefCertificate } from "./_components/brief-certificate";
+import { MockExamDialog } from "./_components/mock-exam-dialog";
 import { PathRating } from "./_components/path-rating";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
@@ -404,14 +405,8 @@ export default async function PathDetailPage({
               {heroCtaLabel} {ARROW}
             </Link>
           )}
-          <Link
-            href={`/paths/${slug}/mock-exam`}
-            className="btn btn--ghost btn--sm"
-            style={{ marginTop: 10 }}
-            title="Un entraînement chronométré : trois questions par module, le score par module, sans certificat ni XP"
-          >
-            Examen blanc
-          </Link>
+          {/* The mock exam's presentation, in a window over the path (?mock=1). */}
+          <MockExamDialog slug={path.slug} pathTitle={path.title} />
         </div>
       </section>
 

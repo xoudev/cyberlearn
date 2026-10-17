@@ -13,8 +13,8 @@ import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelSummary } from "@/lib/social/duels";
+import { ChallengeButton } from "./challenge-button";
 import { dayOf, plural, whenOf } from "./duel-words";
-import { NewDuelForm } from "./new-duel-form";
 import { RespondButtons } from "./respond-buttons";
 import "./duels.css";
 
@@ -107,30 +107,24 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
 
 /**
  * Quiz duels between friends: the reader's record, the rules in three facts,
- * the invitations waiting for an answer, a panel to challenge a friend on a
- * path, and every duel going on or settled. A duel opens on its own page.
- * Drawn from what the page read (page.tsx), so it renders without a request.
+ * the invitations waiting for an answer, the way to challenge a friend (the
+ * "Défier" window, challenge-dialog.tsx), and every duel going on or settled.
+ * A duel opens on its own page. Drawn from what the page read (page.tsx), so
+ * it renders without a request.
  */
 export function DuelsBoard({
   duels,
   record: counts,
-  friends,
-  paths,
-  initialFriend,
-  readerName,
+  friendCount,
 }: {
   duels: DuelSummary[];
   /** The record over every duel, counted on the server: the list stops at twenty. */
   record: DuelRecordCounts;
-  friends: { id: string; name: string }[];
-  paths: { id: string; title: string }[];
-  /** The friend named in ?ami=, preselected in the form. */
-  initialFriend: string | null;
-  readerName: string;
+  /** How many friends the reader has: none, and the panel says how to make one. */
+  friendCount: number;
 }): React.ReactElement {
   const invitations = duels.filter((d) => d.status === "PENDING" && !d.readerIsChallenger);
   const others = duels.filter((d) => !invitations.includes(d));
-  const friendCount = friends.length;
   const record = duelRecordLines(counts);
 
   return (
@@ -226,12 +220,15 @@ export function DuelsBoard({
             message="Un duel se joue entre amis : ajoute quelqu'un depuis son profil, ou accepte une demande dans le panneau Amis en haut de page, puis reviens ici."
           />
         ) : (
-          <NewDuelForm
-            friends={friends}
-            paths={paths}
-            initialFriend={initialFriend}
-            readerInitials={initialsOf(readerName)}
-          />
+          <div className="dl-launch">
+            <p className="dl-launch__text">
+              Choisis un ami et un parcours : le défi part aussitôt, et ton ami a un jour pour
+              l&apos;accepter.
+            </p>
+            <ChallengeButton className="btn btn--accent">
+              Défier un ami <span aria-hidden="true">→</span>
+            </ChallengeButton>
+          </div>
         )}
       </section>
 
@@ -251,7 +248,7 @@ export function DuelsBoard({
           {others.length === 0 ? (
             <EmptyState
               title="Aucun duel pour l'instant"
-              message="Choisis un ami et un parcours ci-dessus : ton duel s'affichera ici."
+              message="Défie un ami ci-dessus : ton duel s'affichera ici."
             />
           ) : (
             <ul className="dl-grid">

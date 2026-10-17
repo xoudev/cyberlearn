@@ -16,12 +16,19 @@ const m = vi.hoisted(() => ({
   recordAnswer: vi.fn<(input: unknown) => Promise<boolean>>(),
   listOverdueFor: vi.fn<(userId: string, now: Date) => Promise<unknown[]>>(),
   recordFor: vi.fn<(userId: string, now: Date) => Promise<unknown>>(),
+  listOpenFor: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  listFriends: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  pathFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
+  resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
   pathsVisibleTo: (userId: string) => ({ visibleTo: userId }),
-  prisma: { path: { findFirst: m.pathFindFirst }, lesson: { findMany: m.lessonFindMany } },
-  friendshipRepository: { between: m.between },
+  prisma: {
+    path: { findFirst: m.pathFindFirst, findMany: m.pathFindMany },
+    lesson: { findMany: m.lessonFindMany },
+  },
+  friendshipRepository: { between: m.between, listFriends: m.listFriends },
   notificationRepository: { create: m.notify },
   duelRepository: {
     findById: m.findById,
@@ -33,13 +40,22 @@ vi.mock("@cyberlearn/db", () => ({
     recordAnswer: m.recordAnswer,
     listOverdueFor: m.listOverdueFor,
     recordFor: m.recordFor,
+    listOpenFor: m.listOpenFor,
   },
 }));
+vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
 vi.mock("@/lib/exam/mock-exam", () => ({ loadSources: m.loadSources }));
 vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.checkNotifyingWrite }));
 
-const { answerDuel, createDuel, duelRecordFor, duelViewFor, listDuelsFor, respondToDuel } =
-  await import("../duels");
+const {
+  answerDuel,
+  createDuel,
+  duelRecordFor,
+  duelSetupFor,
+  duelViewFor,
+  listDuelsFor,
+  respondToDuel,
+} = await import("../duels");
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -299,5 +315,74 @@ describe("duelRecordFor", () => {
     // Settled before counted: the count reads the duels as they now stand.
     const settledAt = m.transition.mock.invocationCallOrder.at(-1) ?? 0;
     expect(m.recordFor.mock.invocationCallOrder[0]).toBeGreaterThan(settledAt);
+  });
+});
+
+describe("duelSetupFor", () => {
+  const SAM = "55555555-5555-4555-8555-555555555555";
+
+  function friend(id: string, displayName: string, xpTotal: number, avatarUrl: string | null) {
+    return {
+      id: `edge-${id}`,
+      status: "ACCEPTED",
+      requestedById: ME,
+      createdAt: new Date(),
+      person: {
+        id,
+        username: displayName.toLowerCase(),
+        displayName,
+        avatarUrl,
+        level: 1,
+        xpTotal,
+      },
+    };
+  }
+
+  beforeEach(() => {
+    m.listFriends.mockResolvedValue([
+      friend(FRIEND, "Alex", 250, "__upload:alex.png"),
+      friend(SAM, "Sam", 0, null),
+    ]);
+    m.pathFindMany.mockResolvedValue([{ id: PATH, title: "Linux" }]);
+    m.resolveAvatarSrcMany.mockImplementation((values) =>
+      Promise.resolve(values.map((v) => (v === null ? null : "https://signed/alex.png"))),
+    );
+    m.listOpenFor.mockResolvedValue([]);
+  });
+
+  it("gives each friend's avatar, handle and level, and the paths a duel can be sent on", async () => {
+    expect(await duelSetupFor(ME)).toEqual({
+      friends: [
+        {
+          id: FRIEND,
+          name: "Alex",
+          username: "alex",
+          avatarSrc: "https://signed/alex.png",
+          level: 2,
+          openDuelId: null,
+        },
+        { id: SAM, name: "Sam", username: "sam", avatarSrc: null, level: 1, openDuelId: null },
+      ],
+      paths: [{ id: PATH, title: "Linux" }],
+    });
+    // Every picture signed in one call, not one per friend.
+    expect(m.resolveAvatarSrcMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the duel still open with a friend, whichever of the two sent it", async () => {
+    m.listOpenFor.mockResolvedValue([
+      duelRow({ challengerId: FRIEND, opponentId: ME, status: "PENDING" }),
+    ]);
+    const { friends } = await duelSetupFor(ME);
+    expect(friends.map((f) => f.openDuelId)).toEqual([DUEL, null]);
+  });
+
+  it("frees a friend whose open duel has run out of time", async () => {
+    m.listOpenFor.mockResolvedValue([
+      duelRow({ status: "PENDING", expiresAt: new Date(Date.now() - 1000) }),
+    ]);
+    const { friends } = await duelSetupFor(ME);
+    expect(friends.map((f) => f.openDuelId)).toEqual([null, null]);
+    expect(m.transition).toHaveBeenCalledWith(DUEL, "PENDING", { status: "EXPIRED" });
   });
 });

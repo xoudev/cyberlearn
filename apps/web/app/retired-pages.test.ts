@@ -35,3 +35,32 @@ describe("pages that became windows", () => {
     expect(existsSync(path.join(__dirname, "..", page))).toBe(false);
   });
 });
+
+describe("a page whose presentation became a window", () => {
+  async function mockExamRedirect() {
+    const redirects = (await nextConfig.redirects?.()) ?? [];
+    return redirects.find((redirect) => redirect.source === "/paths/:slug/mock-exam");
+  }
+
+  it("sends the mock exam's address to its window unless the window started it", async () => {
+    const redirect = await mockExamRedirect();
+    expect(redirect?.destination).toBe("/paths/:slug?mock=1");
+    expect(redirect?.permanent).toBe(false);
+    expect(redirect?.missing).toContainEqual({ type: "query", key: "go" });
+    // The exam itself still has its page, reached with ?go=1.
+    expect(existsSync(path.join(__dirname, "(app)/paths/[slug]/mock-exam/page.tsx"))).toBe(true);
+  });
+
+  it("redirects a page load only, never the router's requests to the running exam", async () => {
+    // Once the exam runs, ?go=1 is off the address, and the hand-in (a server
+    // action's POST) and a refresh go to that address: redirected, they would
+    // run under the path's page.
+    const redirect = await mockExamRedirect();
+    expect(redirect?.missing).toEqual(
+      expect.arrayContaining([
+        { type: "header", key: "next-action" },
+        { type: "header", key: "rsc" },
+      ]),
+    );
+  });
+});

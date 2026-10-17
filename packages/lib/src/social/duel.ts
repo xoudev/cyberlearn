@@ -5,6 +5,7 @@ import {
   type MockRef,
   type MockSource,
 } from "../exam/mock.js";
+import { levelLabel } from "../gamification/level-label.js";
 
 /**
  * Quiz duels between friends: the same five questions, drawn from a path's
@@ -137,6 +138,51 @@ export function duelWinner(challenger: DuelTally, opponent: DuelTally): DuelWinn
 /** A pending or active duel past its time. */
 export function isExpired(duel: { status: DuelStatus; expiresAt: Date }, now: Date): boolean {
   return (duel.status === "PENDING" || duel.status === "ACTIVE") && duel.expiresAt <= now;
+}
+
+/**
+ * A friend as a challenge form lists them, in the field that says whether
+ * they can be picked: the site's DuelFriend (apps/web/lib/social/duels.ts)
+ * and the app's mirror of it both have it.
+ */
+export interface ChallengeableFriend {
+  id: string;
+  /**
+   * A duel still open (pending or going on) between the reader and this
+   * friend: no second one until it is over. Absent counts as none.
+   */
+  openDuelId?: string | null;
+}
+
+/** What a friend already in a duel with the reader shows in place of a choice. */
+export const FRIEND_IN_DUEL_LABEL = "Duel en cours";
+
+/** Under the friends when every one of them is already in a duel with the reader. */
+export const ALL_FRIENDS_IN_DUEL_NOTE =
+  "Tu as déjà un duel en cours avec chacun de tes amis : il se règle en un jour au plus.";
+
+/** "@alex · Niv. 4": who a friend is, under their name, in a challenge form. */
+export function challengeFriendMeta(friend: { username: string | null; level: number }): string {
+  const level = levelLabel(friend.level);
+  return friend.username === null ? level : `@${friend.username} · ${level}`;
+}
+
+/** Whether a friend can be challenged now: not while a duel between the two is open. */
+export function canChallengeFriend(friend: ChallengeableFriend): boolean {
+  return friend.openDuelId === undefined || friend.openDuelId === null;
+}
+
+/**
+ * The friend a challenge form starts on: the one asked for (by a profile's
+ * "Défier" or a rematch) when they can be challenged now, otherwise the first
+ * who can; null when nobody can.
+ */
+export function challengeTarget(
+  friends: readonly ChallengeableFriend[],
+  wanted: string | null,
+): string | null {
+  const free = friends.filter(canChallengeFriend);
+  return (free.find((friend) => friend.id === wanted) ?? free[0])?.id ?? null;
 }
 
 /** "3 / 5": a player's score line. */
