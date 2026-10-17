@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
+import { InQuizGroup } from "./quiz-block";
 
-interface QuizGroupProps {
+export interface QuizGroupProps {
   children: React.ReactNode;
 }
 
@@ -100,22 +101,25 @@ export function QuizGroup({ children }: QuizGroupProps): React.ReactElement {
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {items.slice(0, visible).map((child, i) =>
-          React.cloneElement(child, {
-            key: i,
-            questionNumber: i + 1,
-            questionCount: total,
-            ...(lessonQuiz
-              ? {}
-              : {
-                  onAnswered: (answer: QuizAnswer) => {
-                    setLocalAnswers((prev) => (prev[i] ? prev : { ...prev, [i]: answer }));
-                  },
-                }),
-          }),
-        )}
-      </div>
+      {/* The questions share the group's block (quiz-block.tsx). */}
+      <InQuizGroup.Provider value={true}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {items.slice(0, visible).map((child, i) =>
+            React.cloneElement(child, {
+              key: i,
+              questionNumber: i + 1,
+              questionCount: total,
+              ...(lessonQuiz
+                ? {}
+                : {
+                    onAnswered: (answer: QuizAnswer) => {
+                      setLocalAnswers((prev) => (prev[i] ? prev : { ...prev, [i]: answer }));
+                    },
+                  }),
+            }),
+          )}
+        </div>
+      </InQuizGroup.Provider>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /* A lesson quiz's layout. Colours stay inline in quiz.tsx; what changes with
-   the width of the screen lives here, where a media query can reach it. */
+   the width it is given lives here, where a container query can reach it.
+   The container is the quiz's lesson block, or its group's (quiz-block.tsx). */
 
 .cl-quiz {
   padding: 32px 32px 28px;
@@ -17,9 +18,10 @@
   padding: 16px 20px;
 }
 
-/* On a phone the four columns left the option text a word wide, squeezed by
-   the "Bonne réponse" label. The label goes under the text instead. */
-@media (max-width: 560px) {
+/* In a narrow block, a phone's, the four columns left the option text a word
+   wide, squeezed by the "Bonne réponse" label. The label goes under the text
+   instead. */
+@container lesson-block (max-width: 560px) {
   .cl-quiz {
     padding: 20px 16px 18px;
   }

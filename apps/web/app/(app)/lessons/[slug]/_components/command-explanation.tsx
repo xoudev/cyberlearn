@@ -3,6 +3,7 @@
 import React from "react";
 import { explainLine, PART_KIND_LABELS, type PartKind } from "@cyberlearn/lib/terminal/explain";
 import { ACCENT, MONO } from "@cyberlearn/ui";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * A command line explained word by word (@cyberlearn/lib/terminal/explain):
@@ -44,7 +45,7 @@ export function CommandExplanation({
         <span
           style={{
             fontFamily: MONO,
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             color: ACCENT,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
@@ -139,7 +140,7 @@ export function CommandExplanation({
                 <span
                   style={{
                     fontFamily: MONO,
-                    fontSize: 9,
+                    fontSize: LAB_LABEL_SIZE,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     color: "var(--color-text-muted)",

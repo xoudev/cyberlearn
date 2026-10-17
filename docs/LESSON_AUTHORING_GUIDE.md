@@ -449,7 +449,7 @@ main:
 | `scenario` | string | - | Scénario prédéfini (voir liste ci-dessous) |
 | `commands` | `Record<string, string>` | - | Commandes personnalisées supplémentaires |
 | `title` | string | - | Titre affiché dans la barre du terminal |
-| `height` | number | `320` | Hauteur en pixels |
+| `height` | number | - | Hauteur de l'écran en pixels. Sans `height`, l'écran grandit avec la largeur de son bloc, de 320 à 480 px ; un `height` écrit fixe la hauteur, même dans un bloc large. N'en écris un que si l'exercice demande une hauteur précise |
 | `expectedCommands` | `string[]` | - | Commandes que l'étudiant doit taper pour valider l'exercice |
 | `hints` | `string[]` | - | Indices affichés sous le terminal |
 | `onComplete` | `() => void` | - | Callback déclenché quand toutes les `expectedCommands` ont été tapées |
@@ -617,7 +617,7 @@ tourne sur nos serveurs.
 | `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
 | `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "link" \| "absent", contains?, mode?, target?, links? }`. `contains` : un texte que le fichier doit contenir ; `mode` : les permissions en octal, comme chmod les écrit (`"640"`, `"4755"`) ; `target` : la cible d'un lien symbolique, telle qu'écrite par `ln -s` ; `links` : le nombre de liens physiques (`2` après `ln`). Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement, de liens ou de permissions |
 | `hints` | Indices affichés sous le terminal |
-| `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
+| `height` | Hauteur de l'écran en pixels, de 200 à 900. Sans `height`, l'écran grandit avec la largeur de son bloc, de 380 à 560 px ; un `height` écrit fixe la hauteur, même dans un bloc large. N'en écris un que si l'exercice demande une hauteur précise |
 | `timeLimitMinutes` | Exercice chronométré, de 1 à 180 minutes, comme l'épreuve pratique d'un parcours. Le compte à rebours démarre quand la machine est prête, s'arrête dès que tout est fait, et garde le score atteint à la fin du temps ; l'élève peut ensuite finir, hors délai. Redémarrer la machine relance le chronomètre |
 
 À savoir en écrivant :

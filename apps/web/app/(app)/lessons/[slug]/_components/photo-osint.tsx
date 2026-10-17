@@ -5,7 +5,10 @@ import React, { useState } from "react";
 import { parsePhotoOsint } from "@cyberlearn/types";
 import { distanceKm, distanceLabel, parseCoordinates, type Point } from "@/lib/osint/geo";
 import { type MetadataRow, readMetadata } from "@/lib/osint/metadata";
+import { labStack } from "./lab-stack";
 import { OsintMap } from "./osint-map";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
+import "./photo-osint.css";
 
 /**
  * <PhotoOsint>: a photo, its real metadata read from its bytes (exifr, in the
@@ -57,7 +60,14 @@ function MetadataTable({ rows }: { rows: readonly MetadataRow[] }): React.ReactE
               }}
             >
               {row.label}
-              <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: "#5A5680" }}>
+              <span
+                style={{
+                  display: "block",
+                  fontFamily: MONO,
+                  fontSize: LAB_LABEL_SIZE,
+                  color: "#5A5680",
+                }}
+              >
                 {row.tag}
               </span>
             </th>
@@ -172,9 +182,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          OSINT · PHOTO
-        </span>
+        <span style={labKicker(ACCENT)}>OSINT · PHOTO</span>
         {exercise.title ? (
           <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{exercise.title}</span>
         ) : null}
@@ -183,99 +191,117 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
       <div style={{ padding: "12px 16px", display: "grid", gap: 14 }}>
         <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{exercise.task}</p>
 
-        <figure style={{ margin: 0, display: "grid", gap: 6 }}>
-          {/* A static picture of public/osint, read byte for byte below: next/image would re-encode it. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={exercise.src}
-            alt={exercise.alt}
-            style={{ width: "100%", height: "auto", display: "block", border: "1px solid #1F1B47" }}
-          />
-          {exercise.caption ? (
-            <figcaption style={{ color: "#D8D6EA", fontSize: 14 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", marginRight: 8 }}>
-                LÉGENDE QUI CIRCULE
-              </span>
-              « {exercise.caption} »
-            </figcaption>
-          ) : null}
-        </figure>
+        {/* The photo and what it says on one side, the map on the other, once
+            the block is wide enough for both (photo-osint.css). */}
+        <div className="photo-osint__panes">
+          <div style={labStack(14)}>
+            <figure style={{ margin: 0, display: "grid", gap: 6 }}>
+              {/* A static picture of public/osint, read byte for byte below: next/image would re-encode it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={exercise.src}
+                alt={exercise.alt}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  border: "1px solid #1F1B47",
+                }}
+              />
+              {exercise.caption ? (
+                <figcaption style={{ color: "#D8D6EA", fontSize: 14 }}>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: LAB_LABEL_SIZE,
+                      color: "#7F7BA9",
+                      marginRight: 8,
+                    }}
+                  >
+                    LÉGENDE QUI CIRCULE
+                  </span>
+                  « {exercise.caption} »
+                </figcaption>
+              ) : null}
+            </figure>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          {rows === null ? (
-            <button
-              type="button"
-              onClick={() => void read()}
-              disabled={busy}
-              className="btn btn--accent btn--sm"
-              style={{ justifySelf: "start" }}
-            >
-              {busy ? "Lecture…" : "Lire les métadonnées (EXIF)"}
-            </button>
-          ) : (
-            <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
-                MÉTADONNÉES DU FICHIER
-              </span>
-              <MetadataTable rows={rows} />
+            <div style={{ display: "grid", gap: 8 }}>
+              {rows === null ? (
+                <button
+                  type="button"
+                  onClick={() => void read()}
+                  disabled={busy}
+                  className="btn btn--accent btn--sm"
+                  style={{ justifySelf: "start" }}
+                >
+                  {busy ? "Lecture…" : "Lire les métadonnées (EXIF)"}
+                </button>
+              ) : (
+                <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontFamily: MONO, fontSize: LAB_LABEL_SIZE, color: "#7F7BA9" }}>
+                    MÉTADONNÉES DU FICHIER
+                  </span>
+                  <MetadataTable rows={rows} />
+                </div>
+              )}
+              {readError ? (
+                <p style={{ margin: 0, color: RED, fontSize: 14 }}>
+                  La photo n&apos;a pas pu être lue. Recharge la page et réessaie.
+                </p>
+              ) : null}
             </div>
-          )}
-          {readError ? (
-            <p style={{ margin: 0, color: RED, fontSize: 14 }}>
-              La photo n&apos;a pas pu être lue. Recharge la page et réessaie.
-            </p>
-          ) : null}
-        </div>
+          </div>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          <OsintMap guess={guess} truth={found ? answer : null} onPick={place} />
-          <form onSubmit={placeTyped} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              value={typed}
-              onChange={(e) => {
-                setTyped(e.target.value);
-              }}
-              disabled={found}
-              aria-label="Coordonnées du point"
-              aria-invalid={typedWrong}
-              placeholder={`45.76, 4.83  ou  45° 45' 44" N 4° 49' 37" E`}
-              spellCheck={false}
-              style={{
-                flex: "1 1 220px",
-                minWidth: 0,
-                padding: "8px 10px",
-                background: "#0A0826",
-                border: `1px solid ${typedWrong ? RED : "#2A2560"}`,
-                color: "#D8D6EA",
-                fontFamily: MONO,
-                fontSize: 13,
-              }}
-            />
-            <button type="submit" disabled={found} className="btn btn--ghost btn--sm">
-              Placer
-            </button>
-          </form>
-          {typedWrong ? (
-            <p style={{ margin: 0, color: RED, fontSize: 13 }}>
-              Coordonnées illisibles : latitude puis longitude, en décimal ou en degrés, minutes,
-              secondes.
-            </p>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
-              {guess === null
-                ? "Pas encore de point : clique sur la carte."
-                : `Ton point : ${guess.latitude.toFixed(4)}, ${guess.longitude.toFixed(4)}`}
-            </span>
-            <button
-              type="button"
-              onClick={check}
-              disabled={guess === null || found}
-              className="btn btn--accent btn--sm"
-              style={{ marginLeft: "auto" }}
-            >
-              Valider ce lieu
-            </button>
+          <div style={labStack(8)}>
+            <OsintMap guess={guess} truth={found ? answer : null} onPick={place} />
+            <form onSubmit={placeTyped} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                value={typed}
+                onChange={(e) => {
+                  setTyped(e.target.value);
+                }}
+                disabled={found}
+                aria-label="Coordonnées du point"
+                aria-invalid={typedWrong}
+                placeholder={`45.76, 4.83  ou  45° 45' 44" N 4° 49' 37" E`}
+                spellCheck={false}
+                style={{
+                  flex: "1 1 220px",
+                  minWidth: 0,
+                  padding: "8px 10px",
+                  background: "#0A0826",
+                  border: `1px solid ${typedWrong ? RED : "#2A2560"}`,
+                  color: "#D8D6EA",
+                  fontFamily: MONO,
+                  fontSize: 13,
+                }}
+              />
+              <button type="submit" disabled={found} className="btn btn--ghost btn--sm">
+                Placer
+              </button>
+            </form>
+            {typedWrong ? (
+              <p style={{ margin: 0, color: RED, fontSize: 13 }}>
+                Coordonnées illisibles : latitude puis longitude, en décimal ou en degrés, minutes,
+                secondes.
+              </p>
+            ) : null}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+                {guess === null
+                  ? "Pas encore de point : clique sur la carte."
+                  : `Ton point : ${guess.latitude.toFixed(4)}, ${guess.longitude.toFixed(4)}`}
+              </span>
+              <button
+                type="button"
+                onClick={check}
+                disabled={guess === null || found}
+                className="btn btn--accent btn--sm"
+                style={{ marginLeft: "auto" }}
+              >
+                Valider ce lieu
+              </button>
+            </div>
           </div>
         </div>
 
@@ -326,7 +352,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
               </>
             ) : (
               <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+                <span style={{ fontFamily: MONO, fontSize: LAB_LABEL_SIZE, color: "#7F7BA9" }}>
                   APRÈS NETTOYAGE
                 </span>
                 <MetadataTable rows={cleaned} />

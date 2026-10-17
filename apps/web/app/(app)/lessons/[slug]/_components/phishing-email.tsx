@@ -3,6 +3,7 @@
 import { ACCENT, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { parsePhishingEmail, phishingPartLabel } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * <PhishingEmail>: a message laid out as a mail client lays it out, in which
@@ -93,7 +94,7 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.16em",
             color: ACCENT,
           }}
@@ -128,10 +129,13 @@ export function PhishingEmail(props: Record<string, unknown>): React.ReactElemen
         Clique sur chaque élément qui te paraît suspect. Survole le lien pour voir où il mène.
       </p>
 
+      {/* The message between two rules, across the lab: a band, not a second
+          card inside the lab's card. */}
       <div
-        className="card card--sunken"
         style={{
-          margin: "12px 16px",
+          margin: "12px 0",
+          padding: "0 10px",
+          borderBlock: "1px solid var(--color-border-subtle)",
           color: "#D8D6EA",
           fontSize: 14,
           lineHeight: 1.6,

@@ -141,8 +141,12 @@ export function mermaidConfig(accent: string): MermaidConfig {
  * So the SVG is never enlarged past its natural size, and never shrunk below
  * the point where the text stops being legible. Past that floor the figure
  * scrolls sideways, which is the honest trade on a narrow screen.
+ *
+ * The floor was 0.7, labels of about 9px: smaller than anything else in the
+ * lesson, a caption included. At 0.85 they are 11px, the size of the smallest
+ * text a lesson otherwise sets.
  */
-const MIN_LEGIBLE_SCALE = 0.7; // 13px * 0.7 ≈ 9px
+export const MIN_LEGIBLE_SCALE = 0.85; // 13px * 0.85 ≈ 11px
 
 /** Natural width in CSS pixels, from the viewBox mermaid emits. */
 function naturalWidthOf(svg: SVGElement): number | null {
@@ -195,7 +199,7 @@ function reportFailure(error: unknown, source: string): void {
   });
 }
 
-interface DiagramProps {
+export interface DiagramProps {
   children: React.ReactNode;
   caption?: string;
 }

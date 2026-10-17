@@ -7,6 +7,8 @@ import { DEFAULT_GEOMETRY, layoutGraph } from "@cyberlearn/lib/git/graph";
 import { type GitState, promptOf, run, runSetup, statusOf } from "@cyberlearn/lib/git/sandbox";
 import { parseGitSandbox } from "@cyberlearn/types";
 import { labStack } from "./lab-stack";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE, labKicker } from "./lab-text";
+import "./git-sandbox.css";
 
 /**
  * <GitSandbox>: a Git repository simulated in the page, a terminal to drive
@@ -105,7 +107,7 @@ function GitGraph({ state }: { state: GitState }): React.ReactElement {
             alignItems: "center",
             gap: 6,
             whiteSpace: "nowrap",
-            fontSize: 12.5,
+            fontSize: LAB_MONO_SIZE,
           }}
         >
           <span style={{ fontFamily: MONO, color: "#5A5680" }}>{row.id}</span>
@@ -114,7 +116,7 @@ function GitGraph({ state }: { state: GitState }): React.ReactElement {
               key={name}
               style={{
                 fontFamily: MONO,
-                fontSize: 11,
+                fontSize: LAB_LABEL_SIZE,
                 padding: "1px 6px",
                 border: `1px solid ${row.head && i === 0 ? ACCENT : "var(--color-border-default)"}`,
                 color: row.head && i === 0 ? ACCENT : "var(--color-text-secondary)",
@@ -226,9 +228,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          GIT · BAC À SABLE
-        </span>
+        <span style={labKicker(ACCENT)}>GIT · BAC À SABLE</span>
         {exercise.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {exercise.title}
@@ -258,14 +258,8 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
           {exercise.task}
         </p>
       ) : null}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
-          gap: 12,
-          padding: "12px 16px",
-        }}
-      >
+      {/* The terminal, and the graph beside it or under it (git-sandbox.css). */}
+      <div className="git-sandbox__panes">
         <div
           className="card card--sunken"
           style={{
@@ -281,7 +275,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
               overflowY: "auto",
               padding: "10px 12px",
               fontFamily: MONO,
-              fontSize: 12.5,
+              fontSize: LAB_MONO_SIZE,
               lineHeight: 1.55,
             }}
           >
@@ -325,7 +319,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
               htmlFor={`git-${exercise.id}`}
               style={{
                 fontFamily: MONO,
-                fontSize: 12.5,
+                fontSize: LAB_MONO_SIZE,
                 color: "var(--color-text-muted)",
                 // A long branch name wraps the prompt; the command keeps 40%.
                 minWidth: 0,
@@ -354,7 +348,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
                 outline: "none",
                 color: "var(--color-text-primary)",
                 fontFamily: MONO,
-                fontSize: 12.5,
+                fontSize: LAB_MONO_SIZE,
               }}
             />
           </form>
@@ -432,7 +426,7 @@ export function GitSandbox(props: Record<string, unknown>): React.ReactElement {
             style={{
               cursor: "pointer",
               fontFamily: MONO,
-              fontSize: 10,
+              fontSize: LAB_LABEL_SIZE,
               color: ACCENT,
               letterSpacing: "0.18em",
               textTransform: "uppercase",

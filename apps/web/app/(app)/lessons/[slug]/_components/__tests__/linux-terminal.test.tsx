@@ -33,3 +33,20 @@ describe("the machine's frame", () => {
     expect(parent instanceof HTMLElement && parent.style.overflow).toBe("hidden");
   });
 });
+
+describe("the machine's screen height", () => {
+  const screenHeight = (): string | false => {
+    const screenEl = document.querySelector(".linux-terminal__screen");
+    return screenEl instanceof HTMLElement && screenEl.style.height;
+  };
+
+  it("is left to the stylesheet, which grows it with the block, when the author wrote none", () => {
+    render(<LinuxTerminal id="t" />);
+    expect(screenHeight()).toBe("");
+  });
+
+  it("is the author's, written on the screen, when there is one", () => {
+    render(<LinuxTerminal id="t" height={500} />);
+    expect(screenHeight()).toBe("500px");
+  });
+});

@@ -14,6 +14,7 @@ import {
   TOOL_NOTES,
 } from "@cyberlearn/lib/crypto/workshop";
 import { type CryptoTool, parseCryptoWorkshop } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <CryptoWorkshop>: a bench with one tool open at a time (Base64, hexadecimal,
@@ -125,9 +126,7 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          ATELIER CRYPTO
-        </span>
+        <span style={labKicker(ACCENT)}>ATELIER CRYPTO</span>
         {workshop.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {workshop.title}
@@ -191,7 +190,7 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
               <span
                 style={{
                   fontFamily: MONO,
-                  fontSize: 11,
+                  fontSize: LAB_LABEL_SIZE,
                   color: "var(--color-text-muted)",
                   whiteSpace: "nowrap",
                 }}
@@ -262,7 +261,13 @@ export function CryptoWorkshop(props: Record<string, unknown>): React.ReactEleme
               gap: 8,
             }}
           >
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: LAB_LABEL_SIZE,
+                color: "var(--color-text-muted)",
+              }}
+            >
               MESSAGE À DÉCHIFFRER
             </span>
             <pre

@@ -33,6 +33,7 @@ import {
 } from "@cyberlearn/lib/crypto/cracking";
 import { parsePasswordLab } from "@cyberlearn/types";
 import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * <PasswordLab>: a table of sample accounts as a platform's database would
@@ -66,7 +67,7 @@ const action: React.CSSProperties = {
 
 const tag: React.CSSProperties = {
   fontFamily: MONO,
-  fontSize: 10,
+  fontSize: LAB_LABEL_SIZE,
   letterSpacing: "0.16em",
   textTransform: "uppercase",
 };
@@ -187,7 +188,7 @@ export function PasswordLab(props: Record<string, unknown>): React.ReactElement 
           style={{
             marginLeft: "auto",
             fontFamily: MONO,
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             color: done ? ACCENT : "var(--color-text-muted)",
           }}
         >

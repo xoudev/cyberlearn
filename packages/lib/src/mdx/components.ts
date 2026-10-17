@@ -45,6 +45,16 @@ export interface LessonComponentExample {
   description?: string;
 }
 
+/**
+ * How wide a component sits in a lesson on the site. `prose` keeps it in the
+ * reading measure, with the paragraphs around it: an encadré, a question, a
+ * short exercise. `wide` gives it the article's width, up to a ceiling: a
+ * terminal, an editor, a workshop with panels side by side. Fixed by the type,
+ * never written in the MDX, so a lesson and the mobile app (which draws every
+ * block at the phone's width) do not change with it.
+ */
+export type LessonComponentWidth = "prose" | "wide";
+
 export interface LessonComponentSpec {
   name: LessonComponentName;
   /** In French, as the guide and the panel name it. */
@@ -54,6 +64,8 @@ export interface LessonComponentSpec {
   description: string;
   /** The heading of its section in docs/LESSON_AUTHORING_GUIDE.md, verbatim. */
   guide: string;
+  /** Its width in a lesson page; see LessonComponentWidth. */
+  width: LessonComponentWidth;
   examples: readonly LessonComponentExample[];
 }
 
@@ -80,6 +92,11 @@ export function lessonComponent(name: string): LessonComponentSpec | undefined {
   return LESSON_COMPONENTS.find((spec) => spec.name === name);
 }
 
+/** The width a component takes in a lesson page. Every name the pipeline accepts has one. */
+export function lessonComponentWidth(name: LessonComponentName): LessonComponentWidth {
+  return lessonComponent(name)?.width ?? "wide";
+}
+
 export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
   // ── Encadrés ───────────────────────────────────────────────────────────────
   {
@@ -89,6 +106,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un bloc coloré qui attire l'œil sur un point : une information, une mise en garde, une erreur à éviter, une bonne pratique. Un ou deux par section, pas plus.",
     guide: "5.1 Callout",
+    width: "prose",
     examples: [
       {
         label: "info",
@@ -121,6 +139,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une question à réponse unique, enregistrée par le serveur. Les options sont mélangées pour chaque apprenant ; l'explication s'affiche après la réponse.",
     guide: "5.2 Quiz (QCM)",
+    width: "prose",
     examples: [
       {
         label: "QCM",
@@ -137,6 +156,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Plusieurs quiz à la suite : la question suivante n'apparaît qu'une fois la précédente répondue.",
     guide: "5.2b QuizGroup - Série de QCM séquentiels",
+    width: "prose",
     examples: [
       {
         label: "Série",
@@ -154,6 +174,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Du code que l'apprenant modifie et exécute dans son navigateur, sans serveur : Python, JavaScript, C ou assembleur x86-64. Le code de départ va dans starterCode, entre accents graves : ses accolades y sont permises, ce qu'elles ne sont pas entre les balises.",
     guide: "5.3 CodePlayground - Sandbox interactif",
+    width: "wide",
     examples: [
       {
         label: "Python",
@@ -188,6 +209,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une fonction à écrire, comparée à des cas de test ; la section ne se termine que lorsqu'ils passent tous.",
     guide: "5.9 PythonChallenge - Exercice Python avec tests automatiques",
+    width: "wide",
     examples: [
       {
         label: "Défi",
@@ -206,6 +228,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un terminal qui ne connaît que les commandes de son scénario et répond avec des sorties écrites d'avance. Des commandes attendues en font un exercice.",
     guide: "5.4 SimulatedTerminal - Terminal interactif",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -287,6 +310,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un vrai Linux démarré dans le navigateur au clic : toutes les commandes font ce qu'elles font sur une machine. Des fichiers déposés, des commandes attendues et des vérifications de l'état final en font un exercice.",
     guide: "5.4b LinuxTerminal - Un vrai Linux dans la leçon",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -315,6 +339,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Deux vraies machines Linux (attackbox et app01) reliées par un câble Ethernet en mémoire dans l'onglet : scan, connexion SSH et élévation de privilèges.",
     guide: "5.4c TwoMachineLab - Deux machines Linux reliées",
+    width: "wide",
     examples: [
       {
         label: "Labo",
@@ -332,6 +357,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     family: "media",
     description: "Une vidéo du site, avec son titre et une légende sous le lecteur.",
     guide: "5.5 LessonVideo - Vidéo pédagogique",
+    width: "wide",
     examples: [
       {
         label: "Vidéo",
@@ -348,6 +374,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une image centrée avec sa légende, aux dimensions déclarées pour éviter les sauts de page.",
     guide: "5.6 LessonImage - Image annotée",
+    width: "prose",
     examples: [
       {
         label: "Image",
@@ -364,6 +391,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un lien vers une ressource extérieure : en carte avec sa description, ou en ligne au milieu d'une phrase.",
     guide: "5.7 ExternalLink - Lien externe",
+    width: "prose",
     examples: [
       {
         label: "Carte",
@@ -385,6 +413,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un schéma dessiné à partir d'un texte Mermaid : un flux, une séquence d'échanges ou un graphe de branches Git.",
     guide: "5.8 Diagram - Diagrammes Mermaid",
+    width: "wide",
     examples: [
       {
         label: "Flux",
@@ -413,6 +442,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un extrait de code où l'apprenant clique la ligne vulnérable, puis nomme la faille parmi les options.",
     guide: "5.9b FindTheFlaw - Trouve la faille",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -430,6 +460,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un courriel piégé où l'apprenant clique chaque élément qui le trahit : expéditeur, objet, paragraphe, lien.",
     guide: "5.9c PhishingEmail - Boîte mail piégée",
+    width: "prose",
     examples: [
       {
         label: "Exercice",
@@ -448,6 +479,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une vraie base SQLite dans le navigateur : l'apprenant écrit des requêtes, voit leur résultat et doit obtenir celui qui est attendu.",
     guide: "5.9d SqlPlayground - Une vraie base SQL",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -464,6 +496,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un formulaire de connexion devant une base, avec la requête du serveur sous les yeux : l'apprenant entre sans connaître le mot de passe.",
     guide: "5.9e SqlInjectionLab - Labo d'injection SQL",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -482,6 +515,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un dépôt simulé piloté au terminal, le graphe des branches redessiné à chaque commande, des vérifications cochées au fil de l'exercice.",
     guide: "5.9f GitSandbox - Bac à sable Git",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -500,6 +534,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Des machines à câbler et à adresser sur un canevas, avec des vérifications : une adresse dans le bon réseau, un ping qui passe.",
     guide: "5.9h NetworkLab - Atelier réseau",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -516,6 +551,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Des questions de sous-réseaux tirées au hasard : adresse de réseau, masque, nombre d'hôtes, préfixe. Deux essais par question.",
     guide: "5.9k SubnetDrill - Calcul de sous-réseaux",
+    width: "prose",
     examples: [
       {
         label: "Exercice",
@@ -532,6 +568,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une trame à lire octet par octet, couche par couche, pour retrouver les champs demandés.",
     guide: "5.9l PacketDissector - Décortiquer un paquet",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -548,6 +585,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Des règles de pare-feu à écrire, vérifiées contre des sondes : ce qui doit passer, ce qui doit être bloqué.",
     guide: "5.9p FirewallLab - Pare-feu",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -566,6 +604,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une photo dont l'apprenant lit les métadonnées pour la placer sur une carte et vérifier la légende qui circule.",
     guide: "5.9g PhotoOsint - OSINT sur photo",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -583,6 +622,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Des journaux à filtrer jusqu'à l'attaquant : des événements écrits un par un, des séries générées, des questions à répondre.",
     guide: "5.9q LogHunt - Chasse dans les logs",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -600,6 +640,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un fichier à lire et à réparer octet par octet, avec des questions sur ce qu'il contient.",
     guide: "5.9r HexEditor - Éditeur hexadécimal",
+    width: "wide",
     examples: [
       {
         label: "Exercice",
@@ -618,6 +659,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un incident raconté scène par scène : à chaque étape l'apprenant décide, voit la conséquence, et arrive à l'une des fins. Un bilan compte les décisions et montre la suite conseillée.",
     guide: "5.9s IncidentStory - Incident à choix",
+    width: "prose",
     examples: [
       {
         label: "Histoire",
@@ -637,6 +679,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un établi d'outils (base64, hexadécimal, César, Vigenère, XOR, SHA-256) avec, en option, un message à déchiffrer.",
     guide: "5.9o CryptoWorkshop - Atelier crypto",
+    width: "wide",
     examples: [
       {
         label: "Défi",
@@ -659,6 +702,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Un jeton JWT décomposé, puis forgé pour tromper trois services mal réglés (alg: none, secret faible, confusion d'algorithme), et enfin rejoué contre les mêmes services corrigés. Des clés et des jetons d'exemple, rien n'est envoyé.",
     guide: "5.9t JwtLab - Atelier JWT",
+    width: "wide",
     examples: [
       {
         label: "Parcours complet",
@@ -682,6 +726,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une table de comptes volés (sel et empreinte SHA-256) sur laquelle l'apprenant lance une attaque par dictionnaire, voit ce qui tombe et ce qui résiste, ce que change le sel, ce que valent la longueur et une fonction lente, puis répond à une question de synthèse.",
     guide: "5.9t PasswordLab - Atelier mots de passe",
+    width: "wide",
     examples: [
       {
         label: "Base volée",
@@ -699,6 +744,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une animation que l'apprenant fait avancer étape par étape, avec le texte de chaque étape à côté. Les scènes sont dessinées par le site.",
     guide: "5.9i StepAnimation - Animation pas à pas",
+    width: "wide",
     examples: [
       {
         label: "tcp-handshake",
@@ -728,6 +774,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     family: "ordering",
     description: "Des éléments mélangés que l'apprenant remet dans le bon ordre.",
     guide: "5.9m PutInOrder - Remettre dans l'ordre",
+    width: "prose",
     examples: [
       {
         label: "Exercice",
@@ -743,6 +790,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     family: "ordering",
     description: "Deux colonnes à apparier, élément par élément.",
     guide: "5.9n MatchPairs - Associer",
+    width: "prose",
     examples: [
       {
         label: "Exercice",
@@ -761,6 +809,7 @@ export const LESSON_COMPONENTS: readonly LessonComponentSpec[] = [
     description:
       "Une page PHP qui tourne dans le navigateur : l'apprenant l'attaque, puis corrige son code ; la vérification rejoue les attaques sur sa version.",
     guide: "5.9j PhpLab - Site vulnérable, en vrai PHP",
+    width: "wide",
     examples: [
       {
         label: "Exercice",

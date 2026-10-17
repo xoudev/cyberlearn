@@ -15,6 +15,7 @@ import {
   PORTS,
   type Route,
 } from "@cyberlearn/lib/network/topology";
+import { LAB_LABEL_SIZE } from "./lab-text";
 
 /**
  * The configuration panel of <NetworkLab>: the selected device's name, its
@@ -91,7 +92,7 @@ function Field({
         }}
         style={{ ...field, borderColor: why === null ? "var(--color-border-default)" : RED }}
       />
-      {why !== null ? <span style={{ color: RED, fontSize: 11 }}>{why}</span> : null}
+      {why !== null ? <span style={{ color: RED, fontSize: LAB_LABEL_SIZE }}>{why}</span> : null}
     </label>
   );
 }
@@ -227,7 +228,7 @@ function NewRoute({ onAdd }: { readonly onAdd: (route: Route) => void }): React.
           Ajouter
         </button>
       </div>
-      {why !== null ? <span style={{ color: RED, fontSize: 11 }}>{why}</span> : null}
+      {why !== null ? <span style={{ color: RED, fontSize: LAB_LABEL_SIZE }}>{why}</span> : null}
     </div>
   );
 }
@@ -261,7 +262,7 @@ export function NetworkPanel({
       <div
         style={{
           fontFamily: MONO,
-          fontSize: 10,
+          fontSize: LAB_LABEL_SIZE,
           letterSpacing: "0.16em",
           color: "var(--color-text-muted)",
         }}

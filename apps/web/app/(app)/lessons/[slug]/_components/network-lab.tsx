@@ -42,6 +42,7 @@ import {
 } from "@cyberlearn/lib/network/topology";
 import { type NetworkLab as Lab, parseNetworkLab } from "@cyberlearn/types";
 import { type DevicePatch, NetworkPanel } from "./network-panel";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE, labKicker } from "./lab-text";
 
 /**
  * <NetworkLab>: a small network on a canvas (React Flow), PCs, switches and
@@ -322,9 +323,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          RÉSEAU · ATELIER
-        </span>
+        <span style={labKicker(ACCENT)}>RÉSEAU · ATELIER</span>
         {lab.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {lab.title}
@@ -373,14 +372,9 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
           </p>
         ) : null}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 2fr) minmax(min(100%, 240px), 1fr)",
-            gap: 12,
-          }}
-        >
-          <div className="netlab-canvas card card--ghost" style={{ height: 380, minWidth: 0 }}>
+        {/* The canvas, and the panel beside it or under it (network-lab.css). */}
+        <div className="netlab-body">
+          <div className="netlab-canvas card card--ghost">
             {mounted ? (
               <ReactFlow
                 nodes={flowNodes}
@@ -486,7 +480,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
                 border: "1px solid var(--color-border-subtle)",
                 color: result.ok ? "#D8D6EA" : RED,
                 fontFamily: MONO,
-                fontSize: 12.5,
+                fontSize: LAB_MONO_SIZE,
                 whiteSpace: "pre-wrap",
                 overflowWrap: "anywhere",
               }}
@@ -546,7 +540,7 @@ export function NetworkLab(props: Record<string, unknown>): React.ReactElement {
               style={{
                 cursor: "pointer",
                 fontFamily: MONO,
-                fontSize: 10,
+                fontSize: LAB_LABEL_SIZE,
                 color: ACCENT,
                 letterSpacing: "0.18em",
                 fontWeight: 600,

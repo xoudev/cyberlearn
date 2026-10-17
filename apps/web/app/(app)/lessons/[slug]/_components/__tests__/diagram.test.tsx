@@ -149,6 +149,25 @@ describe("a diagram that cannot draw", () => {
   });
 });
 
+describe("a drawn diagram", () => {
+  it("is never enlarged past its size, nor shrunk under labels of about 11px", async () => {
+    const { Diagram, MIN_LEGIBLE_SCALE } = await freshDiagram();
+    fake.render.mockResolvedValue({ svg: '<svg viewBox="0 0 1000 400"></svg>' });
+
+    render(<Diagram>{SOURCE}</Diagram>);
+
+    await waitFor(() => {
+      expect(document.querySelector("figure svg")).not.toBeNull();
+    });
+    const svg = document.querySelector<SVGElement>("figure svg");
+    // Mermaid lays labels out at 13px: the floor keeps them at 11px or more,
+    // and the figure scrolls sideways under it.
+    expect(13 * MIN_LEGIBLE_SCALE).toBeGreaterThanOrEqual(11);
+    expect(svg?.style.maxWidth).toBe("1000px");
+    expect(svg?.style.minWidth).toBe("850px");
+  });
+});
+
 describe("mermaid failing to start", () => {
   it("is not kept: the next diagram asks again, and draws", async () => {
     const { Diagram } = await freshDiagram();

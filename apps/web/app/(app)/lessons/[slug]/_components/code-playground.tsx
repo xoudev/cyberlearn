@@ -12,6 +12,7 @@ import {
   PythonStatusNotice,
   usePythonRuntimeState,
 } from "./python-status";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 const WORKER_TIMEOUT_MS = 10_000;
 
@@ -258,12 +259,14 @@ export function CodePlayground({
         position: "relative",
       }}
     >
-      {/* Header */}
+      {/* Header: the title and the badge share a line where they fit. */}
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: 8,
           padding: "12px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.6)",
@@ -272,7 +275,7 @@ export function CodePlayground({
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             color: "var(--color-text-secondary)",
@@ -297,7 +300,7 @@ export function CodePlayground({
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9,
+            fontSize: LAB_LABEL_SIZE,
             fontWeight: 700,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
@@ -311,81 +314,86 @@ export function CodePlayground({
         </span>
       </div>
 
-      {/* Monaco or textarea fallback */}
-      {editorLoaded && MonacoEditor ? (
-        <MonacoEditor
-          // Remounted when a draft is restored or reset: the editor is
-          // uncontrolled, and only reads its value when it mounts.
-          key={revision}
-          height="220px"
-          language={
-            language === "python"
-              ? "python"
-              : language === "c"
-                ? "c"
-                : language === "asm"
-                  ? "plaintext"
-                  : "javascript"
-          }
-          defaultValue={code}
-          onChange={(v) => {
-            setCode(v ?? "");
-          }}
-          theme={LESSON_EDITOR_THEME}
-          beforeMount={handleBeforeMount}
-          options={{
-            fontSize: 13,
-            fontFamily: "JetBrains Mono, monospace",
-            minimap: { enabled: false },
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "off",
-            padding: { top: 12, bottom: 12 },
-            overviewRulerLanes: 0,
-            overviewRulerBorder: false,
-            hideCursorInOverviewRuler: true,
-            renderLineHighlight: "none",
-            glyphMargin: false,
-            automaticLayout: true,
-            fixedOverflowWidgets: true,
-            scrollbar: {
-              vertical: "hidden",
-              horizontal: "auto",
-              useShadows: false,
-              verticalScrollbarSize: 0,
-              alwaysConsumeMouseWheel: false,
-            },
-          }}
-        />
-      ) : (
-        <textarea
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-          }}
-          style={{
-            display: "block",
-            width: "100%",
-            height: 220,
-            background: "var(--color-bg-elevated)",
-            border: "none",
-            color: "var(--color-text-secondary)",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: 13,
-            lineHeight: 1.7,
-            padding: "12px 20px",
-            resize: "vertical",
-            outline: "none",
-          }}
-          spellCheck={false}
-        />
-      )}
+      {/* Monaco or textarea fallback, in a box whose height follows the
+          block's width (globals.css, .code-playground__editor). The editor
+          fills it and scrolls inside it, with its own scrollbar. */}
+      <div className="code-playground__editor">
+        {editorLoaded && MonacoEditor ? (
+          <MonacoEditor
+            // Remounted when a draft is restored or reset: the editor is
+            // uncontrolled, and only reads its value when it mounts.
+            key={revision}
+            height="100%"
+            language={
+              language === "python"
+                ? "python"
+                : language === "c"
+                  ? "c"
+                  : language === "asm"
+                    ? "plaintext"
+                    : "javascript"
+            }
+            defaultValue={code}
+            onChange={(v) => {
+              setCode(v ?? "");
+            }}
+            theme={LESSON_EDITOR_THEME}
+            beforeMount={handleBeforeMount}
+            options={{
+              fontSize: 13,
+              fontFamily: "JetBrains Mono, monospace",
+              minimap: { enabled: false },
+              lineNumbers: "on",
+              scrollBeyondLastLine: false,
+              wordWrap: "off",
+              padding: { top: 12, bottom: 12 },
+              overviewRulerLanes: 0,
+              overviewRulerBorder: false,
+              hideCursorInOverviewRuler: true,
+              renderLineHighlight: "none",
+              glyphMargin: false,
+              automaticLayout: true,
+              fixedOverflowWidgets: true,
+              scrollbar: {
+                vertical: "auto",
+                horizontal: "auto",
+                useShadows: false,
+                verticalScrollbarSize: 10,
+                alwaysConsumeMouseWheel: false,
+              },
+            }}
+          />
+        ) : (
+          <textarea
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              background: "var(--color-bg-elevated)",
+              border: "none",
+              color: "var(--color-text-secondary)",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 13,
+              lineHeight: 1.7,
+              padding: "12px 20px",
+              resize: "none",
+              outline: "none",
+            }}
+            spellCheck={false}
+          />
+        )}
+      </div>
 
       {/* Action bar */}
       <div
         style={{
           display: "flex",
           alignItems: "stretch",
+          flexWrap: "wrap",
           borderTop: "1px solid var(--color-border-subtle)",
           background: "rgba(5,4,26,0.7)",
         }}
@@ -404,7 +412,7 @@ export function CodePlayground({
             minHeight: 44,
             fontFamily: "var(--font-mono, monospace)",
             fontWeight: 700,
-            fontSize: 11,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
             background: running ? "rgba(0,36,255,0.4)" : "var(--color-brand-blue)",
@@ -434,18 +442,25 @@ export function CodePlayground({
               ⟳
             </span>
           ) : (
-            <span style={{ fontSize: 9, lineHeight: 1 }}>▶</span>
+            // The glyph is drawn at three quarters of the label it leads, as
+            // it was: an icon, not text to read.
+            <span aria-hidden="true" style={{ fontSize: "0.75em", lineHeight: 1 }}>
+              ▶
+            </span>
           )}
           {running ? "EXÉCUTION..." : "EXÉCUTER"}
         </button>
 
+        {/* Beside the button where there is room, under it on a phone. */}
         <div
           style={{
-            flex: 1,
+            flex: "1 1 240px",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 16px",
+            gap: "6px 14px",
+            padding: "6px 16px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -462,7 +477,7 @@ export function CodePlayground({
             <span
               style={{
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
+                fontSize: LAB_LABEL_SIZE,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 color: statusColor,
@@ -474,7 +489,7 @@ export function CodePlayground({
               <span
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 9,
+                  fontSize: LAB_LABEL_SIZE,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   color: "var(--cosmetic-accent)",
@@ -507,7 +522,7 @@ export function CodePlayground({
             <span
               style={{
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
+                fontSize: LAB_LABEL_SIZE,
                 letterSpacing: "0.1em",
                 color: "var(--color-text-faint)",
               }}
@@ -535,7 +550,7 @@ export function CodePlayground({
             background: "var(--color-bg-base)",
             padding: "16px 18px",
             fontFamily: "JetBrains Mono, monospace",
-            fontSize: 12.5,
+            fontSize: LAB_MONO_SIZE,
             lineHeight: 1.7,
             minHeight: 80,
             whiteSpace: "pre-wrap",
@@ -594,7 +609,7 @@ export function CodePlayground({
             background: "rgba(3,2,25,0.5)",
             borderTop: "1px solid var(--color-border-subtle)",
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.12em",
             color: "var(--color-text-muted)",
           }}

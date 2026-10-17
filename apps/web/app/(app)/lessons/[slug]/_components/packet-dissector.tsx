@@ -1,7 +1,7 @@
 "use client";
 
 import { ACCENT, MONO, RED } from "@cyberlearn/ui";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   buildFrame,
   fieldAt,
@@ -11,6 +11,9 @@ import {
   type PacketLayer,
 } from "@cyberlearn/lib/network/packet";
 import { parsePacketDissector } from "@cyberlearn/types";
+import { useElementWidth } from "@/hooks/use-element-width";
+import { bytesPerRow, DUMP, endsHalfRow, rowStarts } from "./dump-rows";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <PacketDissector>: a frame as a hex dump, where a click on a byte says which
@@ -21,7 +24,8 @@ import { parsePacketDissector } from "@cyberlearn/types";
  * byte of each. A wrong byte still names its own field, so a miss teaches too.
  */
 
-const BYTES_PER_ROW = 16;
+/** The offset column: four hex digits of the dump's monospace. */
+const OFFSET_WIDTH = 36;
 
 const LAYER_COLORS: Record<PacketLayer, string> = {
   eth: "var(--color-info)",
@@ -52,6 +56,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
   const [selected, setSelected] = useState<number | null>(null);
   const [found, setFound] = useState<string[]>([]);
   const [miss, setMiss] = useState<string | null>(null);
+  // Sixteen bytes a row, or eight, or four: the longest row the dump has room for.
+  const dumpRef = useRef<HTMLDivElement>(null);
+  const perRow = bytesPerRow(useElementWidth(dumpRef), OFFSET_WIDTH);
 
   if (!parsed.ok) {
     return (
@@ -91,12 +98,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
     }
   };
 
-  const rows: number[][] = [];
-  for (let at = 0; at < frame.bytes.length; at += BYTES_PER_ROW) {
-    rows.push(
-      Array.from({ length: Math.min(BYTES_PER_ROW, frame.bytes.length - at) }, (_, i) => at + i),
-    );
-  }
+  const rows = rowStarts(frame.bytes.length, perRow).map((at) =>
+    Array.from({ length: Math.min(perRow, frame.bytes.length - at) }, (_, i) => at + i),
+  );
 
   return (
     <section
@@ -117,9 +121,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          DÉCORTIQUER UN PAQUET
-        </span>
+        <span style={labKicker(ACCENT)}>DÉCORTIQUER UN PAQUET</span>
         {dissector.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {dissector.title}
@@ -166,7 +168,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 background: tint(span.layer, 14),
                 color: "var(--color-text-primary)",
                 fontFamily: MONO,
-                fontSize: 11,
+                fontSize: LAB_LABEL_SIZE,
                 cursor: "pointer",
               }}
             >
@@ -176,13 +178,22 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           ))}
         </div>
 
+        {/* A rule around the dump, not a second card in the lab's card. */}
         <div
-          className="card card--sunken"
+          ref={dumpRef}
           role="grid"
           aria-label="Octets de la trame"
-          style={{ overflowX: "auto" }}
+          style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}
         >
-          <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 2,
+              paddingBlock: 8,
+              paddingInline: DUMP.padding,
+              minWidth: "max-content",
+            }}
+          >
             {rows.map((row) => (
               <div
                 key={row[0]}
@@ -190,15 +201,18 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: DUMP.columnGap,
                   fontFamily: MONO,
-                  fontSize: 13,
+                  fontSize: DUMP.fontSize,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 36 }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-disabled)", width: OFFSET_WIDTH }}
+                >
                   {(row[0] ?? 0).toString(16).padStart(4, "0")}
                 </span>
-                <span role="presentation" style={{ display: "flex", gap: 3 }}>
+                <span role="presentation" style={{ display: "flex", gap: DUMP.cellGap }}>
                   {row.map((offset) => {
                     const own = fieldAt(frame, offset);
                     const layer = own?.layer ?? "padding";
@@ -214,7 +228,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                         aria-label={`Octet ${String(offset)} : ${hex[offset] ?? ""}, ${own?.name ?? ""}`}
                         aria-pressed={inField}
                         style={{
-                          width: 26,
+                          width: DUMP.cellWidth,
                           padding: "2px 0",
                           border: `1px solid ${inField ? LAYER_COLORS[layer] : "transparent"}`,
                           background: tint(layer, inField ? 45 : 16),
@@ -222,9 +236,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                             ? "var(--color-text-primary)"
                             : "var(--color-text-secondary)",
                           fontFamily: MONO,
-                          fontSize: 13,
+                          fontSize: DUMP.fontSize,
                           cursor: "pointer",
-                          marginRight: offset % BYTES_PER_ROW === 7 ? 8 : 0,
+                          marginRight: endsHalfRow(offset, perRow) ? DUMP.halfGap : 0,
                         }}
                       >
                         {hex[offset]}
@@ -264,7 +278,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 style={{
                   margin: 0,
                   fontFamily: MONO,
-                  fontSize: 11,
+                  fontSize: LAB_LABEL_SIZE,
                   color: LAYER_COLORS[field.layer],
                 }}
               >

@@ -9,6 +9,7 @@ import {
   type Rng,
 } from "@cyberlearn/lib/network/subnet-drill";
 import { parseSubnetDrill, type SubnetDrill as Settings } from "@cyberlearn/types";
+import { labKicker } from "./lab-text";
 
 /**
  * <SubnetDrill>: IPv4 addressing questions drawn at random, a series at a
@@ -143,9 +144,7 @@ export function SubnetDrill(props: Record<string, unknown> & { rng?: Rng }): Rea
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          CALCUL DE SOUS-RÉSEAUX
-        </span>
+        <span style={labKicker(ACCENT)}>CALCUL DE SOUS-RÉSEAUX</span>
         {drill.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {drill.title}

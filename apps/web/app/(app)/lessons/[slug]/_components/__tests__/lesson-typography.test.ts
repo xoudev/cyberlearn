@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * The lesson's typography (globals.css) is for the prose an author writes. MDX
- * puts each paragraph, list or heading, and each component's root, straight
+ * puts each paragraph, list or heading, and each component's block, straight
  * under the article, so a rule that starts at `article.lesson-content >` stops
  * at a component's edge. The rules used to match every element of the article
  * with !important, which beat the components' own inline styles: a lab's
@@ -73,4 +73,74 @@ describe("the lesson's typography", () => {
     expect(pre?.body).toMatch(/background: none;/u);
     expect(pre?.body).not.toMatch(/border(?:-left)?:/u);
   });
+});
+
+/**
+ * A component's block (lesson-mdx-components.ts): the container its
+ * component lays itself out by, in the prose's measure or wide. Being a
+ * container, it stops the component's margins from meeting the prose's, so it
+ * takes the spacing over: the component's top and bottom margins, and nothing
+ * else of it, are set aside.
+ */
+const blockRules = rulesOf(sheet).filter((rule) =>
+  rule.selectors.some((s) => s.startsWith(".lesson-block")),
+);
+
+describe("a component's block", () => {
+  it("is a size container, named for the components' container queries", () => {
+    const block = blockRules.find((rule) => rule.selectors.includes(".lesson-block"));
+    expect(block?.body).toMatch(/container: lesson-block \/ inline-size;/u);
+    expect(block?.body).toMatch(/margin-inline: auto;/u);
+  });
+
+  it("sits in the prose's measure, or wide up to the article's width in focus mode", () => {
+    const prose = blockRules.find((rule) =>
+      rule.selectors.includes('.lesson-block[data-width="prose"]'),
+    );
+    const wide = blockRules.find((rule) =>
+      rule.selectors.includes('.lesson-block[data-width="wide"]'),
+    );
+    expect(prose?.body).toMatch(/max-width: 720px;/u);
+    expect(wide?.body).toMatch(/max-width: 1200px;/u);
+  });
+
+  it("forces nothing on its component but the top and bottom margins", () => {
+    const forced = blockRules
+      .filter((rule) => rule.body.includes("!important"))
+      .map((rule) => [rule.selectors.join(", "), rule.body.trim()]);
+    expect(forced).toEqual([[".lesson-block > *", "margin-block: 0 !important;"]]);
+  });
+});
+
+/**
+ * A screen's height (terminals, editors, the PHP preview). The components
+ * write none of their own unless the author did, so these rules are all the
+ * height a screen has: fixed outside a lesson (a challenge's machine has no
+ * block), and growing with the block in a lesson, never under the fixed
+ * height, so a phone keeps what it had. The ranges are the ones the authoring
+ * guide gives.
+ */
+const SCREENS = [
+  [".linux-terminal__screen", 380, 560],
+  [".sim-terminal__screen", 320, 480],
+  [".code-playground__editor", 220, 420],
+  [".python-challenge__editor", 240, 440],
+  [".php-lab__preview", 220, 400],
+] as const;
+
+describe("a screen's height", () => {
+  const rules = rulesOf(sheet);
+  const bodyOf = (selector: string): string =>
+    rules.find((rule) => rule.selectors.includes(selector))?.body.trim() ?? "";
+
+  it.each(SCREENS)(
+    "%s is %ipx outside a lesson, and grows from there in a lesson's block",
+    (screen, fixed, most) => {
+      expect(bodyOf(screen)).toBe(`height: ${String(fixed)}px;`);
+      const grown = /^height: clamp\((\d+)px, [\d.]+cqi, (\d+)px\);$/u.exec(
+        bodyOf(`.lesson-block ${screen}`),
+      );
+      expect(grown?.slice(1).map(Number)).toEqual([fixed, most]);
+    },
+  );
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { ACCENT, AMBER, MONO, RED } from "@cyberlearn/ui";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   asciiOf,
   hex2,
@@ -12,6 +12,9 @@ import {
   repairsMet,
 } from "@cyberlearn/lib/files/hex";
 import { parseHexEditor } from "@cyberlearn/types";
+import { useElementWidth } from "@/hooks/use-element-width";
+import { bytesPerRow, DUMP, endsHalfRow, rowStarts } from "./dump-rows";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <HexEditor>: the bytes of a small file in a grid, with the offsets, the
@@ -21,7 +24,8 @@ import { parseHexEditor } from "@cyberlearn/types";
  * nothing is sent anywhere.
  */
 
-const BYTES_PER_ROW = 16;
+/** The offset column: eight hex digits of the dump's monospace. */
+const OFFSET_WIDTH = 64;
 
 const field: React.CSSProperties = {
   padding: "6px 10px",
@@ -51,6 +55,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
   const [draft, setDraft] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [verdicts, setVerdicts] = useState<Record<string, Verdict | undefined>>({});
+  // Sixteen bytes a row, or eight, or four: the longest row the dump has room for.
+  const dumpRef = useRef<HTMLDivElement>(null);
+  const perRow = bytesPerRow(useElementWidth(dumpRef), OFFSET_WIDTH);
 
   if (!parsed.ok) {
     return (
@@ -101,8 +108,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
     setEdits(next);
   };
 
-  const rows: number[] = [];
-  for (let at = 0; at < bytes.length; at += BYTES_PER_ROW) rows.push(at);
+  const rows = rowStarts(bytes.length, perRow);
 
   const check = (label: string, expected: string | string[]): void => {
     setVerdicts({
@@ -130,9 +136,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          ÉDITEUR HEXADÉCIMAL
-        </span>
+        <span style={labKicker(ACCENT)}>ÉDITEUR HEXADÉCIMAL</span>
         {editor.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {editor.title}
@@ -160,7 +164,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           aria-live="polite"
           style={{ margin: 0, fontSize: 14, color: "var(--color-text-secondary)" }}
         >
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+          <span
+            style={{ fontFamily: MONO, fontSize: LAB_LABEL_SIZE, color: "var(--color-text-muted)" }}
+          >
             TYPE RÉEL{" "}
           </span>
           {kind === null ? (
@@ -177,13 +183,22 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           )}
         </p>
 
+        {/* A rule around the dump, not a second card in the lab's card. */}
         <div
-          className="card card--sunken"
+          ref={dumpRef}
           role="grid"
           aria-label="Octets du fichier"
-          style={{ overflowX: "auto" }}
+          style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}
         >
-          <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 2,
+              paddingBlock: 8,
+              paddingInline: DUMP.padding,
+              minWidth: "max-content",
+            }}
+          >
             {rows.map((at) => (
               <div
                 key={at}
@@ -191,16 +206,19 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: DUMP.columnGap,
                   fontFamily: MONO,
-                  fontSize: 13,
+                  fontSize: DUMP.fontSize,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 64 }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-disabled)", width: OFFSET_WIDTH }}
+                >
                   {at.toString(16).padStart(8, "0")}
                 </span>
-                <span role="presentation" style={{ display: "flex", gap: 3 }}>
-                  {bytes.slice(at, at + BYTES_PER_ROW).map((byte, k) => {
+                <span role="presentation" style={{ display: "flex", gap: DUMP.cellGap }}>
+                  {bytes.slice(at, at + perRow).map((byte, k) => {
                     const offset = at + k;
                     const changed = edits[offset] !== undefined;
                     const isSelected = selected === offset;
@@ -215,7 +233,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                         aria-label={`Octet ${String(offset)} : ${hex2(byte)}${changed ? ", modifié" : ""}`}
                         aria-pressed={isSelected}
                         style={{
-                          width: 26,
+                          width: DUMP.cellWidth,
                           padding: "2px 0",
                           border: `1px solid ${isSelected ? ACCENT : changed ? AMBER : "transparent"}`,
                           background: isSelected
@@ -223,9 +241,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                             : "transparent",
                           color: changed ? AMBER : "var(--color-text-secondary)",
                           fontFamily: MONO,
-                          fontSize: 13,
+                          fontSize: DUMP.fontSize,
                           cursor: "pointer",
-                          marginRight: k === 7 ? 8 : 0,
+                          marginRight: endsHalfRow(offset, perRow) ? DUMP.halfGap : 0,
                         }}
                       >
                         {hex2(byte)}
@@ -238,7 +256,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                   style={{ color: "var(--color-text-muted)", whiteSpace: "pre" }}
                 >
                   {bytes
-                    .slice(at, at + BYTES_PER_ROW)
+                    .slice(at, at + perRow)
                     .map((b) => asciiOf(b))
                     .join("")}
                 </span>
@@ -300,7 +318,13 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
 
         {runs.length > 0 ? (
           <div style={{ display: "grid", gap: 4 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: LAB_LABEL_SIZE,
+                color: "var(--color-text-muted)",
+              }}
+            >
               TEXTE LISIBLE DANS LES OCTETS
             </span>
             <ul

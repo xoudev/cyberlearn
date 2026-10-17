@@ -8,6 +8,7 @@ import {
   LESSON_COMPONENT_FAMILIES,
   LESSON_COMPONENTS,
   lessonComponent,
+  lessonComponentWidth,
 } from "./components.js";
 
 /**
@@ -75,6 +76,37 @@ describe("the component registry", () => {
   it("is looked up by name", () => {
     expect(lessonComponent("Quiz")?.label).toBe("QCM");
     expect(lessonComponent("Unknown")).toBeUndefined();
+  });
+});
+
+describe("the width of a component in a lesson", () => {
+  it("is set for every name the pipeline accepts, to prose or wide", () => {
+    for (const name of LESSON_COMPONENT_NAMES) {
+      expect(["prose", "wide"], name).toContain(lessonComponent(name)?.width);
+      expect(lessonComponentWidth(name), name).toBe(lessonComponent(name)?.width);
+    }
+  });
+
+  it("keeps what is read in the measure of the prose, and gives the workshops room", () => {
+    // A question, an encadré, an image: read with the paragraphs around them.
+    for (const name of ["Callout", "Quiz", "QuizGroup", "ExternalLink", "LessonImage"] as const) {
+      expect(lessonComponentWidth(name), name).toBe("prose");
+    }
+    // A terminal, an editor, a schema, panels side by side: as wide as the article lets them.
+    for (const name of [
+      "LinuxTerminal",
+      "SimulatedTerminal",
+      "CodePlayground",
+      "PythonChallenge",
+      "Diagram",
+      "StepAnimation",
+      "NetworkLab",
+      "PhpLab",
+      "HexEditor",
+      "PacketDissector",
+    ] as const) {
+      expect(lessonComponentWidth(name), name).toBe("wide");
+    }
   });
 });
 

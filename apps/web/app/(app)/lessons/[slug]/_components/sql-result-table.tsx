@@ -1,5 +1,6 @@
 import React from "react";
 import type { SqlResult } from "@/lib/sql/sandbox";
+import { LAB_MONO_SIZE } from "./lab-text";
 
 /** At most this many rows are drawn: a SELECT * on a big table stays readable. */
 const MAX_ROWS = 50;
@@ -17,7 +18,7 @@ export function SqlResultTable({ result }: { result: SqlResult }): React.ReactEl
           borderCollapse: "collapse",
           width: "100%",
           fontFamily: "var(--font-mono, monospace)",
-          fontSize: 12.5,
+          fontSize: LAB_MONO_SIZE,
         }}
       >
         <thead>
