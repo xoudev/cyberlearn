@@ -28,7 +28,8 @@ export type InAppRoute =
         | "/friends"
         | "/duels"
         | "/tournaments"
-        | "/challenges";
+        | "/challenges"
+        | "/placement";
     };
 
 const SLUG = "([a-z0-9-]+)";
@@ -86,6 +87,10 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     // Every moderation notice points at the record, a settings page on the site.
     case "/settings/moderation":
       return { pathname: "/moderation" };
+    // A placement test the console reset points at the test: the last step of
+    // the site's onboarding, a screen of its own here.
+    case "/onboarding/placement-test":
+      return { pathname: "/placement" };
     default:
       return null;
   }
