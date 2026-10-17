@@ -1,5 +1,10 @@
 import type { Prisma } from "@prisma/client";
-import { QUIZ_COOLDOWN_MINUTES, cooldownEndsAt } from "@cyberlearn/lib/quiz/quiz";
+import {
+  EXAM_TIME_LIMIT_MINUTES,
+  QUIZ_COOLDOWN_MINUTES,
+  cooldownEndsAt,
+  isExpired,
+} from "@cyberlearn/lib/quiz/quiz";
 import { prisma } from "../prisma.js";
 
 /** An account's latest attempt at one path's exam, as the console shows it. */
@@ -17,14 +22,32 @@ export interface ConsoleExamAttempt {
 export type WaiveCooldownResult =
   | {
       ok: true;
+      /** An attempt handed in, whose wait was running. */
+      kind: "waiting";
       pathTitle: string;
       /** When the wait would have ended. */
       waitEndedAt: Date;
+    }
+  | {
+      ok: true;
+      /** An attempt never handed in and out of time, closed with no wait after it. */
+      kind: "expired";
+      pathTitle: string;
+      startedAt: Date;
     }
   | { ok: false; reason: "NO_EXAM" | "NO_COOLDOWN" };
 
 /** The audit action of a wait lifted from the console. */
 export const EXAM_COOLDOWN_WAIVED_ACTION = "admin.user.exam_cooldown.waived";
+
+/** The questions an attempt drew, read defensively from its own JSON. */
+function drawnQuestionIds(answers: unknown): string[] {
+  if (typeof answers !== "object" || answers === null || !("drawnQuestionIds" in answers)) {
+    return [];
+  }
+  const ids = answers.drawnQuestionIds;
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+}
 
 /** Attempts read to find each exam's latest: far more than anybody sits. */
 const CONSOLE_ATTEMPTS_READ = 200;
@@ -181,9 +204,15 @@ export const quizRepository = {
    * can sit it again now. The attempt keeps its score and its dates; only
    * cooldownWaivedAt is stamped, which the exam reads (isInCooldown).
    *
-   * Refused when there is no wait to lift: no attempt, one still running, or
-   * one whose wait is over or was already lifted. Read and written in one
-   * transaction, with its audit row.
+   * An attempt never handed in whose time ran out (a connection lost during
+   * the exam) has no wait yet, but holds one back: the next start closes it
+   * at 0 % and only then begins the 48 hours. It is closed here instead, as
+   * the exam would close it, with its wait lifted in the same write, so that
+   * the next start draws a new attempt.
+   *
+   * Refused when there is no wait to lift: no attempt, one still running in
+   * its time, or one whose wait is over or was already lifted. Read and
+   * written in one transaction, with its audit row.
    */
   async waiveCooldown(
     userId: string,
@@ -200,11 +229,50 @@ export const quizRepository = {
       const latest = await tx.quizAttempt.findFirst({
         where: { userId, quizId: quiz.id },
         orderBy: { startedAt: "desc" },
-        select: { id: true, submittedAt: true, cooldownWaivedAt: true },
+        select: {
+          id: true,
+          startedAt: true,
+          submittedAt: true,
+          cooldownWaivedAt: true,
+          answers: true,
+        },
       });
+      if (latest === null) return { ok: false, reason: "NO_COOLDOWN" };
+
+      if (isExpired(latest, now, EXAM_TIME_LIMIT_MINUTES)) {
+        // Conditional on it being still open: the learner's own start, or a
+        // second click, may have closed it first.
+        const { count } = await tx.quizAttempt.updateMany({
+          where: { id: latest.id, submittedAt: null },
+          data: {
+            score: 0,
+            passed: false,
+            answers: { drawnQuestionIds: drawnQuestionIds(latest.answers), expired: true },
+            submittedAt: now,
+            cooldownWaivedAt: now,
+          },
+        });
+        if (count === 0) return { ok: false, reason: "NO_COOLDOWN" };
+        await tx.auditLog.create({
+          data: {
+            actorId: by.actorId,
+            action: EXAM_COOLDOWN_WAIVED_ACTION,
+            targetType: "User",
+            targetId: userId,
+            metadata: { pathId, attemptId: latest.id, expiredAttemptClosed: true },
+          },
+        });
+        return {
+          ok: true,
+          kind: "expired",
+          pathTitle: quiz.path.title,
+          startedAt: latest.startedAt,
+        };
+      }
+
       // The exam's own rule (isInCooldown): waiting while now is before the end.
-      const endsAt = latest === null ? null : cooldownEndsAt(latest, QUIZ_COOLDOWN_MINUTES);
-      if (latest === null || endsAt === null || endsAt.getTime() <= now.getTime()) {
+      const endsAt = cooldownEndsAt(latest, QUIZ_COOLDOWN_MINUTES);
+      if (endsAt === null || endsAt.getTime() <= now.getTime()) {
         return { ok: false, reason: "NO_COOLDOWN" };
       }
       // Conditional: two clicks at once stamp it once, and log it once.
@@ -222,7 +290,7 @@ export const quizRepository = {
           metadata: { pathId, attemptId: latest.id, waitEndedAt: endsAt.toISOString() },
         },
       });
-      return { ok: true, pathTitle: quiz.path.title, waitEndedAt: endsAt };
+      return { ok: true, kind: "waiting", pathTitle: quiz.path.title, waitEndedAt: endsAt };
     });
   },
 

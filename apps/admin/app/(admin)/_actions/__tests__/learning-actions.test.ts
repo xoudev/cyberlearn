@@ -118,6 +118,7 @@ describe("waiveExamCooldownAction", () => {
   it("lifts the wait as the administrator, and says when the exam would have opened", async () => {
     m.waiveCooldown.mockResolvedValue({
       ok: true,
+      kind: "waiting",
       pathTitle: "Linux",
       waitEndedAt: new Date("2026-10-19T10:00:00Z"),
     });
@@ -128,9 +129,25 @@ describe("waiveExamCooldownAction", () => {
     expect(result.notice).toMatch(/19 octobre 2026 à 12:00/u);
   });
 
+  it("says an attempt left open past its time was closed with no wait after it", async () => {
+    m.waiveCooldown.mockResolvedValue({
+      ok: true,
+      kind: "expired",
+      pathTitle: "Linux",
+      startedAt: new Date("2026-10-14T08:00:00Z"),
+    });
+    const result = await waiveExamCooldownAction({}, form({ userId: TARGET, pathId: PATH }));
+    expect(result.ok).toBe(true);
+    expect(result.notice).toMatch(/Tentative du 14 octobre 2026 à 10:00 close à 0 %/u);
+    expect(result.notice).toMatch(/« Linux » peut être repassé dès maintenant/u);
+  });
+
   it.each([
     ["NO_EXAM", "Ce parcours n'a pas d'examen."],
-    ["NO_COOLDOWN", "Aucun délai d'attente en cours sur cet examen."],
+    [
+      "NO_COOLDOWN",
+      "Aucun délai d'attente à lever sur cet examen. Recharge la page pour voir où il en est.",
+    ],
   ])("says why it did nothing (%s)", async (reason, message) => {
     m.waiveCooldown.mockResolvedValue({ ok: false, reason });
     expect((await waiveExamCooldownAction({}, form({ userId: TARGET, pathId: PATH }))).error).toBe(

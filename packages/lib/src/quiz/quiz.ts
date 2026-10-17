@@ -173,7 +173,11 @@ export function isInCooldown(attempt: AttemptLike, now: Date, windowMinutes: num
  * a failed attempt (not resumable, late submit rejected) so closing the tab
  * cannot dodge the timer.
  */
-export function isExpired(attempt: AttemptLike, now: Date, limitMinutes: number): boolean {
+export function isExpired(
+  attempt: Pick<AttemptLike, "startedAt" | "submittedAt">,
+  now: Date,
+  limitMinutes: number,
+): boolean {
   return (
     attempt.submittedAt === null &&
     now.getTime() - attempt.startedAt.getTime() > limitMinutes * 60_000

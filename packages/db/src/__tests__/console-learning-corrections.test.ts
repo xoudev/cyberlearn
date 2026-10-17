@@ -30,7 +30,7 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     mockPrisma: {
       $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
       quizAttempt: { findMany: vi.fn() },
-      auditLog: { findMany: vi.fn() },
+      auditLog: { findMany: vi.fn(), findFirst: vi.fn() },
     },
   };
 });
@@ -104,6 +104,25 @@ describe("placementRepository.reset", () => {
       targetId: USER,
       metadata: { dev: 80, cybersec: 40, network: 10, waiversRemoved: 12 },
     });
+  });
+});
+
+describe("placementRepository.lastResetAt", () => {
+  it("reads the newest reset of this account's test from the audit log", async () => {
+    const at = new Date("2026-10-17T09:00:00Z");
+    mockPrisma.auditLog.findFirst.mockResolvedValue({ createdAt: at });
+
+    await expect(placementRepository.lastResetAt(USER)).resolves.toEqual(at);
+    expect(mockPrisma.auditLog.findFirst).toHaveBeenCalledWith({
+      where: { targetType: "User", targetId: USER, action: "admin.user.placement.reset" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+  });
+
+  it("says when it was never reset", async () => {
+    mockPrisma.auditLog.findFirst.mockResolvedValue(null);
+    await expect(placementRepository.lastResetAt(USER)).resolves.toBeNull();
   });
 });
 
@@ -220,15 +239,29 @@ describe("quizRepository.waiveCooldown", () => {
 
   it.each([
     ["no attempt", null],
-    ["an attempt still running", { id: "a-1", submittedAt: null, cooldownWaivedAt: null }],
+    [
+      "an attempt still running in its time",
+      {
+        id: "a-1",
+        startedAt: new Date(now.getTime() - 10 * 60_000),
+        submittedAt: null,
+        cooldownWaivedAt: null,
+      },
+    ],
     [
       "a wait already over",
-      { id: "a-1", submittedAt: new Date(now.getTime() - 49 * HOUR), cooldownWaivedAt: null },
+      {
+        id: "a-1",
+        startedAt: new Date(now.getTime() - 50 * HOUR),
+        submittedAt: new Date(now.getTime() - 49 * HOUR),
+        cooldownWaivedAt: null,
+      },
     ],
     [
       "a wait already lifted",
       {
         id: "a-1",
+        startedAt: new Date(now.getTime() - 2 * HOUR),
         submittedAt: new Date(now.getTime() - HOUR),
         cooldownWaivedAt: new Date(now.getTime() - 1000),
       },
@@ -247,14 +280,16 @@ describe("quizRepository.waiveCooldown", () => {
     const submittedAt = new Date(now.getTime() - 2 * HOUR);
     tx.quizAttempt.findFirst.mockResolvedValue({
       id: "a-1",
+      startedAt: new Date(submittedAt.getTime() - 20 * 60_000),
       submittedAt,
       cooldownWaivedAt: null,
+      answers: { drawnQuestionIds: ["q-1"] },
     });
 
     const result = await quizRepository.waiveCooldown(USER, PATH, BY, now);
 
     const waitEndedAt = new Date(submittedAt.getTime() + 48 * HOUR);
-    expect(result).toEqual({ ok: true, pathTitle: "Linux", waitEndedAt });
+    expect(result).toEqual({ ok: true, kind: "waiting", pathTitle: "Linux", waitEndedAt });
     expect(tx.quizAttempt.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: USER, quizId: "quiz-1" } }),
     );
@@ -274,8 +309,58 @@ describe("quizRepository.waiveCooldown", () => {
   it("logs nothing when a second click got there first", async () => {
     tx.quizAttempt.findFirst.mockResolvedValue({
       id: "a-1",
+      startedAt: new Date(now.getTime() - 2 * HOUR),
       submittedAt: new Date(now.getTime() - HOUR),
       cooldownWaivedAt: null,
+    });
+    tx.quizAttempt.updateMany.mockResolvedValue({ count: 0 });
+    await expect(quizRepository.waiveCooldown(USER, PATH, BY, now)).resolves.toEqual({
+      ok: false,
+      reason: "NO_COOLDOWN",
+    });
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("closes an attempt never handed in and out of time, with no wait after it", async () => {
+    const startedAt = new Date(now.getTime() - 3 * 24 * HOUR);
+    tx.quizAttempt.findFirst.mockResolvedValue({
+      id: "a-1",
+      startedAt,
+      submittedAt: null,
+      cooldownWaivedAt: null,
+      answers: { drawnQuestionIds: ["q-1", "q-2"] },
+    });
+
+    const result = await quizRepository.waiveCooldown(USER, PATH, BY, now);
+
+    expect(result).toEqual({ ok: true, kind: "expired", pathTitle: "Linux", startedAt });
+    // Closed as the exam closes it (startExam), and its wait lifted in the same write.
+    expect(tx.quizAttempt.updateMany).toHaveBeenCalledWith({
+      where: { id: "a-1", submittedAt: null },
+      data: {
+        score: 0,
+        passed: false,
+        answers: { drawnQuestionIds: ["q-1", "q-2"], expired: true },
+        submittedAt: now,
+        cooldownWaivedAt: now,
+      },
+    });
+    expect(audited()).toEqual({
+      actorId: ACTOR,
+      action: "admin.user.exam_cooldown.waived",
+      targetType: "User",
+      targetId: USER,
+      metadata: { pathId: PATH, attemptId: "a-1", expiredAttemptClosed: true },
+    });
+  });
+
+  it("logs nothing when the expired attempt was closed in the meantime", async () => {
+    tx.quizAttempt.findFirst.mockResolvedValue({
+      id: "a-1",
+      startedAt: new Date(now.getTime() - 2 * HOUR),
+      submittedAt: null,
+      cooldownWaivedAt: null,
+      answers: {},
     });
     tx.quizAttempt.updateMany.mockResolvedValue({ count: 0 });
     await expect(quizRepository.waiveCooldown(USER, PATH, BY, now)).resolves.toEqual({

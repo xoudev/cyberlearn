@@ -201,19 +201,13 @@ describe("exam time limit (server guard + countdown)", () => {
   const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000);
 
   it("an un-submitted attempt past the limit is expired", () => {
-    expect(isExpired({ userId: "u", startedAt: minsAgo(31), submittedAt: null }, now, 30)).toBe(
-      true,
-    );
+    expect(isExpired({ startedAt: minsAgo(31), submittedAt: null }, now, 30)).toBe(true);
   });
   it("an un-submitted attempt within the limit is not expired", () => {
-    expect(isExpired({ userId: "u", startedAt: minsAgo(10), submittedAt: null }, now, 30)).toBe(
-      false,
-    );
+    expect(isExpired({ startedAt: minsAgo(10), submittedAt: null }, now, 30)).toBe(false);
   });
   it("a submitted attempt is never expired (already finished)", () => {
-    expect(
-      isExpired({ userId: "u", startedAt: minsAgo(60), submittedAt: minsAgo(50) }, now, 30),
-    ).toBe(false);
+    expect(isExpired({ startedAt: minsAgo(60), submittedAt: minsAgo(50) }, now, 30)).toBe(false);
   });
   it("remainingSeconds counts down and floors at 0", () => {
     expect(remainingSeconds(minsAgo(10), now, 30)).toBe(20 * 60);

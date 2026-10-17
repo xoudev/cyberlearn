@@ -1,4 +1,9 @@
-import { QUIZ_COOLDOWN_MINUTES, cooldownEndsAt } from "@cyberlearn/lib/quiz/quiz";
+import {
+  EXAM_TIME_LIMIT_MINUTES,
+  QUIZ_COOLDOWN_MINUTES,
+  cooldownEndsAt,
+  isExpired,
+} from "@cyberlearn/lib/quiz/quiz";
 import { AVATAR_PATHS, UPLOADED_AVATAR_PREFIX } from "@cyberlearn/types";
 
 /**
@@ -26,8 +31,13 @@ export function avatarLabel(avatarUrl: string | null): string {
 
 /** Where a path's exam stands after the latest attempt at it. */
 export type ExamWait =
-  /** Started and never handed in. */
+  /** Started, never handed in, and still in its time. */
   | { state: "running" }
+  /**
+   * Started, never handed in, and out of time: a connection lost during the
+   * exam. The next start closes it and only then begins the wait.
+   */
+  | { state: "expired" }
   /** Handed in: the next attempt opens at `until`. */
   | { state: "waiting"; until: Date }
   /** Handed in, and an administrator lifted the wait at `at`. */
@@ -35,12 +45,16 @@ export type ExamWait =
   /** Handed in, and the wait is over. */
   | { state: "open" };
 
-/** The exam's own rule (cooldownEndsAt), read for the console. */
+/** The exam's own rules (isExpired, cooldownEndsAt), read for the console. */
 export function examWait(
-  attempt: { submittedAt: Date | null; cooldownWaivedAt: Date | null },
+  attempt: { startedAt: Date; submittedAt: Date | null; cooldownWaivedAt: Date | null },
   now: Date,
 ): ExamWait {
-  if (attempt.submittedAt === null) return { state: "running" };
+  if (attempt.submittedAt === null) {
+    return isExpired(attempt, now, EXAM_TIME_LIMIT_MINUTES)
+      ? { state: "expired" }
+      : { state: "running" };
+  }
   if (attempt.cooldownWaivedAt !== null) return { state: "waived", at: attempt.cooldownWaivedAt };
   const until = cooldownEndsAt(attempt, QUIZ_COOLDOWN_MINUTES);
   return until !== null && until.getTime() > now.getTime()

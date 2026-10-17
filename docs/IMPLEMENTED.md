@@ -334,7 +334,8 @@
 - Corrections d'apprentissage, confirmées et tracées : remettre à zéro le test
   de positionnement (avec ses dispenses ; une notification invite à le
   repasser), lever le délai de 48 h d'un examen
-  (`quiz_attempts.cooldownWaivedAt`), remettre une leçon à zéro ou la marquer
+  (`quiz_attempts.cooldownWaivedAt`) ou clore sans délai une tentative jamais
+  rendue dont le temps est écoulé, remettre une leçon à zéro ou la marquer
   terminée sans XP
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte

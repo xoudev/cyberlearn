@@ -101,7 +101,11 @@ export async function resetPlacementAction(
 
 const waiveSchema = targetSchema.extend({ pathId: z.guid() });
 
-/** Lets the learner sit a path's exam again now, rather than at the end of the 48 hours. */
+/**
+ * Lets the learner sit a path's exam again now, rather than at the end of the
+ * 48 hours: those of an attempt handed in, or those an attempt never handed in
+ * and out of time would begin at the next start, which is closed instead.
+ */
 export async function waiveExamCooldownAction(
   _prev: LearningActionState,
   formData: FormData,
@@ -123,11 +127,17 @@ export async function waiveExamCooldownAction(
       error:
         result.reason === "NO_EXAM"
           ? "Ce parcours n'a pas d'examen."
-          : "Aucun délai d'attente en cours sur cet examen.",
+          : "Aucun délai d'attente à lever sur cet examen. Recharge la page pour voir où il en est.",
     };
   }
 
   revalidatePath(`/users/${userId}`);
+  if (result.kind === "expired") {
+    return {
+      ok: true,
+      notice: `Tentative du ${day.format(result.startedAt)} close à 0 %, sans délai d'attente : l'examen « ${result.pathTitle} » peut être repassé dès maintenant. Jamais rendue, elle aurait imposé 48 h d'attente à la prochaine reprise.`,
+    };
+  }
   return {
     ok: true,
     notice: `Délai levé : l'examen « ${result.pathTitle} » peut être repassé dès maintenant. Il aurait rouvert le ${day.format(result.waitEndedAt)}.`,

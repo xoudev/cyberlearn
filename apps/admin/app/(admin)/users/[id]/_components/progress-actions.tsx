@@ -14,6 +14,13 @@ import {
  * The corrections the progress panel offers, each behind a confirmation and
  * each saying what it did. Client-side for those two things only; the panel
  * around them is read on the server.
+ *
+ * Each one stays mounted after it worked, even when the state it corrected is
+ * gone from the page: the action revalidates the page, which re-renders
+ * without a test to reset, a wait to lift or, for the only lesson listed, a
+ * lesson to correct. Unmounted, it would take its notice with it, and the
+ * warning that the learner was not notified. With nothing to offer, it shows
+ * only what it did, or nothing.
  */
 
 const RADIO_ROW: React.CSSProperties = {
@@ -24,6 +31,11 @@ const RADIO_ROW: React.CSSProperties = {
   color: "var(--a-fg-2)",
   cursor: "pointer",
 };
+
+/** Whether a gesture has anything to say yet. */
+function hasOutcome(state: LearningActionState): boolean {
+  return state.error !== undefined || state.notice !== undefined;
+}
 
 function Outcome({ state }: { state: LearningActionState }): React.ReactElement | null {
   if (state.error !== undefined) return <p className="a-form-error">{state.error}</p>;
@@ -42,70 +54,97 @@ function Outcome({ state }: { state: LearningActionState }): React.ReactElement 
 }
 
 /** Removes the placement test's result, so that it can be sat again. */
-export function PlacementResetButton({ userId }: { userId: string }): React.ReactElement {
+export function PlacementResetButton({
+  userId,
+  offered,
+}: {
+  userId: string;
+  /** False once there is no result to remove. */
+  offered: boolean;
+}): React.ReactElement | null {
   const [state, action, pending] = useActionState<LearningActionState, FormData>(
     resetPlacementAction,
     {},
   );
+  if (!offered && !hasOutcome(state)) return null;
   return (
     <div className="a-form" style={{ marginTop: 12 }}>
-      <form
-        action={action}
-        onSubmit={(event) => {
-          // Cancelling the native submit also cancels the action.
-          if (
-            !window.confirm(
-              "Remettre le test de positionnement à zéro ? Ses scores sont effacés et les leçons qu'il dispensait se verrouillent de nouveau, sauf celles déjà terminées. Une notification invite la personne à le repasser.",
-            )
-          ) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <input type="hidden" name="userId" value={userId} />
-        <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
-          {pending ? "Remise à zéro…" : "Remettre le test à zéro"}
-        </button>
-      </form>
+      {offered && (
+        <form
+          action={action}
+          onSubmit={(event) => {
+            // Cancelling the native submit also cancels the action.
+            if (
+              !window.confirm(
+                "Remettre le test de positionnement à zéro ? Ses scores sont effacés et les leçons qu'il dispensait se verrouillent de nouveau, sauf celles déjà terminées. Une notification invite la personne à le repasser.",
+              )
+            ) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <input type="hidden" name="userId" value={userId} />
+          <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
+            {pending ? "Remise à zéro…" : "Remettre le test à zéro"}
+          </button>
+        </form>
+      )}
       <Outcome state={state} />
     </div>
   );
 }
 
-/** Lets the learner sit a path's exam again now. */
+/**
+ * Lets the learner sit a path's exam again now: by lifting the wait after an
+ * attempt handed in, or by closing, with no wait after it, an attempt never
+ * handed in whose time ran out.
+ */
 export function WaiveCooldownButton({
   userId,
   pathId,
   pathTitle,
+  offer,
 }: {
   userId: string;
   pathId: string;
   pathTitle: string;
-}): React.ReactElement {
+  /** What holds the exam back, or null when nothing does. */
+  offer: "waiting" | "expired" | null;
+}): React.ReactElement | null {
   const [state, action, pending] = useActionState<LearningActionState, FormData>(
     waiveExamCooldownAction,
     {},
   );
+  if (offer === null && !hasOutcome(state)) return null;
+  const question =
+    offer === "expired"
+      ? `La dernière tentative de l'examen « ${pathTitle} » n'a jamais été rendue et son temps est écoulé. La clore à 0 %, sans délai d'attente ? La personne pourra le repasser tout de suite.`
+      : `Lever le délai d'attente de l'examen « ${pathTitle} » ? La personne pourra le repasser tout de suite ; sa dernière tentative garde son score.`;
+  const label =
+    offer === "expired"
+      ? pending
+        ? "Clôture…"
+        : "Clore sans délai"
+      : pending
+        ? "Levée…"
+        : "Lever le délai";
   return (
     <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-      <form
-        action={action}
-        onSubmit={(event) => {
-          if (
-            !window.confirm(
-              `Lever le délai d'attente de l'examen « ${pathTitle} » ? La personne pourra le repasser tout de suite ; sa dernière tentative garde son score.`,
-            )
-          ) {
-            event.preventDefault();
-          }
-        }}
-      >
-        <input type="hidden" name="userId" value={userId} />
-        <input type="hidden" name="pathId" value={pathId} />
-        <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
-          {pending ? "Levée…" : "Lever le délai"}
-        </button>
-      </form>
+      {offer !== null && (
+        <form
+          action={action}
+          onSubmit={(event) => {
+            // Cancelling the native submit also cancels the action.
+            if (!window.confirm(question)) event.preventDefault();
+          }}
+        >
+          <input type="hidden" name="userId" value={userId} />
+          <input type="hidden" name="pathId" value={pathId} />
+          <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
+            {label}
+          </button>
+        </form>
+      )}
       <Outcome state={state} />
     </div>
   );
@@ -121,12 +160,14 @@ export function LessonCorrectionForm({
   lessons,
 }: {
   userId: string;
+  /** Empty once the account has no lesson left to correct. */
   lessons: { id: string; title: string; status: string }[];
-}): React.ReactElement {
+}): React.ReactElement | null {
   const [state, action, pending] = useActionState<LearningActionState, FormData>(
     correctLessonProgressAction,
     {},
   );
+  if (lessons.length === 0) return hasOutcome(state) ? <Outcome state={state} /> : null;
 
   return (
     <form

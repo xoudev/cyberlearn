@@ -12,6 +12,7 @@ import {
   moderationRepository,
   noteReportRepository,
   pathRepository,
+  placementRepository,
   quizRepository,
   ticketRepository,
   userRepository,
@@ -103,6 +104,7 @@ export default async function AdminUserPage({
     lessons,
     lessonCounts,
     certificates,
+    placementResetAt,
   ] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
@@ -119,6 +121,8 @@ export default async function AdminUserPage({
     lessonProgressRepository.recentForConsole(user.id, RECENT_LESSONS),
     lessonProgressRepository.countsForConsole(user.id),
     certificateRepository.findAllForConsole(user.id),
+    // Only an account without a result can have been asked to sit it again.
+    user.placementResult === null ? placementRepository.lastResetAt(user.id) : null,
   ]);
 
   const stamp = (date: Date): string =>
@@ -248,6 +252,7 @@ export default async function AdminUserPage({
           <ProgressPanel
             userId={user.id}
             placement={user.placementResult}
+            placementResetAt={placementResetAt}
             placementWaivers={user._count.skipWaivers}
             paths={paths}
             exams={exams}

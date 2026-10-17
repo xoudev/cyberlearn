@@ -6,7 +6,7 @@ import type {
   pathRepository,
   ProgressStatus,
 } from "@cyberlearn/db";
-import { examWait } from "@/lib/user-record";
+import { examWait, type ExamWait } from "@/lib/user-record";
 import { Card, Tag, type Tone } from "../../../_components/admin-ui";
 import { formatDay } from "../../_components/dates";
 import {
@@ -34,10 +34,15 @@ const stamp = new Intl.DateTimeFormat("fr-FR", {
  * What the account learned: the placement test, the paths it opened with
  * their exams, the lessons it touched last, and the corrections support can
  * make to each. Read on the server; the corrections are the client islands.
+ *
+ * Each island is rendered whatever the state it corrects, at the same place:
+ * after a correction the page re-renders without the thing corrected, and the
+ * island must still be there to say what it did (see progress-actions.tsx).
  */
 export function ProgressPanel({
   userId,
   placement,
+  placementResetAt,
   placementWaivers,
   paths,
   exams,
@@ -52,6 +57,8 @@ export function ProgressPanel({
     networkScore: number;
     completedAt: Date;
   } | null;
+  /** When the console last reset the test, read only for an account without a result. */
+  placementResetAt: Date | null;
   /** Lessons the placement test waived, still on the account. */
   placementWaivers: number;
   paths: PathRow[];
@@ -80,22 +87,22 @@ export function ProgressPanel({
         <h3 className="a-subhead" style={{ marginTop: 0 }}>
           Test de positionnement
         </h3>
-        {placement === null ? (
-          <p className="a-field-hint">
-            Pas passé. Il se propose à la fin de l&apos;inscription, une seule fois.
-          </p>
-        ) : (
-          <>
-            <p className="a-field-hint">
+        <p className="a-field-hint">
+          {placement !== null ? (
+            <>
               Développement {placement.devScore} % · cybersécurité {placement.cybersecScore} % ·
               réseau {placement.networkScore} %, passé le {formatDay(placement.completedAt)}.{" "}
               {placementWaivers > 0
                 ? `${String(placementWaivers)} leçon${placementWaivers > 1 ? "s dispensées" : " dispensée"}.`
                 : "Aucune leçon dispensée."}
-            </p>
-            <PlacementResetButton userId={userId} />
-          </>
-        )}
+            </>
+          ) : placementResetAt !== null ? (
+            `Remis à zéro le ${formatDay(placementResetAt)} et pas repassé depuis. Il s'ouvre depuis la notification envoyée alors, ou à l'adresse /onboarding/placement-test du site.`
+          ) : (
+            "Pas passé. Il se propose à la fin de l'inscription, une seule fois."
+          )}
+        </p>
+        <PlacementResetButton userId={userId} offered={placement !== null} />
 
         <h3 className="a-subhead">Parcours et examens</h3>
         {paths.length + examOnly.length === 0 ? (
@@ -161,33 +168,35 @@ export function ProgressPanel({
         {lessons.length === 0 ? (
           <p className="a-field-hint">Ce compte n&apos;a ouvert aucune leçon.</p>
         ) : (
-          <>
-            <div className="a-table-wrap">
-              <table className="a-table">
-                <tbody>
-                  {lessons.map((lesson) => {
-                    const status = LESSON_STATUS[lesson.status];
-                    return (
-                      <tr key={lesson.lessonId}>
-                        <td>
-                          <span className="a-row-link-title">{lesson.lesson.title}</span>
-                          <div className="mono a-field-hint">
-                            vue le {formatDay(lesson.lastAccessedAt)}
-                            {lesson.quizTotal !== null && lesson.quizCorrect !== null
-                              ? ` · quiz ${String(lesson.quizCorrect)}/${String(lesson.quizTotal)}`
-                              : ""}
-                          </div>
-                        </td>
-                        <td align="right">
-                          <Tag tone={status.tone}>{status.label}</Tag>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <div className="a-table-wrap">
+            <table className="a-table">
+              <tbody>
+                {lessons.map((lesson) => {
+                  const status = LESSON_STATUS[lesson.status];
+                  return (
+                    <tr key={lesson.lessonId}>
+                      <td>
+                        <span className="a-row-link-title">{lesson.lesson.title}</span>
+                        <div className="mono a-field-hint">
+                          vue le {formatDay(lesson.lastAccessedAt)}
+                          {lesson.quizTotal !== null && lesson.quizCorrect !== null
+                            ? ` · quiz ${String(lesson.quizCorrect)}/${String(lesson.quizTotal)}`
+                            : ""}
+                        </div>
+                      </td>
+                      <td align="right">
+                        <Tag tone={status.tone}>{status.label}</Tag>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
+        {lessons.length > 0 && (
+          <>
             <h3 className="a-subhead">Corriger une leçon</h3>
             <p className="a-field-hint" style={{ marginBottom: 12 }}>
               Pour une leçon bloquée dans un état dont la personne ne peut pas sortir seule. La
@@ -195,22 +204,45 @@ export function ProgressPanel({
               ; la marquer terminée ne rapporte ni XP, ni série, ni badge. Un parcours déjà terminé
               le reste, et aucune attestation n&apos;est émise d&apos;ici.
             </p>
-            <LessonCorrectionForm
-              userId={userId}
-              lessons={lessons.map((lesson) => ({
-                id: lesson.lessonId,
-                title: lesson.lesson.title,
-                status: LESSON_STATUS[lesson.status].label,
-              }))}
-            />
           </>
         )}
+        <LessonCorrectionForm
+          userId={userId}
+          lessons={lessons.map((lesson) => ({
+            id: lesson.lessonId,
+            title: lesson.lesson.title,
+            status: LESSON_STATUS[lesson.status].label,
+          }))}
+        />
       </div>
     </Card>
   );
 }
 
-/** The latest attempt at a path's exam, and the wait it left. */
+/** What the latest attempt at a path's exam came to, in a line. */
+function examLabel(exam: ConsoleExamAttempt, wait: ExamWait): string {
+  if (exam.passed && exam.submittedAt !== null) {
+    return `examen réussi (${String(exam.score)} %) le ${formatDay(exam.submittedAt)}`;
+  }
+  switch (wait.state) {
+    case "running":
+      return `examen commencé le ${stamp.format(exam.startedAt)}, pas rendu`;
+    case "expired":
+      return `examen commencé le ${stamp.format(exam.startedAt)}, jamais rendu : temps écoulé`;
+    case "waived":
+      return `échoué (${String(exam.score)} %) · délai levé le ${stamp.format(wait.at)}`;
+    case "open":
+      return `échoué (${String(exam.score)} %) · peut être repassé`;
+    case "waiting":
+      return `échoué (${String(exam.score)} %) · rouvre le ${stamp.format(wait.until)}`;
+  }
+}
+
+/**
+ * The latest attempt at a path's exam, and the wait it left. The button that
+ * lifts the wait is rendered in every state, offering nothing when there is
+ * nothing to lift, so that it outlives the wait it lifted.
+ */
 function ExamCell({
   userId,
   pathId,
@@ -225,38 +257,18 @@ function ExamCell({
   now: Date;
 }): React.ReactElement {
   if (exam === null) return <span className="mono a-field-hint">examen jamais tenté</span>;
-  if (exam.passed && exam.submittedAt !== null) {
-    return (
-      <span className="mono a-field-hint">
-        examen réussi ({exam.score} %) le {formatDay(exam.submittedAt)}
-      </span>
-    );
-  }
 
   const wait = examWait(exam, now);
-  switch (wait.state) {
-    case "running":
-      return (
-        <span className="mono a-field-hint">
-          examen commencé le {stamp.format(exam.startedAt)}, pas rendu
-        </span>
-      );
-    case "waived":
-      return (
-        <span className="mono a-field-hint">
-          échoué ({exam.score} %) · délai levé le {stamp.format(wait.at)}
-        </span>
-      );
-    case "open":
-      return <span className="mono a-field-hint">échoué ({exam.score} %) · peut être repassé</span>;
-    case "waiting":
-      return (
-        <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-          <span className="mono a-field-hint">
-            échoué ({exam.score} %) · rouvre le {stamp.format(wait.until)}
-          </span>
-          <WaiveCooldownButton userId={userId} pathId={pathId} pathTitle={pathTitle} />
-        </div>
-      );
-  }
+  const passed = exam.passed && exam.submittedAt !== null;
+  const offer = passed
+    ? null
+    : wait.state === "waiting" || wait.state === "expired"
+      ? wait.state
+      : null;
+  return (
+    <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+      <span className="mono a-field-hint">{examLabel(exam, wait)}</span>
+      <WaiveCooldownButton userId={userId} pathId={pathId} pathTitle={pathTitle} offer={offer} />
+    </div>
+  );
 }

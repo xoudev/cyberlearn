@@ -57,4 +57,18 @@ export const placementRepository = {
       return { ok: true, scores, waiversRemoved: waivers.count };
     });
   },
+
+  /**
+   * When the console last reset the account's test, read from the audit log
+   * the reset writes. An account without a result is then one that was asked
+   * to sit it again, not one that never did.
+   */
+  async lastResetAt(userId: string): Promise<Date | null> {
+    const row = await prisma.auditLog.findFirst({
+      where: { targetType: "User", targetId: userId, action: PLACEMENT_RESET_ACTION },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    return row?.createdAt ?? null;
+  },
 };
