@@ -1,18 +1,19 @@
 import type { CertificateNotice } from "@cyberlearn/db";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 
 /**
  * What the holder of a certificate reads when the console revokes it or puts
  * it back, in the bell on the site and in the app's inbox.
  *
- * Both lead to the page that lists their certificates: on the site it shows a
- * revoked one with its reason, and the app opens its Certificats tab for the
- * same address (apps/mobile/lib/notification-links.ts). The title names the
+ * Both lead to the Certificats tab of their profile: on the site it shows a
+ * revoked one with its reason, and the app opens its Certificats sub-tab for
+ * the same address (apps/mobile/lib/notification-links.ts). The title names the
  * path: a learner with three certificates has to know which one it is about
  * without opening anything.
  */
 
 /** Where both notices lead, on the site and in the app. */
-export const CERTIFICATES_PAGE = "/certificates";
+export const CERTIFICATES_PAGE = profileTabHref("certificats");
 
 /** The notification columns' widths (schema.prisma, model Notification). */
 const TITLE_MAX = 200;

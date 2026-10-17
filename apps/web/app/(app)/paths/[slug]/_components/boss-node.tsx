@@ -89,7 +89,7 @@ const ArrowIcon = (
  * certificate card + QuizPanel (exam gate) + ClaimCertificatePanel into one node
  * driven by the same props, preserving every state / link / action:
  *  - pathCompleted              → validated; download PDF when certificateId set
- *  - pathCompleted + revoked    → validated, certificate revoked; to /certificates
+ *  - pathCompleted + revoked    → validated, certificate revoked; to the profile's Certificats tab
  *  - lessonsComplete + hasQuiz  → "Passer l'examen final →" (Link to /exam)
  *  - lessonsComplete + no quiz  → claim button (claimCertificateAction)
  *  - lessons incomplete         → locked + requirement chip (amber)
@@ -114,13 +114,13 @@ export function BossNode({
   let body: React.ReactNode;
 
   if (pathCompleted && certificateRevoked) {
-    // The download would answer 404: the page that lists the certificate
-    // shows it revoked, with the reason.
+    // The download would answer 404: the profile's Certificats tab lists the
+    // certificate as revoked, with the reason.
     eyebrow = "// Certificat · révoqué";
     sub =
-      "Tu as validé ce parcours, mais ton certificat a été révoqué. Le motif est sur ta page Certificats.";
+      "Tu as validé ce parcours, mais ton certificat a été révoqué. Le motif est dans l'onglet Certificats de ton profil.";
     body = (
-      <Link className="cp-boss__cta" href="/certificates">
+      <Link className="cp-boss__cta" href={profileTabHref("certificats")}>
         Voir mes certificats {ArrowIcon}
       </Link>
     );

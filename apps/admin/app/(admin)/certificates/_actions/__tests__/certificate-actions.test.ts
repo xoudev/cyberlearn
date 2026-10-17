@@ -77,7 +77,7 @@ describe("revokeCertificateAction", () => {
       actorId: "admin-1",
       notice: {
         title: "Certificat révoqué : Réseau : les fondamentaux",
-        actionUrl: "/certificates",
+        actionUrl: "/profile?tab=certificats",
       },
       metadata: { code: "CL-2026-1A2B3C4D", pathTitle: "Réseau : les fondamentaux" },
     });
@@ -178,7 +178,7 @@ describe("reinstateCertificateAction", () => {
       actorId: "admin-1",
       notice: expect.objectContaining({
         title: "Certificat rétabli : Réseau : les fondamentaux",
-        actionUrl: "/certificates",
+        actionUrl: "/profile?tab=certificats",
       }) as unknown,
       metadata: { code: "CL-2026-1A2B3C4D", pathTitle: "Réseau : les fondamentaux" },
     });
