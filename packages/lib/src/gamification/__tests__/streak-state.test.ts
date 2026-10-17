@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyDayBoundary,
+  correctStreak,
   MAX_FREEZES,
   nextMilestone,
   registerActivity,
@@ -186,6 +187,65 @@ describe("applyDayBoundary", () => {
       freezes: 0,
     });
     expect(applyDayBoundary(s, NOW).event).toBe("safe");
+  });
+});
+
+describe("correctStreak", () => {
+  it("keeps the last active day of a streak still alive, so today's activity still counts", () => {
+    const s = state({ currentStreak: 3, longestStreak: 3, lastActiveDay: "2026-04-27" });
+    const r = correctStreak(s, { currentStreak: 30 }, NOW);
+    expect(r.movedToToday).toBe(false);
+    expect(r.state).toEqual({
+      currentStreak: 30,
+      longestStreak: 30,
+      lastActiveDay: "2026-04-27",
+      freezes: 1,
+    });
+    // The learner acts today: the corrected streak goes on.
+    expect(registerActivity(r.state, NOW).state.currentStreak).toBe(31);
+  });
+
+  it("moves a broken streak's last day to today, so tomorrow extends it", () => {
+    const s = state({ currentStreak: 0, longestStreak: 12, lastActiveDay: "2026-04-20" });
+    const r = correctStreak(s, { currentStreak: 12 }, NOW);
+    expect(r.movedToToday).toBe(true);
+    expect(r.state.lastActiveDay).toBe("2026-04-28");
+    // Tonight's check leaves it, and the next day's activity extends it.
+    expect(applyDayBoundary(r.state, new Date("2026-04-29T08:00:00Z")).event).toBe("safe");
+    expect(registerActivity(r.state, new Date("2026-04-29T08:00:00Z")).state.currentStreak).toBe(
+      13,
+    );
+  });
+
+  it("raises the record with the streak, never lowers it", () => {
+    const s = state({ currentStreak: 40, longestStreak: 40, lastActiveDay: "2026-04-28" });
+    expect(correctStreak(s, { currentStreak: 5 }, NOW).state.longestStreak).toBe(40);
+    expect(correctStreak(s, { currentStreak: 50 }, NOW).state.longestStreak).toBe(50);
+  });
+
+  it("leaves the last day alone when the streak is set to zero", () => {
+    const s = state({ currentStreak: 9, longestStreak: 9, lastActiveDay: "2026-04-10" });
+    const r = correctStreak(s, { currentStreak: 0 }, NOW);
+    expect(r.movedToToday).toBe(false);
+    expect(r.state.lastActiveDay).toBe("2026-04-10");
+    expect(r.state.currentStreak).toBe(0);
+  });
+
+  it("starts a streak for an account never active", () => {
+    const r = correctStreak(state({ lastActiveDay: null }), { currentStreak: 2 }, NOW);
+    expect(r.movedToToday).toBe(true);
+    expect(r.state.lastActiveDay).toBe("2026-04-28");
+  });
+
+  it("keeps the freezes unless told, and keeps them within the reserve", () => {
+    const s = state({ currentStreak: 3, lastActiveDay: "2026-04-28", freezes: 1 });
+    expect(correctStreak(s, { currentStreak: 3 }, NOW).state.freezes).toBe(1);
+    expect(correctStreak(s, { currentStreak: 3, freezes: 0 }, NOW).state.freezes).toBe(0);
+    expect(correctStreak(s, { currentStreak: 3, freezes: 9 }, NOW).state.freezes).toBe(MAX_FREEZES);
+    expect(correctStreak(s, { currentStreak: -4, freezes: -1 }, NOW).state).toMatchObject({
+      currentStreak: 0,
+      freezes: 0,
+    });
   });
 });
 

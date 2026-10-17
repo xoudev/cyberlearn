@@ -27,6 +27,7 @@ import { AuditPanel } from "./_components/audit-panel";
 import { BanForm } from "./_components/ban-form";
 import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
+import { GamificationPanel } from "./_components/gamification-panel";
 import { MfaResetForm } from "./_components/mfa-reset-form";
 import { ModerationPanel } from "./_components/moderation-panel";
 import { PreferencesPanel } from "./_components/preferences-panel";
@@ -198,6 +199,8 @@ export default async function AdminUserPage({
           tone="purple"
         />
       </div>
+      {/* The four figures above, corrected by hand: folded until needed. */}
+      <GamificationPanel userId={user.id} handle={handle} />
 
       <div className="a-split">
         <div className="a-stack" style={{ alignContent: "start" }}>

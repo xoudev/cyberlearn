@@ -146,6 +146,58 @@ export function applyDayBoundary(
   return { state: { ...state, currentStreak: 0 }, event: "broken" };
 }
 
+export interface StreakCorrectionTarget {
+  currentStreak: number;
+  /** Left as it is when absent. Clamped to 0..MAX_FREEZES. */
+  freezes?: number;
+}
+
+export interface StreakCorrection {
+  state: StreakState;
+  /**
+   * True when the last active day moved to today. A corrected streak on an
+   * account whose last activity is older than yesterday would otherwise be
+   * broken again by the next night's check, before the learner could extend it.
+   */
+  movedToToday: boolean;
+}
+
+/**
+ * Sets a streak by hand, from the console: a streak lost to a bug, or one
+ * that should never have been counted.
+ *
+ * The record follows a streak set above it, never one set below: the record
+ * is what the learner reached, and a correction downwards does not undo it.
+ *
+ * The last active day is kept while the streak is still alive (activity today
+ * or yesterday): moving it to today would swallow the learner's next
+ * increment, as registerActivity counts one per day. Otherwise, for a streak
+ * above zero, it moves to today, so the next activity, today or tomorrow,
+ * extends the corrected streak rather than starting over. A streak set to zero
+ * leaves it where it is.
+ */
+export function correctStreak(
+  state: StreakState,
+  target: StreakCorrectionTarget,
+  now: Date,
+  tz: string = STREAK_TIMEZONE,
+): StreakCorrection {
+  const today = dayKey(now, tz);
+  const currentStreak = Math.max(0, Math.trunc(target.currentStreak));
+  const freezes = Math.min(MAX_FREEZES, Math.max(0, Math.trunc(target.freezes ?? state.freezes)));
+  const alive = state.lastActiveDay !== null && daysBetween(state.lastActiveDay, today) <= 1;
+  const movedToToday = currentStreak > 0 && !alive;
+  return {
+    state: {
+      currentStreak,
+      longestStreak: Math.max(state.longestStreak, currentStreak),
+      lastActiveDay: movedToToday ? today : state.lastActiveDay,
+      freezes,
+    },
+    movedToToday,
+  };
+}
+
 /** The next streak milestone strictly greater than `streak`, or null past the top. */
 export function nextMilestone(streak: number): number | null {
   for (const m of STREAK_MILESTONES) {
