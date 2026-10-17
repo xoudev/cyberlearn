@@ -1,6 +1,7 @@
 /**
  * The console's lists, read one page at a time: accounts, the audit log and
- * lessons. Prisma is mocked: what this checks is the query each filter turns
+ * lessons, and the quick search of the top bar over accounts, lessons and
+ * tickets. Prisma is mocked: what this checks is the query each filter turns
  * into (where, order, window) and how a page past the end falls back.
  */
 
@@ -8,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auditLogRepository, auditWhere } from "../repositories/audit-log.repository.js";
 import { lastPage, readSlice } from "../repositories/console-page.js";
 import { lessonRepository } from "../repositories/lesson.repository.js";
+import { consoleTicketWhere, ticketRepository } from "../repositories/ticket.repository.js";
 import { consoleUserWhere, userRepository } from "../repositories/user.repository.js";
 
 const { mockPrisma } = vi.hoisted(() => ({
@@ -15,6 +17,7 @@ const { mockPrisma } = vi.hoisted(() => ({
     user: { count: vi.fn(), findMany: vi.fn() },
     auditLog: { count: vi.fn(), findMany: vi.fn() },
     lesson: { count: vi.fn(), findMany: vi.fn(), groupBy: vi.fn() },
+    contactTicket: { findMany: vi.fn() },
   },
 }));
 
@@ -34,6 +37,7 @@ beforeEach(() => {
   mockPrisma.user.findMany.mockResolvedValue([]);
   mockPrisma.auditLog.findMany.mockResolvedValue([]);
   mockPrisma.lesson.findMany.mockResolvedValue([]);
+  mockPrisma.contactTicket.findMany.mockResolvedValue([]);
 });
 
 describe("readSlice", () => {
@@ -360,5 +364,67 @@ describe("lessonRepository.listForConsole", () => {
       PUBLISHED: 250,
       ARCHIVED: 0,
     });
+  });
+});
+
+describe("the console's quick search", () => {
+  it("offers a few accounts for a term, the most recently active first", async () => {
+    await userRepository.searchForConsole("@amel", 5);
+    expect(firstArg(mockPrisma.user.findMany)).toEqual({
+      where: consoleUserWhere("@amel", undefined),
+      orderBy: [{ lastActiveAt: "desc" }, { id: "asc" }],
+      take: 5,
+      select: { id: true, email: true, username: true, displayName: true, role: true },
+    });
+  });
+
+  it("offers a few lessons in every status, the archives last", async () => {
+    await lessonRepository.searchForConsole("  osi ", 5);
+    expect(firstArg(mockPrisma.lesson.findMany)).toMatchObject({
+      where: {
+        OR: [
+          { title: { contains: "osi", mode: "insensitive" } },
+          { refCode: { contains: "osi", mode: "insensitive" } },
+          { slug: { contains: "osi", mode: "insensitive" } },
+        ],
+      },
+      orderBy: [{ status: "asc" }, { title: "asc" }, { id: "asc" }],
+      take: 5,
+    });
+    // No status term: a draft and an archived lesson are found as well.
+    expect(JSON.stringify(firstArg(mockPrisma.lesson.findMany).where)).not.toContain("status");
+  });
+
+  it("looks for a ticket by its subject or its requester, without the @", () => {
+    const contains = { contains: "amel", mode: "insensitive" };
+    expect(consoleTicketWhere(" @amel ")).toEqual({
+      OR: [
+        { subject: contains },
+        { email: contains },
+        {
+          user: {
+            is: { OR: [{ email: contains }, { username: contains }, { displayName: contains }] },
+          },
+        },
+      ],
+    });
+  });
+
+  it("offers a few tickets, the open ones first and then the most recently touched", async () => {
+    await ticketRepository.searchForConsole("panne", 5);
+    expect(firstArg(mockPrisma.contactTicket.findMany)).toMatchObject({
+      where: consoleTicketWhere("panne"),
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }, { id: "asc" }],
+      take: 5,
+    });
+  });
+
+  it("matches nothing, without a query, for an empty term", async () => {
+    expect(await userRepository.searchForConsole(" @ ", 5)).toEqual([]);
+    expect(await lessonRepository.searchForConsole("   ", 5)).toEqual([]);
+    expect(await ticketRepository.searchForConsole("@", 5)).toEqual([]);
+    expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.lesson.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.contactTicket.findMany).not.toHaveBeenCalled();
   });
 });
