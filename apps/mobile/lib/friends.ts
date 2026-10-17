@@ -119,7 +119,7 @@ export interface PublicProfile {
   isPrivate: boolean;
   isSelf: boolean;
   friendship: FriendshipView;
-  /** The most recent badges, a dozen at most: `counts.badges` has them all. */
+  /** Every badge, the most recent first: the screen lists a dozen (listedBadges). */
   badges: ProfileBadge[];
   recentLessons: ProfileLesson[];
   skills: ProfileSkill[];

@@ -129,6 +129,19 @@ export function moreLabel(shown: number, total: number): string | null {
   return `et ${String(rest)} autre${rest > 1 ? "s" : ""}`;
 }
 
+/** How many badges a profile lists, the most recent first; `moreLabel` says the rest. */
+export const PROFILE_BADGES = 12;
+
+/**
+ * The badges a profile lists out of every badge it holds, most recent first
+ * as given. Cut where the list is drawn, not where it is read: the app's
+ * profile has always received every badge, and an app already installed
+ * still counts them off that list.
+ */
+export function listedBadges<T>(badges: readonly T[]): T[] {
+  return badges.slice(0, PROFILE_BADGES);
+}
+
 // ── The rarest badges ───────────────────────────────────────────────────────
 
 /** Rarity, from the most common up: an unknown one ranks as common. */

@@ -14,6 +14,7 @@ import {
   holdersLabel,
   lessonsFinishedLabel,
   linkedInCertificateUrl,
+  listedBadges,
   missionsLabel,
   moreLabel,
   publicProfileUrl,
@@ -179,13 +180,15 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const duelLines = duelRecordLines(extras.duelRecord);
   const duelsPlayed = extras.duelRecord.win + extras.duelRecord.loss + extras.duelRecord.draw;
   const showCommunity = duelsPlayed > 0 || contributions.length > 0;
-  const moreBadges = moreLabel(user.badges.length, counts.badges);
+  // Every badge is read (the app's list stays whole); the page lists a dozen.
+  const badges = listedBadges(user.badges);
+  const moreBadges = moreLabel(badges.length, counts.badges);
   const moreChallenges = moreLabel(user.challengeProgress.length, counts.challenges);
 
   const no = sectionNumbers([
     "activity",
     extras.headToHead !== null && "faceToFace",
-    user.badges.length > 0 && "badges",
+    badges.length > 0 && "badges",
     extras.paths.length > 0 && "paths",
     skills.length > 0 && "skills",
     user.certificates.length > 0 && "certificates",
@@ -363,7 +366,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
         )}
 
         {/* ── Badges: the rarest put forward, then the most recent ───── */}
-        {user.badges.length > 0 && (
+        {badges.length > 0 && (
           <section className="pp-section">
             <SectionLabel
               eyebrow={`${no("badges")} · trophées · ${String(counts.badges)}`}
@@ -394,7 +397,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               </ul>
             )}
             <ul className="pp-badges">
-              {user.badges.map((ub) => (
+              {badges.map((ub) => (
                 <li key={ub.id} title={ub.badge.name} className="pp-badge">
                   <BadgeMedallion
                     rarity={toBadgeRarity(ub.badge.rarity)}

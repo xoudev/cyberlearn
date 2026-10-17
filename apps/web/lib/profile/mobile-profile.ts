@@ -39,9 +39,12 @@ import {
  * The repository returns the whole user row. Only what the site's page shows
  * leaves this function: no e-mail, no role, no stored avatar key.
  *
- * Fields are only ever added: an app already installed reads the ones it
- * knew and ignores the rest. The lists stay bounded (a dozen badges, thirty
- * challenges, ten lessons) and `counts` says how many there are in all.
+ * Fields are only ever added, and the ones already there keep what they held:
+ * an app already installed reads the ones it knew and ignores the rest. The
+ * badges stay whole, since such an app counts them off the list; the screen
+ * lists a dozen (listedBadges). The other lists stay bounded as they were
+ * (thirty challenges, ten lessons), and `counts` says how many there are in
+ * all.
  */
 
 export interface MobileProfileBadge {
@@ -97,7 +100,7 @@ export interface MobileProfile {
   isSelf: boolean;
   /** Where the reader stands with this person: which button to show. */
   friendship: FriendshipView;
-  /** The most recent badges, a dozen at most: `counts.badges` has them all. */
+  /** Every badge, the most recent first: the screen lists a dozen of them. */
   badges: MobileProfileBadge[];
   recentLessons: MobileProfileLesson[];
   /** The portfolio: skills read off what is finished, certificates, challenges solved. */

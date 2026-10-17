@@ -6,11 +6,13 @@ import {
   holdersLabel,
   lessonsFinishedLabel,
   linkedInCertificateUrl,
+  listedBadges,
   missionsLabel,
   moreLabel,
   pathPercent,
   pathProgressLines,
   type PathProgressRow,
+  PROFILE_BADGES,
   profileTimeline,
   publicProfileUrl,
   rarestBadges,
@@ -109,6 +111,17 @@ describe("moreLabel", () => {
     expect(moreLabel(12, 13)).toBe("et 1 autre");
     expect(moreLabel(5, 5)).toBeNull();
     expect(moreLabel(5, 3)).toBeNull();
+  });
+});
+
+describe("listedBadges", () => {
+  it("lists the first dozen of every badge held, in the order given", () => {
+    const held = Array.from({ length: 17 }, (_, i) => `b${String(i)}`);
+    const listed = listedBadges(held);
+    expect(listed).toHaveLength(PROFILE_BADGES);
+    expect(listed[0]).toBe("b0");
+    expect(moreLabel(listed.length, held.length)).toBe("et 5 autres");
+    expect(listedBadges(["b0", "b1"])).toEqual(["b0", "b1"]);
   });
 });
 

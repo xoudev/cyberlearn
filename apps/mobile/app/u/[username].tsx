@@ -19,6 +19,7 @@ import {
   contributionLines,
   holdersLabel,
   lessonsFinishedLabel,
+  listedBadges,
   missionsLabel,
   moreLabel,
   publicProfileUrl,
@@ -109,13 +110,15 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
   const duelsPlayed = profile.duelRecord
     ? profile.duelRecord.win + profile.duelRecord.loss + profile.duelRecord.draw
     : 0;
-  const moreBadges = moreLabel(profile.badges.length, counts.badges);
+  // The server sends every badge; the page lists a dozen, as the site does.
+  const badges = listedBadges(profile.badges);
+  const moreBadges = moreLabel(badges.length, counts.badges);
   const moreChallenges = moreLabel(profile.challenges.length, counts.challenges);
   // The site's sections, numbered alike, those with nothing to show left out.
   const no = sectionNumbers([
     profile.activity !== undefined && "activity",
     profile.headToHead != null && "faceToFace",
-    profile.badges.length > 0 && "badges",
+    badges.length > 0 && "badges",
     (profile.paths?.length ?? 0) > 0 && "paths",
     profile.skills.length > 0 && "skills",
     profile.certificates.length > 0 && "certificates",
@@ -323,7 +326,7 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
         </View>
       ) : null}
 
-      {profile.badges.length > 0 ? (
+      {badges.length > 0 ? (
         <View>
           <SectionLabel
             eyebrow={`${no("badges")} · trophées · ${String(counts.badges)}`}
@@ -354,7 +357,7 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
             </View>
           ) : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {profile.badges.map((badge) => {
+            {badges.map((badge) => {
               const color = RARITY_COLOR[profileRarity(badge.rarity)];
               return (
                 <View

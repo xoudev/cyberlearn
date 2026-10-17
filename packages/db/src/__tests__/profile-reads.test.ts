@@ -7,7 +7,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { profileRepository } from "../repositories/profile.repository.js";
-import { PROFILE_BADGES, userRepository } from "../repositories/user.repository.js";
+import { userRepository } from "../repositories/user.repository.js";
 
 const { mockPrisma } = vi.hoisted(() => ({
   mockPrisma: {
@@ -59,7 +59,7 @@ beforeEach(() => {
 });
 
 describe("findPublicProfile's counts", () => {
-  it("counts what the lists only sample, and bounds the badges it lists", async () => {
+  it("counts what the lists only sample, and reads every badge for the app", async () => {
     mockPrisma.user.findUnique.mockResolvedValue(ownerRow(true));
 
     const profile = await userRepository.findPublicProfile("alex", null);
@@ -75,7 +75,9 @@ describe("findPublicProfile's counts", () => {
     const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
       include: Record<string, unknown>;
     };
-    expect(query.include["badges"]).toMatchObject({ take: PROFILE_BADGES });
+    // An app already installed counts the badges off this list: it stays whole,
+    // and the page cuts it where it draws it (listedBadges).
+    expect(query.include["badges"]).not.toHaveProperty("take");
     expect(query.include["_count"]).toEqual({
       select: {
         badges: true,

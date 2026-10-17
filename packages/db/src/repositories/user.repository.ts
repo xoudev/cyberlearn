@@ -115,9 +115,6 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
 
 const WEEK_MS = 7 * 86_400_000;
 
-/** The badges a profile lists, the most recent first; the strip counts them all. */
-export const PROFILE_BADGES = 12;
-
 /**
  * How a profile opens for its reader: not at all, as a public profile, or as
  * a private one the reader was let into (their own, or an accepted friend's).
@@ -354,10 +351,12 @@ export const userRepository = {
       where: { username },
       include: {
         preferences: { select: { publicProfile: true } },
+        // Every badge, not the dozen the page lists (listedBadges cuts it
+        // where it is drawn): the app's profile has always received them all,
+        // and an app already installed counts them off this list.
         badges: {
           include: { badge: true },
           orderBy: { earnedAt: "desc" },
-          take: PROFILE_BADGES,
         },
         lessonProgress: {
           where: { status: "COMPLETED" },
@@ -398,7 +397,7 @@ export const userRepository = {
         },
         // The lists above stop at a few rows; the figures are counted. The
         // strip used to print the lists' lengths, so nobody had more than 10
-        // lessons or 30 challenges, and every badge was read to be counted.
+        // lessons or 30 challenges.
         _count: {
           select: {
             badges: true,

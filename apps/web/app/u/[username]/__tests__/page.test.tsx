@@ -289,6 +289,26 @@ describe("the profile's content", () => {
     expect(html).toContain("et 16 autres");
   });
 
+  it("lists a dozen of the badges it reads, and says how many more", async () => {
+    auth.getRequestUser.mockResolvedValue(null);
+    const badges = Array.from({ length: 17 }, (_, i) => ({
+      id: `ub-${String(i)}`,
+      earnedAt: new Date("2026-05-01T00:00:00Z"),
+      badge: { name: `Badge ${String(i)}`, rarity: "COMMON", iconUrl: null },
+    }));
+    db.userRepository.findPublicProfile.mockResolvedValue({
+      ...profile(),
+      badges,
+      counts: { badges: 17, lessons: 0, challenges: 0, certificates: 0, paths: 0 },
+    });
+    const html = await render();
+
+    expect(html.match(/class="pp-badge"/g)).toHaveLength(12);
+    expect(html).toContain('title="Badge 11"');
+    expect(html).not.toContain('title="Badge 12"');
+    expect(html).toContain("et 5 autres");
+  });
+
   it("shows a year of activity and the rarest badges, with how many hold them", async () => {
     auth.getRequestUser.mockResolvedValue(null);
     db.streakRepository.getOverview.mockResolvedValue({

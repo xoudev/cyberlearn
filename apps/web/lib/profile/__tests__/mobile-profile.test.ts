@@ -185,6 +185,21 @@ describe("mobileProfileView", () => {
     expect(text).not.toContain("STUDENT");
   });
 
+  it("sends every badge, as it always did: an app already installed counts them off the list", async () => {
+    const badges = Array.from({ length: 17 }, (_, i) => ({
+      id: `ub-${String(i)}`,
+      earnedAt: new Date("2026-05-01T00:00:00Z"),
+      badge: { name: `Badge ${String(i)}`, rarity: "COMMON", iconUrl: null },
+    }));
+    m.findPublicProfile.mockResolvedValue(
+      row({ badges, counts: { badges: 17, lessons: 1, challenges: 0, certificates: 0, paths: 0 } }),
+    );
+    const result = await mobileProfileView(ME, "alex");
+    if (!result.ok) throw new Error("profile refused");
+    expect(result.profile.badges).toHaveLength(17);
+    expect(result.profile.counts.badges).toBe(17);
+  });
+
   it.each([
     [{ status: "ACCEPTED" as const, requestedById: ME }, "friends"],
     [{ status: "PENDING" as const, requestedById: ME }, "outgoing"],

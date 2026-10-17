@@ -43,7 +43,6 @@ export { badgeRepository } from "./repositories/badge.repository.js";
 export {
   userRepository,
   consoleUserWhere,
-  PROFILE_BADGES,
   type ChangeRoleResult,
   type ConsoleUserQuery,
   type ConsoleUserRow,
