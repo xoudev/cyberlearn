@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, configure, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RecallAnswerResult, RecallView } from "@/lib/revisions/daily-recall";
+
+// Each case walks several server round trips (open, answer, read back) through
+// the lazy window. Beside the other suites in CI that ran past the default
+// second of findBy and waitFor, while it takes a fraction of it alone.
+configure({ asyncUtilTimeout: 5_000 });
 
 /**
  * The review window: one question at a time, the verdict with the
