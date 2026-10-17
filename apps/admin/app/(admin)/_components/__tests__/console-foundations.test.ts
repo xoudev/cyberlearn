@@ -20,6 +20,8 @@ import { CONTENT_STATUS_OPTIONS } from "../content-status";
 
 const APP = join(__dirname, "..", "..", "..");
 const ADMIN = join(APP, "(admin)");
+const AUTH = join(APP, "(auth)");
+const COMPONENTS = join(ADMIN, "_components");
 
 function filesUnder(dir: string, keep: (path: string) => boolean): string[] {
   const out: string[] = [];
@@ -39,6 +41,9 @@ const SOURCES = filesUnder(APP, (path) => /\.(tsx?|css)$/u.test(path));
 const PAGES = filesUnder(ADMIN, (path) => path.endsWith("page.tsx"));
 const css = readFileSync(join(APP, "admin-ui.css"), "utf8");
 const globals = readFileSync(join(APP, "globals.css"), "utf8");
+
+/** A colour written out instead of named: a hex value, rgb() or rgba(). */
+const RAW_COLOUR = /#[0-9a-f]{3,8}\b|rgba?\(/iu;
 
 /** The red, blue and amber that had drifted from the tokens, as hex or rgb(). */
 const DRIFTED =
@@ -65,7 +70,7 @@ describe("the console palette", () => {
     for (const [name, value] of palette) {
       // A reference, never a colour: no hex, no rgb(), and a --color-* token
       // at the bottom of it.
-      expect(value, name).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/iu);
+      expect(value, name).not.toMatch(RAW_COLOUR);
       expect(value, name).toMatch(/var\(--color-[\w-]+\)/u);
     }
   });
@@ -109,6 +114,14 @@ describe("the console palette", () => {
     expect("rgba(77, 139, 255, 0.08)").toMatch(DRIFTED);
     expect("rgba(255, 181, 71, 0.12)").toMatch(DRIFTED);
     expect("color-mix(in srgb, var(--a-danger) 30%, transparent)").not.toMatch(DRIFTED);
+  });
+
+  it("knows a written-out colour in any of its forms", () => {
+    expect("#ff8aa0").toMatch(RAW_COLOUR);
+    expect("#FFF").toMatch(RAW_COLOUR);
+    expect("rgba(0, 36, 255, 0.22)").toMatch(RAW_COLOUR);
+    expect("rgb(10 255 212)").toMatch(RAW_COLOUR);
+    expect("color-mix(in srgb, var(--a-blue) 22%, transparent)").not.toMatch(RAW_COLOUR);
   });
 
   it("colours a badge's rarity from the site's rarity ramp", () => {
@@ -162,6 +175,63 @@ describe("the console layout", () => {
       expect(source, where(path)).not.toMatch(/\/\/ ADMIN ›|Admin \/ (?:Leçons|Badges|Parcours)/u);
       expect(source, where(path)).not.toContain("adm-caret");
     }
+  });
+});
+
+describe("the console chrome", () => {
+  // The sidebar, the top bar and the pieces every page shares. The sidebar
+  // kept its own BORDER, MUTED and TURQUOISE in hex after the UI constant went.
+  const shared = filesUnder(COMPONENTS, (path) => path.endsWith(".tsx"));
+
+  it("finds the shared components, the sidebar and the top bar among them", () => {
+    expect(shared.map(where)).toEqual(
+      expect.arrayContaining([
+        "(admin)/_components/admin-sidebar.tsx",
+        "(admin)/_components/admin-topbar.tsx",
+        "(admin)/_components/admin-shell-client.tsx",
+      ]),
+    );
+  });
+
+  it.each(shared.map((path) => [where(path), path]))(
+    "%s names its colours from the palette",
+    (_name, path) => {
+      expect(readFileSync(path, "utf8")).not.toMatch(RAW_COLOUR);
+    },
+  );
+
+  it("reaches the raised surface and the faint rule through the tokens", () => {
+    const palette = consolePalette();
+    expect(palette.get("--a-overlay")).toBe("var(--color-bg-overlay)");
+    expect(palette.get("--a-faint-2")).toBe("var(--color-text-faint)");
+  });
+});
+
+describe("the sign-in screens", () => {
+  const screens = filesUnder(AUTH, (path) => path.endsWith(".tsx"));
+
+  it("finds the screens", () => {
+    expect(screens.length).toBeGreaterThan(5);
+  });
+
+  it.each(screens.map((path) => [where(path), path]))(
+    "%s takes its colours and its type from the stylesheet",
+    (_name, path) => {
+      const source = readFileSync(path, "utf8");
+      expect(source).not.toMatch(RAW_COLOUR);
+      // The logo is sized for next/image; anything else wears a class.
+      expect(source.replace(/<Image\b[\s\S]*?\/>/gu, "")).not.toContain("style=");
+    },
+  );
+
+  it("are styled from the palette, the QR code's white ground aside", () => {
+    const start = css.indexOf("/* ─── Auth screens");
+    const end = css.indexOf("/* ─── Stacks");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    // A scanner wants dark modules on a light ground, whatever the theme.
+    const section = css.slice(start, end).replace(/\.a-qr-canvas \{[^}]*\}/u, "");
+    expect(section).not.toMatch(RAW_COLOUR);
   });
 });
 

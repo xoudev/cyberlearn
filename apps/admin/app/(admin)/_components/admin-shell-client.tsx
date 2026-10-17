@@ -44,7 +44,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }): R
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.65)",
+            background: "color-mix(in srgb, var(--a-bg) 65%, transparent)",
             zIndex: 28,
           }}
         />

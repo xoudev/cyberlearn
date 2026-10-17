@@ -13,6 +13,9 @@
   --a-bg: var(--color-bg-base);
   --a-surface: var(--color-bg-elevated);
   --a-surface-2: var(--color-bg-sunken);
+  /* The raised surface: the initials square of the identity chip in the
+     sidebar and the top bar. */
+  --a-overlay: var(--color-bg-overlay);
   /* Between a card and a raised overlay: a row under the pointer lifts, but
      less than a menu does. */
   --a-hover: color-mix(in srgb, var(--color-bg-elevated), var(--color-bg-overlay));
@@ -22,6 +25,8 @@
   --a-fg-2: var(--color-text-secondary);
   --a-muted: var(--color-text-muted);
   --a-faint: var(--color-text-disabled);
+  /* A step above --a-faint, for the short rule before a sidebar section label. */
+  --a-faint-2: var(--color-text-faint);
   --a-accent: var(--color-brand-turquoise);
   --a-blue: var(--color-brand-blue);
   --a-info: var(--color-info);
@@ -1074,9 +1079,18 @@
   justify-content: space-between;
   padding: 44px 48px;
   border-right: 1px solid var(--a-border);
+  /* The two halos of the learner site's sign-in panel, from the same tokens. */
   background:
-    radial-gradient(ellipse 90% 60% at 10% 0%, rgba(0, 36, 255, 0.22), transparent 60%),
-    radial-gradient(ellipse 70% 50% at 90% 100%, rgba(10, 255, 212, 0.07), transparent 65%),
+    radial-gradient(
+      ellipse 90% 60% at 10% 0%,
+      color-mix(in srgb, var(--a-blue) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 90% 100%,
+      color-mix(in srgb, var(--a-accent) 7%, transparent),
+      transparent 65%
+    ),
     var(--a-bg);
   overflow: hidden;
 }
@@ -1090,8 +1104,16 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgba(42, 37, 96, 0.18) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(42, 37, 96, 0.18) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--a-border-2) 18%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--a-border-2) 18%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse at 30% 30%, black 0%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse at 30% 30%, black 0%, transparent 75%);
@@ -1145,10 +1167,19 @@
 .a-auth-card {
   width: min(100%, 400px);
 }
+/* The page title, a size down from .a-h1: the card is 400px wide. */
+.a-auth-title {
+  font-size: clamp(26px, 3vw, 34px);
+}
 .a-auth-form {
   display: grid;
   gap: 15px;
   margin-top: 26px;
+}
+/* A link under the form sits at its start, as the cancel button does, rather
+   than stretched across the grid. */
+.a-auth-form > .a-card-link {
+  justify-self: start;
 }
 .a-field {
   display: grid;
@@ -1293,7 +1324,7 @@
   padding: 11px 13px;
   border-left: 2px solid var(--a-danger);
   background: color-mix(in srgb, var(--a-danger) 7%, transparent);
-  color: #ff8aa0;
+  color: var(--a-danger);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.55;

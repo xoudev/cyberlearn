@@ -57,7 +57,7 @@ export default async function AccessDeniedPage(): Promise<React.JSX.Element> {
         {user.email ? <p className="a-field-hint">Compte connecté : {user.email}</p> : null}
         <CancelSignIn label="Se déconnecter" className="a-btn a-btn--primary" />
         {site !== null ? (
-          <a className="a-card-link" style={{ justifySelf: "start" }} href={site}>
+          <a className="a-card-link" href={site}>
             Aller sur le site
           </a>
         ) : null}
