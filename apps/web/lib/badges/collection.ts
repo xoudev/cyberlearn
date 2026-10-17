@@ -3,8 +3,9 @@ import { buildBadgeCriterionStats, computeBadgeProgress } from "@cyberlearn/lib"
 import { retroAwardBadges } from "./award";
 
 /**
- * The badge collection, for the site's /badges page and the app's Collection
- * tab (/api/mobile/badges): every active badge, earned or not, grouped by
+ * The badge collection, for the Badges tab of the site's profile
+ * (/profile?tab=badges) and the app's Collection tab (/api/mobile/badges):
+ * every active badge, earned or not, grouped by
  * rarity, with the progress of those still locked.
  *
  * Callers are responsible for AUTHENTICATION: `userId` must be verified.

@@ -58,7 +58,7 @@ describe("BossNode", () => {
     expect(container.textContent).toMatch(/ton certificat a été révoqué/u);
     expect(screen.queryByRole("link", { name: /Télécharger le PDF/u })).toBeNull();
     expect(screen.getByRole("link", { name: /Voir mes certificats/u }).getAttribute("href")).toBe(
-      "/certificates",
+      "/profile?tab=certificats",
     );
   });
 });

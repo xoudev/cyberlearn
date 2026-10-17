@@ -3,12 +3,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { computeLevel, computeTier } from "@cyberlearn/lib";
-import { classRepository, userRepository, prisma } from "@cyberlearn/db";
+import { certificateRepository, classRepository, userRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { buildBadgeCollection } from "@/lib/badges/collection";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakCard } from "@/components/streak-card";
 import { TierBadge } from "@/components/tier-badge";
+import { ActivityFeed, type SerializedLesson } from "./_components/activity-feed";
+import { BadgesCollection } from "./_components/badges-collection";
+import { CertificatesList } from "./_components/certificates-list";
 import { ProfileContent } from "./_components/profile-content";
 import { Crumb } from "@/components/crumb";
 import { CopyButton } from "@/components/copy-button";
@@ -24,8 +28,6 @@ import {
   rarestOf,
   type BadgeRarity,
 } from "@cyberlearn/ui";
-import type { SerializedLesson, SerializedCert } from "./_components/profile-content";
-import type { SerializedBadge } from "@/lib/badges/collection";
 
 export const metadata: Metadata = { title: "Profil" };
 
@@ -148,14 +150,18 @@ function HexAvatar({
 export default async function ProfilePage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  const [user, certs, classes] = await Promise.all([
-    userRepository.findProfile(authUser.id),
-    prisma.certificate.findMany({
-      where: { userId: authUser.id, revokedAt: null },
-      include: { path: { select: { title: true } } },
-      orderBy: { issuedAt: "desc" },
-      take: 10,
-    }),
+  // Every tab's content is read here, so that a tab switches in place: the
+  // badge collection (the same service as the app's Collection sub-tab,
+  // /api/mobile/badges) and every certificate, the revoked ones included.
+  // The collection awards the badges earned but never given, and credits
+  // their XP: the profile is read once it is done, so that the XP, the level
+  // and the badge count agree with the Badges tab.
+  const [{ collection, user }, certs, classes] = await Promise.all([
+    buildBadgeCollection(authUser.id).then(async (built) => ({
+      collection: built,
+      user: await userRepository.findProfile(authUser.id),
+    })),
+    certificateRepository.listForUser(authUser.id),
     classRepository.findForMember(authUser.id),
   ]);
 
@@ -181,24 +187,6 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   const earnedRarities = user.badges.map((ub) => ub.badge.rarity as string);
   const avatarRarity = rarestOf(earnedRarities);
 
-  // Serialize badges (drop Date objects)
-  const serializedBadges: SerializedBadge[] = user.badges.map((ub) => ({
-    id: ub.badge.id,
-    refCode: ub.badge.refCode,
-    earned: true,
-    progress: null,
-    name: ub.badge.name,
-    description: ub.badge.description,
-    iconUrl: ub.badge.iconUrl,
-    rarity: ub.badge.rarity,
-    criterionType: ub.badge.criterionType,
-    earnedDateStr: new Intl.DateTimeFormat("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(ub.earnedAt),
-  }));
-
   // Serialize lesson activity
   const serializedLessons: SerializedLesson[] = user.lessonProgress.map((lp) => ({
     lessonId: lp.lessonId,
@@ -211,23 +199,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       : null,
   }));
 
-  // Serialize certificates
-  const serializedCerts: SerializedCert[] = certs.map((cert) => ({
-    id: cert.id,
-    publicId: cert.publicId,
-    pathTitle: cert.path.title,
-    issuedDateStr: new Intl.DateTimeFormat("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(cert.issuedAt),
-    sha256Hash: cert.sha256Hash,
-  }));
-
   // Stats
   const completedLessonsCount = user.lessonProgress.length; // already filtered to COMPLETED in repo
   const badgesCount = user.badges.length;
-  const certsCount = certs.length;
+  // The tab lists the revoked ones too; the count is of those still valid.
+  const certsCount = certs.filter((cert) => cert.revokedAt === null).length;
   const legendaryCount = user.badges.filter((ub) => ub.badge.rarity === "LEGENDARY").length;
   const isPublic = user.preferences?.publicProfile !== false;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
@@ -911,11 +887,26 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           Renders nothing for a learner who belongs to no class, which is most
           of them - an empty heading would read as something missing. */}
 
-      {/* ── Interactive tabs + content ──────────────────────────────────────── */}
+      {/* ── Tabs: ?tab=activite|badges|certificats ──────────────────────────── */}
       <ProfileContent
-        badges={serializedBadges}
-        lessons={serializedLessons}
-        certs={serializedCerts}
+        counts={{
+          activite: serializedLessons.length,
+          badges: `${String(collection.earnedCount)}/${String(collection.totalCount)}`,
+          certificats: certsCount,
+        }}
+        panels={{
+          activite: <ActivityFeed lessons={serializedLessons} />,
+          badges: (
+            <BadgesCollection
+              groups={collection.groups}
+              earnedCount={collection.earnedCount}
+              totalCount={collection.totalCount}
+              rarityTotals={collection.rarityTotals}
+              rarityEarned={collection.rarityEarned}
+            />
+          ),
+          certificats: <CertificatesList certs={certs} />,
+        }}
       />
     </div>
   );

@@ -17,6 +17,7 @@ import {
 } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { awardBadges } from "@/lib/badges/award";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
@@ -163,10 +164,11 @@ export async function issueCertificate(
         type: "CERTIFICATE_ISSUED",
         title: "Certificat émis",
         body: `Ton certificat pour "${path.title}" est disponible.`,
-        // The page that lists it, with its download and its verification
-        // link. The PDF route itself made a click in the bell download a raw
-        // file, and the app has no screen for an API address.
-        actionUrl: "/certificates",
+        // The profile's tab that lists it, with its download and its
+        // verification link; the app opens its own Certificats sub-tab. The
+        // PDF route itself made a click in the bell download a raw file, and
+        // the app has no screen for an API address.
+        actionUrl: profileTabHref("certificats"),
         metadata: { certId, pathTitle: path.title },
       }),
     ]);

@@ -247,6 +247,26 @@ export function phaseTallyWord(phase: TournamentPhase, n: number): string {
   return n > 1 ? "terminés" : "terminé";
 }
 
+/**
+ * What an empty list says, on the site's Tournois tab as on the app's screen.
+ * Both are open to everyone, and a tournament is played from a class: a
+ * reader in none is told so, rather than to wait for a tournament that cannot
+ * reach them.
+ */
+export function noTournamentsCopy(inClass: boolean): { title: string; message: string } {
+  return inClass
+    ? {
+        title: "Aucun tournoi pour l'instant",
+        message:
+          "Un tournoi réunit des classes : quand la tienne en rejoint un, il apparaît ici, et une notification te le dit.",
+      }
+    : {
+        title: "Les tournois se jouent en classe",
+        message:
+          "Un tournoi réunit des classes, entre elles ou entre écoles. Tu n'es dans aucune classe pour l'instant : quand ton établissement t'en ouvre une et qu'elle rejoint un tournoi, il apparaît ici, et une notification te le dit.",
+      };
+}
+
 // ── Teams ───────────────────────────────────────────────────────────────────
 
 /** A class taking part, with the school it belongs to. */

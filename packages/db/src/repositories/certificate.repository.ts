@@ -246,6 +246,30 @@ export const certificateRepository = {
     });
   },
 
+  /**
+   * Every certificate of an account, the revoked ones included, newest
+   * first: the profile's Certificats tab, which shows a revoked one with its
+   * reason rather than dropping it.
+   */
+  async listForUser(userId: string) {
+    return prisma.certificate.findMany({
+      where: { userId },
+      orderBy: { issuedAt: "desc" },
+      select: {
+        id: true,
+        publicId: true,
+        issuedAt: true,
+        score: true,
+        sha256Hash: true,
+        revokedAt: true,
+        revokedReason: true,
+        path: {
+          select: { title: true, category: true, difficulty: true, estimatedHours: true },
+        },
+      },
+    });
+  },
+
   async findByUser(userId: string) {
     return prisma.certificate.findMany({
       where: { userId, revokedAt: null },

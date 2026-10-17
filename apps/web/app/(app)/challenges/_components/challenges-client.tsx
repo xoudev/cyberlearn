@@ -6,7 +6,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
-import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, type TabItem } from "@/components/tabs";
 import type { ChallengeItem, DisplayStatus, WeeklyChallenge } from "@/lib/challenges/catalogue";
@@ -451,12 +450,12 @@ export function ChallengesClient({ items, weekly, nowMs }: Props): React.ReactEl
     { key: "done", label: "Résolus", count: items.filter((i) => matches(i, "done")).length },
   ];
 
+  // The breadcrumb, the title and the section's tabs are drawn above, by the
+  // page (challenges-header.tsx).
   return (
-    <div className="chx dfx">
+    <div className="dfx">
       <header className="dfx-head">
         <div>
-          <Crumb segments={["défis"]} />
-          <h1 className="pg-title">Défis</h1>
           <p className="pg-lede">
             Des enquêtes sur pièces. Chaque défi te confie une machine Linux, dans ton navigateur :
             tu fouilles ses fichiers, tu trouves le flag, tu le soumets. Rien à installer.

@@ -11,6 +11,7 @@ import {
 } from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { LevelReached } from "@/components/level-reached";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 
@@ -57,7 +58,7 @@ interface Props {
 export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): React.ReactElement {
   const displayXp = useCountUp(result.xpGained);
   const hasBadges = result.newBadges.length > 0;
-  const primaryUrl = hasBadges ? "/badges" : "/profile";
+  const primaryUrl = hasBadges ? profileTabHref("badges") : "/profile";
   const primaryLabel = hasBadges ? "Voir mes badges" : "Voir mon profil";
 
   return (

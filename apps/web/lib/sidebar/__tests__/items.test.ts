@@ -44,17 +44,12 @@ describe("sidebarGroups", () => {
     expect(labels({ ...BASE, hasClasses: true })).toContain("Mes classes");
   });
 
-  it("lists the locker with the other rewards", () => {
+  it("lists the locker with the leaderboard", () => {
     const progress = sidebarGroups(BASE).find((g) => g.label === "Progression");
-    expect(progress?.items.map((i) => i.href)).toEqual([
-      "/badges",
-      "/certificates",
-      "/locker",
-      "/leaderboard",
-    ]);
+    expect(progress?.items.map((i) => i.href)).toEqual(["/locker", "/leaderboard"]);
   });
 
-  it("ends the community with the help page, after the classes and their tournaments", () => {
+  it("ends the community with the help page, after the classes", () => {
     const without = sidebarGroups(BASE).find((g) => g.label === "Communauté");
     expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/duels", "/support"]);
     const withClasses = sidebarGroups({ ...BASE, hasClasses: true }).find(
@@ -64,9 +59,21 @@ describe("sidebarGroups", () => {
       "/forum",
       "/duels",
       "/my-class",
-      "/tournaments",
       "/support",
     ]);
+  });
+
+  it("lists no page that became a tab: badges, certificates, tournaments", () => {
+    for (const hasClasses of [false, true]) {
+      const hrefs = sidebarGroups({ ...BASE, hasClasses }).flatMap((g) =>
+        g.items.map((i) => i.href),
+      );
+      for (const href of ["/badges", "/certificates", "/tournaments"]) {
+        expect(hrefs).not.toContain(href);
+      }
+      // The tournaments are reached from the challenges, listed for everyone.
+      expect(hrefs).toContain("/challenges");
+    }
   });
 
   it("keeps the account pages out of the list: they are reached from the navbar", () => {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import React from "react";
+import { challengesTabHref } from "@cyberlearn/lib/challenges/tabs";
 import { Crumb } from "@/components/crumb";
 import { requireRequestUser } from "@/lib/auth";
 import { tournamentViewFor } from "@/lib/tournaments/tournaments";
@@ -25,7 +26,13 @@ export default async function TournamentPage({ params }: Props): Promise<React.R
 
   return (
     <div className="page-container trn">
-      <Crumb segments={[{ label: "tournois", href: "/tournaments" }, view.title]} />
+      <Crumb
+        segments={[
+          { label: "défis", href: challengesTabHref("defis") },
+          { label: "tournois", href: challengesTabHref("tournois") },
+          view.title,
+        ]}
+      />
       <TournamentBoard initial={view} />
     </div>
   );

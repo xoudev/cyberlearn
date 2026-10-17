@@ -7,6 +7,7 @@ import {
   toBadgeRarity,
 } from "@cyberlearn/ui";
 import type { DashboardStat } from "@cyberlearn/lib/dashboard/stats";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 
 export interface RecentBadge {
   earnedAt: Date;
@@ -71,7 +72,7 @@ export function Standing({
                 </div>
               );
             })}
-            <Link href="/badges" className="dash-badges-link">
+            <Link href={profileTabHref("badges")} className="dash-badges-link">
               {badgeTotal} badge{badgeTotal > 1 ? "s" : ""}
             </Link>
           </div>

@@ -10,6 +10,7 @@ import {
   flagNotice,
   tournamentDateLabel,
 } from "@cyberlearn/lib/challenges/tournament";
+import { challengesTabHref } from "@cyberlearn/lib/challenges/tabs";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
@@ -68,7 +69,8 @@ export function TournamentChallenge({
     <div className="page-container trn" data-phase={tournament.phase}>
       <Crumb
         segments={[
-          { label: "tournois", href: "/tournaments" },
+          { label: "défis", href: challengesTabHref("defis") },
+          { label: "tournois", href: challengesTabHref("tournois") },
           { label: tournament.title, href: board },
           challenge.slug,
         ]}

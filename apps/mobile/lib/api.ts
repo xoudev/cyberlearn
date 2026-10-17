@@ -1551,6 +1551,8 @@ export async function answerDuelApi(
 /** The reader's tournaments, and the server's clock when it listed them. */
 export interface TournamentList {
   tournaments: TournamentSummary[];
+  /** Whether the reader is in a class or teaches one: what an empty list explains. */
+  inClass: boolean;
   serverNow: string;
 }
 
@@ -1559,11 +1561,16 @@ export async function fetchTournamentsApi(): Promise<TournamentList> {
   const res = await authedFetch("/api/mobile/tournaments");
   // SAFETY: the route's own JSON (apps/web/app/api/mobile/tournaments/route.ts).
   const body = (await res.json()) as
-    | { ok: true; tournaments: TournamentSummary[]; serverNow?: string }
+    | { ok: true; tournaments: TournamentSummary[]; inClass?: boolean; serverNow?: string }
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  // A site older than this app sends no clock: the phone's stands in for it.
-  return { tournaments: body.tournaments, serverNow: body.serverNow ?? new Date().toISOString() };
+  return {
+    tournaments: body.tournaments,
+    // A site older than this app says nothing of the classes: the empty list
+    // keeps the words it had, and the phone's clock stands in for the server's.
+    inClass: body.inClass ?? true,
+    serverNow: body.serverNow ?? new Date().toISOString(),
+  };
 }
 
 /** One tournament, its challenges and its scoreboard; null when it is not the reader's. */

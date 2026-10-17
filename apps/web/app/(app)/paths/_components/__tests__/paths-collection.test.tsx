@@ -158,7 +158,7 @@ describe("PathsCollection", () => {
     const certificates = screen.getAllByRole("link", { name: /Voir le certificat/ });
     expect(certificates.map((a) => a.getAttribute("href"))).toEqual([
       "/verify/cert-1",
-      "/certificates",
+      "/profile?tab=certificats",
     ]);
     expect(hrefOf(/Python/)).toBe("/paths/python");
   });

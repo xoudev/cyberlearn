@@ -39,7 +39,7 @@ describe("reinstatedNotice", () => {
     expect(notice.title).toBe("Certificat rétabli : Python");
     expect(notice.body).toContain("de nouveau valide");
     expect(notice.body).toContain("même numéro");
-    expect(notice.actionUrl).toBe("/certificates");
+    expect(notice.actionUrl).toBe("/profile?tab=certificats");
   });
 });
 

@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
-  listTournamentsFor: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  tournamentListFor:
+    vi.fn<(userId: string) => Promise<{ tournaments: unknown[]; inClass: boolean }>>(),
   tournamentViewFor: vi.fn<(userId: string, id: unknown) => Promise<unknown>>(),
   tournamentChallengeFor:
     vi.fn<
@@ -15,7 +16,7 @@ const m = vi.hoisted(() => ({
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("../../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
 vi.mock("@/lib/tournaments/tournaments", () => ({
-  listTournamentsFor: m.listTournamentsFor,
+  tournamentListFor: m.tournamentListFor,
   tournamentViewFor: m.tournamentViewFor,
   tournamentChallengeFor: m.tournamentChallengeFor,
   submitTournamentFlag: m.submitTournamentFlag,
@@ -45,17 +46,30 @@ describe("/api/mobile/tournaments", () => {
   });
 
   it("lists the reader's tournaments, with the server's clock", async () => {
-    m.listTournamentsFor.mockResolvedValue([{ id: "t1" }]);
+    m.tournamentListFor.mockResolvedValue({ tournaments: [{ id: "t1" }], inClass: true });
     // SAFETY: the route's own JSON, read back in the shape it was written.
     const body = (await (await list.GET(new NextRequest(BASE))).json()) as {
       ok: boolean;
       tournaments: unknown[];
+      inClass: boolean;
       serverNow: string;
     };
     expect(body.ok).toBe(true);
     expect(body.tournaments).toEqual([{ id: "t1" }]);
+    expect(body.inClass).toBe(true);
     expect(Number.isNaN(Date.parse(body.serverNow))).toBe(false);
-    expect(m.listTournamentsFor).toHaveBeenCalledWith("u1");
+    expect(m.tournamentListFor).toHaveBeenCalledWith("u1");
+  });
+
+  it("says whether the reader of an empty list is in a class, as the site's tab does", async () => {
+    m.tournamentListFor.mockResolvedValue({ tournaments: [], inClass: false });
+    // SAFETY: the route's own JSON, read back in the shape it was written.
+    const body = (await (await list.GET(new NextRequest(BASE))).json()) as {
+      tournaments: unknown[];
+      inClass: boolean;
+    };
+    expect(body.tournaments).toEqual([]);
+    expect(body.inClass).toBe(false);
   });
 
   it("sends a tournament, or says it is not the reader's", async () => {

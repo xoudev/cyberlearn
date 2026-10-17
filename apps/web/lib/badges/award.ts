@@ -19,6 +19,7 @@
 import { badgeRepository, prisma, userRepository } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
 import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { creditXp } from "@/lib/xp/credit";
 
 /** Structural shape - full Prisma Badge rows satisfy it. */
@@ -92,7 +93,8 @@ export async function awardBadges(
         type: "BADGE_EARNED" as const,
         title: `Badge obtenu : ${badge.name}`,
         body: badge.description,
-        actionUrl: "/badges",
+        // The profile's Badges tab; the app opens its own Badges sub-tab.
+        actionUrl: profileTabHref("badges"),
         metadata: { badgeId: badge.id, rarity: badge.rarity, xpReward: badge.xpReward },
       })),
     });

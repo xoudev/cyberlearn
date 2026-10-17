@@ -166,6 +166,15 @@ describe("awardBadges", () => {
     expect(notifArg.data[0]?.metadata).toEqual({ badgeId: "b1", rarity: "RARE", xpReward: 40 });
   });
 
+  it("points the BADGE_EARNED notification at the profile's Badges tab", async () => {
+    const tx = makeTx(["b1"], 0);
+    await awardBadges(asTx(tx), "u1", [badge("b1", 40)], {});
+
+    expect(tx.notification.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ actionUrl: "/profile?tab=badges" })],
+    });
+  });
+
   it("creates no notification when notify is false", async () => {
     const tx = makeTx(["b1"], 0);
     await awardBadges(asTx(tx), "u1", [badge("b1", 40)], {}, { notify: false });

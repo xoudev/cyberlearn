@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import "../exam.css";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { unlockDateLabel, waitLeftLabel } from "@/lib/exam/cooldown-label";
@@ -505,7 +506,7 @@ function IntroScreen(props: {
                 {pathCompleted ? (
                   <Link
                     className="exam-start"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
+                    href={certPublicId ? `/verify/${certPublicId}` : profileTabHref("certificats")}
                   >
                     Voir mon certificat
                     {IcoArrowRight}
@@ -988,7 +989,7 @@ function ResultsScreen(props: {
                 <div className="r-action">
                   <Link
                     className="r-btn r-btn--cert"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
+                    href={certPublicId ? `/verify/${certPublicId}` : profileTabHref("certificats")}
                   >
                     <Brackets />
                     <svg

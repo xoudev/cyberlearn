@@ -1,5 +1,6 @@
-/* The CTF tournaments: the list (/tournaments), a tournament's scoreboard
-   (/tournaments/[id]) and one of its challenges (/tournaments/[id]/[slug]).
+/* The CTF tournaments: the list (the Tournois tab of /challenges), a
+   tournament's scoreboard (/tournaments/[id]) and one of its challenges
+   (/tournaments/[id]/[slug]).
    Square like the rest of the site, on the page chrome of globals.css
    (.page-container, .pg-title, .pg-lede). The page's accent is the
    challenges' red, a tournament being a CTF. A phase has its own colour, set

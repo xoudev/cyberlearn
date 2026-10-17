@@ -1,19 +1,17 @@
 import React from "react";
 import Link from "next/link";
-import { Crumb } from "@/components/crumb";
 
 /**
  * Shown instead of the challenges catalog while no active challenge exists
  * (content reboot: lessons and paths ship first, challenges are reworked
  * after). Server component: pure static markup, removed automatically the
- * day an active challenge lands.
+ * day an active challenge lands. The breadcrumb, the section's title and its
+ * tabs are drawn above it by the page (challenges-header.tsx): the
+ * tournaments tab stays open meanwhile.
  */
 export function ChallengesWip(): React.ReactElement {
   return (
-    <div className="page-container">
-      {/* Breadcrumb */}
-      <Crumb segments={["défis"]} caret={false} />
-
+    <div>
       {/* Eyebrow */}
       <div
         className="mono-label"
@@ -27,11 +25,11 @@ export function ChallengesWip(): React.ReactElement {
       </div>
 
       {/* Title */}
-      <h1
+      <h2
         style={{
           fontFamily: "var(--font-sans)",
           fontWeight: 800,
-          fontSize: "clamp(40px, 5.5vw, 72px)",
+          fontSize: "clamp(32px, 4vw, 52px)",
           lineHeight: 1.1,
           letterSpacing: "-0.035em",
           color: "var(--color-text-primary)",
@@ -53,7 +51,7 @@ export function ChallengesWip(): React.ReactElement {
           bientôt
         </em>
         .
-      </h1>
+      </h2>
 
       <p
         style={{

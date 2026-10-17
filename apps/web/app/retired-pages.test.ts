@@ -1,11 +1,14 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { challengesTabHref } from "@cyberlearn/lib/challenges/tabs";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import nextConfig from "../next.config";
 
 /**
- * Pages that became windows over another page: the page is gone, and its
- * address still lands somewhere, with the window open (docs/dev/dialogs.md).
+ * Pages that became windows over another page, or tabs of another page: the
+ * page is gone, and its address still lands somewhere, with the window open
+ * (docs/dev/dialogs.md) or on the tab.
  */
 
 const RETIRED = [
@@ -19,12 +22,31 @@ const RETIRED = [
     source: "/forum/:category/nouveau",
     destination: "/forum/:category?compose=1",
   },
+  {
+    page: "app/(app)/badges",
+    source: "/badges",
+    destination: profileTabHref("badges"),
+  },
+  {
+    page: "app/(app)/certificates",
+    source: "/certificates",
+    destination: profileTabHref("certificats"),
+  },
+  {
+    // The list only: a tournament's own pages live on beneath it.
+    page: "app/(app)/tournaments/page.tsx",
+    source: "/tournaments",
+    destination: challengesTabHref("tournois"),
+  },
 ];
 
-describe("pages that became windows", () => {
+async function redirects(): Promise<unknown[]> {
+  return (await nextConfig.redirects?.()) ?? [];
+}
+
+describe("pages that became windows or tabs", () => {
   it.each(RETIRED)("$source redirects to $destination, not remembered", async (retired) => {
-    const redirects = (await nextConfig.redirects?.()) ?? [];
-    expect(redirects).toContainEqual({
+    expect(await redirects()).toContainEqual({
       source: retired.source,
       destination: retired.destination,
       permanent: false,
@@ -33,6 +55,17 @@ describe("pages that became windows", () => {
 
   it.each(RETIRED)("$page has no page left behind the redirect", ({ page }) => {
     expect(existsSync(path.join(__dirname, "..", page))).toBe(false);
+  });
+
+  it("keeps a tournament's own pages", () => {
+    expect(existsSync(path.join(__dirname, "(app)/tournaments/[id]/page.tsx"))).toBe(true);
+    expect(existsSync(path.join(__dirname, "(app)/tournaments/[id]/[slug]/page.tsx"))).toBe(true);
+  });
+
+  it("sends the old French address of the certificates straight to their tab", async () => {
+    expect(await redirects()).toContainEqual(
+      expect.objectContaining({ source: "/certifs", destination: profileTabHref("certificats") }),
+    );
   });
 });
 

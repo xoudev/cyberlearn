@@ -21,8 +21,8 @@
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement, pour un visiteur (connecté, on dépose une demande depuis la fenêtre « Nouvelle demande » de `/support`) |
 | `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat ; le bilan compté sur tous les duels ; « Défier un ami » ouvre une fenêtre (`?duel=1`, ou `?duel=<id>` avec l'ami choisi, depuis « Rejouer » ou le profil ; l'ancienne adresse `?ami=<id>` y mène) : les amis en cartes, celui qui est déjà en duel montré sans pouvoir être choisi, puis le parcours |
-| `/tournaments` · `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct |
 | `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction. Sa présentation (modules couverts, règles, dernières tentatives) est une fenêtre sur la page du parcours (`?mock=1`), dont « Commencer » mène à l'examen avec `?go=1` ; sans `go`, l'adresse est redirigée vers cette fenêtre |
+| `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct. La liste est l'onglet Tournois de `/challenges` ; `/tournaments` y redirige |
 | `/u/[username]` | Profil public d'un utilisateur : chiffres comptés en base (badges, leçons terminées, défis résolus), l'année d'activité jour par jour, « Face à face » et « Défier » entre amis, les trois badges les plus rares, les parcours en cours et terminés avec leur progression, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, le bilan des duels et les contributions, la chronologie, activité ; une image d'aperçu pour un lien partagé (sans nom pour un profil privé) et `noindex` sur un profil privé ; dans l'interface de l'app pour un visiteur connecté, seul pour un visiteur anonyme, aux cosmétiques de son propriétaire ; « Ami ✓ » et son menu, « Accepter » et « Refuser » une demande, « Défier en duel » qui suit l'amitié ; sur sa propre page, « Modifier mon profil » et « Copier le lien » |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
 | `/download` | Page de téléchargement de l'app mobile |
@@ -49,10 +49,10 @@
 | `/lessons` · `/lessons/[slug]` | Catalogue et leçon (MDX, quiz, Q&A, notes) |
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
-| `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) |
+| `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
 | `/revisions` · `/review` | Révisions espacées SM-2 |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
-| `/badges` · `/certificates` | Collection de badges, attestations obtenues |
+| `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
 | `/forum` · `/forum/[category]` | Forum par catégories ; « Nouveau sujet » ouvre le formulaire dans une fenêtre sur la section (`?compose=1`) |
@@ -64,7 +64,7 @@
 | `/support` · `/support/[id]` | Aide & demandes, et fil d'une demande ; « Nouvelle demande » ouvre une fenêtre (`?request=1`) : thème, objet, message, réponse à l'adresse du compte |
 | `/wrapped` | Récap annuel, ouvert du 1er décembre au 7 janvier |
 | `/changelog` | Pas de page : redirection vers `/dashboard?news=1`. Les notes de version s'ouvrent dans un tiroir sur la page en cours, depuis le bouton Nouveautés de la barre du haut |
-| `/profile` | Profil |
+| `/profile` | Profil, en trois onglets dans l'adresse (`?tab=activite`, `badges`, `certificats`) : l'activité, la collection de badges (gagnés et verrouillés, avec leur progression), tous les certificats, révoqués compris |
 | `/settings/<section>` | Pas de page : redirection vers `/dashboard?settings=<section>`, où le volet des paramètres s'ouvre sur la section (`profile`, `privacy`, `preferences`, `notifications`, `moderation`, `account`, `data`). `/profile/edit` redirige vers la section profil |
 
 #### API Routes

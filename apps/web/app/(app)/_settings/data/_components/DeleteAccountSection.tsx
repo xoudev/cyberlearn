@@ -2,9 +2,11 @@
 
 import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { ModalShell } from "@cyberlearn/ui";
+import { useSettingsDrawer } from "../../_components/SettingsDrawer";
 import { useSettingsReload } from "../../_components/settings-reload";
 
 interface Props {
@@ -22,6 +24,7 @@ export function DeleteAccountSection({
   const [inputValue, setInputValue] = useState("");
   const [state, formAction, pending] = useActionState(requestDeletionAction, INITIAL_STATE);
   const reloadSettings = useSettingsReload();
+  const drawer = useSettingsDrawer();
 
   // The drawer loaded its data once: it asks for it again, to show the
   // pending request.
@@ -137,9 +140,12 @@ export function DeleteAccountSection({
               . Télécharge-les avant la suppression.
             </span>
             <Link
-              href="/certificates"
+              href={profileTabHref("certificats")}
               onClick={() => {
                 setOpen(false);
+                // Opened over the profile, the drawer would stay: the
+                // pathname does not change, only the tab under it.
+                drawer?.leave();
               }}
               style={{ color: "var(--color-info)", textDecoration: "none", fontSize: 11 }}
             >
