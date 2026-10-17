@@ -389,6 +389,9 @@ describe("reviewCardRepository (integration, real DB)", () => {
     try {
       expect(await reviewCardRepository.findReminders(now)).toContain(reminded);
       expect(await reviewCardRepository.hasDue(reminded, now)).toBe(true);
+      expect(await reviewCardRepository.findDueQuestions([reminded], now)).toEqual([
+        { userId: reminded, lessonId, quizId: "q-1" },
+      ]);
 
       const session = await reviewCardRepository.createSession(reminded, "2026-10-20", []);
       expect(await reviewCardRepository.findReminders(now)).toContain(reminded);
@@ -398,6 +401,11 @@ describe("reviewCardRepository (integration, real DB)", () => {
       expect(await reviewCardRepository.findReminders(new Date("2026-10-21T06:00:00Z"))).toContain(
         reminded,
       );
+      // A day stored with nothing to ask, handed in from the start, is not reminded.
+      const quiet = new Date("2026-10-22T06:00:00Z");
+      const empty = await reviewCardRepository.createSession(reminded, "2026-10-22", [], quiet);
+      expect(empty).toMatchObject({ draw: [], completedAt: quiet, xpCredited: false });
+      expect(await reviewCardRepository.findReminders(quiet)).not.toContain(reminded);
 
       await prisma.userPreferences.create({
         data: { userId: reminded, reviewReminders: false },

@@ -54,6 +54,13 @@ export interface DueCardRow {
   lesson: { slug: string; title: string };
 }
 
+/** A card due, by the question it asks. */
+export interface DueQuestionRow {
+  userId: string;
+  lessonId: string;
+  quizId: string;
+}
+
 /**
  * The cards the thirty-day rule retires on the day of `now` (isStale):
  * answered right at least once and more than CARD_STALE_DAYS overdue.
@@ -235,11 +242,16 @@ export const reviewCardRepository = {
    * Stores a day's draw and returns the day's session: this one, or the one
    * a second tab or a replayed request stored first. The unique index on
    * (user, day) is what makes it one.
+   *
+   * `completedAt` stores it handed in already: a day with cards due and no
+   * question to ask, stored empty so that every later read says so. Its XP
+   * is never claimed (claimSessionXp is the caller's, after a hand-in).
    */
   async createSession(
     userId: string,
     day: string,
     draw: readonly ReviewDrawRef[],
+    completedAt: Date | null = null,
   ): Promise<ReviewSessionRow> {
     await prisma.reviewSession.createMany({
       data: [
@@ -248,6 +260,7 @@ export const reviewCardRepository = {
           day: dayStart(day),
           // SAFETY: ReviewDrawRef is plain data (strings and a number array), valid JSON.
           draw: draw as unknown as Prisma.InputJsonValue,
+          ...(completedAt === null ? {} : { completedAt }),
         },
       ],
       skipDuplicates: true,
@@ -332,10 +345,31 @@ export const reviewCardRepository = {
   },
 
   /**
+   * The cards due on the day of `now` of these learners, as findDue reads
+   * them, each learner's in the order a session takes them: which question
+   * each card asks, for the caller to tell whether its lesson still has it.
+   */
+  async findDueQuestions(userIds: readonly string[], now: Date): Promise<DueQuestionRow[]> {
+    if (userIds.length === 0) return [];
+    return prisma.reviewCard.findMany({
+      where: {
+        userId: { in: [...new Set(userIds)] },
+        retiredAt: null,
+        dueAt: { lte: dueCutoff(now) },
+        NOT: staleWhere(now),
+        ...LIVE_REVIEW_FILTER,
+      },
+      orderBy: [{ userId: "asc" }, { dueAt: "asc" }, { box: "asc" }],
+      select: { userId: true, lessonId: true, quizId: true },
+    });
+  },
+
+  /**
    * Who to remind on the day of `now`: the learners with a card due, as
    * findDue reads them, who keep the feature and its reminder on (no
    * preferences row keeps both defaults), and whose session of the day is not
-   * handed in yet.
+   * handed in yet. Whether a card due has a question to ask is the caller's
+   * to read off its lesson (findDueQuestions).
    */
   async findReminders(now: Date): Promise<string[]> {
     const rows = await prisma.reviewCard.findMany({

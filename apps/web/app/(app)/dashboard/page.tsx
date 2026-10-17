@@ -95,7 +95,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { lastAccessedAt: "desc" },
       take: 1,
     }),
-    // The day's recall: to do, done, or nothing to ask. Never a count.
+    // The day's recall: to do, done, or nothing to ask, as the window will
+    // find it (drawn here on the day's first visit with a card due). Never a
+    // count.
     dailyRecallState(authUser.id, now),
     prisma.userLessonProgress.count({ where: { userId: authUser.id, status: "COMPLETED" } }),
     prisma.userLessonProgress.count({

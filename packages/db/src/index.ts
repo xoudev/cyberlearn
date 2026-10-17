@@ -164,6 +164,7 @@ export {
 export {
   reviewCardRepository,
   type DueCardRow,
+  type DueQuestionRow,
   type ReviewLessonRow,
   type ReviewSessionRow,
 } from "./repositories/review-card.repository.js";

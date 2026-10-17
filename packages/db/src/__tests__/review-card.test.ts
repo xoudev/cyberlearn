@@ -256,6 +256,19 @@ describe("sessions", () => {
     expect(session.id).toBe("s1");
   });
 
+  it("stores a day with nothing to ask handed in already, its XP unclaimed", async () => {
+    mockPrisma.reviewSession.createMany.mockResolvedValue({ count: 1 });
+    mockPrisma.reviewSession.findUniqueOrThrow.mockResolvedValue(
+      sessionRow({ draw: [], completedAt: NOW }),
+    );
+    const session = await reviewCardRepository.createSession(USER, "2026-10-11", [], NOW);
+    expect(mockPrisma.reviewSession.createMany).toHaveBeenCalledWith({
+      data: [{ userId: USER, day: day("2026-10-11"), draw: [], completedAt: NOW }],
+      skipDuplicates: true,
+    });
+    expect(session).toMatchObject({ draw: [], completedAt: NOW, xpCredited: false });
+  });
+
   it("hands a session in once", async () => {
     mockPrisma.reviewSession.updateMany.mockResolvedValueOnce({ count: 1 });
     expect(await reviewCardRepository.completeSession("s1", { "0": 1 }, NOW)).toBe(true);
@@ -327,6 +340,30 @@ describe("hasDue", () => {
     });
     mockPrisma.reviewCard.findFirst.mockResolvedValueOnce(null);
     expect(await reviewCardRepository.hasDue(USER, NOW)).toBe(false);
+  });
+});
+
+describe("findDueQuestions", () => {
+  it("reads the questions of these learners' cards due, as findDue reads them, in a session's order", async () => {
+    const rows = [{ userId: USER, lessonId: LESSON, quizId: "q-1" }];
+    mockPrisma.reviewCard.findMany.mockResolvedValue(rows);
+    expect(await reviewCardRepository.findDueQuestions([USER, USER, "u2"], NOW)).toEqual(rows);
+    expect(argOf(mockPrisma.reviewCard.findMany)).toEqual({
+      where: {
+        userId: { in: [USER, "u2"] },
+        retiredAt: null,
+        dueAt: { lte: day("2026-10-11") },
+        NOT: { everCorrect: true, dueAt: { lt: day("2026-09-11") } },
+        lesson: { status: "PUBLISHED" },
+      },
+      orderBy: [{ userId: "asc" }, { dueAt: "asc" }, { box: "asc" }],
+      select: { userId: true, lessonId: true, quizId: true },
+    });
+  });
+
+  it("asks nothing for nobody", async () => {
+    expect(await reviewCardRepository.findDueQuestions([], NOW)).toEqual([]);
+    expect(mockPrisma.reviewCard.findMany).not.toHaveBeenCalled();
   });
 });
 

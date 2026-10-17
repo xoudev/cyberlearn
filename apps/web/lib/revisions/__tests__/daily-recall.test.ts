@@ -25,12 +25,20 @@ const m = vi.hoisted(() => ({
     retire: vi.fn(),
     retireStale: vi.fn(),
     createSession:
-      vi.fn<(userId: string, day: string, draw: ReviewDrawRef[]) => Promise<unknown>>(),
+      vi.fn<
+        (
+          userId: string,
+          day: string,
+          draw: ReviewDrawRef[],
+          completedAt?: Date | null,
+        ) => Promise<unknown>
+      >(),
     answerInSession: vi.fn(),
     applyAnswer: vi.fn(),
     completeSession: vi.fn(),
     claimSessionXp: vi.fn(),
     hasDue: vi.fn(),
+    findDueQuestions: vi.fn(),
   },
 }));
 
@@ -48,6 +56,7 @@ const {
   answerDailyRecall,
   answerModuleReview,
   dailyRecallState,
+  learnersWithRecall,
   openDailyRecall,
   openModuleReview,
 } = await import("../daily-recall");
@@ -86,6 +95,41 @@ const LESSONS = [
   { id: L1, slug: "linux-droits", title: "Les droits", contentMdx: MDX_L1 },
   { id: L2, slug: "linux-lister", title: "Lister", contentMdx: MDX_L2 },
 ];
+
+/** A lesson one bad expression keeps from parsing: it yields no quiz, and its cards are kept. */
+const BROKEN = {
+  id: L3,
+  slug: "linux-casse",
+  title: "Cassé",
+  contentMdx: [
+    "## Cassé",
+    "",
+    "Une accolade { jamais fermée.",
+    "",
+    `<Quiz id="q-4" question="Qui ?" options={${JSON.stringify(Q3)}} correct={0} />`,
+  ].join("\n"),
+};
+
+/** A card due since yesterday, as findDue reads it. */
+function dueCard(id: string, lessonId: string, quizId: string) {
+  return {
+    id,
+    lessonId,
+    quizId,
+    box: 1,
+    dueAt: new Date("2026-10-16T00:00:00Z"),
+    lapses: 0,
+    everCorrect: false,
+    lesson: { slug: "x", title: "x" },
+  };
+}
+
+/** createSession as the repository answers it: the session stored, handed in or not. */
+function storesSession(): void {
+  m.repo.createSession.mockImplementation((_user, _day, draw, completedAt) =>
+    Promise.resolve(session({ draw, completedAt: completedAt ?? null })),
+  );
+}
 
 function ref(lessonId: string, quizId: string, options: string[]): ReviewDrawRef {
   return {
@@ -163,20 +207,10 @@ describe("openDailyRecall", () => {
 
   it("draws the day's session on its first opening, retiring the stale and the orphaned cards", async () => {
     m.repo.findSession.mockResolvedValue(null);
-    const card = (id: string, lessonId: string, quizId: string) => ({
-      id,
-      lessonId,
-      quizId,
-      box: 1,
-      dueAt: new Date("2026-10-16T00:00:00Z"),
-      lapses: 0,
-      everCorrect: false,
-      lesson: { slug: "x", title: "x" },
-    });
     m.repo.findDue.mockResolvedValue([
-      card("c-1", L1, "q-1"),
-      card("c-gone", L1, "q-gone"),
-      card("c-3", L2, "q-3"),
+      dueCard("c-1", L1, "q-1"),
+      dueCard("c-gone", L1, "q-gone"),
+      dueCard("c-3", L2, "q-3"),
     ]);
     m.repo.createSession.mockImplementation((_user, _day, draw) =>
       Promise.resolve(session({ draw })),
@@ -242,6 +276,31 @@ describe("openDailyRecall", () => {
     expect(m.repo.completeSession).toHaveBeenCalledWith("s1", answers, NOW, tx);
     expect(m.creditXp).toHaveBeenCalledWith(tx, USER, 15, "REVIEW");
     expect(view.status).toBe("done");
+  });
+
+  it("asks nothing of cards whose lesson yields no quiz, keeps them, and stores the day so", async () => {
+    m.repo.findSession.mockResolvedValue(null);
+    m.repo.findDue.mockResolvedValue([dueCard("c-4", L3, "q-4")]);
+    m.repo.findLessons.mockResolvedValue([BROKEN]);
+    storesSession();
+
+    const view = await openDailyRecall(USER, NOW);
+
+    expect(view).toMatchObject({ status: "empty", questions: [], verdicts: [], result: null });
+    // Not retired: the lesson may be mended.
+    expect(m.repo.retire).toHaveBeenCalledWith(USER, [], NOW);
+    // Stored empty and handed in, so the dashboard and the reminder say the same all day.
+    expect(m.repo.createSession).toHaveBeenCalledWith(USER, DAY, [], NOW);
+    expect(m.repo.completeSession).not.toHaveBeenCalled();
+    expect(m.creditXp).not.toHaveBeenCalled();
+  });
+
+  it("says there is nothing to ask on a day stored so, without drawing again", async () => {
+    m.repo.findSession.mockResolvedValue(session({ draw: [], completedAt: NOW }));
+    const view = await openDailyRecall(USER, NOW);
+    expect(view.status).toBe("empty");
+    expect(m.repo.findDue).not.toHaveBeenCalled();
+    expect(m.repo.completeSession).not.toHaveBeenCalled();
   });
 });
 
@@ -378,12 +437,84 @@ describe("dailyRecallState", () => {
     expect(await dailyRecallState(USER, NOW)).toBe("todo");
   });
 
-  it("is to do when a card is due and nothing was drawn yet, empty otherwise", async () => {
+  it("is empty, drawing nothing, when no card is due or spaced repetition is off", async () => {
     m.repo.findSession.mockResolvedValue(null);
-    m.repo.hasDue.mockResolvedValueOnce(true);
-    expect(await dailyRecallState(USER, NOW)).toBe("todo");
     m.repo.hasDue.mockResolvedValueOnce(false);
     expect(await dailyRecallState(USER, NOW)).toBe("empty");
+    m.repo.hasDue.mockResolvedValueOnce(true);
+    m.revisionsEnabled.mockResolvedValueOnce(false);
+    expect(await dailyRecallState(USER, NOW)).toBe("empty");
+    expect(m.repo.findDue).not.toHaveBeenCalled();
+    expect(m.repo.createSession).not.toHaveBeenCalled();
+  });
+
+  it("draws the day when a card is due and nothing was drawn yet: to do, with a question", async () => {
+    m.repo.findSession.mockResolvedValue(null);
+    m.repo.hasDue.mockResolvedValue(true);
+    m.repo.findDue.mockResolvedValue([dueCard("c-1", L1, "q-1")]);
+    storesSession();
+    expect(await dailyRecallState(USER, NOW)).toBe("todo");
+    expect(m.repo.createSession).toHaveBeenCalledWith(
+      USER,
+      DAY,
+      [expect.objectContaining({ cardId: "c-1" })],
+      null,
+    );
+  });
+
+  it("is empty, not to do, when the cards due are in a lesson that yields no quiz", async () => {
+    m.repo.findSession.mockResolvedValue(null);
+    m.repo.hasDue.mockResolvedValue(true);
+    m.repo.findDue.mockResolvedValue([dueCard("c-4", L3, "q-4")]);
+    m.repo.findLessons.mockResolvedValue([BROKEN]);
+    storesSession();
+    expect(await dailyRecallState(USER, NOW)).toBe("empty");
+
+    // Stored so: the next visit reads it back, and draws nothing again.
+    m.repo.findSession.mockResolvedValue(session({ draw: [], completedAt: NOW }));
+    expect(await dailyRecallState(USER, NOW)).toBe("empty");
+    expect(m.repo.createSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("learnersWithRecall", () => {
+  const U2 = "55555555-5555-4555-8555-555555555555";
+  const U3 = "66666666-6666-4666-8666-666666666666";
+
+  it("keeps the learners with a card due whose question its lesson has, each lesson read once", async () => {
+    m.repo.findDueQuestions.mockResolvedValue([
+      { userId: USER, lessonId: L1, quizId: "q-1" },
+      // A lesson that yields no quiz: due, never asked.
+      { userId: U2, lessonId: L3, quizId: "q-4" },
+      // A question gone, then one still there.
+      { userId: U3, lessonId: L1, quizId: "q-gone" },
+      { userId: U3, lessonId: L2, quizId: "q-3" },
+    ]);
+    m.repo.findLessons.mockResolvedValue([...LESSONS, BROKEN]);
+
+    expect(await learnersWithRecall([USER, U2, U3], NOW)).toEqual([USER, U3]);
+    expect(m.repo.findDueQuestions).toHaveBeenCalledWith([USER, U2, U3], NOW);
+    expect(m.repo.findLessons).toHaveBeenCalledTimes(1);
+    expect(m.repo.createSession).not.toHaveBeenCalled();
+  });
+
+  it("looks at as many of a learner's cards as the draw does, the most overdue first", async () => {
+    const stuck = Array.from({ length: 60 }, (_el, i) => ({
+      userId: USER,
+      lessonId: L3,
+      quizId: `q-${String(i + 10)}`,
+    }));
+    m.repo.findDueQuestions.mockResolvedValue([
+      ...stuck,
+      { userId: USER, lessonId: L1, quizId: "q-1" },
+    ]);
+    m.repo.findLessons.mockResolvedValue([...LESSONS, BROKEN]);
+    expect(await learnersWithRecall([USER], NOW)).toEqual([]);
+  });
+
+  it("reads nothing for nobody", async () => {
+    expect(await learnersWithRecall([], NOW)).toEqual([]);
+    expect(m.repo.findDueQuestions).not.toHaveBeenCalled();
   });
 });
 

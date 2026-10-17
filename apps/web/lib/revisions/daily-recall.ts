@@ -246,6 +246,12 @@ function resultOf(verdicts: readonly RecallVerdict[], xpCredited: boolean): Reca
  * cards the thirty-day rule retires and those whose question is gone from
  * its lesson are retired on the way: written down here, at the one moment
  * they are looked at.
+ *
+ * Cards due and not one question to ask: each is in a lesson that yields no
+ * quiz now, whose cards are kept for when it is mended (orphanCards). The day
+ * is stored all the same, empty and handed in, without XP: the window, the
+ * dashboard and the reminder then say for the rest of the day what the draw
+ * found, that there is nothing to ask.
  */
 async function drawToday(userId: string, day: string, now: Date): Promise<ReviewSessionRow | null> {
   await reviewCardRepository.retireStale(userId, now);
@@ -264,9 +270,8 @@ async function drawToday(userId: string, day: string, now: Date): Promise<Review
     now,
   );
   const draw = drawReviewSession(due, sources, userId, day);
-  if (draw.length === 0) return null;
   // A second tab drawing at the same moment gets the session stored first.
-  return reviewCardRepository.createSession(userId, day, draw);
+  return reviewCardRepository.createSession(userId, day, draw, draw.length === 0 ? now : null);
 }
 
 /**
@@ -336,7 +341,8 @@ function dailyView(day: string): RecallView {
 
 /**
  * The day's recall as the learner opens it: drawn on the first opening of
- * the day, then the same questions all day, with the answers given so far.
+ * the day, or by the dashboard before it (dailyRecallState), then the same
+ * questions all day, with the answers given so far.
  */
 export async function openDailyRecall(userId: string, now: Date = new Date()): Promise<RecallView> {
   const day = dayKey(now);
@@ -345,7 +351,8 @@ export async function openDailyRecall(userId: string, now: Date = new Date()): P
 
   let session =
     (await reviewCardRepository.findSession(userId, day)) ?? (await drawToday(userId, day, now));
-  if (session === null) return base;
+  // Nothing due, or nothing to ask of the cards due (drawToday).
+  if (session === null || session.draw.length === 0) return base;
 
   const lessons = await reviewCardRepository.findLessons(session.draw.map((ref) => ref.lessonId));
   const sources = sourcesOf(lessons);
@@ -428,18 +435,60 @@ export async function answerDailyRecall(
 /** Where the day's recall stands, as the dashboard says it: no count, ever. */
 export type DailyRecallState = "todo" | "done" | "empty";
 
+function stateOf(session: Pick<ReviewSessionRow, "draw" | "completedAt">): DailyRecallState {
+  if (session.draw.length === 0) return "empty";
+  return session.completedAt === null ? "todo" : "done";
+}
+
 /**
- * Whether the day's recall is to do, done, or has nothing to ask, without
- * drawing it: the dashboard reads this on every visit, and the draw happens
- * when the window opens.
+ * Whether the day's recall is to do, done, or has nothing to ask, as the
+ * window will find it.
+ *
+ * A card due is not enough to say "to do": whether it has a question to ask
+ * is only known by reading its lesson, and a lesson that yields no quiz keeps
+ * its cards due and asks nothing. So with a card due and nothing drawn yet,
+ * the day is drawn here, once, as the window would draw it, and every later
+ * visit reads the stored session back. Nothing is drawn for a learner who
+ * switched spaced repetition off.
  */
 export async function dailyRecallState(
   userId: string,
   now: Date = new Date(),
 ): Promise<DailyRecallState> {
-  const session = await reviewCardRepository.findSession(userId, dayKey(now));
-  if (session !== null) return session.completedAt === null ? "todo" : "done";
-  return (await reviewCardRepository.hasDue(userId, now)) ? "todo" : "empty";
+  const day = dayKey(now);
+  const session = await reviewCardRepository.findSession(userId, day);
+  if (session !== null) return stateOf(session);
+  if (!(await reviewCardRepository.hasDue(userId, now))) return "empty";
+  if (!(await revisionsEnabled(userId))) return "empty";
+  const drawn = await drawToday(userId, day, now);
+  return drawn === null ? "empty" : stateOf(drawn);
+}
+
+/**
+ * Among these learners, those whose day's recall has a question to ask on
+ * the day of `now`, by the rule the draw follows (drawToday): a card due,
+ * among the DRAW_WINDOW the draw looks at, whose question its lesson still
+ * has. Read without drawing or writing anything, each lesson read once for
+ * all of them: the daily reminder goes by it, so a card whose lesson yields
+ * no quiz now, due but never asked, brings no reminder.
+ */
+export async function learnersWithRecall(
+  userIds: readonly string[],
+  now: Date = new Date(),
+): Promise<string[]> {
+  if (userIds.length === 0) return [];
+  const due = await reviewCardRepository.findDueQuestions(userIds, now);
+  if (due.length === 0) return [];
+  const sources = sourcesOf(await reviewCardRepository.findLessons(due.map((c) => c.lessonId)));
+  const looked = new Map<string, number>();
+  const asking = new Set<string>();
+  for (const card of due) {
+    const seen = looked.get(card.userId) ?? 0;
+    if (seen >= DRAW_WINDOW) continue;
+    looked.set(card.userId, seen + 1);
+    if (sources.has(sourceKey(card.lessonId, card.quizId))) asking.add(card.userId);
+  }
+  return userIds.filter((id) => asking.has(id));
 }
 
 // ── A module's review ─────────────────────────────────────────────────────────
