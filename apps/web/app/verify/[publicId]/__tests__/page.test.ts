@@ -149,6 +149,45 @@ describe("what the page vouches for", () => {
   });
 });
 
+describe("a revoked certificate", () => {
+  const REVOKED = {
+    ...CERT,
+    revokedAt: new Date("2026-10-17T09:00:00Z"),
+    revokedReason: "Examen final passé par une autre personne.",
+  };
+
+  it("says it is revoked, since when and why, and no longer that it is valid", async () => {
+    findByPublicId.mockResolvedValue(REVOKED);
+    const html = await renderPage();
+    expect(html).toContain("Certificat révoqué");
+    expect(html).toContain("Révoqué le 17/10/2026");
+    expect(html).toContain("Examen final passé par une autre personne.");
+    expect(html).not.toContain("Certificat valide");
+  });
+
+  it("ends the reason with one stop, whether the console typed one or not", async () => {
+    findByPublicId.mockResolvedValue(REVOKED);
+    expect(await renderPage()).not.toContain("personne.</span>.");
+    findByPublicId.mockResolvedValue({ ...REVOKED, revokedReason: "Fraude avérée" });
+    expect(await renderPage()).toContain("Fraude avérée</span>.");
+  });
+
+  it("offers its holder neither the PDF nor LinkedIn any more", async () => {
+    findByPublicId.mockResolvedValue(REVOKED);
+    getRequestUser.mockResolvedValue({ id: HOLDER });
+    const html = await renderPage();
+    expect(html).not.toContain("Télécharger le PDF");
+    expect(html).not.toContain("linkedin.com");
+  });
+
+  it("keeps the number and the name printed on the PDF", async () => {
+    findByPublicId.mockResolvedValue(REVOKED);
+    const html = await renderPage();
+    expect(html).toContain("CL-2026-22222222");
+    expect(html).toContain("Camille Martin");
+  });
+});
+
 describe("an unknown certificate", () => {
   it("is not found, and says so in its title", async () => {
     findByPublicId.mockResolvedValue(null);

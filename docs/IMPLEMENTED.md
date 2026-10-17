@@ -173,10 +173,11 @@
 - Les paramètres s'ouvrent en volet par-dessus la page, sans navigation, depuis le rouage de la barre du haut et depuis tout lien interne vers `/settings/<section>` (classement, révisions, profil, avis de modération) : volet client `SettingsDrawerProvider` monté dans la coquille de l'app (`components/app-shell.tsx`, dessinée par `(app)/layout.tsx`), les sept sections chargées en une requête (`GET /api/me/settings`, lancée dès le survol d'un lien), le changement de section sans réseau (`<Activity>` garde la saisie). Il n'y a pas de page de paramètres : le code vit dans le dossier privé `(app)/_settings` (chargeurs `_lib/load-settings.ts`, vues de section, actions), et une adresse `/settings/<section>` venue d'un e-mail, d'une notification ou d'un favori est redirigée par `next.config.ts` vers `/dashboard?settings=<section>`, que le volet lit puis retire de l'adresse (entrée `settings` des fenêtres ouvertes par l'adresse, `components/query-dialogs.ts`, dessinées par `QueryDialogHost` monté dans la même coquille ; cadre `SideDrawer` de `@cyberlearn/ui`, voir `docs/dev/dialogs.md`)
 
 #### Notifications
-- 15 types : REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED,
+- 19 types : REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED,
   CERTIFICATE_ISSUED, ANNOUNCEMENT, TICKET_UPDATE, CLASS_ENROLLED,
   LESSON_ASSIGNED, PATH_ASSIGNED, NOTE_SHARED, MODERATION_ALERT, FORUM_REPLY,
-  FRIEND_REQUEST, FRIEND_ACCEPTED
+  FRIEND_REQUEST, FRIEND_ACCEPTED, DUEL_INVITE, DUEL_RESULT,
+  TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED
 - Badge de comptage non-lu dans la navbar
 - Marquer une ou toutes les notifications comme lues
 
@@ -220,7 +221,14 @@
 #### Certificats
 - Génération PDF côté serveur avec `@react-pdf/renderer`
 - Hash SHA-256 stocké pour détection de falsification
-- Révocable par l'admin (revokedAt + revokedReason)
+- Révocable depuis la console, avec un motif (revokedAt + revokedReason) : le
+  titulaire reçoit une notification CERTIFICATE_REVOKED qui mène à
+  `/certificates`, où le certificat reste listé avec sa date de révocation et
+  son motif ; la page publique `/verify/[publicId]` dit « Certificat révoqué »
+  avec la date et le motif, et ne propose plus ni le PDF ni LinkedIn ; le
+  téléchargement est refusé ; le parcours reste terminé, et son nœud final
+  renvoie à `/certificates` au lieu du PDF. Un certificat révoqué par erreur
+  peut être rétabli : même numéro, même PDF, notification CERTIFICATE_ISSUED
 - Téléchargement direct via API
 
 ---
@@ -252,6 +260,7 @@
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
 | `/users/[id]` | Un compte : rôle, bannissement, remise à zéro, suppression |
+| `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
@@ -312,6 +321,22 @@
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte
 - Suppression complète du compte et de ce qu'il possède, avec e-mail à la clé
+
+#### Gestion des certificats
+- Liste paginée par la base (25 par page) : titulaire (le nom imprimé sur le
+  PDF, lien vers son compte), parcours, score, date d'émission, statut et
+  numéro « CL-AAAA-XXXXXXXX » (lien vers la page de vérification) ; recherche
+  sur le nom, le @pseudo, l'adresse, le parcours ou le numéro (la forme du
+  PDF, l'identifiant complet ou l'adresse de vérification) ; filtres parcours
+  et statut (valides, révoqués) ; tri par colonne ; le tout dans l'adresse
+- Révocation sur la ligne, avec un motif obligatoire (5 à 500 caractères) et
+  une confirmation qui nomme le certificat : écrite seulement sur un
+  certificat encore valide (une seconde révocation ne change rien), avec sa
+  ligne d'audit `admin.certificate.revoke` et la notification du titulaire
+  dans la même transaction
+- Rétablissement d'un certificat révoqué par erreur : même numéro, même PDF,
+  ligne d'audit `admin.certificate.reinstate` (avec le motif effacé),
+  notification au titulaire
 
 #### Modération
 - File de relecture des contenus bloqués à la publication
@@ -422,7 +447,7 @@
 | `FriendshipStatus` | PENDING, ACCEPTED |
 | `ModerationVerdict` | ALLOW, REVIEW, BLOCK |
 | `ModerationOutcome` | PENDING, UPHELD, OVERTURNED |
-| `NotificationType` | REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED, CERTIFICATE_ISSUED, ANNOUNCEMENT, TICKET_UPDATE, CLASS_ENROLLED, LESSON_ASSIGNED, PATH_ASSIGNED, NOTE_SHARED, MODERATION_ALERT, FORUM_REPLY, FRIEND_REQUEST, FRIEND_ACCEPTED |
+| `NotificationType` | REVIEW_REMINDER, BADGE_EARNED, LEVEL_UP, PATH_COMPLETED, CERTIFICATE_ISSUED, ANNOUNCEMENT, TICKET_UPDATE, CLASS_ENROLLED, LESSON_ASSIGNED, PATH_ASSIGNED, NOTE_SHARED, MODERATION_ALERT, FORUM_REPLY, FRIEND_REQUEST, FRIEND_ACCEPTED, DUEL_INVITE, DUEL_RESULT, TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED |
 | `TicketTheme` | BUG, QUESTION, FEATURE_REQUEST, SECURITY, CONTENT_ERROR, ESTABLISHMENT_REQUEST, BAN_APPEAL, OTHER |
 | `TicketStatus` | OPEN, IN_PROGRESS, RESOLVED, CLOSED |
 

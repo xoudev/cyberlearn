@@ -24,7 +24,12 @@ import {
   fetchSupportThreadApi,
   fetchSupportTicketsApi,
 } from "@/lib/api";
-import { CERTIFICATE_COUNT_COLUMN, certificateCountOf } from "@/lib/certificates";
+import {
+  CERTIFICATE_COUNT_COLUMN,
+  CERTIFICATE_LIST_COLUMNS,
+  certificateCountOf,
+  type CertificateStanding,
+} from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import {
@@ -525,7 +530,7 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
 
 // ── Profil ────────────────────────────────────────────────────────────────────
 
-export interface CertificateItem {
+export interface CertificateItem extends CertificateStanding {
   publicId: string;
   score: number | null;
   issuedAt: string;
@@ -559,11 +564,13 @@ export function useProfile(userId: string | undefined) {
           .select("id", { count: "exact", head: true })
           .eq("userId", uid)
           .eq("status", "COMPLETED"),
+        // Revoked ones included, with their reason, as the site lists them:
+        // a certificate that vanished from the list without a word read as
+        // a bug, and its notice led to a tab that no longer showed it.
         supabase
           .from("certificates")
-          .select("publicId,score,issuedAt, paths(title)")
+          .select(CERTIFICATE_LIST_COLUMNS)
           .eq("userId", uid)
-          .is("revokedAt", null)
           .order("issuedAt", { ascending: false }),
       ]);
 
@@ -576,12 +583,16 @@ export function useProfile(userId: string | undefined) {
         publicId: string;
         score: number | null;
         issuedAt: string;
+        revokedAt: string | null;
+        revokedReason: string | null;
         paths: Embed<{ title: string }>;
       }[];
       const certificates = certRows.map((c) => ({
         publicId: c.publicId,
         score: c.score,
         issuedAt: dbIso(c.issuedAt),
+        revokedAt: dbIsoOrNull(c.revokedAt),
+        revokedReason: c.revokedReason,
         pathTitle: one(c.paths)?.title ?? "Parcours",
       }));
 
@@ -593,6 +604,32 @@ export function useProfile(userId: string | undefined) {
         badges,
         certificates,
       };
+    },
+  });
+}
+
+/**
+ * Whether one of the reader's own certificates still stands, and the reason
+ * when the console revoked it. The certificate screen is opened from the
+ * profile's list and from a path's final card, which knows only the id: it
+ * reads the state itself. Null for a certificate that is not the reader's,
+ * which the row policy keeps out of reach anyway.
+ */
+export function useCertificateStanding(userId: string | undefined, publicId: string | undefined) {
+  return useQuery({
+    queryKey: ["certificate-standing", userId, publicId],
+    enabled: Boolean(userId) && Boolean(publicId),
+    queryFn: async (): Promise<CertificateStanding | null> => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("revokedAt,revokedReason")
+        .eq("publicId", publicId as string) // gated by `enabled`
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      // The hand-written shape of the two columns selected (no generated types).
+      const row = data as CertificateStanding | null;
+      if (row === null) return null;
+      return { revokedAt: dbIsoOrNull(row.revokedAt), revokedReason: row.revokedReason };
     },
   });
 }

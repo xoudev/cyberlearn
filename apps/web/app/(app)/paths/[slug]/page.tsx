@@ -257,7 +257,7 @@ export default async function PathDetailPage({
     where: { userId_pathId: { userId: authUser.id, pathId: path.id } },
     create: { userId: authUser.id, pathId: path.id, status: "IN_PROGRESS" },
     update: {},
-    select: { status: true, certificateId: true },
+    select: { status: true, certificateId: true, certificate: { select: { revokedAt: true } } },
   });
 
   const myRating = await ratingRepository.findUserPathRating(authUser.id, path.id);
@@ -306,9 +306,12 @@ export default async function PathDetailPage({
   // A class path carries no certificate: the server refuses to claim or issue
   // one, so the page promises none, as the app's final card shows nothing.
   const certifiable = isCertifiablePath(path);
+  // Revoked from the console: the path stays completed, the certificate does not.
+  const certRevoked = userPathProgress.certificate?.revokedAt != null;
   // The certificate is "obtained" once it's been issued (same signal the final-boss
-  // node uses for its download link). Drives the MISSION.BRIEF certificate cell.
-  const certObtained = userPathProgress.certificateId !== null;
+  // node uses for its download link), and until it is revoked. Drives the
+  // MISSION.BRIEF certificate cell.
+  const certObtained = userPathProgress.certificateId !== null && !certRevoked;
 
   // serpentine state → card visual state
   const cardState = (s: NodeState): CardState =>
@@ -508,6 +511,7 @@ export default async function PathDetailPage({
               lessonsComplete={lessonsComplete}
               pathCompleted={pathCompleted}
               certificateId={userPathProgress.certificateId}
+              certificateRevoked={certRevoked}
               doneLessons={doneLessons}
               totalLessons={totalLessons}
             />

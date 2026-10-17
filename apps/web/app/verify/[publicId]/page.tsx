@@ -677,7 +677,9 @@ export default async function CertVerifyPage({
               <b style={{ color: "var(--color-text-primary)" }}>{"// REVOKE.LOG"}</b>
               <br />
               Révoqué le {revokedStr} · Raison :{" "}
-              <span style={{ color: "#fff" }}>{cert.revokedReason}</span>.
+              <span style={{ color: "#fff" }}>{cert.revokedReason}</span>
+              {/* The console's reason is a sentence, which often brings its own stop. */}
+              {/[.!?…]$/u.test(cert.revokedReason.trim()) ? "" : "."}
               <br />
               Ce certificat a été retiré du registre public et ne peut plus être utilisé comme
               preuve de complétion.
