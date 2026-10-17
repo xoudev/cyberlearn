@@ -256,6 +256,53 @@ export async function resetMfaAction(
   };
 }
 
+// ─── Sessions ───────────────────────────────────────────────────────────────
+
+/**
+ * Signs the account out everywhere: the site, the app, the console.
+ *
+ * For a phone lost while still signed in, a password typed on somebody else's
+ * computer, an account somebody else got into. The repository deletes the
+ * sessions and writes the audit row in one transaction, so a failure leaves
+ * both as they were, and there is no "done but not logged" to report.
+ *
+ * Never on oneself: the administrator's own session is one of them, and
+ * closing it mid-request would end the page that asked.
+ */
+export async function revokeAllSessionsAction(
+  _prev: AccessActionState,
+  formData: FormData,
+): Promise<AccessActionState> {
+  const admin = await requireAdminAction();
+  const parsed = targetSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: "Paramètres invalides." };
+  if (parsed.data.userId === admin.id) {
+    return {
+      error:
+        "Tu ne peux pas fermer tes propres sessions depuis la console : celle que tu utilises en fait partie.",
+    };
+  }
+
+  const target = await findTarget(parsed.data.userId);
+  if (!target) return { error: "Ce compte n'existe plus." };
+
+  let revoked: number;
+  try {
+    revoked = await userRepository.revokeAllSessions(target.id, { actorId: admin.id });
+  } catch (error) {
+    logger.error({ scope: "admin", err: errorMessage(error) }, "revokeAllSessionsAction failed");
+    return { error: "La déconnexion a échoué. Aucune session n'a été fermée." };
+  }
+
+  return {
+    ok: true,
+    notice:
+      revoked === 0
+        ? "Aucune session n'était ouverte sur ce compte."
+        : `${String(revoked)} session${revoked > 1 ? "s fermées" : " fermée"}. Le site et l'app redemandent la connexion dès la page suivante ; un jeton déjà délivré reste accepté par l'API de données une heure au plus.`,
+  };
+}
+
 // ─── Password ───────────────────────────────────────────────────────────────
 
 /**

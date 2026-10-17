@@ -1375,6 +1375,9 @@ model QuizAttempt {
   answers     Json
   startedAt   DateTime  @default(now())
   submittedAt DateTime?
+  /// When an administrator lifted the wait after this attempt, from the
+  /// account's page in the console. Null while the wait runs its course.
+  cooldownWaivedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)

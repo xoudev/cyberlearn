@@ -43,13 +43,32 @@ export { badgeRepository } from "./repositories/badge.repository.js";
 export {
   userRepository,
   consoleUserWhere,
+  generatedUsername,
+  CONSOLE_PROFILE_ACTION,
   type ChangeRoleResult,
+  type ConsoleProfile,
+  type ConsoleProfileField,
+  type ConsoleProfileReset,
+  type ConsoleProfileUpdate,
   type ConsoleUserQuery,
   type ConsoleUserRow,
   type ConsoleUserSort,
   type ProfileAccess,
   type ProfilePreviewCard,
 } from "./repositories/user.repository.js";
+export {
+  placementRepository,
+  PLACEMENT_RESET_ACTION,
+  PLACEMENT_WAIVER_REASON,
+  type PlacementResetResult,
+} from "./repositories/placement.repository.js";
+export {
+  lessonProgressRepository,
+  LESSON_CORRECTIONS,
+  LESSON_CORRECTION_ACTION,
+  type LessonCorrection,
+  type LessonCorrectionResult,
+} from "./repositories/lesson-progress.repository.js";
 export {
   auditLogRepository,
   auditWhere,
@@ -201,11 +220,13 @@ export type {
 } from "./repositories/leaderboard.repository.js";
 export { challengeRepository } from "./repositories/challenge.repository.js";
 export type { ChallengeWithProgress } from "./repositories/challenge.repository.js";
-export { quizRepository } from "./repositories/quiz.repository.js";
+export { quizRepository, EXAM_COOLDOWN_WAIVED_ACTION } from "./repositories/quiz.repository.js";
 export type {
   QuizOption,
   DrawableQuestion,
   ScorableQuestion,
+  ConsoleExamAttempt,
+  WaiveCooldownResult,
 } from "./repositories/quiz.repository.js";
 export { questRepository } from "./repositories/quest.repository.js";
 export type { QuestWithProgress } from "./repositories/quest.repository.js";

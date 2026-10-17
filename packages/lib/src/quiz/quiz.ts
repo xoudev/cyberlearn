@@ -127,6 +127,8 @@ export interface AttemptLike {
   userId: string;
   startedAt: Date;
   submittedAt: Date | null;
+  /** When an administrator lifted the wait after this attempt; null or absent otherwise. */
+  cooldownWaivedAt?: Date | null;
 }
 
 export type SubmitGuard = { ok: true } | { ok: false; reason: "not-owner" | "already-submitted" };
@@ -146,12 +148,24 @@ export function isResumable(attempt: AttemptLike, now: Date, windowMinutes: numb
   );
 }
 
-/** A recent SUBMITTED attempt blocks a new start (cooldown). */
+/**
+ * When the wait after a handed-in attempt ends. Null for an attempt still
+ * running, and for one whose wait an administrator lifted from the console:
+ * that one no longer holds the next attempt back.
+ */
+export function cooldownEndsAt(
+  attempt: Pick<AttemptLike, "submittedAt" | "cooldownWaivedAt">,
+  windowMinutes: number,
+): Date | null {
+  if (attempt.submittedAt === null) return null;
+  if (attempt.cooldownWaivedAt !== undefined && attempt.cooldownWaivedAt !== null) return null;
+  return new Date(attempt.submittedAt.getTime() + windowMinutes * 60_000);
+}
+
+/** A recent SUBMITTED attempt blocks a new start (cooldown), unless its wait was lifted. */
 export function isInCooldown(attempt: AttemptLike, now: Date, windowMinutes: number): boolean {
-  return (
-    attempt.submittedAt !== null &&
-    now.getTime() - attempt.submittedAt.getTime() < windowMinutes * 60_000
-  );
+  const ends = cooldownEndsAt(attempt, windowMinutes);
+  return ends !== null && now.getTime() < ends.getTime();
 }
 
 /**
@@ -159,7 +173,11 @@ export function isInCooldown(attempt: AttemptLike, now: Date, windowMinutes: num
  * a failed attempt (not resumable, late submit rejected) so closing the tab
  * cannot dodge the timer.
  */
-export function isExpired(attempt: AttemptLike, now: Date, limitMinutes: number): boolean {
+export function isExpired(
+  attempt: Pick<AttemptLike, "startedAt" | "submittedAt">,
+  now: Date,
+  limitMinutes: number,
+): boolean {
   return (
     attempt.submittedAt === null &&
     now.getTime() - attempt.startedAt.getTime() > limitMinutes * 60_000

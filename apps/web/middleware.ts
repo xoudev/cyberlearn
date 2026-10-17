@@ -200,6 +200,13 @@ function isOnboardingRoute(pathname: string): boolean {
   return pathname.startsWith("/onboarding");
 }
 
+const PLACEMENT_TEST_ROUTE = "/onboarding/placement-test";
+
+/** The placement test's pages: its introduction, its questions and its result. */
+function isPlacementTestRoute(pathname: string): boolean {
+  return pathname === PLACEMENT_TEST_ROUTE || pathname.startsWith(`${PLACEMENT_TEST_ROUTE}/`);
+}
+
 // ─── Auth calls, bounded ───────────────────────────────────────────────────
 // The middleware runs on every request, and getSession() refreshes an expired
 // token over the network. When the auth host is unreachable the GoTrue client
@@ -417,15 +424,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
 
     // Completed-onboarding user visiting the landing, /login or /onboarding →
-    // redirect to dashboard. Exception: the result page is shown once right
-    // after completing the placement test.
-    const isPlacementResult = pathname === "/onboarding/placement-test/result";
+    // redirect to dashboard. Exception: the placement test. Its result page is
+    // shown right after the test, and the console can reset somebody's test,
+    // whose notice links to it: an account that already has a result is sent
+    // to the dashboard by the test's own pages, which read the database.
     if (
       isOnboardingComplete &&
       (isLanding ||
         ["/login", "/register", "/forgot-password"].includes(pathname) ||
         isOnboardingRoute(pathname)) &&
-      !isPlacementResult
+      !isPlacementTestRoute(pathname)
     ) {
       const dashboardUrl = new URL("/dashboard", request.url);
       const redirectResponse = NextResponse.redirect(dashboardUrl);

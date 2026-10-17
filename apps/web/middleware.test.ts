@@ -149,6 +149,30 @@ describe("the landing page is for people who are not signed in", () => {
     }
   });
 
+  it("sends a finished sign-up from the onboarding steps to the dashboard", async () => {
+    auth.session = { user: { app_metadata: { onboarding_complete: true } } };
+
+    for (const path of ["/onboarding", "/onboarding/goals", "/onboarding/placement-testx"]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      expect(location(response), path).toBe("/dashboard");
+    }
+  });
+
+  it("keeps the placement test open to a finished sign-up, for a test the console reset", async () => {
+    // The console's notice links to the test. The pages themselves send an
+    // account that already has a result to the dashboard.
+    auth.session = { user: { app_metadata: { onboarding_complete: true } } };
+
+    for (const path of [
+      "/onboarding/placement-test",
+      "/onboarding/placement-test/questions",
+      "/onboarding/placement-test/result",
+    ]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      expect(location(response), path).toBeNull();
+    }
+  });
+
   it("still exchanges an OAuth code on / before deciding anything", async () => {
     // The Site URL fallback drops people on "/?code=..." with a session that
     // is not established yet. Redirecting that to the dashboard would throw

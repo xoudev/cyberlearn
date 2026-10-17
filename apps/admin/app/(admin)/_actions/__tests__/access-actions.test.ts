@@ -13,12 +13,16 @@ const m = vi.hoisted(() => ({
   resend: vi.fn(),
   sendMfaResetEmail: vi.fn<(options: Record<string, unknown>) => Promise<void>>(),
   heldAdminRoleSince: vi.fn(),
+  revokeAllSessions: vi.fn<(userId: string, by: { actorId: string }) => Promise<number>>(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: { user: { findUnique: m.findUnique }, auditLog: { create: m.auditCreate } },
-  userRepository: { heldAdminRoleSince: m.heldAdminRoleSince },
+  userRepository: {
+    heldAdminRoleSince: m.heldAdminRoleSince,
+    revokeAllSessions: m.revokeAllSessions,
+  },
 }));
 vi.mock("@cyberlearn/db/supabase/admin", () => ({
   createSupabaseAdminClient: () => ({
@@ -50,8 +54,13 @@ vi.mock("@/lib/learner-url", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 
 const { ADMIN_MFA_REFUSAL, RECENT_ADMIN_MFA_REFUSAL } = await import("@/lib/account-guards");
-const { confirmEmailAction, resendConfirmationAction, resetMfaAction, sendPasswordResetAction } =
-  await import("../access-actions");
+const {
+  confirmEmailAction,
+  resendConfirmationAction,
+  resetMfaAction,
+  revokeAllSessionsAction,
+  sendPasswordResetAction,
+} = await import("../access-actions");
 
 /**
  * The gestures that unblock an account from the console: what they refuse,
@@ -243,6 +252,59 @@ describe("resetMfaAction", () => {
     m.sendMfaResetEmail.mockRejectedValue(new Error("resend down"));
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result).toMatchObject({ ok: true, emailFailed: true });
+  });
+});
+
+describe("revokeAllSessionsAction", () => {
+  beforeEach(() => {
+    m.revokeAllSessions.mockResolvedValue(2);
+  });
+
+  it("checks the caller is an admin before anything else", async () => {
+    m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(revokeAllSessionsAction({}, form({ userId: LEARNER }))).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
+    expect(m.revokeAllSessions).not.toHaveBeenCalled();
+  });
+
+  it("closes the account's sessions as the administrator, and says how many went", async () => {
+    const result = await revokeAllSessionsAction({}, form({ userId: LEARNER }));
+    expect(m.revokeAllSessions).toHaveBeenCalledWith(LEARNER, { actorId: ADMIN });
+    expect(result.ok).toBe(true);
+    expect(result.notice).toMatch(/^2 sessions fermées\./u);
+  });
+
+  it("says so when nothing was open", async () => {
+    m.revokeAllSessions.mockResolvedValue(0);
+    const result = await revokeAllSessionsAction({}, form({ userId: LEARNER }));
+    expect(result).toMatchObject({
+      ok: true,
+      notice: "Aucune session n'était ouverte sur ce compte.",
+    });
+  });
+
+  it("refuses on oneself, whose session is one of them", async () => {
+    const result = await revokeAllSessionsAction({}, form({ userId: ADMIN }));
+    expect(result.error).toMatch(/tes propres sessions/u);
+    expect(m.revokeAllSessions).not.toHaveBeenCalled();
+  });
+
+  it("refuses an account that is gone, and an id that is not one", async () => {
+    const gone = "55555555-5555-4555-8555-555555555555";
+    expect((await revokeAllSessionsAction({}, form({ userId: gone }))).error).toBe(
+      "Ce compte n'existe plus.",
+    );
+    expect((await revokeAllSessionsAction({}, form({ userId: "nope" }))).error).toBe(
+      "Paramètres invalides.",
+    );
+    expect(m.revokeAllSessions).not.toHaveBeenCalled();
+  });
+
+  it("reports a failure as nothing closed, rather than a crash", async () => {
+    m.revokeAllSessions.mockRejectedValue(new Error("permission denied for table sessions"));
+    const result = await revokeAllSessionsAction({}, form({ userId: LEARNER }));
+    expect(result.error).toMatch(/Aucune session n'a été fermée/u);
   });
 });
 

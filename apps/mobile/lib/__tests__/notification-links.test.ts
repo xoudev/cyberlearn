@@ -103,6 +103,12 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/challenges")).toEqual({ pathname: "/challenges" });
   });
 
+  it("opens the placement test the console reset on the app's own screen", () => {
+    expect(inAppRouteFor("/onboarding/placement-test")).toEqual({ pathname: "/placement" });
+    expect(inAppRouteFor("/onboarding/placement-test/")).toEqual({ pathname: "/placement" });
+    expect(inAppRouteFor("/onboarding")).toBeNull();
+  });
+
   it("opens the certificates sub-tab of the profile, for new notices and old ones", () => {
     expect(inAppRouteFor("/certificates")).toEqual({
       pathname: "/profile",

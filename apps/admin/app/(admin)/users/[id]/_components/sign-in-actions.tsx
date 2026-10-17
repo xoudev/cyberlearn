@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   confirmEmailAction,
   resendConfirmationAction,
+  revokeAllSessionsAction,
   sendPasswordResetAction,
   type AccessActionState,
 } from "../../../_actions/access-actions";
@@ -18,6 +19,10 @@ import {
  * Confirming without the mail is the exception, and asks first: it vouches for
  * an address nobody proved they read.
  *
+ * Signing the account out everywhere is the other way round: not a way in but
+ * a way to close every door already open, for a phone lost while signed in.
+ * It asks first too, and is not offered on the administrator's own account.
+ *
  * The labels are short on purpose. A console button does not wrap, and these
  * sit in a card that has to fit a phone.
  */
@@ -25,10 +30,13 @@ export function SignInActions({
   userId,
   email,
   confirmed,
+  canRevoke,
 }: {
   userId: string;
   email: string;
   confirmed: boolean;
+  /** False on the administrator's own account, whose session is one of them. */
+  canRevoke: boolean;
 }): React.ReactElement {
   const [resetState, resetAction, resetPending] = useActionState<AccessActionState, FormData>(
     sendPasswordResetAction,
@@ -40,6 +48,10 @@ export function SignInActions({
   );
   const [confirmState, confirmAction, confirmPending] = useActionState<AccessActionState, FormData>(
     confirmEmailAction,
+    {},
+  );
+  const [revokeState, revokeAction, revokePending] = useActionState<AccessActionState, FormData>(
+    revokeAllSessionsAction,
     {},
   );
   const router = useRouter();
@@ -99,11 +111,33 @@ export function SignInActions({
             </form>
           </>
         )}
+
+        {canRevoke && (
+          <form
+            action={revokeAction}
+            onSubmit={(event) => {
+              // Cancelling the native submit also cancels the action.
+              if (
+                !window.confirm(
+                  `Déconnecter ${email} partout ? Le site, l'app et la console lui redemanderont de se connecter.`,
+                )
+              ) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <input type="hidden" name="userId" value={userId} />
+            <button type="submit" disabled={revokePending} className="a-btn a-btn--ghost a-btn--sm">
+              {revokePending ? "Déconnexion…" : "Déconnecter toutes les sessions"}
+            </button>
+          </form>
+        )}
       </div>
 
       <AccessOutcome state={resetState} />
       <AccessOutcome state={resendState} />
       <AccessOutcome state={confirmState} />
+      <AccessOutcome state={revokeState} />
     </div>
   );
 }

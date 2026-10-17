@@ -2,19 +2,39 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
 import { Card, GhostLink, KpiCard, Monogram, PageHeader, Tag } from "../../_components/admin-ui";
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
-import { banRepository, userRepository } from "@cyberlearn/db";
+import {
+  auditLogRepository,
+  banRepository,
+  certificateRepository,
+  lessonProgressRepository,
+  moderationRepository,
+  noteReportRepository,
+  pathRepository,
+  placementRepository,
+  quizRepository,
+  ticketRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
+import { isUploadedAvatar } from "@cyberlearn/types";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
+import { avatarLabel } from "@/lib/user-record";
+import { AuditPanel } from "./_components/audit-panel";
 import { BanForm } from "./_components/ban-form";
+import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
 import { MfaResetForm } from "./_components/mfa-reset-form";
+import { ModerationPanel } from "./_components/moderation-panel";
+import { PreferencesPanel } from "./_components/preferences-panel";
+import { ProfileForm } from "./_components/profile-form";
+import { ProgressPanel } from "./_components/progress-panel";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 import { SignInActions } from "./_components/sign-in-actions";
+import { TicketsPanel } from "./_components/tickets-panel";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -31,12 +51,21 @@ const PROVIDER_LABEL: Record<string, string> = {
   github: "GitHub",
 };
 
+/** Lines of the moderation record, reports and audit log the page shows. */
+const RECENT_ROWS = 10;
+/** Lessons listed, and offered to the correction form. */
+const RECENT_LESSONS = 30;
+
 /**
- * One account, what stops it from signing in, and what you can do to it.
+ * One account, everything support needs to know about it, and what can be
+ * done to it.
  *
- * The gestures that unblock somebody come first: a lost phone or a mail that
- * never arrived is the usual reason to open this page, and before them the
- * console's only answer to either was deleting the account.
+ * Every read goes through a repository. The gestures that unblock somebody
+ * come first: a lost phone or a mail that never arrived is the usual reason
+ * to open this page. The record follows in two columns: on the left who the
+ * account is and what it learned, with the corrections to each; on the right
+ * what it asked, what it was flagged or banned for, and what the audit log
+ * says about it. The two gestures that cannot be undone close the page.
  *
  * Deletion lives here rather than on the list. A destructive action belongs
  * behind a navigation: a misclick in a sorted table is cheap and this one is
@@ -51,65 +80,49 @@ export default async function AdminUserPage({
   const viewer = await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      displayName: true,
-      avatarUrl: true,
-      role: true,
-      level: true,
-      xpTotal: true,
-      streakDays: true,
-      createdAt: true,
-      lastActiveAt: true,
-      _count: {
-        select: {
-          badges: true,
-          certificates: { where: { revokedAt: null } },
-          questions: true,
-          answers: true,
-        },
-      },
-      classMemberships: {
-        select: {
-          class: {
-            select: {
-              id: true,
-              name: true,
-              promotion: { select: { name: true, establishment: { select: { name: true } } } },
-            },
-          },
-        },
-      },
-      taughtClasses: {
-        select: {
-          subject: true,
-          class: {
-            select: {
-              id: true,
-              name: true,
-              promotion: { select: { name: true, establishment: { select: { name: true } } } },
-            },
-          },
-        },
-      },
-    },
-  });
-
+  const user = await userRepository.findConsoleProfile(id);
   if (!user) notFound();
 
+  const now = new Date();
   // The ban in force and the ones before it. The history is the point as much
   // as the state: the second ban on an account is not the first one, and
   // whoever is deciding what to do needs to see both. The role history decides
   // whether the second factor may be reset here, as the action decides it.
-  const [active, history, signIn, wasRecentlyAdmin] = await Promise.all([
+  const [
+    active,
+    history,
+    signIn,
+    wasRecentlyAdmin,
+    tickets,
+    moderationEvents,
+    moderationTotal,
+    noteReports,
+    noteReportTotal,
+    auditRows,
+    paths,
+    exams,
+    lessons,
+    lessonCounts,
+    certificates,
+    placementResetAt,
+  ] = await Promise.all([
     banRepository.findActive(user.id),
     banRepository.history(user.id),
     readSignInState(user.id),
-    userRepository.heldAdminRoleSince(user.id, recentAdminSince(new Date())),
+    userRepository.heldAdminRoleSince(user.id, recentAdminSince(now)),
+    ticketRepository.findForUser(user.id),
+    moderationRepository.findForUser(user.id, RECENT_ROWS),
+    moderationRepository.countForUser(user.id),
+    noteReportRepository.againstAuthor(user.id, RECENT_ROWS),
+    noteReportRepository.countAgainstAuthor(user.id),
+    auditLogRepository.recentForUser(user.id, RECENT_ROWS),
+    pathRepository.findProgressForConsole(user.id),
+    quizRepository.latestAttemptsForConsole(user.id),
+    lessonProgressRepository.recentForConsole(user.id, RECENT_LESSONS),
+    lessonProgressRepository.countsForConsole(user.id),
+    certificateRepository.findAllForConsole(user.id),
+    // Only an account without a result can have been asked to sit it again.
+    user.placementResult === null ? placementRepository.lastResetAt(user.id) : null,
   ]);
 
   const stamp = (date: Date): string =>
@@ -144,6 +157,7 @@ export default async function AdminUserPage({
     }));
 
   const handle = user.username ? `@${user.username}` : user.displayName || user.email;
+  const classCount = user.classMemberships.length + user.taughtClasses.length;
 
   return (
     <main className="a-page">
@@ -172,112 +186,160 @@ export default async function AdminUserPage({
         <KpiCard label="Badges" value={String(user._count.badges)} tone="purple" />
       </div>
 
-      <Card title="Compte" pad>
-        <div className="a-defrow">
-          {/* Read-only here. Changing a role is something you do while
-              scanning a list of people, which is where that control lives;
-              this page is for looking at one account and, at the bottom,
-              removing it. */}
-          <span className="a-defrow-label">Rôle</span>
-          <Tag tone={roleTone(user.role)}>{ROLE_LABEL[user.role]}</Tag>
-        </div>
-        <div className="a-defrow">
-          <span className="a-defrow-label">Inscrit</span>
-          <span className="mono a-field-hint">{formatDate(user.createdAt)}</span>
-        </div>
-        <div className="a-defrow">
-          <span className="a-defrow-label">Dernière activité</span>
-          <span className="mono a-field-hint">{formatDate(user.lastActiveAt)}</span>
-        </div>
-        <div className="a-defrow">
-          <span className="a-defrow-label">Attestations actives</span>
-          <span className="mono a-field-hint">{user._count.certificates}</span>
-        </div>
-        <div className="a-defrow">
-          <span className="a-defrow-label">Questions et réponses publiées</span>
-          {/* Named here because they are the one thing a deletion does not
-              erase - it detaches them. Better read before the button than
-              discovered after it. */}
-          <span className="mono a-field-hint">{user._count.questions + user._count.answers}</span>
-        </div>
-      </Card>
+      <div className="a-split">
+        <div className="a-stack" style={{ alignContent: "start" }}>
+          <Card title="Compte" pad>
+            <div className="a-defrow">
+              {/* Read-only here. Changing a role is something you do while
+                  scanning a list of people, which is where that control lives. */}
+              <span className="a-defrow-label">Rôle</span>
+              <Tag tone={roleTone(user.role)}>{ROLE_LABEL[user.role]}</Tag>
+            </div>
+            <div className="a-defrow">
+              <span className="a-defrow-label">Inscrit</span>
+              <span className="mono a-field-hint">{formatDate(user.createdAt)}</span>
+            </div>
+            <div className="a-defrow">
+              <span className="a-defrow-label">Dernière activité</span>
+              <span className="mono a-field-hint">{formatDate(user.lastActiveAt)}</span>
+            </div>
+            <div className="a-defrow">
+              <span className="a-defrow-label">Questions et réponses publiées</span>
+              {/* Named here because they are the one thing a deletion does not
+                  erase - it detaches them. Better read before the button than
+                  discovered after it. */}
+              <span className="mono a-field-hint">
+                {user._count.questions + user._count.answers}
+              </span>
+            </div>
+          </Card>
 
-      <SignInCard userId={user.id} email={user.email} state={signIn} />
+          <SignInCard
+            userId={user.id}
+            email={user.email}
+            state={signIn}
+            canRevoke={viewer.id !== user.id}
+          />
 
-      {/* Mounted whenever the factors could be read, even when there are
-          none: after a reset the page re-renders with zero factors, and the
-          form has to stay to say what it did. */}
-      {signIn.status === "ok" && (
-        <MfaResetForm
+          {/* Mounted whenever the factors could be read, even when there are
+              none: after a reset the page re-renders with zero factors, and
+              the form has to stay to say what it did. */}
+          {signIn.status === "ok" && (
+            <MfaResetForm
+              userId={user.id}
+              email={user.email}
+              displayName={user.displayName || handle}
+              factorCount={signIn.verifiedTotp + signIn.pendingTotp}
+              refusal={mfaResetRefusal({
+                actorId: viewer.id,
+                targetId: user.id,
+                targetRole: user.role,
+                wasRecentlyAdmin,
+              })}
+            />
+          )}
+
+          <ProfileForm
+            userId={user.id}
+            displayName={user.displayName}
+            username={user.username}
+            bio={user.bio}
+            avatarLabel={avatarLabel(user.avatarUrl)}
+            avatarIsUpload={isUploadedAvatar(user.avatarUrl)}
+            hasAvatar={user.avatarUrl !== null}
+          />
+
+          <ProgressPanel
+            userId={user.id}
+            placement={user.placementResult}
+            placementResetAt={placementResetAt}
+            placementWaivers={user._count.skipWaivers}
+            paths={paths}
+            exams={exams}
+            lessons={lessons}
+            lessonCounts={lessonCounts}
+            now={now}
+          />
+
+          <CertificatesPanel certificates={certificates} />
+        </div>
+
+        <div className="a-stack" style={{ alignContent: "start" }}>
+          <BanForm userId={user.id} active={activeBan} history={banHistory} />
+
+          <TicketsPanel tickets={tickets} />
+
+          <ModerationPanel
+            events={moderationEvents}
+            eventTotal={moderationTotal}
+            noteReports={noteReports}
+            noteReportTotal={noteReportTotal}
+          />
+
+          <AuditPanel userId={user.id} rows={auditRows} />
+
+          <PreferencesPanel preferences={user.preferences} />
+
+          <Card title={`Classes · ${String(classCount)}`}>
+            {classCount === 0 ? (
+              <div className="a-card-pad">
+                <p className="a-field-hint">Ce compte n&apos;est rattaché à aucune classe.</p>
+              </div>
+            ) : (
+              <div className="a-table-wrap">
+                <table className="a-table">
+                  <tbody>
+                    {user.taughtClasses.map((t) => (
+                      <tr key={`t-${t.class.id}`}>
+                        <td>
+                          <Link href={`/classes/${t.class.id}`} className="a-row-link">
+                            <span className="a-row-link-title">{t.class.name}</span>
+                          </Link>
+                        </td>
+                        <td style={{ color: "var(--a-muted)" }}>
+                          {t.class.promotion.establishment.name} · {t.class.promotion.name}
+                        </td>
+                        <td align="right">
+                          <Tag tone="info">
+                            Professeur{t.subject !== null ? ` · ${t.subject}` : ""}
+                          </Tag>
+                        </td>
+                      </tr>
+                    ))}
+                    {user.classMemberships.map((m) => (
+                      <tr key={`m-${m.class.id}`}>
+                        <td>
+                          <Link href={`/classes/${m.class.id}`} className="a-row-link">
+                            <span className="a-row-link-title">{m.class.name}</span>
+                          </Link>
+                        </td>
+                        <td style={{ color: "var(--a-muted)" }}>
+                          {m.class.promotion.establishment.name} · {m.class.promotion.name}
+                        </td>
+                        <td align="right">
+                          <Tag tone="neutral">Élève</Tag>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      <div className="a-stack" style={{ marginTop: 18 }}>
+        {/* Before the deletion, and with its own confirmation token: the one
+            that keeps the account is the one to reach for first. */}
+        <ResetProgressForm
           userId={user.id}
-          email={user.email}
+          handle={user.username ?? user.email}
           displayName={user.displayName || handle}
-          factorCount={signIn.verifiedTotp + signIn.pendingTotp}
-          refusal={mfaResetRefusal({
-            actorId: viewer.id,
-            targetId: user.id,
-            targetRole: user.role,
-            wasRecentlyAdmin,
-          })}
         />
-      )}
 
-      <Card title={`Classes · ${String(user.classMemberships.length + user.taughtClasses.length)}`}>
-        {user.classMemberships.length + user.taughtClasses.length === 0 ? (
-          <div className="a-card-pad">
-            <p className="a-field-hint">Ce compte n&apos;est rattaché à aucune classe.</p>
-          </div>
-        ) : (
-          <div className="a-table-wrap">
-            <table className="a-table">
-              <tbody>
-                {user.taughtClasses.map((t) => (
-                  <tr key={`t-${t.class.id}`}>
-                    <td>
-                      <Link href={`/classes/${t.class.id}`} className="a-row-link">
-                        <span className="a-row-link-title">{t.class.name}</span>
-                      </Link>
-                    </td>
-                    <td style={{ color: "var(--a-muted)" }}>
-                      {t.class.promotion.establishment.name} · {t.class.promotion.name}
-                    </td>
-                    <td align="right">
-                      <Tag tone="info">Professeur{t.subject !== null ? ` · ${t.subject}` : ""}</Tag>
-                    </td>
-                  </tr>
-                ))}
-                {user.classMemberships.map((m) => (
-                  <tr key={`m-${m.class.id}`}>
-                    <td>
-                      <Link href={`/classes/${m.class.id}`} className="a-row-link">
-                        <span className="a-row-link-title">{m.class.name}</span>
-                      </Link>
-                    </td>
-                    <td style={{ color: "var(--a-muted)" }}>
-                      {m.class.promotion.establishment.name} · {m.class.promotion.name}
-                    </td>
-                    <td align="right">
-                      <Tag tone="neutral">Élève</Tag>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      <BanForm userId={user.id} active={activeBan} history={banHistory} />
-
-      {/* Before the deletion, and with its own confirmation token: the one
-          that keeps the account is the one to reach for first. */}
-      <ResetProgressForm
-        userId={user.id}
-        handle={user.username ?? user.email}
-        displayName={user.displayName || handle}
-      />
-
-      <DeleteUserForm userId={user.id} email={user.email} />
+        <DeleteUserForm userId={user.id} email={user.email} />
+      </div>
     </main>
   );
 }
@@ -292,10 +354,12 @@ function SignInCard({
   userId,
   email,
   state,
+  canRevoke,
 }: {
   userId: string;
   email: string;
   state: SignInState;
+  canRevoke: boolean;
 }): React.ReactElement {
   if (state.status === "missing") {
     return (
@@ -364,7 +428,7 @@ function SignInCard({
         </span>
       </div>
 
-      <SignInActions userId={userId} email={email} confirmed={confirmed} />
+      <SignInActions userId={userId} email={email} confirmed={confirmed} canRevoke={canRevoke} />
     </Card>
   );
 }

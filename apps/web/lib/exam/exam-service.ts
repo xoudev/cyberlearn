@@ -6,6 +6,7 @@ import {
   EXAM_TIME_LIMIT_MINUTES,
   QUIZ_COOLDOWN_MINUTES,
   checkCanSubmit,
+  cooldownEndsAt,
   drawQuestions,
   isExpired,
   isInCooldown,
@@ -105,9 +106,10 @@ export async function examStatus(userId: string, pathId: string): Promise<ExamSt
       const elapsedMs = now - latest.startedAt.getTime();
       if (elapsedMs <= EXAM_TIME_LIMIT_MINUTES * 60_000) resumeStartedAt = latest.startedAt;
       // else expired → finalized on the next start (no resume offered)
-    } else if (latest?.submittedAt) {
-      const until = cooldownEnd(latest.submittedAt);
-      if (until.getTime() > now) cooldownUntil = until;
+    } else if (latest) {
+      // None once an administrator lifted the wait (cooldownWaivedAt).
+      const until = cooldownEndsAt(latest, QUIZ_COOLDOWN_MINUTES);
+      if (until !== null && until.getTime() > now) cooldownUntil = until;
     }
   }
 
@@ -181,7 +183,8 @@ export async function startExam(userId: string, pathId: unknown): Promise<StartQ
     return { ok: true, attemptId: latest.id, questions, startedAt: latest.startedAt };
   }
 
-  // Cooldown: a finished (submitted or expired) attempt blocks a new start (48h).
+  // Cooldown: a finished (submitted or expired) attempt blocks a new start
+  // (48h), unless an administrator lifted the wait from the console.
   if (latest && isInCooldown(latest, now, QUIZ_COOLDOWN_MINUTES)) {
     return { ok: false, error: "Examen déjà passé récemment. Réessaie après le délai d'attente." };
   }

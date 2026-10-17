@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { classRepository } from "./class.repository.js";
@@ -53,6 +54,100 @@ const CONSOLE_USER_ROW = {
 } as const satisfies Prisma.UserSelect;
 
 export type ConsoleUserRow = Prisma.UserGetPayload<{ select: typeof CONSOLE_USER_ROW }>;
+
+const CLASS_PLACE = {
+  id: true,
+  name: true,
+  promotion: { select: { name: true, establishment: { select: { name: true } } } },
+} as const satisfies Prisma.ClassSelect;
+
+/** One account as its page in the console reads it: who it is and what it set. */
+const CONSOLE_PROFILE = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  bio: true,
+  role: true,
+  level: true,
+  xpTotal: true,
+  streakDays: true,
+  longestStreak: true,
+  createdAt: true,
+  lastActiveAt: true,
+  preferences: {
+    select: {
+      theme: true,
+      emailNotifications: true,
+      spacedRepetition: true,
+      reviewReminders: true,
+      weeklyDigest: true,
+      streakReminder: true,
+      publicProfile: true,
+      leaderboardVisibility: true,
+      friendsLeaderboard: true,
+      learningGoals: true,
+      startingLevel: true,
+    },
+  },
+  placementResult: {
+    select: { devScore: true, cybersecScore: true, networkScore: true, completedAt: true },
+  },
+  _count: {
+    select: {
+      badges: true,
+      certificates: { where: { revokedAt: null } },
+      questions: true,
+      answers: true,
+      skipWaivers: { where: { grantReason: "placement_test" } },
+    },
+  },
+  classMemberships: { select: { class: { select: CLASS_PLACE } } },
+  taughtClasses: { select: { subject: true, class: { select: CLASS_PLACE } } },
+} as const satisfies Prisma.UserSelect;
+
+export type ConsoleProfile = Prisma.UserGetPayload<{ select: typeof CONSOLE_PROFILE }>;
+
+/** The profile fields the console edits, and the avatar it can only clear. */
+export type ConsoleProfileField = "displayName" | "username" | "bio" | "avatar";
+
+export type ConsoleProfileUpdate =
+  | { ok: true; changed: Exclude<ConsoleProfileField, "avatar">[] }
+  | { ok: false; reason: "NOT_FOUND" | "USERNAME_TAKEN" | "USERNAME_REQUIRED" };
+
+export type ConsoleProfileReset =
+  | {
+      ok: true;
+      /** What the field holds now. */
+      value: string | null;
+      /** The avatar the reset cleared, for the caller to remove its file. */
+      clearedAvatar: string | null;
+    }
+  | { ok: false; reason: "NOT_FOUND" | "UNCHANGED" | "NO_USERNAME" | "USERNAME_TAKEN" };
+
+/** The audit actions of the console's gestures on a profile and its sessions. */
+export const CONSOLE_PROFILE_ACTION = {
+  update: "admin.user.profile.update",
+  reset: "admin.user.profile.reset",
+  sessionsRevoked: "admin.user.sessions.revoked",
+} as const;
+
+/** Tries before a generated handle is given up on: each one is new. */
+const GENERATED_USERNAME_TRIES = 5;
+
+/**
+ * A handle nobody chose, for an account whose own the console reset:
+ * "utilisateur-" and eight hex characters, inside the rules of usernameSchema.
+ */
+export function generatedUsername(): string {
+  return `utilisateur-${randomUUID().slice(0, 8)}`;
+}
+
+/** A unique-constraint violation: somebody took the handle between the check and the write. */
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}
 
 /**
  * The order of each sortable column. The id comes last everywhere: rows that
@@ -560,6 +655,198 @@ export const userRepository = {
       prisma.user.count({ where: { lastActiveAt: { gte: new Date(now.getTime() - WEEK_MS) } } }),
     ]);
     return { total, admins, activeWeek };
+  },
+
+  /**
+   * One account for its page in the console: identity, counters, settings,
+   * placement test and classes, in one read. The page used to query Prisma
+   * itself, and read neither the bio nor the settings.
+   */
+  async findConsoleProfile(userId: string): Promise<ConsoleProfile | null> {
+    return prisma.user.findUnique({ where: { id: userId }, select: CONSOLE_PROFILE });
+  },
+
+  /**
+   * Signs the account out everywhere: every session Supabase Auth holds for
+   * it, on the site, the app and the console alike. Returns how many there
+   * were.
+   *
+   * A statement on auth.sessions rather than a call to Supabase: its admin
+   * signOut takes the user's own token, which the console never holds. The
+   * refresh tokens go with their sessions, by the cascade on their foreign
+   * key, so no client can renew one. The site and the app check the session
+   * on every request (getUser), and stop at the next one; a token already
+   * issued is still accepted by the Data API until it expires, an hour at most.
+   *
+   * The audit row is written in the same transaction: the sessions and their
+   * trace go together or not at all.
+   */
+  async revokeAllSessions(userId: string, by: { actorId: string }): Promise<number> {
+    return prisma.$transaction(async (tx) => {
+      const revoked =
+        await tx.$executeRaw`DELETE FROM auth.sessions WHERE user_id = ${userId}::uuid`;
+      await tx.auditLog.create({
+        data: {
+          actorId: by.actorId,
+          action: CONSOLE_PROFILE_ACTION.sessionsRevoked,
+          targetType: "User",
+          targetId: userId,
+          metadata: { sessionsRevoked: revoked },
+        },
+      });
+      return revoked;
+    });
+  },
+
+  /**
+   * The name shown, the handle and the bio, as an administrator corrected
+   * them. The bounds are the caller's (the same as the site's forms); the
+   * handle being free is checked here, in the transaction that writes it, and
+   * the unique index settles a race.
+   *
+   * An account that has a handle keeps one: `username: null` is accepted only
+   * from an account still in onboarding, which has none yet. Nothing changed
+   * writes nothing, to the account or to the log.
+   */
+  async updateProfileFromConsole(
+    userId: string,
+    input: { displayName: string; username: string | null; bio: string | null },
+    by: { actorId: string },
+  ): Promise<ConsoleProfileUpdate> {
+    try {
+      return await prisma.$transaction(async (tx): Promise<ConsoleProfileUpdate> => {
+        const before = await tx.user.findUnique({
+          where: { id: userId },
+          select: { username: true, displayName: true, bio: true },
+        });
+        if (before === null) return { ok: false, reason: "NOT_FOUND" };
+        if (input.username === null && before.username !== null) {
+          return { ok: false, reason: "USERNAME_REQUIRED" };
+        }
+
+        const changed: Exclude<ConsoleProfileField, "avatar">[] = [];
+        if (input.displayName !== before.displayName) changed.push("displayName");
+        if (input.username !== before.username) changed.push("username");
+        if (input.bio !== before.bio) changed.push("bio");
+        if (changed.length === 0) return { ok: true, changed };
+
+        if (input.username !== null && input.username !== before.username) {
+          const holder = await tx.user.findUnique({
+            where: { username: input.username },
+            select: { id: true },
+          });
+          if (holder !== null && holder.id !== userId) {
+            return { ok: false, reason: "USERNAME_TAKEN" };
+          }
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { displayName: input.displayName, username: input.username, bio: input.bio },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: by.actorId,
+            action: CONSOLE_PROFILE_ACTION.update,
+            targetType: "User",
+            targetId: userId,
+            // The fields are named, not copied: the log keeps who changed
+            // what, not a second copy of somebody's name, handle or bio. A
+            // copy would also outlive the account, since an erasure
+            // pseudonymises the rows where it acted, not those about it.
+            metadata: { fields: changed },
+          },
+        });
+        return { ok: true, changed };
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) return { ok: false, reason: "USERNAME_TAKEN" };
+      throw error;
+    }
+  },
+
+  /**
+   * Puts one profile field back to what nobody chose: the name shown becomes
+   * the handle, the handle a generated one, the bio and the avatar nothing.
+   * For a name or a picture that should not be there, without having to type
+   * a replacement for somebody.
+   *
+   * Returns the avatar it cleared, so the caller can remove an uploaded
+   * picture's file: storage is not transactional, and a file that outlives
+   * its row is a loose end to report, not a reason to keep the row.
+   */
+  async resetProfileFieldFromConsole(
+    userId: string,
+    field: ConsoleProfileField,
+    by: { actorId: string },
+    newUsername: () => string = generatedUsername,
+  ): Promise<ConsoleProfileReset> {
+    try {
+      return await prisma.$transaction(async (tx): Promise<ConsoleProfileReset> => {
+        const before = await tx.user.findUnique({
+          where: { id: userId },
+          select: { username: true, displayName: true, bio: true, avatarUrl: true },
+        });
+        if (before === null) return { ok: false, reason: "NOT_FOUND" };
+
+        let data: Prisma.UserUpdateInput;
+        let value: string | null = null;
+        switch (field) {
+          case "displayName": {
+            if (before.username === null) return { ok: false, reason: "NO_USERNAME" };
+            if (before.displayName === before.username) return { ok: false, reason: "UNCHANGED" };
+            value = before.username;
+            data = { displayName: value };
+            break;
+          }
+          case "username": {
+            if (before.username === null) return { ok: false, reason: "NO_USERNAME" };
+            for (let attempt = 0; attempt < GENERATED_USERNAME_TRIES && value === null; attempt++) {
+              const candidate = newUsername();
+              const holder = await tx.user.findUnique({
+                where: { username: candidate },
+                select: { id: true },
+              });
+              if (holder === null) value = candidate;
+            }
+            if (value === null) return { ok: false, reason: "USERNAME_TAKEN" };
+            data = { username: value };
+            break;
+          }
+          case "bio": {
+            if (before.bio === null) return { ok: false, reason: "UNCHANGED" };
+            data = { bio: null };
+            break;
+          }
+          case "avatar": {
+            if (before.avatarUrl === null) return { ok: false, reason: "UNCHANGED" };
+            data = { avatarUrl: null };
+            break;
+          }
+        }
+
+        await tx.user.update({ where: { id: userId }, data });
+        await tx.auditLog.create({
+          data: {
+            actorId: by.actorId,
+            action: CONSOLE_PROFILE_ACTION.reset,
+            targetType: "User",
+            targetId: userId,
+            // The field alone, as for an update: neither the old name, handle
+            // or picture, nor the new value (a handle is still a name).
+            metadata: { field },
+          },
+        });
+        return {
+          ok: true,
+          value,
+          clearedAvatar: field === "avatar" ? before.avatarUrl : null,
+        };
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) return { ok: false, reason: "USERNAME_TAKEN" };
+      throw error;
+    }
   },
 
   /**

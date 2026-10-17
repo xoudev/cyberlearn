@@ -225,6 +225,27 @@ export const certificateRepository = {
     });
   },
 
+  /**
+   * Every certificate of an account, the revoked ones included, for its page
+   * in the console. findByUser leaves the revoked out: the holder has nothing
+   * to do with them, support needs to see them.
+   */
+  async findAllForConsole(userId: string) {
+    return prisma.certificate.findMany({
+      where: { userId },
+      orderBy: { issuedAt: "desc" },
+      select: {
+        id: true,
+        publicId: true,
+        issuedAt: true,
+        score: true,
+        revokedAt: true,
+        revokedReason: true,
+        path: { select: { title: true, slug: true } },
+      },
+    });
+  },
+
   async findByUser(userId: string) {
     return prisma.certificate.findMany({
       where: { userId, revokedAt: null },

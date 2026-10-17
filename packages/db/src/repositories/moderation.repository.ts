@@ -313,6 +313,11 @@ export const moderationRepository = {
     });
   },
 
+  /** How many decisions were recorded about one account's writing, all told. */
+  async countForUser(userId: string): Promise<number> {
+    return prisma.moderationEvent.count({ where: { userId } });
+  },
+
   /**
    * Ties a recorded decision to the row it produced.
    *
