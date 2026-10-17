@@ -1,7 +1,7 @@
 import React from "react";
 import { ImageResponse } from "next/og";
 import { userRepository } from "@cyberlearn/db";
-import { previewCardText } from "@/lib/profile/preview-card";
+import { previewCardText, previewHandle } from "@/lib/profile/preview-card";
 
 /**
  * A profile's link preview: its owner's name, handle and figures on the
@@ -11,7 +11,9 @@ import { previewCardText } from "@/lib/profile/preview-card";
  * Read as a stranger reads it, whoever asks: a shared link travels, and the
  * crawler that fetches it is nobody's friend. Drawn on each request rather
  * than cached, so a profile closed a minute ago stops naming its owner a
- * minute later. The font is ImageResponse's own: nothing is fetched to draw.
+ * minute later. The font is ImageResponse's own, and the text is cut down to
+ * what it draws (drawableText): a glyph it lacks would make next/og fetch a
+ * font or an emoji from a CDN while drawing.
  */
 
 export const alt = "Un profil CyberLearn";
@@ -34,8 +36,9 @@ export default async function ProfilePreviewImage({
 }: {
   params: Promise<{ username: string }>;
 }): Promise<ImageResponse> {
-  const { username } = await params;
-  const card = await userRepository.findPreviewCard(username);
+  // A handle no profile could have draws the card without a name, unread.
+  const handle = previewHandle((await params).username);
+  const card = handle === null ? null : await userRepository.findPreviewCard(handle);
   const text = previewCardText(card);
 
   return new ImageResponse(
