@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { CLASS_CRUMBS } from "../_components/class-columns";
 import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
@@ -65,8 +66,7 @@ export default async function AdminClassPage({
         // name on every page of the console, and the school and the year
         // answer "which SIO1-A?". Neither has a page of its own to link to.
         crumbs={[
-          { label: "Structure" },
-          { label: "Classes", href: "/classes" },
+          ...CLASS_CRUMBS,
           { label: klass.promotion.establishment.name },
           { label: klass.promotion.name },
         ]}

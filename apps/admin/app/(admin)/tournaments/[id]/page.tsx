@@ -15,6 +15,7 @@ import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/a
 import { updateTournamentAction } from "../_actions/tournament-actions";
 import { TournamentControls } from "../_components/tournament-controls";
 import { TournamentForm } from "../_components/tournament-form";
+import { TOURNAMENT_CRUMBS } from "../_components/tournament-head";
 import { tournamentOptions } from "../_components/tournament-options";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerUrl } from "@/lib/learner-url";
@@ -103,7 +104,7 @@ export default async function AdminTournamentPage({ params }: Props): Promise<Re
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Tournois", href: "/tournaments" }]}
+        crumbs={TOURNAMENT_CRUMBS}
         title={edited.title}
         description={`${String(edited._count.solves)} flag${edited._count.solves > 1 ? "s" : ""} trouvé${edited._count.solves > 1 ? "s" : ""}.`}
         actions={

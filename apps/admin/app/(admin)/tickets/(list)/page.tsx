@@ -9,10 +9,11 @@ import {
   LAST_TICKET_MESSAGE,
   prisma,
 } from "@cyberlearn/db";
-import { KpiCard, PageHeader, Tag, type Tone } from "../_components/admin-ui";
-import { DataGrid, type GridRow } from "../_components/data-grid";
-import { TicketStatusSelect } from "./_components/TicketStatusSelect";
-import { STATUS_META, THEME_META } from "./ticket-meta";
+import { KpiCard, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
+import { DataGrid, type GridRow } from "../../_components/data-grid";
+import { TicketStatusSelect } from "../_components/TicketStatusSelect";
+import { TICKET_COLUMNS, TICKET_KPI_LABELS, TICKETS_HEADER } from "../_components/ticket-columns";
+import { STATUS_META, THEME_META } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -177,19 +178,19 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Support" }]}
-        title="Tickets"
-        description="Signalements du formulaire de contact. Les bugs et alertes sécurité ouverts ou en cours sont considérés critiques. Un ticket en cours dont le demandeur a répondu remonte en tête, marqué « Réponse en attente »."
+        crumbs={TICKETS_HEADER.crumbs}
+        title={TICKETS_HEADER.title}
+        description={TICKETS_HEADER.description}
       />
 
       <div className="a-kpi-grid">
         <KpiCard
-          label="Ouverts"
+          label={TICKET_KPI_LABELS[0]}
           value={String(openCount)}
           tone={openCount > 0 ? "danger" : "accent"}
         />
         <KpiCard
-          label="En cours"
+          label={TICKET_KPI_LABELS[1]}
           value={String(inProgressCount)}
           tone={inProgressCount > 0 ? "warning" : "accent"}
           delta={
@@ -203,23 +204,16 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
             ) : undefined
           }
         />
-        <KpiCard label="Résolus / fermés" value={String(resolvedCount)} />
+        <KpiCard label={TICKET_KPI_LABELS[2]} value={String(resolvedCount)} />
         <KpiCard
-          label="Critiques actifs"
+          label={TICKET_KPI_LABELS[3]}
           value={String(criticalCount)}
           tone={criticalCount > 0 ? "danger" : "accent"}
         />
       </div>
 
       <DataGrid
-        columns={[
-          { label: "Sujet", sortable: true },
-          { label: "Thème", sortable: true },
-          { label: "Utilisateur", sortable: true },
-          { label: "Jira" },
-          { label: "Date", sortable: true },
-          { label: "Statut", sortable: true },
-        ]}
+        columns={TICKET_COLUMNS}
         rows={rows}
         facets={[
           {

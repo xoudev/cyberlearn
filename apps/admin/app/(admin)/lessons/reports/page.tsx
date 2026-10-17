@@ -8,6 +8,7 @@ import {
   QUIZ_REPORT_REASON_LABELS,
 } from "@cyberlearn/lib/quiz/report-reasons";
 import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { REPORTS_HEADER } from "../_components/lesson-headers";
 import { resolveQuizReportsAction } from "./actions";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -114,8 +115,8 @@ export default async function QuizReportsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
-        title="Questions signalées"
+        crumbs={REPORTS_HEADER.crumbs}
+        title={REPORTS_HEADER.title}
         description={
           groups.length === 0
             ? "Les apprenants signalent ici une question de quiz ambiguë, une réponse douteuse ou une faute."

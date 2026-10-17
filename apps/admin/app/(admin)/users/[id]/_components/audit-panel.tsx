@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { AuditRow } from "@cyberlearn/db";
 import { auditActorName } from "@/lib/audit-export";
 import { Card } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 
 const stamp = new Intl.DateTimeFormat("fr-FR", {
   dateStyle: "short",
@@ -24,7 +25,7 @@ export function AuditPanel({
 }): React.ReactElement {
   return (
     <Card
-      title="Journal d'audit"
+      title={USER_CARDS.audit}
       action={
         <span style={{ display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
           <Link href={`/audit?target=${userId}`} className="a-btn a-btn--ghost a-btn--sm">

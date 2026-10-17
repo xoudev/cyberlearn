@@ -8,6 +8,7 @@ import type {
 } from "@cyberlearn/db";
 import { examWait, type ExamWait } from "@/lib/user-record";
 import { Card, Tag, type Tone } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 import { formatDay } from "../../_components/dates";
 import {
   LessonCorrectionForm,
@@ -75,7 +76,7 @@ export function ProgressPanel({
 
   return (
     <Card
-      title="Progression"
+      title={USER_CARDS.progress}
       action={
         <span className="mono a-field-hint">
           {lessonCounts.completed} leçon{lessonCounts.completed > 1 ? "s" : ""} terminée

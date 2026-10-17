@@ -24,6 +24,7 @@ import {
   type QuizSyncState,
 } from "@/lib/services/repository-import.service";
 import type { DiffHunk } from "@/lib/text-diff";
+import { SYNC_HEADER, SYNC_KPI_LABELS } from "../_components/lesson-headers";
 import { PublishCatalogueButton, RunAllButton, RunOneButton } from "./_components/sync-controls";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -382,9 +383,9 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
-        title="Synchroniser avec le dépôt"
-        description="Les leçons de content/lessons, les parcours de content/paths et leurs examens de content/quizzes, comparés à la base. Rien n'est écrit sans confirmation, et rien n'est publié : les nouvelles leçons et les nouveaux parcours arrivent en brouillon. Le slug, le statut et l'image de couverture d'une leçon existante ne changent jamais."
+        crumbs={SYNC_HEADER.crumbs}
+        title={SYNC_HEADER.title}
+        description={SYNC_HEADER.description}
         actions={<GhostLink href="/lessons">Retour aux leçons</GhostLink>}
       />
 
@@ -397,23 +398,23 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
         <>
           <div className="a-kpi-grid a-sync-kpis">
             <KpiCard
-              label="À mettre à jour"
+              label={SYNC_KPI_LABELS[0]}
               value={String(overview.updates.length)}
               tone="warning"
             />
-            <KpiCard label="Déjà à jour" value={String(overview.unchanged)} tone="accent" />
+            <KpiCard label={SYNC_KPI_LABELS[1]} value={String(overview.unchanged)} tone="accent" />
             <KpiCard
-              label="Pas encore importées"
+              label={SYNC_KPI_LABELS[2]}
               value={String(overview.notImported.length)}
               tone="info"
             />
             <KpiCard
-              label="Parcours à synchroniser"
+              label={SYNC_KPI_LABELS[3]}
               value={String(paths.paths.filter((p) => !p.upToDate).length)}
               tone="info"
             />
             <KpiCard
-              label="Fichiers illisibles"
+              label={SYNC_KPI_LABELS[4]}
               value={String(overview.unreadable.length)}
               tone="danger"
             />

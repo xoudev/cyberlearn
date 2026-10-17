@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { classRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../_components/admin-ui";
+import { NEW_CLASS_HEADER } from "../_components/class-columns";
 import { ComposeForms } from "./_components/compose-forms";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -29,9 +30,9 @@ export default async function NewClassPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Structure" }, { label: "Classes", href: "/classes" }]}
-        title="Créer"
-        description="Un établissement contient des promos, une promo contient des classes. Crée-les dans cet ordre - chaque niveau a besoin du précédent."
+        crumbs={NEW_CLASS_HEADER.crumbs}
+        title={NEW_CLASS_HEADER.title}
+        description={NEW_CLASS_HEADER.description}
         actions={<GhostLink href="/classes">Retour aux classes</GhostLink>}
       />
 

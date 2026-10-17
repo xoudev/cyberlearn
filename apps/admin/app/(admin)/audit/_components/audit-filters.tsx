@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Select } from "@cyberlearn/ui";
 import { gridHref } from "@/lib/grid-href";
+import { AUDIT_FILTER_LABELS } from "./columns";
 
 /**
  * The audit log's filters: who, on what, which action, between which days.
@@ -54,7 +55,7 @@ export function AuditFilters({
       }}
     >
       <label className="a-filter">
-        Acteur
+        {AUDIT_FILTER_LABELS.actor}
         <input
           name="actor"
           className="a-input a-input--sm"
@@ -64,7 +65,7 @@ export function AuditFilters({
         />
       </label>
       <label className="a-filter">
-        Cible
+        {AUDIT_FILTER_LABELS.target}
         <input
           name="target"
           className="a-input a-input--sm"
@@ -74,7 +75,7 @@ export function AuditFilters({
         />
       </label>
       <div className="a-filter">
-        <span id={actionLabel}>Action</span>
+        <span id={actionLabel}>{AUDIT_FILTER_LABELS.action}</span>
         <Select
           name="action"
           block={false}
@@ -88,7 +89,7 @@ export function AuditFilters({
         />
       </div>
       <label className="a-filter">
-        Du
+        {AUDIT_FILTER_LABELS.from}
         <input
           type="date"
           name="from"
@@ -97,7 +98,7 @@ export function AuditFilters({
         />
       </label>
       <label className="a-filter">
-        Au
+        {AUDIT_FILTER_LABELS.to}
         <input
           type="date"
           name="to"

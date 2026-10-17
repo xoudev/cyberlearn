@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { Card, PageHeader } from "../../../_components/admin-ui";
+import { CHALLENGE_CRUMBS } from "../../_components/challenge-columns";
 import { EditChallengeForm } from "./_components/edit-challenge-form";
 import { HintsManager } from "./_components/hints-manager";
 import type { ChallengeOption } from "../../new/_components/new-challenge-form";
@@ -69,7 +70,7 @@ export default async function EditChallengePage({ params }: Props): Promise<Reac
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }, { label: "Challenges", href: "/challenges" }]}
+        crumbs={CHALLENGE_CRUMBS}
         title={challenge.title}
         description={<span className="a-mono">{challenge.refCode}</span>}
       />

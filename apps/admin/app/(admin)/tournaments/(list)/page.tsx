@@ -9,7 +9,15 @@ import {
   tournamentPhase,
   type TournamentPhase,
 } from "@cyberlearn/lib/challenges/tournament";
-import { Card, EmptyState, PageHeader, PrimaryLink, Tag, type Tone } from "../_components/admin-ui";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  PrimaryLink,
+  Tag,
+  type Tone,
+} from "../../_components/admin-ui";
+import { TOURNAMENTS_HEADER } from "../_components/tournament-head";
 import { requireAdminPage } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Tournois" };
@@ -29,9 +37,9 @@ export default async function AdminTournamentsPage(): Promise<React.ReactElement
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }]}
-        title="Tournois"
-        description="Des défis à flag ouverts sur une période, entre classes ou entre écoles, avec un tableau des scores en direct sur le site et dans l'app."
+        crumbs={TOURNAMENTS_HEADER.crumbs}
+        title={TOURNAMENTS_HEADER.title}
+        description={TOURNAMENTS_HEADER.description}
         actions={<PrimaryLink href="/tournaments/new">Nouveau tournoi</PrimaryLink>}
       />
 

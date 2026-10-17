@@ -1,103 +1,66 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@cyberlearn/ui";
+import { Card, PageHeader } from "../_components/admin-ui";
+import { ActionsSkeleton, KpiGridSkeleton } from "../_components/data-grid-skeleton";
+import { FeedSkeleton, LineSkeleton, TableSkeleton } from "../_components/page-skeletons";
+import {
+  DASHBOARD_CARDS,
+  DASHBOARD_HEADER,
+  DASHBOARD_KPI_LABELS,
+  RECENT_USER_COLUMNS,
+} from "./_components/dashboard-head";
 
-const CARD: React.CSSProperties = {
-  background: "#0A0826",
-  border: "1px solid #1F1B47",
-  borderRadius: 12,
-  padding: 20,
-  position: "relative",
-};
-
+/**
+ * The overview while it loads, in the page's own order: the four figures, the
+ * errors of the last day, then the activity beside the newest accounts and
+ * the content meters.
+ */
 export default function AdminDashboardLoading(): React.ReactElement {
   return (
-    <div className="a-page">
-      {/* Page header */}
-      <div className="a-page-head">
-        <div>
-          <Skeleton width={220} height={28} style={{ marginBottom: 10 }} />
-          <Skeleton width={160} height={14} />
-        </div>
-        <Skeleton width={120} height={36} style={{ borderRadius: 8 }} />
-      </div>
+    <main className="a-page" aria-busy="true">
+      <PageHeader
+        crumbs={DASHBOARD_HEADER.crumbs}
+        title={DASHBOARD_HEADER.title}
+        description={DASHBOARD_HEADER.description}
+        actions={<ActionsSkeleton widths={[160, 170]} />}
+      />
 
-      {/* Stats grid - 4 cards */}
-      <div className="admin-stats-grid">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} style={CARD}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
-              <Skeleton width={40} height={40} style={{ borderRadius: 10, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <Skeleton width="60%" height={12} style={{ marginBottom: 8 }} />
-                <Skeleton width="40%" height={10} />
-              </div>
+      <KpiGridSkeleton labels={DASHBOARD_KPI_LABELS} />
+
+      <Card title={DASHBOARD_CARDS.errors}>
+        <FeedSkeleton items={3} />
+      </Card>
+
+      <div className="a-split">
+        <Card title={DASHBOARD_CARDS.activity} action={<LineSkeleton width={80} height={10} />}>
+          <FeedSkeleton items={8} />
+        </Card>
+
+        <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
+          <Card title={DASHBOARD_CARDS.newUsers} action={<LineSkeleton width={50} height={10} />}>
+            <TableSkeleton columns={RECENT_USER_COLUMNS} rows={5} />
+          </Card>
+
+          <Card
+            title={DASHBOARD_CARDS.content}
+            action={<LineSkeleton width={60} height={10} />}
+            pad
+          >
+            <div style={{ display: "grid", gap: 16 }} aria-hidden="true">
+              {Array.from({ length: 3 }, (_, index) => (
+                <span key={index} className="a-meter">
+                  <span style={{ display: "flex", justifyContent: "space-between" }}>
+                    <Skeleton as="span" w={80} h={10} />
+                    <Skeleton as="span" w={24} h={10} />
+                  </span>
+                  <Skeleton as="span" w="100%" h={4} />
+                </span>
+              ))}
+              <Skeleton as="span" w={140} h={10} />
             </div>
-            <Skeleton width="50%" height={32} style={{ marginBottom: 8 }} />
-            <Skeleton width="70%" height={10} />
-          </div>
-        ))}
-      </div>
-
-      {/* 2-col: activity log + recent users */}
-      <div className="admin-2col-grid">
-        {/* Activity log */}
-        <div style={CARD}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Skeleton width={160} height={18} />
-            <Skeleton width={80} height={26} style={{ borderRadius: 6 }} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <Skeleton
-                  width={8}
-                  height={8}
-                  style={{ borderRadius: "50%", marginTop: 5, flexShrink: 0 }}
-                />
-                <div style={{ flex: 1 }}>
-                  <Skeleton width="75%" height={13} style={{ marginBottom: 6 }} />
-                  <Skeleton width="45%" height={11} />
-                </div>
-                <Skeleton width={52} height={11} style={{ flexShrink: 0 }} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent users */}
-        <div style={CARD}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Skeleton width={140} height={18} />
-            <Skeleton width={80} height={26} style={{ borderRadius: 6 }} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <Skeleton width={36} height={36} style={{ borderRadius: "50%", flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <Skeleton width="55%" height={13} style={{ marginBottom: 6 }} />
-                  <Skeleton width="75%" height={11} />
-                </div>
-                <Skeleton width={56} height={22} style={{ borderRadius: 99, flexShrink: 0 }} />
-              </div>
-            ))}
-          </div>
+          </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

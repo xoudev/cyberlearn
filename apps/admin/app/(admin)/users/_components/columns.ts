@@ -14,6 +14,32 @@ export const USERS_HEADER = {
     "Recherche, tri et gestion des rôles. Un changement de rôle se confirme et est tracé dans l'audit log ; personne ne peut retirer son propre rôle Admin ni celui du dernier administrateur.",
 };
 
+/** The trail of an account's own page, back to the list. */
+export const USER_CRUMBS = [
+  { label: "Comptes" },
+  { label: "Utilisateurs", href: "/users" },
+] as const satisfies readonly [Crumb, Crumb];
+
+/** The figures of one account, above its cards. */
+export const USER_DETAIL_KPI_LABELS = ["Niveau", "XP", "Série", "Badges"] as const;
+
+/**
+ * The cards of an account's page whose title does not depend on the account.
+ * The others carry a count (tickets, certificates, classes) or a state (a ban
+ * in force), and wait as a block in the skeleton.
+ */
+export const USER_CARDS = {
+  account: "Compte",
+  signIn: "Connexion",
+  profile: "Profil",
+  progress: "Progression",
+  moderation: "Modération",
+  audit: "Journal d'audit",
+  preferences: "Préférences",
+  resetProgress: "Remettre la progression à zéro",
+  danger: "Zone dangereuse",
+} as const;
+
 export const USER_KPI_LABELS = [
   "Total",
   "Administrateurs",

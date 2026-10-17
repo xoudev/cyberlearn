@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { isActionableEvent, moderationRepository, noteReportRepository } from "@cyberlearn/db";
 import { banRefusal } from "@/lib/account-guards";
-import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../_components/admin-ui";
-import { ReviewButtons } from "./_components/review-buttons";
-import { ReviewOutcomes } from "./_components/review-outcomes";
-import { SURFACE_LABEL } from "./surface-labels";
+import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../../_components/admin-ui";
+import { MODERATION_HEADER, MODERATION_KPI_LABELS } from "../_components/moderation-head";
+import { ReviewButtons } from "../_components/review-buttons";
+import { ReviewOutcomes } from "../_components/review-outcomes";
+import { SURFACE_LABEL } from "../surface-labels";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -74,9 +75,9 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Sécurité" }]}
-        title="Modération"
-        description="Ce que le filtre automatique a refusé ou signalé. Confirmer ou infirmer ne republie rien : ça dit si la règle est bonne."
+        crumbs={MODERATION_HEADER.crumbs}
+        title={MODERATION_HEADER.title}
+        description={MODERATION_HEADER.description}
         actions={
           // Reports by people, kept apart from the filter's own queue.
           <GhostLink href="/moderation/notes">Notes signalées · {String(reportedNotes)}</GhostLink>
@@ -84,11 +85,15 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label="En attente" value={String(counts.PENDING ?? 0)} tone="warning" />
-        <KpiCard label="Décisions confirmées" value={String(upheld)} tone="accent" />
-        <KpiCard label="Faux positifs" value={String(overturned)} tone="danger" />
         <KpiCard
-          label="Taux de faux positifs"
+          label={MODERATION_KPI_LABELS[0]}
+          value={String(counts.PENDING ?? 0)}
+          tone="warning"
+        />
+        <KpiCard label={MODERATION_KPI_LABELS[1]} value={String(upheld)} tone="accent" />
+        <KpiCard label={MODERATION_KPI_LABELS[2]} value={String(overturned)} tone="danger" />
+        <KpiCard
+          label={MODERATION_KPI_LABELS[3]}
           value={judged === 0 ? "n.d." : `${String(Math.round((overturned / judged) * 100))}%`}
           tone="info"
         />

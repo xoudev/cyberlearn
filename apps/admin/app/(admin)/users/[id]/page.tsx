@@ -35,6 +35,7 @@ import { ProgressPanel } from "./_components/progress-panel";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 import { SignInActions } from "./_components/sign-in-actions";
 import { TicketsPanel } from "./_components/tickets-panel";
+import { USER_CARDS, USER_CRUMBS, USER_DETAIL_KPI_LABELS } from "../_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -162,7 +163,7 @@ export default async function AdminUserPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Comptes" }, { label: "Utilisateurs", href: "/users" }]}
+        crumbs={USER_CRUMBS}
         title={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
             <Monogram text={handle.replace("@", "")} size={32} tone={roleTone(user.role)} />
@@ -180,15 +181,27 @@ export default async function AdminUserPage({
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label="Niveau" value={String(user.level)} tone="accent" />
-        <KpiCard label="XP" value={user.xpTotal.toLocaleString("fr-FR")} tone="info" />
-        <KpiCard label="Série" value={`${String(user.streakDays)} j`} tone="warning" />
-        <KpiCard label="Badges" value={String(user._count.badges)} tone="purple" />
+        <KpiCard label={USER_DETAIL_KPI_LABELS[0]} value={String(user.level)} tone="accent" />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[1]}
+          value={user.xpTotal.toLocaleString("fr-FR")}
+          tone="info"
+        />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[2]}
+          value={`${String(user.streakDays)} j`}
+          tone="warning"
+        />
+        <KpiCard
+          label={USER_DETAIL_KPI_LABELS[3]}
+          value={String(user._count.badges)}
+          tone="purple"
+        />
       </div>
 
       <div className="a-split">
         <div className="a-stack" style={{ alignContent: "start" }}>
-          <Card title="Compte" pad>
+          <Card title={USER_CARDS.account} pad>
             <div className="a-defrow">
               {/* Read-only here. Changing a role is something you do while
                   scanning a list of people, which is where that control lives. */}
@@ -363,7 +376,7 @@ function SignInCard({
 }): React.ReactElement {
   if (state.status === "missing") {
     return (
-      <Card title="Connexion" pad>
+      <Card title={USER_CARDS.signIn} pad>
         <p className="a-form-notice">
           Aucun identifiant de connexion n&apos;est rattaché à ce compte : il n&apos;a pas été créé
           par l&apos;inscription. Il ne peut pas se connecter, et aucun e-mail ne peut l&apos;y
@@ -374,7 +387,7 @@ function SignInCard({
   }
   if (state.status === "unavailable") {
     return (
-      <Card title="Connexion" pad>
+      <Card title={USER_CARDS.signIn} pad>
         <p className="a-form-error">
           Supabase n&apos;a pas répondu : l&apos;état de connexion de ce compte n&apos;a pas pu être
           lu. Recharge la page dans un instant.
@@ -385,7 +398,7 @@ function SignInCard({
 
   const confirmed = state.emailConfirmedAt !== null;
   return (
-    <Card title="Connexion" pad>
+    <Card title={USER_CARDS.signIn} pad>
       <div className="a-defrow">
         <span className="a-defrow-label">Adresse e-mail</span>
         {state.emailConfirmedAt !== null ? (
