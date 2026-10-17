@@ -32,6 +32,22 @@ export function isBanActive(ban: BanLike, now: Date = new Date()): boolean {
   return ban.expiresAt.getTime() > now.getTime();
 }
 
+/** Where a ban stands: in force, lifted by somebody, or run its course. */
+export type BanState = "ACTIVE" | "LIFTED" | "EXPIRED";
+
+/**
+ * Which of the three a ban is at `now`, for a screen that has to say so - the
+ * console's card on an appeal shows the ban it contests whatever became of it.
+ *
+ * Lifted is read first, for the reason isBanActive gives: a ban lifted before
+ * its end date was lifted, and saying "expired" would erase the decision that
+ * ended it.
+ */
+export function banState(ban: BanLike, now: Date = new Date()): BanState {
+  if (ban.liftedAt !== null) return "LIFTED";
+  return isBanActive(ban, now) ? "ACTIVE" : "EXPIRED";
+}
+
 /** The lengths the console offers. Permanent is the absence of one. */
 export const BAN_DURATIONS = [
   { key: "24h", label: "24 heures", hours: 24 },

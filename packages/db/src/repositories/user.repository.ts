@@ -684,6 +684,15 @@ export const userRepository = {
     return { total, admins, activeWeek };
   },
 
+  /** The administrators, by name: who a ticket can be given to. */
+  async listAdmins() {
+    return prisma.user.findMany({
+      where: { role: "ADMIN" },
+      orderBy: { displayName: "asc" },
+      select: { id: true, username: true, displayName: true },
+    });
+  },
+
   /**
    * One account for its page in the console: identity, counters, settings,
    * placement test and classes, in one read. The page used to query Prisma

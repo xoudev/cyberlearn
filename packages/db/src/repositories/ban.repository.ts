@@ -90,16 +90,27 @@ export const banRepository = {
    * By user rather than by id, because that is the question being answered:
    * "let this person back in". Returns false when there was nothing to lift,
    * so a caller does not report having done something it did not.
+   *
+   * `banId` narrows it to one decision, for a caller that is answering that
+   * decision rather than the person: an appeal contests the ban it was filed
+   * against, and accepting it must not lift a newer one issued since. It is in
+   * the same statement as the "in force" filter, so a ban lifted or expired in
+   * the meantime is refused rather than read and then written.
    */
   async lift(input: {
     userId: string;
     liftedById: string;
     reason?: string;
+    banId?: string;
     now?: Date;
   }): Promise<boolean> {
     const now = input.now ?? new Date();
     const result = await prisma.userBan.updateMany({
-      where: { userId: input.userId, ...activeBanFilter(now) },
+      where: {
+        userId: input.userId,
+        ...(input.banId !== undefined ? { id: input.banId } : {}),
+        ...activeBanFilter(now),
+      },
       data: {
         liftedAt: now,
         liftedById: input.liftedById,

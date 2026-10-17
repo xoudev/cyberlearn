@@ -105,6 +105,8 @@ model User {
   authoredLessons   Lesson[]                @relation("LessonAuthor")
   authoredPaths     Path[]                  @relation("PathAuthor")
   ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
+  ticketNotes       TicketNote[]            @relation("TicketNoteAuthor")
+  assignedTickets   ContactTicket[]         @relation("TicketAssignee")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
   friendshipsA      Friendship[]            @relation("FriendshipUserA")
@@ -1728,15 +1730,44 @@ model ContactTicket {
   userAgent    String?      @db.VarChar(500)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  /// The administrator who has taken the ticket in hand. Console only: no read
+  /// made for the requester's page or the app selects it, and the Data API has
+  /// no grant on this table at all.
+  assigneeId   String?      @db.Uuid
 
   user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignee  User?           @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   messages  TicketMessage[]
+  notes     TicketNote[]
   /// Set when this ticket is somebody contesting a ban.
   appealFor UserBan?        @relation("BanAppeal")
 
   @@index([status])
   @@index([userId])
+  @@index([assigneeId])
   @@map("contact_tickets")
+}
+
+/// A note the team leaves on a ticket, for itself.
+///
+/// A table of its own rather than a TicketMessage flagged internal: the
+/// requester's reads select the thread, and one forgotten filter on a shared
+/// table would put the team's notes about somebody in front of that person.
+/// Kept apart, a note is never in the thread to be filtered out.
+///
+/// Erased with its ticket, by cascade, when retention purges it.
+model TicketNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  authorId  String?  @db.Uuid // null once that account is erased
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket ContactTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User?         @relation("TicketNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_notes")
 }
 
 /// One turn in the conversation on a ticket.

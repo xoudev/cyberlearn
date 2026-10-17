@@ -35,6 +35,20 @@ export function isTicketOpen(status: TicketStatus): boolean {
 /** Why a message was refused, so each caller can say so in its own words. */
 export type AddMessageResult = { ok: true } | { ok: false; reason: "NOT_FOUND" | "TERMINAL" };
 
+/** The same for an internal note, which follows the same gate. */
+export type AddNoteResult =
+  | { ok: true; noteId: string }
+  | { ok: false; reason: "NOT_FOUND" | "TERMINAL" };
+
+/** What assigning a ticket did, or why it did not. */
+export type AssignTicketResult =
+  | { ok: true; changed: boolean }
+  | { ok: false; reason: "NOT_FOUND" | "NOT_ADMIN" };
+
+/** The audit actions the console's ticket bookkeeping writes. */
+export const TICKET_ASSIGN_ACTION = "ticket.assign";
+export const TICKET_NOTE_ACTION = "ticket.note.add";
+
 /**
  * The themes whose tickets the console calls critical while they are open.
  *
@@ -231,6 +245,10 @@ export const ticketRepository = {
    *
    * viewerId is the entitlement check, not decoration: the query returns
    * nothing for a ticket somebody else opened, so knowing an id is not enough.
+   *
+   * The columns are named one by one, and the console's own - who has the
+   * ticket in hand, the team's notes - are not among them. The site and the
+   * app both read through here.
    */
   async findForRequester(ticketId: string, viewerId: string) {
     return prisma.contactTicket.findFirst({
@@ -258,7 +276,11 @@ export const ticketRepository = {
     });
   },
 
-  /** The same ticket for the console, which reads every one of them. */
+  /**
+   * The same ticket for the console, which reads every one of them: the
+   * account behind it, who has it in hand, and the ban it contests when it is
+   * an appeal. The team's notes are read apart, by listNotes.
+   */
   async findWithThread(ticketId: string) {
     return prisma.contactTicket.findUnique({
       where: { id: ticketId },
@@ -269,8 +291,26 @@ export const ticketRepository = {
         status: true,
         message: true,
         email: true,
+        jiraIssueKey: true,
+        jiraIssueUrl: true,
+        userAgent: true,
         createdAt: true,
-        user: { select: { id: true, displayName: true, email: true } },
+        updatedAt: true,
+        user: { select: { id: true, username: true, displayName: true, email: true } },
+        assignee: { select: { id: true, username: true, displayName: true } },
+        appealFor: {
+          select: {
+            id: true,
+            userId: true,
+            reason: true,
+            expiresAt: true,
+            createdAt: true,
+            liftedAt: true,
+            liftReason: true,
+            issuedBy: { select: { displayName: true } },
+            liftedBy: { select: { displayName: true } },
+          },
+        },
         messages: {
           orderBy: { createdAt: "asc" },
           select: {
@@ -282,6 +322,119 @@ export const ticketRepository = {
           },
         },
       },
+    });
+  },
+
+  /** The team's notes on a ticket, oldest first, like the thread beside them. */
+  async listNotes(ticketId: string) {
+    return prisma.ticketNote.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        author: { select: { displayName: true } },
+      },
+    });
+  },
+
+  /**
+   * Gives a ticket to an administrator, or to nobody when assigneeId is null.
+   *
+   * Only an ADMIN account takes one: the console is theirs, and a ticket
+   * handed to an account that cannot open it is a ticket nobody has. The role
+   * is read in the transaction that writes, and the audit row lands with the
+   * change or not at all, like a status change.
+   *
+   * The ticket's updatedAt stays where it was, which is why the write is raw:
+   * Prisma moves an @updatedAt column on every update it makes. That column is
+   * the last turn of the conversation - it orders the requester's own list and
+   * the console's queue, and retention counts from it - and taking a ticket in
+   * hand is not a turn. Moving it would reorder the requester's list over
+   * something they are never shown.
+   *
+   * Allowed whatever the status: who follows a finished ticket is bookkeeping,
+   * not a message on it.
+   */
+  async assign(input: {
+    ticketId: string;
+    assigneeId: string | null;
+    actorId: string;
+  }): Promise<AssignTicketResult> {
+    return prisma.$transaction(async (tx): Promise<AssignTicketResult> => {
+      if (input.assigneeId !== null) {
+        const assignee = await tx.user.findUnique({
+          where: { id: input.assigneeId },
+          select: { role: true },
+        });
+        if (assignee?.role !== "ADMIN") return { ok: false, reason: "NOT_ADMIN" };
+      }
+
+      const ticket = await tx.contactTicket.findUnique({
+        where: { id: input.ticketId },
+        select: { assigneeId: true },
+      });
+      if (ticket === null) return { ok: false, reason: "NOT_FOUND" };
+      if (ticket.assigneeId === input.assigneeId) return { ok: true, changed: false };
+
+      await tx.$executeRaw`
+        UPDATE "contact_tickets" SET "assigneeId" = ${input.assigneeId}::uuid
+        WHERE "id" = ${input.ticketId}::uuid`;
+      await tx.auditLog.create({
+        data: {
+          actorId: input.actorId,
+          action: TICKET_ASSIGN_ACTION,
+          targetType: "ContactTicket",
+          targetId: input.ticketId,
+          metadata: { assigneeId: input.assigneeId, previousAssigneeId: ticket.assigneeId },
+        },
+      });
+      return { ok: true, changed: true };
+    });
+  },
+
+  /**
+   * Adds a note the team leaves itself on a ticket.
+   *
+   * A finished ticket takes no note either (AGENTS.md, rule 16): RESOLVED and
+   * CLOSED are the end of the ticket for everyone, the console included, and
+   * reopening it is one deliberate control away. The gate is here, like
+   * addMessage's, and holds the same way: the ticket's row is locked before
+   * its status is read, so a status change waits for the note rather than
+   * landing between the check and the insert. Locked rather than bumped,
+   * unlike a message: a note is not a turn of the conversation, and moving
+   * updatedAt would reorder the requester's list over something they never see.
+   *
+   * The audit row says a note was added and which one, never what it says: the
+   * log outlives the ticket, whose notes go with it when retention purges it.
+   */
+  async addNote(input: {
+    ticketId: string;
+    authorId: string;
+    body: string;
+  }): Promise<AddNoteResult> {
+    return prisma.$transaction(async (tx): Promise<AddNoteResult> => {
+      const rows = await tx.$queryRaw<{ status: TicketStatus }[]>`
+        SELECT "status" FROM "contact_tickets" WHERE "id" = ${input.ticketId}::uuid FOR SHARE`;
+      const ticket = rows[0];
+      if (ticket === undefined) return { ok: false, reason: "NOT_FOUND" };
+      if (!isTicketOpen(ticket.status)) return { ok: false, reason: "TERMINAL" };
+
+      const note = await tx.ticketNote.create({
+        data: { ticketId: input.ticketId, authorId: input.authorId, body: input.body },
+        select: { id: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: input.authorId,
+          action: TICKET_NOTE_ACTION,
+          targetType: "ContactTicket",
+          targetId: input.ticketId,
+          metadata: { noteId: note.id },
+        },
+      });
+      return { ok: true, noteId: note.id };
     });
   },
 
