@@ -10,7 +10,13 @@ export interface ExamStatusDto {
   hasQuiz: boolean;
   lessonsComplete: boolean;
   pathCompleted: boolean;
+  /** The certificate that still stands; null once the console revoked it. */
   certPublicId: string | null;
+  /**
+   * The console revoked the path's certificate. Absent from a site that
+   * predates revocation, which reads as not revoked.
+   */
+  certRevoked?: boolean;
   questionCount: number;
   /** A percentage: 70 means 70 %. */
   passThreshold: number;
@@ -47,6 +53,9 @@ export interface ExamReviewItem {
 /** The step a learner is at, from the site's boss node: one card, one action. */
 export type FinalStep =
   | { kind: "certified"; publicId: string | null }
+  // Validated, but the console revoked the certificate: the reason is on the
+  // profile's Certificats sub-tab, as the site's node sends to /certificates.
+  | { kind: "revoked" }
   | { kind: "locked" }
   | { kind: "claim" }
   | { kind: "resume"; startedAt: string }
@@ -54,7 +63,10 @@ export type FinalStep =
   | { kind: "ready" };
 
 export function finalStepOf(status: ExamStatusDto): FinalStep {
-  if (status.pathCompleted) return { kind: "certified", publicId: status.certPublicId };
+  if (status.pathCompleted) {
+    if (status.certRevoked === true) return { kind: "revoked" };
+    return { kind: "certified", publicId: status.certPublicId };
+  }
   if (!status.lessonsComplete) return { kind: "locked" };
   // No exam: the certificate comes with the last lesson, or is claimed.
   if (!status.hasQuiz) return { kind: "claim" };

@@ -41,6 +41,23 @@ describe("finalStepOf", () => {
     ).toEqual({ kind: "certified", publicId: "abc" });
   });
 
+  it("says the certificate was revoked rather than available, once the console revoked it", () => {
+    expect(finalStepOf(status({ pathCompleted: true, certRevoked: true }))).toEqual({
+      kind: "revoked",
+    });
+  });
+
+  it("reads a status without the revocation field, from an older site, as not revoked", () => {
+    expect(finalStepOf(status({ pathCompleted: true, certPublicId: "abc" }))).toEqual({
+      kind: "certified",
+      publicId: "abc",
+    });
+  });
+
+  it("never says revoked before the path is validated", () => {
+    expect(finalStepOf(status({ certRevoked: true }))).toEqual({ kind: "ready" });
+  });
+
   it("keeps the exam locked while lessons remain, with or without one", () => {
     expect(finalStepOf(status({ lessonsComplete: false }))).toEqual({ kind: "locked" });
     expect(finalStepOf(status({ lessonsComplete: false, hasQuiz: false }))).toEqual({

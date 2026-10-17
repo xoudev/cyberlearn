@@ -9,13 +9,15 @@ import { Card, Text } from "@/components/ui";
 import { claimCertificateApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { finalStepOf, waitLabel } from "@/lib/exam";
+import { profileSubParam } from "@/lib/profile-tabs";
 import { useExamStatus } from "@/lib/queries";
 
 /**
  * The end of a path, under its missions: the site's final "boss" node. One
  * card, one action, from where the learner stands: locked until the lessons
  * are done, then the exam (or the claim, on a path without one), then the
- * certificate. A class path carries no certificate, so it shows nothing.
+ * certificate, or the word that it was revoked. A class path carries no
+ * certificate, so it shows nothing.
  */
 export function PathFinalCard({
   userId,
@@ -75,6 +77,21 @@ export function PathFinalCard({
           />
         );
       }
+      break;
+    case "revoked":
+      // The certificate screen would need its id, which a revoked one no
+      // longer comes with: the profile's list shows it, with the reason.
+      eyebrow = "// Certificat · révoqué";
+      sub =
+        "Tu as validé ce parcours, mais ton certificat a été révoqué. Le motif est sous Certificats, dans ton profil.";
+      action = (
+        <GradientButton
+          label="Voir mes certificats"
+          onPress={() => {
+            router.push({ pathname: "/profile", params: { tab: profileSubParam("Certificats") } });
+          }}
+        />
+      );
       break;
     case "ready":
       eyebrow = "// Examen final · débloqué";
