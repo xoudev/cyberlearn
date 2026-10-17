@@ -132,6 +132,13 @@ describe("examStatus", () => {
     expect(cooldownUntil?.getTime()).toBe(submittedAt.getTime() + 48 * 60 * MIN);
   });
 
+  it("gives no wait once an administrator lifted it", async () => {
+    m.findLatestAttempt.mockResolvedValue(
+      attempt({ submittedAt: new Date(Date.now() - 60 * MIN), cooldownWaivedAt: new Date() }),
+    );
+    expect((await examStatus("user-1", PATH)).cooldownUntil).toBeNull();
+  });
+
   it("hands the certificate of a completed path", async () => {
     m.findProgress.mockResolvedValue({ status: "COMPLETED" });
     m.certFindFirst.mockResolvedValue({ publicId: "cert-1" });
@@ -220,6 +227,15 @@ describe("startExam", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain(message);
     expect(m.createAttempt).not.toHaveBeenCalled();
+  });
+
+  it("draws a new attempt inside the 48 hours once an administrator lifted the wait", async () => {
+    m.findLatestAttempt.mockResolvedValue(
+      attempt({ submittedAt: new Date(Date.now() - 60 * MIN), cooldownWaivedAt: new Date() }),
+    );
+    const result = await startExam("user-1", PATH);
+    expect(result.ok).toBe(true);
+    expect(m.createAttempt).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a path id that is not one", async () => {
