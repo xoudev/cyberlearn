@@ -6,7 +6,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { nextLessonRefCode } from "../next-ref-code";
+import {
+  lessonRefCodeFor,
+  nextLessonRefCode,
+  pathLessonPrefix,
+  suggestLessonRefCode,
+} from "../next-ref-code";
 
 describe("nextLessonRefCode", () => {
   it("starts the new catalogue's series on an empty database", () => {
@@ -71,5 +76,121 @@ describe("nextLessonRefCode", () => {
     const next = nextLessonRefCode(taken);
     expect(next).toBe("CL-LSN-01002-V01");
     expect(taken).not.toContain(next);
+  });
+});
+
+describe("pathLessonPrefix", () => {
+  it("is the path's number less 100", () => {
+    expect(pathLessonPrefix("CL-PATH-102-V01")).toBe(2);
+    expect(pathLessonPrefix("CL-PATH-101-V03")).toBe(1);
+    expect(pathLessonPrefix("CL-PATH-120-V01")).toBe(20);
+  });
+
+  it("gives none for the first catalogue, the showcase or another shape", () => {
+    expect(pathLessonPrefix("CL-PATH-004-V01")).toBeNull();
+    expect(pathLessonPrefix("CL-PATH-100-V01")).toBeNull();
+    expect(pathLessonPrefix("CL-PATH-199-V01")).toBeNull();
+    expect(pathLessonPrefix("CL-PATH-250-V01")).toBeNull();
+    expect(pathLessonPrefix("CL-CPATH-00042-V01")).toBeNull();
+  });
+});
+
+describe("lessonRefCodeFor", () => {
+  it("numbers the lesson by its place in the path", () => {
+    // content/paths/linux.json: CL-PATH-102 lists CL-LSN-02001…
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 1, [])).toBe("CL-LSN-02001-V01");
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 37, [])).toBe("CL-LSN-02037-V01");
+  });
+
+  it("takes the next free number of the path when that one is taken, whatever its version", () => {
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 5, ["CL-LSN-02005-V02", "CL-LSN-02006-V01"])).toBe(
+      "CL-LSN-02007-V01",
+    );
+  });
+
+  it("is not stopped by another path's codes or by the three-digit series", () => {
+    expect(lessonRefCodeFor("CL-PATH-103-V01", 1, ["CL-LSN-02001-V01", "CL-LSN-001-V01"])).toBe(
+      "CL-LSN-03001-V01",
+    );
+  });
+
+  it("leaves the recap numbers to the recaps and wraps back to 001", () => {
+    const tail = Array.from(
+      { length: 11 },
+      (_, i) => `CL-LSN-02${String(890 + i).padStart(3, "0")}-V01`,
+    );
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 890, tail)).toBe("CL-LSN-02001-V01");
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 950, [])).toBe("CL-LSN-02900-V01");
+  });
+
+  it("gives up when the path's range is full or the path has no prefix", () => {
+    const full = Array.from(
+      { length: 900 },
+      (_, i) => `CL-LSN-02${String(i + 1).padStart(3, "0")}-V01`,
+    );
+    expect(lessonRefCodeFor("CL-PATH-102-V01", 1, full)).toBeNull();
+    expect(lessonRefCodeFor("CL-PATH-004-V01", 1, [])).toBeNull();
+  });
+});
+
+describe("suggestLessonRefCode", () => {
+  const linux = (position: number): { pathRefCode: string; position: number } => ({
+    pathRefCode: "CL-PATH-102-V01",
+    position,
+  });
+
+  it("proposes the path's code to a lesson numbered outside its paths", () => {
+    // Created before it had a path, so nextLessonRefCode gave it 17092.
+    expect(suggestLessonRefCode("CL-LSN-17092-V01", [linux(12)], [])).toEqual({
+      refCode: "CL-LSN-02012-V01",
+      from: linux(12),
+    });
+  });
+
+  it("names its code after the first path that gives a prefix", () => {
+    const old = { pathRefCode: "CL-PATH-004-V01", position: 1 };
+    const network = { pathRefCode: "CL-PATH-103-V01", position: 7 };
+    expect(suggestLessonRefCode("CL-LSN-17092-V01", [old, network, linux(2)], [])).toEqual({
+      refCode: "CL-LSN-03007-V01",
+      from: network,
+    });
+  });
+
+  it("proposes nothing to a lesson already numbered in one of its paths", () => {
+    // 02008 sits at position 9, behind the first recap: still in its range.
+    expect(suggestLessonRefCode("CL-LSN-02008-V01", [linux(9)], ["CL-LSN-02009-V01"])).toBeNull();
+    expect(
+      suggestLessonRefCode(
+        "CL-LSN-03004-V01",
+        [linux(4), { pathRefCode: "CL-PATH-103-V01", position: 4 }],
+        [],
+      ),
+    ).toBeNull();
+  });
+
+  it("never touches the first catalogue's codes or a class lesson's", () => {
+    expect(suggestLessonRefCode("CL-LSN-042-V01", [linux(3)], [])).toBeNull();
+    expect(suggestLessonRefCode("CL-CLS-00042-V01", [linux(3)], [])).toBeNull();
+  });
+
+  it("proposes nothing without a path that gives a prefix", () => {
+    expect(suggestLessonRefCode("CL-LSN-17092-V01", [], [])).toBeNull();
+    expect(
+      suggestLessonRefCode(
+        "CL-LSN-17092-V01",
+        [{ pathRefCode: "CL-PATH-004-V01", position: 2 }],
+        [],
+      ),
+    ).toBeNull();
+  });
+
+  it("does not count the lesson's own code as taken, and skips the others", () => {
+    expect(
+      suggestLessonRefCode(
+        "CL-LSN-17092-V01",
+        [linux(12)],
+        ["CL-LSN-17092-V01", "CL-LSN-02012-V01"],
+      )?.refCode,
+    ).toBe("CL-LSN-02013-V01");
   });
 });

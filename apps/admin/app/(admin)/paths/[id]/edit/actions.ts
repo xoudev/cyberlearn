@@ -2,7 +2,7 @@
 
 import { redirect, notFound } from "next/navigation";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { pathRepository, prisma } from "@cyberlearn/db";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { readPathLessonIds } from "../../_actions/lesson-ids";
@@ -96,8 +96,8 @@ export async function updatePathAction(
     status === "PUBLISHED" && existing.status !== "PUBLISHED" ? new Date() : existing.publishedAt;
 
   try {
-    await prisma.$transaction([
-      prisma.path.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.path.update({
         where: { id },
         data: {
           ...data,
@@ -105,16 +105,11 @@ export async function updatePathAction(
           status,
           publishedAt,
         },
-      }),
-      prisma.pathLesson.deleteMany({ where: { pathId: id } }),
-      ...(orderedLessonIds.length > 0
-        ? orderedLessonIds.map((lessonId, position) =>
-            prisma.pathLesson.create({
-              data: { pathId: id, lessonId, position, isRequired: true },
-            }),
-          )
-        : []),
-      prisma.auditLog.create({
+      });
+      // Not a delete and a recreate: that dropped every lesson's module and
+      // flag, so one save emptied the modules the sync had filled.
+      await pathRepository.replaceLessons(id, orderedLessonIds, tx);
+      await tx.auditLog.create({
         data: {
           actorId: admin.id,
           action: "path.update",
@@ -122,8 +117,8 @@ export async function updatePathAction(
           targetId: id,
           metadata: { title: data.title, status, lessonCount: orderedLessonIds.length },
         },
-      }),
-    ]);
+      });
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode"))

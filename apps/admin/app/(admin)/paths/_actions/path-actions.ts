@@ -66,13 +66,13 @@ export async function createPathAction(
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
         status: publishNow ? "PUBLISHED" : "DRAFT",
         publishedAt: publishNow ? new Date() : null,
+        // 1-based, as the sync writes them; a new path has no module yet.
         ...(orderedLessonIds.length > 0
           ? {
               lessons: {
-                create: orderedLessonIds.map((lessonId, position) => ({
+                create: orderedLessonIds.map((lessonId, index) => ({
                   lessonId,
-                  position,
-                  isRequired: true,
+                  position: index + 1,
                 })),
               },
             }
