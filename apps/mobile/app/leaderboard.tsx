@@ -446,6 +446,8 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
         {member.promotion ? "▲" : member.relegation ? "▼" : ""}
         {member.rank}
       </Text>
+      {/* Initials only, as on the site's ladder: the league's avatars are not signed. */}
+      <Avatar avatarUrl={null} displayName={rowAvatarName(member)} size={28} />
       <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
         <Text
           variant="h3"
