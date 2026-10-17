@@ -56,8 +56,8 @@ export function ResetProgressForm({
         Efface l&apos;XP, le niveau, les séries, la progression des leçons et des parcours, les
         révisions, les badges, les quêtes, les défis, les cosmétiques et les attestations, fichiers
         compris. Le compte, son identité, ses préférences, ses classes, ses notes et tout ce
-        qu&apos;il a publié restent en place. Le test de positionnement aussi : il ne se repasse
-        pas. Rien de tout cela ne se récupère.
+        qu&apos;il a publié restent en place. Le test de positionnement aussi : il se remet à zéro à
+        part, depuis la progression. Rien de tout cela ne se récupère.
       </p>
 
       <form action={formAction} className="a-form" style={{ marginTop: 16 }}>

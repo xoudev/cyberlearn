@@ -6,20 +6,12 @@ import { banRefusal } from "@/lib/account-guards";
 import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
 import { ReviewOutcomes } from "./_components/review-outcomes";
+import { SURFACE_LABEL } from "./surface-labels";
 
 import { requireAdminPage } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Modération" };
 export const dynamic = "force-dynamic";
-
-const SURFACE_LABEL: Record<string, string> = {
-  "lesson.question": "Question sous une leçon",
-  "lesson.answer": "Réponse sous une leçon",
-  "note.share": "Note partagée",
-  "forum.topic": "Sujet du forum",
-  "forum.post": "Message du forum",
-  "challenge.writeup": "Solution d'un défi",
-};
 
 const RULE_LABEL: Record<string, string> = {
   slur: "Insulte discriminatoire",

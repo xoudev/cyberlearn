@@ -259,7 +259,7 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte : rôle, bannissement, remise à zéro, suppression |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), double authentification, remise à zéro complète, suppression |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
@@ -318,6 +318,23 @@
   sur un administrateur, ni sur un compte qui l'était il y a moins de 30 jours),
   lien de réinitialisation du mot de passe, renvoi ou
   forçage de la confirmation d'adresse ; tout est tracé dans l'audit log
+- Déconnecter toutes les sessions d'un compte (site, app, console), jamais les
+  siennes ; tracé dans l'audit log
+- Fiche d'un compte lue par les dépôts : tickets (appels de bannissement
+  marqués), contenus signalés et notes signalées, dix dernières lignes de
+  l'audit log (visant le compte ou faites par lui), préférences en lecture,
+  progression (test de positionnement, parcours et dernier examen de chacun,
+  dernières leçons), attestations révoquées comprises avec leur lien de
+  vérification
+- Profil : modifier le nom affiché, le pseudo et la bio dans les bornes du
+  site, ou remettre un champ à zéro (nom vers le pseudo, pseudo généré, bio et
+  avatar effacés, photo envoyée supprimée du stockage) ; chaque geste se
+  confirme et s'inscrit dans l'audit log
+- Corrections d'apprentissage, confirmées et tracées : remettre à zéro le test
+  de positionnement (avec ses dispenses ; une notification invite à le
+  repasser), lever le délai de 48 h d'un examen
+  (`quiz_attempts.cooldownWaivedAt`), remettre une leçon à zéro ou la marquer
+  terminée sans XP
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte
 - Suppression complète du compte et de ce qu'il possède, avec e-mail à la clé

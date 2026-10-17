@@ -176,6 +176,47 @@ export const pathRepository = {
   },
 
   /**
+   * The paths an account opened, for its page in the console: where each one
+   * stands, its missions done out of its published ones, and whether it gave
+   * a certificate. Newest first. A path's progress row is written when its
+   * page is first opened, so these are the paths somebody started.
+   */
+  async findProgressForConsole(userId: string) {
+    const rows = await prisma.userPathProgress.findMany({
+      where: { userId },
+      orderBy: { startedAt: "desc" },
+      select: {
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        certificateId: true,
+        path: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            _count: { select: { lessons: { where: PUBLISHED_PATH_LESSON } } },
+          },
+        },
+      },
+    });
+    const completed = await Promise.all(
+      rows.map((row) => this.countCompletedLessons(userId, row.path.id)),
+    );
+    return rows.map((row, index) => ({
+      pathId: row.path.id,
+      title: row.path.title,
+      slug: row.path.slug,
+      status: row.status,
+      startedAt: row.startedAt,
+      completedAt: row.completedAt,
+      hasCertificate: row.certificateId !== null,
+      lessonCount: row.path._count.lessons,
+      completedLessons: completed[index] ?? 0,
+    }));
+  },
+
+  /**
    * Whether the user has completed all the published lessons of a path.
    *
    * A path with none left is never complete. Its links can all point at drafts

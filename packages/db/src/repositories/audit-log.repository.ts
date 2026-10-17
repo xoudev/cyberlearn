@@ -126,6 +126,20 @@ export const auditLogRepository = {
     );
   },
 
+  /**
+   * The latest entries about one account, for its page in the console: what
+   * was done to it, and what it did as an actor. The page links to the full
+   * log under the same id for the rest.
+   */
+  async recentForUser(userId: string, limit = 10): Promise<AuditRow[]> {
+    return prisma.auditLog.findMany({
+      where: { OR: [{ targetId: userId }, { actorId: userId }] },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit,
+      select: AUDIT_ROW,
+    });
+  },
+
   async count(filter: AuditFilter): Promise<number> {
     return prisma.auditLog.count({ where: auditWhere(filter) });
   },

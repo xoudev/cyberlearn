@@ -74,6 +74,26 @@ export const noteReportRepository = {
     return prisma.noteReport.count({ where: { reporterId, updatedAt: { gte: since } } });
   },
 
+  /**
+   * The reports filed against an author's notes, newest first, for the
+   * author's page in the console. Not who filed them: a report is somebody's
+   * claim, and the queue (/moderation/notes) is where it is judged.
+   */
+  async againstAuthor(authorId: string, limit = 20) {
+    return prisma.noteReport.findMany({
+      where: { note: { userId: authorId } },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        reason: true,
+        status: true,
+        createdAt: true,
+        note: { select: { lesson: { select: { title: true } } } },
+      },
+    });
+  },
+
   /** Notes with at least one open report. */
   async countOpenNotes(): Promise<number> {
     const rows = await prisma.noteReport.groupBy({ by: ["noteId"], where: { status: "OPEN" } });
