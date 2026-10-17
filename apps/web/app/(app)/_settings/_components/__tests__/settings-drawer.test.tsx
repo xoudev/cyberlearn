@@ -57,7 +57,7 @@ function payload(displayName = "Ada"): SettingsData {
       emailNotifications: true,
     },
     moderation: { events: [] },
-    account: { email: "ada@example.test", emailConfirmed: true },
+    account: { email: "ada@example.test", emailConfirmed: true, canDisableMfa: true },
     data: { pendingExpiresAt: null, certificateCount: 0 },
   };
 }

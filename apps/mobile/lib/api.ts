@@ -26,6 +26,7 @@ import type { FriendLists, PublicProfile } from "@/lib/friends";
 import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
 import { readCompletionReply, type CompletionReply } from "@/lib/lesson-completion";
 import type { QaQuestion } from "@/lib/lesson-qa";
+import { readMfaRemovalAnswer } from "@/lib/mfa";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import { readPathCovers, type PathCover } from "@/lib/path-covers";
@@ -367,6 +368,21 @@ export async function fetchLessonAccessApi(): Promise<LessonAccess> {
     unlockAll: body.unlockAll,
     waivedLessonIds: waived.filter((id): id is string => typeof id === "string"),
   };
+}
+
+// ── Second factor (whether the security screen offers its removal) ────────────
+
+/**
+ * Whether the security screen offers to remove the second factor: never to an
+ * administrator, as on the site. Decided by the server from the role in the
+ * database, which the app's client cannot read. Throws on anything but an
+ * answer, so the screen never offers the removal on a guess.
+ */
+export async function fetchMfaRemovalApi(): Promise<boolean> {
+  const res = await authedFetch("/api/mobile/mfa-removal");
+  const canDisable = readMfaRemovalAnswer(await res.json());
+  if (canDisable === null) throw new Error("Vérification impossible");
+  return canDisable;
 }
 
 // ── Path covers (the site's illustrations, and the images sent from the console) ──

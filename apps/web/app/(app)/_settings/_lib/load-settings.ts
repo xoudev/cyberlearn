@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { moderationRepository, prisma } from "@cyberlearn/db";
+import { canDisableOwnMfa } from "@/lib/auth/mfa-removal";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import type {
   AccountSectionData,
@@ -92,9 +93,16 @@ export async function loadModerationSection(userId: string): Promise<ModerationS
   };
 }
 
-/** No query: the sign-in identity is the session's own. */
-export function accountSection(user: User): AccountSectionData {
-  return { email: user.email ?? null, emailConfirmed: Boolean(user.email_confirmed_at) };
+/**
+ * The sign-in identity is the session's own; whether the panel offers to
+ * remove the second factor depends on the role, read from the database.
+ */
+export async function loadAccountSection(user: User): Promise<AccountSectionData> {
+  return {
+    email: user.email ?? null,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    canDisableMfa: await canDisableOwnMfa(user.id),
+  };
 }
 
 export async function loadDataSection(userId: string): Promise<DataSectionData> {
@@ -114,21 +122,15 @@ export async function loadDataSection(userId: string): Promise<DataSectionData> 
 
 /** Every section, read in parallel: what the drawer opens with. */
 export async function loadSettings(user: User): Promise<SettingsData> {
-  const [profile, privacy, preferences, notifications, moderation, data] = await Promise.all([
-    loadProfileSection(user.id),
-    loadPrivacySection(user.id),
-    loadPreferencesSection(user.id),
-    loadNotificationsSection(user.id),
-    loadModerationSection(user.id),
-    loadDataSection(user.id),
-  ]);
-  return {
-    profile,
-    privacy,
-    preferences,
-    notifications,
-    moderation,
-    account: accountSection(user),
-    data,
-  };
+  const [profile, privacy, preferences, notifications, moderation, account, data] =
+    await Promise.all([
+      loadProfileSection(user.id),
+      loadPrivacySection(user.id),
+      loadPreferencesSection(user.id),
+      loadNotificationsSection(user.id),
+      loadModerationSection(user.id),
+      loadAccountSection(user),
+      loadDataSection(user.id),
+    ]);
+  return { profile, privacy, preferences, notifications, moderation, account, data };
 }

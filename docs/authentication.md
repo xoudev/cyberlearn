@@ -60,6 +60,16 @@ portal, and the native mobile application.
   field is `OtpCodeInput` in `@cyberlearn/ui`. A pasted "123 456" keeps its six
   digits.
 - Password and TOTP settings are available on the website and in the native app.
+  Removing the second factor asks for a confirmation and a fresh code, then
+  removes every verified TOTP factor (`@cyberlearn/lib/auth/mfa-factors`). The
+  code is checked from the client: it stops a stray click, not a stolen aal2
+  session, which Supabase Auth lets unenroll its own factors directly.
+- An `ADMIN` is never offered that removal, on the site or in the app: the
+  panel points to the break-glass procedure under "Lost authenticator" below.
+  The role is read from `public.users` on the server
+  (`apps/web/lib/auth/mfa-removal.ts`; the app asks `/api/mobile/mfa-removal`).
+  This hides a control and refuses nothing on the server; see
+  `docs/hardening/known-issues.md`.
 
 ## Admin flow
 
