@@ -29,6 +29,7 @@ import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelView } from "@/lib/social/duels";
 import { answerDuelAction, duelViewAction } from "../../_actions/duel-actions";
+import { ChallengeButton } from "../../_components/challenge-button";
 import { pad2, plural, whenOf } from "../../_components/duel-words";
 import { RespondButtons } from "../../_components/respond-buttons";
 import "../../_components/duels.css";
@@ -218,9 +219,10 @@ function Result({
       </p>
       {note !== null && <p className="dl-result__note">{note}</p>}
       <div className="dl-result__cta">
-        <Link href={`/duels?ami=${view.other.id}`} className="btn btn--accent">
+        {/* The "Défier" window, over the result, with the same friend picked. */}
+        <ChallengeButton friendId={view.other.id} className="btn btn--accent">
           Rejouer <span aria-hidden="true">→</span>
-        </Link>
+        </ChallengeButton>
         <Link href="/duels" className="btn btn--ghost">
           Tous tes duels
         </Link>
@@ -400,12 +402,12 @@ export function DuelPlay({ initial }: { initial: DuelView }): React.ReactElement
                 ? "Ce duel a été refusé."
                 : "Ce duel n'a pas été joué à temps."}
             </p>
-            <Link
-              href={`/duels?ami=${view.other.id}`}
+            <ChallengeButton
+              friendId={view.other.id}
               className="btn btn--accent btn--ghost btn--sm"
             >
               Relancer un duel
-            </Link>
+            </ChallengeButton>
           </div>
         ) : null}
 

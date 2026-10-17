@@ -4,19 +4,10 @@ import "./_components/duels.css";
 
 /**
  * The duels list while it loads, drawn on the page's own classes (duels.css):
- * the header and the record, the three rules, the new duel panel and three
- * duel cards, at their real sizes. The eyebrow is a bare bar with its line
+ * the header and the record, the three rules, the way to challenge a friend
+ * and three duel cards, at their real sizes. The eyebrow is a bare bar with its line
  * and margin: .pg-eyebrow would print its "// " before it.
  */
-
-function FieldSkeleton(): React.ReactElement {
-  return (
-    <div className="dl-field">
-      <Skeleton w={52} h={10} style={{ margin: "1.5px 0" }} />
-      <Skeleton w="100%" h={44} />
-    </div>
-  );
-}
 
 function CardSkeleton(): React.ReactElement {
   return (
@@ -94,22 +85,16 @@ export default function DuelsLoading(): React.ReactElement {
         <div className="dl-sec">
           <Skeleton w={200} h={26} style={{ margin: "2.5px 0" }} />
         </div>
-        <div className="dl-new">
-          <div className="dl-new__versus">
-            <div className="dl-new__me">
-              <Skeleton w={44} h={44} />
-              <Skeleton w={30} h={16} />
-            </div>
-            <Skeleton w={70} h={26} style={{ marginBottom: 9 }} />
-            <div className="dl-new__them">
-              <Skeleton w={44} h={44} />
-              <FieldSkeleton />
-            </div>
-          </div>
-          <FieldSkeleton />
-          <div className="dl-new__go">
-            <Skeleton w={190} h={44} />
-          </div>
+        <div className="dl-launch">
+          <SkeletonText
+            className="dl-launch__text"
+            lines={2}
+            lastWidth="40%"
+            lineHeight={14}
+            gap={9}
+            style={{ maxWidth: "62ch" }}
+          />
+          <Skeleton w={170} h={44} />
         </div>
       </div>
 

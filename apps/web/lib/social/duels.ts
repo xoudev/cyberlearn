@@ -22,6 +22,8 @@ import {
   type DuelRecordCounts,
   type DuelStatus,
 } from "@cyberlearn/lib/social/duel";
+import { computeLevel } from "@cyberlearn/lib/xp";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { loadSources } from "@/lib/exam/mock-exam";
 import { checkNotifyingWrite } from "@/lib/rate-limit";
 
@@ -251,23 +253,63 @@ function isPlayer(duel: { challengerId: string; opponentId: string }, userId: st
   return duel.challengerId === userId || duel.opponentId === userId;
 }
 
-/** Whom the reader may challenge, and on which paths: what the new duel form offers. */
-export async function duelSetupFor(userId: string): Promise<{
-  friends: { id: string; name: string }[];
+/** A friend the reader may challenge, as the "Défier" window and the app's screen show them. */
+export interface DuelFriend {
+  id: string;
+  name: string;
+  username: string | null;
+  /**
+   * Ready for an `<img src>`, a glyph marker, or null. Resolved here: an
+   * uploaded picture is signed with the service_role key, which never
+   * leaves the server.
+   */
+  avatarSrc: string | null;
+  level: number;
+  /** A duel still open between the two: they cannot be challenged again until it is over. */
+  openDuelId: string | null;
+}
+
+export interface DuelSetup {
+  friends: DuelFriend[];
   paths: { id: string; title: string }[];
-}> {
-  const [edges, paths] = await Promise.all([
+}
+
+/**
+ * Whom the reader may challenge, and on which paths: what the "Défier" window
+ * offers (and the app's duels screen). A friend already in a duel with the
+ * reader comes with that duel, settled first so that one whose time is over
+ * no longer counts.
+ */
+export async function duelSetupFor(userId: string): Promise<DuelSetup> {
+  const [edges, paths, open] = await Promise.all([
     friendshipRepository.listFriends(userId),
     prisma.path.findMany({
       where: pathsVisibleTo(userId),
       orderBy: { title: "asc" },
       select: { id: true, title: true },
     }),
+    duelRepository.listOpenFor(userId),
   ]);
+  const friends = edges.filter((edge) => edge.status === "ACCEPTED");
+  const avatars = await resolveAvatarSrcMany(friends.map((edge) => edge.person.avatarUrl));
+
+  const openWith = new Map<string, string>();
+  for (const raw of open) {
+    const duel = await settle(raw);
+    if (duel.status !== "PENDING" && duel.status !== "ACTIVE") continue;
+    const other = duel.challengerId === userId ? duel.opponentId : duel.challengerId;
+    if (!openWith.has(other)) openWith.set(other, duel.id);
+  }
+
   return {
-    friends: edges
-      .filter((edge) => edge.status === "ACCEPTED")
-      .map((edge) => ({ id: edge.person.id, name: playerOf(edge.person).name })),
+    friends: friends.map((edge, i) => ({
+      id: edge.person.id,
+      name: playerOf(edge.person).name,
+      username: edge.person.username,
+      avatarSrc: avatars[i] ?? null,
+      level: computeLevel(edge.person.xpTotal).level,
+      openDuelId: openWith.get(edge.person.id) ?? null,
+    })),
     paths,
   };
 }

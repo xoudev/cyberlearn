@@ -145,7 +145,7 @@ describe("the public profile page", () => {
     const html = await render();
 
     expect(html).toContain(">Ami ✓<");
-    expect(html).toContain(`href="/duels?ami=${OWNER}"`);
+    expect(html).toContain(`href="/duels?duel=${OWNER}"`);
     expect(html).not.toContain("Retirer des amis");
     expect(html).not.toContain("Modifier mon profil");
     expect(html).not.toContain("Copier le lien");

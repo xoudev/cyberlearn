@@ -7,6 +7,8 @@ import {
   RESULT_TITLE,
   VERDICT_LABEL,
   VERDICT_OUTCOME,
+  canChallengeFriend,
+  challengeTarget,
   checkDuelAnswer,
   deadlineLabel,
   drawDuel,
@@ -133,6 +135,30 @@ describe("isExpired", () => {
     expect(isExpired({ status: "PENDING", expiresAt: at(0) }, at(1))).toBe(true);
     expect(isExpired({ status: "ACTIVE", expiresAt: at(5) }, at(1))).toBe(false);
     expect(isExpired({ status: "FINISHED", expiresAt: at(0) }, at(1))).toBe(false);
+  });
+});
+
+describe("challengeTarget", () => {
+  const friends = [
+    { id: "busy", openDuelId: "d1" },
+    { id: "alex", openDuelId: null },
+    { id: "sam" },
+  ];
+
+  it("cannot pick a friend already in a duel with the reader", () => {
+    expect(friends.map(canChallengeFriend)).toEqual([false, true, true]);
+  });
+
+  it("starts on the friend asked for when they are free, else on the first free one", () => {
+    expect(challengeTarget(friends, "sam")).toBe("sam");
+    expect(challengeTarget(friends, "busy")).toBe("alex");
+    expect(challengeTarget(friends, "stranger")).toBe("alex");
+    expect(challengeTarget(friends, null)).toBe("alex");
+  });
+
+  it("starts on nobody when nobody can be challenged", () => {
+    expect(challengeTarget([{ id: "busy", openDuelId: "d1" }], "busy")).toBeNull();
+    expect(challengeTarget([], null)).toBeNull();
   });
 });
 

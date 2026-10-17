@@ -111,6 +111,16 @@ const nextConfig: NextConfig = {
         destination: "/forum/:category?compose=1",
         permanent: false,
       },
+      // The mock exam's presentation is a window over its path (?mock=1); its
+      // page runs the exam, started by the window's button (?go=1). Reached
+      // any other way (a bookmark, an old link), it opens the window rather
+      // than the clock.
+      {
+        source: "/paths/:slug/mock-exam",
+        missing: [{ type: "query", key: "go" }],
+        destination: "/paths/:slug?mock=1",
+        permanent: false,
+      },
     ]);
   },
   rewrites() {

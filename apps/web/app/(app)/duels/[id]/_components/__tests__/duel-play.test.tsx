@@ -10,6 +10,19 @@ const m = vi.hoisted(() => ({
   respondToDuelAction: vi.fn<(id: unknown, accept: unknown) => Promise<unknown>>(),
   push: vi.fn<(href: string) => void>(),
   refresh: vi.fn<() => void>(),
+  openDialog: vi.fn<(key: string, value?: string) => void>(),
+}));
+
+// The hook and the host are covered once (query-dialog-host.test.tsx): here,
+// which window a button opens, and for whom.
+vi.mock("@/hooks/use-query-dialog", () => ({
+  useQueryDialog: (key: string) => ({
+    value: null,
+    open: (value?: string) => {
+      m.openDialog(key, value);
+    },
+    close: vi.fn(),
+  }),
 }));
 
 vi.mock("../../../_actions/duel-actions", () => ({
@@ -118,9 +131,9 @@ describe("DuelPlay", () => {
     expect(screen.getByText("Défaite.")).toBeTruthy();
     expect(screen.getByText("1 à 2 contre Alex.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Liste" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Rejouer" }).getAttribute("href")).toBe(
-      "/duels?ami=alex",
-    );
+    // The rematch is the "Défier" window over the result, the same friend picked.
+    fireEvent.click(screen.getByRole("button", { name: "Rejouer" }));
+    expect(m.openDialog).toHaveBeenCalledWith("duel", "alex");
     // The reader's answers, the right one named where they missed.
     expect(screen.getByText("Ta réponse : Date")).toBeTruthy();
     expect(screen.getByText("Droits")).toBeTruthy();
@@ -163,5 +176,12 @@ describe("DuelPlay", () => {
     rerender(<DuelPlay initial={{ ...BASE, readerIsChallenger: false }} />);
     expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
     expect(screen.getByText("Que fait ls ?")).toBeTruthy();
+  });
+
+  it("offers a new duel with the same friend when this one was declined", () => {
+    render(<DuelPlay initial={{ ...BASE, status: "DECLINED", questions: [] }} />);
+    expect(screen.getByText("Ce duel a été refusé.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Relancer un duel" }));
+    expect(m.openDialog).toHaveBeenCalledWith("duel", "alex");
   });
 });

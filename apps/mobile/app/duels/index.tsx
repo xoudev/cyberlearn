@@ -4,8 +4,11 @@ import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {
+  canChallengeFriend,
+  challengeTarget,
   duelActionLabel,
   duelRecordLines,
+  FRIEND_IN_DUEL_LABEL,
   isSettled,
   OUTCOME_LABEL,
   outcomeOf,
@@ -47,8 +50,11 @@ const RULES: { title: string; text: string }[] = [
 /**
  * Duels: the site's /duels in the app. The reader's record, the rules, the
  * invitations waiting, a form to challenge a friend on a path (the friend
- * named in ?ami= picked), and every duel going on or settled, each with its
- * outcome in a word and its small print; a duel opens on its own screen.
+ * named in ?ami= picked, a friend already in a duel with the reader shown
+ * but not offered, as in the site's "Défier" window), and every duel going
+ * on or settled, each with its outcome in a word and its small print; a duel
+ * opens on its own screen. The site draws the form as a window over its
+ * page; here it stays on the screen, the native pattern.
  */
 export default function DuelsScreen(): React.JSX.Element {
   const { ami } = useLocalSearchParams<{ ami?: string }>();
@@ -101,11 +107,7 @@ function DuelsBody({
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    setFriend(
-      board.friends.some((f) => f.id === initialFriend)
-        ? initialFriend
-        : (board.friends[0]?.id ?? null),
-    );
+    setFriend(challengeTarget(board.friends, initialFriend));
     setPath(board.paths[0]?.id ?? null);
   }, [board, initialFriend]);
 
@@ -193,16 +195,26 @@ function DuelsBody({
           <Card style={{ gap: 10 }}>
             <Text variant="bodySm">Ami</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {board.friends.map((f) => (
-                <Choice
-                  key={f.id}
-                  label={f.name}
-                  picked={friend === f.id}
-                  onPress={() => {
-                    setFriend(f.id);
-                  }}
-                />
-              ))}
+              {board.friends.map((f) =>
+                canChallengeFriend(f) ? (
+                  <Choice
+                    key={f.id}
+                    label={f.name}
+                    picked={friend === f.id}
+                    onPress={() => {
+                      setFriend(f.id);
+                    }}
+                  />
+                ) : (
+                  <Choice
+                    key={f.id}
+                    label={`${f.name} · ${FRIEND_IN_DUEL_LABEL}`}
+                    picked={false}
+                    disabled
+                    onPress={() => undefined}
+                  />
+                ),
+              )}
             </View>
             <Text variant="bodySm">Parcours</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -405,25 +417,35 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
 function Choice({
   label,
   picked,
+  disabled = false,
   onPress,
 }: {
   label: string;
   picked: boolean;
+  /** Shown but not offered: a friend already in a duel with the reader. */
+  disabled?: boolean;
   onPress: () => void;
 }): React.JSX.Element {
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="radio"
-      accessibilityState={{ selected: picked }}
+      accessibilityState={{ selected: picked, disabled }}
       style={{
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderWidth: 1,
+        borderStyle: disabled ? "dashed" : "solid",
         borderColor: picked ? colors.accent : colors.borderDefault,
       }}
     >
-      <Text variant="bodySm" style={{ color: picked ? colors.accent : colors.textSecondary }}>
+      <Text
+        variant="bodySm"
+        style={{
+          color: picked ? colors.accent : disabled ? colors.textMuted : colors.textSecondary,
+        }}
+      >
         {label}
       </Text>
     </Pressable>

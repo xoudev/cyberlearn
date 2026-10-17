@@ -71,6 +71,19 @@ export const duelRepository = {
     });
   },
 
+  /**
+   * The reader's duels still open, in either direction: who they cannot
+   * challenge again until it is over. Not capped like listFor, whose twenty
+   * most recent could leave an older open duel out.
+   */
+  async listOpenFor(userId: string) {
+    return prisma.duel.findMany({
+      where: { status: { in: OPEN }, OR: [{ challengerId: userId }, { opponentId: userId }] },
+      orderBy: { createdAt: "desc" },
+      select: DUEL,
+    });
+  },
+
   async create(input: {
     challengerId: string;
     opponentId: string;

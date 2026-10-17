@@ -1,7 +1,8 @@
-/* The mock exam (/paths/[slug]/mock-exam): the practice run of the final
-   exam, in the final exam's vocabulary (the framed intro, hexagon keys, the
-   clock in a pinned bar, the gauge, the review rows) drawn on the site's
-   tokens, so it reads in the light theme as well as the dark one. Square.
+/* The mock exam (/paths/[slug]/mock-exam, and its intro in a window on the
+   path's page): the practice run of the final exam, in the final exam's
+   vocabulary (the framed intro, hexagon keys, the clock in a pinned bar, the
+   gauge, the review rows) drawn on the site's tokens, so it reads in the
+   light theme as well as the dark one. Square.
    The page's accent is the learner's own; a verdict keeps the site's status
    colours: acquis in the success tone, à consolider in the warning tone,
    à revoir in the danger tone. */
@@ -189,40 +190,37 @@
   text-align: center;
 }
 
-/* ── Intro ──────────────────────────────────────────────────────────────── */
+/* ── Intro, in its window on the path's page ────────────────────────────── */
 
-/* Capped like the final exam's frame, left-aligned under the breadcrumb, so a
-   wide screen does not stretch the figures and the rows apart. */
+/* The window (paths/[slug]/_components/mock-exam-dialog.tsx) is the frame
+   and carries the path's name in its header: the intro is its two columns,
+   the brief and the modules with the attempts. */
 .mkx-intro {
-  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  max-width: 1320px;
-  border: 1px solid var(--color-border-default);
   background: var(--color-bg-elevated);
 }
 .mkx-intro__main {
   display: flex;
   flex-direction: column;
-  padding: 40px 44px 38px;
+  padding: 26px 28px 24px;
 }
 .mkx-intro__side {
   display: flex;
   flex-direction: column;
-  gap: 36px;
-  padding: 34px 34px 36px;
+  gap: 28px;
+  padding: 24px 24px 26px;
   border-left: 1px solid var(--color-border-subtle);
   background: var(--color-bg-sunken);
 }
-.mkx-intro .pg-title {
-  margin-bottom: 16px;
-  font-size: clamp(36px, 4.4vw, 60px);
-  line-height: 1.02;
-  overflow-wrap: break-word;
-  text-wrap: balance;
-}
 .mkx-intro .pg-lede {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+}
+/* The window's loading state and its failure: the brief's place. */
+.mkx-window-wait {
+  display: grid;
+  gap: 14px;
+  padding: 26px 28px;
 }
 
 /* The figures and the rules stop about where the lede does (62ch). */
@@ -277,7 +275,7 @@
 
 .mkx-rules {
   max-width: 640px;
-  margin: 0 0 30px;
+  margin: 0 0 20px;
   padding: 0;
   list-style: none;
   border-top: 1px dashed var(--color-border-subtle);
@@ -333,9 +331,7 @@
   background: var(--color-bg-sunken);
 }
 
-/* Right after the rules, not pinned to the column's foot: when the modules
-   make the side column the taller one, the spare room falls under the button
-   instead of opening a gap above it. */
+/* The opening's way on (mock-exam-flow.tsx): try again, or back to the path. */
 .mkx-cta {
   display: flex;
   flex-wrap: wrap;
@@ -369,9 +365,6 @@
   font-size: 11px;
   font-weight: 700;
   color: var(--mkx-ink);
-}
-.mkx-mods--loading > li::before {
-  content: "";
 }
 .mkx-mods__name {
   min-width: 0;
@@ -436,6 +429,38 @@
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--color-text-muted);
+}
+
+/* ── Opening: between the window's "Commencer" and the paper ───────────── */
+
+.mkx-open {
+  position: relative;
+  max-width: 760px;
+  padding: 40px 44px 38px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+}
+.mkx-open .pg-title {
+  margin-bottom: 20px;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.04;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.mkx-open__wait {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  color: var(--mkx-ink);
+}
+.mkx-open .mkx-error,
+.mkx-open .mkx-note {
+  margin-bottom: 24px;
 }
 
 /* ── Running: the paper takes the screen, as the final exam does ────────── */
@@ -1284,9 +1309,13 @@
   }
 }
 @media (max-width: 640px) {
-  .mkx-intro__main,
-  .mkx-intro__side {
+  .mkx-open {
     padding: 26px 18px 28px;
+  }
+  .mkx-intro__main,
+  .mkx-intro__side,
+  .mkx-window-wait {
+    padding: 20px 16px 22px;
   }
   .mkx-stats {
     gap: 8px;

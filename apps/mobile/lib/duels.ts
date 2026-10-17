@@ -65,7 +65,11 @@ export interface DuelBoard {
    * from before it, which only sent the duels listed.
    */
   record?: DuelRecordCounts;
-  friends: { id: string; name: string }[];
+  /**
+   * The site's DuelFriend, in the fields the screen uses: a friend already in
+   * a duel with the reader comes with that duel, and cannot be picked.
+   */
+  friends: { id: string; name: string; openDuelId?: string | null }[];
   paths: { id: string; title: string }[];
 }
 

@@ -139,6 +139,41 @@ export function isExpired(duel: { status: DuelStatus; expiresAt: Date }, now: Da
   return (duel.status === "PENDING" || duel.status === "ACTIVE") && duel.expiresAt <= now;
 }
 
+/**
+ * A friend as a challenge form lists them, in the field that says whether
+ * they can be picked: the site's DuelFriend (apps/web/lib/social/duels.ts)
+ * and the app's mirror of it both have it.
+ */
+export interface ChallengeableFriend {
+  id: string;
+  /**
+   * A duel still open (pending or going on) between the reader and this
+   * friend: no second one until it is over. Absent counts as none.
+   */
+  openDuelId?: string | null;
+}
+
+/** What a friend already in a duel with the reader shows in place of a choice. */
+export const FRIEND_IN_DUEL_LABEL = "Duel en cours";
+
+/** Whether a friend can be challenged now: not while a duel between the two is open. */
+export function canChallengeFriend(friend: ChallengeableFriend): boolean {
+  return friend.openDuelId === undefined || friend.openDuelId === null;
+}
+
+/**
+ * The friend a challenge form starts on: the one asked for (by a profile's
+ * "Défier" or a rematch) when they can be challenged now, otherwise the first
+ * who can; null when nobody can.
+ */
+export function challengeTarget(
+  friends: readonly ChallengeableFriend[],
+  wanted: string | null,
+): string | null {
+  const free = friends.filter(canChallengeFriend);
+  return (free.find((friend) => friend.id === wanted) ?? free[0])?.id ?? null;
+}
+
 /** "3 / 5": a player's score line. */
 export function scoreLine(tally: DuelTally, questionCount: number): string {
   return `${String(tally.correct)} / ${String(questionCount)}`;

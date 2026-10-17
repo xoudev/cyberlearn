@@ -35,3 +35,17 @@ describe("pages that became windows", () => {
     expect(existsSync(path.join(__dirname, "..", page))).toBe(false);
   });
 });
+
+describe("a page whose presentation became a window", () => {
+  it("sends the mock exam's address to its window unless the window started it", async () => {
+    const redirects = (await nextConfig.redirects?.()) ?? [];
+    expect(redirects).toContainEqual({
+      source: "/paths/:slug/mock-exam",
+      missing: [{ type: "query", key: "go" }],
+      destination: "/paths/:slug?mock=1",
+      permanent: false,
+    });
+    // The exam itself still has its page, reached with ?go=1.
+    expect(existsSync(path.join(__dirname, "(app)/paths/[slug]/mock-exam/page.tsx"))).toBe(true);
+  });
+});
