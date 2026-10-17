@@ -207,6 +207,59 @@ export async function refreshLesson(store: KeyValueStorage, lesson: OfflineLesso
   await store.setItem(lessonKey(lesson.slug), JSON.stringify(lesson));
 }
 
+// ── Whose saved modules they are ─────────────────────────────────────────────
+
+/**
+ * The account the saved modules belong to. The storage is the phone's, not
+ * the account's: without this, the modules one account saved stayed listed,
+ * and readable without a network, for the next one to sign in on a shared
+ * phone, a class lesson the next one could not open online included.
+ */
+const OWNER_KEY = "cl-offline-owner";
+
+/** The keys the offline reader wrote, among every key the storage holds. */
+export function offlineKeys(allKeys: readonly string[]): string[] {
+  return allKeys.filter(
+    (key) => key === INDEX_KEY || key === OWNER_KEY || key.startsWith(LESSON_PREFIX),
+  );
+}
+
+/**
+ * Forgets every saved module and lesson, and whose they were: on signing out.
+ * Every key the reader wrote goes, a copy an interrupted save left unlisted
+ * included, so `allKeys` is the storage's whole list of keys.
+ */
+export async function clearOffline(
+  store: KeyValueStorage,
+  allKeys: readonly string[],
+): Promise<void> {
+  for (const key of offlineKeys(allKeys)) await store.removeItem(key);
+}
+
+/**
+ * Binds the saved modules to the account signed in, removing first those of
+ * another account. Says whether anything was removed.
+ *
+ * Modules saved before their owner was recorded are kept only when
+ * `adoptUnowned` says the account was already signed in when the app started
+ * (it saved them, or nobody else could have since): a sign-in, on the other
+ * hand, may be a different person's, and their modules are removed.
+ */
+export async function claimOffline(
+  store: KeyValueStorage,
+  allKeys: readonly string[],
+  userId: string,
+  adoptUnowned: boolean,
+): Promise<boolean> {
+  const owner = await store.getItem(OWNER_KEY);
+  if (owner === userId) return false;
+  const stale = owner !== null || !adoptUnowned;
+  const saved = offlineKeys(allKeys).some((key) => key !== OWNER_KEY);
+  if (stale) await clearOffline(store, allKeys);
+  await store.setItem(OWNER_KEY, userId);
+  return stale && saved;
+}
+
 /** "312 Ko", "1,2 Mo": the space shown to the reader. */
 export function formatSize(size: number): string {
   if (size < 1024 * 1024) return `${String(Math.max(1, Math.round(size / 1024)))} Ko`;

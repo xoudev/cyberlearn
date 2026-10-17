@@ -1,4 +1,4 @@
-import { isReadable, type LessonPlacement } from "./unlock";
+import { isReadable, type LessonPlacement } from "@cyberlearn/lib/paths/unlock";
 
 /** Stable partition: keep the existing recency order within each availability group. */
 export function availableFirst<L extends { id: string }>(

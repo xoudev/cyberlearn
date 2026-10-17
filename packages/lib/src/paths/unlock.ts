@@ -7,6 +7,11 @@
  * a picture of a rule nothing enforced. This module is that rule, written once
  * so the catalogue, the lesson page and the path map cannot drift apart.
  *
+ * Shared with the app, which kept a rule of its own on its path screen ("the
+ * first mission not completed") and none at all on its catalogue and lesson
+ * screen: the same rule now draws both apps' path maps, and the server applies
+ * it to every completion and quiz answer (apps/web/lib/lessons/access.ts).
+ *
  * A lesson is readable when:
  *   - the reader has already completed it - a lesson never re-locks, which
  *     matters because everything was open until now and some readers are
@@ -133,15 +138,26 @@ function rankOf(state: LockState): number {
 }
 
 /**
- * The lesson a path's "Continuer" opens: the first one the reader can open and
- * has not finished, in the path's order. That is also the first lesson not
- * completed, since everything before it is done and so opens it. Once every
- * lesson is completed there is nothing left to resume, and it is the first
- * lesson again, to go back over. Null for a path with no lesson.
+ * Where a path's "Continuer" lands, as an index into the path's lessons: the
+ * first one the reader can open and has not finished. That is also the first
+ * lesson not completed, since everything before it is done and so opens it.
  *
  * A lesson the placement test waived is open but not where the reader picks
  * up: the first open lesson that was not waived comes first. When every open
- * lesson was waived, the first of them is still offered, rather than nothing.
+ * lesson was waived, the first of them is still the answer, rather than none.
+ * -1 when no lesson is open (every one completed, or the path is empty).
+ *
+ * `states` and `waived` run parallel to the path's lessons.
+ */
+export function resumeIndex(states: readonly LockState[], waived: readonly boolean[] = []): number {
+  const fresh = states.findIndex((state, i) => state === "unlocked" && waived[i] !== true);
+  return fresh >= 0 ? fresh : states.indexOf("unlocked");
+}
+
+/**
+ * The lesson a path's "Continuer" opens (resumeIndex). Once every lesson is
+ * completed there is nothing left to resume, and it is the first lesson
+ * again, to go back over. Null for a path with no lesson.
  *
  * `states` and `waived` run parallel to `lessons`, as the path page builds them.
  */
@@ -150,8 +166,7 @@ export function resumeLesson<L>(
   states: readonly LockState[],
   waived: readonly boolean[] = [],
 ): L | null {
-  const fresh = states.findIndex((state, i) => state === "unlocked" && waived[i] !== true);
-  const open = fresh >= 0 ? fresh : states.indexOf("unlocked");
+  const open = resumeIndex(states, waived);
   return lessons[open >= 0 ? open : 0] ?? null;
 }
 

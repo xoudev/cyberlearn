@@ -17,7 +17,7 @@ interface NextBarProps {
   } | null;
   /** Where this lesson sits, so the reader can see the path they are walking. */
   placement: { path: { slug: string; title: string }; rank: number; total: number } | null;
-  /** The next lesson waits for this one to be finished (the path's lock, unlock.ts). */
+  /** The next lesson waits for this one (the path's lock, @cyberlearn/lib/paths/unlock). */
   nextLocked?: boolean;
 }
 

@@ -320,6 +320,27 @@ export const lessonRepository = {
   },
 
   /**
+   * A published lesson this reader may open, by id, with what a completion or
+   * a quiz answer reads off it. Null for a draft, an archived lesson, or a
+   * class's own lesson the reader is not in the class of: none of them may be
+   * completed or answered, whatever id the caller sends.
+   */
+  async findReadableById(lessonId: string, viewerId: string) {
+    return prisma.lesson.findFirst({
+      where: { id: lessonId, ...lessonsVisibleTo(viewerId) },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        xpReward: true,
+        audience: true,
+        category: true,
+        contentMdx: true,
+      },
+    });
+  },
+
+  /**
    * A lesson by slug whatever its status or audience: a draft, an archived
    * one, a class's own. For an administrator reviewing the catalogue before
    * it is published; the caller checks the role, this only reads.

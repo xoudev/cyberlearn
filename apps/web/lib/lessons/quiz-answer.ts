@@ -1,10 +1,7 @@
 import { extractLessonQuizzes, type LessonQuiz } from "@cyberlearn/lib/mdx-quizzes";
-import {
-  lessonQuizRepository,
-  lessonRepository,
-  prisma,
-  type RecordedQuizAnswer,
-} from "@cyberlearn/db";
+import { lessonQuizRepository, lessonRepository, type RecordedQuizAnswer } from "@cyberlearn/db";
+import { pathLockOf } from "@/lib/lessons/access";
+import { lockedLessonError } from "@/lib/lessons/lock-message";
 
 export type QuizAnswerResult =
   | {
@@ -23,10 +20,11 @@ export type QuizAnswerResult =
  * what the browser or the app says: the answer key is read off the lesson's
  * syntax tree, without running the lesson.
  *
- * The lesson has to have been opened first. Its page is where access is
- * decided (a class lesson, a lesson locked in a path), and opening it writes
- * the progress row this checks for, so an answer cannot be recorded for a
- * lesson the learner cannot read.
+ * The lesson has to be one the learner may read, and to have been opened.
+ * Both are checked here: a published lesson they may open (a class's lesson
+ * only for its members), not locked in its path, with a progress row. The
+ * page used to be trusted to have decided access before writing that row, but
+ * the app wrote the row itself, under RLS, for any lesson it listed.
  *
  * Callers are responsible for AUTHENTICATION: `userId` must be a verified
  * identity (server action session or mobile Bearer JWT). Lives outside any
@@ -38,11 +36,13 @@ export async function recordQuizAnswer(
   quizId: string,
   selected: number,
 ): Promise<QuizAnswerResult> {
-  const [lesson, progress] = await Promise.all([
-    prisma.lesson.findUnique({ where: { id: lessonId }, select: { contentMdx: true } }),
+  const [lesson, progress, lock] = await Promise.all([
+    lessonRepository.findReadableById(lessonId, userId),
     lessonRepository.findProgress(userId, lessonId),
+    pathLockOf(userId, lessonId),
   ]);
   if (!lesson || !progress) return { ok: false, error: "Leçon introuvable." };
+  if (lock !== null) return { ok: false, error: lockedLessonError(lock.title) };
 
   const quiz = extractLessonQuizzes(lesson.contentMdx).find((q) => q.id === quizId);
   if (!quiz || selected >= quiz.options.length) {

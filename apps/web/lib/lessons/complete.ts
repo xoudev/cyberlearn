@@ -9,12 +9,12 @@ import { cardsForCompletion, isReviewableLesson } from "@cyberlearn/lib/revision
 import {
   prisma,
   lessonRepository,
-  lessonsVisibleTo,
   badgeRepository,
   reviewCardRepository,
   userRepository,
 } from "@cyberlearn/db";
-import { pathOpensLesson } from "@/lib/lessons/access";
+import { pathLockOf } from "@/lib/lessons/access";
+import { lockedLessonError } from "@/lib/lessons/lock-message";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
@@ -31,19 +31,7 @@ export interface CompleteLessonResult {
   newBadges: { name: string; rarity: string; xpReward: number }[];
   /** Right answers out of the lesson's quizzes; null when it has none. */
   quizScore: { correct: number; total: number } | null;
-  /**
-   * Why nothing was recorded, in the words the reader is shown; null when the
-   * completion went through (or was already on record). A refusal used to
-   * come back as an empty result, which the app read as a completion worth
-   * 0 XP: it said « enregistrées » and the lesson stayed in progress for good.
-   */
-  refusal: string | null;
 }
-
-/** The lesson is not one this reader may open: unpublished, or another class's. */
-export const LESSON_NOT_FOUND = "Leçon introuvable.";
-/** The lesson before it in its path is not finished yet. */
-export const LESSON_LOCKED = "Termine d'abord la leçon précédente du parcours.";
 
 export const EMPTY_COMPLETE_RESULT: CompleteLessonResult = {
   alreadyCompleted: false,
@@ -52,12 +40,25 @@ export const EMPTY_COMPLETE_RESULT: CompleteLessonResult = {
   newLevel: 1,
   newBadges: [],
   quizScore: null,
-  refusal: null,
 };
 
-function refused(refusal: string): CompleteLessonResult {
-  return { ...EMPTY_COMPLETE_RESULT, refusal };
-}
+/**
+ * Why a completion was turned away: a lesson the reader may not open, one
+ * still locked in its path, or an account with no row to credit.
+ */
+export type CompletionRefusal = "unreadable" | "locked" | "no-account";
+
+/**
+ * A completion recorded, or refused with the words to tell the learner.
+ *
+ * A refusal is never an empty result. It used to be one, and the app's route
+ * wrapped it in `{ ok: true }`: the app then showed "+0 XP", "Niveau 1" and
+ * "Ta progression et tes récompenses sont enregistrées." for a lesson where
+ * nothing had been recorded.
+ */
+export type CompleteLessonOutcome =
+  | { ok: true; result: CompleteLessonResult }
+  | { ok: false; refused: CompletionRefusal; error: string };
 
 /**
  * The single guarded lesson-completion flow (XP ledger, streak, badges, quests,
@@ -65,40 +66,39 @@ function refused(refusal: string): CompleteLessonResult {
  * a verified identity (server action session or mobile Bearer JWT). Lives
  * outside any "use server" module so it can never be invoked as an action with
  * an arbitrary userId.
+ *
+ * ACCESS is decided here, not by the caller: only a published lesson the
+ * reader may open (the catalogue, or a class's lesson for its members), and
+ * not one still locked in its path. The lesson page used to be the only gate,
+ * and the app's route reached this with any lesson id, so a locked mission
+ * opened from the app's catalogue paid its XP, badges and streak.
  */
 export async function completeLessonForUser(
   userId: string,
   lessonId: string,
-): Promise<CompleteLessonResult> {
-  // Parallel fetch - lesson, user gamification state, existing progress, all
-  // active badges, whether this account still wants a revision queue, and
-  // whether the lesson's path lets the reader open it.
+): Promise<CompleteLessonOutcome> {
+  // Parallel fetch - lesson, its path lock, user gamification state, existing
+  // progress, all active badges, and whether this account still wants a
+  // revision queue.
   //
-  // The lesson is read as this reader may open it, like the lesson page reads
-  // it: by id alone, a draft an administrator previews, a class's own lesson
-  // or a lesson still locked in its path could be completed and paid by
-  // anyone who sent its id.
-  const [lesson, user, existing, allBadges, wantsRevisions, pathOpen] = await Promise.all([
-    prisma.lesson.findFirst({
-      where: { id: lessonId, ...lessonsVisibleTo(userId) },
-      select: {
-        xpReward: true,
-        slug: true,
-        title: true,
-        audience: true,
-        category: true,
-        contentMdx: true,
-      },
-    }),
+  // The lesson is read as this reader may open it (findReadableById), like the
+  // lesson page reads it: by id alone, a draft an administrator previews, a
+  // class's own lesson or a lesson still locked in its path could be completed
+  // and paid by anyone who sent its id.
+  const [lesson, lock, user, existing, allBadges, wantsRevisions] = await Promise.all([
+    lessonRepository.findReadableById(lessonId, userId),
+    pathLockOf(userId, lessonId),
     userRepository.findForGamification(userId),
     lessonRepository.findProgress(userId, lessonId),
     badgeRepository.findAllActive(),
     revisionsEnabled(userId),
-    pathOpensLesson(userId, lessonId),
   ]);
 
-  if (!lesson || !user) return refused(LESSON_NOT_FOUND);
-  if (!pathOpen) return refused(LESSON_LOCKED);
+  if (!lesson) return { ok: false, refused: "unreadable", error: "Leçon introuvable." };
+  if (lock !== null) {
+    return { ok: false, refused: "locked", error: lockedLessonError(lock.title) };
+  }
+  if (!user) return { ok: false, refused: "no-account", error: "Compte introuvable." };
 
   // The quiz score is fixed now, with the completion: right answers out of
   // the quizzes the lesson has at this moment. The catalogue shows it.
@@ -289,16 +289,18 @@ export async function completeLessonForUser(
   }
 
   return {
-    alreadyCompleted: !firstCompletion,
-    xpGained: firstCompletion ? lesson.xpReward + award.xpGained : 0,
-    leveledUp: finalLevel > user.level,
-    newLevel: finalLevel,
-    newBadges: award.awarded.map((b) => ({
-      name: b.name,
-      rarity: b.rarity,
-      xpReward: b.xpReward,
-    })),
-    quizScore,
-    refusal: null,
+    ok: true,
+    result: {
+      alreadyCompleted: !firstCompletion,
+      xpGained: firstCompletion ? lesson.xpReward + award.xpGained : 0,
+      leveledUp: finalLevel > user.level,
+      newLevel: finalLevel,
+      newBadges: award.awarded.map((b) => ({
+        name: b.name,
+        rarity: b.rarity,
+        xpReward: b.xpReward,
+      })),
+      quizScore,
+    },
   };
 }

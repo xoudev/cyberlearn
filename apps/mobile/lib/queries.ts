@@ -6,10 +6,12 @@ import {
   fetchChallengeApi,
   fetchChallengesApi,
   fetchLessonAccessApi,
+  fetchLessonLocksApi,
   fetchMyRankApi,
   fetchPathCoversApi,
   type LessonAccess,
 } from "@/lib/api";
+import type { LessonLock } from "@/lib/lesson-locks";
 import { supabase } from "@/lib/supabase";
 import { readLesson, refreshLesson } from "@/lib/offline";
 import { offlineStorage } from "@/lib/offline-store";
@@ -88,6 +90,8 @@ export interface LessonCard {
   status: ProgressStatus | null;
   /** A completed lesson's quiz score, when one was recorded. */
   quizScore?: QuizScore | null;
+  /** The path the lesson is still locked in: the card leads there, as on the site. */
+  lock?: LessonLock | null;
 }
 
 export interface BadgeItem {
@@ -497,12 +501,22 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
       const fetched = (lessonsRes.data ?? []) as Omit<LessonCard, "status">[];
       const rows = inUrl ? fetched : fetched.filter((l) => inScope(scope, l.id)).slice(0, 60);
 
+      // Which of them are still locked in their path, as the site's catalogue
+      // marks them. The server unreachable: no mark, and the lesson screen
+      // asks again when one is opened.
+      const locks = userId
+        ? await fetchLessonLocksApi(rows.map((l) => l.id)).catch(
+            () => new Map<string, LessonLock>(),
+          )
+        : new Map<string, LessonLock>();
+
       return rows.map((l) => {
         const progress = progressByLesson.get(l.id);
         return {
           ...l,
           status: progress?.status ?? null,
           quizScore: progress ? progressScore(progress) : null,
+          lock: locks.get(l.id) ?? null,
         };
       });
     },
@@ -822,7 +836,33 @@ export async function fetchLessonQuizAnswers(
   );
 }
 
-/** Mark a lesson as opened (IN_PROGRESS) - resume tracking, no XP involved. */
+/**
+ * The path a lesson is still locked in for the reader, or null when they may
+ * read it: the lesson screen sends a locked lesson to its path, as the site's
+ * lesson page does, before anything is recorded on it. The server unreachable
+ * reads as no lock (the text is readable anyway, and the server refuses a
+ * completion or a quiz answer on a locked lesson itself).
+ */
+export function useLessonLock(userId: string | undefined, lessonId: string | undefined) {
+  return useQuery({
+    queryKey: ["lesson-lock", lessonId, userId],
+    enabled: Boolean(userId && lessonId),
+    queryFn: async (): Promise<LessonLock | null> => {
+      const id = lessonId as string; // gated by `enabled`
+      try {
+        return (await fetchLessonLocksApi([id])).get(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
+  });
+}
+
+/**
+ * Mark a lesson as opened (IN_PROGRESS) - resume tracking, no XP involved.
+ * Called once the lesson is known not to be locked (useLessonLock): the
+ * server checks the lock again on every quiz answer and completion.
+ */
 export async function markLessonOpened(userId: string, lessonId: string): Promise<void> {
   // RLS self insert/update permits this; COMPLETED rows are left untouched.
   const { data } = await supabase
@@ -930,12 +970,14 @@ export function useNotifications(userId: string | undefined) {
     enabled: Boolean(userId),
     refetchInterval: 60_000,
     queryFn: async (): Promise<NotificationItem[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("notifications")
         .select("id,type,title,body,actionUrl,readAt,createdAt")
         .eq("userId", userId as string) // gated by `enabled`
         .order("createdAt", { ascending: false })
         .limit(50);
+      // A failed read is an error, not an empty inbox: the screen offers a retry.
+      if (error) throw new Error(error.message);
       // SAFETY: the columns selected above, in NotificationItem's shape.
       return ((data ?? []) as NotificationItem[]).map((n) => ({
         ...n,
@@ -1011,13 +1053,16 @@ export function usePreferences(userId: string | undefined) {
     queryKey: ["preferences", userId],
     enabled: Boolean(userId),
     queryFn: async (): Promise<Preferences> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_preferences")
         .select(
           "emailNotifications,reviewReminders,weeklyDigest,streakReminder,spacedRepetition,publicProfile,friendsLeaderboard,leaderboardVisibility",
         )
         .eq("userId", userId as string) // gated by `enabled`
         .maybeSingle();
+      // A failed read throws, so the query keeps the settings it last read.
+      // Read as "no row", it put the defaults on screen, privacy included.
+      if (error) throw new Error(error.message);
       return (data as Preferences | null) ?? DEFAULT_PREFS;
     },
   });
@@ -1041,14 +1086,20 @@ export async function updatePreference(
   if (error) throw new Error(error.message);
 }
 
-/** The public board's visibility; the column is an enum, so the database refuses anything else. */
+/**
+ * The public board's visibility; the column is an enum, so the database
+ * refuses anything else. A refused write throws, as for the switches: this is
+ * a privacy choice, and a reader who picked "Masqué" must not be left
+ * believing it was saved.
+ */
 export async function updateLeaderboardVisibility(
   userId: string,
   value: LeaderboardVisibility,
 ): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from("user_preferences")
     .upsert({ userId, leaderboardVisibility: value }, { onConflict: "userId" });
+  if (error) throw new Error(error.message);
 }
 
 // ── Révisions (SM-2) ──────────────────────────────────────────────────────────

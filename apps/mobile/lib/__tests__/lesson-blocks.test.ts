@@ -1019,3 +1019,103 @@ describe("PasswordLab", () => {
     ]);
   });
 });
+
+describe("ExternalLink and Markdown links", () => {
+  it("shows a card with its label, its description and its site", () => {
+    // cyber-blueteam/05-mitre-attack.mdx: the card on one line.
+    const lesson = parseLesson(`
+## Pour aller plus loin
+
+<ExternalLink href="https://attack.mitre.org/" description="La base de connaissances des tactiques">MITRE ATT and CK</ExternalLink>
+
+La suite.
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "link",
+        href: "https://attack.mitre.org/",
+        label: "MITRE ATT and CK",
+        description: "La base de connaissances des tactiques",
+        host: "attack.mitre.org",
+      },
+      { kind: "paragraph", text: "La suite." },
+    ]);
+  });
+
+  it("keeps the address of a card written over several lines", () => {
+    const lesson = parseLesson(`
+## Ressources
+
+<ExternalLink
+  href="https://nmap.org/book/man.html"
+  description="Documentation officielle des options et techniques de scan"
+>
+  Nmap Reference Guide
+</ExternalLink>
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "link",
+        href: "https://nmap.org/book/man.html",
+        label: "Nmap Reference Guide",
+        description: "Documentation officielle des options et techniques de scan",
+        host: "nmap.org",
+      },
+    ]);
+  });
+
+  it("keeps the inline variant in its sentence, as a link", () => {
+    // _vitrine/99001-vitrine-des-composants.mdx
+    const lesson = parseLesson(`
+## Liens
+
+Pour en savoir plus, consulte la <ExternalLink href="https://owasp.org/www-project-top-ten/" variant="link">liste OWASP Top 10</ExternalLink>, le lien en ligne.
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "paragraph",
+        text: "Pour en savoir plus, consulte la [liste OWASP Top 10](https://owasp.org/www-project-top-ten/), le lien en ligne.",
+      },
+    ]);
+  });
+
+  it("keeps a Markdown link of a list item for the reader to draw", () => {
+    const lesson = parseLesson(`
+## Liste
+
+- un autre élément, avec un [lien vers le guide](https://example.com/guide) ;
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "list",
+        ordered: false,
+        items: ["un autre élément, avec un [lien vers le guide](https://example.com/guide) ;"],
+      },
+    ]);
+  });
+
+  it("turns a card inside a callout into a link in its text", () => {
+    const lesson = parseLesson(`
+## A
+
+<Callout type="info">Lis <ExternalLink href="https://example.com/doc">la doc</ExternalLink> avant.</Callout>
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "callout", type: "info", text: "Lis [la doc](https://example.com/doc) avant." },
+    ]);
+  });
+
+  it("shows only the label of a link whose address the site would refuse", () => {
+    const lesson = parseLesson(`
+## A
+
+Voir <ExternalLink href="javascript:alert(1)" variant="link">ici</ExternalLink>.
+
+<ExternalLink href="ftp://example.com/fichier">Le fichier</ExternalLink>
+`);
+    expect(lesson.sections[0]?.blocks).toEqual([
+      { kind: "paragraph", text: "Voir ici." },
+      { kind: "paragraph", text: "Le fichier" },
+    ]);
+  });
+});

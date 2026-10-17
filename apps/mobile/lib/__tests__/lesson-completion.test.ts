@@ -28,11 +28,25 @@ describe("readCompletionReply", () => {
 
   it("reads a refusal as one, with the reason to show", () => {
     expect(
-      readCompletionReply(409, {
+      readCompletionReply(403, {
         ok: false,
         error: "Termine d'abord la leçon précédente du parcours.",
       }),
     ).toEqual({ kind: "refused", message: "Termine d'abord la leçon précédente du parcours." });
+  });
+
+  it("reads a lesson the reader may not open, or an account with no row, as a refusal too", () => {
+    expect(readCompletionReply(404, { ok: false, error: "Leçon introuvable." })).toEqual({
+      kind: "refused",
+      message: "Leçon introuvable.",
+    });
+  });
+
+  it("still reads the 409 an older server answered to every refusal", () => {
+    expect(readCompletionReply(409, { ok: false, error: "Leçon verrouillée." })).toEqual({
+      kind: "refused",
+      message: "Leçon verrouillée.",
+    });
   });
 
   it("leaves anything else to a new try: an error, a session gone, a body it cannot read", () => {

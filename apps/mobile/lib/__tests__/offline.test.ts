@@ -3,9 +3,12 @@ import type { KeyValueStorage } from "@/lib/migrating-storage";
 import {
   FULL_MESSAGE,
   OFFLINE_BUDGET,
+  claimOffline,
+  clearOffline,
   formatSize,
   listModules,
   moduleKey,
+  offlineKeys,
   readLesson,
   refreshLesson,
   removeModule,
@@ -141,6 +144,69 @@ describe("refreshLesson", () => {
     expect((await readLesson(store, "grep"))?.contentMdx).toBe("Corrigée.");
     await refreshLesson(store, lesson("autre"));
     expect(await readLesson(store, "autre")).toBeNull();
+  });
+});
+
+describe("whose saved modules they are", () => {
+  const ALICE = "11111111-1111-4111-8111-111111111111";
+  const BOB = "22222222-2222-4222-8222-222222222222";
+
+  /** A phone where Alice saved a module, an interrupted save left a copy, and the session is kept. */
+  async function sharedPhone(): Promise<ReturnType<typeof memory>> {
+    const store = memory();
+    await store.setItem("sb-session", "jeton");
+    await claimOffline(store, store.keys(), ALICE, true);
+    await saveModule(store, LINUX, [lesson("grep")]);
+    await store.setItem("cl-offline-lesson:orpheline", JSON.stringify(lesson("orpheline")));
+    return store;
+  }
+
+  it("picks out the keys the offline reader wrote, and only those", () => {
+    expect(
+      offlineKeys([
+        "cl-offline-index",
+        "cl-offline-owner",
+        "cl-offline-lesson:grep",
+        "sb-session",
+        "cl.notifications.deviceEnabled",
+      ]),
+    ).toEqual(["cl-offline-index", "cl-offline-owner", "cl-offline-lesson:grep"]);
+  });
+
+  it("forgets every saved module on signing out, an unlisted copy included", async () => {
+    const store = await sharedPhone();
+    await clearOffline(store, store.keys());
+    expect(await listModules(store)).toEqual([]);
+    expect(await readLesson(store, "grep")).toBeNull();
+    expect(await readLesson(store, "orpheline")).toBeNull();
+    expect(store.keys()).toEqual(["sb-session"]);
+  });
+
+  it("removes another account's modules before the next one reads them", async () => {
+    const store = await sharedPhone();
+    expect(await claimOffline(store, store.keys(), BOB, false)).toBe(true);
+    expect(await listModules(store)).toEqual([]);
+    expect(await readLesson(store, "grep")).toBeNull();
+    expect(await readLesson(store, "orpheline")).toBeNull();
+    expect(store.keys()).toEqual(["cl-offline-owner", "sb-session"]);
+  });
+
+  it("keeps an account's own modules when it signs in again", async () => {
+    const store = await sharedPhone();
+    expect(await claimOffline(store, store.keys(), ALICE, false)).toBe(false);
+    expect((await listModules(store)).map((m) => m.key)).toEqual(["linux#3"]);
+  });
+
+  it("adopts modules saved before owners were recorded only for the session the app started with", async () => {
+    const restored = memory();
+    await saveModule(restored, LINUX, [lesson("grep")]);
+    expect(await claimOffline(restored, restored.keys(), ALICE, true)).toBe(false);
+    expect((await listModules(restored)).map((m) => m.key)).toEqual(["linux#3"]);
+
+    const signedIn = memory();
+    await saveModule(signedIn, LINUX, [lesson("grep")]);
+    expect(await claimOffline(signedIn, signedIn.keys(), BOB, false)).toBe(true);
+    expect(await listModules(signedIn)).toEqual([]);
   });
 });
 

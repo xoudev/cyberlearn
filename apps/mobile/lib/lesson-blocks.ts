@@ -4,12 +4,13 @@
 // NetworkLab, PhpLab, SubnetDrill, PacketDissector, PutInOrder, MatchPairs, CryptoWorkshop,
 // FirewallLab, LogHunt, HexEditor, IncidentStory, JwtLab, PasswordLab, StepAnimation,
 // SimulatedTerminal,
-// LinuxTerminal, Diagram. Code is shown, not run: it runs on the site. Interactive web-only
+// LinuxTerminal, Diagram, ExternalLink. Code is shown, not run: it runs on the site. Interactive web-only
 // components become placeholders; Quiz data is extracted so the quiz runs
 // natively at the end of the lesson.
 
 import { sceneById } from "@cyberlearn/lib/animations/scenes";
 import { diagramOutline } from "@cyberlearn/lib/mdx-diagram-outline";
+import { isLessonLinkHref, markdownLink } from "./inline-markdown";
 import {
   type CryptoWorkshop,
   type FindTheFlaw,
@@ -205,6 +206,19 @@ export type Block =
       kind: "diagram";
       caption: string | null;
       outline: string[];
+    }
+  | {
+      /**
+       * An ExternalLink card: a resource outside the platform, opened in the
+       * browser. The inline variant is a link in its sentence instead
+       * (lib/inline-markdown.ts).
+       */
+      kind: "link";
+      href: string;
+      label: string;
+      description: string | null;
+      /** The site's name, shown under the label as the site's card does. */
+      host: string;
     }
   | {
       kind: "placeholder";
@@ -607,6 +621,54 @@ function replaceSelfClosing(
   return out + text.slice(i);
 }
 
+/** An ExternalLink as the lesson writes it (LESSON_AUTHORING_GUIDE, 5.7). */
+interface ExternalLinkTag {
+  href: string;
+  /** Its children, on one line; the address when it has none. */
+  label: string;
+  description: string | null;
+  /** variant="link": a link in its sentence rather than a card. */
+  inline: boolean;
+}
+
+// Paired or self-closing; a quoted attribute may hold a `>`.
+const EXTERNAL_LINK_RE = /<ExternalLink\b((?:"[^"]*"|[^">])*?)(?:\/>|>([\s\S]*?)<\/ExternalLink>)/g;
+
+/**
+ * Each ExternalLink of the text replaced by what `toText` makes of it, or
+ * left as it is when `toText` gives null.
+ */
+function replaceExternalLinks(
+  text: string,
+  toText: (link: ExternalLinkTag) => string | null,
+): string {
+  return text.replace(EXTERNAL_LINK_RE, (whole, attrs: string, children: string | undefined) => {
+    const href = /\bhref\s*=\s*"([^"]*)"/.exec(attrs)?.[1]?.trim() ?? "";
+    const label = (children ?? "").replace(/\s+/g, " ").trim();
+    const link: ExternalLinkTag = {
+      href,
+      label: label === "" ? href : label,
+      description: /\bdescription\s*=\s*"([^"]*)"/.exec(attrs)?.[1] ?? null,
+      inline: /\bvariant\s*=\s*"link"/.test(attrs),
+    };
+    return toText(link) ?? whole;
+  });
+}
+
+/**
+ * An ExternalLink as a link in its sentence, drawn like any Markdown link; one
+ * whose address the site would refuse (not http(s)) is its label alone.
+ */
+function inlineExternalLink(link: ExternalLinkTag): string {
+  return isLessonLinkHref(link.href) ? markdownLink(link.label, link.href) : link.label;
+}
+
+/** "nmap.org" out of "https://nmap.org/book/man.html", as the site's card shows it. */
+function hostOf(href: string): string {
+  const authority = /^https?:\/\/([^/?#]+)/i.exec(href)?.[1] ?? href;
+  return authority.replace(/^.*@/, "").replace(/:\d+$/, "").toLowerCase();
+}
+
 /** The time limit of a timed terminal, when it has one. */
 function timeLimit(tag: string): { timeLimitMinutes?: number } {
   const minutes = TIME_LIMIT_RE.exec(tag)?.[1];
@@ -633,15 +695,38 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
     const quiz = extractQuiz(tag, quizIds);
     return quiz ? put(quiz) : "\n";
   });
-  // Callout (paired)
+  // ExternalLink, inline variant → a Markdown link in its sentence, which the
+  // reader draws as any other. Before the callouts, whose text is drawn the
+  // same way.
+  text = replaceExternalLinks(text, (link) => (link.inline ? inlineExternalLink(link) : null));
+  // Callout (paired). A card inside one has no room for a card: a link in
+  // its text instead.
   text = text.replace(
     /<Callout[^>]*type\s*=\s*"(\w+)"[^>]*>([\s\S]*?)<\/Callout>/g,
     (_m, type: string, body: string) => {
       const valid = ["info", "warning", "danger", "success"].includes(type)
         ? (type as "info" | "warning" | "danger" | "success")
         : "info";
-      return put({ kind: "callout", type: valid, text: body.trim() });
+      return put({
+        kind: "callout",
+        type: valid,
+        text: replaceExternalLinks(body.trim(), inlineExternalLink),
+      });
     },
+  );
+  // ExternalLink card → a card that opens the resource in the browser, with
+  // its description and its site, as on the site. One whose address the site
+  // would refuse is its label alone.
+  text = replaceExternalLinks(text, (link) =>
+    isLessonLinkHref(link.href)
+      ? put({
+          kind: "link",
+          href: link.href,
+          label: link.label,
+          description: link.description,
+          host: hostOf(link.href),
+        })
+      : `\n${link.label}\n`,
   );
   // CodePlayground → a runnable-code block (the source is shown natively so the
   // lesson reads in full; execution stays on the web sandbox). The code is

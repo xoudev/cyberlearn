@@ -6,7 +6,7 @@ import { LessonCard } from "@cyberlearn/ui";
 import type { Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
-import { indexPlacements } from "@/lib/lessons/unlock";
+import { indexPlacements } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { availableFirst } from "@/lib/lessons/catalog-order";
 import { catalogHref, parseCatalogFilters, type RawParams } from "@/lib/lessons/catalog-filters";

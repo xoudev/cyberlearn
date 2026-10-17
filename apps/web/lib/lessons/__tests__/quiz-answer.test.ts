@@ -10,17 +10,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const LESSON = "11111111-1111-4111-8111-111111111111";
 
 const m = vi.hoisted(() => ({
-  lessonFindUnique: vi.fn(),
+  findReadableById: vi.fn(),
   findProgress: vi.fn(),
   recordFirst: vi.fn(),
   findForLesson: vi.fn(),
+  pathLockOf: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  prisma: { lesson: { findUnique: m.lessonFindUnique } },
-  lessonRepository: { findProgress: m.findProgress },
+  lessonRepository: { findReadableById: m.findReadableById, findProgress: m.findProgress },
   lessonQuizRepository: { recordFirst: m.recordFirst, findForLesson: m.findForLesson },
 }));
+vi.mock("@/lib/lessons/access", () => ({ pathLockOf: m.pathLockOf }));
 
 const { recordQuizAnswer, readLessonQuizRecord, quizScoreOf } = await import("../quiz-answer");
 
@@ -41,8 +42,9 @@ const MDX = [
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.lessonFindUnique.mockResolvedValue({ contentMdx: MDX });
+  m.findReadableById.mockResolvedValue({ contentMdx: MDX });
   m.findProgress.mockResolvedValue({ status: "IN_PROGRESS" });
+  m.pathLockOf.mockResolvedValue(null);
   m.recordFirst.mockImplementation(
     (_u: string, _l: string, a: { quizId: string; selected: number; correct: boolean }) =>
       Promise.resolve(a),
@@ -82,12 +84,35 @@ describe("recordQuizAnswer", () => {
     expect(m.recordFirst).not.toHaveBeenCalled();
   });
 
-  it("refuses a lesson that was never opened, where access is decided", async () => {
+  it("refuses a lesson that was never opened", async () => {
     m.findProgress.mockResolvedValue(null);
     expect(await recordQuizAnswer("u1", LESSON, "q-1", 1)).toEqual({
       ok: false,
       error: "Leçon introuvable.",
     });
+    expect(m.recordFirst).not.toHaveBeenCalled();
+  });
+
+  it("refuses a lesson the learner may not open, even with a progress row", async () => {
+    // A draft, or a class's lesson for someone outside the class: the app
+    // could write the progress row itself, under RLS.
+    m.findReadableById.mockResolvedValue(null);
+    expect(await recordQuizAnswer("u1", LESSON, "q-1", 1)).toEqual({
+      ok: false,
+      error: "Leçon introuvable.",
+    });
+    expect(m.findReadableById).toHaveBeenCalledWith(LESSON, "u1");
+    expect(m.recordFirst).not.toHaveBeenCalled();
+  });
+
+  it("refuses a lesson still locked in its path, and names the path", async () => {
+    m.pathLockOf.mockResolvedValue({ slug: "python-bases", title: "Python : les bases" });
+    expect(await recordQuizAnswer("u1", LESSON, "q-1", 1)).toEqual({
+      ok: false,
+      error:
+        "Cette leçon est verrouillée : termine d'abord la précédente du parcours « Python : les bases ».",
+    });
+    expect(m.pathLockOf).toHaveBeenCalledWith("u1", LESSON);
     expect(m.recordFirst).not.toHaveBeenCalled();
   });
 });

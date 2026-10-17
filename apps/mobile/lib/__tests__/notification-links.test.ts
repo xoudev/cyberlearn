@@ -1,5 +1,52 @@
 import { describe, expect, it } from "vitest";
-import { inAppRouteFor } from "../notification-links";
+import { deviceNotificationData, inAppRouteFor, tapRoute } from "../notification-links";
+
+describe("a tap on a notification in the phone's tray", () => {
+  const ID = "33333333-3333-4333-8333-333333333333";
+  const USER = "44444444-4444-4444-8444-444444444444";
+
+  it("reads back the row, the account and the link the app posted", () => {
+    expect(deviceNotificationData({ id: ID, userId: USER, actionUrl: "/duels" })).toEqual({
+      id: ID,
+      userId: USER,
+      actionUrl: "/duels",
+    });
+    expect(deviceNotificationData({ id: ID, userId: USER, actionUrl: null })).toEqual({
+      id: ID,
+      userId: USER,
+      actionUrl: null,
+    });
+  });
+
+  it("ignores a notification the app did not post, or one posted before taps were read", () => {
+    expect(deviceNotificationData(undefined)).toBeNull();
+    expect(deviceNotificationData(null)).toBeNull();
+    expect(deviceNotificationData({})).toBeNull();
+    expect(deviceNotificationData({ id: ID })).toBeNull();
+    expect(deviceNotificationData({ id: 7, userId: USER })).toBeNull();
+    expect(deviceNotificationData({ id: "", userId: USER })).toBeNull();
+  });
+
+  it("drops a link that is not text rather than the whole notification", () => {
+    expect(deviceNotificationData({ id: ID, userId: USER, actionUrl: 3 })).toEqual({
+      id: ID,
+      userId: USER,
+      actionUrl: null,
+    });
+  });
+
+  it("opens the screen the notification is about", () => {
+    expect(tapRoute("/forum/reseau/subnetting")).toEqual({
+      pathname: "/forum/[category]/[topic]",
+      params: { category: "reseau", topic: "subnetting" },
+    });
+  });
+
+  it("opens the inbox for a notification with no screen of its own", () => {
+    expect(tapRoute(null)).toEqual({ pathname: "/notifications" });
+    expect(tapRoute("/api/me/export")).toEqual({ pathname: "/notifications" });
+  });
+});
 
 describe("inAppRouteFor", () => {
   it("opens a forum reply on its thread", () => {

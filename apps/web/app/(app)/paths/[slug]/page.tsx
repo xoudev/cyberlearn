@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { FileDown } from "lucide-react";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { indexPlacements, type LockState, resumeLesson } from "@/lib/lessons/unlock";
+import { indexPlacements, type LockState, resumeLesson } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";

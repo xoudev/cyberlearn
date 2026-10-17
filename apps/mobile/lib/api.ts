@@ -27,6 +27,7 @@ import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/l
 import { readCompletionReply, type CompletionReply } from "@/lib/lesson-completion";
 import type { QaQuestion } from "@/lib/lesson-qa";
 import { readMfaRemovalAnswer } from "@/lib/mfa";
+import { readLessonLocks, type LessonLock } from "@/lib/lesson-locks";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import { readPathCovers, type PathCover } from "@/lib/path-covers";
@@ -383,6 +384,23 @@ export async function fetchMfaRemovalApi(): Promise<boolean> {
   const canDisable = readMfaRemovalAnswer(await res.json());
   if (canDisable === null) throw new Error("Vérification impossible");
   return canDisable;
+}
+
+/**
+ * Which of these lessons are still locked for the reader, with the path that
+ * opens each; a lesson left out may be read. Throws when the server does not
+ * answer, so the caller decides what an unknown lock means.
+ */
+export async function fetchLessonLocksApi(
+  lessonIds: readonly string[],
+): Promise<Map<string, LessonLock>> {
+  if (lessonIds.length === 0) return new Map();
+  const res = await authedFetch("/api/mobile/lesson-access", {
+    method: "POST",
+    body: JSON.stringify({ lessonIds }),
+  });
+  if (!res.ok) throw new Error("Chargement impossible");
+  return readLessonLocks(await res.json());
 }
 
 // ── Path covers (the site's illustrations, and the images sent from the console) ──
