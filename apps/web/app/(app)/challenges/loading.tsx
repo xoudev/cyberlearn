@@ -4,8 +4,9 @@ import "./_components/challenges.css";
 
 /**
  * The challenges list while it loads, drawn on the page's own classes
- * (challenges.css): the header and its tally, the three steps, the week's
- * challenge, the tabs and three cards, at their real sizes.
+ * (challenges.css): the breadcrumb, the title and the section's two tabs
+ * (challenges-header.tsx), the lede and its tally, the three steps, the
+ * week's challenge, the list's tabs and three cards, at their real sizes.
  */
 
 function CardSkeleton(): React.ReactElement {
@@ -36,11 +37,21 @@ function CardSkeleton(): React.ReactElement {
 
 export default function ChallengesLoading(): React.ReactElement {
   return (
-    <div className="chx dfx" aria-busy="true" aria-label="Chargement des défis">
+    <div className="page-container dfx" aria-busy="true" aria-label="Chargement des défis">
+      <div className="pg-crumb" aria-hidden="true">
+        <Skeleton w={210} h={14} />
+      </div>
+      <Skeleton w={190} h={58} style={{ marginBottom: 18 }} />
+      <div className="tabs dfx-tabs" aria-hidden="true">
+        <span className="tabs__tab">
+          <Skeleton w={44} h={11} />
+        </span>
+        <span className="tabs__tab">
+          <Skeleton w={70} h={11} />
+        </span>
+      </div>
       <header className="dfx-head">
         <div>
-          <Skeleton w={210} h={14} style={{ marginBottom: 26 }} />
-          <Skeleton w={190} h={58} style={{ marginBottom: 18 }} />
           <SkeletonText
             lines={2}
             lastWidth="55%"

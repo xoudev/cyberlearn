@@ -11,6 +11,15 @@
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
+/* The section's two tabs, the catalogue and the tournaments: links on the tab
+   row's classes (globals.css, .tabs), under the title of either tab. */
+.dfx-tabs {
+  margin-bottom: 32px;
+}
+.dfx-tabs .tabs__tab {
+  text-decoration: none;
+}
+
 .dfx-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

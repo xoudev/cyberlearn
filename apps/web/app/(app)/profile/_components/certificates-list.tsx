@@ -1,15 +1,26 @@
 import { MONO_STYLE as MONO } from "@cyberlearn/ui";
 import React from "react";
-import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
-import { requireRequestUser } from "@/lib/auth";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
-import { Crumb } from "@/components/crumb";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { certificateCode } from "@cyberlearn/lib/social/certificate-code";
 
-export const metadata: Metadata = { title: "Mes certificats" };
+/** One certificate as the tab shows it (certificateRepository.listForUser). */
+export interface CertificateRow {
+  id: string;
+  publicId: string;
+  issuedAt: Date;
+  score: number | null;
+  sha256Hash: string;
+  revokedAt: Date | null;
+  revokedReason: string | null;
+  path: {
+    title: string;
+    category: string;
+    difficulty: string;
+    estimatedHours: number;
+  };
+}
 
 const GOLD = "var(--color-rarity-legendary)";
 
@@ -48,39 +59,27 @@ function CertSeal(): React.ReactElement {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── The tab ───────────────────────────────────────────────────────────────────
 
-export default async function CertificatesPage(): Promise<React.ReactElement> {
-  const authUser = await requireRequestUser();
-
-  const certs = await prisma.certificate.findMany({
-    where: { userId: authUser.id },
-    orderBy: { issuedAt: "desc" },
-    include: {
-      path: {
-        select: {
-          title: true,
-          slug: true,
-          category: true,
-          difficulty: true,
-          estimatedHours: true,
-        },
-      },
-    },
-  });
-
+/**
+ * The profile's Certificats tab: every certificate of the account, a revoked
+ * one kept, dimmed, with its reason. It was the /certificates page; the
+ * profile's own header now stands above it, so it opens on an h2.
+ */
+export function CertificatesList({
+  certs,
+}: {
+  certs: readonly CertificateRow[];
+}): React.ReactElement {
   const activeCerts = certs.filter((c) => !c.revokedAt);
   const revokedCerts = certs.filter((c) => c.revokedAt);
   const totalHours = activeCerts.reduce((sum, c) => sum + c.path.estimatedHours, 0);
   const isEmpty = certs.length === 0;
 
   return (
-    <div className="page-container">
-      {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <Crumb segments={["certificats"]} />
-
+    <div>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="catalog-header-grid" style={{ marginBottom: 40 }}>
+      <div className="catalog-header-grid" style={{ marginTop: 12, marginBottom: 40 }}>
         <div>
           <div
             style={{
@@ -95,11 +94,11 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
             REGISTRE · <b style={{ color: GOLD, fontWeight: 500 }}>SHA-256</b> · VÉRIFIABLE
           </div>
-          <h1
+          <h2
             style={{
               fontFamily: "var(--font-sans)",
               fontWeight: 800,
-              fontSize: "clamp(40px, 5.5vw, 72px)",
+              fontSize: "clamp(32px, 3.6vw, 48px)",
               lineHeight: 1,
               letterSpacing: "-0.035em",
               color: "var(--color-text-primary)",
@@ -140,7 +139,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                 délivré{activeCerts.length !== 1 ? "s" : ""}.
               </>
             )}
-          </h1>
+          </h2>
           <p
             style={{
               fontFamily: "var(--font-body)",
@@ -418,7 +417,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                   </div>
 
                   {/* Title */}
-                  <h2
+                  <h3
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontWeight: 700,
@@ -430,7 +429,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     }}
                   >
                     {cert.path.title}
-                  </h2>
+                  </h3>
 
                   {/* Meta row */}
                   <div
@@ -552,8 +551,11 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     >
                       Vérifier ↗
                     </Link>
+                    {/* A file from a route handler, not a page: a plain link,
+                        so the router does not try to render it. */}
                     <a
                       href={`/api/certificates/${cert.id}/download`}
+                      download
                       style={{
                         flex: 1.3,
                         display: "inline-flex",

@@ -2,6 +2,7 @@
 
 import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 import { ModalShell } from "@cyberlearn/ui";
@@ -137,7 +138,7 @@ export function DeleteAccountSection({
               . Télécharge-les avant la suppression.
             </span>
             <Link
-              href="/certificates"
+              href={profileTabHref("certificats")}
               onClick={() => {
                 setOpen(false);
               }}

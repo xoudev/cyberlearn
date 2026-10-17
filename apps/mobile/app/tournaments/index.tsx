@@ -8,6 +8,7 @@ import {
   counted,
   durationLabel,
   elapsedShare,
+  noTournamentsCopy,
   phaseTallyWord,
   TEAM_SCOPE_LABELS,
   type TournamentPhase,
@@ -54,7 +55,8 @@ function lengthOf(t: TournamentSummary): string {
 }
 
 /**
- * Tournaments: the site's /tournaments in the app. The CTF tournaments the
+ * Tournaments: the site's Tournois tab of the challenges (/challenges?tab=tournois)
+ * in the app, which keeps it a screen of its own. The CTF tournaments the
  * reader's classes take part in, counted by phase: the one running first,
  * with how much of its window has gone by, then the steps that explain the
  * scoring, then the ones to come and the ones played; each opens on its own
@@ -89,7 +91,11 @@ export default function TournamentsScreen(): React.JSX.Element {
       ) : error !== null || data === undefined ? (
         <ErrorState onRetry={() => void refetch()} code="TOURNAMENTS_LOAD" />
       ) : (
-        <TournamentsBody tournaments={sorted} readAt={Date.parse(data.serverNow)} />
+        <TournamentsBody
+          tournaments={sorted}
+          inClass={data.inClass}
+          readAt={Date.parse(data.serverNow)}
+        />
       )}
     </Screen>
   );
@@ -102,9 +108,12 @@ export default function TournamentsScreen(): React.JSX.Element {
  */
 function TournamentsBody({
   tournaments,
+  inClass,
   readAt,
 }: {
   tournaments: readonly TournamentSummary[];
+  /** Whether the reader is in a class or teaches one: what an empty list explains. */
+  inClass: boolean;
   readAt: number;
 }): React.JSX.Element {
   const router = useRouter();
@@ -116,6 +125,8 @@ function TournamentsBody({
   const running = of("RUNNING");
   const upcoming = of("UPCOMING");
   const finished = of("FINISHED");
+  // Open to everyone, as on the site: an empty list says why it is.
+  const empty = noTournamentsCopy(inClass);
 
   return (
     <View style={{ gap: 18 }}>
@@ -150,12 +161,7 @@ function TournamentsBody({
         <NumberedFacts facts={STEPS} />
       </Card>
 
-      {tournaments.length === 0 ? (
-        <EmptyState
-          title="Aucun tournoi pour l'instant"
-          body="Un tournoi réunit des classes : quand la tienne en rejoint un, il apparaît ici, et une notification te le dit."
-        />
-      ) : null}
+      {tournaments.length === 0 ? <EmptyState title={empty.title} body={empty.message} /> : null}
 
       {upcoming.length > 0 ? (
         <View>

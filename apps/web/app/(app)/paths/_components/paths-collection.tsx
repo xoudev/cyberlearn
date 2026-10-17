@@ -20,6 +20,7 @@ import {
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
@@ -374,9 +375,12 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
-/** Where "Voir le certificat" leads: its public page, or the list when none is on record. */
+/**
+ * Where "Voir le certificat" leads: its public page, or the profile's list of
+ * them when none is on record.
+ */
 function certificateHref(certPublicId: string | null): string {
-  return certPublicId === null ? "/certificates" : `/verify/${certPublicId}`;
+  return certPublicId === null ? profileTabHref("certificats") : `/verify/${certPublicId}`;
 }
 
 /**

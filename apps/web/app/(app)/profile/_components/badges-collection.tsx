@@ -1,9 +1,11 @@
 "use client";
 
+// "use client" justification: the rarity pills and the search filter the
+// collection in place.
+
 import { Pills } from "@/components/pills";
 import React, { useMemo, useRef, useState } from "react";
 import type { BadgeGroup } from "@/lib/badges/collection";
-import { Crumb } from "@/components/crumb";
 import { BadgeCard, rarityChrome } from "@/components/badge-card";
 import { ProgressBar } from "@/components/progress-bar";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
@@ -94,6 +96,11 @@ function SectionHeader({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+/**
+ * The profile's Badges tab: every active badge, earned or not, grouped by
+ * rarity, with the progress of those still locked. It was the /badges page;
+ * the profile's own header now stands above it, so it opens on an h2.
+ */
 export function BadgesCollection({
   groups,
   earnedCount,
@@ -133,18 +140,15 @@ export function BadgesCollection({
   ];
 
   return (
-    <div className="page-container">
-      {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <Crumb segments={["badges"]} />
-
+    <div>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="catalog-header-grid">
+      <div className="catalog-header-grid" style={{ marginTop: 12 }}>
         <div>
-          <h1
+          <h2
             style={{
               fontFamily: "var(--font-sans)",
               fontWeight: 800,
-              fontSize: "clamp(44px, 5.4vw, 76px)",
+              fontSize: "clamp(32px, 3.6vw, 48px)",
               lineHeight: 0.95,
               letterSpacing: "-0.04em",
               color: "var(--color-text-primary)",
@@ -178,7 +182,7 @@ export function BadgesCollection({
               <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{earnedCount}</b> /{" "}
               {totalCount}
             </span>
-          </h1>
+          </h2>
           <p
             style={{
               fontFamily: "var(--font-body)",

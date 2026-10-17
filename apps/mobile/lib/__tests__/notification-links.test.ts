@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { challengesTabHref } from "@cyberlearn/lib/challenges/tabs";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { deviceNotificationData, inAppRouteFor, tapRoute } from "../notification-links";
 
 describe("a tap on a notification in the phone's tray", () => {
@@ -45,6 +47,14 @@ describe("a tap on a notification in the phone's tray", () => {
   it("opens the inbox for a notification with no screen of its own", () => {
     expect(tapRoute(null)).toEqual({ pathname: "/notifications" });
     expect(tapRoute("/api/me/export")).toEqual({ pathname: "/notifications" });
+  });
+
+  it("opens the profile's sub-tab or the tournaments for the site's tab addresses", () => {
+    expect(tapRoute(profileTabHref("certificats"))).toEqual({
+      pathname: "/profile",
+      params: { tab: "certificats" },
+    });
+    expect(tapRoute(challengesTabHref("tournois"))).toEqual({ pathname: "/tournaments" });
   });
 });
 
@@ -119,6 +129,41 @@ describe("inAppRouteFor", () => {
       inAppRouteFor("/api/certificates/11111111-1111-4111-8111-111111111111/download"),
     ).toEqual({ pathname: "/profile", params: { tab: "certificats" } });
     expect(inAppRouteFor("/api/certificates/abc/download/extra")).toBeNull();
+  });
+
+  it("opens the sub-tab of the profile a link to one of the site's profile tabs names", () => {
+    expect(inAppRouteFor(profileTabHref("certificats"))).toEqual({
+      pathname: "/profile",
+      params: { tab: "certificats" },
+    });
+    expect(inAppRouteFor(profileTabHref("badges"))).toEqual({
+      pathname: "/profile",
+      params: { tab: "badges" },
+    });
+    // The activity has no sub-tab here: the profile opens as it is.
+    expect(inAppRouteFor(profileTabHref("activite"))).toEqual({ pathname: "/profile" });
+    expect(inAppRouteFor("/profile")).toEqual({ pathname: "/profile" });
+    expect(inAppRouteFor("/profile?tab=inconnu")).toEqual({ pathname: "/profile" });
+    // The tab is read wherever it sits in the query, and a fragment is dropped.
+    expect(inAppRouteFor("/profile?ref=bell&tab=certificats#top")).toEqual({
+      pathname: "/profile",
+      params: { tab: "certificats" },
+    });
+  });
+
+  it("opens the tournaments screen for the site's Tournois tab of the challenges", () => {
+    expect(inAppRouteFor(challengesTabHref("tournois"))).toEqual({ pathname: "/tournaments" });
+    expect(inAppRouteFor(challengesTabHref("defis"))).toEqual({ pathname: "/challenges" });
+    expect(inAppRouteFor("/challenges?tab=inconnu")).toEqual({ pathname: "/challenges" });
+  });
+
+  it("still opens the old addresses notices already stored carry", () => {
+    expect(inAppRouteFor("/badges")).toEqual({ pathname: "/profile", params: { tab: "badges" } });
+    expect(inAppRouteFor("/certificates")).toEqual({
+      pathname: "/profile",
+      params: { tab: "certificats" },
+    });
+    expect(inAppRouteFor("/tournaments")).toEqual({ pathname: "/tournaments" });
   });
 
   it("leads nowhere for what has no screen, or for no link at all", () => {

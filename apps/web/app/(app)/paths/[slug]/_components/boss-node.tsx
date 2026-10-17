@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import { ClaimCertificateButton } from "./claim-certificate";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
@@ -149,7 +150,7 @@ export function BossNode({
         </svg>
       </a>
     ) : (
-      <Link className="cp-boss__cta cp-boss__cta--teal" href="/certificates">
+      <Link className="cp-boss__cta cp-boss__cta--teal" href={profileTabHref("certificats")}>
         Voir mes certificats {ArrowIcon}
       </Link>
     );

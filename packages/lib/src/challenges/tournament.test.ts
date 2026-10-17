@@ -12,6 +12,7 @@ import {
   elapsedShare,
   firstSolves,
   flagNotice,
+  noTournamentsCopy,
   parisLocalToDate,
   phaseTallyWord,
   placeLabel,
@@ -197,6 +198,21 @@ describe("phaseTallyWord", () => {
     expect(phaseTallyWord("UPCOMING", 2)).toBe("à venir");
     expect(phaseTallyWord("FINISHED", 1)).toBe("terminé");
     expect(phaseTallyWord("FINISHED", 2)).toBe("terminés");
+  });
+});
+
+describe("noTournamentsCopy", () => {
+  it("tells a reader in a class that theirs will bring one", () => {
+    const copy = noTournamentsCopy(true);
+    expect(copy.title).toBe("Aucun tournoi pour l'instant");
+    expect(copy.message).toContain("quand la tienne en rejoint un");
+  });
+
+  it("tells a reader in no class that a tournament brings classes together", () => {
+    const copy = noTournamentsCopy(false);
+    expect(copy.title).toBe("Les tournois se jouent en classe");
+    expect(copy.message).toContain("Un tournoi réunit des classes");
+    expect(copy.message).toContain("Tu n'es dans aucune classe pour l'instant");
   });
 });
 

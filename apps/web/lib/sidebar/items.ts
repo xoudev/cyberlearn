@@ -71,11 +71,9 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
     { href: "/duels", label: "Duels", icon: "duel", count: null },
   ];
   if (input.hasClasses) {
-    // A tournament brings classes together: without one, there is none to play.
-    community.push(
-      { href: "/my-class", label: "Mes classes", icon: "classes", count: null },
-      { href: "/tournaments", label: "Tournois", icon: "tournament", count: null },
-    );
+    // The tournaments are a tab of the challenges (/challenges?tab=tournois),
+    // open to everyone: the entry is the classes' alone.
+    community.push({ href: "/my-class", label: "Mes classes", icon: "classes", count: null });
   }
   // Help is somebody answering: it belongs with the people, not under the account.
   community.push({ href: "/support", label: "Aide", icon: "support", count: null });
@@ -91,8 +89,8 @@ export function sidebarGroups(input: SidebarInput): SidebarGroup[] {
       key: "progress",
       label: "Progression",
       items: [
-        { href: "/badges", label: "Badges", icon: "badge", count: null },
-        { href: "/certificates", label: "Certificats", icon: "cert", count: null },
+        // The badges and the certificates are tabs of the profile
+        // (/profile?tab=badges|certificats), which the account block leads to.
         // The locker is what the levels unlock: a reward, listed with the others.
         { href: "/locker", label: "Casier", icon: "locker", count: null },
         { href: "/leaderboard", label: "Classement", icon: "trophy", count: null },

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   LeaderboardVisibility,
+  classRepository,
   friendshipRepository,
   tournamentRepository,
   userRepository,
@@ -27,7 +28,8 @@ import { checkFlagSubmission } from "@/lib/rate-limit";
  * its challenges to play, a flag checked and counted. Composing one is the
  * console's (apps/admin/app/(admin)/tournaments).
  *
- * Shared by the site (/tournaments and its actions) and the app
+ * Shared by the site (the Tournois tab of /challenges, a tournament's pages
+ * and their actions) and the app
  * (/api/mobile/tournaments/*). Callers are responsible for AUTHENTICATION:
  * `userId` must be a verified identity. Whether that identity may see or play
  * a tournament is decided here, from their classes.
@@ -256,6 +258,34 @@ export async function listTournamentsFor(
   return rows.map((row) =>
     summaryOf(row, { classes: row._count.classes, challenges: row._count.challenges }, now),
   );
+}
+
+/** The list as the site's Tournois tab and the app's screen show it. */
+export interface TournamentList {
+  tournaments: TournamentSummary[];
+  /**
+   * Whether the reader is in a class or teaches one: what an empty list
+   * explains (noTournamentsCopy). Asked only of an empty list, the one time
+   * it is shown; true otherwise.
+   */
+  inClass: boolean;
+}
+
+/**
+ * The reader's tournaments, for a list open to everyone: somebody in no class
+ * sees it too, and is told why it is empty.
+ */
+export async function tournamentListFor(
+  userId: string,
+  now: Date = new Date(),
+): Promise<TournamentList> {
+  const tournaments = await listTournamentsFor(userId, now);
+  if (tournaments.length > 0) return { tournaments, inClass: true };
+  const [classes, teaches] = await Promise.all([
+    classRepository.findForMember(userId),
+    classRepository.teachesAnyClass(userId),
+  ]);
+  return { tournaments, inClass: classes.length > 0 || teaches };
 }
 
 /** One tournament, its challenges once started, and its scoreboard; null when not the reader's. */

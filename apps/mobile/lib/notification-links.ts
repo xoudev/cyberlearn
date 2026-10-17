@@ -1,5 +1,6 @@
+import type { ChallengesTab } from "@cyberlearn/lib/challenges/tabs";
 import { threadFromHref } from "./forum";
-import { profileSubParam, type ProfileSubParam } from "./profile-tabs";
+import { profileSubFrom, profileSubParam, type ProfileSubParam } from "./profile-tabs";
 
 /**
  * Where a notification leads, in the app. The site stores a link to one of its
@@ -38,9 +39,35 @@ function certificates(): InAppRoute {
   return { pathname: "/profile", params: { tab: profileSubParam("Certificats") } };
 }
 
+/**
+ * The `tab` a link's query names, or null. Read by hand rather than through
+ * URLSearchParams: the values are plain words, and React Native's own
+ * URLSearchParams has not always implemented `get`.
+ */
+function tabParam(query: string): string | null {
+  const match = /(?:^|&)tab=([^&]*)/u.exec(query);
+  return match?.[1] ?? null;
+}
+
+/**
+ * The profile, on the sub-tab a link names. The site's tabs are
+ * `/profile?tab=activite|badges|certificats` (@cyberlearn/lib/social/profile-tabs):
+ * the badges and the certificates have a sub-tab here of the same name, the
+ * activity has none and opens the profile as it is.
+ */
+function profileOn(tab: string | null): InAppRoute {
+  const sub = profileSubFrom(tab ?? undefined);
+  return sub === null
+    ? { pathname: "/profile" }
+    : { pathname: "/profile", params: { tab: profileSubParam(sub) } };
+}
+
 export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   if (actionUrl === null) return null;
-  const path = actionUrl.split(/[?#]/u)[0]?.replace(/\/$/u, "") ?? "";
+  const [beforeHash = ""] = actionUrl.split("#");
+  const [rawPath = "", query = ""] = beforeHash.split("?");
+  const path = rawPath.replace(/\/$/u, "");
+  const tab = tabParam(query);
 
   const thread = threadFromHref(path);
   if (thread) {
@@ -71,19 +98,25 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/notes":
     case "/my-class":
     case "/revisions":
-    case "/profile":
     case "/friends":
     case "/duels":
     case "/tournaments":
-    // A completed challenge points at the challenges.
-    case "/challenges":
       return { pathname: path };
-    // The certificates, like the badges, live under the profile tab, each
-    // on its own sub-tab: the link names it, or the tab opens on the last one.
+    // The certificates and the badges are tabs of the site's profile, and
+    // sub-tabs of the Profile screen here: a new notice names its tab
+    // (/profile?tab=certificats), an older one the page it had before.
+    case "/profile":
+      return profileOn(tab);
     case "/certificates":
       return certificates();
     case "/badges":
       return { pathname: "/profile", params: { tab: profileSubParam("Badges") } };
+    // A completed challenge points at the challenges. The tournaments are a
+    // tab of them on the site (/challenges?tab=tournois), a screen here.
+    case "/challenges":
+      return tab === ("tournois" satisfies ChallengesTab)
+        ? { pathname: "/tournaments" }
+        : { pathname: "/challenges" };
     // Every moderation notice points at the record, a settings page on the site.
     case "/settings/moderation":
       return { pathname: "/moderation" };

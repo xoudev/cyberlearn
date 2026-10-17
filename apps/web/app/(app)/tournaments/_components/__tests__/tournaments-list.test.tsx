@@ -71,7 +71,7 @@ const NOW = Date.parse("2026-10-16T13:15:00.000Z");
 
 describe("TournamentsList", () => {
   it("counts the tournaments of each phase in the header", () => {
-    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} />);
+    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} inClass />);
     const tally = screen.getByLabelText("Les tournois");
     expect(
       within(tally)
@@ -81,7 +81,7 @@ describe("TournamentsList", () => {
   });
 
   it("puts a running tournament first, its window measured at the server's clock", () => {
-    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} />);
+    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} inClass />);
     const live = screen.getByRole("region", { name: "CTF de la Toussaint" });
     expect(live.textContent).toContain("50 % du temps écoulé");
     expect(within(live).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
@@ -97,7 +97,7 @@ describe("TournamentsList", () => {
   });
 
   it("lists the ones to come by their start, and the ones played", () => {
-    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} />);
+    render(<TournamentsList tournaments={[PLAYED, LATER, LIVE, SOONER]} nowMs={NOW} inClass />);
     const upcoming = screen.getByRole("region", { name: "À venir" });
     expect(
       within(upcoming)
@@ -116,9 +116,26 @@ describe("TournamentsList", () => {
   });
 
   it("says there is none yet, without a tally", () => {
-    render(<TournamentsList tournaments={[]} nowMs={NOW} />);
+    render(<TournamentsList tournaments={[]} nowMs={NOW} inClass />);
     expect(screen.getByText("Aucun tournoi pour l'instant")).toBeTruthy();
     expect(screen.queryByLabelText("Les tournois")).toBeNull();
     expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("tells a reader in no class that a tournament brings classes together", () => {
+    render(<TournamentsList tournaments={[]} nowMs={NOW} inClass={false} />);
+    expect(screen.getByText("Les tournois se jouent en classe")).toBeTruthy();
+    expect(screen.getByText(/Un tournoi réunit des classes/u).textContent).toContain(
+      "Tu n'es dans aucune classe pour l'instant",
+    );
+    expect(screen.queryByText("Aucun tournoi pour l'instant")).toBeNull();
+    // How a tournament is scored is still told.
+    expect(screen.getByText("Un flag, des points")).toBeTruthy();
+  });
+
+  it("leaves the breadcrumb and the title to the challenges section", () => {
+    render(<TournamentsList tournaments={[LIVE]} nowMs={NOW} inClass />);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.queryByText("cyberlearn")).toBeNull();
   });
 });
