@@ -1,6 +1,6 @@
 import React from "react";
 import { wrappedWindow } from "@cyberlearn/lib";
-import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@cyberlearn/ui";
 import "./_components/story/story.css";
 
 /**

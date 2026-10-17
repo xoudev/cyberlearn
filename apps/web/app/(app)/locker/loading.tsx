@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonCard, SkeletonText } from "@cyberlearn/ui";
 import "./_components/locker.css";
 
 /**

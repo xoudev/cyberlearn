@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@cyberlearn/ui";
 
 /**
  * A certificate's verification page while it loads, drawn on the page's own
