@@ -144,6 +144,61 @@
   letter-spacing: 0.04em;
 }
 
+/* ─── Toasts ───────────────────────────────────────────────────
+   Sonner ships its own look - rounded, near-black, a system sans. These rules
+   give it the console's floating panel instead: square corners, the raised
+   surface, a hairline border, and a coloured left edge that says at a glance
+   which kind of message it is. The same treatment as the site's toasts
+   (apps/web/app/globals.css), on the console's own names.
+
+   The selectors carry [data-styled="true"] on purpose: sonner's own rules are
+   written with two attributes, so a rule with fewer ties on specificity and
+   loses on source order. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  --toast-edge: var(--a-accent);
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 0;
+  background: var(--a-surface);
+  border: 1px solid var(--a-border-2);
+  border-left: 2px solid var(--toast-edge);
+  box-shadow: 0 8px 40px color-mix(in srgb, var(--a-bg) 70%, transparent);
+  font-family: var(--font-sans);
+  color: var(--a-fg);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-edge: var(--a-danger);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-edge: var(--a-warning);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  --toast-edge: var(--a-info);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  margin: 0;
+  color: var(--toast-edge);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font: 500 13px / 1.45 var(--font-sans);
+  color: var(--a-fg);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  margin-top: 4px;
+  font: 12px / 1.5 var(--font-sans);
+  color: var(--a-muted);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  border-radius: 0;
+  border-color: var(--a-border-2);
+  background: var(--a-surface);
+  color: var(--a-muted);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+  color: var(--a-fg);
+  border-color: var(--toast-edge);
+}
+
 /* ─── Sidebar ──────────────────────────────────────────────── */
 
 .a-side-item {
