@@ -45,6 +45,8 @@ export {
   consoleUserWhere,
   generatedUsername,
   CONSOLE_PROFILE_ACTION,
+  announcementAudienceWhere,
+  type AnnouncementAudience,
   type ChangeRoleResult,
   type ConsoleProfile,
   type ConsoleProfileField,
@@ -209,8 +211,15 @@ export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";
-export { notificationRepository } from "./repositories/notification.repository.js";
-export type { NotificationItem } from "./repositories/notification.repository.js";
+export {
+  notificationRepository,
+  NOTIFICATION_BATCH_SIZE,
+} from "./repositories/notification.repository.js";
+export type {
+  NotificationBatchAudit,
+  NotificationItem,
+  NotificationRow,
+} from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
 export type {
   LeaderboardEntry,

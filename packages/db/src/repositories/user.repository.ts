@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "../prisma.js";
-import { classRepository } from "./class.repository.js";
+import { activeBanFilter } from "./ban.repository.js";
+import { classRepository, LIVE_CLASS_FILTER } from "./class.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 import { friendshipRepository } from "./friendship.repository.js";
 
@@ -206,6 +207,50 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
     });
   }
   return { AND: terms };
+}
+
+/**
+ * Who a console announcement goes to: every account, the accounts of some
+ * roles, or the members of some classes.
+ */
+export type AnnouncementAudience =
+  | { kind: "ALL" }
+  | { kind: "ROLES"; roles: readonly UserRole[] }
+  | { kind: "CLASSES"; classIds: readonly string[] };
+
+/**
+ * The accounts an audience reaches, as a filter: the count shown before the
+ * send and the list it goes to are read through the same one, so the number
+ * confirmed is the number sent.
+ *
+ * A banned account is left out: it cannot sign in to read the message, and it
+ * would find it waiting the day the ban ends, out of date. A deleted account
+ * needs no clause, its row is gone with it. A class reaches its members while
+ * it is live (LIVE_CLASS_FILTER), like a tournament announcement; its
+ * teachers are not members, and are reached by their role.
+ */
+export function announcementAudienceWhere(
+  audience: AnnouncementAudience,
+  now: Date,
+): Prisma.UserWhereInput {
+  const notBanned: Prisma.UserWhereInput = { bans: { none: activeBanFilter(now) } };
+  switch (audience.kind) {
+    case "ALL":
+      return notBanned;
+    case "ROLES":
+      return { AND: [notBanned, { role: { in: [...audience.roles] } }] };
+    case "CLASSES":
+      return {
+        AND: [
+          notBanned,
+          {
+            classMemberships: {
+              some: { classId: { in: [...audience.classIds] }, class: LIVE_CLASS_FILTER },
+            },
+          },
+        ],
+      };
+  }
 }
 
 const WEEK_MS = 7 * 86_400_000;
@@ -860,5 +905,20 @@ export const userRepository = {
       select: { id: true },
     });
     return new Set(rows.map((row) => row.id));
+  },
+
+  /** How many accounts an announcement would reach: the figure asked to be confirmed. */
+  async countForAudience(audience: AnnouncementAudience, now: Date = new Date()): Promise<number> {
+    return prisma.user.count({ where: announcementAudienceWhere(audience, now) });
+  },
+
+  /** The accounts an announcement goes to, each once. */
+  async idsForAudience(audience: AnnouncementAudience, now: Date = new Date()): Promise<string[]> {
+    const rows = await prisma.user.findMany({
+      where: announcementAudienceWhere(audience, now),
+      orderBy: { id: "asc" },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
   },
 };
