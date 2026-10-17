@@ -24,6 +24,12 @@ import {
   type CssWithVars,
   type Tone,
 } from "../_components/admin-ui";
+import {
+  DASHBOARD_CARDS,
+  DASHBOARD_HEADER,
+  DASHBOARD_KPI_LABELS,
+  RECENT_USER_COLUMNS,
+} from "./_components/dashboard-head";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -156,9 +162,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Aperçu" }]}
-        title="Vue d'ensemble"
-        description="Croissance, contenu publié et signalements : l'état de la plateforme sur les 8 dernières semaines."
+        crumbs={DASHBOARD_HEADER.crumbs}
+        title={DASHBOARD_HEADER.title}
+        description={DASHBOARD_HEADER.description}
         actions={
           <>
             <GhostLink href="/lessons/import">Importer MDX</GhostLink>
@@ -169,7 +175,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
 
       <div className="a-kpi-grid">
         <KpiCard
-          label="Utilisateurs"
+          label={DASHBOARD_KPI_LABELS[0]}
           value={userCount.toLocaleString("fr-FR")}
           series={weeklySeries(
             userDates.map((u) => u.createdAt),
@@ -182,7 +188,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           }
         />
         <KpiCard
-          label="Leçons publiées"
+          label={DASHBOARD_KPI_LABELS[1]}
           value={lessonCount.toLocaleString("fr-FR")}
           series={weeklySeries(
             lessonDates.map((l) => l.publishedAt).filter((d): d is Date => d !== null),
@@ -196,7 +202,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           tone="info"
         />
         <KpiCard
-          label="Certificats émis"
+          label={DASHBOARD_KPI_LABELS[2]}
           value={certCount.toLocaleString("fr-FR")}
           series={weeklySeries(
             certDates.map((c) => c.issuedAt),
@@ -210,7 +216,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           tone="purple"
         />
         <KpiCard
-          label="Tickets actifs"
+          label={DASHBOARD_KPI_LABELS[3]}
           value={activeTickets.toLocaleString("fr-FR")}
           series={weeklySeries(
             ticketDates.map((t) => t.createdAt),
@@ -249,7 +255,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       {/* Errors before the activity feed: the audit log says what people did,
           and this says what broke. One of the two is urgent. */}
       <Card
-        title="Erreurs · 24 h"
+        title={DASHBOARD_CARDS.errors}
         action={
           sentry.state === "ok" && sentry.issues.length > 0 ? (
             <span
@@ -264,7 +270,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       </Card>
 
       <div className="a-split">
-        <Card title="Activité récente" action={<CardLink href="/audit">Audit log →</CardLink>}>
+        <Card
+          title={DASHBOARD_CARDS.activity}
+          action={<CardLink href="/audit">Audit log →</CardLink>}
+        >
           {recentLogs.length === 0 ? (
             <p
               style={{
@@ -313,15 +322,19 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         </Card>
 
         <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
-          <Card title="Nouveaux utilisateurs" action={<CardLink href="/users">Tous →</CardLink>}>
+          <Card title={DASHBOARD_CARDS.newUsers} action={<CardLink href="/users">Tous →</CardLink>}>
             <div className="a-table-wrap">
               <table className="a-table">
                 <thead>
                   <tr>
-                    <th>Utilisateur</th>
-                    <th>Rôle</th>
-                    <th style={{ textAlign: "right" }}>Niveau</th>
-                    <th style={{ textAlign: "right" }}>Inscrit</th>
+                    {RECENT_USER_COLUMNS.map((column) => (
+                      <th
+                        key={column.label}
+                        style={column.align === "right" ? { textAlign: "right" } : undefined}
+                      >
+                        {column.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -358,7 +371,11 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             </div>
           </Card>
 
-          <Card title="Contenu" action={<CardLink href="/lessons">Gérer →</CardLink>} pad>
+          <Card
+            title={DASHBOARD_CARDS.content}
+            action={<CardLink href="/lessons">Gérer →</CardLink>}
+            pad
+          >
             <div style={{ display: "grid", gap: 16 }}>
               {(
                 [

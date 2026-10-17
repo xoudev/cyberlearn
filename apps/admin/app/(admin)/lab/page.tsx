@@ -5,6 +5,7 @@ import { wrappedWindow } from "@cyberlearn/lib";
 import { env } from "@/lib/env";
 import { Card, PageHeader, Tag } from "../_components/admin-ui";
 import { EmailViewer } from "./_components/email-viewer";
+import { LAB_CARDS, LAB_HEADER } from "./_components/lab-head";
 import { ModerationProbe } from "./_components/moderation-probe";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -39,14 +40,14 @@ export default async function LabPage(): Promise<React.JSX.Element> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Outils" }]}
-        title="Banc d'essai"
-        description="Voir ce qui ne se montre qu'une fois par an, ou qu'une fois envoyé. Rien ici n'écrit, n'envoie ni ne modifie quoi que ce soit."
+        crumbs={LAB_HEADER.crumbs}
+        title={LAB_HEADER.title}
+        description={LAB_HEADER.description}
       />
 
       <div className="a-stack">
         <Card
-          title="Wrapped"
+          title={LAB_CARDS.wrapped}
           action={
             <Tag tone={window.open ? "accent" : "neutral"}>
               {window.open ? "ouvert au public" : "fermé au public"}
@@ -77,14 +78,14 @@ export default async function LabPage(): Promise<React.JSX.Element> {
         </Card>
 
         <Card
-          title="Filtre de modération"
+          title={LAB_CARDS.moderation}
           action={<Tag tone="info">rien n&apos;est enregistré</Tag>}
           pad
         >
           <ModerationProbe />
         </Card>
 
-        <Card title="Modèles d'e-mail" action={<Tag tone="info">aucun envoi</Tag>} pad>
+        <Card title={LAB_CARDS.emails} action={<Tag tone="info">aucun envoi</Tag>} pad>
           <EmailViewer samples={samples} />
         </Card>
       </div>

@@ -3,6 +3,7 @@
 import React, { useActionState, useState } from "react";
 import { resetProgressAction, type ResetProgressState } from "../../../_actions/user-actions";
 import { Card } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 
 /**
  * Putting an account back to its first day, keeping the account.
@@ -51,7 +52,7 @@ export function ResetProgressForm({
   }
 
   return (
-    <Card title="Remettre la progression à zéro" pad>
+    <Card title={USER_CARDS.resetProgress} pad>
       <p className="a-form-notice">
         Efface l&apos;XP, le niveau, les séries, la progression des leçons et des parcours, les
         révisions, les badges, les quêtes, les défis, les cosmétiques et les attestations, fichiers

@@ -33,6 +33,12 @@ export {
 } from "./components/otp-code-input.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { SideDrawer, type SideDrawerProps } from "./components/side-drawer.js";
+export {
+  Skeleton,
+  SkeletonCard,
+  SkeletonText,
+  type SkeletonProps,
+} from "./components/skeleton.js";
 export { cn } from "./lib/utils.js";
 export { ACCENT, AMBER, BORDER, DANGER, MONO, MONO_STYLE, MUTED, RED } from "./lib/palette.js";
 export { cssColor, cssToken, toHexColor } from "./lib/css-color.js";

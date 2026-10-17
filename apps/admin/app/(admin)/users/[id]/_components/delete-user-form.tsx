@@ -4,6 +4,7 @@ import React, { useActionState, useState } from "react";
 import { deleteUserAction, type DeleteUserState } from "../../../_actions/user-actions";
 import { keepFormInput } from "@/lib/form-input";
 import { Card } from "../../../_components/admin-ui";
+import { USER_CARDS } from "../../_components/columns";
 
 /**
  * The one action in the console nobody can review afterwards.
@@ -33,7 +34,7 @@ export function DeleteUserForm({
   const matches = typed.trim().toLowerCase() === email.toLowerCase();
 
   return (
-    <Card title="Zone dangereuse" pad>
+    <Card title={USER_CARDS.danger} pad>
       <p className="a-form-error">
         Supprimer ce compte efface définitivement le profil, les préférences, l&apos;avatar, la
         progression, les badges, les séries, les révisions, les attestations et leurs fichiers,

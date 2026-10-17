@@ -2,9 +2,10 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
-import { PageHeader, PrimaryLink, Tag, type Tone } from "../_components/admin-ui";
-import { DataGrid, type GridRow } from "../_components/data-grid";
-import { ActiveToggle } from "./_components/active-toggle";
+import { PageHeader, PrimaryLink, Tag, type Tone } from "../../_components/admin-ui";
+import { DataGrid, type GridRow } from "../../_components/data-grid";
+import { ActiveToggle } from "../_components/active-toggle";
+import { CHALLENGE_COLUMNS, CHALLENGES_HEADER } from "../_components/challenge-columns";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -123,24 +124,14 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Gamification" }]}
-        title="Challenges"
+        crumbs={CHALLENGES_HEADER.crumbs}
+        title={CHALLENGES_HEADER.title}
         description={`${String(challenges.length)} challenge${challenges.length !== 1 ? "s" : ""} · ${String(activeCount)} actif${activeCount !== 1 ? "s" : ""}. CTF, puzzles et labs proposés dans la section Défis.`}
         actions={<PrimaryLink href="/challenges/new">Nouveau challenge</PrimaryLink>}
       />
 
       <DataGrid
-        columns={[
-          { label: "Ref", sortable: true },
-          { label: "Titre", sortable: true },
-          { label: "Catégorie", sortable: true },
-          { label: "Difficulté", sortable: true },
-          { label: "Type", sortable: true },
-          { label: "XP", align: "right", sortable: true },
-          { label: "Résolus", align: "right", sortable: true },
-          { label: "Statut", sortable: true },
-          { label: "Actions" },
-        ]}
+        columns={CHALLENGE_COLUMNS}
         rows={rows}
         facets={[
           {

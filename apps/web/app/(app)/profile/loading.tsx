@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton, SkeletonCard, SkeletonText } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonCard, SkeletonText } from "@cyberlearn/ui";
 
 /**
  * The profile while it loads, drawn on the page's own classes and layout

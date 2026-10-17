@@ -2,8 +2,9 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { classRepository } from "@cyberlearn/db";
-import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag } from "../_components/admin-ui";
-import { DataGrid, type GridRow } from "../_components/data-grid";
+import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag } from "../../_components/admin-ui";
+import { DataGrid, type GridRow } from "../../_components/data-grid";
+import { CLASS_COLUMNS, CLASS_KPI_LABELS, CLASSES_HEADER } from "../_components/class-columns";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -80,9 +81,9 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Structure" }]}
-        title="Classes"
-        description="Une classe appartient à une promo, qui appartient à un établissement. Ouvre une classe pour gérer ses élèves et ses professeurs."
+        crumbs={CLASSES_HEADER.crumbs}
+        title={CLASSES_HEADER.title}
+        description={CLASSES_HEADER.description}
         actions={
           <>
             <GhostLink href="/classes/structure">Structure</GhostLink>
@@ -92,21 +93,14 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
       />
 
       <div className="a-kpi-grid">
-        <KpiCard label="Établissements" value={String(hierarchy.length)} tone="info" />
-        <KpiCard label="Promos" value={String(totalPromotions)} tone="purple" />
-        <KpiCard label="Classes" value={String(classes.length - archived)} />
-        <KpiCard label="Élèves rattachés" value={String(totalMembers)} tone="accent" />
+        <KpiCard label={CLASS_KPI_LABELS[0]} value={String(hierarchy.length)} tone="info" />
+        <KpiCard label={CLASS_KPI_LABELS[1]} value={String(totalPromotions)} tone="purple" />
+        <KpiCard label={CLASS_KPI_LABELS[2]} value={String(classes.length - archived)} />
+        <KpiCard label={CLASS_KPI_LABELS[3]} value={String(totalMembers)} tone="accent" />
       </div>
 
       <DataGrid
-        columns={[
-          { label: "Classe", sortable: true },
-          { label: "Établissement", sortable: true },
-          { label: "Promo", sortable: true },
-          { label: "Élèves", align: "right", sortable: true },
-          { label: "Professeurs", sortable: true },
-          { label: "État", sortable: true },
-        ]}
+        columns={CLASS_COLUMNS}
         rows={rows}
         facets={[
           {

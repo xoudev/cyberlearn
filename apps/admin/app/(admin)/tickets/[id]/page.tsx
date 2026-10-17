@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { isTicketOpen, prisma } from "@cyberlearn/db";
 import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
+import { TICKET_CARDS, TICKET_CRUMBS } from "../_components/ticket-columns";
 import { TicketThread } from "../_components/TicketThread";
 import { STATUS_META, THEME_META } from "../ticket-meta";
 
@@ -122,7 +123,7 @@ export default async function AdminTicketPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Support" }, { label: "Tickets", href: "/tickets" }]}
+        crumbs={TICKET_CRUMBS}
         title={ticket.subject}
         description={
           <>
@@ -134,7 +135,7 @@ export default async function AdminTicketPage({
 
       <div className="a-split">
         <div style={{ alignSelf: "start", minWidth: 0 }}>
-          <Card title="Message">
+          <Card title={TICKET_CARDS.message}>
             <p
               style={{
                 margin: 0,
@@ -152,7 +153,7 @@ export default async function AdminTicketPage({
         </div>
 
         <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
-          <Card title="Statut" pad>
+          <Card title={TICKET_CARDS.status} pad>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
               <span
@@ -167,7 +168,7 @@ export default async function AdminTicketPage({
             </div>
           </Card>
 
-          <Card title="Détails" pad>
+          <Card title={TICKET_CARDS.details} pad>
             <div style={{ display: "grid", gap: 13 }}>
               <DetailRow label="Demandeur">
                 {/* The account, one click away: banning, lifting a ban or
@@ -244,7 +245,7 @@ export default async function AdminTicketPage({
         </div>
       </div>
 
-      <Card title="Conversation">
+      <Card title={TICKET_CARDS.conversation}>
         <TicketThread
           ticketId={ticket.id}
           open={isTicketOpen(ticket.status)}

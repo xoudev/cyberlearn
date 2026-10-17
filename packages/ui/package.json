@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
     "./dialogs.css": "./src/dialogs.css",
+    "./skeleton.css": "./src/skeleton.css",
     "./mdx-editor": "./src/components/mdx-editor-panel.tsx"
   },
   "scripts": {

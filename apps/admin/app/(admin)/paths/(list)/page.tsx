@@ -1,8 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
-import { GhostLink, PageHeader, PrimaryLink } from "../_components/admin-ui";
-import { ArchiveFirstCatalogueButton } from "../_components/archive-first-catalogue-button";
-import { PathsGrid } from "./_components/paths-grid";
+import { GhostLink, PageHeader, PrimaryLink } from "../../_components/admin-ui";
+import { ArchiveFirstCatalogueButton } from "../../_components/archive-first-catalogue-button";
+import { PATHS_HEADER } from "../_components/path-columns";
+import { PathsGrid } from "../_components/paths-grid";
 import { firstCatalogueCounts } from "@/lib/services/first-catalogue.service";
 import { listPaths } from "@/lib/services/path-list.service";
 
@@ -20,8 +21,8 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }]}
-        title="Parcours"
+        crumbs={PATHS_HEADER.crumbs}
+        title={PATHS_HEADER.title}
         description={`${String(counts.published)} publié${counts.published !== 1 ? "s" : ""} · ${String(counts.draft)} brouillon${counts.draft !== 1 ? "s" : ""}. Les parcours archivés sont rangés à part ; un parcours publié doit être archivé avant suppression.`}
         actions={
           <>

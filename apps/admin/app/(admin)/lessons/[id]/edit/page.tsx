@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
+import { LESSON_CRUMBS } from "../../_components/lesson-headers";
 import { EditLessonClient } from "./_components/edit-lesson-client";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
@@ -48,7 +49,7 @@ export default async function EditLessonPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
+        crumbs={LESSON_CRUMBS}
         title={lesson.title}
         description={
           <>

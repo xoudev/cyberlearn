@@ -1,4 +1,5 @@
 import React from "react";
+import { Skeleton } from "@cyberlearn/ui";
 import type { GridColumn } from "./data-grid";
 
 /**
@@ -7,32 +8,15 @@ import type { GridColumn } from "./data-grid";
  * only the cells wait. A skeleton drawn by hand next to the page is how the
  * account list came to load as seven columns and render as ten.
  *
- * Square, like the console: the shimmer's own rounding is turned off.
+ * Every block is the shared Skeleton, square like the console. A block that
+ * stands in for text is a span, so it fits in a <p> or a <th>.
  */
-
-/**
- * A shimmering bar. A span, so it can stand in for text anywhere, a page
- * description's <p> included, where a <div> would break the markup.
- */
-export function Bar({
-  width,
-  height,
-}: {
-  width: number | string;
-  height: number;
-}): React.ReactElement {
-  return (
-    <span
-      className="skeleton-shimmer"
-      style={{ display: "inline-block", width, maxWidth: "100%", height, borderRadius: 0 }}
-    />
-  );
-}
 
 export function DataGridSkeleton({
   columns,
   facets = 0,
   search = true,
+  toolbar,
   rows = 10,
   selectable = false,
   leadLines = 1,
@@ -41,6 +25,8 @@ export function DataGridSkeleton({
   /** How many filter menus the toolbar holds. */
   facets?: number;
   search?: boolean;
+  /** Replaces the search box and the facets, as the grid's own toolbar prop does. */
+  toolbar?: React.ReactNode;
   rows?: number;
   /** A checkbox column before the first. */
   selectable?: boolean;
@@ -50,12 +36,16 @@ export function DataGridSkeleton({
   return (
     <section className="a-card" aria-hidden="true">
       <div className="a-toolbar">
-        {search && <span className="a-search skeleton-shimmer" style={{ borderRadius: 0 }} />}
-        {Array.from({ length: facets }, (_, index) => (
-          <Bar key={index} width={132} height={36} />
-        ))}
+        {toolbar ?? (
+          <>
+            {search && <Skeleton as="span" className="a-search" />}
+            {Array.from({ length: facets }, (_, index) => (
+              <Skeleton key={index} as="span" w={132} h={36} />
+            ))}
+          </>
+        )}
         <span className="a-toolbar-count">
-          <Bar width={84} height={11} />
+          <Skeleton as="span" w={84} h={11} />
         </span>
       </div>
       <div className="a-table-wrap">
@@ -64,7 +54,7 @@ export function DataGridSkeleton({
             <tr>
               {selectable && (
                 <th className="a-check-cell">
-                  <Bar width={16} height={16} />
+                  <Skeleton as="span" w={16} h={16} />
                 </th>
               )}
               {columns.map((column) => (
@@ -82,7 +72,7 @@ export function DataGridSkeleton({
               <tr key={row}>
                 {selectable && (
                   <td className="a-check-cell">
-                    <Bar width={16} height={16} />
+                    <Skeleton as="span" w={16} h={16} />
                   </td>
                 )}
                 {columns.map((column, index) => (
@@ -99,10 +89,10 @@ export function DataGridSkeleton({
         </table>
       </div>
       <div className="a-pager">
-        <Bar width={150} height={11} />
+        <Skeleton as="span" w={150} h={11} />
         <div className="a-pager-btns">
           {Array.from({ length: 5 }, (_, index) => (
-            <Bar key={index} width={30} height={30} />
+            <Skeleton key={index} as="span" w={30} h={30} />
           ))}
         </div>
       </div>
@@ -120,20 +110,55 @@ function SkeletonCell({ right, lines }: { right: boolean; lines: number }): Reac
       }}
     >
       {Array.from({ length: lines }, (_, line) => (
-        <Bar key={line} height={line === 0 ? 12 : 10} width={right ? 44 : line === 0 ? 120 : 160} />
+        <Skeleton
+          key={line}
+          as="span"
+          h={line === 0 ? 12 : 10}
+          w={right ? 44 : line === 0 ? 120 : 160}
+        />
       ))}
     </span>
   );
 }
 
-/** The figures above a list, labels known and values waiting. */
-export function KpiGridSkeleton({ labels }: { labels: readonly string[] }): React.ReactElement {
+/**
+ * The filters of a list whose toolbar is more than a search (the audit log):
+ * each field under its label, then the submit button.
+ */
+export function FiltersSkeleton({ labels }: { labels: readonly string[] }): React.ReactElement {
   return (
-    <div className="a-kpi-grid" aria-hidden="true">
+    <div className="a-filters">
+      {labels.map((label) => (
+        <span key={label} className="a-filter">
+          {label}
+          <Skeleton as="span" w={150} h={36} />
+        </span>
+      ))}
+      <span className="a-filter-actions">
+        <Skeleton as="span" w={84} h={32} />
+      </span>
+    </div>
+  );
+}
+
+/** The figures above a list, labels known and values waiting. */
+export function KpiGridSkeleton({
+  labels,
+  className,
+}: {
+  labels: readonly string[];
+  /** What the page adds to .a-kpi-grid, the sync page's tighter margin. */
+  className?: string;
+}): React.ReactElement {
+  return (
+    <div
+      className={className === undefined ? "a-kpi-grid" : `a-kpi-grid ${className}`}
+      aria-hidden="true"
+    >
       {labels.map((label) => (
         <div key={label} className="a-kpi">
           <div className="a-kpi-label">{label}</div>
-          <Bar width={72} height={30} />
+          <Skeleton as="span" w={72} h={30} />
         </div>
       ))}
     </div>
@@ -145,7 +170,7 @@ export function ActionsSkeleton({ widths }: { widths: readonly number[] }): Reac
   return (
     <>
       {widths.map((width, index) => (
-        <Bar key={index} width={width} height={40} />
+        <Skeleton key={index} as="span" w={width} h={40} />
       ))}
     </>
   );

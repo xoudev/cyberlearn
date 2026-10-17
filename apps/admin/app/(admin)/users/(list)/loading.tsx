@@ -7,7 +7,7 @@ import { UsersTabs } from "../_components/users-head";
 /** The account list while it loads: its header, figures, tabs and grid, from the page's own constants. */
 export default function AdminUsersLoading(): React.ReactElement {
   return (
-    <main className="a-page">
+    <main className="a-page" aria-busy="true">
       <PageHeader
         crumbs={USERS_HEADER.crumbs}
         title={USERS_HEADER.title}

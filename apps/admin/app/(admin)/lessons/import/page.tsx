@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { PageHeader } from "../../_components/admin-ui";
+import { IMPORT_HEADER } from "../_components/lesson-headers";
 import { ImportClient } from "./_components/import-client";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -12,9 +13,9 @@ export default async function ImportLessonPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
-        title="Importer une leçon MDX"
-        description="Format : frontmatter YAML + corps MDX · 500 Ko au plus · extension .mdx uniquement"
+        crumbs={IMPORT_HEADER.crumbs}
+        title={IMPORT_HEADER.title}
+        description={IMPORT_HEADER.description}
       />
 
       <ImportClient />

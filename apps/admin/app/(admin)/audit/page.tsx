@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auditLogRepository } from "@cyberlearn/db";
 import { Monogram, PageHeader, Tag, type Tone } from "../_components/admin-ui";
-import { DataGrid, type GridColumn, type GridRowBase } from "../_components/data-grid";
+import { DataGrid, type GridRowBase } from "../_components/data-grid";
 import { AuditFilters } from "./_components/audit-filters";
+import { AUDIT_COLUMNS, AUDIT_HEADER } from "./_components/columns";
 import { AUDIT_EXPORT_MAX, auditActorName } from "@/lib/audit-export";
 import { gridHref } from "@/lib/grid-href";
 import type { RawParams } from "@/lib/grid-params";
@@ -48,14 +49,6 @@ function formatTs(d: Date): string {
     timeZone: "Europe/Paris",
   }).format(d);
 }
-
-const AUDIT_COLUMNS: readonly GridColumn[] = [
-  { label: "Action" },
-  { label: "Acteur" },
-  { label: "Cible" },
-  { label: "Métadonnées" },
-  { label: "Horodatage", sortKey: "date" },
-];
 
 /**
  * The audit log, a page of 50 at a time under the filters of the URL (actor,
@@ -152,8 +145,8 @@ export default async function AdminAuditPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Système" }]}
-        title="Audit log"
+        crumbs={AUDIT_HEADER.crumbs}
+        title={AUDIT_HEADER.title}
         description={`${slice.total.toLocaleString("fr-FR")} entrée${slice.total !== 1 ? "s" : ""} pour ce filtre · rétention 1 an. Chaque action d'administration est journalisée avec son acteur et sa cible.`}
         actions={
           slice.total > 0 && !tooLarge ? (

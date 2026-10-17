@@ -4,6 +4,7 @@ import { requireAdminPage } from "@/lib/auth";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { PageHeader, Tag } from "../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../_components/content-status";
+import { NEW_LESSON_HEADER } from "../_components/lesson-headers";
 import { NewLessonForm } from "./_components/new-lesson-form";
 
 export const metadata: Metadata = { title: "Nouvelle leçon" };
@@ -15,8 +16,8 @@ export default async function NewLessonPage(): Promise<React.ReactElement> {
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[{ label: "Contenu" }, { label: "Leçons", href: "/lessons" }]}
-        title="Créer une leçon"
+        crumbs={NEW_LESSON_HEADER.crumbs}
+        title={NEW_LESSON_HEADER.title}
         description={<Tag tone={CONTENT_STATUS.DRAFT.tone}>Brouillon · non publié</Tag>}
       />
       <NewLessonForm lessonUrlPrefix={learnerLessonUrlPrefix()} />
