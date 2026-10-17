@@ -6,9 +6,9 @@ import { PathsCollection, type SerializedPath } from "../paths-collection";
 
 /**
  * The paths catalogue: every button leads where it says. "Continuer" picks the
- * path up at its next mission, or its exam once they are done, "Voir le
- * certificat" opens the certificate, and a filtered empty result can be
- * cleared from where it is shown.
+ * path up at its next mission, or its exam once they are done, on the hero as
+ * on a second path's card; "Voir le certificat" opens the certificate, and a
+ * filtered empty result can be cleared from where it is shown.
  */
 
 function path(over: Partial<SerializedPath>): SerializedPath {
@@ -93,6 +93,61 @@ describe("PathsCollection", () => {
     expect(hrefOf(/Voir le parcours/)).toBe("/paths/python");
     expect(screen.queryByRole("link", { name: "Aperçu" })).toBeNull();
     expect(screen.queryByRole("link", { name: /Continuer le parcours/ })).toBeNull();
+  });
+
+  describe("a second path in progress", () => {
+    const hero = path({
+      status: "inprog",
+      progressDone: 4,
+      nextLesson: {
+        n: "05",
+        title: "Les fonctions",
+        slug: "python-fonctions",
+        xpReward: 50,
+        estimatedMinutes: 20,
+      },
+    });
+    const second = (over: Partial<SerializedPath>): SerializedPath =>
+      path({ id: "p2", slug: "reseaux", title: "Réseaux", status: "inprog", ...over });
+
+    it("continues at its next mission, and opens the path from the card", () => {
+      renderCollection([
+        hero,
+        second({
+          progressDone: 2,
+          nextLesson: {
+            n: "03",
+            title: "Le modèle OSI",
+            slug: "reseaux-osi",
+            xpReward: 40,
+            estimatedMinutes: 15,
+          },
+        }),
+      ]);
+      expect(hrefOf("Continuer")).toBe("/lessons/reseaux-osi");
+      expect(hrefOf(/Réseaux/)).toBe("/paths/reseaux");
+      // Two links side by side: one inside the other is invalid HTML.
+      expect(document.querySelector("a a")).toBeNull();
+    });
+
+    it("leads to the final exam once its missions are done", () => {
+      renderCollection([hero, second({ progressDone: 10, nextLesson: null })]);
+      expect(hrefOf(/Passer l'examen final/)).toBe("/paths/reseaux/exam");
+      expect(hrefOf(/Réseaux/)).toBe("/paths/reseaux");
+      expect(screen.queryByRole("link", { name: "Continuer" })).toBeNull();
+    });
+
+    it("stays one link to the path with neither a mission nor an exam left", () => {
+      renderCollection([hero, second({ progressDone: 10, nextLesson: null, hasQuiz: false })]);
+      const card = screen.getByRole("link", { name: /Réseaux/ });
+      expect(card.getAttribute("href")).toBe("/paths/reseaux");
+      expect(card.textContent).toContain("Voir le parcours");
+      const toPath = screen
+        .getAllByRole("link")
+        .filter((a) => a.getAttribute("href") === "/paths/reseaux");
+      expect(toPath).toHaveLength(1);
+      expect(screen.queryByRole("link", { name: "Continuer" })).toBeNull();
+    });
   });
 
   it("opens the certificate of a certified path, and the path from the card", () => {

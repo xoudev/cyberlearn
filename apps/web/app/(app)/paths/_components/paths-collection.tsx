@@ -153,13 +153,14 @@ function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX
 // ── Tier cards ──────────────────────────────────────────────────────────────────
 
 /**
- * Where the hero's main button leads: the next mission while one is left, as
- * "Prochaine mission" does; the final exam once every mission is done, which
- * is what such a path is waiting on (for 48 h after a failed attempt too). A
- * path with neither is opened from one button, since "Aperçu" would open the
- * same page: two buttons to one place is what this replaced.
+ * Where a path in progress is picked up, from the hero's main button or a
+ * secondary card's: the next mission while one is left, as "Prochaine mission"
+ * does; the final exam once every mission is done, which is what such a path
+ * is waiting on (for 48 h after a failed attempt too). A path with neither is
+ * opened from one button, since "Aperçu" would open the same page: two buttons
+ * to one place is what this replaced.
  */
-function heroCta(path: SerializedPath): { href: string; label: string; withPreview: boolean } {
+function resumeCta(path: SerializedPath): { href: string; label: string; withPreview: boolean } {
   if (path.nextLesson !== null) {
     return {
       href: `/lessons/${path.nextLesson.slug}`,
@@ -179,7 +180,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   const kind = CATEGORY_KIND[path.category] ?? "cyber";
   const diff = difficultyMeta(path.difficulty);
   const pct = pctOf(path);
-  const cta = heroCta(path);
+  const cta = resumeCta(path);
   return (
     <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
@@ -285,24 +286,36 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
+/**
+ * A secondary path in progress. The card used to be one link to the path, so
+ * "Continuer" opened the path rather than the next mission. As on the trophy
+ * card, the body still opens the path and the button now goes where the hero's
+ * would. When that is the path itself, the card stays one link, for the same
+ * reason the hero drops "Aperçu": two links to one page.
+ */
 function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
   const kind = CATEGORY_KIND[path.category] ?? "cyber";
   const pct = pctOf(path);
+  const cta = resumeCta(path);
+  // `withPreview`: the button leads past the path page, which keeps the body.
+  const ownLink = cta.withPreview;
+  // The hero has room for "Continuer le parcours"; the card keeps the verb.
+  const ctaLabel = path.nextLesson !== null ? "Continuer" : cta.label;
   return (
-    <Link href={`/paths/${path.slug}`} className={`active-card active-card--${kind}`}>
+    <article className={`active-card active-card--${kind}`}>
       <Brackets />
-      <div className={`active-card__glyph${path.coverSrc ? " active-card__glyph--image" : ""}`}>
-        {path.coverSrc ? (
-          <span
-            className="active-card__img"
-            aria-hidden="true"
-            style={{ backgroundImage: `url("${path.coverSrc}")` }}
-          />
-        ) : (
-          <KindGlyph kind={kind} size={56} />
-        )}
-      </div>
-      <div className="active-card__body">
+      <Link href={`/paths/${path.slug}`} className="active-card__body">
+        <div className={`active-card__glyph${path.coverSrc ? " active-card__glyph--image" : ""}`}>
+          {path.coverSrc ? (
+            <span
+              className="active-card__img"
+              aria-hidden="true"
+              style={{ backgroundImage: `url("${path.coverSrc}")` }}
+            />
+          ) : (
+            <KindGlyph kind={kind} size={56} />
+          )}
+        </div>
         <div className="active-card__top">
           <span className="state-chip">
             <span className="state-chip__dot" />
@@ -344,9 +357,20 @@ function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
           <span className="pct">{pct}%</span>
         </div>
         <ProgressBar value={pct} size="md" tip label="Progression du parcours" />
-        <span className="active-card__cta">Continuer {ARROW}</span>
-      </div>
-    </Link>
+        {!ownLink && (
+          <span className="active-card__cta">
+            {ctaLabel} {ARROW}
+          </span>
+        )}
+      </Link>
+      {ownLink && (
+        <div className="active-card__foot">
+          <Link href={cta.href} className="active-card__cta">
+            {ctaLabel} {ARROW}
+          </Link>
+        </div>
+      )}
+    </article>
   );
 }
 

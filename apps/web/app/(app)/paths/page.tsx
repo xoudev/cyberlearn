@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
-import { PUBLISHED_PATH_LESSON, pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { PUBLISHED_PATH_LESSON, lessonRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { nextLesson as pickNextLesson } from "@cyberlearn/lib/dashboard/module-route";
 import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
 import { requireRequestUser } from "@/lib/auth";
@@ -64,16 +65,30 @@ export default async function PathsPage(): Promise<React.ReactElement> {
     if (up.certificate !== null) certByPath.set(up.pathId, up.certificate.publicId);
   }
 
-  // Count completed lessons per path for progress
-  const completedLessonsByPath = await prisma.userLessonProgress.groupBy({
-    by: ["lessonId"],
-    where: {
-      userId: authUser.id,
-      status: "COMPLETED",
-      lesson: { pathLessons: { some: {} } },
-    },
-    _count: { lessonId: true },
-  });
+  // The lessons of the paths in progress, the only ones a next mission is
+  // picked from.
+  const inProgressLessonIds = paths
+    .filter((path) => progressMap.get(path.id) === "IN_PROGRESS")
+    .flatMap((path) => path.lessons.map((pl) => pl.lessonId));
+
+  const [completedLessonsByPath, waivedLessonIds] = await Promise.all([
+    // Count completed lessons per path for progress
+    prisma.userLessonProgress.groupBy({
+      by: ["lessonId"],
+      where: {
+        userId: authUser.id,
+        status: "COMPLETED",
+        lesson: { pathLessons: { some: {} } },
+      },
+      _count: { lessonId: true },
+    }),
+    // Those of the paths in progress the placement test waived: open, never
+    // completed, so the next mission passes over them as "Continuer" does on
+    // the path page.
+    lessonRepository
+      .findWaivedLessonIds(authUser.id, inProgressLessonIds)
+      .then((ids) => new Set(ids)),
+  ]);
 
   // Build lessonId → completed set
   const completedLessonIds = new Set(completedLessonsByPath.map((r) => r.lessonId));
@@ -91,19 +106,21 @@ export default async function PathsPage(): Promise<React.ReactElement> {
     const xpTotal = path.lessons.reduce((sum, pl) => sum + pl.lesson.xpReward, 0);
     const progressDone = path.lessons.filter((pl) => completedLessonIds.has(pl.lessonId)).length;
 
-    // For in-progress paths: the next mission = the first lesson (by position)
-    // the user has NOT completed yet. Drives the hero "Prochaine mission" panel.
+    // For in-progress paths: the next mission, by the path page's rule (and
+    // the dashboard's): the first lesson, by position, neither completed nor
+    // waived; the first waived one when nothing else is left. Drives the hero
+    // "Prochaine mission" panel and every in-progress card's "Continuer".
     let nextLesson: SerializedPath["nextLesson"] = null;
     if (status === "inprog") {
-      const idx = path.lessons.findIndex((pl) => !completedLessonIds.has(pl.lessonId));
-      const pl = idx >= 0 ? path.lessons[idx] : undefined;
-      if (pl) {
+      const lessons = path.lessons.map((pl) => pl.lesson);
+      const next = pickNextLesson(lessons, completedLessonIds, waivedLessonIds);
+      if (next !== null) {
         nextLesson = {
-          n: String(idx + 1).padStart(2, "0"),
-          title: pl.lesson.title,
-          slug: pl.lesson.slug,
-          xpReward: pl.lesson.xpReward,
-          estimatedMinutes: pl.lesson.estimatedMinutes,
+          n: String(lessons.indexOf(next) + 1).padStart(2, "0"),
+          title: next.title,
+          slug: next.slug,
+          xpReward: next.xpReward,
+          estimatedMinutes: next.estimatedMinutes,
         };
       }
     }

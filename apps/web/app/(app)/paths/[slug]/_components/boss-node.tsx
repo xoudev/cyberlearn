@@ -109,9 +109,12 @@ export function BossNode({
     eyebrow = "// Récompense · débloquée";
     sub = "Tu as validé ce parcours. Ton certificat vérifiable est disponible.";
     body = certificateId ? (
+      // A file from a route handler, as on the profile: a plain link that
+      // says it downloads.
       <a
         className="cp-boss__cta cp-boss__cta--teal"
         href={`/api/certificates/${certificateId}/download`}
+        download
       >
         Télécharger le PDF
         <svg
