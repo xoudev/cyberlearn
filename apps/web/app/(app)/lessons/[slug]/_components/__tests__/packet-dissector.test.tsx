@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stubResizeObserver } from "@/test/resize-observer";
 import { PacketDissector } from "../packet-dissector";
@@ -49,18 +49,26 @@ describe("PacketDissector", () => {
     expect(screen.getByText(/Clique sur un octet/u)).toBeTruthy();
   });
 
-  it("prints sixteen bytes a row where they fit, and eight in a narrow dump", () => {
+  it("prints sixteen bytes a row where they fit, eight in a narrow dump, four on a phone", () => {
     const cells = (row: HTMLElement): number => within(row).getAllByRole("gridcell").length;
 
     const wide = render(<PacketDissector {...ARP} />);
     expect(screen.getAllByRole("row").map(cells)).toEqual([16, 16, 16, 12]);
     wide.unmount();
 
-    stubResizeObserver(343);
+    const observer = stubResizeObserver(480);
     render(<PacketDissector {...ARP} />);
-    const rows = screen.getAllByRole("row");
+    let rows = screen.getAllByRole("row");
     expect(rows.map(cells)).toEqual([8, 8, 8, 8, 8, 8, 8, 4]);
     expect(rows[1]?.textContent).toMatch(/^0008/u);
+
+    // The dump's box on a 375px phone.
+    act(() => {
+      observer.resize(307);
+    });
+    rows = screen.getAllByRole("row");
+    expect(rows.map(cells)).toEqual(Array<number>(15).fill(4));
+    expect(rows[2]?.textContent).toMatch(/^0008/u);
   });
 
   it("names the field of a clicked byte, with its value and what it is for", () => {

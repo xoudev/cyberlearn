@@ -13,7 +13,7 @@ import {
 } from "@cyberlearn/lib/files/hex";
 import { parseHexEditor } from "@cyberlearn/types";
 import { useElementWidth } from "@/hooks/use-element-width";
-import { bytesPerRow, endsHalfRow, rowStarts } from "./dump-rows";
+import { bytesPerRow, DUMP, endsHalfRow, rowStarts } from "./dump-rows";
 import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
@@ -23,6 +23,9 @@ import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
  * that a hidden message can be found. Client-side because it answers clicks;
  * nothing is sent anywhere.
  */
+
+/** The offset column: eight hex digits of the dump's monospace. */
+const OFFSET_WIDTH = 64;
 
 const field: React.CSSProperties = {
   padding: "6px 10px",
@@ -52,9 +55,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
   const [draft, setDraft] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [verdicts, setVerdicts] = useState<Record<string, Verdict | undefined>>({});
-  // Sixteen bytes a row, or eight where the dump is too narrow for sixteen.
+  // Sixteen bytes a row, or eight, or four: the longest row the dump has room for.
   const dumpRef = useRef<HTMLDivElement>(null);
-  const perRow = bytesPerRow(useElementWidth(dumpRef));
+  const perRow = bytesPerRow(useElementWidth(dumpRef), OFFSET_WIDTH);
 
   if (!parsed.ok) {
     return (
@@ -187,7 +190,15 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
           aria-label="Octets du fichier"
           style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}
         >
-          <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 2,
+              paddingBlock: 8,
+              paddingInline: DUMP.padding,
+              minWidth: "max-content",
+            }}
+          >
             {rows.map((at) => (
               <div
                 key={at}
@@ -195,15 +206,18 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: DUMP.columnGap,
                   fontFamily: MONO,
-                  fontSize: 13,
+                  fontSize: DUMP.fontSize,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 64 }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-disabled)", width: OFFSET_WIDTH }}
+                >
                   {at.toString(16).padStart(8, "0")}
                 </span>
-                <span role="presentation" style={{ display: "flex", gap: 3 }}>
+                <span role="presentation" style={{ display: "flex", gap: DUMP.cellGap }}>
                   {bytes.slice(at, at + perRow).map((byte, k) => {
                     const offset = at + k;
                     const changed = edits[offset] !== undefined;
@@ -219,7 +233,7 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                         aria-label={`Octet ${String(offset)} : ${hex2(byte)}${changed ? ", modifié" : ""}`}
                         aria-pressed={isSelected}
                         style={{
-                          width: 26,
+                          width: DUMP.cellWidth,
                           padding: "2px 0",
                           border: `1px solid ${isSelected ? ACCENT : changed ? AMBER : "transparent"}`,
                           background: isSelected
@@ -227,9 +241,9 @@ export function HexEditor(props: Record<string, unknown>): React.ReactElement {
                             : "transparent",
                           color: changed ? AMBER : "var(--color-text-secondary)",
                           fontFamily: MONO,
-                          fontSize: 13,
+                          fontSize: DUMP.fontSize,
                           cursor: "pointer",
-                          marginRight: endsHalfRow(offset, perRow) ? 8 : 0,
+                          marginRight: endsHalfRow(offset, perRow) ? DUMP.halfGap : 0,
                         }}
                       >
                         {hex2(byte)}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stubResizeObserver } from "@/test/resize-observer";
 import { HexEditor } from "../hex-editor";
@@ -48,20 +48,31 @@ const writeByte = (offset: number, value: string): void => {
 };
 
 describe("HexEditor", () => {
-  it("prints sixteen bytes a row where they fit, and eight in a narrow dump", () => {
+  it("prints sixteen bytes a row where they fit, eight in a narrow dump, four on a phone", () => {
     const cells = (row: HTMLElement): number => within(row).getAllByRole("gridcell").length;
 
     const wide = render(<HexEditor {...PROPS} />);
     expect(screen.getAllByRole("row").map(cells)).toEqual([16, 16, 16, 3]);
     wide.unmount();
 
-    stubResizeObserver(343);
-    render(<HexEditor {...PROPS} />);
-    const rows = screen.getAllByRole("row");
+    const observer = stubResizeObserver(480);
+    const narrow = render(<HexEditor {...PROPS} />);
+    let rows = screen.getAllByRole("row");
     expect(rows.map(cells)).toEqual([8, 8, 8, 8, 8, 8, 3]);
     // Each row spells its own eight characters, offset 32 to 39 here.
     expect(rows[4]?.textContent).toContain("00000020");
     expect(rows[4]?.textContent).toContain("tComment");
+
+    // The dump's box on a 375px phone.
+    act(() => {
+      observer.resize(307);
+    });
+    rows = screen.getAllByRole("row");
+    expect(rows.map(cells)).toEqual([...Array<number>(12).fill(4), 3]);
+    expect(rows[8]?.textContent).toContain("00000020");
+    expect(rows[8]?.textContent).toContain("tCom");
+    expect(rows[8]?.textContent).not.toContain("tComment");
+    narrow.unmount();
   });
 
   it("shows the bytes, their characters, and no known signature while the header is broken", () => {

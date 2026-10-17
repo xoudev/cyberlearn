@@ -12,7 +12,7 @@ import {
 } from "@cyberlearn/lib/network/packet";
 import { parsePacketDissector } from "@cyberlearn/types";
 import { useElementWidth } from "@/hooks/use-element-width";
-import { bytesPerRow, endsHalfRow, rowStarts } from "./dump-rows";
+import { bytesPerRow, DUMP, endsHalfRow, rowStarts } from "./dump-rows";
 import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
@@ -23,6 +23,9 @@ import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
  * With `find`, the lesson asks for fields one at a time: the learner clicks a
  * byte of each. A wrong byte still names its own field, so a miss teaches too.
  */
+
+/** The offset column: four hex digits of the dump's monospace. */
+const OFFSET_WIDTH = 36;
 
 const LAYER_COLORS: Record<PacketLayer, string> = {
   eth: "var(--color-info)",
@@ -53,9 +56,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
   const [selected, setSelected] = useState<number | null>(null);
   const [found, setFound] = useState<string[]>([]);
   const [miss, setMiss] = useState<string | null>(null);
-  // Sixteen bytes a row, or eight where the dump is too narrow for sixteen.
+  // Sixteen bytes a row, or eight, or four: the longest row the dump has room for.
   const dumpRef = useRef<HTMLDivElement>(null);
-  const perRow = bytesPerRow(useElementWidth(dumpRef));
+  const perRow = bytesPerRow(useElementWidth(dumpRef), OFFSET_WIDTH);
 
   if (!parsed.ok) {
     return (
@@ -182,7 +185,15 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
           aria-label="Octets de la trame"
           style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}
         >
-          <div style={{ display: "grid", gap: 2, padding: "8px 10px", minWidth: "max-content" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 2,
+              paddingBlock: 8,
+              paddingInline: DUMP.padding,
+              minWidth: "max-content",
+            }}
+          >
             {rows.map((row) => (
               <div
                 key={row[0]}
@@ -190,15 +201,18 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: DUMP.columnGap,
                   fontFamily: MONO,
-                  fontSize: 13,
+                  fontSize: DUMP.fontSize,
                 }}
               >
-                <span aria-hidden="true" style={{ color: "var(--color-text-disabled)", width: 36 }}>
+                <span
+                  aria-hidden="true"
+                  style={{ color: "var(--color-text-disabled)", width: OFFSET_WIDTH }}
+                >
                   {(row[0] ?? 0).toString(16).padStart(4, "0")}
                 </span>
-                <span role="presentation" style={{ display: "flex", gap: 3 }}>
+                <span role="presentation" style={{ display: "flex", gap: DUMP.cellGap }}>
                   {row.map((offset) => {
                     const own = fieldAt(frame, offset);
                     const layer = own?.layer ?? "padding";
@@ -214,7 +228,7 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                         aria-label={`Octet ${String(offset)} : ${hex[offset] ?? ""}, ${own?.name ?? ""}`}
                         aria-pressed={inField}
                         style={{
-                          width: 26,
+                          width: DUMP.cellWidth,
                           padding: "2px 0",
                           border: `1px solid ${inField ? LAYER_COLORS[layer] : "transparent"}`,
                           background: tint(layer, inField ? 45 : 16),
@@ -222,9 +236,9 @@ export function PacketDissector(props: Record<string, unknown>): React.ReactElem
                             ? "var(--color-text-primary)"
                             : "var(--color-text-secondary)",
                           fontFamily: MONO,
-                          fontSize: 13,
+                          fontSize: DUMP.fontSize,
                           cursor: "pointer",
-                          marginRight: endsHalfRow(offset, perRow) ? 8 : 0,
+                          marginRight: endsHalfRow(offset, perRow) ? DUMP.halfGap : 0,
                         }}
                       >
                         {hex[offset]}
