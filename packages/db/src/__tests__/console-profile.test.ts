@@ -116,7 +116,7 @@ describe("updateProfileFromConsole", () => {
     expect(tx.auditLog.create).not.toHaveBeenCalled();
   });
 
-  it("writes the fields and logs which ones changed, without copying the bio", async () => {
+  it("writes the fields and logs which ones changed, without copying any of them", async () => {
     tx.user.findUnique.mockResolvedValueOnce(account()).mockResolvedValueOnce(null);
     const result = await userRepository.updateProfileFromConsole(TARGET, input, BY);
 
@@ -130,13 +130,12 @@ describe("updateProfileFromConsole", () => {
       action: "admin.user.profile.update",
       targetType: "User",
       targetId: TARGET,
-      metadata: {
-        fields: ["displayName", "username", "bio"],
-        before: { username: "amelie", displayName: "Amélie" },
-        after: { username: "amelie-r", displayName: "Amélie R." },
-      },
+      metadata: { fields: ["displayName", "username", "bio"] },
     });
-    expect(JSON.stringify(audited())).not.toContain("réseau");
+    // Names and handles outlive an erasure in the log: none is copied there.
+    for (const value of ["réseau", "amelie", "Amélie"]) {
+      expect(JSON.stringify(audited())).not.toContain(value);
+    }
   });
 
   it("reads a handle taken in the meantime as taken", async () => {
@@ -170,8 +169,9 @@ describe("resetProfileFieldFromConsole", () => {
     });
     expect(audited()).toMatchObject({
       action: "admin.user.profile.reset",
-      metadata: { field: "displayName", previous: "Un nom injurieux", value: "amelie" },
+      metadata: { field: "displayName" },
     });
+    expect(JSON.stringify(audited())).not.toContain("injurieux");
   });
 
   it("refuses a name or a handle reset on an account that has no handle yet", async () => {
@@ -197,9 +197,8 @@ describe("resetProfileFieldFromConsole", () => {
       () => names.shift() ?? "",
     );
     expect(result).toEqual({ ok: true, value: "utilisateur-bbbbbbbb", clearedAvatar: null });
-    expect(audited()).toMatchObject({
-      metadata: { field: "username", previous: "amelie", value: "utilisateur-bbbbbbbb" },
-    });
+    expect(audited()).toMatchObject({ metadata: { field: "username" } });
+    expect(JSON.stringify(audited())).not.toContain("amelie");
   });
 
   it("gives up after a few taken handles rather than loop", async () => {
@@ -222,6 +221,9 @@ describe("resetProfileFieldFromConsole", () => {
       where: { id: TARGET },
       data: { avatarUrl: null },
     });
+    // The storage key names the account's folder and the file: not logged.
+    expect(audited()).toMatchObject({ metadata: { field: "avatar" } });
+    expect(JSON.stringify(audited())).not.toContain("__upload");
   });
 
   it("clears the bio, and says when there was none to clear", async () => {

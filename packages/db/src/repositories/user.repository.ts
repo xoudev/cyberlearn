@@ -750,13 +750,11 @@ export const userRepository = {
             action: CONSOLE_PROFILE_ACTION.update,
             targetType: "User",
             targetId: userId,
-            // The bio is named, not copied: the log keeps who changed what,
-            // not a second copy of what somebody wrote about themselves.
-            metadata: {
-              fields: changed,
-              before: { username: before.username, displayName: before.displayName },
-              after: { username: input.username, displayName: input.displayName },
-            },
+            // The fields are named, not copied: the log keeps who changed
+            // what, not a second copy of somebody's name, handle or bio. A
+            // copy would also outlive the account, since an erasure
+            // pseudonymises the rows where it acted, not those about it.
+            metadata: { fields: changed },
           },
         });
         return { ok: true, changed };
@@ -793,13 +791,11 @@ export const userRepository = {
 
         let data: Prisma.UserUpdateInput;
         let value: string | null = null;
-        let previous: string | null = null;
         switch (field) {
           case "displayName": {
             if (before.username === null) return { ok: false, reason: "NO_USERNAME" };
             if (before.displayName === before.username) return { ok: false, reason: "UNCHANGED" };
             value = before.username;
-            previous = before.displayName;
             data = { displayName: value };
             break;
           }
@@ -814,7 +810,6 @@ export const userRepository = {
               if (holder === null) value = candidate;
             }
             if (value === null) return { ok: false, reason: "USERNAME_TAKEN" };
-            previous = before.username;
             data = { username: value };
             break;
           }
@@ -825,7 +820,6 @@ export const userRepository = {
           }
           case "avatar": {
             if (before.avatarUrl === null) return { ok: false, reason: "UNCHANGED" };
-            previous = before.avatarUrl;
             data = { avatarUrl: null };
             break;
           }
@@ -838,7 +832,9 @@ export const userRepository = {
             action: CONSOLE_PROFILE_ACTION.reset,
             targetType: "User",
             targetId: userId,
-            metadata: { field, previous, value },
+            // The field alone, as for an update: neither the old name, handle
+            // or picture, nor the new value (a handle is still a name).
+            metadata: { field },
           },
         });
         return {

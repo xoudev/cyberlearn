@@ -329,7 +329,8 @@
 - Profil : modifier le nom affiché, le pseudo et la bio dans les bornes du
   site, ou remettre un champ à zéro (nom vers le pseudo, pseudo généré, bio et
   avatar effacés, photo envoyée supprimée du stockage) ; chaque geste se
-  confirme et s'inscrit dans l'audit log
+  confirme et s'inscrit dans l'audit log, qui nomme les champs touchés sans en
+  copier les valeurs
 - Corrections d'apprentissage, confirmées et tracées : remettre à zéro le test
   de positionnement (avec ses dispenses ; une notification invite à le
   repasser), lever le délai de 48 h d'un examen
