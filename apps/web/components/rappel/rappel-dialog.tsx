@@ -4,7 +4,7 @@
 // the address in the browser; each answer is sent as it is picked and its
 // verdict shown in place.
 
-import React, { useEffect, useMemo, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ModalShell } from "@cyberlearn/ui";
 import { rightAnswersWord } from "@cyberlearn/lib/social/duel";
@@ -265,6 +265,12 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
   const [current, setCurrent] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  /**
+   * The question an answer was refused on, to show again once the day's
+   * recall is read back, if it is still there: answered elsewhere, it comes
+   * back with that answer's verdict.
+   */
+  const refusedOn = useRef<number | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -275,11 +281,17 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
     load.then(
       (next) => {
         if (!live) return;
+        const kept = refusedOn.current;
+        refusedOn.current = null;
         setFailed(false);
         setView(next);
         setVerdicts(next.verdicts);
         setResult(next.result);
-        setCurrent(firstOpen(next.questions, next.verdicts));
+        setCurrent(
+          kept !== null && next.questions.some((q) => q.index === kept)
+            ? kept
+            : firstOpen(next.questions, next.verdicts),
+        );
       },
       () => {
         if (live) setFailed(true);
@@ -324,6 +336,21 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
             : await answerDailyRecallAction({ index: question.index, selected });
         if (!res.ok) {
           setError(res.error);
+          if (view.mode === "daily") {
+            // Refused for what the server knows and this window does not:
+            // answered in another tab or on the phone, gone from its lesson,
+            // a day old, the recall handed in or switched off. Read back, the
+            // recall shows it: that answer's verdict, the next question,
+            // today's recall, the end.
+            refusedOn.current = question.index;
+            setAttempt((n) => n + 1);
+            return;
+          }
+          // A module's review keeps nothing to read back: the question that
+          // could not be checked is set aside, and the review goes on.
+          const left = view.questions.filter((q) => q.index !== question.index);
+          setView({ ...view, status: left.length === 0 ? "empty" : view.status, questions: left });
+          setCurrent(firstOpen(left, verdicts));
           return;
         }
         setVerdicts((prev) => [...prev.filter((v) => v.index !== res.verdict.index), res.verdict]);

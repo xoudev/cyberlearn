@@ -123,7 +123,8 @@ export const DAILY_RECALL_TITLE = "Rappel du jour";
 
 const INVALID = "Réponse invalide.";
 const OFF = "La répétition espacée est coupée dans tes réglages.";
-const NOT_TODAY = "Ce rappel n'est plus celui du jour : rouvre-le pour celui d'aujourd'hui.";
+// Said over today's recall as well: the window reads it back on a refusal.
+const NOT_TODAY = "Ce rappel n'est plus celui du jour.";
 const DONE = "Tu as déjà fait le rappel du jour.";
 const GONE = "Cette question n'est plus disponible.";
 const ANSWERED = "Tu as déjà répondu à cette question.";

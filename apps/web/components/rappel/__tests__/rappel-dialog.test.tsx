@@ -156,17 +156,66 @@ describe("RappelDialog, the day's recall", () => {
     expect(link.getAttribute("href")).toBe("/settings/preferences");
   });
 
-  it("says why an answer was not taken, and lets the reader try again", async () => {
-    m.openDailyRecallAction.mockResolvedValue(view());
+  it("shows the verdict of a question answered elsewhere, and goes on", async () => {
+    // Answered on the phone meanwhile: the server refuses this answer, and
+    // the recall read back carries the one given there.
+    m.openDailyRecallAction
+      .mockResolvedValueOnce(view())
+      .mockResolvedValueOnce(view({ verdicts: [verdict(0, 1, 1)] }));
     m.answerDailyRecallAction.mockResolvedValue({
       ok: false,
       error: "Tu as déjà répondu à cette question.",
     });
     render(<RappelDialog value="1" onClose={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /rwx --- ---/u }));
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      "Tu as déjà répondu à cette question.",
+
+    expect(await screen.findByText("Bonne réponse.")).toBeTruthy();
+    expect(m.openDailyRecallAction).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("alert").textContent).toBe("Tu as déjà répondu à cette question.");
+    expect(screen.getByText("Que donne chmod 600 ?")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /rw- --- ---/u }).getAttribute("aria-pressed")).toBe(
+      "true",
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Question suivante" }));
+    expect(screen.getByText("Quelle commande change le groupe ?")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("goes on to the next question when the one answered is gone from its lesson", async () => {
+    m.openDailyRecallAction
+      .mockResolvedValueOnce(view())
+      .mockResolvedValueOnce(view({ questions: QUESTIONS.slice(1) }));
+    m.answerDailyRecallAction.mockResolvedValue({
+      ok: false,
+      error: "Cette question n'est plus disponible.",
+    });
+    render(<RappelDialog value="1" onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /rwx --- ---/u }));
+
+    expect(await screen.findByText("Quelle commande change le groupe ?")).toBeTruthy();
+    expect(screen.getByText(/Question 1 sur 1/u)).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toBe("Cette question n'est plus disponible.");
+  });
+
+  it("lets the reader answer again a question whose answer was not taken", async () => {
+    m.openDailyRecallAction.mockResolvedValue(view());
+    m.answerDailyRecallAction
+      .mockResolvedValueOnce({ ok: false, error: "Réponse invalide." })
+      .mockResolvedValueOnce({ ok: true, verdict: verdict(0, 1, 1), result: null });
+    render(<RappelDialog value="1" onClose={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /rwx --- ---/u }));
+    expect((await screen.findByRole("alert")).textContent).toBe("Réponse invalide.");
+    await waitFor(() => {
+      expect(m.openDailyRecallAction).toHaveBeenCalledTimes(2);
+    });
+
+    const option = screen.getByRole("button", { name: /rw- --- ---/u });
+    await waitFor(() => {
+      expect(option.hasAttribute("disabled")).toBe(false);
+    });
+    fireEvent.click(option);
+    expect(await screen.findByText("Bonne réponse.")).toBeTruthy();
   });
 
   it("offers to try again when the recall cannot be loaded", async () => {
@@ -218,5 +267,29 @@ describe("RappelDialog, a module's review", () => {
     expect(status.textContent).toContain("1 bonne réponse sur 1");
     expect(status.textContent).toContain("sans XP");
     expect(screen.queryByText(/\+\d+ XP/u)).toBeNull();
+  });
+
+  it("sets aside a question it cannot check, and goes on without it", async () => {
+    m.openModuleReviewAction.mockResolvedValue(
+      view({
+        mode: "module",
+        title: "Module 02 · Les droits",
+        module: { path: "linux-fondamentaux", number: 2 },
+      }),
+    );
+    m.answerModuleReviewAction
+      .mockResolvedValueOnce({ ok: false, error: "Cette question n'est plus disponible." })
+      .mockResolvedValueOnce({ ok: true, verdict: verdict(1, 1, 1), result: null });
+    render(<RappelDialog value="module-2-linux-fondamentaux" onClose={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /rwx --- ---/u }));
+    expect(await screen.findByText("Quelle commande change le groupe ?")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toBe("Cette question n'est plus disponible.");
+    // Nothing on the server to read back.
+    expect(m.openModuleReviewAction).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /chgrp/u }));
+    fireEvent.click(await screen.findByRole("button", { name: "Voir le bilan" }));
+    expect(screen.getByRole("status").textContent).toContain("1 bonne réponse sur 1");
   });
 });
