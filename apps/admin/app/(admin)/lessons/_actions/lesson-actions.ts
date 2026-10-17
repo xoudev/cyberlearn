@@ -9,7 +9,13 @@ import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
 import { nextLessonRefCode } from "@/lib/next-ref-code";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 
 const createLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
@@ -18,12 +24,18 @@ const createLessonSchema = z.object({
     .regex(LESSON_SLUG, LESSON_SLUG_HINT)
     .min(LESSON_LIMITS.slugMin)
     .max(LESSON_LIMITS.slugMax),
-  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  title: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.titleMin)
+    .max(LESSON_LIMITS.titleMax)
+    .refine(holdsNoEmDash, emDashInField("Le titre")),
   description: z
     .string()
     .trim()
     .min(LESSON_LIMITS.descriptionMin)
-    .max(LESSON_LIMITS.descriptionMax),
+    .max(LESSON_LIMITS.descriptionMax)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
@@ -39,6 +51,8 @@ const createLessonSchema = z.object({
 export interface CreateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
+  /** What the content check refused, each at its line, for the editor to mark. */
+  problems?: LessonEditorProblem[];
 }
 
 export async function createLessonAction(
@@ -58,12 +72,18 @@ export async function createLessonAction(
     return { error: "Formulaire invalide.", fieldErrors };
   }
 
-  // Refused before it reaches the database: see checkLessonMdx.
-  const render = await checkLessonMdx(parsed.data.contentMdx);
+  // Refused before it reaches the database: see checkLessonMdx and authoring.ts.
+  const typed = formData.get("contentMdx");
+  const render = asTyped(
+    await checkLessonForSave(parsed.data.contentMdx),
+    typeof typed === "string" ? typed : "",
+  );
   if (!render.ok) {
     return {
-      error: "Le contenu ne s'affiche pas.",
+      error:
+        render.kind === undefined ? "Le contenu ne s'affiche pas." : "Le contenu est à corriger.",
       fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+      problems: editorProblemsOf(render),
     };
   }
 

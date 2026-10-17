@@ -6,7 +6,13 @@ import { prisma } from "@cyberlearn/db";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 
 const updateLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
@@ -15,12 +21,18 @@ const updateLessonSchema = z.object({
     .regex(LESSON_SLUG, LESSON_SLUG_HINT)
     .min(LESSON_LIMITS.slugMin)
     .max(LESSON_LIMITS.slugMax),
-  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  title: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.titleMin)
+    .max(LESSON_LIMITS.titleMax)
+    .refine(holdsNoEmDash, emDashInField("Le titre")),
   description: z
     .string()
     .trim()
     .min(LESSON_LIMITS.descriptionMin)
-    .max(LESSON_LIMITS.descriptionMax),
+    .max(LESSON_LIMITS.descriptionMax)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
@@ -36,6 +48,8 @@ const updateLessonSchema = z.object({
 export interface UpdateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
+  /** What the content check refused, each at its line, for the editor to mark. */
+  problems?: LessonEditorProblem[];
 }
 
 export async function updateLessonAction(
@@ -68,12 +82,19 @@ export async function updateLessonAction(
 
   // Refused before it reaches the database. The editor used to save anything,
   // and on 22 September two saves in a row broke a lesson for everyone who
-  // opened it (Sentry JAVASCRIPT-NEXTJS-14 and -15).
-  const render = await checkLessonMdx(parsed.data.contentMdx);
+  // opened it (Sentry JAVASCRIPT-NEXTJS-14 and -15). The catalogue's rules,
+  // which CI applied to content/ alone, are applied here too (authoring.ts).
+  const typed = formData.get("contentMdx");
+  const render = asTyped(
+    await checkLessonForSave(parsed.data.contentMdx),
+    typeof typed === "string" ? typed : "",
+  );
   if (!render.ok) {
     return {
-      error: "Le contenu ne s'affiche pas.",
+      error:
+        render.kind === undefined ? "Le contenu ne s'affiche pas." : "Le contenu est à corriger.",
       fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+      problems: editorProblemsOf(render),
     };
   }
 

@@ -191,6 +191,26 @@ Un brouillon qui ne s'affiche pas est refusé avec la section et la ligne en
 cause, avant toute sauvegarde. L'aperçu vit une demi-heure après sa dernière
 mise à jour ; le bouton « Rapide » redonne l'ancienne approximation.
 
+Chaque problème trouvé, par l'aperçu pendant la frappe ou par la sauvegarde,
+porte sa ligne et sa colonne dans la leçon entière, comptées à partir de 1
+comme dans l'éditeur : il est souligné dans la vue code et listé au-dessus de
+l'éditeur (« À CORRIGER »), et le bouton `L12:5` d'une ligne de la liste y
+mène, depuis la vue blocs aussi. Tous les problèmes sont rendus d'un coup, pas
+seulement le premier : une section qui ne s'affiche pas, puis les exercices
+mal configurés, les quiz sans identifiant, les chaînes qui perdraient une
+barre oblique inverse. Le message sous le champ cite le premier, avec sa
+ligne et sa colonne, et compte les autres.
+
+L'enregistrement, dans la console comme dans l'éditeur des professeurs, et
+l'import appliquent aussi les règles que la CI vérifiait seule sur `content/`
+(`packages/lib/src/mdx/authoring.ts`) : une note de rédaction restée seule
+sur sa ligne (« OK 03 écrit »), un tiret cadratin (dans le texte comme dans
+le titre et la description, qui sont publiés avec lui : le frontmatter d'un
+fichier importé est lu aussi), un `<Diagram>` que le markdown réécrirait avant
+Mermaid. L'aperçu les montre sans bloquer le rendu ; la sauvegarde les
+refuse. Seul l'analyseur de Mermaid reste à la CI (`content:diagrams`, voir
+5.10) : la console ne dépend pas de Mermaid.
+
 L'éditeur s'ouvre en **blocs** : la leçon découpée en titres, en passages de
 Markdown et en composants, chacun sous forme de champs (ton et texte d'un
 encadré, question, options et bonne réponse d'un quiz, fichiers et
@@ -1704,9 +1724,15 @@ compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
 | Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `\n` dans la chaîne |
 | Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
 
-Le test `packages/lib/src/mdx/content.test.ts` compile chaque leçon, et
-`pnpm --filter @cyberlearn/web content:diagrams` vérifie que chaque schéma
-traverse MDX intact et que Mermaid sait le lire : lance-les avant de pousser.
+Le test `packages/lib/src/mdx/content.test.ts` passe chaque leçon au contrôle
+de l'enregistrement, et `pnpm --filter @cyberlearn/web content:diagrams`
+vérifie que chaque schéma traverse MDX intact et que Mermaid sait le lire :
+lance-les avant de pousser. `pnpm --filter @cyberlearn/admin content:check`
+fait passer chaque fichier de `content/lessons` par le code de l'import
+(frontmatter, injection, rendu, règles du catalogue), chaque problème à sa
+ligne dans le fichier, puis vérifie les 300 mots, le quiz et l'unicité du
+`refCode` ; `--fix` met les guillemets du frontmatter, réécrit les
+`<CodePlayground>` et retire la note de rédaction de fin de leçon.
 
 ## 6. Règles de contenu
 

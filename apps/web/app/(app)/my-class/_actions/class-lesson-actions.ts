@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 
 /**
  * A teacher writing a lesson for their own class.
@@ -22,8 +28,14 @@ import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-ch
 
 const lessonSchema = z.object({
   classId: z.guid(),
-  title: z.string().trim().min(3).max(200),
-  description: z.string().trim().min(10).max(500),
+  // Published with the lesson, under the rule its text keeps (authoring.ts).
+  title: z.string().trim().min(3).max(200).refine(holdsNoEmDash, emDashInField("Le titre")),
+  description: z
+    .string()
+    .trim()
+    .min(10)
+    .max(500)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(600),
@@ -38,6 +50,26 @@ export interface ClassLessonState {
   error?: string;
   ok?: boolean;
   slug?: string;
+  /** What the content check refused, each at its line, for the editor to mark. */
+  problems?: LessonEditorProblem[];
+}
+
+/**
+ * The content check the console's editors run on save: it renders, and it
+ * keeps the catalogue's rules (authoring.ts). Its problems are placed in the
+ * text as typed, which the schema trims before checking it.
+ */
+async function contentRefusal(
+  contentMdx: string,
+  formData: FormData,
+): Promise<ClassLessonState | null> {
+  const typed = formData.get("contentMdx");
+  const check = asTyped(
+    await checkLessonForSave(contentMdx),
+    typeof typed === "string" ? typed : "",
+  );
+  if (check.ok) return null;
+  return { error: describeLessonMdxProblem(check), problems: editorProblemsOf(check) };
 }
 
 export async function createClassLessonAction(
@@ -56,8 +88,8 @@ export async function createClassLessonAction(
 
   // Refused before it reaches the class: a lesson that does not render is a
   // lesson its students open onto an error. See checkLessonMdx.
-  const render = await checkLessonMdx(parsed.data.contentMdx);
-  if (!render.ok) return { error: describeLessonMdxProblem(render) };
+  const refusal = await contentRefusal(parsed.data.contentMdx, formData);
+  if (refusal !== null) return refusal;
 
   const { classId, ...lesson } = parsed.data;
   const created = await classRepository.createClassLesson({
@@ -96,8 +128,8 @@ export async function updateClassLessonAction(
     return { error: "Cette leçon n'est pas la tienne." };
   }
 
-  const render = await checkLessonMdx(parsed.data.contentMdx);
-  if (!render.ok) return { error: describeLessonMdxProblem(render) };
+  const refusal = await contentRefusal(parsed.data.contentMdx, formData);
+  if (refusal !== null) return refusal;
 
   const { lessonId, ...data } = parsed.data;
   await classRepository.updateClassLesson(lessonId, data);
