@@ -94,6 +94,25 @@ function pageOf(loading: string): string {
  */
 const PAGE_CONSTANT = /_(?:HEADER|CRUMBS|COLUMNS|KPI_LABELS|CARDS|FILTER_LABELS)$/u;
 
+/** A character that can continue a JavaScript identifier. */
+function isIdentifierChar(char: string | undefined): boolean {
+  return char !== undefined && /[A-Za-z0-9_$]/u.test(char);
+}
+
+/**
+ * Whether a source names this identifier as a whole word: USER_CARDS, not
+ * the start of USER_CARDS_LEGACY. Searched by position rather than with a
+ * pattern built from the name.
+ */
+function readsName(text: string, name: string): boolean {
+  for (let at = text.indexOf(name); at !== -1; at = text.indexOf(name, at + 1)) {
+    if (!isIdentifierChar(text[at - 1]) && !isIdentifierChar(text[at + name.length])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Everything a section renders with, its loading states left out. */
 function sectionSources(section: string): string[] {
   return filesUnder(join(ADMIN, section), (path) => /\.tsx?$/u.test(path)).filter(
@@ -177,10 +196,7 @@ describe("console loading states", () => {
         // for it (the paths grid, the account figures, the tournament form).
         const readers = section.filter((file) => {
           const text = readFileSync(file, "utf8");
-          return (
-            !text.includes(`export const ${constant}`) &&
-            new RegExp(`\\b${constant}\\b`, "u").test(text)
-          );
+          return !text.includes(`export const ${constant}`) && readsName(text, constant);
         });
         expect(readers.map(where), `${constant} is read by the page`).not.toEqual([]);
       }
