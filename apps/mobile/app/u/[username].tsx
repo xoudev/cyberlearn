@@ -14,18 +14,32 @@ import {
   type FriendshipAction,
 } from "@cyberlearn/lib/social/friendship";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { lessonsFinishedLabel, publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
+import { duelRecordLines, headToHeadVerdict } from "@cyberlearn/lib/social/duel";
+import {
+  contributionLines,
+  holdersLabel,
+  lessonsFinishedLabel,
+  listedBadges,
+  missionsLabel,
+  moreLabel,
+  publicProfileUrl,
+  sectionNumbers,
+  TIMELINE_LABEL,
+} from "@cyberlearn/lib/social/portfolio";
+import { ActivityCalendar } from "@/components/activity-calendar";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Divider, SectionLabel, StatCell, Text, XPBar } from "@/components/ui";
 import { fetchProfileApi, removeFriendApi, requestFriendApi, SITE_URL } from "@/lib/api";
-import { useCosmetics } from "@/lib/cosmetics";
+import { CosmeticsScope, useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, RARITY_COLOR } from "@/lib/db";
 import {
   joinedLabel,
+  longDay,
   profileCategory,
+  profileCounts,
   profileEyebrow,
   profileRarity,
   shortDay,
@@ -40,6 +54,11 @@ import {
  * and a closed profile reads exactly like a handle that does not exist. What
  * a visitor can do here is the friendship, as on the site; the owner gets the
  * way to change it and the link to hand out.
+ *
+ * The site's sections, from the same server reads (profileExtras): the
+ * figures counted, a year of activity, the head-to-head for a friend, the
+ * rarest badges, the paths with their progress, the duels and contributions,
+ * the timeline. Drawn in the owner's cosmetics, as the site draws it.
  */
 export default function PublicProfileScreen(): React.JSX.Element {
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -64,6 +83,12 @@ export default function PublicProfileScreen(): React.JSX.Element {
           title="Profil introuvable"
           body="Ce pseudo n'existe pas, ou son profil n'est ouvert qu'à ses amis."
         />
+      ) : data.ownerCosmetics ? (
+        // The owner's look, as the site wears it in its own scope; a server
+        // from before it sends none, and the page keeps the reader's.
+        <CosmeticsScope loadout={data.ownerCosmetics}>
+          <ProfileBody profile={data} />
+        </CosmeticsScope>
       ) : (
         <ProfileBody profile={data} />
       )}
@@ -79,6 +104,29 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
     profile.level.needed > 0
       ? Math.round(Math.min((profile.level.current / profile.level.needed) * 100, 100))
       : 0;
+  const counts = profileCounts(profile);
+  const name = profile.displayName || profile.username;
+  const contributions = profile.contributions ? contributionLines(profile.contributions) : [];
+  const duelsPlayed = profile.duelRecord
+    ? profile.duelRecord.win + profile.duelRecord.loss + profile.duelRecord.draw
+    : 0;
+  // The server sends every badge; the page lists a dozen, as the site does.
+  const badges = listedBadges(profile.badges);
+  const moreBadges = moreLabel(badges.length, counts.badges);
+  const moreChallenges = moreLabel(profile.challenges.length, counts.challenges);
+  // The site's sections, numbered alike, those with nothing to show left out.
+  const no = sectionNumbers([
+    profile.activity !== undefined && "activity",
+    profile.headToHead != null && "faceToFace",
+    badges.length > 0 && "badges",
+    (profile.paths?.length ?? 0) > 0 && "paths",
+    profile.skills.length > 0 && "skills",
+    profile.certificates.length > 0 && "certificates",
+    profile.challenges.length > 0 && "challenges",
+    (duelsPlayed > 0 || contributions.length > 0) && "community",
+    (profile.timeline?.length ?? 0) > 0 && "timeline",
+    profile.recentLessons.length > 0 && "lessons",
+  ]);
 
   return (
     <View style={{ gap: 22 }}>
@@ -168,21 +216,148 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
         </View>
       </Card>
 
-      {/* Stats */}
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <StatCell value={`+${fr(profile.xpTotal)}`} label="XP total" accent={theme.accent} />
-        <StatCell value={`${String(profile.streakDays)}j`} label="Série en cours" />
-        <StatCell value={profile.badges.length} label="Badges" />
+      {/* Stats: counted on the server, not read off the lists below */}
+      <View style={{ gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <StatCell value={`+${fr(profile.xpTotal)}`} label="XP total" accent={theme.accent} />
+          <StatCell value={`${String(profile.streakDays)}j`} label="Série en cours" />
+          <StatCell value={fr(counts.badges)} label="Badges" />
+        </View>
+        {profile.counts ? (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <StatCell value={fr(counts.lessons)} label="Leçons terminées" />
+            <StatCell value={fr(counts.challenges)} label="Défis résolus" />
+          </View>
+        ) : null}
       </View>
 
-      {profile.badges.length > 0 ? (
+      {profile.activity ? (
         <View>
           <SectionLabel
-            eyebrow={`01 · trophées · ${String(profile.badges.length)}`}
+            eyebrow={`${no("activity")} · activité`}
+            title="Une année d'apprentissage."
+          />
+          <Card style={{ gap: 14 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+              <Text variant="bodySm">
+                <Text
+                  style={{ fontFamily: `${fonts.sans}_800ExtraBold`, color: colors.textPrimary }}
+                >
+                  {profile.activity.daysThisYear}
+                </Text>
+                {profile.activity.daysThisYear > 1 ? " jours actifs" : " jour actif"} cette année
+              </Text>
+              {profile.activity.longestStreak > 0 ? (
+                <Text variant="bodySm">
+                  {"record de série : "}
+                  <Text
+                    style={{ fontFamily: `${fonts.sans}_800ExtraBold`, color: colors.textPrimary }}
+                  >
+                    {profile.activity.longestStreak}
+                  </Text>
+                  {profile.activity.longestStreak > 1 ? " jours" : " jour"}
+                </Text>
+              ) : null}
+            </View>
+            <ActivityCalendar
+              activity={profile.activity.days}
+              daysThisYear={profile.activity.daysThisYear}
+              label={`Activité de ${name}`}
+            />
+          </Card>
+        </View>
+      ) : null}
+
+      {profile.headToHead ? (
+        <View>
+          <SectionLabel eyebrow={`${no("faceToFace")} · duels entre vous`} title="Face à face." />
+          <Card accent={theme.accent} style={{ gap: 12 }}>
+            <View
+              accessible
+              accessibilityLabel={`Toi ${String(profile.headToHead.win)}, ${name} ${String(profile.headToHead.loss)}`}
+              style={{ flexDirection: "row", alignItems: "baseline", gap: 10 }}
+            >
+              <Text variant="micro">Toi</Text>
+              <Text
+                style={{
+                  fontFamily: `${fonts.sans}_800ExtraBold`,
+                  fontSize: 34,
+                  color: theme.accent,
+                }}
+              >
+                {profile.headToHead.win}
+              </Text>
+              <Text variant="mono" style={{ color: colors.textDisabled }}>
+                –
+              </Text>
+              <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 34 }}>
+                {profile.headToHead.loss}
+              </Text>
+              <Text variant="micro" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {name}
+              </Text>
+            </View>
+            <Text variant="h3">{headToHeadVerdict(profile.headToHead, name)}</Text>
+            {profile.headToHead.draw > 0 ? (
+              <Text variant="bodySm">
+                {`${String(profile.headToHead.draw)} égalité${profile.headToHead.draw > 1 ? "s" : ""}`}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: "row" }}>
+              {profile.headToHead.openDuelId !== null ? (
+                <ActionChip
+                  label="Voir le duel en cours"
+                  tone="neutral"
+                  onPress={() => {
+                    const id = profile.headToHead?.openDuelId;
+                    if (id) router.push({ pathname: "/duels/[id]", params: { id } });
+                  }}
+                />
+              ) : (
+                <ActionChip
+                  label="Défier"
+                  onPress={() => {
+                    router.push({ pathname: "/duels", params: { ami: profile.id } });
+                  }}
+                />
+              )}
+            </View>
+          </Card>
+        </View>
+      ) : null}
+
+      {badges.length > 0 ? (
+        <View>
+          <SectionLabel
+            eyebrow={`${no("badges")} · trophées · ${String(counts.badges)}`}
             title="Badges obtenus."
           />
+          {profile.rarestBadges && profile.rarestBadges.length > 0 ? (
+            <View style={{ gap: 8, marginBottom: 12 }}>
+              {profile.rarestBadges.map((badge) => {
+                const color = RARITY_COLOR[profileRarity(badge.rarity)];
+                return (
+                  <Card
+                    key={badge.id}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+                  >
+                    <BadgeIcon iconUrl={badge.iconUrl} color={color} size={52} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text variant="micro" style={{ color }}>
+                        {badge.rarityLabel}
+                      </Text>
+                      <Text variant="h3" numberOfLines={2}>
+                        {badge.name}
+                      </Text>
+                      <Text variant="bodySm">{holdersLabel(badge.holders)}</Text>
+                    </View>
+                  </Card>
+                );
+              })}
+            </View>
+          ) : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {profile.badges.map((badge) => {
+            {badges.map((badge) => {
               const color = RARITY_COLOR[profileRarity(badge.rarity)];
               return (
                 <View
@@ -207,12 +382,70 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
               );
             })}
           </View>
+          {moreBadges !== null ? <MoreLine text={moreBadges} /> : null}
+        </View>
+      ) : null}
+
+      {profile.paths && profile.paths.length > 0 ? (
+        <View>
+          <SectionLabel eyebrow={`${no("paths")} · parcours`} title="En cours et terminés." />
+          <Card style={{ padding: 0 }}>
+            {profile.paths.map((path, i) => {
+              const category = profileCategory(path.category);
+              return (
+                <View key={path.slug}>
+                  {i > 0 ? <Divider /> : null}
+                  <View style={{ padding: 12, gap: 8 }}>
+                    <Text
+                      variant="micro"
+                      style={{ color: category ? CATEGORY_COLOR[category] : colors.textMuted }}
+                    >
+                      {`${category ? CATEGORY_LABEL[category] : "-"} · ${
+                        path.completed && path.completedAt !== null
+                          ? `terminé le ${longDay(path.completedAt)}`
+                          : "en cours"
+                      }`}
+                    </Text>
+                    <Text variant="h3" numberOfLines={2}>
+                      {path.title}
+                    </Text>
+                    <View
+                      accessible
+                      accessibilityRole="progressbar"
+                      accessibilityLabel={`${path.title} : ${String(path.percent)} %`}
+                      accessibilityValue={{ min: 0, max: 100, now: path.percent }}
+                      style={{
+                        height: 6,
+                        borderWidth: 1,
+                        borderColor: colors.borderDefault,
+                        backgroundColor: "rgba(5,4,26,0.9)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: "100%",
+                          width: `${path.percent}%`,
+                          backgroundColor: theme.accent,
+                        }}
+                      />
+                    </View>
+                    <Text variant="mono" style={{ fontSize: 11, color: colors.textMuted }}>
+                      {path.completed
+                        ? "100 %"
+                        : `${String(path.percent)} % · ${missionsLabel(path.done, path.total)}`}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </Card>
         </View>
       ) : null}
 
       {profile.skills.length > 0 ? (
         <View>
-          <SectionLabel eyebrow="02 · compétences" title="Ce qui est acquis." />
+          <SectionLabel eyebrow={`${no("skills")} · compétences`} title="Ce qui est acquis." />
           <View style={{ gap: 8 }}>
             {profile.skills.map((skill) => (
               <Card key={skill.category} style={{ gap: 4 }}>
@@ -234,7 +467,7 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
       {profile.certificates.length > 0 ? (
         <View>
           <SectionLabel
-            eyebrow={`03 · certificats · ${String(profile.certificates.length)}`}
+            eyebrow={`${no("certificates")} · certificats · ${String(counts.certificates)}`}
             title="Attestations obtenues."
           />
           <Card style={{ padding: 0 }}>
@@ -270,7 +503,7 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
       {profile.challenges.length > 0 ? (
         <View>
           <SectionLabel
-            eyebrow={`04 · défis · ${String(profile.challenges.length)}`}
+            eyebrow={`${no("challenges")} · défis · ${String(counts.challenges)}`}
             title="Défis résolus."
           />
           <Card style={{ padding: 0 }}>
@@ -293,12 +526,89 @@ function ProfileBody({ profile }: { profile: PublicProfile }): React.JSX.Element
               </View>
             ))}
           </Card>
+          {moreChallenges !== null ? <MoreLine text={moreChallenges} /> : null}
+        </View>
+      ) : null}
+
+      {duelsPlayed > 0 || contributions.length > 0 ? (
+        <View>
+          <SectionLabel eyebrow={`${no("community")} · communauté`} title="Avec les autres." />
+          <View style={{ gap: 8 }}>
+            {profile.duelRecord && duelsPlayed > 0 ? (
+              <Card style={{ gap: 10 }}>
+                <Text variant="micro">Duels · depuis toujours</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {duelRecordLines(profile.duelRecord).map((line) => (
+                    <StatCell
+                      key={line.outcome}
+                      value={line.n}
+                      label={line.word}
+                      accent={line.outcome === "win" ? theme.accent : colors.textPrimary}
+                    />
+                  ))}
+                </View>
+              </Card>
+            ) : null}
+            {contributions.length > 0 ? (
+              <Card style={{ gap: 10 }}>
+                <Text variant="micro">Contributions</Text>
+                {contributions.map((line) => (
+                  <View
+                    key={line.key}
+                    style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}
+                  >
+                    <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 22 }}>
+                      {line.n}
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="body">{line.label}</Text>
+                      {line.detail !== null ? <Text variant="bodySm">{line.detail}</Text> : null}
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {profile.timeline && profile.timeline.length > 0 ? (
+        <View>
+          <SectionLabel eyebrow={`${no("timeline")} · chronologie`} title="Ses derniers moments." />
+          <Card style={{ padding: 0 }}>
+            {profile.timeline.map((event, i) => (
+              <View key={event.key}>
+                {i > 0 ? <Divider /> : null}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text
+                      variant="micro"
+                      style={{
+                        color: event.kind === "badge" ? RARITY_COLOR.LEGENDARY : theme.accent,
+                      }}
+                    >
+                      {TIMELINE_LABEL[event.kind]}
+                    </Text>
+                    <Text variant="h3" numberOfLines={2}>
+                      {event.title}
+                    </Text>
+                  </View>
+                  <Text variant="mono" style={{ fontSize: 11, color: colors.textMuted }}>
+                    {longDay(event.at)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </Card>
         </View>
       ) : null}
 
       {profile.recentLessons.length > 0 ? (
         <View>
-          <SectionLabel eyebrow="05 · activité" title="Leçons terminées récemment." />
+          <SectionLabel
+            eyebrow={`${no("lessons")} · leçons · ${String(counts.lessons)}`}
+            title="Leçons terminées récemment."
+          />
           <Card style={{ padding: 0 }}>
             {profile.recentLessons.map((lesson, i) => {
               const category = profileCategory(lesson.category);
@@ -442,6 +752,15 @@ function FriendActions({
         </Text>
       ) : null}
     </View>
+  );
+}
+
+/** "et 4 autres", under a list that stops before its count. */
+function MoreLine({ text }: { text: string }): React.JSX.Element {
+  return (
+    <Text variant="micro" style={{ marginTop: 10 }}>
+      {text}
+    </Text>
   );
 }
 

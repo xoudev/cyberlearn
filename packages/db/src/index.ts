@@ -47,6 +47,8 @@ export {
   type ConsoleUserQuery,
   type ConsoleUserRow,
   type ConsoleUserSort,
+  type ProfileAccess,
+  type ProfilePreviewCard,
 } from "./repositories/user.repository.js";
 export {
   auditLogRepository,
@@ -119,7 +121,17 @@ export {
 export { exerciseRepository } from "./repositories/exercise.repository.js";
 export { writeupRepository } from "./repositories/writeup.repository.js";
 export { mockExamRepository } from "./repositories/mock-exam.repository.js";
-export { duelRepository } from "./repositories/duel.repository.js";
+export {
+  duelRepository,
+  type DuelResults,
+  type DuelTally,
+} from "./repositories/duel.repository.js";
+export {
+  profileRepository,
+  type BadgeCandidate,
+  type ContributionTally,
+  type ProfilePathRow,
+} from "./repositories/profile.repository.js";
 export { tournamentRepository } from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";

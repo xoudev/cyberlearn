@@ -1,6 +1,7 @@
 import { colors } from "@cyberlearn/tokens";
 import { describe, expect, it } from "vitest";
 import {
+  boardRecord,
   deadlineLine,
   duelDay,
   duelMeta,
@@ -72,5 +73,13 @@ describe("duels in the app", () => {
     expect(outcomeTone("live", "#123456")).toBe("#123456");
     expect(outcomeTone("wait", "#123456")).toBe(colors.warning);
     expect(outcomeTone("expired", "#123456")).toBe(colors.textMuted);
+  });
+
+  it("shows the server's record over every duel, or the listed duels' from an older server", () => {
+    const record = { win: 31, loss: 4, draw: 2, live: 1, wait: 0 };
+    expect(boardRecord({ duels: [DUEL], record })).toEqual(record);
+    expect(
+      boardRecord({ duels: [DUEL, { ...DUEL, status: "FINISHED", winner: "reader" }] }),
+    ).toEqual({ win: 1, loss: 0, draw: 0, live: 1, wait: 0 });
   });
 });

@@ -2,11 +2,12 @@ import Link from "next/link";
 import React from "react";
 import {
   duelActionLabel,
-  duelRecord,
+  duelRecordLines,
   duelSmallPrint,
   OUTCOME_LABEL,
   outcomeOf,
   wasPlayed,
+  type DuelRecordCounts,
 } from "@cyberlearn/lib/social/duel";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
@@ -112,12 +113,15 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
  */
 export function DuelsBoard({
   duels,
+  record: counts,
   friends,
   paths,
   initialFriend,
   readerName,
 }: {
   duels: DuelSummary[];
+  /** The record over every duel, counted on the server: the list stops at twenty. */
+  record: DuelRecordCounts;
   friends: { id: string; name: string }[];
   paths: { id: string; title: string }[];
   /** The friend named in ?ami=, preselected in the form. */
@@ -127,7 +131,7 @@ export function DuelsBoard({
   const invitations = duels.filter((d) => d.status === "PENDING" && !d.readerIsChallenger);
   const others = duels.filter((d) => !invitations.includes(d));
   const friendCount = friends.length;
-  const record = duelRecord(duels);
+  const record = duelRecordLines(counts);
 
   return (
     <div className="page-container dl">

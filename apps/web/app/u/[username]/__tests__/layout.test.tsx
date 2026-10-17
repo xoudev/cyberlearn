@@ -17,7 +17,10 @@ vi.mock("@/lib/auth", () => auth);
 
 const db = vi.hoisted(() => ({
   userRepository: {
-    isProfileOpenTo: vi.fn<(username: string, viewerId: string | null) => Promise<boolean>>(),
+    profileAccess:
+      vi.fn<
+        (username: string, viewerId: string | null) => Promise<"closed" | "public" | "private">
+      >(),
     findPublicProfile: vi.fn<(username: string, viewerId: string | null) => Promise<unknown>>(),
   },
 }));
@@ -44,7 +47,7 @@ async function render(username = "alex"): Promise<string> {
 beforeEach(() => {
   vi.clearAllMocks();
   auth.getActiveBan.mockResolvedValue(null);
-  db.userRepository.isProfileOpenTo.mockResolvedValue(true);
+  db.userRepository.profileAccess.mockResolvedValue("public");
 });
 
 describe("the public profile's frame", () => {
@@ -66,6 +69,14 @@ describe("the public profile's frame", () => {
     expect(html).toContain('href="/"');
   });
 
+  it("draws a private profile the reader was let into like any other", async () => {
+    auth.getRequestUser.mockResolvedValue({ id: READER });
+    db.userRepository.profileAccess.mockResolvedValue("private");
+    const html = await render();
+
+    expect(html).toContain(`<x-shell data-user="${READER}">`);
+  });
+
   it("draws it alone for a banned account, which the app is closed to", async () => {
     auth.getRequestUser.mockResolvedValue({ id: READER });
     auth.getActiveBan.mockResolvedValue({ id: "ban" });
@@ -79,10 +90,10 @@ describe("the public profile's frame", () => {
     // From the layout, above the skeleton's Suspense boundary: thrown from the
     // page, behind it, the 404 arrived after a 200 had gone out.
     auth.getRequestUser.mockResolvedValue({ id: READER });
-    db.userRepository.isProfileOpenTo.mockResolvedValue(false);
+    db.userRepository.profileAccess.mockResolvedValue("closed");
 
     await expect(render("inconnu")).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
-    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledWith("inconnu", READER);
+    expect(db.userRepository.profileAccess).toHaveBeenCalledWith("inconnu", READER);
   });
 
   it("asks only whether the profile opens, never reads it", async () => {
@@ -92,7 +103,7 @@ describe("the public profile's frame", () => {
     auth.getRequestUser.mockResolvedValue({ id: READER });
     await render();
 
-    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledTimes(1);
+    expect(db.userRepository.profileAccess).toHaveBeenCalledTimes(1);
     expect(db.userRepository.findPublicProfile).not.toHaveBeenCalled();
   });
 
@@ -101,6 +112,6 @@ describe("the public profile's frame", () => {
     auth.getActiveBan.mockResolvedValue({ id: "ban" });
     await render();
 
-    expect(db.userRepository.isProfileOpenTo).toHaveBeenCalledWith("alex", null);
+    expect(db.userRepository.profileAccess).toHaveBeenCalledWith("alex", null);
   });
 });

@@ -1,9 +1,11 @@
 import { colors } from "@cyberlearn/tokens";
 import {
   deadlineLabel,
+  duelRecordCounts,
   duelSmallPrint,
   type DuelOutcome,
   type DuelQuestion,
+  type DuelRecordCounts,
   type DuelStatus,
 } from "@cyberlearn/lib/social/duel";
 
@@ -58,8 +60,21 @@ export interface DuelView extends DuelSummary {
 
 export interface DuelBoard {
   duels: DuelSummary[];
+  /**
+   * The record over every duel, counted on the server; absent from a server
+   * from before it, which only sent the duels listed.
+   */
+  record?: DuelRecordCounts;
   friends: { id: string; name: string }[];
   paths: { id: string; title: string }[];
+}
+
+/**
+ * The record the board shows: the server's, over every duel, or the one the
+ * listed duels make when the server sends none (the twenty most recent).
+ */
+export function boardRecord(board: Pick<DuelBoard, "duels" | "record">): DuelRecordCounts {
+  return board.record ?? duelRecordCounts(board.duels);
 }
 
 /** How often the duel screen reads the duel again while it is going on. */

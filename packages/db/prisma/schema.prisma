@@ -911,6 +911,8 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@index([userId])
+  /// A public profile counts the holders of its owner's rarest badges.
+  @@index([badgeId])
   @@map("user_badges")
 }
 
@@ -1090,6 +1092,8 @@ model LessonAnswer {
   upvoteRecords LessonAnswerUpvote[]
 
   @@index([questionId, isHidden])
+  /// A public profile counts its owner's answers.
+  @@index([userId])
   @@map("lesson_answers")
 }
 
@@ -2011,6 +2015,8 @@ model ChallengeWriteup {
 
   @@unique([challengeId, userId])
   @@index([challengeId, isHidden])
+  /// A public profile counts its owner's solutions.
+  @@index([userId])
   @@map("challenge_writeups")
 }
 

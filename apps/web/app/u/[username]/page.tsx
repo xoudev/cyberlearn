@@ -4,29 +4,40 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { cosmeticRepository, friendshipRepository } from "@cyberlearn/db";
-import { computeLevel, friendshipView, type FriendshipView } from "@cyberlearn/lib";
-import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
+import { computeLevel, dayKey, friendshipView, type FriendshipView } from "@cyberlearn/lib";
+import { BADGE_RARITY_VAR, BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
+import { duelRecordLines, headToHeadVerdict } from "@cyberlearn/lib/social/duel";
 import {
   certificateVerifyUrl,
+  contributionLines,
+  holdersLabel,
   lessonsFinishedLabel,
   linkedInCertificateUrl,
+  listedBadges,
+  missionsLabel,
+  moreLabel,
   publicProfileUrl,
+  sectionNumbers,
   skillLines,
+  TIMELINE_LABEL,
 } from "@cyberlearn/lib/social/portfolio";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { profileExtras, timelineOf } from "@/lib/profile/profile-extras";
 import {
   findProfileFor,
-  profileOpensFor,
+  profileAccessFor,
   profileReaderId,
 } from "@/lib/profile/public-profile-read";
 import { scopedCosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
-import { pageAddress } from "@/app/page-metadata";
+import { pageAddressWithOwnImage } from "@/app/page-metadata";
+import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { AvatarView } from "@/components/avatar-view";
 import { CopyButton } from "@/components/copy-button";
 import { Crumb } from "@/components/crumb";
+import { ProgressBar } from "@/components/progress-bar";
 import { StatTile } from "@/components/stat-tile";
 import { XpProgress } from "@/components/xp-progress";
 import { FriendshipActions } from "./_components/friendship-actions";
@@ -51,13 +62,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // 404s in generateMetadata too, so the tab never confirms, in its title, that
   // an account the reader may not open exists. No profile is read - the handle
   // in the address is the one the check matched. For a profile the reader may
-  // open, the preview is the shared link's own - title, description and og:url -
-  // not the home page's.
-  if (!(await profileOpensFor(username))) notFound();
+  // open, the preview is the shared link's own - title, description, og:url
+  // and the card drawn by opengraph-image.tsx - not the home page's.
+  const access = await profileAccessFor(username);
+  if (access === "closed") notFound();
   return {
     title: `@${username}`,
     description: `Le profil de @${username} sur CyberLearn : son niveau, ses badges, ses parcours et ses certificats.`,
-    ...pageAddress(`/u/${encodeURIComponent(username)}`),
+    ...pageAddressWithOwnImage(`/u/${encodeURIComponent(username)}`),
+    // Its owner closed it to everybody but their friends: a friend reads it,
+    // a search engine never lists it, nor follows it to the people it names.
+    ...(access === "private" ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
@@ -76,6 +91,14 @@ function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): R
     </div>
   );
 }
+
+const DAY_MONTH = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+const MONTH_YEAR = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+const FULL_DAY = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 /**
  * The owner's equipped cosmetics, for the profile's own scope. Decorative,
@@ -127,10 +150,14 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
       : friendshipView(await friendshipRepository.between(viewerId, user.id), viewerId);
 
   // Resolve "__upload:" markers to short-lived signed URLs before rendering;
-  // built-in paths, "__glyph:" markers and null pass through unchanged.
-  const [avatarSrc, cosmetics] = await Promise.all([
+  // built-in paths, "__glyph:" markers and null pass through unchanged. The
+  // extras are the app's too (profileExtras): the year of activity, the duels,
+  // the badges put forward, the paths, the contributions, and the
+  // head-to-head, which only a friend gets.
+  const [avatarSrc, cosmetics, extras] = await Promise.all([
     resolveAvatarSrc(user.avatarUrl),
     ownerCosmetics(user.id),
+    profileExtras(user.id, viewerId, friendState === "friends"),
   ]);
 
   // The portfolio: skills read off what is finished, certificates with their
@@ -143,11 +170,33 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
   const handle = user.username ?? username;
   const name = user.displayName || handle;
+  const { counts } = user;
 
   const { level, current, needed } = computeLevel(user.xpTotal);
-  const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
-    user.createdAt,
-  );
+  const joinedStr = MONTH_YEAR.format(user.createdAt);
+
+  const timeline = timelineOf(user, extras.paths);
+  const contributions = contributionLines(extras.contributions);
+  const duelLines = duelRecordLines(extras.duelRecord);
+  const duelsPlayed = extras.duelRecord.win + extras.duelRecord.loss + extras.duelRecord.draw;
+  const showCommunity = duelsPlayed > 0 || contributions.length > 0;
+  // Every badge is read (the app's list stays whole); the page lists a dozen.
+  const badges = listedBadges(user.badges);
+  const moreBadges = moreLabel(badges.length, counts.badges);
+  const moreChallenges = moreLabel(user.challengeProgress.length, counts.challenges);
+
+  const no = sectionNumbers([
+    "activity",
+    extras.headToHead !== null && "faceToFace",
+    badges.length > 0 && "badges",
+    extras.paths.length > 0 && "paths",
+    skills.length > 0 && "skills",
+    user.certificates.length > 0 && "certificates",
+    user.challengeProgress.length > 0 && "challenges",
+    showCommunity && "community",
+    timeline.length > 0 && "timeline",
+    user.lessonProgress.length > 0 && "lessons",
+  ]);
 
   return (
     <div className="page-container">
@@ -233,20 +282,122 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
           <StatTile
             size="lg"
             label="Badges obtenus"
-            value={String(user.badges.length)}
+            value={counts.badges.toLocaleString("fr-FR")}
             sub="trophées gagnés"
+          />
+          <StatTile
+            size="lg"
+            label="Leçons terminées"
+            value={counts.lessons.toLocaleString("fr-FR")}
+            sub="missions accomplies"
+          />
+          <StatTile
+            size="lg"
+            label="Défis résolus"
+            value={counts.challenges.toLocaleString("fr-FR")}
+            sub="flags, puzzles et labos"
           />
         </div>
 
-        {/* ── Badges (earned-only, public showcase) ──────────────────── */}
-        {user.badges.length > 0 && (
+        {/* ── A year of activity, day by day ─────────────────────────── */}
+        <section className="pp-section">
+          <SectionLabel
+            eyebrow={`${no("activity")} · activité`}
+            title="Une année d'apprentissage."
+          />
+          <div className="card pp-year">
+            <div className="pp-year__figs">
+              <p>
+                <b>{extras.activity.daysThisYear}</b>
+                {extras.activity.daysThisYear > 1 ? " jours actifs" : " jour actif"} cette année
+              </p>
+              {extras.activity.longestStreak > 0 && (
+                <p>
+                  record de série : <b>{extras.activity.longestStreak}</b>
+                  {extras.activity.longestStreak > 1 ? " jours" : " jour"}
+                </p>
+              )}
+            </div>
+            <ActivityHeatmap
+              activity={extras.activity.days}
+              today={dayKey(new Date())}
+              label={`Activité de ${name} sur les douze derniers mois`}
+            />
+          </div>
+        </section>
+
+        {/* ── Face to face: between friends only ─────────────────────── */}
+        {extras.headToHead !== null && (
+          <section className="pp-section">
+            <SectionLabel eyebrow={`${no("faceToFace")} · duels entre vous`} title="Face à face." />
+            <div className="card pp-versus">
+              <p className="pp-versus__score">
+                <span className="sr-only">{`Toi ${String(extras.headToHead.win)}, ${name} ${String(extras.headToHead.loss)}`}</span>
+                <span aria-hidden="true">Toi</span>
+                <b aria-hidden="true">{extras.headToHead.win}</b>
+                <span className="pp-versus__dash" aria-hidden="true">
+                  –
+                </span>
+                <b aria-hidden="true">{extras.headToHead.loss}</b>
+                <span aria-hidden="true">{name}</span>
+              </p>
+              <div className="pp-versus__text">
+                <p className="pp-row__title">{headToHeadVerdict(extras.headToHead, name)}</p>
+                {extras.headToHead.draw > 0 && (
+                  <p className="pp-versus__draws">
+                    {extras.headToHead.draw} égalité{extras.headToHead.draw > 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+              {extras.headToHead.openDuelId !== null ? (
+                <Link
+                  href={`/duels/${extras.headToHead.openDuelId}`}
+                  className="btn btn--ghost btn--sm"
+                >
+                  Voir le duel en cours
+                </Link>
+              ) : (
+                <Link href={`/duels?ami=${user.id}`} className="btn btn--accent btn--sm">
+                  Défier
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ── Badges: the rarest put forward, then the most recent ───── */}
+        {badges.length > 0 && (
           <section className="pp-section">
             <SectionLabel
-              eyebrow={`01 · trophées · ${String(user.badges.length)}`}
+              eyebrow={`${no("badges")} · trophées · ${String(counts.badges)}`}
               title="Badges obtenus."
             />
+            {extras.rarestBadges.length > 0 && (
+              <ul className="pp-rarest" aria-label="Ses badges les plus rares">
+                {extras.rarestBadges.map((badge) => {
+                  const rarity = toBadgeRarity(badge.rarity);
+                  return (
+                    <li key={badge.id} className="card pp-rarest__item">
+                      <BadgeMedallion
+                        rarity={rarity}
+                        size="lg"
+                        iconUrl={badge.iconUrl}
+                        name={badge.name}
+                      />
+                      <div className="pp-row__main">
+                        <div className="pp-kicker" style={tone(BADGE_RARITY_VAR[rarity])}>
+                          {badge.rarityLabel}
+                        </div>
+                        <p className="pp-row__title">{badge.name}</p>
+                        <p className="pp-rarest__holders">{holdersLabel(badge.holders)}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             <ul className="pp-badges">
-              {user.badges.map((ub) => (
+              {badges.map((ub) => (
                 <li key={ub.id} title={ub.badge.name} className="pp-badge">
                   <BadgeMedallion
                     rarity={toBadgeRarity(ub.badge.rarity)}
@@ -258,13 +409,51 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 </li>
               ))}
             </ul>
+            {moreBadges !== null && <p className="pp-more">{moreBadges}</p>}
+          </section>
+        )}
+
+        {/* ── Paths: going on, then finished, each with its bar ──────── */}
+        {extras.paths.length > 0 && (
+          <section className="pp-section">
+            <SectionLabel eyebrow={`${no("paths")} · parcours`} title="En cours et terminés." />
+            <div className="card">
+              {extras.paths.map((path) => {
+                const cat = categoryMeta(path.category);
+                return (
+                  <div key={path.slug} className="pp-row pp-row--wrap">
+                    <div className="pp-row__main">
+                      <div className="pp-kicker" style={tone(cat.color)}>
+                        {cat.short} ·{" "}
+                        {path.completed && path.completedAt !== null
+                          ? `terminé le ${FULL_DAY.format(new Date(path.completedAt))}`
+                          : "en cours"}
+                      </div>
+                      <p className="pp-row__title">{path.title}</p>
+                    </div>
+                    <div className="pp-path__bar">
+                      <ProgressBar
+                        value={path.percent}
+                        label={`${path.title} : ${String(path.percent)} %`}
+                        {...(path.completed ? { color: "var(--cosmetic-accent)" } : {})}
+                      />
+                      <span className="pp-row__date">
+                        {path.completed
+                          ? "100 %"
+                          : `${String(path.percent)} % · ${missionsLabel(path.done, path.total)}`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
         {/* ── Skills: what is finished, by category ──────────────────── */}
         {skills.length > 0 && (
           <section className="pp-section">
-            <SectionLabel eyebrow="02 · compétences" title="Ce qui est acquis." />
+            <SectionLabel eyebrow={`${no("skills")} · compétences`} title="Ce qui est acquis." />
             <div className="pp-skills">
               {skills.map((skill) => (
                 <div key={skill.category} className="card pp-skill">
@@ -289,17 +478,14 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
         {user.certificates.length > 0 && (
           <section className="pp-section">
             <SectionLabel
-              eyebrow={`03 · certificats · ${String(user.certificates.length)}`}
+              eyebrow={`${no("certificates")} · certificats · ${String(counts.certificates)}`}
               title="Attestations obtenues."
             />
             <div className="card">
               {user.certificates.map((cert) => {
                 const verifyUrl = certificateVerifyUrl(siteUrl, cert.publicId);
                 const cat = categoryMeta(cert.path.category);
-                const dateStr = new Intl.DateTimeFormat("fr-FR", {
-                  month: "long",
-                  year: "numeric",
-                }).format(cert.issuedAt);
+                const dateStr = MONTH_YEAR.format(cert.issuedAt);
                 return (
                   <div key={cert.publicId} className="pp-row pp-row--wrap">
                     <div className="pp-row__main">
@@ -338,17 +524,13 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
         {user.challengeProgress.length > 0 && (
           <section className="pp-section">
             <SectionLabel
-              eyebrow={`04 · défis · ${String(user.challengeProgress.length)}`}
+              eyebrow={`${no("challenges")} · défis · ${String(counts.challenges)}`}
               title="Défis résolus."
             />
             <div className="card">
               {user.challengeProgress.map((cp) => {
                 const diff = difficultyMeta(cp.challenge.difficulty);
-                const dateStr = cp.completedAt
-                  ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
-                      cp.completedAt,
-                    )
-                  : "-";
+                const dateStr = cp.completedAt ? DAY_MONTH.format(cp.completedAt) : "-";
                 return (
                   <div key={cp.challenge.slug} className="pp-row">
                     <div className="pp-row__main">
@@ -362,21 +544,83 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 );
               })}
             </div>
+            {moreChallenges !== null && <p className="pp-more">{moreChallenges}</p>}
+          </section>
+        )}
+
+        {/* ── With the others: duels over all time, contributions ────── */}
+        {showCommunity && (
+          <section className="pp-section">
+            <SectionLabel eyebrow={`${no("community")} · communauté`} title="Avec les autres." />
+            <div className="pp-community">
+              {duelsPlayed > 0 && (
+                <div className="card pp-community__card">
+                  <p className="pp-kicker">Duels · depuis toujours</p>
+                  <ul className="pp-figures">
+                    {duelLines.map((line) => (
+                      <li key={line.outcome} data-outcome={line.outcome}>
+                        <b>{line.n}</b>
+                        <span>{line.word}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {contributions.length > 0 && (
+                <div className="card pp-community__card">
+                  <p className="pp-kicker">Contributions</p>
+                  <ul className="pp-figures">
+                    {contributions.map((line) => (
+                      <li key={line.key}>
+                        <b>{line.n}</b>
+                        <span>
+                          {line.label}
+                          {line.detail !== null && <small>{line.detail}</small>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ── Timeline: the last moments, on their dates ─────────────── */}
+        {timeline.length > 0 && (
+          <section className="pp-section">
+            <SectionLabel
+              eyebrow={`${no("timeline")} · chronologie`}
+              title="Ses derniers moments."
+            />
+            <ol className="card pp-timeline">
+              {timeline.map((event) => (
+                <li key={event.key} className="pp-row" data-kind={event.kind}>
+                  <span className="pp-row__dot" aria-hidden="true" />
+                  <div className="pp-row__main">
+                    <div className="pp-kicker">{TIMELINE_LABEL[event.kind]}</div>
+                    <p className="pp-row__title pp-row__title--clip">{event.title}</p>
+                  </div>
+                  <time className="pp-row__date" dateTime={event.at}>
+                    {FULL_DAY.format(new Date(event.at))}
+                  </time>
+                </li>
+              ))}
+            </ol>
           </section>
         )}
 
         {/* ── Recent lessons ─────────────────────────────────────────── */}
         {user.lessonProgress.length > 0 && (
           <section className="pp-section">
-            <SectionLabel eyebrow="05 · activité" title="Leçons terminées récemment." />
+            <SectionLabel
+              eyebrow={`${no("lessons")} · leçons · ${String(counts.lessons)}`}
+              title="Leçons terminées récemment."
+            />
             <div className="card">
               {user.lessonProgress.map((lp, i) => {
                 const cat = categoryMeta(lp.lesson.category);
-                const dateStr = lp.completedAt
-                  ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
-                      lp.completedAt,
-                    )
-                  : "-";
+                const dateStr = lp.completedAt ? DAY_MONTH.format(lp.completedAt) : "-";
 
                 return (
                   <div key={`${lp.lesson.slug}-${String(i)}`} className="pp-row">

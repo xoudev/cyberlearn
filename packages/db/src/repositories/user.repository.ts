@@ -116,6 +116,21 @@ export function consoleUserWhere(q: string, role: UserRole | undefined): Prisma.
 const WEEK_MS = 7 * 86_400_000;
 
 /**
+ * How a profile opens for its reader: not at all, as a public profile, or as
+ * a private one the reader was let into (their own, or an accepted friend's).
+ */
+export type ProfileAccess = "closed" | "public" | "private";
+
+/** What a public profile's link preview names: nothing a stranger could not read on it. */
+export interface ProfilePreviewCard {
+  username: string;
+  displayName: string;
+  xpTotal: number;
+  streakDays: number;
+  badges: number;
+}
+
+/**
  * Whether this reader may open this person's profile: a public one, their
  * own, or an accepted friend's. The one rule behind findPublicProfile and
  * isProfileOpenTo, so the light check and the full read never disagree.
@@ -336,6 +351,9 @@ export const userRepository = {
       where: { username },
       include: {
         preferences: { select: { publicProfile: true } },
+        // Every badge, not the dozen the page lists (listedBadges cuts it
+        // where it is drawn): the app's profile has always received them all,
+        // and an app already installed counts them off this list.
         badges: {
           include: { badge: true },
           orderBy: { earnedAt: "desc" },
@@ -377,6 +395,18 @@ export const userRepository = {
           orderBy: { completedAt: "desc" },
           take: 30,
         },
+        // The lists above stop at a few rows; the figures are counted. The
+        // strip used to print the lists' lengths, so nobody had more than 10
+        // lessons or 30 challenges.
+        _count: {
+          select: {
+            badges: true,
+            lessonProgress: { where: { status: "COMPLETED" } },
+            challengeProgress: { where: { status: "COMPLETED" } },
+            certificates: { where: { revokedAt: null } },
+            pathProgress: { where: { status: "COMPLETED" } },
+          },
+        },
       },
     });
     if (!user) return null;
@@ -389,9 +419,61 @@ export const userRepository = {
       where: { progress: { some: { userId: user.id, status: "COMPLETED" } } },
       _count: { _all: true },
     });
+    const { _count: count, ...profile } = user;
     return {
-      ...user,
+      ...profile,
       lessonsByCategory: counted.map((row) => ({ category: row.category, count: row._count._all })),
+      counts: {
+        badges: count.badges,
+        lessons: count.lessonProgress,
+        challenges: count.challengeProgress,
+        certificates: count.certificates,
+        paths: count.pathProgress,
+      },
+    };
+  },
+
+  /**
+   * How /u/<username> opens for this reader: "closed" when it does not (no
+   * such account, or a private one the reader is not let into - the two are
+   * not told apart), otherwise whether it is public or a private profile the
+   * reader was let into. The id and the setting, then the friendship only for
+   * a private one: the layout's and the metadata's light question, which
+   * also decides whether search engines may index the page.
+   */
+  async profileAccess(username: string, viewerId: string | null): Promise<ProfileAccess> {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true, preferences: { select: { publicProfile: true } } },
+    });
+    if (owner === null || !(await profileOpensTo(owner, viewerId))) return "closed";
+    return owner.preferences?.publicProfile === false ? "private" : "public";
+  },
+
+  /**
+   * A profile's link preview, as anybody receives it: a shared link is read
+   * by whoever it is pasted to, and by crawlers, never as a friend. Null for
+   * a missing or private profile, which previews without a name.
+   */
+  async findPreviewCard(username: string): Promise<ProfilePreviewCard | null> {
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        username: true,
+        displayName: true,
+        xpTotal: true,
+        streakDays: true,
+        preferences: { select: { publicProfile: true } },
+        _count: { select: { badges: true } },
+      },
+    });
+    if (owner?.username == null || owner.preferences?.publicProfile === false) return null;
+    return {
+      username: owner.username,
+      displayName: owner.displayName,
+      xpTotal: owner.xpTotal,
+      streakDays: owner.streakDays,
+      badges: owner._count.badges,
     };
   },
 
@@ -407,11 +489,7 @@ export const userRepository = {
    * the full read stays in the page, behind the skeleton.
    */
   async isProfileOpenTo(username: string, viewerId: string | null): Promise<boolean> {
-    const owner = await prisma.user.findUnique({
-      where: { username },
-      select: { id: true, preferences: { select: { publicProfile: true } } },
-    });
-    return owner !== null && (await profileOpensTo(owner, viewerId));
+    return (await userRepository.profileAccess(username, viewerId)) !== "closed";
   },
 
   /**

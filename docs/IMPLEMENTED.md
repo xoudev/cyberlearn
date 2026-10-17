@@ -20,10 +20,10 @@
 | `/forgot-password` · `/reset-password` | Récupération du mot de passe |
 | `/mfa` | Défi TOTP quand un facteur vérifié existe |
 | `/contact` | Formulaire de contact / signalement, pour un visiteur (connecté, on dépose une demande depuis la fenêtre « Nouvelle demande » de `/support`) |
-| `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat |
+| `/duels` · `/duels/[id]` | Duels de quiz entre amis : défier, accepter, jouer, résultat ; le bilan compté sur tous les duels |
 | `/tournaments` · `/tournaments/[id]` · `/tournaments/[id]/[slug]` | Tournois CTF entre classes ou écoles : les défis du tournoi, un flag par défi, le tableau des équipes et des joueurs en direct |
 | `/paths/[slug]/mock-exam` | Examen blanc d'un parcours : trois questions par module, chronométré, score par module, correction |
-| `/u/[username]` | Profil public d'un utilisateur : badges, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, activité ; dans l'interface de l'app pour un visiteur connecté, seul pour un visiteur anonyme, aux cosmétiques de son propriétaire ; « Ami ✓ » et son menu, « Accepter » et « Refuser » une demande, « Défier en duel » qui suit l'amitié ; sur sa propre page, « Modifier mon profil » et « Copier le lien » |
+| `/u/[username]` | Profil public d'un utilisateur : chiffres comptés en base (badges, leçons terminées, défis résolus), l'année d'activité jour par jour, « Face à face » et « Défier » entre amis, les trois badges les plus rares, les parcours en cours et terminés avec leur progression, compétences, certificats (ajout à LinkedIn sur sa propre page), défis résolus, le bilan des duels et les contributions, la chronologie, activité ; une image d'aperçu pour un lien partagé (sans nom pour un profil privé) et `noindex` sur un profil privé ; dans l'interface de l'app pour un visiteur connecté, seul pour un visiteur anonyme, aux cosmétiques de son propriétaire ; « Ami ✓ » et son menu, « Accepter » et « Refuser » une demande, « Défier en duel » qui suit l'amitié ; sur sa propre page, « Modifier mon profil » et « Copier le lien » |
 | `/verify` · `/verify/[publicId]` | Vérification publique d'un certificat |
 | `/download` | Page de téléchargement de l'app mobile |
 | `/banned` | Page d'un compte suspendu, avec dépôt d'appel |

@@ -10,13 +10,42 @@ const m = vi.hoisted(() => ({
       ) => Promise<{ status: "PENDING" | "ACCEPTED"; requestedById: string } | null>
     >(),
   resolveAvatarSrc: vi.fn<(value: string | null) => Promise<string | null>>(),
+  findLoadout: vi.fn<(userId: string) => Promise<Record<string, string | null>>>(),
+  getOverview: vi.fn<(userId: string) => Promise<unknown>>(),
+  recordFor: vi.fn<(userId: string) => Promise<Record<string, number>>>(),
+  recordBetween: vi.fn<(a: string, b: string) => Promise<Record<string, number>>>(),
+  findOpenBetween: vi.fn<(a: string, b: string) => Promise<{ id: string } | null>>(),
+  badgeCandidates: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  pathsOf: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  contributionsOf: vi.fn<(userId: string) => Promise<Record<string, number>>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
   userRepository: { findPublicProfile: m.findPublicProfile },
   friendshipRepository: { between: m.between },
+  cosmeticRepository: { findLoadout: m.findLoadout },
+  streakRepository: { getOverview: m.getOverview },
+  duelRepository: {
+    recordFor: m.recordFor,
+    recordBetween: m.recordBetween,
+    findOpenBetween: m.findOpenBetween,
+  },
+  profileRepository: {
+    badgeCandidates: m.badgeCandidates,
+    pathsOf: m.pathsOf,
+    contributionsOf: m.contributionsOf,
+  },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrc: m.resolveAvatarSrc }));
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+
+const LOADOUT = {
+  terminalTheme: null,
+  hexagonStyle: "hex-neon",
+  profileFrame: null,
+  accentColor: "accent-violet",
+};
+const NO_CONTRIBUTIONS = { posts: 0, topics: 0, answers: 0, acceptedAnswers: 0, writeups: 0 };
 
 const { mobileProfileView } = await import("../mobile-profile");
 
@@ -53,6 +82,7 @@ function row(overrides: Record<string, unknown> = {}) {
     pathProgress: [],
     certificates: [],
     challengeProgress: [],
+    counts: { badges: 14, lessons: 1, challenges: 0, certificates: 0, paths: 0 },
     ...overrides,
   };
 }
@@ -61,6 +91,21 @@ beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
   m.resolveAvatarSrc.mockResolvedValue("https://signed/alex");
   m.between.mockResolvedValue(null);
+  m.findLoadout.mockResolvedValue(LOADOUT);
+  m.getOverview.mockResolvedValue({
+    currentStreak: 4,
+    longestStreak: 9,
+    freezes: 1,
+    active: true,
+    daysThisYear: 30,
+    activity: { "2026-09-01": 2 },
+  });
+  m.recordFor.mockResolvedValue({ win: 6, loss: 1, draw: 2, live: 1, wait: 3 });
+  m.recordBetween.mockResolvedValue({ win: 2, loss: 1, draw: 0 });
+  m.findOpenBetween.mockResolvedValue(null);
+  m.badgeCandidates.mockResolvedValue([]);
+  m.pathsOf.mockResolvedValue([]);
+  m.contributionsOf.mockResolvedValue(NO_CONTRIBUTIONS);
 });
 
 describe("mobileProfileView", () => {
@@ -115,12 +160,44 @@ describe("mobileProfileView", () => {
         skills: [],
         certificates: [],
         challenges: [],
+        counts: { badges: 14, lessons: 1, challenges: 0, certificates: 0, paths: 0 },
+        activity: { days: { "2026-09-01": 2 }, daysThisYear: 30, longestStreak: 9 },
+        // Results only: what the owner has going on is theirs alone.
+        duelRecord: { win: 6, loss: 1, draw: 2 },
+        headToHead: null,
+        rarestBadges: [],
+        timeline: [
+          {
+            kind: "badge",
+            title: "Premier pas",
+            at: expect.any(String) as string,
+            key: "badge:ub-1",
+          },
+        ],
+        paths: [],
+        contributions: NO_CONTRIBUTIONS,
+        ownerCosmetics: LOADOUT,
       },
     });
     const text = JSON.stringify(result);
     expect(text).not.toContain("alex@example.test");
     expect(text).not.toContain("__upload:");
     expect(text).not.toContain("STUDENT");
+  });
+
+  it("sends every badge, as it always did: an app already installed counts them off the list", async () => {
+    const badges = Array.from({ length: 17 }, (_, i) => ({
+      id: `ub-${String(i)}`,
+      earnedAt: new Date("2026-05-01T00:00:00Z"),
+      badge: { name: `Badge ${String(i)}`, rarity: "COMMON", iconUrl: null },
+    }));
+    m.findPublicProfile.mockResolvedValue(
+      row({ badges, counts: { badges: 17, lessons: 1, challenges: 0, certificates: 0, paths: 0 } }),
+    );
+    const result = await mobileProfileView(ME, "alex");
+    if (!result.ok) throw new Error("profile refused");
+    expect(result.profile.badges).toHaveLength(17);
+    expect(result.profile.counts.badges).toBe(17);
   });
 
   it.each([
@@ -199,5 +276,98 @@ describe("mobileProfileView", () => {
     const result = await mobileProfileView(ME, "alex");
     expect(result).toMatchObject({ ok: true, profile: { isSelf: true, friendship: "none" } });
     expect(m.between).not.toHaveBeenCalled();
+  });
+
+  it("sends the head-to-head to a friend only, from the reader's seat", async () => {
+    m.findPublicProfile.mockResolvedValue(row());
+    m.between.mockResolvedValue({ status: "ACCEPTED", requestedById: THEM });
+    m.findOpenBetween.mockResolvedValue({ id: "duel-1" });
+    const friend = await mobileProfileView(ME, "alex");
+    expect(friend).toMatchObject({
+      ok: true,
+      profile: { headToHead: { win: 2, loss: 1, draw: 0, openDuelId: "duel-1" } },
+    });
+    expect(m.recordBetween).toHaveBeenCalledWith(ME, THEM);
+
+    m.recordBetween.mockClear();
+    m.between.mockResolvedValue({ status: "PENDING", requestedById: ME });
+    const asked = await mobileProfileView(ME, "alex");
+    expect(asked).toMatchObject({ ok: true, profile: { headToHead: null } });
+    expect(m.recordBetween).not.toHaveBeenCalled();
+  });
+
+  it("sends the paths with their progress, the rarest badges and the contributions", async () => {
+    m.findPublicProfile.mockResolvedValue(row());
+    m.pathsOf.mockResolvedValue([
+      {
+        slug: "linux",
+        title: "Linux",
+        category: "DEV",
+        completed: false,
+        done: 6,
+        total: 12,
+        completedAt: null,
+      },
+    ]);
+    m.badgeCandidates.mockResolvedValue([
+      {
+        id: "ub-1",
+        name: "Premier pas",
+        rarity: "COMMON",
+        iconUrl: null,
+        earnedAt: new Date(),
+        holders: 40,
+      },
+      {
+        id: "ub-2",
+        name: "Légende",
+        rarity: "LEGENDARY",
+        iconUrl: "/l.svg",
+        earnedAt: new Date(),
+        holders: 2,
+      },
+    ]);
+    m.contributionsOf.mockResolvedValue({ ...NO_CONTRIBUTIONS, answers: 3, acceptedAnswers: 1 });
+    const result = await mobileProfileView(ME, "alex");
+    if (!result.ok) throw new Error("profile refused");
+    expect(result.profile.paths).toEqual([
+      {
+        slug: "linux",
+        title: "Linux",
+        category: "DEV",
+        completed: false,
+        done: 6,
+        total: 12,
+        percent: 50,
+        completedAt: null,
+      },
+    ]);
+    expect(result.profile.rarestBadges.map((b) => b.name)).toEqual(["Légende", "Premier pas"]);
+    expect(result.profile.rarestBadges[0]).toEqual({
+      id: "ub-2",
+      name: "Légende",
+      rarity: "LEGENDARY",
+      rarityLabel: "Légendaire",
+      iconUrl: "/l.svg",
+      holders: 2,
+    });
+    expect(result.profile.contributions).toMatchObject({ answers: 3, acceptedAnswers: 1 });
+  });
+
+  it("draws the owner's look in the default one when it cannot be read", async () => {
+    m.findPublicProfile.mockResolvedValue(row());
+    m.findLoadout.mockRejectedValue(new Error("db down"));
+    const result = await mobileProfileView(ME, "alex");
+    expect(result).toMatchObject({
+      ok: true,
+      profile: {
+        ownerCosmetics: {
+          terminalTheme: null,
+          hexagonStyle: null,
+          profileFrame: null,
+          accentColor: null,
+        },
+      },
+    });
   });
 });

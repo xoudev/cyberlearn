@@ -19,6 +19,7 @@ import {
   tallyFor,
   type DuelAnswerRow,
   type DuelQuestion,
+  type DuelRecordCounts,
   type DuelStatus,
 } from "@cyberlearn/lib/social/duel";
 import { loadSources } from "@/lib/exam/mock-exam";
@@ -281,6 +282,20 @@ export async function listDuelsFor(userId: string): Promise<DuelSummary[]> {
     out.push(summaryOf(duel, userId, rows));
   }
   return out;
+}
+
+/**
+ * The reader's record over every duel they played, not only the twenty the
+ * list shows: each of their duels whose time is over is settled first (a duel
+ * nobody opened again is still PENDING or ACTIVE in the table, and settles
+ * only when read), then the record is counted in the database.
+ */
+export async function duelRecordFor(
+  userId: string,
+  now: Date = new Date(),
+): Promise<DuelRecordCounts> {
+  for (const raw of await duelRepository.listOverdueFor(userId, now)) await settle(raw, now);
+  return duelRepository.recordFor(userId, now);
 }
 
 /** Challenges a friend on a path: five questions drawn from its lessons. */

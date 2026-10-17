@@ -13,7 +13,10 @@ import {
   duelActionLabel,
   duelQuestions,
   duelRecord,
+  duelRecordCounts,
+  duelRecordLines,
   duelSmallPrint,
+  headToHeadVerdict,
   duelWinner,
   idleScoreWord,
   isExpired,
@@ -188,6 +191,30 @@ describe("a duel in the reader's words", () => {
       "0 égalité",
       "1 en attente",
     ]);
+  });
+
+  it("counts the record it words, so a count from the database reads the same", () => {
+    const duels = [settled("reader"), settled("other"), open("ACTIVE"), open("EXPIRED")];
+    expect(duelRecordCounts(duels)).toEqual({ win: 1, loss: 1, draw: 0, live: 1, wait: 0 });
+    expect(duelRecordLines(duelRecordCounts(duels))).toEqual(duelRecord(duels));
+    // A profile's record has results only: the three, never what is open.
+    expect(
+      duelRecordLines({ win: 4, loss: 0, draw: 2 }).map((l) => `${String(l.n)} ${l.word}`),
+    ).toEqual(["4 victoires", "0 défaite", "2 égalités"]);
+  });
+
+  it("says who leads between two friends, from the reader's seat", () => {
+    expect(headToHeadVerdict({ win: 0, loss: 0, draw: 0 }, "Alex")).toBe(
+      "Aucun duel terminé entre vous pour l'instant.",
+    );
+    expect(headToHeadVerdict({ win: 3, loss: 2, draw: 1 }, "Alex")).toBe("Tu mènes 3 à 2.");
+    expect(headToHeadVerdict({ win: 1, loss: 2, draw: 0 }, "Alex")).toBe("Alex mène 2 à 1.");
+    expect(headToHeadVerdict({ win: 2, loss: 2, draw: 0 }, "Alex")).toBe(
+      "À égalité, 2 victoires chacun.",
+    );
+    expect(headToHeadVerdict({ win: 0, loss: 0, draw: 3 }, "Alex")).toBe(
+      "À égalité, 0 victoire chacun.",
+    );
   });
 
   it("says what opening the duel does: play on the reader's turn, look otherwise", () => {

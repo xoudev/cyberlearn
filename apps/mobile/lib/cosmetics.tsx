@@ -214,3 +214,25 @@ export function CosmeticsProvider({
 export function useCosmetics(): CosmeticsState {
   return useContext(CosmeticsContext);
 }
+
+/**
+ * A part of the screen drawn in somebody else's look: a profile wears its
+ * owner's cosmetics, as the site draws it in its own scope, while the rest of
+ * the app keeps the reader's. Everything under it that asks useCosmetics
+ * (section labels, bars, cards) gets the owner's theme; nothing under it can
+ * change a cosmetic, and the app's active accent stays the reader's.
+ */
+export function CosmeticsScope({
+  loadout,
+  children,
+}: {
+  loadout: CosmeticLoadout;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  const { accentColor, terminalTheme, hexagonStyle, profileFrame } = loadout;
+  const value = useMemo<CosmeticsState>(() => {
+    const scoped = normalizedLoadout({ accentColor, terminalTheme, hexagonStyle, profileFrame });
+    return { loadout: scoped, theme: resolveCosmeticTheme(scoped), setCosmetic: () => undefined };
+  }, [accentColor, terminalTheme, hexagonStyle, profileFrame]);
+  return <CosmeticsContext.Provider value={value}>{children}</CosmeticsContext.Provider>;
+}

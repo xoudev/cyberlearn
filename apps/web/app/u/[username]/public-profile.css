@@ -243,13 +243,18 @@ span.pp-avatar__img {
 
 /* ── The stats strip ───────────────────────────────────────────────────── */
 
+/* Five figures that wrap as the column narrows. Each tile rules its own top
+   and left edge; the card clips the rules that would fall on its border. */
 .pp-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  overflow: hidden;
   margin-bottom: 56px;
 }
-.pp-stats > * + * {
-  border-left: 1px solid var(--color-border-default);
+.pp-stats > * {
+  box-shadow:
+    -1px 0 0 var(--color-border-default),
+    0 -1px 0 var(--color-border-default);
 }
 
 /* ── Sections ──────────────────────────────────────────────────────────── */
@@ -404,6 +409,187 @@ span.pp-avatar__img {
   box-shadow: 0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 
+/* "et 4 autres", under a list that stops before its count. */
+.pp-more {
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ── A year of activity ────────────────────────────────────────────────── */
+
+.pp-year {
+  padding: 20px 22px 16px;
+}
+.pp-year__figs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.pp-year__figs p {
+  margin: 0;
+}
+.pp-year__figs b {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+/* ── Face to face ──────────────────────────────────────────────────────── */
+
+.pp-versus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 28px;
+  padding: 20px 22px;
+}
+.pp-versus__score {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.pp-versus__score b {
+  font-family: var(--font-sans);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.pp-versus__score b:first-of-type {
+  color: var(--cosmetic-accent);
+}
+.pp-versus__dash {
+  font-size: 22px;
+  color: var(--color-text-faint);
+}
+.pp-versus__text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.pp-versus__draws {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* ── The rarest badges ─────────────────────────────────────────────────── */
+
+.pp-rarest {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+.pp-rarest__item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+}
+.pp-rarest__holders {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── Paths and their bars ──────────────────────────────────────────────── */
+
+.pp-path__bar {
+  display: flex;
+  flex: 0 1 280px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+.pp-path__bar .pp-row__date {
+  justify-content: flex-end;
+}
+
+/* ── With the others ───────────────────────────────────────────────────── */
+
+.pp-community {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.pp-community__card {
+  padding: 18px 20px;
+}
+.pp-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 26px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pp-figures li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pp-figures b {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+.pp-figures li[data-outcome="win"] b {
+  color: var(--cosmetic-accent);
+}
+.pp-figures li[data-outcome="loss"] b {
+  color: var(--color-text-muted);
+}
+.pp-figures span {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.pp-figures small {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+/* ── The timeline ──────────────────────────────────────────────────────── */
+
+.pp-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pp-timeline .pp-kicker {
+  color: var(--color-text-muted);
+}
+.pp-timeline [data-kind="certificate"] .pp-kicker,
+.pp-timeline [data-kind="path"] .pp-kicker {
+  color: var(--cosmetic-accent);
+}
+.pp-timeline [data-kind="badge"] .pp-kicker {
+  color: var(--color-rarity-legendary);
+}
+
 @media (max-width: 760px) {
   .pp-hero {
     padding: 30px 20px 26px;
@@ -412,12 +598,8 @@ span.pp-avatar__img {
     width: 100%;
     min-width: 0;
   }
-  .pp-stats {
-    grid-template-columns: 1fr;
-  }
-  .pp-stats > * + * {
-    border-top: 1px solid var(--color-border-default);
-    border-left: none;
+  .pp-path__bar {
+    flex-basis: 100%;
   }
 }
 
