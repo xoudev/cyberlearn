@@ -1,6 +1,6 @@
 import { createElement, type ComponentProps, type ComponentType, type ReactElement } from "react";
 import type { LessonComponentName } from "@cyberlearn/lib/mdx-check";
-import { lessonComponentWidth } from "@cyberlearn/lib/mdx-components";
+import { type LessonComponentWidth, lessonComponentWidth } from "@cyberlearn/lib/mdx-components";
 import { CodeBlock } from "./code-block";
 import type { Quiz } from "./quiz";
 import { QuizBlock } from "./quiz-block";
@@ -37,12 +37,26 @@ import { JwtLab } from "./jwt-lab";
 import { PasswordLab } from "./password-lab";
 import { lessonBlockAttributes } from "./lesson-block";
 
+/** How a component's props change its block, for the few whose variants do. */
+interface BlockOptions<P> {
+  /**
+   * The props with which the component flows in a sentence or beside one, an
+   * inline link or a floated image: those stay bare, since a block there would
+   * break the paragraph (a <div> cannot sit in a <p>) or contain the float.
+   */
+  inline?: (props: P) => boolean;
+  /**
+   * The block's width for these props, where a variant asks for another than
+   * the type's: a full-bleed image is drawn wider than the measure it would
+   * otherwise sit in.
+   */
+  width?: (props: P) => LessonComponentWidth | undefined;
+}
+
 /**
  * A component in its block (lesson-block.ts): a size container, as wide as
- * the registry says (`width` in @cyberlearn/lib/mdx-components). `inline`
- * names the props with which the component flows in a sentence or beside one,
- * an inline link or a floated image: those stay bare, since a block there would
- * break the paragraph (a <div> cannot sit in a <p>) or contain the float.
+ * the registry says (`width` in @cyberlearn/lib/mdx-components), or as its
+ * props say where `options` tells how (see BlockOptions).
  *
  * A plain function, run on the server: what it returns is what the page gets.
  * That is why the Quiz has a block of its own making (quiz-block.tsx).
@@ -50,12 +64,14 @@ import { lessonBlockAttributes } from "./lesson-block";
 function inLessonBlock<P extends object>(
   name: LessonComponentName,
   Component: ComponentType<P>,
-  inline?: (props: P) => boolean,
+  options: BlockOptions<P> = {},
 ): (props: P) => ReactElement {
-  const attributes = lessonBlockAttributes(name, lessonComponentWidth(name));
+  const registered = lessonComponentWidth(name);
   function LessonBlock(props: P): ReactElement {
     const element = createElement(Component, props);
-    return inline?.(props) === true ? element : createElement("div", attributes, element);
+    if (options.inline?.(props) === true) return element;
+    const width = options.width?.(props) ?? registered;
+    return createElement("div", lessonBlockAttributes(name, width), element);
   }
   LessonBlock.displayName = `LessonBlock(${name})`;
   return LessonBlock;
@@ -84,8 +100,15 @@ export const LESSON_MDX_COMPONENTS = {
   LinuxTerminal: inLessonBlock("LinuxTerminal", LinuxTerminal),
   TwoMachineLab: inLessonBlock("TwoMachineLab", TwoMachineLab),
   LessonVideo: inLessonBlock("LessonVideo", LessonVideo),
-  LessonImage: inLessonBlock("LessonImage", LessonImage, (props) => props.variant === "inline"),
-  ExternalLink: inLessonBlock("ExternalLink", ExternalLink, (props) => props.variant === "link"),
+  LessonImage: inLessonBlock("LessonImage", LessonImage, {
+    inline: (props) => props.variant === "inline",
+    // "full" bleeds past the margins (LESSON_AUTHORING_GUIDE.md, 5.6): in the
+    // prose's measure it would be no wider than a default image.
+    width: (props) => (props.variant === "full" ? "wide" : undefined),
+  }),
+  ExternalLink: inLessonBlock("ExternalLink", ExternalLink, {
+    inline: (props) => props.variant === "link",
+  }),
   Callout: inLessonBlock("Callout", Callout),
   Diagram: inLessonBlock("Diagram", Diagram),
   QuizGroup: inLessonBlock("QuizGroup", QuizGroup),

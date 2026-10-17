@@ -90,6 +90,15 @@ describe("the components a lesson can name", () => {
     const figure = draw("LessonImage", { src: "/a.png", alt: "A" });
     expect(figure.type).toBe("div");
   });
+
+  it("widens the block of a full-bleed image, and only that one", () => {
+    const width = (props: Record<string, unknown>): unknown =>
+      draw("LessonImage", { src: "/a.png", alt: "A", ...props }).props["data-width"];
+    expect(width({ variant: "full" })).toBe("wide");
+    expect(width({ variant: "default" })).toBe("prose");
+    expect(width({})).toBe("prose");
+    expect(lessonComponentWidth("LessonImage")).toBe("prose");
+  });
 });
 
 describe("a Quiz in a lesson", () => {
