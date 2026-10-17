@@ -111,3 +111,36 @@ describe("a component's block", () => {
     expect(forced).toEqual([[".lesson-block > *", "margin-block: 0 !important;"]]);
   });
 });
+
+/**
+ * A screen's height (terminals, editors, the PHP preview). The components
+ * write none of their own unless the author did, so these rules are all the
+ * height a screen has: fixed outside a lesson (a challenge's machine has no
+ * block), and growing with the block in a lesson, never under the fixed
+ * height, so a phone keeps what it had. The ranges are the ones the authoring
+ * guide gives.
+ */
+const SCREENS = [
+  [".linux-terminal__screen", 380, 560],
+  [".sim-terminal__screen", 320, 480],
+  [".code-playground__editor", 220, 420],
+  [".python-challenge__editor", 240, 440],
+  [".php-lab__preview", 220, 400],
+] as const;
+
+describe("a screen's height", () => {
+  const rules = rulesOf(sheet);
+  const bodyOf = (selector: string): string =>
+    rules.find((rule) => rule.selectors.includes(selector))?.body.trim() ?? "";
+
+  it.each(SCREENS)(
+    "%s is %ipx outside a lesson, and grows from there in a lesson's block",
+    (screen, fixed, most) => {
+      expect(bodyOf(screen)).toBe(`height: ${String(fixed)}px;`);
+      const grown = /^height: clamp\((\d+)px, [\d.]+cqi, (\d+)px\);$/u.exec(
+        bodyOf(`.lesson-block ${screen}`),
+      );
+      expect(grown?.slice(1).map(Number)).toEqual([fixed, most]);
+    },
+  );
+});
