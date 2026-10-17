@@ -527,7 +527,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     scenario,
     commands: extraCommands,
     title,
-    height = 320,
+    // Written by the author, it is the screen's height. Otherwise the screen
+    // follows its block's width (globals.css, .sim-terminal__screen).
+    height,
     shell = "bash",
     expectedCommands = [],
     hints = [],
@@ -590,6 +592,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     mounted.current = true;
 
     let term: TerminalType;
+    let resizeObserver: ResizeObserver | null = null;
 
     async function initTerminal() {
       const { Terminal } = await import("@xterm/xterm");
@@ -614,6 +617,15 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       if (containerRef.current) {
         term.open(containerRef.current);
         fitAddon.fit();
+        // The screen's height follows its block's width: fitted again when
+        // the block is resized, or the rows would stop short of the frame or
+        // run past it.
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(() => {
+            fitAddon.fit();
+          });
+          resizeObserver.observe(containerRef.current);
+        }
       }
 
       termRef.current = term;
@@ -756,6 +768,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     void initTerminal();
 
     return () => {
+      resizeObserver?.disconnect();
       termRef.current?.dispose();
       termRef.current = null;
     };
@@ -854,8 +867,9 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       {/* Terminal container */}
       <div
         ref={containerRef}
+        className="sim-terminal__screen"
         style={{
-          height,
+          ...(height === undefined ? {} : { height }),
           padding: "16px 18px",
           overflow: "hidden",
         }}

@@ -15,6 +15,8 @@ import { previewDocument } from "@/lib/php/preview";
 import { type PhpOutcome, PhpSandbox } from "@/lib/php/sandbox";
 import type { WorkerLike } from "@/lib/sql/sandbox";
 import { labStack } from "./lab-stack";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE, labKicker } from "./lab-text";
+import "./php-lab.css";
 
 /**
  * <PhpLab>: a small web page in real PHP that the learner attacks with a
@@ -168,9 +170,7 @@ export function PhpLab(
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          PHP · VRAI SERVEUR
-        </span>
+        <span style={labKicker(ACCENT)}>PHP · VRAI SERVEUR</span>
         {lab.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {lab.title}
@@ -193,255 +193,281 @@ export function PhpLab(
       <div style={{ padding: "12px 16px", ...labStack(14) }}>
         <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>{lab.task}</p>
 
-        <div style={labStack(6)}>
-          {pages.length > 1 ? (
-            <div
-              role="group"
-              aria-label="Pages du serveur"
-              style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
-            >
-              {pages.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  aria-pressed={page === shown}
-                  onClick={() => {
-                    setOpenFile(page);
-                  }}
-                  className="btn btn--ghost btn--sm"
-                  style={{
-                    color: page === shown ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                    background: page === shown ? ACCENT : "transparent",
-                    borderColor: page === shown ? ACCENT : "var(--color-border-default)",
-                  }}
-                >
-                  {page}
-                  {page === lab.file ? " · à corriger" : ""}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {editing ? (
-            <textarea
-              value={code}
-              onChange={(event) => {
-                setCode(event.target.value);
-                setVerification(null);
-              }}
-              rows={Math.min(26, Math.max(8, code.split("\n").length + 1))}
-              spellCheck={false}
-              aria-label={`Code PHP de ${lab.file}`}
-              style={{ ...codeBox, resize: "vertical" }}
-            />
-          ) : (
-            <pre
-              tabIndex={0}
-              aria-label={`Code PHP de ${shown}, en lecture seule`}
-              style={{ ...codeBox, margin: 0, overflow: "auto", whiteSpace: "pre" }}
-            >
-              {support[shown]}
-            </pre>
-          )}
-        </div>
-
-        <div style={labStack(8)}>
-          {lab.requests !== undefined && lab.requests.length > 0 ? (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
-                REQUÊTES TOUTES FAITES
-              </span>
-              {lab.requests.map((shortcut) => (
-                <button
-                  key={shortcut.label}
-                  type="button"
-                  disabled={running || verifying}
-                  onClick={() => {
-                    setMethod(shortcut.method);
-                    setUrl(shortcut.url);
-                    setCookie(shortcut.cookie ?? "");
-                    setBody(shortcut.body ?? "");
-                    void send({
-                      method: shortcut.method,
-                      url: shortcut.url,
-                      ...(shortcut.cookie ? { cookie: shortcut.cookie } : {}),
-                      ...(shortcut.body ? { body: shortcut.body } : {}),
-                    });
-                  }}
-                  className="btn btn--ghost btn--sm"
-                >
-                  {shortcut.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void send(typed());
-            }}
-            style={labStack(8)}
-          >
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <select
-                value={method}
-                onChange={(event) => {
-                  setMethod(event.target.value === "POST" ? "POST" : "GET");
-                }}
-                aria-label="Méthode"
-                style={{ ...field, width: "auto" }}
+        {/* The code on one side, the request and its answer on the other,
+            once the block is wide enough for both (php-lab.css). */}
+        <div className="php-lab__panes">
+          <div style={labStack(6)}>
+            {pages.length > 1 ? (
+              <div
+                role="group"
+                aria-label="Pages du serveur"
+                style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
               >
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-              </select>
-              <input
-                value={url}
-                onChange={(event) => {
-                  setUrl(event.target.value);
-                }}
-                aria-label="Adresse de la requête"
-                placeholder="/page.php?q=php"
-                spellCheck={false}
-                style={{ ...field, flex: "1 1 260px", minWidth: 0 }}
-              />
-              <button
-                type="submit"
-                disabled={running || verifying || url.trim() === ""}
-                className="btn btn--accent btn--sm"
-              >
-                {running ? "Envoi…" : "Envoyer"}
-              </button>
-            </div>
-            <input
-              value={cookie}
-              onChange={(event) => {
-                setCookie(event.target.value);
-              }}
-              aria-label="Cookie de la requête"
-              placeholder="Cookie : session=…  (facultatif)"
-              spellCheck={false}
-              style={field}
-            />
-            {method === "POST" ? (
-              <textarea
-                value={body}
-                onChange={(event) => {
-                  setBody(event.target.value);
-                }}
-                aria-label="Corps de la requête"
-                placeholder="Corps : nom=valeur&autre=valeur"
-                rows={2}
-                spellCheck={false}
-                style={field}
-              />
-            ) : null}
-          </form>
-        </div>
-
-        <div aria-live="polite" style={labStack(8)}>
-          {outcome?.ok === false ? (
-            <p role="alert" style={{ margin: 0, color: RED, fontSize: 14 }}>
-              {outcome.error}
-            </p>
-          ) : null}
-          {response !== null ? (
-            <>
-              <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-                <strong
-                  style={{ fontFamily: MONO, fontSize: 13, color: statusColor(response.status) }}
-                >
-                  HTTP {String(response.status)}
-                </strong>
-                {headerValue(response, "location") !== null ? (
-                  <span
-                    style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-secondary)" }}
-                  >
-                    → {headerValue(response, "location")}
-                  </span>
-                ) : null}
-                <details
-                  style={{ fontSize: 12, color: "var(--color-text-secondary)", minWidth: 0 }}
-                >
-                  <summary style={{ cursor: "pointer" }}>
-                    En-têtes ({String(response.headers.length)})
-                  </summary>
-                  <pre
+                {pages.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    aria-pressed={page === shown}
+                    onClick={() => {
+                      setOpenFile(page);
+                    }}
+                    className="btn btn--ghost btn--sm"
                     style={{
-                      margin: "6px 0 0",
-                      fontFamily: MONO,
-                      whiteSpace: "pre-wrap",
-                      overflowWrap: "anywhere",
+                      color:
+                        page === shown ? "var(--color-bg-base)" : "var(--color-text-secondary)",
+                      background: page === shown ? ACCENT : "transparent",
+                      borderColor: page === shown ? ACCENT : "var(--color-border-default)",
                     }}
                   >
-                    {response.headers.join("\n") || "(aucun)"}
-                  </pre>
-                </details>
-                <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                  {(["preview", "source"] as const).map((which) => (
+                    {page}
+                    {page === lab.file ? " · à corriger" : ""}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {editing ? (
+              <textarea
+                value={code}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setVerification(null);
+                }}
+                rows={Math.min(26, Math.max(8, code.split("\n").length + 1))}
+                spellCheck={false}
+                aria-label={`Code PHP de ${lab.file}`}
+                style={{ ...codeBox, resize: "vertical" }}
+              />
+            ) : (
+              <pre
+                tabIndex={0}
+                aria-label={`Code PHP de ${shown}, en lecture seule`}
+                style={{ ...codeBox, margin: 0, overflow: "auto", whiteSpace: "pre" }}
+              >
+                {support[shown]}
+              </pre>
+            )}
+          </div>
+
+          <div style={labStack(14)}>
+            <div style={labStack(8)}>
+              {lab.requests !== undefined && lab.requests.length > 0 ? (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: LAB_LABEL_SIZE,
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    REQUÊTES TOUTES FAITES
+                  </span>
+                  {lab.requests.map((shortcut) => (
                     <button
-                      key={which}
+                      key={shortcut.label}
                       type="button"
-                      aria-pressed={view === which}
+                      disabled={running || verifying}
                       onClick={() => {
-                        setView(which);
+                        setMethod(shortcut.method);
+                        setUrl(shortcut.url);
+                        setCookie(shortcut.cookie ?? "");
+                        setBody(shortcut.body ?? "");
+                        void send({
+                          method: shortcut.method,
+                          url: shortcut.url,
+                          ...(shortcut.cookie ? { cookie: shortcut.cookie } : {}),
+                          ...(shortcut.body ? { body: shortcut.body } : {}),
+                        });
                       }}
                       className="btn btn--ghost btn--sm"
-                      style={{
-                        color:
-                          view === which ? "var(--color-bg-base)" : "var(--color-text-secondary)",
-                        background: view === which ? ACCENT : "transparent",
-                        borderColor: view === which ? ACCENT : "var(--color-border-default)",
-                      }}
                     >
-                      {which === "preview" ? "Aperçu" : "Source"}
+                      {shortcut.label}
                     </button>
                   ))}
-                </span>
-              </div>
-              {findings.length > 0 ? (
-                <p
-                  style={{
-                    margin: 0,
-                    padding: "8px 12px",
-                    border: `1px solid ${AMBER}`,
-                    color: AMBER,
-                    fontSize: 14,
+                </div>
+              ) : null}
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void send(typed());
+                }}
+                style={labStack(8)}
+              >
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <select
+                    value={method}
+                    onChange={(event) => {
+                      setMethod(event.target.value === "POST" ? "POST" : "GET");
+                    }}
+                    aria-label="Méthode"
+                    style={{ ...field, width: "auto" }}
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                  </select>
+                  <input
+                    value={url}
+                    onChange={(event) => {
+                      setUrl(event.target.value);
+                    }}
+                    aria-label="Adresse de la requête"
+                    placeholder="/page.php?q=php"
+                    spellCheck={false}
+                    style={{ ...field, flex: "1 1 260px", minWidth: 0 }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={running || verifying || url.trim() === ""}
+                    className="btn btn--accent btn--sm"
+                  >
+                    {running ? "Envoi…" : "Envoyer"}
+                  </button>
+                </div>
+                <input
+                  value={cookie}
+                  onChange={(event) => {
+                    setCookie(event.target.value);
                   }}
-                >
-                  ⚠ Le navigateur exécuterait du code qui vient de la requête :{" "}
-                  {findings.map(describeFinding).join(", ")}. L&apos;aperçu ci-dessous ne
-                  l&apos;exécute pas.
+                  aria-label="Cookie de la requête"
+                  placeholder="Cookie : session=…  (facultatif)"
+                  spellCheck={false}
+                  style={field}
+                />
+                {method === "POST" ? (
+                  <textarea
+                    value={body}
+                    onChange={(event) => {
+                      setBody(event.target.value);
+                    }}
+                    aria-label="Corps de la requête"
+                    placeholder="Corps : nom=valeur&autre=valeur"
+                    rows={2}
+                    spellCheck={false}
+                    style={field}
+                  />
+                ) : null}
+              </form>
+            </div>
+
+            <div aria-live="polite" style={labStack(8)}>
+              {outcome?.ok === false ? (
+                <p role="alert" style={{ margin: 0, color: RED, fontSize: 14 }}>
+                  {outcome.error}
                 </p>
               ) : null}
-              {view === "preview" && isHtml(response) ? (
-                <iframe
-                  title="Aperçu de la page"
-                  sandbox=""
-                  referrerPolicy="no-referrer"
-                  srcDoc={previewDocument(response.body)}
-                  style={{
-                    width: "100%",
-                    height: 220,
-                    border: "1px solid var(--color-border-subtle)",
-                    background: "#FFFFFF",
-                  }}
-                />
-              ) : (
-                <pre
-                  tabIndex={0}
-                  aria-label="Source de la réponse"
-                  style={{
-                    ...codeBox,
-                    margin: 0,
-                    overflow: "auto",
-                    whiteSpace: "pre-wrap",
-                    maxHeight: 260,
-                  }}
-                >
-                  {response.body === "" ? "(réponse vide)" : response.body}
-                </pre>
-              )}
-            </>
-          ) : null}
+              {response !== null ? (
+                <>
+                  <div
+                    style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}
+                  >
+                    <strong
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 13,
+                        color: statusColor(response.status),
+                      }}
+                    >
+                      HTTP {String(response.status)}
+                    </strong>
+                    {headerValue(response, "location") !== null ? (
+                      <span
+                        style={{
+                          fontFamily: MONO,
+                          fontSize: 12,
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        → {headerValue(response, "location")}
+                      </span>
+                    ) : null}
+                    <details
+                      style={{ fontSize: 12, color: "var(--color-text-secondary)", minWidth: 0 }}
+                    >
+                      <summary style={{ cursor: "pointer" }}>
+                        En-têtes ({String(response.headers.length)})
+                      </summary>
+                      <pre
+                        style={{
+                          margin: "6px 0 0",
+                          fontFamily: MONO,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {response.headers.join("\n") || "(aucun)"}
+                      </pre>
+                    </details>
+                    <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                      {(["preview", "source"] as const).map((which) => (
+                        <button
+                          key={which}
+                          type="button"
+                          aria-pressed={view === which}
+                          onClick={() => {
+                            setView(which);
+                          }}
+                          className="btn btn--ghost btn--sm"
+                          style={{
+                            color:
+                              view === which
+                                ? "var(--color-bg-base)"
+                                : "var(--color-text-secondary)",
+                            background: view === which ? ACCENT : "transparent",
+                            borderColor: view === which ? ACCENT : "var(--color-border-default)",
+                          }}
+                        >
+                          {which === "preview" ? "Aperçu" : "Source"}
+                        </button>
+                      ))}
+                    </span>
+                  </div>
+                  {findings.length > 0 ? (
+                    <p
+                      style={{
+                        margin: 0,
+                        padding: "8px 12px",
+                        border: `1px solid ${AMBER}`,
+                        color: AMBER,
+                        fontSize: 14,
+                      }}
+                    >
+                      ⚠ Le navigateur exécuterait du code qui vient de la requête :{" "}
+                      {findings.map(describeFinding).join(", ")}. L&apos;aperçu ci-dessous ne
+                      l&apos;exécute pas.
+                    </p>
+                  ) : null}
+                  {view === "preview" && isHtml(response) ? (
+                    <iframe
+                      title="Aperçu de la page"
+                      sandbox=""
+                      referrerPolicy="no-referrer"
+                      srcDoc={previewDocument(response.body)}
+                      // Its height follows the block's width (globals.css).
+                      className="php-lab__preview"
+                      style={{
+                        width: "100%",
+                        border: "1px solid var(--color-border-subtle)",
+                        background: "#FFFFFF",
+                      }}
+                    />
+                  ) : (
+                    <pre
+                      tabIndex={0}
+                      aria-label="Source de la réponse"
+                      style={{
+                        ...codeBox,
+                        margin: 0,
+                        overflow: "auto",
+                        whiteSpace: "pre-wrap",
+                        maxHeight: 260,
+                      }}
+                    >
+                      {response.body === "" ? "(réponse vide)" : response.body}
+                    </pre>
+                  )}
+                </>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {checks.length > 0 ? (
@@ -504,7 +530,7 @@ export function PhpLab(
               style={{
                 cursor: "pointer",
                 fontFamily: MONO,
-                fontSize: 10,
+                fontSize: LAB_LABEL_SIZE,
                 color: ACCENT,
                 letterSpacing: "0.18em",
                 fontWeight: 600,
@@ -551,7 +577,7 @@ const codeBox: React.CSSProperties = {
   border: "1px solid var(--color-border-default)",
   color: "#D8D6EA",
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 12.5,
+  fontSize: LAB_MONO_SIZE,
   lineHeight: 1.6,
   tabSize: 4,
 };

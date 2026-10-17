@@ -55,6 +55,7 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
     // An object, not a let: the unmount flips it while the loading awaits.
     const life = { over: false };
     let created: Leaflet.Map | null = null;
+    let resized: ResizeObserver | null = null;
     void (async () => {
       try {
         const L = await import("leaflet");
@@ -119,6 +120,15 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
           pick.current({ latitude: event.latlng.lat, longitude: event.latlng.lng });
         });
         showTowns();
+        // Leaflet follows the window, not its box: the box changes width
+        // when the photo comes beside it (photo-osint.css) or the notes dock
+        // beside the lesson, with no window resize to say so.
+        if (typeof ResizeObserver !== "undefined") {
+          resized = new ResizeObserver(() => {
+            shown.invalidateSize();
+          });
+          resized.observe(el);
+        }
         lib.current = L;
         map.current = created;
         setReady(true);
@@ -130,6 +140,7 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
     })();
     return () => {
       life.over = true;
+      resized?.disconnect();
       created?.remove();
       map.current = null;
     };

@@ -315,7 +315,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const parsed = propsSchema.safeParse(rawProps);
   const props = parsed.success ? parsed.data : {};
   const title = props.title ?? LINUX_TERMINAL_DEFAULT_TITLE;
-  const height = props.height ?? 380;
+  // The author's height, when written, is the screen's. Otherwise the screen
+  // follows its block's width in a lesson, and stays at 380px elsewhere
+  // (globals.css, .linux-terminal__screen).
+  const height = props.height;
   const files = props.files ?? {};
   const expected = (props.expectedCommands ?? []).map(normalizeCommand);
   const checks: StateCheck[] = props.checks ?? [];
@@ -794,7 +797,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
         ) : null}
       </div>
 
-      <div style={{ position: "relative", height }}>
+      <div
+        className="linux-terminal__screen"
+        style={height === undefined ? { position: "relative" } : { position: "relative", height }}
+      >
         {/* The margin around the screen sits on a wrapper: xterm's fit measures
             the screen's parent without its padding, and gave a padded parent
             one row and a few columns too many. Clipped as well, so the screen

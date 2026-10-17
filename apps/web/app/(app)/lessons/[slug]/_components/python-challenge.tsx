@@ -249,67 +249,71 @@ function PythonChallengeBody({
         </div>
       )}
 
-      {/* Monaco editor or textarea fallback */}
-      {editorLoaded && MonacoEditor ? (
-        <MonacoEditor
-          // Remounted when a draft is restored or reset: the editor is
-          // uncontrolled, and only reads its value when it mounts.
-          key={revision}
-          height="240px"
-          language="python"
-          defaultValue={code}
-          onChange={(v) => {
-            setCode(v ?? "");
-          }}
-          theme={LESSON_EDITOR_THEME}
-          beforeMount={handleBeforeMount}
-          options={{
-            fontSize: 13,
-            fontFamily: "JetBrains Mono, monospace",
-            minimap: { enabled: false },
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "off",
-            padding: { top: 12, bottom: 12 },
-            overviewRulerLanes: 0,
-            overviewRulerBorder: false,
-            hideCursorInOverviewRuler: true,
-            renderLineHighlight: "none",
-            glyphMargin: false,
-            automaticLayout: true,
-            fixedOverflowWidgets: true,
-            scrollbar: {
-              vertical: "hidden",
-              horizontal: "auto",
-              useShadows: false,
-              verticalScrollbarSize: 0,
-              alwaysConsumeMouseWheel: false,
-            },
-          }}
-        />
-      ) : (
-        <textarea
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-          }}
-          style={{
-            display: "block",
-            width: "100%",
-            height: 240,
-            background: "var(--color-bg-elevated)",
-            border: "none",
-            color: "var(--color-text-secondary)",
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: 13,
-            lineHeight: 1.7,
-            padding: "12px 20px",
-            resize: "vertical",
-            outline: "none",
-          }}
-          spellCheck={false}
-        />
-      )}
+      {/* Monaco editor or textarea fallback, in a box whose height follows
+          the block's width (globals.css, .python-challenge__editor). The
+          editor fills it and scrolls inside it, with its own scrollbar. */}
+      <div className="python-challenge__editor">
+        {editorLoaded && MonacoEditor ? (
+          <MonacoEditor
+            // Remounted when a draft is restored or reset: the editor is
+            // uncontrolled, and only reads its value when it mounts.
+            key={revision}
+            height="100%"
+            language="python"
+            defaultValue={code}
+            onChange={(v) => {
+              setCode(v ?? "");
+            }}
+            theme={LESSON_EDITOR_THEME}
+            beforeMount={handleBeforeMount}
+            options={{
+              fontSize: 13,
+              fontFamily: "JetBrains Mono, monospace",
+              minimap: { enabled: false },
+              lineNumbers: "on",
+              scrollBeyondLastLine: false,
+              wordWrap: "off",
+              padding: { top: 12, bottom: 12 },
+              overviewRulerLanes: 0,
+              overviewRulerBorder: false,
+              hideCursorInOverviewRuler: true,
+              renderLineHighlight: "none",
+              glyphMargin: false,
+              automaticLayout: true,
+              fixedOverflowWidgets: true,
+              scrollbar: {
+                vertical: "auto",
+                horizontal: "auto",
+                useShadows: false,
+                verticalScrollbarSize: 10,
+                alwaysConsumeMouseWheel: false,
+              },
+            }}
+          />
+        ) : (
+          <textarea
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              background: "var(--color-bg-elevated)",
+              border: "none",
+              color: "var(--color-text-secondary)",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: 13,
+              lineHeight: 1.7,
+              padding: "12px 20px",
+              resize: "none",
+              outline: "none",
+            }}
+            spellCheck={false}
+          />
+        )}
+      </div>
 
       {/* Action bar */}
       <div

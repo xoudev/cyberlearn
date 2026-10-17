@@ -1,0 +1,18 @@
+/* <GitSandbox>: the terminal, then the graph of the commits. Side by side once
+   the lesson block (lesson-block.ts) has room for both, as the other labs
+   with panels do; one under the other before that. The panes used to fill the
+   row with an auto-fit grid, which reached the same place from the width of
+   whatever held the lab rather than from a width the labs share. */
+
+.git-sandbox__panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+@container lesson-block (min-width: 640px) {
+  .git-sandbox__panes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
