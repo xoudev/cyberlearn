@@ -14,6 +14,7 @@ import {
   type LogField,
 } from "@cyberlearn/lib/logs/hunt";
 import { parseLogHunt } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE, labKicker } from "./lab-text";
 
 /**
  * <LogHunt>: a table of normalized log events to filter and count until the
@@ -121,9 +122,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          CHASSE DANS LES LOGS
-        </span>
+        <span style={labKicker(ACCENT)}>CHASSE DANS LES LOGS</span>
         {hunt.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {hunt.title}
@@ -161,7 +160,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
               gap: 6,
               alignItems: "center",
               fontFamily: MONO,
-              fontSize: 11,
+              fontSize: LAB_LABEL_SIZE,
               color: "var(--color-text-muted)",
             }}
           >
@@ -261,10 +260,16 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
           </table>
         ) : null}
 
-        <div className="card card--sunken" style={{ overflowX: "auto" }}>
+        {/* A rule around the events, not a second card inside the lab's card. */}
+        <div style={{ overflowX: "auto", border: "1px solid var(--color-border-subtle)" }}>
           <table
             aria-label="Événements"
-            style={{ borderCollapse: "collapse", width: "100%", fontFamily: MONO, fontSize: 12 }}
+            style={{
+              borderCollapse: "collapse",
+              width: "100%",
+              fontFamily: MONO,
+              fontSize: LAB_MONO_SIZE,
+            }}
           >
             <thead>
               <tr>

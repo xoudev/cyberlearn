@@ -33,6 +33,7 @@ import {
 } from "@cyberlearn/lib/crypto/jwt-lab";
 import { type JwtLab as JwtLabProps, type JwtLevel, parseJwtLab } from "@cyberlearn/types";
 import { labStack } from "./lab-stack";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <JwtLab>: a JWT taken apart, then forged to fool three services that are set
@@ -81,7 +82,7 @@ const primary: React.CSSProperties = { ...small, border: `1px solid ${ACCENT}`, 
 
 const label: React.CSSProperties = {
   fontFamily: MONO,
-  fontSize: 11,
+  fontSize: LAB_LABEL_SIZE,
   color: "var(--color-text-muted)",
 };
 
@@ -151,9 +152,7 @@ function Lab({ lab }: { lab: JwtLabProps }): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          ATELIER JWT
-        </span>
+        <span style={labKicker(ACCENT)}>ATELIER JWT</span>
         {lab.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {lab.title}
@@ -205,7 +204,9 @@ function Lab({ lab }: { lab: JwtLabProps }): React.ReactElement {
             </p>
           ))}
           <p style={{ ...paragraph, color: "var(--color-text-primary)" }}>
-            <strong style={{ fontFamily: MONO, fontSize: 11, color: ACCENT }}>OBJECTIF </strong>
+            <strong style={{ fontFamily: MONO, fontSize: LAB_LABEL_SIZE, color: ACCENT }}>
+              OBJECTIF{" "}
+            </strong>
             {text.goal}
           </p>
         </div>

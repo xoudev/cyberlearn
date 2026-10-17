@@ -11,6 +11,7 @@ import {
   verdicts,
 } from "@cyberlearn/lib/exercises/arrange";
 import { parsePutInOrder } from "@cyberlearn/types";
+import { LAB_LABEL_SIZE, labKicker } from "./lab-text";
 
 /**
  * <PutInOrder>: steps or layers shown shuffled, to put back in order. The
@@ -119,9 +120,7 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          DANS L&apos;ORDRE
-        </span>
+        <span style={labKicker(ACCENT)}>DANS L&apos;ORDRE</span>
         {exercise.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {exercise.title}
@@ -200,7 +199,13 @@ export function PutInOrder(props: Record<string, unknown>): React.ReactElement {
 
         {pool.length > 0 ? (
           <div role="group" aria-label="À placer" style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "var(--color-text-muted)" }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: LAB_LABEL_SIZE,
+                color: "var(--color-text-muted)",
+              }}
+            >
               À PLACER
             </span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

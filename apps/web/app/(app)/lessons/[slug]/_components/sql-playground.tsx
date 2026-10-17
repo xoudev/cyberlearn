@@ -12,6 +12,7 @@ import {
 } from "@/lib/sql/sandbox";
 import { labStack } from "./lab-stack";
 import { SqlResultTable, tablesOf } from "./sql-result-table";
+import { LAB_LABEL_SIZE, LAB_MONO_SIZE } from "./lab-text";
 
 /**
  * <SqlPlayground>: a real SQLite (sql.js, in a Web Worker) built from the
@@ -95,7 +96,7 @@ export function SqlPlayground(
         <span
           style={{
             fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
+            fontSize: LAB_LABEL_SIZE,
             letterSpacing: "0.16em",
             color: ACCENT,
           }}
@@ -119,7 +120,7 @@ export function SqlPlayground(
           style={{
             margin: 0,
             color: "var(--color-text-muted)",
-            fontSize: 12.5,
+            fontSize: LAB_MONO_SIZE,
             fontFamily: "var(--font-mono, monospace)",
           }}
         >

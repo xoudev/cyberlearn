@@ -11,6 +11,7 @@ import {
   verdicts,
 } from "@cyberlearn/lib/exercises/arrange";
 import { parseMatchPairs } from "@cyberlearn/types";
+import { labKicker } from "./lab-text";
 
 /**
  * <MatchPairs>: a left column in the author's order, a right column shuffled.
@@ -126,9 +127,7 @@ export function MatchPairs(props: Record<string, unknown>): React.ReactElement {
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: ACCENT }}>
-          ASSOCIE
-        </span>
+        <span style={labKicker(ACCENT)}>ASSOCIE</span>
         {exercise.title ? (
           <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
             {exercise.title}
