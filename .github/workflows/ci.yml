@@ -234,6 +234,9 @@ jobs:
   # écrit" - which the import pipeline carried into the database and the lesson
   # page rendered as the last paragraph of the lesson. Nothing flagged it: it is
   # valid markdown. A grep costs nothing and is the only thing that would have.
+  # The console and the teachers' editor refuse the same pattern on save
+  # (packages/lib/src/mdx/authoring.ts), as they refuse an em dash (6c) and a
+  # diagram markdown rewrites (6a); this keeps content/ to it.
   lesson-markers:
     name: Lesson authoring markers
     runs-on: ubuntu-latest
@@ -243,7 +246,7 @@ jobs:
       - name: No authoring marker left in a lesson
         run: |
           if grep -rnE '^[[:space:]]*OK .*crit[[:space:]]*$' content/lessons --include='*.mdx'; then
-            echo "::error::A lesson ends on an authoring marker ("OK 03 écrit"). It renders to the reader. Run: node content-check.mjs --fix from apps/admin"
+            echo "::error::A lesson holds an authoring marker ("OK 03 écrit"). It renders to the reader. Run: pnpm --filter @cyberlearn/admin content:check --fix"
             exit 1
           fi
 

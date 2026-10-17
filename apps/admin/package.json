@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "content:check": "node content-check.mjs"
   },
   "dependencies": {
     "@cyberlearn/db": "workspace:*",
