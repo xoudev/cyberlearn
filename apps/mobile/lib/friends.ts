@@ -1,8 +1,16 @@
+import type { DuelResultCounts, HeadToHead } from "@cyberlearn/lib/social/duel";
 import {
   UNFRIEND_DETAIL,
   unfriendQuestion,
   type FriendshipView,
 } from "@cyberlearn/lib/social/friendship";
+import type {
+  ContributionCounts,
+  PathProgressLine,
+  ProfileCounts,
+  TimelineEvent,
+} from "@cyberlearn/lib/social/portfolio";
+import type { CosmeticLoadout } from "./cosmetics";
 import type { Category, Rarity } from "./db";
 
 /**
@@ -82,6 +90,21 @@ export interface ProfileChallenge {
   completedAt: string | null;
 }
 
+export interface ProfileBadgeHighlight extends ProfileBadge {
+  /** "Légendaire", in the site's words. */
+  rarityLabel: string;
+  /** How many people hold it, the owner included. */
+  holders: number;
+}
+
+/** A year of activity, day by day: the site's calendar's data. */
+export interface ProfileActivity {
+  /** Activity count by day, "YYYY-MM-DD". */
+  days: Record<string, number>;
+  daysThisYear: number;
+  longestStreak: number;
+}
+
 /** Somebody's profile page, as /api/mobile/profile sends it. */
 export interface PublicProfile {
   id: string;
@@ -96,11 +119,43 @@ export interface PublicProfile {
   isPrivate: boolean;
   isSelf: boolean;
   friendship: FriendshipView;
+  /** The most recent badges, a dozen at most: `counts.badges` has them all. */
   badges: ProfileBadge[];
   recentLessons: ProfileLesson[];
   skills: ProfileSkill[];
   certificates: ProfileCertificate[];
   challenges: ProfileChallenge[];
+  // Added later, each beside the rest: a server from before them sends none,
+  // and the screen draws what it had then.
+  /** Counted on the server, not read off the bounded lists above. */
+  counts?: ProfileCounts;
+  activity?: ProfileActivity;
+  /** The owner's results over every duel they played. */
+  duelRecord?: DuelResultCounts;
+  /** Between the reader and the owner, from the reader's seat; null unless friends. */
+  headToHead?: HeadToHead | null;
+  rarestBadges?: ProfileBadgeHighlight[];
+  timeline?: TimelineEvent[];
+  paths?: PathProgressLine[];
+  contributions?: ContributionCounts;
+  /** The owner's equipped cosmetic codes: the screen wears them. */
+  ownerCosmetics?: CosmeticLoadout;
+}
+
+/**
+ * The profile's figures: the server's counts, or, from a server that sends
+ * none, the lengths of the lists it sent, as the screen showed them before.
+ */
+export function profileCounts(profile: PublicProfile): ProfileCounts {
+  return (
+    profile.counts ?? {
+      badges: profile.badges.length,
+      lessons: profile.recentLessons.length,
+      challenges: profile.challenges.length,
+      certificates: profile.certificates.length,
+      paths: 0,
+    }
+  );
 }
 
 /**
@@ -243,6 +298,12 @@ export function shortDay(iso: string | null): string {
   if (iso === null) return "-";
   const date = new Date(iso);
   return `${String(date.getDate())} ${SHORT_MONTHS[date.getMonth()] ?? ""}`;
+}
+
+/** A moment of the timeline, a path finished, in full as on the site: "12 mars 2026". */
+export function longDay(iso: string): string {
+  const date = new Date(iso);
+  return `${String(date.getDate())} ${MONTHS[date.getMonth()] ?? ""} ${String(date.getFullYear())}`;
 }
 
 /**

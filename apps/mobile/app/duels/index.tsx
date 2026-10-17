@@ -5,11 +5,12 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import {
   duelActionLabel,
-  duelRecord,
+  duelRecordLines,
   isSettled,
   OUTCOME_LABEL,
   outcomeOf,
   wasPlayed,
+  type DuelRecordCounts,
 } from "@cyberlearn/lib/social/duel";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
@@ -19,6 +20,7 @@ import { Card, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
 import { createDuelApi, fetchDuelsApi, respondToDuelApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import {
+  boardRecord,
   duelMeta,
   invitationMeta,
   outcomeTone,
@@ -136,7 +138,7 @@ function DuelsBody({
 
   return (
     <View style={{ gap: 16 }}>
-      {board.duels.length > 0 ? <RecordStats duels={board.duels} /> : null}
+      {board.duels.length > 0 ? <RecordStats counts={boardRecord(board)} /> : null}
 
       <Rules />
 
@@ -268,13 +270,13 @@ function DuelsBody({
 }
 
 /**
- * The reader's record: wins, losses and draws side by side, the duels going
- * on and the invitations waiting under them when there are some. A draw's
- * number stays in the text colour, as on the site.
+ * The reader's record over every duel: wins, losses and draws side by side,
+ * the duels going on and the invitations waiting under them when there are
+ * some. A draw's number stays in the text colour, as on the site.
  */
-function RecordStats({ duels }: { duels: DuelSummary[] }): React.JSX.Element {
+function RecordStats({ counts }: { counts: DuelRecordCounts }): React.JSX.Element {
   const { theme } = useCosmetics();
-  const record = duelRecord(duels);
+  const record = duelRecordLines(counts);
   const results = record.filter((line) => isSettled(line.outcome));
   const open = record.filter((line) => !isSettled(line.outcome));
   return (

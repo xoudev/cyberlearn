@@ -1471,12 +1471,20 @@ export async function submitMockExamApi(
 
 // ── Quiz duels (the site's lib/social/duels.ts) ─────────────────────────────
 
-/** The reader's duels, with the friends and the paths a duel can be sent on. */
+/**
+ * The reader's duels, their record over every duel (when the server sends
+ * it), the friends and the paths a duel can be sent on.
+ */
 export async function fetchDuelsApi(): Promise<DuelBoard> {
   const res = await authedFetch("/api/mobile/duels");
   const body = (await res.json()) as ({ ok: true } & DuelBoard) | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return { duels: body.duels, friends: body.friends, paths: body.paths };
+  return {
+    duels: body.duels,
+    ...(body.record !== undefined ? { record: body.record } : {}),
+    friends: body.friends,
+    paths: body.paths,
+  };
 }
 
 export type DuelReply<T extends object = object> =

@@ -1,23 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import React, { useRef } from "react";
-import { ScrollView, View } from "react-native";
+import React from "react";
+import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { ActivityCalendar } from "@/components/activity-calendar";
 import { Card, Text } from "@/components/ui";
 import { fetchStreakApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
-import {
-  STREAK_COPY,
-  WEEKDAY_LABELS,
-  calendarColumns,
-  nextMilestone,
-  streakCalendar,
-  streakTodayKey,
-} from "@/lib/streak";
+import { STREAK_COPY, nextMilestone } from "@/lib/streak";
 
 const AMBER = "#FFB547";
-const CELL = 10;
-const GAP = 3;
 
 /**
  * The site's streak panel (dashboard and profile): the series and whether it
@@ -28,7 +20,6 @@ const GAP = 3;
  */
 export function StreakPanel({ userId }: { userId: string | undefined }): React.JSX.Element | null {
   const { theme } = useCosmetics();
-  const calendar = useRef<ScrollView>(null);
   const { data } = useQuery({
     queryKey: ["streak", userId],
     enabled: Boolean(userId),
@@ -37,11 +28,8 @@ export function StreakPanel({ userId }: { userId: string | undefined }): React.J
   });
   if (!data) return null;
 
-  const { cells, monthLabels } = streakCalendar(data.activity, streakTodayKey());
-  const columns = calendarColumns(cells);
   const next = nextMilestone(data.currentStreak);
   const tone = data.active ? theme.accent : colors.textMuted;
-  const heat = [colors.borderDefault, `${theme.accent}47`, `${theme.accent}8C`, theme.accent];
 
   return (
     <Card style={{ gap: 16 }}>
@@ -111,79 +99,7 @@ export function StreakPanel({ userId }: { userId: string | undefined }): React.J
         ))}
       </View>
 
-      <View style={{ gap: 8 }}>
-        <View
-          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
-        >
-          <Text variant="micro">{STREAK_COPY.lastYear}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text variant="micro" style={{ fontSize: 9 }}>
-              {STREAK_COPY.less}
-            </Text>
-            {heat.map((color) => (
-              <View key={color} style={{ width: CELL, height: CELL, backgroundColor: color }} />
-            ))}
-            <Text variant="micro" style={{ fontSize: 9 }}>
-              {STREAK_COPY.more}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{ flexDirection: "row" }}
-          accessible
-          accessibilityLabel={`${STREAK_COPY.lastYear} : ${String(data.daysThisYear)} jours actifs cette année`}
-        >
-          <View style={{ gap: GAP, paddingTop: 14, marginRight: 6 }}>
-            {WEEKDAY_LABELS.map((label, row) => (
-              <Text
-                key={`weekday-${String(row)}`}
-                variant="micro"
-                style={{ fontSize: 8, height: CELL, lineHeight: CELL }}
-              >
-                {label}
-              </Text>
-            ))}
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            // Open on the current week, at the right-hand end, once laid out.
-            ref={calendar}
-            onContentSizeChange={() => calendar.current?.scrollToEnd({ animated: false })}
-          >
-            <View style={{ gap: 4 }}>
-              <View style={{ flexDirection: "row", gap: GAP, height: 10 }}>
-                {monthLabels.map((month, w) => (
-                  <View key={`month-${String(w)}`} style={{ width: CELL }}>
-                    {month !== "" ? (
-                      <Text variant="micro" numberOfLines={1} style={{ fontSize: 8, width: 30 }}>
-                        {month}
-                      </Text>
-                    ) : null}
-                  </View>
-                ))}
-              </View>
-              <View style={{ flexDirection: "row", gap: GAP }}>
-                {columns.map((week) => (
-                  <View key={week[0]?.key} style={{ gap: GAP }}>
-                    {week.map((cell) => (
-                      <View
-                        key={cell.key}
-                        style={{
-                          width: CELL,
-                          height: CELL,
-                          backgroundColor: cell.future ? "transparent" : heat[cell.level],
-                        }}
-                      />
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </View>
+      <ActivityCalendar activity={data.activity} daysThisYear={data.daysThisYear} />
 
       <View
         style={{

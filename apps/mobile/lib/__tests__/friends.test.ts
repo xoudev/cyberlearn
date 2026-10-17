@@ -6,7 +6,9 @@ import {
   handleFrom,
   joinedLabel,
   listCountLabel,
+  longDay,
   profileCategory,
+  profileCounts,
   profileEyebrow,
   profileRarity,
   profileTarget,
@@ -14,6 +16,7 @@ import {
   shortDay,
   showsFriendMark,
   unfriendAlert,
+  type PublicProfile,
 } from "../friends";
 
 describe("ending a friendship", () => {
@@ -134,5 +137,52 @@ describe("what a profile sends", () => {
     expect(profileRarity("MYTHIC")).toBe("COMMON");
     expect(profileCategory("NETWORK")).toBe("NETWORK");
     expect(profileCategory("CLOUD")).toBeNull();
+  });
+
+  const PROFILE: PublicProfile = {
+    id: "u1",
+    username: "alex",
+    displayName: "Alex",
+    bio: null,
+    avatar: null,
+    joinedAt: "2026-01-15T09:00:00.000Z",
+    xpTotal: 0,
+    streakDays: 0,
+    level: { level: 1, current: 0, needed: 100 },
+    isPrivate: false,
+    isSelf: false,
+    friendship: "none",
+    badges: [{ id: "b1", name: "Premier pas", rarity: "COMMON", iconUrl: null }],
+    recentLessons: [],
+    skills: [],
+    certificates: [],
+    challenges: [],
+  };
+
+  it("prints the server's counts, not the lengths of the bounded lists", () => {
+    const counts = { badges: 17, lessons: 48, challenges: 35, certificates: 2, paths: 3 };
+    expect(profileCounts({ ...PROFILE, counts })).toEqual(counts);
+  });
+
+  it("falls back on the lists from a server that sends no counts", () => {
+    expect(profileCounts(PROFILE)).toEqual({
+      badges: 1,
+      lessons: 0,
+      challenges: 0,
+      certificates: 0,
+      paths: 0,
+    });
+  });
+
+  it("writes a timeline's day in full, as the site does", () => {
+    const full = new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    for (let month = 0; month < 12; month++) {
+      const date = new Date(2026, month, 12, 12);
+      expect(longDay(date.toISOString())).toBe(full.format(date));
+    }
   });
 });
