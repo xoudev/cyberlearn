@@ -125,9 +125,9 @@ export function StatusBadge({
               top: "calc(100% + 4px)",
               right: 0,
               zIndex: 50,
-              background: "#0A0826",
-              border: "1px solid #2A2560",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+              background: "var(--a-surface)",
+              border: "1px solid var(--a-border-2)",
+              boxShadow: "0 8px 24px color-mix(in srgb, var(--a-bg) 60%, transparent)",
               minWidth: 120,
               overflow: "hidden",
             }}
@@ -147,7 +147,7 @@ export function StatusBadge({
                   padding: "9px 12px",
                   background: "transparent",
                   border: "none",
-                  borderBottom: i < options.length - 1 ? "1px solid #1F1B47" : "none",
+                  borderBottom: i < options.length - 1 ? "1px solid var(--a-border)" : "none",
                   cursor: "pointer",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
@@ -181,7 +181,7 @@ export function StatusBadge({
             top: "calc(100% + 4px)",
             right: 0,
             zIndex: 50,
-            background: "#0A0826",
+            background: "var(--a-surface)",
             border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
             padding: "6px 10px",
             fontFamily: "var(--font-mono)",
@@ -200,7 +200,7 @@ export function StatusBadge({
               setError(null);
             }}
             style={{
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               background: "none",
               border: "none",
               cursor: "pointer",

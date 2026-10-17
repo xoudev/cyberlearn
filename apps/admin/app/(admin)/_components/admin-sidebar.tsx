@@ -22,10 +22,6 @@ interface AdminSidebarProps {
   counts: SidebarCounts;
 }
 
-const BORDER = "#1F1B47";
-const MUTED = "#7F7BA9";
-const TURQUOISE = "#0AFFD4";
-
 function NavIcon({ name }: { name: string }): React.ReactElement | null {
   const s: React.SVGProps<SVGSVGElement> = {
     width: 15,
@@ -146,11 +142,11 @@ function SectionLabel({ text }: { text: string }): React.ReactElement {
         fontWeight: 600,
         letterSpacing: "0.16em",
         textTransform: "uppercase",
-        color: MUTED,
+        color: "var(--a-muted)",
       }}
     >
       <span
-        style={{ width: 8, height: 1, background: "#44406B", flexShrink: 0 }}
+        style={{ width: 8, height: 1, background: "var(--a-faint-2)", flexShrink: 0 }}
         aria-hidden="true"
       />
       {text}
@@ -226,8 +222,8 @@ export function AdminSidebar({
         bottom: 0,
         width: 240,
         zIndex: 30,
-        background: "#030219",
-        borderRight: `1px solid ${BORDER}`,
+        background: "var(--a-bg)",
+        borderRight: "1px solid var(--a-border)",
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
@@ -246,7 +242,7 @@ export function AdminSidebar({
       <div style={{ flex: 1 }} />
 
       {/* Identity + sign out */}
-      <div style={{ padding: "16px 14px", borderTop: `1px solid ${BORDER}` }}>
+      <div style={{ padding: "16px 14px", borderTop: "1px solid var(--a-border)" }}>
         <div
           style={{
             display: "grid",
@@ -254,8 +250,8 @@ export function AdminSidebar({
             gap: 10,
             alignItems: "center",
             padding: "10px 11px",
-            background: "#0A0826",
-            border: `1px solid ${BORDER}`,
+            background: "var(--a-surface)",
+            border: "1px solid var(--a-border)",
             marginBottom: 10,
           }}
         >
@@ -265,12 +261,12 @@ export function AdminSidebar({
               height: 30,
               display: "grid",
               placeItems: "center",
-              background: "#110F33",
-              border: "1px solid #2A2560",
+              background: "var(--a-overlay)",
+              border: "1px solid var(--a-border-2)",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 10.5,
-              color: "#B8B5D1",
+              color: "var(--a-fg-2)",
             }}
           >
             {initials}
@@ -282,7 +278,7 @@ export function AdminSidebar({
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 11.5,
-                color: "#F5F5FA",
+                color: "var(--a-fg)",
               }}
             >
               {handle}
@@ -292,7 +288,7 @@ export function AdminSidebar({
                 display: "block",
                 fontFamily: "var(--font-mono)",
                 fontSize: 9.5,
-                color: MUTED,
+                color: "var(--a-muted)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -308,8 +304,8 @@ export function AdminSidebar({
               fontSize: 8.5,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: TURQUOISE,
-              border: "1px solid color-mix(in srgb, #0AFFD4 40%, transparent)",
+              color: "var(--a-accent)",
+              border: "1px solid color-mix(in srgb, var(--a-accent) 40%, transparent)",
               padding: "2px 6px",
             }}
           >
@@ -329,8 +325,8 @@ export function AdminSidebar({
               gap: 9,
               padding: "9px 12px",
               background: "transparent",
-              border: `1px solid ${BORDER}`,
-              color: MUTED,
+              border: "1px solid var(--a-border)",
+              color: "var(--a-muted)",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 10,

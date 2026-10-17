@@ -207,9 +207,9 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
               zIndex: 60,
               maxHeight: 320,
               overflowY: "auto",
-              background: "#0A0826",
-              border: "1px solid #2A2560",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+              background: "var(--a-surface)",
+              border: "1px solid var(--a-border-2)",
+              boxShadow: "0 16px 40px color-mix(in srgb, var(--a-bg) 60%, transparent)",
             }}
           >
             {matches.map((destination, index) => (
@@ -232,10 +232,10 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
                   gap: 12,
                   width: "100%",
                   padding: "10px 14px",
-                  background: index === cursor ? "#0E0B2E" : "transparent",
+                  background: index === cursor ? "var(--a-hover)" : "transparent",
                   border: "none",
-                  borderBottom: "1px solid #1F1B47",
-                  color: index === cursor ? "#F5F5FA" : "#B8B5D1",
+                  borderBottom: "1px solid var(--a-border)",
+                  color: index === cursor ? "var(--a-fg)" : "var(--a-fg-2)",
                   fontFamily: "var(--font-sans)",
                   fontSize: 13,
                   textAlign: "left",
@@ -249,7 +249,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
                     fontSize: 9,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: destination.hint === "action" ? "#0AFFD4" : "#7F7BA9",
+                    color: destination.hint === "action" ? "var(--a-accent)" : "var(--a-muted)",
                   }}
                 >
                   {destination.hint}
@@ -276,8 +276,8 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
             gap: 10,
             height: 34,
             padding: "0 5px",
-            border: "1px solid #1F1B47",
-            background: "#05041A",
+            border: "1px solid var(--a-border)",
+            background: "var(--a-surface-2)",
           }}
         >
           <span
@@ -286,12 +286,12 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
               height: 24,
               display: "grid",
               placeItems: "center",
-              background: "#110F33",
-              border: "1px solid #2A2560",
+              background: "var(--a-overlay)",
+              border: "1px solid var(--a-border-2)",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 10,
-              color: "#B8B5D1",
+              color: "var(--a-fg-2)",
             }}
           >
             {initials}
@@ -301,7 +301,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11.5,
-              color: "#B8B5D1",
+              color: "var(--a-fg-2)",
               letterSpacing: "0.03em",
             }}
           >
@@ -314,9 +314,9 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
               fontSize: 9,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
-              border: "1px solid color-mix(in srgb, #0AFFD4 40%, transparent)",
-              background: "color-mix(in srgb, #0AFFD4 8%, transparent)",
+              color: "var(--a-accent)",
+              border: "1px solid color-mix(in srgb, var(--a-accent) 40%, transparent)",
+              background: "color-mix(in srgb, var(--a-accent) 8%, transparent)",
               padding: "3px 8px",
               marginRight: 3,
             }}

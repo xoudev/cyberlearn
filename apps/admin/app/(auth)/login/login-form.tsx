@@ -82,7 +82,7 @@ export function AdminLoginForm({
         {pending ? "Vérification…" : "Continuer"}
       </button>
       {forgotPasswordUrl ? (
-        <a className="a-card-link" style={{ justifySelf: "start" }} href={forgotPasswordUrl}>
+        <a className="a-card-link" href={forgotPasswordUrl}>
           Définir ou réinitialiser le mot de passe
         </a>
       ) : null}

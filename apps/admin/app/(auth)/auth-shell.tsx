@@ -70,9 +70,7 @@ export function AdminAuthShell({
       <section className="a-auth-panel">
         <div className="a-auth-card">
           <div className="a-eyebrow">{eyebrow}</div>
-          <h1 className="a-h1" style={{ fontSize: "clamp(26px, 3vw, 34px)" }}>
-            {title}
-          </h1>
+          <h1 className="a-h1 a-auth-title">{title}</h1>
           <p className="a-sub">{description}</p>
           {children}
         </div>
