@@ -84,28 +84,38 @@ function lessonsIn(dir: string): string[] {
   });
 }
 
+const LESSONS = lessonsIn(ROOT).map((file) => ({ file, lesson: path.relative(ROOT, file) }));
+
+// One case per lesson: the MDX parser takes a few hundred milliseconds a
+// lesson, and a single case over all of them ran past its minute in CI beside
+// the other suites. Split, no case comes near its limit, and a failure names
+// its lesson.
+const PER_LESSON_TIMEOUT = 30_000;
+
 describe("the lessons in content/lessons", () => {
-  it("each have the server's quizzes in the app", () => {
-    const files = lessonsIn(ROOT);
-    // Guards the test itself: a moved directory would make it pass on nothing.
-    expect(files.length).toBeGreaterThan(100);
-    let total = 0;
-    for (const file of files) {
+  // Guards the test itself: a moved directory would make it pass on nothing.
+  it("are all found", () => {
+    expect(LESSONS.length).toBeGreaterThan(100);
+  });
+
+  it.each(LESSONS)(
+    "$lesson has the server's quizzes in the app",
+    ({ file }) => {
       const mdx = readFileSync(file, "utf8");
-      const lesson = path.relative(ROOT, file);
       const server = extractLessonQuizzes(mdx);
       const app = appQuizzes(mdx);
-      expect
-        .soft(
-          app.map((q) => q.id),
-          lesson,
-        )
-        .toEqual(server.map((q) => q.id));
-      expect.soft(app, lesson).toEqual(server);
-      total += server.length;
-    }
+      expect(app.map((q) => q.id)).toEqual(server.map((q) => q.id));
+      expect(app).toEqual(server);
+    },
+    PER_LESSON_TIMEOUT,
+  );
+
+  it("hold enough quizzes for the check to mean something", () => {
+    // Counted on the text, without the parser: the cases above compare them.
+    const total = LESSONS.reduce(
+      (sum, { file }) => sum + (readFileSync(file, "utf8").match(/<Quiz\b/g)?.length ?? 0),
+      0,
+    );
     expect(total).toBeGreaterThan(500);
-    // Parses every lesson with the MDX parser: a few seconds alone, more beside
-    // the other suites.
-  }, 60_000);
+  });
 });
