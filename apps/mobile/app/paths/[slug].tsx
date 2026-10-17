@@ -10,14 +10,14 @@ import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail } from "@/lib/queries";
-import { missionStates } from "@/lib/missions";
+import { missionStates, moduleStarts } from "@/lib/missions";
 import { PathCover } from "@/components/path-cover";
 import { OfflineToggle } from "@/components/offline-toggle";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@cyberlearn/lib/content/rating";
 import { useSession } from "@/lib/session";
-import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
+import { moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { MODULE_REVIEW_ACTION, MODULE_REVIEW_HINT } from "@cyberlearn/lib/revisions/recall-copy";
 import { moduleReviewable } from "@/lib/rappel";
 
@@ -87,15 +87,9 @@ function PathBody({
   const total = data.missions.length;
   const pct = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
   const states = missionStates(data.missions, data.unlockAll);
-  // A header before the first mission of each of the path's own modules. A path
-  // without modules stays one list, as it always was here.
-  const moduleStarts = new Map<number, ModuleGroup>();
-  if (data.modules.length > 0) {
-    for (const group of groupIntoModules(data.missions, data.modules)) {
-      const first = group.indices[0];
-      if (first !== undefined && group.title !== null) moduleStarts.set(first, group);
-    }
-  }
+  // A header before the first mission of each module, titled or not (blocks of
+  // six for a path without modules of its own), as the site draws its gates.
+  const starts = moduleStarts(data.missions, data.modules);
   const currentIndex = states.indexOf("current");
   const resume = currentIndex >= 0 ? data.missions[currentIndex] : null;
 
@@ -182,7 +176,7 @@ function PathBody({
                   : state === "open"
                     ? colors.textSecondary
                     : colors.textDisabled;
-            const moduleStart = moduleStarts.get(i);
+            const moduleStart = starts.get(i);
             return (
               <React.Fragment key={m.lessonId}>
                 {moduleStart ? (
@@ -191,9 +185,11 @@ function PathBody({
                       {moduleLabel(moduleStart).toUpperCase()} · {moduleStart.indices.length}{" "}
                       missions
                     </Text>
-                    <Text variant="h3" numberOfLines={2}>
-                      {moduleStart.title}
-                    </Text>
+                    {moduleStart.title !== null ? (
+                      <Text variant="h3" numberOfLines={2}>
+                        {moduleStart.title}
+                      </Text>
+                    ) : null}
                     {moduleStart.description ? (
                       <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
                         {moduleStart.description}

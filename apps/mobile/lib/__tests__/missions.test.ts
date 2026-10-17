@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countMissions, missionStates, publishedLesson } from "../missions";
+import { countMissions, missionStates, moduleStarts, publishedLesson } from "../missions";
 
 describe("publishedLesson", () => {
   const lesson = (status: string) => ({ id: "l1", slug: "l1", title: "L1", status });
@@ -140,5 +140,36 @@ describe("missionStates", () => {
         { status: null, waived: false },
       ]),
     ).toEqual(["done", "current"]);
+  });
+});
+
+describe("moduleStarts", () => {
+  const loose = (count: number) => Array.from({ length: count }, () => ({ moduleId: null }));
+
+  it("heads every block of six of a path without modules, as the site's gates", () => {
+    // A class's path has no modules of its own: its learner still finds the
+    // revision sheet and "Réviser ce module" over each block.
+    const starts = moduleStarts(loose(8), []);
+    expect([...starts.keys()]).toEqual([0, 6]);
+    expect(starts.get(6)).toMatchObject({ number: 2, title: null, indices: [6, 7] });
+  });
+
+  it("heads the path's own modules and the lessons none of them claims", () => {
+    const starts = moduleStarts(
+      [{ moduleId: "m1" }, { moduleId: null }, { moduleId: "m1" }, { moduleId: "m2" }],
+      [
+        { id: "m2", position: 2, title: "Les droits" },
+        { id: "m1", position: 1, title: "Le shell" },
+      ],
+    );
+    expect([...starts.entries()].map(([first, group]) => [first, group.title])).toEqual([
+      [0, "Le shell"],
+      [3, "Les droits"],
+      [1, null],
+    ]);
+  });
+
+  it("draws no header for a path without missions", () => {
+    expect(moduleStarts([], []).size).toBe(0);
   });
 });
