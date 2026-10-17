@@ -6,6 +6,7 @@ import { prisma } from "@cyberlearn/db";
 import { avatarToKeep } from "@cyberlearn/lib/onboarding/avatars";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { AvatarForm } from "./_components/avatar-form";
+import { OnboardingSignOut } from "../_components/onboarding-sign-out";
 
 export default async function OnboardingAvatarPage(): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
@@ -122,9 +123,12 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
         >
           cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "var(--color-text-faint)" }}>/</span>
-        <span>ONBOARDING · AVATAR</span>
+        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
+          /
+        </span>
+        <span className="onboarding-bar__label">ONBOARDING · AVATAR</span>
         <span
+          className="onboarding-bar__label"
           style={{
             marginLeft: "auto",
             display: "inline-flex",
@@ -146,6 +150,7 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
           />
           SYNC EN DIRECT
         </span>
+        <OnboardingSignOut />
       </header>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}

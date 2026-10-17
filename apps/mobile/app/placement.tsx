@@ -21,6 +21,7 @@ import {
   placementLevelFor,
   placementQuestionHeading,
   placementScoreOf,
+  placementStartCopy,
   strongestPlacementDomain,
   unansweredPlacementQuestions,
   type PlacementQuestion,
@@ -538,6 +539,7 @@ function ResultView({
   const { scores, recommendedPathSlug } = result;
   const strongest = strongestPlacementDomain(scores);
   const mastered = masteredPlacementDomains(scores);
+  const startCopy = placementStartCopy(scores);
 
   return (
     <Screen>
@@ -650,9 +652,7 @@ function ResultView({
           </Card>
         ) : (
           <View style={{ gap: 12 }}>
-            {mastered.length === 0 ? (
-              <Text variant="body">{PLACEMENT_COPY.fromScratch}</Text>
-            ) : null}
+            {startCopy !== null ? <Text variant="body">{startCopy}</Text> : null}
             <GradientButton label="Explorer les parcours" onPress={onBrowse} />
           </View>
         )}

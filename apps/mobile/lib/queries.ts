@@ -8,6 +8,7 @@ import {
   fetchLessonAccessApi,
   fetchMyRankApi,
   fetchPathCoversApi,
+  type LessonAccess,
 } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { readLesson, refreshLesson } from "@/lib/offline";
@@ -24,7 +25,14 @@ import {
 import { CERTIFICATE_COUNT_COLUMN, certificateCountOf } from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
-import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
+import {
+  countSince,
+  homePaths,
+  learningGoalsOf,
+  monthStart,
+  type HomePath,
+  type HomePaths,
+} from "@/lib/home";
 import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
@@ -194,6 +202,11 @@ export function useDashboard(userId: string | undefined) {
       // board's rules, so an account off the board read "#1". A failure leaves
       // the home screen up without a rank.
       const rankPromise = fetchMyRankApi().catch(() => null);
+      // The lessons the placement test waived, which the next mission passes
+      // over as on the site. Without the server, none: the plain rule.
+      const waivedPromise = fetchLessonAccessApi()
+        .then((access) => new Set(access.waivedLessonIds))
+        .catch(() => new Set<string>());
       const [
         meRes,
         completedRes,
@@ -207,6 +220,7 @@ export function useDashboard(userId: string | undefined) {
         pathsRes,
         statuses,
         placementRes,
+        prefsRes,
       ] = await Promise.all([
         supabase.from("users").select(ME_COLUMNS).eq("id", uid).single(),
         supabase
@@ -263,12 +277,15 @@ export function useDashboard(userId: string | undefined) {
           .select("devScore,cybersecScore,networkScore")
           .eq("userId", uid)
           .maybeSingle(),
+        // What the reader said they came for at sign-up, as the site weighs it.
+        supabase.from("user_preferences").select("learningGoals").eq("userId", uid).maybeSingle(),
       ]);
 
       const me = meRes.data as MeRow | null;
       if (!me) throw new Error("Profil introuvable");
 
       const rank = await rankPromise;
+      const waived = await waivedPromise;
 
       // Embeds cast via `unknown` (no generated Supabase types); `one()` handles
       // the array-or-object runtime shape.
@@ -352,8 +369,10 @@ export function useDashboard(userId: string | undefined) {
               .slice(0, 20)
               .map((row) => one(row.lessons)?.category)
               .filter((c): c is Category => c !== undefined),
+            goals: learningGoalsOf(prefsRes.data),
           },
           resume?.id ?? null,
+          waived,
         ),
         stats: {
           completedThisMonth,
@@ -591,6 +610,8 @@ export interface PathMission {
   estimatedMinutes: number;
   xpReward: number;
   status: ProgressStatus | null;
+  /** Waived by the placement test: open, and opens the next, as on the site. */
+  waived: boolean;
 }
 
 export interface PathDetail {
@@ -617,9 +638,10 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
     enabled: Boolean(slug),
     queryFn: async (): Promise<PathDetail> => {
       // Signed out, or the server unreachable: the lock stays, as for anyone.
+      const locked: LessonAccess = { unlockAll: false, waivedLessonIds: [] };
       const accessPromise = userId
-        ? fetchLessonAccessApi().catch(() => ({ unlockAll: false }))
-        : Promise.resolve({ unlockAll: false });
+        ? fetchLessonAccessApi().catch(() => locked)
+        : Promise.resolve(locked);
       const pathRes = await supabase
         .from("paths")
         .select(
@@ -668,6 +690,8 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         );
       }
 
+      const access = await accessPromise;
+      const waived = new Set(access.waivedLessonIds);
       // The published lessons only, as the site's path page draws them.
       const missions: PathMission[] = raw.path_lessons
         .map((pl) => {
@@ -682,6 +706,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
             estimatedMinutes: lesson.estimatedMinutes,
             xpReward: lesson.xpReward,
             status: statusByLesson.get(lesson.id) ?? null,
+            waived: waived.has(lesson.id),
           };
         })
         .filter((m): m is PathMission => m !== null)
@@ -700,7 +725,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         missions,
         modules: [...(raw.path_modules ?? [])].sort((a, b) => a.position - b.position),
         completedCount: missions.filter((m) => m.status === "COMPLETED").length,
-        unlockAll: (await accessPromise).unlockAll,
+        unlockAll: access.unlockAll,
       };
     },
   });

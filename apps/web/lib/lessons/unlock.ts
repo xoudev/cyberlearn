@@ -11,8 +11,16 @@
  *   - the reader has already completed it - a lesson never re-locks, which
  *     matters because everything was open until now and some readers are
  *     sitting on progress the strict rule would otherwise take away; or
+ *   - the placement test waived it; or
  *   - it opens its path; or
- *   - the lesson immediately before it in the same path is completed.
+ *   - the lesson immediately before it in the same path is completed or
+ *     waived.
+ *
+ * A waiver is what the placement test grants for a domain the reader already
+ * masters (apps/web/lib/onboarding/placement.ts writes them): it counts as a
+ * completion for the lock, and for nothing else. The lesson is not marked
+ * completed and earns nothing; it simply stops standing in the way. The
+ * result screens promise exactly that, on the site and in the app.
  *
  * Every one of the 192 lessons belongs to exactly one path, so "the lesson
  * before it" is unambiguous. The shape below still keys by lesson id rather
@@ -54,6 +62,12 @@ export interface PlacementOptions {
    * the lesson they are checking. Completed lessons still read as completed.
    */
   unlockAll?: boolean;
+  /**
+   * The lessons the placement test waived for the reader. Each one is
+   * readable, and opens the lesson after it, as a completed one would; it
+   * still reads as "unlocked", not "completed", since it was not done.
+   */
+  waivedLessonIds?: Iterable<string>;
 }
 
 /**
@@ -71,6 +85,9 @@ export function indexPlacements<L extends { id: string }>(
   options: PlacementOptions = {},
 ): Map<string, LessonPlacement<L>> {
   const completed = new Set(completedLessonIds);
+  const waived = new Set(options.waivedLessonIds ?? []);
+  /** Whether a lesson lets the one after it open. */
+  const opensNext = (id: string): boolean => completed.has(id) || waived.has(id);
   const placements = new Map<string, LessonPlacement<L>>();
 
   for (const path of paths) {
@@ -82,7 +99,10 @@ export function indexPlacements<L extends { id: string }>(
 
       const state: LockState = completed.has(entry.lesson.id)
         ? "completed"
-        : options.unlockAll === true || previous === null || completed.has(previous.id)
+        : options.unlockAll === true ||
+            waived.has(entry.lesson.id) ||
+            previous === null ||
+            opensNext(previous.id)
           ? "unlocked"
           : "locked";
 
@@ -119,10 +139,19 @@ function rankOf(state: LockState): number {
  * lesson is completed there is nothing left to resume, and it is the first
  * lesson again, to go back over. Null for a path with no lesson.
  *
- * `states` runs parallel to `lessons`, as the path page builds them.
+ * A lesson the placement test waived is open but not where the reader picks
+ * up: the first open lesson that was not waived comes first. When every open
+ * lesson was waived, the first of them is still offered, rather than nothing.
+ *
+ * `states` and `waived` run parallel to `lessons`, as the path page builds them.
  */
-export function resumeLesson<L>(lessons: readonly L[], states: readonly LockState[]): L | null {
-  const open = states.indexOf("unlocked");
+export function resumeLesson<L>(
+  lessons: readonly L[],
+  states: readonly LockState[],
+  waived: readonly boolean[] = [],
+): L | null {
+  const fresh = states.findIndex((state, i) => state === "unlocked" && waived[i] !== true);
+  const open = fresh >= 0 ? fresh : states.indexOf("unlocked");
   return lessons[open >= 0 ? open : 0] ?? null;
 }
 

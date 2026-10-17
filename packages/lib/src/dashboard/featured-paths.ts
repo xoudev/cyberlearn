@@ -4,10 +4,11 @@
  * sees one path suggested on their laptop and another on their phone.
  *
  * A path already finished is never suggested. Among the rest, one in progress
- * wins by a wide margin; after that, the path at the reader's level, the
- * domains their placement test rated them strongest in, and the domains of
- * their last lessons. Ties go by title, so the answer does not depend on the
- * order the database happened to return the rows in.
+ * wins by a wide margin; after that, the domains the reader said they came
+ * for at sign-up, the path at their level, the domains their placement test
+ * rated them strongest in, and the domains of their last lessons. Ties go by
+ * title, so the answer does not depend on the order the database happened to
+ * return the rows in.
  */
 
 export type PathDifficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
@@ -27,7 +28,23 @@ export interface FeaturedContext {
   placement: { DEV: number; CYBERSEC: number; NETWORK: number } | null;
   /** The domains of the reader's recently completed lessons, newest first. */
   recentCategories: readonly string[];
+  /**
+   * What the reader answered to "Qu'est-ce que tu veux apprendre ?" at sign-up
+   * (UserPreferences.learningGoals): DEV, CYBERSEC, NETWORK, CAREER, UNSURE.
+   * Empty when the question was skipped.
+   */
+  goals: readonly string[];
 }
+
+/**
+ * What a domain named at sign-up weighs. Without it, somebody who answered
+ * "réseau" and had neither a test nor a lesson behind them was offered the
+ * first beginner path by title, whatever its domain, right after being shown
+ * network paths. More than the spread of the placement test, which measures
+ * what the reader knows rather than what they want; less than a path in
+ * progress, which is what they actually chose.
+ */
+export const GOAL_WEIGHT = 20;
 
 /** The difficulty that suits a level. */
 export function preferredDifficulty(level: number): PathDifficulty {
@@ -41,6 +58,8 @@ export function preferredDifficulty(level: number): PathDifficulty {
 export function featuredScore(path: FeaturedCandidate, context: FeaturedContext): number {
   let score = 0;
   if (path.status === "IN_PROGRESS") score += 50;
+  // A domain named, not "CAREER" or "UNSURE", which point at none in particular.
+  if (context.goals.includes(path.category)) score += GOAL_WEIGHT;
   if (path.difficulty === preferredDifficulty(context.level)) score += 15;
   const placement: Record<string, number> = context.placement ?? {};
   score += ((placement[path.category] ?? 50) / 100) * 25;

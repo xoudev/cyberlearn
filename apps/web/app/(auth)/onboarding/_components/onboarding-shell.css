@@ -89,6 +89,19 @@
   color: var(--color-text-faint);
 }
 
+/* The way out, at the far end of the bar. Below 768px the step's label
+   gives up its room to it, or the button is pushed off the right edge. */
+.ob-shell__signout {
+  margin-left: auto;
+}
+
+@media (max-width: 767px) {
+  .ob-shell__slash,
+  .ob-shell__crumb {
+    display: none;
+  }
+}
+
 .ob-shell__body {
   position: relative;
   z-index: 1;

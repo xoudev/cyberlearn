@@ -33,3 +33,12 @@ export async function pathOpensLesson(userId: string, lessonId: string): Promise
   }).get(lessonId);
   return isReadable(placement);
 }
+
+/**
+ * The lessons the placement test waived for the reader: each opens, and opens
+ * the one after it, as a completed lesson would (./unlock.ts). Every one of
+ * them, for the app, which applies the lock path by path.
+ */
+export async function waivedLessonIds(userId: string): Promise<string[]> {
+  return lessonRepository.findWaivedLessonIds(userId);
+}

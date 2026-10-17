@@ -343,18 +343,30 @@ export async function searchApi(term: string): Promise<SearchGroupItem[]> {
 
 // ── Lesson access (the path lock, as the site applies it) ────────────────────
 
+export interface LessonAccess {
+  /** True for an administrator, who opens any lesson to review it. */
+  unlockAll: boolean;
+  /** The lessons the placement test waived: each opens, and opens the next. */
+  waivedLessonIds: string[];
+}
+
 /**
- * Whether the reader skips the path lock: true for an administrator, who opens
- * any lesson to review it. Decided by the server from the role in the
- * database, which the app's client cannot read.
+ * How the path lock applies to the reader. Decided by the server: the role
+ * from the database, which the app's client cannot read, and the waivers the
+ * placement test granted.
  */
-export async function fetchLessonAccessApi(): Promise<{ unlockAll: boolean }> {
+export async function fetchLessonAccessApi(): Promise<LessonAccess> {
   const res = await authedFetch("/api/mobile/lesson-access");
   const body = (await res.json()) as
-    | { ok: true; unlockAll: boolean }
+    | { ok: true; unlockAll: boolean; waivedLessonIds?: unknown }
     | { ok: false; error?: string };
   if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return { unlockAll: body.unlockAll };
+  // A server deployed before the waivers were sent answers without them.
+  const waived = Array.isArray(body.waivedLessonIds) ? body.waivedLessonIds : [];
+  return {
+    unlockAll: body.unlockAll,
+    waivedLessonIds: waived.filter((id): id is string => typeof id === "string"),
+  };
 }
 
 // ── Path covers (the site's illustrations, and the images sent from the console) ──

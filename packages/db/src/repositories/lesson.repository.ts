@@ -231,6 +231,16 @@ function consoleLessonOrder(
   }
 }
 
+/** See lessonRepository.findWaivedLessonIds. */
+async function waivedLessonIdsFor(userId: string, lessonIds?: string[]): Promise<string[]> {
+  if (lessonIds?.length === 0) return [];
+  const rows = await prisma.userSkipWaiver.findMany({
+    where: { userId, ...(lessonIds !== undefined ? { lessonId: { in: lessonIds } } : {}) },
+    select: { lessonId: true },
+  });
+  return rows.map((row) => row.lessonId);
+}
+
 export const lessonRepository = {
   /**
    * One page of one of the console's lesson lists, under its filters. The
@@ -412,22 +422,30 @@ export const lessonRepository = {
   },
 
   /**
+   * The lessons the placement test waived for the reader, among `lessonIds`
+   * when given. A waiver opens a lesson and what follows it in its path, as a
+   * completion would, without marking it completed or awarding anything.
+   */
+  findWaivedLessonIds: waivedLessonIdsFor,
+
+  /**
    * The published paths these lessons belong to, each with its full ordered
-   * lesson list, plus which of those lessons the reader has completed.
+   * lesson list, plus which of those lessons the reader has completed and
+   * which the placement test waived.
    *
    * Whole paths rather than just the lessons asked about: the sequential rule
    * needs each lesson's neighbours, and a catalogue page asks about nine
-   * lessons scattered across as many paths. Three queries whatever the page
+   * lessons scattered across as many paths. Four queries whatever the page
    * size, instead of one per card.
    */
   async findPathContexts(userId: string, lessonIds: string[]) {
-    if (lessonIds.length === 0) return { paths: [], completedLessonIds: [] };
+    if (lessonIds.length === 0) return { paths: [], completedLessonIds: [], waivedLessonIds: [] };
 
     const links = await prisma.pathLesson.findMany({
       where: { lessonId: { in: lessonIds }, path: { status: "PUBLISHED" } },
       select: { pathId: true },
     });
-    if (links.length === 0) return { paths: [], completedLessonIds: [] };
+    if (links.length === 0) return { paths: [], completedLessonIds: [], waivedLessonIds: [] };
 
     const paths = await prisma.path.findMany({
       where: { id: { in: [...new Set(links.map((l) => l.pathId))] } },
@@ -457,16 +475,16 @@ export const lessonRepository = {
       },
     });
 
-    const completed = await prisma.userLessonProgress.findMany({
-      where: {
-        userId,
-        status: "COMPLETED",
-        lessonId: { in: paths.flatMap((p) => p.lessons.map((pl) => pl.lesson.id)) },
-      },
-      select: { lessonId: true },
-    });
+    const pathLessonIds = paths.flatMap((p) => p.lessons.map((pl) => pl.lesson.id));
+    const [completed, waivedLessonIds] = await Promise.all([
+      prisma.userLessonProgress.findMany({
+        where: { userId, status: "COMPLETED", lessonId: { in: pathLessonIds } },
+        select: { lessonId: true },
+      }),
+      waivedLessonIdsFor(userId, pathLessonIds),
+    ]);
 
-    return { paths, completedLessonIds: completed.map((c) => c.lessonId) };
+    return { paths, completedLessonIds: completed.map((c) => c.lessonId), waivedLessonIds };
   },
 
   /**

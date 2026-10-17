@@ -108,6 +108,29 @@ describe("indexPlacements", () => {
   it("keeps the strict rule when the option is off", () => {
     expect(indexPlacements([PYTHON], [], { unlockAll: false }).get("b")?.state).toBe("locked");
   });
+
+  // The placement test waives a mastered domain's beginner and intermediate
+  // lessons, and its result says they are unlocked: they must be.
+  it("opens a waived lesson and the one after it, without calling it completed", () => {
+    const placements = indexPlacements([PYTHON], [], { waivedLessonIds: ["a", "b"] });
+    expect(placements.get("a")?.state).toBe("unlocked");
+    expect(placements.get("b")?.state).toBe("unlocked");
+    expect(placements.get("c")?.state).toBe("unlocked"); // its predecessor b is waived
+    expect(placements.get("d")?.state).toBe("locked");
+  });
+
+  it("opens a waived lesson even behind an unfinished one", () => {
+    const placements = indexPlacements([PYTHON], [], { waivedLessonIds: ["c"] });
+    expect(placements.get("b")?.state).toBe("locked");
+    expect(placements.get("c")?.state).toBe("unlocked");
+    expect(placements.get("d")?.state).toBe("unlocked");
+  });
+
+  it("still reports a waived lesson the reader went on to complete as completed", () => {
+    const placements = indexPlacements([PYTHON], ["a"], { waivedLessonIds: ["a"] });
+    expect(placements.get("a")?.state).toBe("completed");
+    expect(placements.get("b")?.state).toBe("unlocked");
+  });
 });
 
 describe("isReadable", () => {
@@ -150,5 +173,19 @@ describe("resumeLesson", () => {
 
   it("has nothing to open on a path with no lesson", () => {
     expect(resumeLesson([], [])).toBeNull();
+  });
+
+  it("skips the lessons the placement test waived", () => {
+    const waivedIds = ["a", "b"];
+    const placements = indexPlacements([PYTHON], [], { waivedLessonIds: waivedIds });
+    const states = ids.map((id) => placements.get(id)?.state ?? "locked");
+    const waived = ids.map((id) => waivedIds.includes(id));
+    expect(resumeLesson(ids, states, waived)).toBe("c");
+  });
+
+  it("offers the first waived lesson when every open one was waived", () => {
+    const placements = indexPlacements([PYTHON], [], { waivedLessonIds: ids });
+    const states = ids.map((id) => placements.get(id)?.state ?? "locked");
+    expect(resumeLesson(ids, states, [true, true, true, true])).toBe("a");
   });
 });

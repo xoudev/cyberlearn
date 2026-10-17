@@ -2,7 +2,13 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { SearchParams } from "next/dist/server/request/search-params";
-import { PLACEMENT_CATEGORY_LABEL, placementLevelFor } from "@cyberlearn/lib/onboarding/placement";
+import {
+  PLACEMENT_CATEGORY_LABEL,
+  PLACEMENT_COPY,
+  masteredPlacementDomains,
+  placementLevelFor,
+  placementStartCopy,
+} from "@cyberlearn/lib/onboarding/placement";
 import { ProgressBar } from "@/components/progress-bar";
 
 interface ResultPageProps {
@@ -134,6 +140,10 @@ export default async function PlacementResultPage({
   ];
 
   const bestDomain = scores.reduce((a, b) => (a.score >= b.score ? a : b));
+  // The same reading as the app's result screen (apps/mobile/app/placement.tsx).
+  const byDomain = { devScore, cybersecScore: cyberSec, networkScore: network };
+  const waivedSomething = masteredPlacementDomains(byDomain).length > 0;
+  const startCopy = placementStartCopy(byDomain);
 
   return (
     <div
@@ -368,21 +378,22 @@ export default async function PlacementResultPage({
               <ScoreBar key={s.label} {...s} />
             ))}
 
-            {/* Footer note */}
-            <div
-              style={{
-                padding: "14px 24px",
-                background: "rgba(5,4,26,0.5)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10.5,
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.04em",
-                borderTop: "1px solid var(--color-border-subtle)",
-              }}
-            >
-              Les niveaux débutant de tes domaines forts ont été{" "}
-              <b style={{ color: "var(--color-brand-turquoise)" }}>débloqués automatiquement</b>.
-            </div>
+            {/* Footer note: only when the test waived something, which takes 70 in a domain */}
+            {waivedSomething && (
+              <div
+                style={{
+                  padding: "14px 24px",
+                  background: "rgba(5,4,26,0.5)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10.5,
+                  color: "var(--color-text-muted)",
+                  letterSpacing: "0.04em",
+                  borderTop: "1px solid var(--color-border-subtle)",
+                }}
+              >
+                {PLACEMENT_COPY.waived}
+              </div>
+            )}
           </div>
 
           {/* Recommendation */}
@@ -432,8 +443,7 @@ export default async function PlacementResultPage({
                   maxWidth: 480,
                 }}
               >
-                D&apos;après ton profil, ce parcours correspond à ton niveau et tes objectifs. Les
-                prérequis débutant et intermédiaire de tes domaines maîtrisés sont déjà validés.
+                {PLACEMENT_COPY.recommended}
               </p>
               <Link href={`/paths/${recPath}`} className="btn btn--accent">
                 Voir le parcours
@@ -449,26 +459,27 @@ export default async function PlacementResultPage({
               </Link>
             </div>
           ) : (
-            <div
-              className="card"
-              style={{
-                padding: "24px 28px",
-                marginBottom: 24,
-              }}
-            >
-              <p
+            startCopy !== null && (
+              <div
+                className="card"
                 style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  color: "var(--color-text-secondary)",
-                  lineHeight: 1.6,
-                  margin: 0,
+                  padding: "24px 28px",
+                  marginBottom: 24,
                 }}
               >
-                Tu pars de zéro, c&apos;est le meilleur moment. Explore nos parcours pour choisir
-                ton point d&apos;entrée.
-              </p>
-            </div>
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 14,
+                    color: "var(--color-text-secondary)",
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {startCopy}
+                </p>
+              </div>
+            )
           )}
 
           {/* CTA */}

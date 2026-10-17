@@ -6,7 +6,10 @@ import type { OnboardingActionState } from "../_actions/complete-onboarding";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
 
 interface OnboardingFormProps {
+  /** Filled when the reader comes back to the step from the avatar. */
+  initialUsername: string;
   initialDisplayName: string;
+  initialBio: string;
   avatarUrl: string | null;
 }
 
@@ -130,11 +133,13 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 export function OnboardingForm({
+  initialUsername,
   initialDisplayName,
+  initialBio,
   avatarUrl,
 }: OnboardingFormProps): React.ReactElement {
   const [state, formAction, isPending] = useActionState(completeOnboarding, initialState);
-  const [bioLen, setBioLen] = useState(0);
+  const [bioLen, setBioLen] = useState(initialBio.length);
   const BIO_MAX = 280;
 
   return (
@@ -250,8 +255,9 @@ export function OnboardingForm({
               minLength={3}
               maxLength={32}
               // React empties the form once the action has run: what was typed
-              // comes back from it after a refusal.
-              defaultValue={state.values?.username}
+              // comes back from it after a refusal; otherwise the value already
+              // in the profile (edit flow) is shown.
+              defaultValue={state.values?.username ?? initialUsername}
               style={INPUT_STYLE}
             />
             <span
@@ -338,7 +344,9 @@ export function OnboardingForm({
                 name="bio"
                 rows={3}
                 maxLength={BIO_MAX}
-                defaultValue={state.values?.bio}
+                // Typed text comes back after a refusal; otherwise the bio
+                // already in the profile (edit flow) is shown.
+                defaultValue={state.values?.bio ?? initialBio}
                 placeholder="Qui es-tu ? Qu'est-ce qui t'a amené ici ?"
                 onChange={(e) => {
                   setBioLen(e.target.value.length);

@@ -7,6 +7,7 @@ import { ReviewsDue } from "./_components/reviews-due";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
+import { dashboardDateLabel, monthStartIn } from "@cyberlearn/lib/dashboard/calendar";
 import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
 import { currentLessonId, moduleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
@@ -16,12 +17,14 @@ import {
   CATALOGUE_PATH,
   leaderboardRepository,
   PUBLISHED_PATH_LESSON,
+  lessonRepository,
   pathsVisibleTo,
   prisma,
   reviewRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { savedLearningAnswers } from "@/lib/paths/suggestions";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -30,12 +33,9 @@ import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
 
 export default function DashboardPage(): React.ReactElement {
   return (
-    <>
-      <WelcomeModal />
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
 
@@ -52,8 +52,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   const now = new Date();
-  /** Midnight on the first of the current month, local time - "ce mois-ci". */
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  /** Midnight on the first of the current month in Paris - "ce mois-ci". */
+  const monthStart = monthStartIn(now);
 
   const [
     dbUser,
@@ -71,6 +71,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     placementResult,
     recentLessons,
     wantsRevisions,
+    learningAnswers,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -150,6 +151,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
       take: 20,
     }),
     revisionsEnabled(authUser.id),
+    // What they said they came for at sign-up, step 3.
+    savedLearningAnswers(authUser.id),
   ]);
 
   const dueReviews = reviewSession.rows.slice(0, 3);
@@ -172,6 +175,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
           }
         : null,
       recentCategories: recentLessons.map((row) => row.lesson.category),
+      goals: learningAnswers.goals ?? [],
     },
   );
 
@@ -208,27 +212,29 @@ async function DashboardContent(): Promise<React.ReactElement> {
       })
     : null;
   const leadLessonIds = leadDetail?.lessons.map((pl) => pl.lesson.id) ?? [];
-  const completedInLead = new Set(
+  // And which the placement test waived: the mission passes over them, as
+  // "Commencer" on the path's page does. (An empty list costs no query.)
+  const [completedInLead, waivedInLead] = await Promise.all([
     leadLessonIds.length > 0
-      ? (
-          await prisma.userLessonProgress.findMany({
+      ? prisma.userLessonProgress
+          .findMany({
             where: { userId: authUser.id, status: "COMPLETED", lessonId: { in: leadLessonIds } },
             select: { lessonId: true },
           })
-        ).map((row) => row.lessonId)
-      : [],
-  );
+          .then((rows) => new Set(rows.map((row) => row.lessonId)))
+      : new Set<string>(),
+    lessonRepository.findWaivedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
+  ]);
 
   const resume = inProgressRows[0]?.lesson ?? null;
   const mission = planMission({
     lead: lead && leadDetail ? { ...lead, ...leadDetail } : null,
     completedInLead,
+    waivedInLead,
     resume,
   });
 
-  const dateLabel = capitalize(
-    now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
-  );
+  const dateLabel = dashboardDateLabel(now);
   const heroNotes: React.ReactNode[] = [];
   if (streakDays > 0) {
     heroNotes.push(
@@ -270,6 +276,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   return (
     <div className="page-container">
+      {/* The welcome's button opens what the mission card offers, not a list. */}
+      <WelcomeModal cta={mission.cta} />
       <div className="dash">
         {/* ── Hero: the greeting, and the level ───────────────────────────── */}
         <section className="dash-hero">
@@ -360,18 +368,23 @@ interface ResumeLesson {
  * What the card offers.
  *
  * A lesson left open wins: it is what the reader was doing. Otherwise the next
- * lesson of the path that leads. A path with nothing left offers its page, for
- * the exam; a reader with no path at all is sent to choose one. The route
+ * lesson of the path that leads, passing over the ones the placement test
+ * waived (`nextLesson`, the rule the path page and the app's home tab read
+ * too). A path with nothing left offers its page, for the exam; a reader with
+ * no path at all is sent to choose one. The route
  * beside the text is always the leading path's module, centred on the lesson
  * offered when it belongs to that path.
  */
 function planMission({
   lead,
   completedInLead,
+  waivedInLead,
   resume,
 }: {
   lead: LeadPath | null;
   completedInLead: ReadonlySet<string>;
+  /** The lead's lessons waived by the placement test. */
+  waivedInLead: ReadonlySet<string>;
   resume: ResumeLesson | null;
 }): MissionCardProps {
   const minutesAndXp = (lesson: { estimatedMinutes: number; xpReward: number }): string =>
@@ -384,13 +397,24 @@ function planMission({
       title: pl.lesson.title,
       moduleId: pl.moduleId,
     }));
-    const route = moduleRoute(routeLessons, lead.modules, completedInLead, resume?.id ?? null);
+    const route = moduleRoute(
+      routeLessons,
+      lead.modules,
+      completedInLead,
+      resume?.id ?? null,
+      waivedInLead,
+    );
     const path = {
       completed: completedInLead.size,
       total: routeLessons.length,
       href: `/paths/${lead.slug}`,
     };
-    const current = currentLessonId(routeLessons, completedInLead, resume?.id ?? null);
+    const current = currentLessonId(
+      routeLessons,
+      completedInLead,
+      resume?.id ?? null,
+      waivedInLead,
+    );
     const resumeInLead = resume !== null && routeLessons.some((l) => l.id === resume.id);
     const lesson = resume ?? lead.lessons.find((pl) => pl.lesson.id === current)?.lesson ?? null;
 
@@ -452,8 +476,4 @@ function planMission({
     route: null,
     path: null,
   };
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

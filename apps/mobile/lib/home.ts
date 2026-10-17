@@ -1,5 +1,5 @@
 import { rankFeaturedPaths, type FeaturedContext } from "@cyberlearn/lib/dashboard/featured-paths";
-import { moduleRoute, type ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
+import { moduleRoute, nextLesson, type ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty } from "./db";
 import { dbTime } from "./db-time";
@@ -39,7 +39,11 @@ export interface HomePath {
 export interface LeadProgress {
   completed: number;
   total: number;
-  /** The first mission not done yet, or null when every one is. */
+  /**
+   * The mission to pick up: the first neither done nor waived by the
+   * placement test (the first waived one when only those are left), or null
+   * when every one is done. The site's dashboard and the path screen agree.
+   */
   next: HomePathLesson | null;
 }
 
@@ -52,12 +56,19 @@ export interface HomePaths {
   other: HomePath | null;
 }
 
-export function progressIn(path: HomePath, completed: ReadonlySet<string>): LeadProgress {
+const NO_WAIVER: ReadonlySet<string> = new Set();
+
+export function progressIn(
+  path: HomePath,
+  completed: ReadonlySet<string>,
+  /** The lessons the placement test waived (`/api/mobile/lesson-access`). */
+  waived: ReadonlySet<string> = NO_WAIVER,
+): LeadProgress {
   const ordered = [...path.lessons].sort((a, b) => a.position - b.position);
   return {
     completed: ordered.filter((lesson) => completed.has(lesson.id)).length,
     total: ordered.length,
-    next: ordered.find((lesson) => !completed.has(lesson.id)) ?? null,
+    next: nextLesson(ordered, completed, waived),
   };
 }
 
@@ -67,17 +78,30 @@ export function homePaths(
   context: FeaturedContext,
   /** The lesson left open, if any: the route centres on it when it is the lead's. */
   resumeId: string | null = null,
+  /** The lessons the placement test waived: the next mission passes over them. */
+  waived: ReadonlySet<string> = NO_WAIVER,
 ): HomePaths {
   const [lead, other] = rankFeaturedPaths(paths, context);
   if (!lead) return { lead: null, leadProgress: null, leadRoute: null, other: null };
-  const progress = progressIn(lead, completed);
+  const progress = progressIn(lead, completed, waived);
   const ordered = [...lead.lessons].sort((a, b) => a.position - b.position);
   return {
     lead,
     leadProgress: progress.completed > 0 ? progress : null,
-    leadRoute: moduleRoute(ordered, lead.modules, completed, resumeId),
+    leadRoute: moduleRoute(ordered, lead.modules, completed, resumeId, waived),
     other: other ?? null,
   };
+}
+
+/**
+ * The goals kept from the sign-up's questionnaire, from the reader's
+ * user_preferences row: none without a row, or when the question was skipped.
+ * The ranking weighs the domains among them, as the site's dashboard does.
+ */
+export function learningGoalsOf(row: unknown): string[] {
+  if (typeof row !== "object" || row === null || !("learningGoals" in row)) return [];
+  const goals = row.learningGoals;
+  return Array.isArray(goals) ? goals.filter((g): g is string => typeof g === "string") : [];
 }
 
 /** The lead card's button, as the site words it. */

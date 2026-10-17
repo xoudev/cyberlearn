@@ -101,6 +101,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
   ]);
   const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
     unlockAll,
+    waivedLessonIds: pathContexts.waivedLessonIds,
   });
   const lessons = availableFirst(matchingLessons, placements).slice(
     (page - 1) * PAGE_SIZE,

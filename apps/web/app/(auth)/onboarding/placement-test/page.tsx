@@ -5,6 +5,7 @@ import { prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { skipOnboarding } from "../_actions/finalize-onboarding";
+import { OnboardingSignOut } from "../_components/onboarding-sign-out";
 
 export default async function PlacementTestIntroPage(): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
@@ -121,9 +122,12 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
         >
           cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "var(--color-text-faint)" }}>/</span>
-        <span>ONBOARDING · POSITIONNEMENT</span>
+        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
+          /
+        </span>
+        <span className="onboarding-bar__label">ONBOARDING · POSITIONNEMENT</span>
         <span
+          className="onboarding-bar__label"
           style={{
             marginLeft: "auto",
             display: "inline-flex",
@@ -145,6 +149,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
           />
           SYNC EN DIRECT
         </span>
+        <OnboardingSignOut />
       </header>
 
       <div

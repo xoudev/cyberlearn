@@ -6,6 +6,7 @@ import { submitPlacementTest } from "../_actions/submit-placement";
 import type { PlacementActionState } from "../_actions/submit-placement";
 import {
   PLACEMENT_CATEGORY_LABEL,
+  PLACEMENT_COPY,
   PLACEMENT_DIFFICULTY_LABEL,
   isPlacementCategory,
 } from "@cyberlearn/lib/onboarding/placement";
@@ -186,9 +187,8 @@ export function PlacementTestForm({
               marginBottom: 0,
             }}
           >
-            <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>Note :</b> les
-            niveaux débutant des domaines maîtrisés seront débloqués automatiquement. Tu peux passer
-            ce test à tout moment.
+            <b style={{ color: "var(--color-brand-turquoise)", fontWeight: 600 }}>Note :</b>{" "}
+            {PLACEMENT_COPY.waiverNote} Tu peux passer ce test à tout moment.
           </div>
         </div>
       </div>
