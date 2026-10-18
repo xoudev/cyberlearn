@@ -257,6 +257,12 @@ function changedQuizzes(before: string, after: string): Map<string, QuizImpact["
   return out;
 }
 
+/**
+ * What the audit log calls an edit made in the console: the lesson studio's
+ * publish, and the save of the form it replaced, still in the log.
+ */
+const CONSOLE_EDITS: readonly string[] = ["lesson.publish", "lesson.update"];
+
 /** Every file of the repository against its lesson. Reads, writes nothing. */
 export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOverview> {
   const empty: SyncOverview = {
@@ -320,7 +326,7 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
           prisma.auditLog.findMany({
             where: {
               targetId: { in: ids },
-              action: { in: ["lesson.update", "lesson.sync", "lesson.import.success"] },
+              action: { in: [...CONSOLE_EDITS, "lesson.sync", "lesson.import.success"] },
             },
             orderBy: { createdAt: "desc" },
             select: { targetId: true, action: true, createdAt: true },
@@ -363,7 +369,8 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
       added,
       removed,
       quizImpacts,
-      editedInConsoleAt: last?.action === "lesson.update" ? last.createdAt : null,
+      editedInConsoleAt:
+        last !== undefined && CONSOLE_EDITS.includes(last.action) ? last.createdAt : null,
       slugDiffers: row.slug === file.slug ? null : { database: row.slug, file: file.slug },
     };
   });

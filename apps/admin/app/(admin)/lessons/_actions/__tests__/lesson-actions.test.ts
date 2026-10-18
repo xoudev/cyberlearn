@@ -107,6 +107,12 @@ describe("createLessonAction", () => {
     });
   });
 
+  it("opens the lesson it created in its studio", async () => {
+    await expect(createLessonAction({}, form())).rejects.toThrow(
+      `REDIRECT /lessons/${NEW_LESSON}?saved=created`,
+    );
+  });
+
   it("creates a lesson in no path, as before", async () => {
     await expect(createLessonAction({}, form())).rejects.toThrow("REDIRECT /lessons");
     expect(m.pathFindMany).not.toHaveBeenCalled();

@@ -351,6 +351,11 @@
     padding: 34px 44px 120px;
   }
 }
+/* The one other width: the window's, for a page that sets an editor beside
+   its preview (the lesson studio). */
+.a-page[data-width="full"] {
+  max-width: none;
+}
 
 .a-page-head {
   display: flex;
@@ -2019,4 +2024,173 @@
   color: var(--a-fg-2);
   border-left: 2px solid var(--a-info);
   background: color-mix(in srgb, var(--a-info) 7%, transparent);
+}
+
+/* ─── Lesson studio ────────────────────────────────────────── */
+
+/* The bar stays under the top bar (56px + its 2px line) while the page
+   scrolls; the body below it takes what is left of the window, so the
+   editor and its preview are seen whole once the header is scrolled by. */
+.a-studio {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.a-studio-bar {
+  position: sticky;
+  top: 58px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface);
+}
+.a-studio-state {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--a-accent);
+}
+.a-studio-state[data-state="pending"],
+.a-studio-state[data-state="saving"],
+.a-studio-state[data-draft="false"] {
+  color: var(--a-muted);
+}
+.a-studio-state[data-state="error"],
+.a-studio-state[data-state="conflict"] {
+  color: var(--a-danger);
+}
+.a-studio-version {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--a-muted);
+}
+.a-studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.a-studio-shortcut {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--a-faint-2);
+}
+.a-studio-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.a-studio-alert-detail {
+  flex-basis: 100%;
+  color: var(--a-fg-2);
+}
+.a-studio-alert-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.a-studio-body {
+  display: grid;
+  gap: 16px;
+}
+.a-studio-rail {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+.a-studio-editor {
+  height: 78vh;
+  min-height: 480px;
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .a-studio-body {
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    height: calc(100dvh - 150px);
+    min-height: 560px;
+  }
+  .a-studio-rail {
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .a-studio-editor {
+    height: auto;
+    min-height: 0;
+  }
+}
+.a-studio-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.a-studio-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 6px 6px 13px;
+  border: 1px solid var(--a-border-2);
+  background: var(--a-surface-2);
+  overflow-wrap: anywhere;
+}
+.a-studio-url {
+  overflow-wrap: anywhere;
+}
+.a-studio-rail .a-field-hint b {
+  color: var(--a-accent);
+}
+.a-studio-field-error {
+  color: var(--a-danger);
+}
+.a-studio-versions {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--a-border);
+}
+.a-studio-versions h2 {
+  margin: 0;
+}
+.a-studio-version-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.a-studio-version-list li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 9px 11px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface-2);
+}
+.a-studio-version-list li[data-current="true"] {
+  border-left: 2px solid var(--a-accent);
+}
+.a-studio-version-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--a-muted);
+}
+.a-studio-version-head b {
+  color: var(--a-fg);
+}
+.a-studio-version-title {
+  font-size: 13px;
+  color: var(--a-fg-2);
+  overflow-wrap: anywhere;
 }

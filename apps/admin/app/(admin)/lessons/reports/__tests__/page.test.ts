@@ -64,7 +64,7 @@ describe("the reported questions page", () => {
     expect(html).toContain("@camille");
     expect(html).toContain("compte supprimé");
     expect(html).toContain('name="quizId" value="q-1"');
-    expect(html).toContain(`href="/lessons/${LESSON}/edit"`);
+    expect(html).toContain(`href="/lessons/${LESSON}"`);
   });
 
   it("says so when the question is no longer in the lesson", async () => {

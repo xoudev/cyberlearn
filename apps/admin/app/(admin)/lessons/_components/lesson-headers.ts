@@ -47,8 +47,8 @@ export const SYNC_KPI_LABELS = [
 ] as const;
 
 /**
- * Every rating of one lesson, the page its edit page links to under the
- * latest few. Its trail is LESSON_CRUMBS and the lesson's title.
+ * Every rating of one lesson, the page its studio links to under the latest
+ * few. Its trail is LESSON_CRUMBS and the lesson's title.
  */
 export const LESSON_RATINGS_HEADER = {
   title: "Avis des apprenants",
@@ -66,9 +66,25 @@ export const LESSON_RATING_COLUMNS: readonly GridColumn[] = [
 ];
 
 /**
- * The shape of the lesson form, for the loading states of the pages that
- * hold it: reference and slug, title, description, category and difficulty,
- * duration and reward, the cover, the editor.
+ * The shape of the studio's rail, for its loading state: reference, slug,
+ * title, description, category and difficulty, duration and reward, the
+ * cover, the status.
+ */
+export const LESSON_STUDIO_RAIL_ROWS: readonly FormRow[] = [
+  1,
+  1,
+  1,
+  { height: 96 },
+  2,
+  2,
+  { height: 99 },
+  1,
+];
+
+/**
+ * The shape of the lesson creation form, for its loading state: reference
+ * and slug, title, description, category and difficulty, duration and
+ * reward, the cover, the editor.
  */
 export const LESSON_FORM_ROWS: readonly FormRow[] = [
   2,

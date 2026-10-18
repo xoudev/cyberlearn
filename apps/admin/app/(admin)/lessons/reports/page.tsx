@@ -41,7 +41,7 @@ function ReportedQuizCard({
               {group.reports.length} signalement{group.reports.length > 1 ? "s" : ""}
             </Tag>
           </div>
-          <Link href={`/lessons/${group.lessonId}/edit`} className="a-report-name">
+          <Link href={`/lessons/${group.lessonId}`} className="a-report-name">
             {group.lessonTitle}
           </Link>
         </div>

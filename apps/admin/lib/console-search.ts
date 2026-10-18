@@ -47,7 +47,7 @@ export function lessonHit(lesson: ConsoleLessonHit): SearchHit {
     id: lesson.id,
     label: lesson.title,
     sublabel: `${lesson.refCode} · ${CONTENT_STATUS[lesson.status].label}${audience}`,
-    href: `/lessons/${lesson.id}/edit`,
+    href: `/lessons/${lesson.id}`,
   };
 }
 

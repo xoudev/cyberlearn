@@ -159,11 +159,13 @@ describe("the console layout", () => {
 
   // The page owns its width and its header, the client form under it neither:
   // that is how the edit pages ended up at 1100 px with a prompt for a title.
+  // One width, and the full one for a page that sets an editor beside its
+  // preview (the lesson studio): never a width of the page's own.
   it.each(PAGES.map((path) => [where(path), path]))(
     "%s sits in .a-page under a PageHeader",
     (_name, path) => {
       const source = readFileSync(path, "utf8");
-      expect(source).toContain('<main className="a-page">');
+      expect(source).toMatch(/<main className="a-page"(?: data-width="full")?>/u);
       expect(source).toContain("<PageHeader");
     },
   );
@@ -243,7 +245,7 @@ describe("the content status", () => {
       { value: "ARCHIVED", label: "Archivé", tone: "var(--a-danger)" },
     ]);
     for (const form of [
-      join(ADMIN, "lessons", "[id]", "edit", "_components", "edit-lesson-client.tsx"),
+      join(ADMIN, "lessons", "[id]", "_components", "lesson-studio.tsx"),
       join(ADMIN, "paths", "[id]", "edit", "_components", "EditPathClient.tsx"),
     ]) {
       expect(readFileSync(form, "utf8"), where(form)).toContain("options={CONTENT_STATUS_OPTIONS}");

@@ -100,7 +100,7 @@ describe("setLessonPathsAction", () => {
         removed: ["CL-PATH-103-V01"],
       },
     });
-    expect(m.revalidatePath).toHaveBeenCalledWith(`/lessons/${LESSON}/edit`);
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/lessons/${LESSON}`);
     expect(m.revalidatePath).toHaveBeenCalledWith(`/paths/${WEB}/edit`);
     expect(m.revalidatePath).toHaveBeenCalledWith(`/paths/${NETWORK}/edit`);
   });
@@ -186,7 +186,7 @@ describe("setLessonPrerequisitesAction", () => {
         after: ["CL-LSN-02008-V01", "CL-LSN-02009-V01"],
       },
     });
-    expect(m.revalidatePath).toHaveBeenCalledWith(`/lessons/${LESSON}/edit`);
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/lessons/${LESSON}`);
   });
 
   it("refuses a loop, names it, and writes nothing", async () => {

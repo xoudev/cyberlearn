@@ -246,6 +246,21 @@ describe("lessonSyncOverview", () => {
     expect((await lessonSyncOverview(dir)).updates[0]?.editedInConsoleAt).toBeNull();
   });
 
+  it("counts a publish from the lesson studio as a console edit", async () => {
+    write("python/05.mdx", file("CL-LSN-005-V01", `${BODY}\n\nFin.`));
+    m.findMany.mockResolvedValue([row("CL-LSN-005-V01")]);
+    const published = new Date("2026-10-18T08:00:00Z");
+    m.auditFindMany.mockResolvedValue([
+      { targetId: "id-CL-LSN-005-V01", action: "lesson.publish", createdAt: published },
+      { targetId: "id-CL-LSN-005-V01", action: "lesson.sync", createdAt: new Date(0) },
+    ]);
+    expect((await lessonSyncOverview(dir)).updates[0]?.editedInConsoleAt).toEqual(published);
+    // The studio's publish, and the form's save it replaced, still in the log.
+    const query = JSON.stringify(m.auditFindMany.mock.lastCall);
+    expect(query).toContain('"lesson.publish"');
+    expect(query).toContain('"lesson.update"');
+  });
+
   it("points out a different slug, which the update will not touch", async () => {
     write(
       "python/05.mdx",
