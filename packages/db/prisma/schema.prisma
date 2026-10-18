@@ -83,6 +83,8 @@ model User {
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
   lessonPreviews    LessonPreview[]
+  lessonDrafts      LessonDraft[]           @relation("LessonDraftEditor")
+  lessonVersions    LessonVersion[]         @relation("LessonVersionPublisher")
   quizAttempts      QuizAttempt[]
   activityDays      UserActivityDay[]
   questProgress     UserQuestProgress[]
@@ -540,6 +542,8 @@ model Lesson {
   notes            Note[]
   classAssignments ClassAssignment[]
   classLinks       LessonClass[]
+  draft            LessonDraft?
+  versions         LessonVersion[]
 
   @@index([category, difficulty, status])
   @@index([slug])
@@ -1939,6 +1943,87 @@ model LessonPreview {
   @@index([userId])
   @@index([expiresAt])
   @@map("lesson_previews")
+}
+
+// The console's work on a lesson before it reaches anyone: the lesson studio
+// saves here as the administrator types, and "Publier les changements" copies
+// it into the lesson. One per lesson, shared by every administrator who opens
+// it, so the write is conditional on updatedAt: a second tab cannot overwrite
+// what the first saved. Never read by the site or the app, which read
+// lessons.contentMdx and so only ever see what was published.
+//
+// baseVersion and baseContentHash say what the draft was started from: the
+// lesson's version, and a fingerprint of its published fields. A publish whose
+// lesson no longer matches that fingerprint (a sync, another administrator's
+// publish) would replace changes the draft never saw, and asks first. A
+// status change moves the lesson's updatedAt without touching its content,
+// which is why the fingerprint is of the content.
+model LessonDraft {
+  lessonId         String     @id @db.Uuid
+  refCode          String
+  slug             String
+  title            String     @db.VarChar(200)
+  description      String     @db.VarChar(500)
+  category         Category
+  difficulty       Difficulty
+  estimatedMinutes Int
+  xpReward         Int
+  contentMdx       String     @db.Text
+  coverImageUrl    String?
+  baseVersion      Int
+  baseContentHash  String     @db.VarChar(64)
+  /// Null once that account is erased: the draft is the lesson's, not theirs.
+  updatedById      String?    @db.Uuid
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  updatedBy User?  @relation("LessonDraftEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("lesson_drafts")
+}
+
+/// Where a version of a lesson came from.
+enum LessonVersionSource {
+  /// What the lesson held before its first recorded version: kept on the
+  /// first publish, so that state can be restored too.
+  BASELINE
+  CONSOLE
+  IMPORT
+  SYNC
+}
+
+// What a lesson held at each publish, numbered as lessons.version. Written by
+// lessonVersionRepository.publish, the one function a publish goes through
+// (the studio's, and the import's and the sync's as they move onto it); read
+// by the studio's version list, which restores one into the draft.
+// Server-only, like the draft.
+model LessonVersion {
+  id               String              @id @default(uuid()) @db.Uuid
+  lessonId         String              @db.Uuid
+  version          Int
+  source           LessonVersionSource
+  refCode          String
+  slug             String
+  title            String              @db.VarChar(200)
+  description      String              @db.VarChar(500)
+  category         Category
+  difficulty       Difficulty
+  estimatedMinutes Int
+  xpReward         Int
+  contentMdx       String              @db.Text
+  coverImageUrl    String?
+  /// Null for a baseline, and once that account is erased.
+  publishedById    String?             @db.Uuid
+  publishedAt      DateTime            @default(now())
+
+  lesson      Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  publishedBy User?  @relation("LessonVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@unique([lessonId, version])
+  @@index([publishedById])
+  @@map("lesson_versions")
 }
 
 // ============================================================
