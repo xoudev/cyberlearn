@@ -1755,7 +1755,9 @@ model ContactTicket {
 /// table would put the team's notes about somebody in front of that person.
 /// Kept apart, a note is never in the thread to be filtered out.
 ///
-/// Erased with its ticket, by cascade, when retention purges it.
+/// Erased with its ticket, by cascade, when retention purges it - and sooner
+/// when the requester's account is erased: deleteAccount deletes the notes on
+/// their tickets, which outlive the account anonymised.
 model TicketNote {
   id        String   @id @default(uuid()) @db.Uuid
   ticketId  String   @db.Uuid

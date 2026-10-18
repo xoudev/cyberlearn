@@ -397,8 +397,9 @@
   `authenticated`, lecture réservée à ADMIN) : carte « Notes internes » à
   part du fil, jamais lue par le site ni par l'app (`findForRequester`,
   `findForUser`) ; même règle qu'une réponse, aucune note sur une demande
-  RESOLVED ou CLOSED ; effacées avec leur ticket ; audit `ticket.note.add`,
-  sans le texte de la note
+  RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
+  compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
+  texte de la note
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)
