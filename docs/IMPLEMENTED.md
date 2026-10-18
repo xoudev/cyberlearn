@@ -283,6 +283,7 @@
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/moderation` | File de relecture des contenus signalés |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
+| `/announcements` | Envoyer une annonce (notification `ANNOUNCEMENT`) à tous les comptes, à des rôles ou à des classes, et l'historique des envois, lu dans l'audit log |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/settings` | Configuration de l'application |
@@ -430,6 +431,22 @@
   RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
   compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
   texte de la note
+
+#### Annonces
+- Titre (200 caractères au plus), message (1 000), lien optionnel vers une
+  page du site (chemin qui commence par une seule « / ») et destinataires :
+  tous les comptes, un ou plusieurs rôles, ou les membres de classes actives ;
+  les comptes bannis sont exclus (`userRepository.countForAudience` et
+  `idsForAudience`, un seul filtre pour les deux)
+- Le nombre de destinataires est compté puis confirmé avant l'envoi ; s'il a
+  changé entre-temps, rien ne part et le nouveau nombre est à confirmer
+- Envoi par lots de 1 000 (`notificationRepository.createMany`) dans une
+  seule transaction, avec la ligne d'audit `announcement.send` (titre,
+  message, lien, audience, nombre de destinataires) ; 5 annonces par heure et
+  par administrateur au plus
+- Historique des envois sur la même page, lu dans l'audit log, sans table à
+  part ; l'annonce arrive dans la cloche du site et dans les notifications de
+  l'app
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)
