@@ -8,7 +8,7 @@ import type { ContentStatus } from "@cyberlearn/db";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
-import { lessonRefCodeFor, nextLessonRefCode } from "@/lib/next-ref-code";
+import { lessonRefCodeFor, nextLessonRefCode, nextPathLessonNumber } from "@/lib/next-ref-code";
 import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 import { readLessonLinks } from "./lesson-links";
 
@@ -153,8 +153,9 @@ export async function createLessonAction(
  * just the last one in string order: see nextLessonRefCode for why.
  *
  * With the first path chosen for the lesson, the code is that path's: its PP,
- * and the place the lesson will take at the end of it (lessonRefCodeFor).
- * Without one, or for a path that gives no PP, the next code of the catalogue.
+ * and the rank the lesson will take at the end of it, recaps not counted
+ * (nextPathLessonNumber, lessonRefCodeFor). Without one, or for a path that
+ * gives no PP, the next code of the catalogue.
  */
 export async function getNextRefCodeAction(
   pathId?: string | null,
@@ -170,13 +171,21 @@ export async function getNextRefCodeAction(
     path.success
       ? prisma.path.findUnique({
           where: { id: path.data },
-          select: { refCode: true, _count: { select: { lessons: true } } },
+          select: { refCode: true, lessons: { select: { lesson: { select: { refCode: true } } } } },
         })
       : Promise.resolve(null),
   ]);
   const taken = lessons.map((lesson) => lesson.refCode);
+  // Appended at the end: every lesson of the path comes before it.
   const fromPath = firstPath
-    ? lessonRefCodeFor(firstPath.refCode, firstPath._count.lessons + 1, taken)
+    ? lessonRefCodeFor(
+        firstPath.refCode,
+        nextPathLessonNumber(
+          firstPath.refCode,
+          firstPath.lessons.map((link) => link.lesson.refCode),
+        ),
+        taken,
+      )
     : null;
   return { nextRefCode: fromPath ?? nextLessonRefCode(taken) };
 }

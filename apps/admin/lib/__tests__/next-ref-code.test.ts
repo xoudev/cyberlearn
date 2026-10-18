@@ -9,9 +9,32 @@ import { describe, expect, it } from "vitest";
 import {
   lessonRefCodeFor,
   nextLessonRefCode,
+  nextPathLessonNumber,
   pathLessonPrefix,
   suggestLessonRefCode,
 } from "../next-ref-code";
+
+/** Codes CL-LSN-PP{from}…PP{to}-V01, as a path lists its lessons. */
+function codes(prefix: string, from: number, to: number): string[] {
+  return Array.from(
+    { length: to - from + 1 },
+    (_, i) => `CL-LSN-${prefix}${String(from + i).padStart(3, "0")}-V01`,
+  );
+}
+
+/**
+ * Linux as content/paths/linux.json lists it: 80 lessons, 02001 to 02080, and
+ * a recap closing each of its ten modules, 02901 to 02910. 90 rows.
+ */
+const LINUX_ROWS = (() => {
+  const rows: string[] = [];
+  const lessons = codes("02", 1, 80);
+  for (let module = 0; module < 10; module++) {
+    rows.push(...lessons.slice(module * 8, module * 8 + 8));
+    rows.push(`CL-LSN-02${String(901 + module)}-V01`);
+  }
+  return rows;
+})();
 
 describe("nextLessonRefCode", () => {
   it("starts the new catalogue's series on an empty database", () => {
@@ -133,23 +156,60 @@ describe("lessonRefCodeFor", () => {
   });
 });
 
+describe("nextPathLessonNumber", () => {
+  it("ranks a lesson among the path's lessons, the module recaps left out", () => {
+    // 90 rows, ten of them recaps: the next lesson is 02081, not 02091.
+    expect(LINUX_ROWS).toHaveLength(90);
+    expect(nextPathLessonNumber("CL-PATH-102-V01", LINUX_ROWS)).toBe(81);
+    // Behind the first recap, as lesson 02009 sits.
+    expect(nextPathLessonNumber("CL-PATH-102-V01", LINUX_ROWS.slice(0, 9))).toBe(9);
+  });
+
+  it("starts a path at 1", () => {
+    expect(nextPathLessonNumber("CL-PATH-102-V01", [])).toBe(1);
+    expect(nextPathLessonNumber("CL-PATH-102-V01", ["CL-LSN-02901-V01"])).toBe(1);
+  });
+
+  it("leaves out the lessons another range numbers, and follows its own highest", () => {
+    const borrowed = ["CL-LSN-01003-V01", "CL-LSN-042-V01", "CL-LSN-02001-V02"];
+    expect(nextPathLessonNumber("CL-PATH-102-V01", borrowed)).toBe(2);
+    // A gap left by a removed lesson stays behind: the new one goes last.
+    expect(nextPathLessonNumber("CL-PATH-102-V01", ["CL-LSN-02001-V01", "CL-LSN-02005-V01"])).toBe(
+      6,
+    );
+  });
+
+  it("gives 1 for a path without a prefix", () => {
+    expect(nextPathLessonNumber("CL-PATH-004-V01", ["CL-LSN-04002-V01"])).toBe(1);
+  });
+});
+
 describe("suggestLessonRefCode", () => {
-  const linux = (position: number): { pathRefCode: string; position: number } => ({
+  /** A lesson placed in Linux after its first `count` rows. */
+  const linux = (count: number): { pathRefCode: string; ahead: string[] } => ({
     pathRefCode: "CL-PATH-102-V01",
-    position,
+    ahead: LINUX_ROWS.slice(0, count),
   });
 
   it("proposes the path's code to a lesson numbered outside its paths", () => {
-    // Created before it had a path, so nextLessonRefCode gave it 17092.
+    // Created before it had a path, so nextLessonRefCode gave it 17092. After
+    // twelve rows, the first recap among them, it is lesson 12, not 13.
     expect(suggestLessonRefCode("CL-LSN-17092-V01", [linux(12)], [])).toEqual({
       refCode: "CL-LSN-02012-V01",
       from: linux(12),
     });
   });
 
+  it("does not rank the module recaps before it", () => {
+    // Last of Linux, after its 90 rows: 02081, whatever the recaps.
+    expect(suggestLessonRefCode("CL-LSN-17092-V01", [linux(90)], LINUX_ROWS)?.refCode).toBe(
+      "CL-LSN-02081-V01",
+    );
+  });
+
   it("names its code after the first path that gives a prefix", () => {
-    const old = { pathRefCode: "CL-PATH-004-V01", position: 1 };
-    const network = { pathRefCode: "CL-PATH-103-V01", position: 7 };
+    const old = { pathRefCode: "CL-PATH-004-V01", ahead: [] };
+    const network = { pathRefCode: "CL-PATH-103-V01", ahead: codes("03", 1, 6) };
     expect(suggestLessonRefCode("CL-LSN-17092-V01", [old, network, linux(2)], [])).toEqual({
       refCode: "CL-LSN-03007-V01",
       from: network,
@@ -157,12 +217,12 @@ describe("suggestLessonRefCode", () => {
   });
 
   it("proposes nothing to a lesson already numbered in one of its paths", () => {
-    // 02008 sits at position 9, behind the first recap: still in its range.
-    expect(suggestLessonRefCode("CL-LSN-02008-V01", [linux(9)], ["CL-LSN-02009-V01"])).toBeNull();
+    // 02008 is already in Linux's range: it keeps its code.
+    expect(suggestLessonRefCode("CL-LSN-02008-V01", [linux(7)], ["CL-LSN-02009-V01"])).toBeNull();
     expect(
       suggestLessonRefCode(
         "CL-LSN-03004-V01",
-        [linux(4), { pathRefCode: "CL-PATH-103-V01", position: 4 }],
+        [linux(4), { pathRefCode: "CL-PATH-103-V01", ahead: codes("03", 1, 3) }],
         [],
       ),
     ).toBeNull();
@@ -178,7 +238,7 @@ describe("suggestLessonRefCode", () => {
     expect(
       suggestLessonRefCode(
         "CL-LSN-17092-V01",
-        [{ pathRefCode: "CL-PATH-004-V01", position: 2 }],
+        [{ pathRefCode: "CL-PATH-004-V01", ahead: codes("04", 1, 1) }],
         [],
       ),
     ).toBeNull();

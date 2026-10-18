@@ -53,7 +53,7 @@ const NEW_LESSON = "99999999-9999-4999-8999-999999999999";
 function form(links: { pathIds?: string[]; prerequisiteIds?: string[] } = {}): FormData {
   const data = new FormData();
   const fields: Record<string, string> = {
-    refCode: "CL-LSN-02091-V01",
+    refCode: "CL-LSN-02081-V01",
     slug: "nouvelle-lecon",
     title: "Une nouvelle leçon",
     description: "Ce que la leçon apprend, en une phrase ou deux.",
@@ -141,13 +141,24 @@ describe("getNextRefCodeAction", () => {
     expect(m.pathFindUnique).not.toHaveBeenCalled();
   });
 
-  it("takes the first path's prefix and the place the lesson will have at its end", async () => {
-    m.pathFindUnique.mockResolvedValue({ refCode: "CL-PATH-102-V01", _count: { lessons: 90 } });
-    expect(await getNextRefCodeAction(LINUX)).toEqual({ nextRefCode: "CL-LSN-02091-V01" });
+  it("takes the first path's prefix and the rank the lesson will have at its end", async () => {
+    // Linux as content/paths/linux.json lists it: 80 lessons and a recap
+    // closing each of its ten modules. The recaps are not ranked: 02081.
+    const rows: { lesson: { refCode: string } }[] = [];
+    for (let n = 1; n <= 80; n++) {
+      rows.push({ lesson: { refCode: `CL-LSN-02${String(n).padStart(3, "0")}-V01` } });
+      if (n % 8 === 0) rows.push({ lesson: { refCode: `CL-LSN-02${String(900 + n / 8)}-V01` } });
+    }
+    expect(rows).toHaveLength(90);
+    m.pathFindUnique.mockResolvedValue({ refCode: "CL-PATH-102-V01", lessons: rows });
+    expect(await getNextRefCodeAction(LINUX)).toEqual({ nextRefCode: "CL-LSN-02081-V01" });
   });
 
   it("falls back on the catalogue for a path without a prefix", async () => {
-    m.pathFindUnique.mockResolvedValue({ refCode: "CL-PATH-004-V01", _count: { lessons: 3 } });
+    m.pathFindUnique.mockResolvedValue({
+      refCode: "CL-PATH-004-V01",
+      lessons: [{ lesson: { refCode: "CL-LSN-042-V01" } }],
+    });
     expect(await getNextRefCodeAction(LINUX)).toEqual({ nextRefCode: "CL-LSN-17092-V01" });
   });
 

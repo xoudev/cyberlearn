@@ -82,12 +82,39 @@ export function lessonCodePrefix(refCode: string): number | null {
 }
 
 /**
- * The code of a lesson at `position` (1-based) in the path `pathRefCode`:
- * CL-LSN-PPNNN-V01 with NNN its place. When that number is taken, whatever
- * its version, the next free one of the path's range, wrapping back to 001;
- * the recap numbers (901 and up) are left to the recaps. Null when the path
- * gives no prefix or its range is full: the caller falls back on
- * nextLessonRefCode.
+ * The NNN a lesson takes in the path `pathRefCode` after the lessons `ahead`
+ * (their codes, those placed before it): one past the highest ordinary number
+ * of the path's own range among them, 1 when there is none.
+ *
+ * NNN is a lesson's rank in its path, and the module recaps are not ranked:
+ * they take 901 and up (docs/LESSON_AUTHORING_GUIDE.md). Counting the path's
+ * rows counted them too. Linux holds 90 rows, ten of them recaps, and its last
+ * lesson is 02080: the next one is 02081, where the row count proposed 02091
+ * and left a gap of ten. A lesson borrowed from another path's range or from
+ * the first catalogue keeps its own code and leaves this range alone, so it
+ * is not ranked either.
+ */
+export function nextPathLessonNumber(pathRefCode: string, ahead: readonly string[]): number {
+  const prefix = pathLessonPrefix(pathRefCode);
+  let highest = 0;
+  for (const code of ahead) {
+    const digits = LESSON_REF_CODE.exec(code)?.[1];
+    if (digits?.length !== 5) continue;
+    const n = Number(digits);
+    if (Math.floor(n / 1000) !== prefix) continue;
+    const rank = n % 1000;
+    if (rank <= LAST_LESSON_NUMBER) highest = Math.max(highest, rank);
+  }
+  return highest + 1;
+}
+
+/**
+ * The code of a lesson whose rank in the path `pathRefCode` is `position`
+ * (1-based, nextPathLessonNumber): CL-LSN-PPNNN-V01. When that number is
+ * taken, whatever its version, the next free one of the path's range,
+ * wrapping back to 001; the recap numbers (901 and up) are left to the
+ * recaps. Null when the path gives no prefix or its range is full: the caller
+ * falls back on nextLessonRefCode.
  */
 export function lessonRefCodeFor(
   pathRefCode: string,
@@ -109,11 +136,11 @@ export function lessonRefCodeFor(
   return free === null ? null : format(free, 5);
 }
 
-/** Where an existing lesson sits: a path's code and the lesson's place in it. */
+/** Where an existing lesson sits: a path's code and the lessons before it. */
 export interface LessonPlacement {
   pathRefCode: string;
-  /** 1-based, among the path's lessons. */
-  position: number;
+  /** The codes of the lessons placed before it in that path. */
+  ahead: readonly string[];
 }
 
 /**
@@ -140,7 +167,8 @@ export function suggestLessonRefCode<P extends LessonPlacement>(
   const first = numbered[0];
   if (first === undefined) return null;
   const others = taken.filter((code) => code !== current);
-  const refCode = lessonRefCodeFor(first.pathRefCode, first.position, others);
+  const rank = nextPathLessonNumber(first.pathRefCode, first.ahead);
+  const refCode = lessonRefCodeFor(first.pathRefCode, rank, others);
   return refCode === null ? null : { refCode, from: first };
 }
 

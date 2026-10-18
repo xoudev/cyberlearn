@@ -159,8 +159,9 @@ export function NewLessonForm({
   const refCodeOpen = editingRefCode || state.fieldErrors?.refCode !== undefined;
   const preview = useLessonPreview(refreshLessonPreviewAction);
 
-  // The first path chosen gives the code its PP and the lesson's place at the
-  // end of that path; without one, the next code of the catalogue.
+  // The first path chosen gives the code its PP and the lesson's rank at the
+  // end of that path, recaps not counted; without one, the next code of the
+  // catalogue.
   const firstPathId = pathIds[0] ?? null;
   useEffect(() => {
     if (refCodeTyped) return;
@@ -313,8 +314,8 @@ export function NewLessonForm({
                 </>
               ) : firstPath !== undefined ? (
                 <>
-                  Tiré du parcours <b style={{ color: TURQ }}>{firstPath.title}</b> et de la place
-                  que la leçon y prendra.
+                  Tiré du parcours <b style={{ color: TURQ }}>{firstPath.title}</b> et du rang que
+                  la leçon y prendra, bilans de module non comptés.
                 </>
               ) : (
                 <>Le prochain code libre du catalogue, faute de parcours.</>
