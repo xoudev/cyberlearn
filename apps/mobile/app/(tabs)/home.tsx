@@ -14,7 +14,7 @@ import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { ModuleRouteRow } from "@/components/module-route";
 import { BadgeIcon } from "@/components/media";
-import { RevisionsCard } from "@/components/revisions-card";
+import { RecallCard } from "@/components/recall-card";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { StreakPanel } from "@/components/streak-panel";
@@ -26,27 +26,31 @@ import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "
 import { firstName, leadAction, pathsTitle, type HomePath, type LeadProgress } from "@/lib/home";
 import type { ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import {
+  useDailyRecall,
   useDashboard,
   useQuests,
-  useRevisions,
   useUnreadCount,
   type DashboardData,
 } from "@/lib/queries";
-import { splitReviews } from "@/lib/revisions";
+import { recallCardState } from "@/lib/rappel";
 import { useSession } from "@/lib/session";
+import { RECALL_STATE_LABEL, type RecallState } from "@cyberlearn/lib/revisions/recall-copy";
 
 /**
  * The home tab: the site's dashboard, rebuilt around the paths (PR #233). The
- * paths lead; a half-finished lesson and due revisions follow only when there
- * are some; the reader's own record closes. The sections are numbered as on
- * the site, and the numbering closes up behind a section that has nothing to
- * say (@cyberlearn/lib/dashboard/sections).
+ * paths lead; a half-finished lesson follows when there is one, then the
+ * day's recall while spaced repetition is on; the reader's own record
+ * closes. The sections are numbered as on the site, and the numbering closes
+ * up behind a section that has nothing to say
+ * (@cyberlearn/lib/dashboard/sections).
  */
 export default function Accueil(): React.JSX.Element {
   const { session } = useSession();
   const userId = session?.user.id;
   const { data, isLoading, error, refetch } = useDashboard(userId);
-  const { data: revisions } = useRevisions(userId);
+  // Drawn on the server on the day's first look, as the site's dashboard
+  // draws it: its state is the one the Révisions screen will open on.
+  const recall = useDailyRecall(userId);
 
   if (isLoading || !data) {
     return (
@@ -60,12 +64,9 @@ export default function Accueil(): React.JSX.Element {
     );
   }
 
-  const dueReviews =
-    revisions?.enabled === true ? splitReviews(revisions.items, new Date()).due.length : 0;
-
   return (
-    <Screen onRefresh={() => refetch()}>
-      <HomeBody data={data} userId={userId} dueReviews={dueReviews} />
+    <Screen onRefresh={() => Promise.all([refetch(), recall.refetch()])}>
+      <HomeBody data={data} userId={userId} recallState={recallCardState(recall.data)} />
     </Screen>
   );
 }
@@ -73,11 +74,12 @@ export default function Accueil(): React.JSX.Element {
 function HomeBody({
   data,
   userId,
-  dueReviews,
+  recallState,
 }: {
   data: DashboardData;
   userId: string | undefined;
-  dueReviews: number;
+  /** To do, done or nothing today; null with spaced repetition off. Never a count. */
+  recallState: RecallState | null;
 }): React.JSX.Element {
   const router = useRouter();
   const { theme } = useCosmetics();
@@ -90,7 +92,10 @@ function HomeBody({
 
   const { me, level, rank, badges, resume, paths, stats } = data;
   const tier = computeTier(level.level);
-  const sections = planSections({ hasResume: resume !== null, dueReviews });
+  const sections = planSections({ hasResume: resume !== null, hasRecall: recallState !== null });
+  const openRecall = (): void => {
+    router.push("/revisions");
+  };
   const xpToNext = Math.max(level.needed - level.current, 0);
   const fr = (value: number): string => value.toLocaleString("fr-FR");
   const wrapped = wrappedWindow(new Date());
@@ -187,6 +192,22 @@ function HomeBody({
             <Text variant="micro">{me.streakDays > 1 ? "jours" : "jour"}</Text>
           </View>
         </View>
+        {/* The site's greeting says it too, while the day's recall is to do. */}
+        {recallState === "todo" ? (
+          <PressableScale
+            onPress={openRecall}
+            accessibilityLabel="Ton rappel du jour t'attend"
+            style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
+          >
+            <Text variant="body">
+              <Text style={{ color: theme.accent, fontFamily: `${fonts.sans}_700Bold` }}>
+                Ton rappel du jour
+              </Text>{" "}
+              t&apos;attend
+            </Text>
+            <ChevronRight color={theme.accent} size={14} />
+          </PressableScale>
+        ) : null}
       </View>
 
       {/* Level + XP: the rank reached, the level, how far into it, what is left */}
@@ -301,14 +322,24 @@ function HomeBody({
         </Rise>
       ) : null}
 
-      {/* 03 · À réviser: only when something is actually due */}
-      {dueReviews > 0 ? (
+      {/* 03 · Révisions: the day's recall, to do, done or nothing today. It
+          keeps its place from one day to the next, as on the site, and leaves
+          only with spaced repetition switched off. */}
+      {recallState !== null ? (
         <Rise index={3}>
           <SectionLabel
-            eyebrow={`${sectionNumber(sections, "reviews") ?? "03"} · à réviser`}
-            title={`${String(dueReviews)} leçon${dueReviews > 1 ? "s" : ""} demande${dueReviews > 1 ? "nt" : ""} ton attention.`}
+            eyebrow={`${sectionNumber(sections, "recall") ?? "03"} · révisions`}
+            title="Rappel du jour"
+            right={
+              <Text
+                variant="micro"
+                style={{ color: recallState === "todo" ? theme.accent : colors.textMuted }}
+              >
+                {RECALL_STATE_LABEL[recallState]}
+              </Text>
+            }
           />
-          <RevisionsCard userId={userId} />
+          <RecallCard state={recallState} onOpen={openRecall} />
         </Rise>
       ) : null}
 

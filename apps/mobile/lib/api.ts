@@ -31,6 +31,15 @@ import { readLessonLocks, type LessonLock } from "@/lib/lesson-locks";
 import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import { readPathCovers, type PathCover } from "@/lib/path-covers";
+import {
+  moduleReviewPath,
+  readRecallAnswer,
+  readRecallReply,
+  REVIEW_CARDS_PATH,
+  type ModuleAnswer,
+  type RecallAnswerReply,
+  type RecallView,
+} from "@/lib/rappel";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
@@ -552,24 +561,51 @@ export async function reportQuizApi(
   }
 }
 
-export type GradeReviewReply =
-  | { ok: true; reviewXp: number; nextReviewAt: string | null; mastered: boolean }
-  | { ok: false; error: string };
+// ── Rappel du jour et Réviser ce module (the site's lib/revisions/daily-recall.ts) ──
+// The older SM-2 queue keeps its route (/api/mobile/review) for the apps
+// already installed; this one no longer calls it.
 
-/** Grades a due review through the site's service (SM-2 step, XP, no double grading). */
-export async function gradeReviewApi(
-  scheduleId: string,
-  quality: 1 | 3 | 5,
-): Promise<GradeReviewReply> {
+async function fetchRecall(path: string): Promise<RecallView> {
+  const res = await authedFetch(path);
+  const reply = readRecallReply(await res.json());
+  if (!reply.ok) throw new Error(reply.error);
+  return reply.recall;
+}
+
+/** The day's recall, drawn on the server on its first opening of the day, with the answers given. */
+export function fetchDailyRecallApi(): Promise<RecallView> {
+  return fetchRecall(REVIEW_CARDS_PATH);
+}
+
+/** "Réviser ce module": six questions at most from the module's lessons finished, the same all day. */
+export function fetchModuleReviewApi(slug: string, moduleNumber: number): Promise<RecallView> {
+  return fetchRecall(moduleReviewPath(slug, moduleNumber));
+}
+
+/** Posts one answer; null when the server could not be reached or its reply not read. */
+async function postRecallAnswer(body: object): Promise<RecallAnswerReply | null> {
   try {
-    const res = await authedFetch("/api/mobile/review", {
+    const res = await authedFetch(REVIEW_CARDS_PATH, {
       method: "POST",
-      body: JSON.stringify({ scheduleId, quality }),
+      body: JSON.stringify(body),
     });
-    return (await res.json()) as GradeReviewReply;
+    return readRecallAnswer(await res.json());
   } catch {
-    return { ok: false, error: "La révision n'a pas pu être enregistrée. Réessaie." };
+    return null;
   }
+}
+
+/** One answer to the day's recall: final, checked on the server; the last one hands it in. */
+export function answerDailyRecallApi(
+  index: number,
+  selected: number,
+): Promise<RecallAnswerReply | null> {
+  return postRecallAnswer({ index, selected });
+}
+
+/** One answer to a module's review: checked on the server, nothing recorded. */
+export function answerModuleReviewApi(answer: ModuleAnswer): Promise<RecallAnswerReply | null> {
+  return postRecallAnswer(answer);
 }
 
 /** Finishes a lesson: recorded, refused with its reason, or not synced (see lesson-completion). */
