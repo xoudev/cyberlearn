@@ -1029,7 +1029,7 @@ export interface MdxEditorPanelProps {
    * The block view's fields are plain inputs: the app's own listener on the
    * window (useSaveShortcut) takes the shortcut there.
    */
-  onSave?: () => void;
+  onSave?: (() => void) | undefined;
 }
 
 export function MdxEditorPanel({
