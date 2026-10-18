@@ -1,4 +1,5 @@
 import type { ContentReportSurface, Prisma } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { LIVE_CLASS_FILTER, classRepository } from "./class.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice } from "./console-page.js";
@@ -39,12 +40,7 @@ const everySurfaceListed: [Exclude<ContentReportSurface, ContentSurface>] extend
 void everySurfaceListed;
 
 /** What the journal calls each gesture. */
-export const CONTENT_AUDIT_ACTION = {
-  hide: "moderation.content.hide",
-  restore: "moderation.content.restore",
-  delete: "moderation.content.delete",
-  dismiss: "moderation.report.dismiss",
-} as const;
+export const CONTENT_AUDIT_ACTION = AUDIT_ACTION.content;
 
 export type ContentGesture = "hide" | "restore" | "delete";
 

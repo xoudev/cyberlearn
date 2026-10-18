@@ -5,13 +5,13 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockRequireRequestUser, mockPrisma } = vi.hoisted(() => ({
+const { mockRequireRequestUser, mockSave } = vi.hoisted(() => ({
   mockRequireRequestUser: vi.fn(),
-  mockPrisma: { userPreferences: { upsert: vi.fn() } },
+  mockSave: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireRequestUser: mockRequireRequestUser }));
-vi.mock("@cyberlearn/db", () => ({ prisma: mockPrisma }));
+vi.mock("@cyberlearn/db", () => ({ preferencesRepository: { save: mockSave } }));
 
 const { updateThemeAction } = await import("../update-preferences");
 
@@ -25,7 +25,7 @@ function makeFormData(theme: string): FormData {
 
 beforeEach(() => {
   mockRequireRequestUser.mockResolvedValue(MOCK_USER);
-  mockPrisma.userPreferences.upsert.mockResolvedValue({});
+  mockSave.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -36,7 +36,7 @@ describe("updateThemeAction", () => {
   it("rejects an invalid theme and writes nothing", async () => {
     const result = await updateThemeAction({}, makeFormData("ultra"));
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 
   it.each(["dark", "light", "system"])("accepts the valid theme %s", async (theme) => {
@@ -44,12 +44,8 @@ describe("updateThemeAction", () => {
     expect(result.success).toBe(true);
   });
 
-  it("persists the chosen theme via upsert", async () => {
+  it("persists the chosen theme, and only that column", async () => {
     await updateThemeAction({}, makeFormData("light"));
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: MOCK_USER.id },
-      create: { userId: MOCK_USER.id, theme: "light" },
-      update: { theme: "light" },
-    });
+    expect(mockSave).toHaveBeenCalledExactlyOnceWith(MOCK_USER.id, { theme: "light" });
   });
 });

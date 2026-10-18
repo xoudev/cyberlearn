@@ -1,3 +1,4 @@
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { createSupabaseAdminClient } from "../supabase/admin.js";
 
@@ -167,7 +168,7 @@ export async function resetProgress(
     await tx.auditLog.create({
       data: {
         actorId: options.actorId,
-        action: options.action ?? "admin.user.progress.reset",
+        action: options.action ?? AUDIT_ACTION.user.progressReset,
         targetType: "User",
         targetId: userId,
         metadata: {

@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({
-  requireAdminAction: vi.fn<() => Promise<{ id: string }>>(),
-  ticketUpdate: vi.fn<(args: unknown) => Promise<unknown>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
-  transaction: vi.fn<(operations: Promise<unknown>[]) => Promise<unknown[]>>(),
-  revalidatePath: vi.fn<(path: string) => void>(),
-  loggerError: vi.fn(),
-}));
+const m = vi.hoisted(() => {
+  const tx = { contactTicket: { update: vi.fn<(args: unknown) => Promise<unknown>>() } };
+  return {
+    tx,
+    requireAdminAction: vi.fn<() => Promise<{ id: string }>>(),
+    record: vi.fn<(entry: Record<string, unknown>, db?: unknown) => Promise<void>>(),
+    transaction: vi.fn<(work: (client: typeof tx) => Promise<unknown>) => Promise<unknown>>(),
+    revalidatePath: vi.fn<(path: string) => void>(),
+    loggerError: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
-  prisma: {
-    contactTicket: { update: m.ticketUpdate },
-    auditLog: { create: m.auditCreate },
-    $transaction: m.transaction,
-  },
+  prisma: { $transaction: m.transaction },
+  auditLogRepository: { record: m.record },
   ticketRepository: {},
 }));
 vi.mock("@cyberlearn/email", () => ({ sendTicketReplyEmail: vi.fn() }));
@@ -41,9 +41,9 @@ const TICKET = "55555555-5555-4555-8555-555555555555";
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: "admin-1" });
-  m.ticketUpdate.mockResolvedValue({});
-  m.auditCreate.mockResolvedValue({});
-  m.transaction.mockImplementation((operations) => Promise.all(operations));
+  m.tx.contactTicket.update.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
+  m.transaction.mockImplementation((work) => work(m.tx));
 });
 
 describe("isTicketStatus", () => {
@@ -62,15 +62,21 @@ describe("updateTicketStatusAction", () => {
   it("writes the status and its audit row together", async () => {
     await expect(updateTicketStatusAction(TICKET, "IN_PROGRESS")).resolves.toEqual({ ok: true });
     expect(m.transaction).toHaveBeenCalledOnce();
-    expect(m.ticketUpdate).toHaveBeenCalledWith({
+    expect(m.tx.contactTicket.update).toHaveBeenCalledWith({
       where: { id: TICKET },
       data: { status: "IN_PROGRESS" },
     });
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
-      action: "ticket.status.update",
-      targetId: TICKET,
-      metadata: { status: "IN_PROGRESS" },
-    });
+    // In the transaction that changes the status, by its client.
+    expect(m.record).toHaveBeenCalledExactlyOnceWith(
+      {
+        actorId: "admin-1",
+        action: "ticket.status.update",
+        targetType: "ContactTicket",
+        targetId: TICKET,
+        metadata: { status: "IN_PROGRESS" },
+      },
+      m.tx,
+    );
     expect(m.revalidatePath).toHaveBeenCalledWith(`/tickets/${TICKET}`);
   });
 

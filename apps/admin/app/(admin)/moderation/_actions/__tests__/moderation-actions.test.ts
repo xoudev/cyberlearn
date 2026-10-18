@@ -5,7 +5,7 @@ const m = vi.hoisted(() => ({
   findSubject: vi.fn<(eventId: string) => Promise<unknown>>(),
   applyOutcome: vi.fn<(eventId: string, outcome: string, adminId: string) => Promise<unknown>>(),
   issue: vi.fn<(input: Record<string, unknown>) => Promise<{ ok: boolean }>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  record: vi.fn<(entry: Record<string, unknown>) => Promise<void>>(),
   notificationCreate: vi.fn<(args: unknown) => Promise<unknown>>(),
   sendBanNoticeEmail: vi.fn<(options: unknown) => Promise<void>>(),
   sendModerationNoticeEmail: vi.fn<(options: unknown) => Promise<void>>(),
@@ -16,8 +16,8 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   moderationRepository: { findSubject: m.findSubject, applyOutcome: m.applyOutcome },
   banRepository: { issue: m.issue },
+  auditLogRepository: { record: m.record },
   prisma: {
-    auditLog: { create: m.auditCreate },
     notification: { create: m.notificationCreate },
   },
 }));
@@ -78,7 +78,7 @@ beforeEach(() => {
     surface: "forum.post",
   });
   m.issue.mockResolvedValue({ ok: true });
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
   m.notificationCreate.mockResolvedValue({});
   m.sendBanNoticeEmail.mockResolvedValue(undefined);
   m.sendModerationNoticeEmail.mockResolvedValue(undefined);
@@ -126,7 +126,7 @@ describe("what the queue is told", () => {
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/quelqu'un d'autre/u);
     expect(m.revalidatePath).toHaveBeenCalledWith("/moderation");
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("that the sanction did not apply to an account already banned", async () => {

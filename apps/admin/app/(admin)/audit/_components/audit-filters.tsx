@@ -24,7 +24,7 @@ export function AuditFilters({
 }: {
   /** The filters the server understood, as the URL carries them. */
   params: Readonly<Record<string, string>>;
-  /** Every action the log holds. */
+  /** Every action the console writes, and every other the log holds. */
   actions: readonly string[];
 }): React.ReactElement {
   const router = useRouter();

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@cyberlearn/db";
+import { preferencesRepository } from "@cyberlearn/db";
 import { updateNotificationsSchema } from "@cyberlearn/types";
 import { requireRequestUser } from "@/lib/auth";
 
@@ -46,16 +46,10 @@ export async function updateNotificationsAction(
   }
 
   const { reviewReminders, weeklyDigest, emailNotifications } = parsed.data;
-  const values = {
+  await preferencesRepository.save(authUser.id, {
     reviewReminders,
     weeklyDigest,
     ...(emailNotifications !== undefined ? { emailNotifications } : {}),
-  };
-
-  await prisma.userPreferences.upsert({
-    where: { userId: authUser.id },
-    create: { userId: authUser.id, ...values },
-    update: values,
   });
 
   return { success: true };

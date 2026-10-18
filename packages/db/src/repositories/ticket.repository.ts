@@ -1,3 +1,4 @@
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import type { Prisma, TicketStatus, TicketTheme } from "@prisma/client";
 
@@ -46,8 +47,8 @@ export type AssignTicketResult =
   | { ok: false; reason: "NOT_FOUND" | "NOT_ADMIN" };
 
 /** The audit actions the console's ticket bookkeeping writes. */
-export const TICKET_ASSIGN_ACTION = "ticket.assign";
-export const TICKET_NOTE_ACTION = "ticket.note.add";
+export const TICKET_ASSIGN_ACTION = AUDIT_ACTION.ticket.assign;
+export const TICKET_NOTE_ACTION = AUDIT_ACTION.ticket.noteAdd;
 
 /**
  * The themes whose tickets the console calls critical while they are open.
@@ -461,7 +462,7 @@ export const ticketRepository = {
       await tx.auditLog.create({
         data: {
           actorId: input.actorId,
-          action: "ticket.status.update",
+          action: AUDIT_ACTION.ticket.statusUpdate,
           targetType: "ContactTicket",
           targetId: input.ticketId,
           metadata: { status: "RESOLVED" },

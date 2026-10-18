@@ -1,8 +1,9 @@
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { creditXp } from "./credit.js";
 
 /** What the audit log calls an XP correction from the console. */
-export const XP_ADJUSTMENT_ACTION = "admin.user.xp.adjust";
+export const XP_ADJUSTMENT_ACTION = AUDIT_ACTION.user.xpAdjust;
 
 export interface AdjustXpInput {
   userId: string;

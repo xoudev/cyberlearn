@@ -11,7 +11,8 @@
     "./supabase/admin": "./src/supabase/admin.ts",
     "./prisma": "./src/prisma.ts",
     "./catalogue": "./src/catalogue/index.ts",
-    "./gamification": "./src/gamification.ts"
+    "./gamification": "./src/gamification.ts",
+    "./audit-actions": "./src/audit-actions.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",

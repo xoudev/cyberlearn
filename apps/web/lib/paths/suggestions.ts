@@ -1,4 +1,4 @@
-import { PUBLISHED_PATH_LESSON, prisma } from "@cyberlearn/db";
+import { PUBLISHED_PATH_LESSON, preferencesRepository, prisma } from "@cyberlearn/db";
 import { suggestPaths, type PathSuggestion } from "@cyberlearn/lib/paths/suggest";
 import {
   goalSchema,
@@ -44,10 +44,9 @@ export async function suggestionsFor(
 
 /** Keeps the answers, to suggest again later. Never used to restrict anything. */
 export async function saveLearningAnswers(userId: string, answers: LearningAnswers): Promise<void> {
-  await prisma.userPreferences.upsert({
-    where: { userId },
-    create: { userId, learningGoals: answers.goals, startingLevel: answers.level },
-    update: { learningGoals: answers.goals, startingLevel: answers.level },
+  await preferencesRepository.save(userId, {
+    learningGoals: answers.goals,
+    startingLevel: answers.level,
   });
 }
 

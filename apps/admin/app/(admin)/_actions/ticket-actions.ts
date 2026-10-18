@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  auditLogRepository,
   banRepository,
   prisma,
   ticketRepository,
   type AddNoteResult,
   type AssignTicketResult,
 } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { sendTicketReplyEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { STATUS_META } from "../tickets/ticket-meta";
@@ -39,21 +41,22 @@ export async function updateTicketStatusAction(
   // thrown: a thrown error took the administrator off the ticket to the
   // console's error page.
   try {
-    await prisma.$transaction([
-      prisma.contactTicket.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.contactTicket.update({
         where: { id: input.data.ticketId },
         data: { status: input.data.status },
-      }),
-      prisma.auditLog.create({
-        data: {
+      });
+      await auditLogRepository.record(
+        {
           actorId: admin.id,
-          action: "ticket.status.update",
+          action: AUDIT_ACTION.ticket.statusUpdate,
           targetType: "ContactTicket",
           targetId: input.data.ticketId,
           metadata: { status: input.data.status },
         },
-      }),
-    ]);
+        tx,
+      );
+    });
   } catch (error) {
     logger.error({ scope: "tickets", err: errorMessage(error) }, "status update failed");
     return { ok: false, error: "Le statut n'a pas pu être changé. Rien n'a été modifié." };
@@ -181,14 +184,12 @@ export async function replyToTicketAction(
     };
   }
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "ticket.reply",
-      targetType: "ContactTicket",
-      targetId: ticket.id,
-      metadata: {},
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.ticket.reply,
+    targetType: "ContactTicket",
+    targetId: ticket.id,
+    metadata: {},
   });
 
   await emailReply(ticket, input.data.body);
@@ -317,14 +318,12 @@ export async function liftAppealedBanAction(
     // The reply is on the requester's page by now: a journal line that fails
     // to land is logged, and the console does not call a sent reply unsent.
     try {
-      await prisma.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "ticket.reply",
-          targetType: "ContactTicket",
-          targetId: ticketId,
-          metadata: {},
-        },
+      await auditLogRepository.record({
+        actorId: admin.id,
+        action: AUDIT_ACTION.ticket.reply,
+        targetType: "ContactTicket",
+        targetId: ticketId,
+        metadata: {},
       });
     } catch (error) {
       logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal reply audit failed");

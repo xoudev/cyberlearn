@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@cyberlearn/db";
+import { preferencesRepository } from "@cyberlearn/db";
 import { updatePrivacySchema } from "@cyberlearn/types";
 import { requireRequestUser } from "@/lib/auth";
 
@@ -42,12 +42,12 @@ export async function updatePrivacyAction(
 
   const { leaderboardVisibility, publicProfile, friendsLeaderboard } = parsed.data;
 
-  // Upsert: a user who reached settings has completed onboarding (so the row
-  // exists), but upsert stays correct even if the preferences row is missing.
-  await prisma.userPreferences.upsert({
-    where: { userId: authUser.id },
-    create: { userId: authUser.id, leaderboardVisibility, publicProfile, friendsLeaderboard },
-    update: { leaderboardVisibility, publicProfile, friendsLeaderboard },
+  // A user who reached settings has completed onboarding (so the row exists),
+  // but the save stays correct even if the preferences row is missing.
+  await preferencesRepository.save(authUser.id, {
+    leaderboardVisibility,
+    publicProfile,
+    friendsLeaderboard,
   });
 
   // A visibility change must be reflected on the leaderboard right away.
@@ -83,11 +83,7 @@ export async function setFriendsLeaderboardAction(
   }
 
   const { friendsLeaderboard } = parsed.data;
-  await prisma.userPreferences.upsert({
-    where: { userId: authUser.id },
-    create: { userId: authUser.id, friendsLeaderboard },
-    update: { friendsLeaderboard },
-  });
+  await preferencesRepository.save(authUser.id, { friendsLeaderboard });
 
   revalidatePath("/leaderboard");
 

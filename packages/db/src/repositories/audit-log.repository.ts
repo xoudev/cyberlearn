@@ -1,15 +1,37 @@
 import type { Prisma } from "@prisma/client";
+import { CONSOLE_AUDIT_ACTIONS, type AuditAction } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 import { WITHOUT_CRON_RUNS } from "./cron-run.repository.js";
 
 /**
- * The audit log as the console reads it: a page under filters, the names of
- * the actions it holds, and the batches its CSV export streams.
+ * The audit log: the one entry a console gesture writes, and the log as the
+ * console reads it - a page under filters, the names of the actions it holds,
+ * and the batches its CSV export streams.
  *
  * The page used to read the last 500 entries and filter them in the browser,
  * so a gesture older than that could not be found at all, even by its date.
  */
+
+/** One entry, as a console gesture writes it. */
+export interface AuditEntry {
+  actorId: string;
+  /** One of the catalogue's names (audit-actions.ts), never a string spelled here. */
+  action: AuditAction;
+  /** The kind of thing acted on, as the list prints it: "User", "Lesson", "ContactTicket". */
+  targetType: string;
+  /** Which one; null for a gesture on nothing in particular, such as an export of the log. */
+  targetId: string | null;
+  /** What the gesture changed or decided. Left out, the column stays null. */
+  metadata?: Prisma.InputJsonObject | undefined;
+  /**
+   * For an entry about an account erased in the same gesture: the hashed id
+   * the erasure left in its place, and the flag that says the row is about a
+   * person no longer there.
+   */
+  actorHashedId?: string | undefined;
+  anonymized?: boolean | undefined;
+}
 
 /** What the console narrows the log by; every part is optional. */
 export interface AuditFilter {
@@ -113,18 +135,23 @@ export function auditWhere(filter: AuditFilter): Prisma.AuditLogWhereInput {
 
 export const auditLogRepository = {
   /**
-   * Writes one entry, for a gesture whose repository has no transaction of
-   * its own to write it in: the change happened elsewhere (Supabase Auth),
-   * and this is its trace.
+   * Writes one entry.
+   *
+   * Handed the client of a transaction, it writes in that transaction, so the
+   * change and its trace land together or not at all. Without one, it writes
+   * on its own, after the change: one with no transaction here to share
+   * (Supabase Auth, a mail that went out), or one its caller made outside any.
    */
-  async record(entry: {
-    actorId: string;
-    action: string;
-    targetType: string;
-    targetId: string | null;
-    metadata: Prisma.InputJsonObject;
-  }): Promise<void> {
-    await prisma.auditLog.create({ data: entry });
+  async record(entry: AuditEntry, db: Prisma.TransactionClient = prisma): Promise<void> {
+    const { metadata, actorHashedId, anonymized, ...row } = entry;
+    await db.auditLog.create({
+      data: {
+        ...row,
+        ...(metadata !== undefined ? { metadata } : {}),
+        ...(actorHashedId !== undefined ? { actorHashedId } : {}),
+        ...(anonymized !== undefined ? { anonymized } : {}),
+      },
+    });
   },
 
   /** One page of the log under a filter. */
@@ -164,14 +191,25 @@ export const auditLogRepository = {
     return prisma.auditLog.count({ where: auditWhere(filter) });
   },
 
-  /** Every action the log holds, for the filter's list. */
+  /**
+   * The actions the filter offers: every one the console writes, from the
+   * catalogue, whether or not the log holds one yet, and every other the log
+   * holds (the site's, the scheduled jobs', names no longer written). Once
+   * each, sorted.
+   *
+   * The catalogue is what lets a link from another page (the announcements'
+   * history) filter on an action nobody has used yet, rather than see it
+   * dropped as unknown and land on the whole log.
+   */
   async actionNames(): Promise<string[]> {
     const rows = await prisma.auditLog.findMany({
       distinct: ["action"],
       select: { action: true },
       orderBy: { action: "asc" },
     });
-    return rows.map((row) => row.action);
+    return [
+      ...new Set<string>([...CONSOLE_AUDIT_ACTIONS, ...rows.map((row) => row.action)]),
+    ].sort();
   },
 
   /**

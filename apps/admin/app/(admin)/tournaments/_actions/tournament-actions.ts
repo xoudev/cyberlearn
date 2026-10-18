@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { LIVE_CLASS_FILTER, prisma, tournamentRepository, type Prisma } from "@cyberlearn/db";
+import {
+  auditLogRepository,
+  LIVE_CLASS_FILTER,
+  prisma,
+  tournamentRepository,
+  type Prisma,
+} from "@cyberlearn/db";
+import { AUDIT_ACTION, type AuditAction } from "@cyberlearn/db/audit-actions";
 import {
   parisLocalToDate,
   TOURNAMENT_LIMITS,
@@ -137,12 +144,16 @@ async function compositionProblem(composition: Composition): Promise<string | nu
 
 async function audit(
   actorId: string,
-  action: string,
+  action: AuditAction,
   targetId: string,
-  metadata: Prisma.InputJsonValue,
+  metadata: Prisma.InputJsonObject,
 ): Promise<void> {
-  await prisma.auditLog.create({
-    data: { actorId, action, targetType: "Tournament", targetId, metadata },
+  await auditLogRepository.record({
+    actorId,
+    action,
+    targetType: "Tournament",
+    targetId,
+    metadata,
   });
 }
 
@@ -171,7 +182,7 @@ export async function createTournamentAction(
     classIds: composition.data.classIds,
     challenges: composition.data.challenges,
   });
-  await audit(admin.id, "tournament.create", created.id, {
+  await audit(admin.id, AUDIT_ACTION.tournament.create, created.id, {
     title: details.data.title,
     classes: composition.data.classIds.length,
     challenges: composition.data.challenges.length,
@@ -259,7 +270,7 @@ export async function updateTournamentAction(
     });
   }
 
-  await audit(admin.id, "tournament.update", id, { phase, title: details.data.title });
+  await audit(admin.id, AUDIT_ACTION.tournament.update, id, { phase, title: details.data.title });
   revalidatePath("/tournaments");
   revalidatePath(`/tournaments/${id}`);
   return { ok: true };
@@ -272,7 +283,7 @@ export async function deleteTournamentAction(id: string): Promise<TournamentForm
   if (!deleted) {
     return { error: "Un tournoi commencé ne se supprime pas : ses scores restent. Arrête-le." };
   }
-  await audit(admin.id, "tournament.delete", id, {});
+  await audit(admin.id, AUDIT_ACTION.tournament.delete, id, {});
   revalidatePath("/tournaments");
   redirect(withSavedNotice("/tournaments", "deleted"));
 }
@@ -282,7 +293,7 @@ export async function endTournamentNowAction(id: string): Promise<TournamentForm
   if (!idSchema.safeParse(id).success) return { error: "Tournoi introuvable." };
   const ended = await tournamentRepository.endNow(id, new Date());
   if (!ended) return { error: "Ce tournoi n'est pas en cours." };
-  await audit(admin.id, "tournament.end", id, {});
+  await audit(admin.id, AUDIT_ACTION.tournament.end, id, {});
   revalidatePath("/tournaments");
   revalidatePath(`/tournaments/${id}`);
   return { ok: true };

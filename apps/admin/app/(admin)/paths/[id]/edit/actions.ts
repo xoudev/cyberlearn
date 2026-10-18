@@ -2,7 +2,8 @@
 
 import { redirect, notFound } from "next/navigation";
 import { z } from "zod";
-import { pathRepository, prisma } from "@cyberlearn/db";
+import { auditLogRepository, pathRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { requireAdminAction } from "@/lib/auth";
@@ -122,15 +123,16 @@ export async function updatePathAction(
         // Not a delete and a recreate: that dropped every lesson's module and
         // flag, so one save emptied the modules the sync had filled.
         await pathRepository.replaceLessons(id, orderedLessonIds, tx);
-        await tx.auditLog.create({
-          data: {
+        await auditLogRepository.record(
+          {
             actorId: admin.id,
-            action: "path.update",
+            action: AUDIT_ACTION.path.update,
             targetType: "Path",
             targetId: id,
             metadata: { title: data.title, status, lessonCount: orderedLessonIds.length },
           },
-        });
+          tx,
+        );
       },
       { timeout: SAVE_PATH_TIMEOUT_MS },
     );
