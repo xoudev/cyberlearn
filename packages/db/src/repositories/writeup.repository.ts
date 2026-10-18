@@ -92,4 +92,18 @@ export const writeupRepository = {
     const { count } = await prisma.challengeWriteup.deleteMany({ where: { challengeId, userId } });
     return count;
   },
+
+  /** Every solution the account published, hidden ones included, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.challengeWriteup.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        isHidden: true,
+        createdAt: true,
+        updatedAt: true,
+        challenge: { select: { title: true, slug: true } },
+      },
+    });
+  },
 };

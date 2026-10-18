@@ -100,4 +100,12 @@ export const wrappedRepository = {
       update: { payload: data },
     });
   },
+
+  /** Every recap kept for the account, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.wrappedSnapshot.findMany({
+      where: { userId },
+      select: { period: true, periodKey: true, payload: true, createdAt: true },
+    });
+  },
 };

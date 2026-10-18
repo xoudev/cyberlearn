@@ -532,4 +532,23 @@ export const ticketRepository = {
       return { ok: true };
     });
   },
+
+  /**
+   * Every ticket the account filed, for its GDPR export (rgpd/build-export.ts).
+   * The columns are named one by one, like the requester's own reads: the
+   * assignee and the internal notes are the team's and never leave.
+   */
+  async exportFor(userId: string) {
+    return prisma.contactTicket.findMany({
+      where: { userId },
+      select: {
+        subject: true,
+        theme: true,
+        message: true,
+        status: true,
+        jiraIssueKey: true,
+        createdAt: true,
+      },
+    });
+  },
 };

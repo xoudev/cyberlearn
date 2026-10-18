@@ -75,4 +75,19 @@ export const mockExamRepository = {
       select: { submittedAt: true, score: true, domains: true, late: true },
     });
   },
+
+  /** Every mock exam the account started, on every path, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.mockExamAttempt.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        domains: true,
+        late: true,
+        startedAt: true,
+        submittedAt: true,
+        path: { select: { title: true } },
+      },
+    });
+  },
 };

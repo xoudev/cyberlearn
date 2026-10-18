@@ -108,4 +108,18 @@ export const leagueRepository = {
     }));
     return buildPodLadder(members, currentUserId, friendIds);
   },
+
+  /** The account's place in every season it played, for its GDPR export (rgpd/build-export.ts). */
+  async exportMembershipsFor(userId: string) {
+    return prisma.leagueMembership.findMany({
+      where: { userId },
+      select: {
+        division: true,
+        seasonXp: true,
+        finalRank: true,
+        globalRank: true,
+        joinedAt: true,
+      },
+    });
+  },
 };

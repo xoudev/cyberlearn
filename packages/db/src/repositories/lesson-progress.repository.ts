@@ -149,4 +149,23 @@ export const lessonProgressRepository = {
       return { ok: true, mode, lessonTitle: lesson.title, previousStatus };
     });
   },
+
+  /** Every lesson the account opened, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.userLessonProgress.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        attempts: true,
+        bestScore: true,
+        timeSpentSeconds: true,
+        startedAt: true,
+        completedAt: true,
+        lastAccessedAt: true,
+        quizCorrect: true,
+        quizTotal: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+    });
+  },
 };

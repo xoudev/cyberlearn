@@ -184,4 +184,24 @@ export const contentReportRepository = {
 
     return { rows: all, total: slice.total, page: slice.page, openReports };
   },
+
+  /**
+   * Every report the account made, oldest first, for its GDPR export
+   * (rgpd/build-export.ts): where, its reason and comment. Not the content,
+   * which is its author's.
+   */
+  async exportFor(userId: string) {
+    return prisma.contentReport.findMany({
+      where: { reporterId: userId },
+      select: {
+        surface: true,
+        contentId: true,
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
 };

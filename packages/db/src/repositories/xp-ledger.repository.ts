@@ -22,4 +22,13 @@ export const xpLedgerRepository = {
       select: { id: true, amount: true, source: true, createdAt: true },
     });
   },
+
+  /** Every credit of the account, newest first, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.xpLedger.findMany({
+      where: { userId },
+      select: { amount: true, source: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+  },
 };

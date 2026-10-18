@@ -320,4 +320,16 @@ export const badgeRepository = {
       return { ok: true, badgeName: badge.name, xpCredited: credited, xpTakenBack };
     });
   },
+
+  /** Every badge the account holds, with what it was earned for, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.userBadge.findMany({
+      where: { userId },
+      select: {
+        earnedAt: true,
+        context: true,
+        badge: { select: { name: true, rarity: true, description: true } },
+      },
+    });
+  },
 };

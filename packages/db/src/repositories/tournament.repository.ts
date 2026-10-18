@@ -556,4 +556,24 @@ export const tournamentRepository = {
     const count = await prisma.tournamentChallenge.count({ where: { challengeId } });
     return count > 0;
   },
+
+  /**
+   * Every flag the account found in a tournament, disqualified ones included,
+   * oldest first, for its GDPR export (rgpd/build-export.ts). Who took a flag
+   * back is the team's, not the player's: it is not read.
+   */
+  async exportSolvesFor(userId: string) {
+    return prisma.tournamentSolve.findMany({
+      where: { userId },
+      orderBy: { solvedAt: "asc" },
+      select: {
+        points: true,
+        solvedAt: true,
+        disqualifiedAt: true,
+        disqualifiedReason: true,
+        tournament: { select: { title: true } },
+        challenge: { select: { title: true } },
+      },
+    });
+  },
 };

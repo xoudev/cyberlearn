@@ -272,4 +272,26 @@ export const duelRepository = {
       throw err;
     }
   },
+
+  /**
+   * Every duel the account sent or received, for its GDPR export
+   * (rgpd/build-export.ts). Only its own answers: the other player's are theirs.
+   */
+  async exportFor(userId: string) {
+    return prisma.duel.findMany({
+      where: { OR: [{ challengerId: userId }, { opponentId: userId }] },
+      select: {
+        challengerId: true,
+        status: true,
+        winnerId: true,
+        createdAt: true,
+        finishedAt: true,
+        path: { select: { title: true } },
+        answers: {
+          where: { userId },
+          select: { index: true, selected: true, correct: true, answeredAt: true },
+        },
+      },
+    });
+  },
 };

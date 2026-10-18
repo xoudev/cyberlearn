@@ -153,4 +153,13 @@ export const streakRepository = {
       return { ok: true, before, after, movedToToday };
     });
   },
+
+  /** Every day the account was active, the latest first, for its GDPR export (rgpd/build-export.ts). */
+  async exportActivityDaysFor(userId: string) {
+    return prisma.userActivityDay.findMany({
+      where: { userId },
+      select: { day: true, count: true },
+      orderBy: { day: "desc" },
+    });
+  },
 };

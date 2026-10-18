@@ -449,4 +449,25 @@ export const certificateRepository = {
       return { ok: true };
     });
   },
+
+  /**
+   * Every certificate issued to the account, revoked ones included, for its
+   * GDPR export (rgpd/build-export.ts). The id is for the download link the
+   * export builds, never printed itself.
+   */
+  async exportFor(userId: string) {
+    return prisma.certificate.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        publicId: true,
+        issuedAt: true,
+        expiresAt: true,
+        sha256Hash: true,
+        revokedAt: true,
+        revokedReason: true,
+        path: { select: { title: true } },
+      },
+    });
+  },
 };

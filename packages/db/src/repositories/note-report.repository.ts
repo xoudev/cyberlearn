@@ -172,4 +172,23 @@ export const noteReportRepository = {
       return { reports: count, sharesRemoved };
     });
   },
+
+  /**
+   * Every report the account made, oldest first, for its GDPR export
+   * (rgpd/build-export.ts): its reason and comment, and the lesson the note
+   * was on. Not the note, which is its author's.
+   */
+  async exportFor(userId: string) {
+    return prisma.noteReport.findMany({
+      where: { reporterId: userId },
+      select: {
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+        note: { select: { lesson: { select: { title: true } } } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
 };
