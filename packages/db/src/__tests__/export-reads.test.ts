@@ -94,6 +94,28 @@ vi.mock("../prisma.js", () => ({ prisma: mockPrisma }));
 
 const USER = "11111111-1111-4111-8111-111111111111";
 
+/**
+ * Every column a query selects, as a dotted path, in the order its select
+ * lists them. Prisma hands a row's keys back in that order, and several
+ * sections of the export put the row in the file as it is, so a reordered
+ * select reorders the downloaded JSON. `toHaveBeenCalledWith` compares
+ * objects whatever their key order: this is what pins it.
+ */
+function selectedColumns(query: unknown, prefix = ""): string[] {
+  if (typeof query !== "object" || query === null || !("select" in query)) return [];
+  const { select } = query;
+  if (typeof select !== "object" || select === null) return [];
+  return Object.entries(select).flatMap(([key, value]: [string, unknown]) => [
+    `${prefix}${key}`,
+    ...selectedColumns(value, `${prefix}${key}.`),
+  ]);
+}
+
+/** The query a mocked Prisma method received on its first call. */
+function firstQuery(method: ReturnType<typeof vi.fn>): unknown {
+  return method.mock.calls[0]?.[0];
+}
+
 interface ReadCase {
   /** How the export calls it. */
   name: string;
@@ -607,9 +629,20 @@ describe("the repositories' reads for the GDPR export", () => {
 
       expect(prisma).toHaveBeenCalledOnce();
       expect(prisma).toHaveBeenCalledWith(query);
+      // The same columns in the same order, not only the same set.
+      expect(selectedColumns(firstQuery(prisma))).toEqual(selectedColumns(query));
       expect(result).toBe(rows);
     },
   );
+
+  it("tells two selects of the same columns in another order apart", () => {
+    const listed = { select: { day: true, lesson: { select: { title: true, slug: true } } } };
+    const reordered = { select: { lesson: { select: { slug: true, title: true } }, day: true } };
+
+    expect(reordered).toEqual(listed);
+    expect(selectedColumns(listed)).toEqual(["day", "lesson", "lesson.title", "lesson.slug"]);
+    expect(selectedColumns(reordered)).not.toEqual(selectedColumns(listed));
+  });
 
   it("covers every read the export makes through these repositories", () => {
     // The 37 reads of build-export.ts: these 34, the two of
