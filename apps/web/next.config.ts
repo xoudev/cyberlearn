@@ -139,10 +139,12 @@ const nextConfig: NextConfig = {
       { source: "/badges", destination: "/profile?tab=badges", permanent: false },
       { source: "/certificates", destination: "/profile?tab=certificats", permanent: false },
       { source: "/tournaments", destination: "/challenges?tab=tournois", permanent: false },
-      // The old SM-2 queue's address. Its page was only a redirect to the
-      // revisions, kept for bookmarks; the redirect lives here now, with the
-      // others, and the page and its skeleton are gone.
-      { source: "/review", destination: "/revisions", permanent: false },
+      // The revisions are the day's recall, a window over any page
+      // (?rappel=1): the old SM-2 queue's page is gone. Its addresses live on
+      // in bookmarks and in the reminders already stored, and open the
+      // window over the dashboard. /review was itself an older name of it.
+      { source: "/revisions", destination: "/dashboard?rappel=1", permanent: false },
+      { source: "/review", destination: "/dashboard?rappel=1", permanent: false },
     ]);
   },
   rewrites() {

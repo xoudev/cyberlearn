@@ -161,14 +161,8 @@ export { tournamentRepository } from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
 export {
-  reviewRepository,
-  LIVE_REVIEW_FILTER,
-  type ReviewQueueRow,
-  type ReviewSessionView,
-  type ReviewReminder,
-} from "./repositories/review.repository.js";
-export {
   reviewCardRepository,
+  LIVE_REVIEW_FILTER,
   type DueCardRow,
   type DueQuestionRow,
   type ReviewLessonRow,
@@ -300,7 +294,6 @@ export type {
   NoteFolder,
   Certificate,
   Notification,
-  ReviewSchedule,
   ReviewCard,
   ReviewSession,
   ContactTicket,

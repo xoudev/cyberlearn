@@ -116,15 +116,6 @@ export interface ExportPayload {
     revokedAt: Date | null;
     revokedReason: string | null;
   }[];
-  reviewSchedules: {
-    lessonTitle: string;
-    lessonSlug: string;
-    easeFactor: number;
-    intervalDays: number;
-    repetitions: number;
-    nextReviewAt: Date;
-    lastReviewedAt: Date;
-  }[];
   /** The lesson questions to be asked again, each in its box, retired ones included. */
   reviewCards: {
     lessonTitle: string;
@@ -293,7 +284,6 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     hintReveals,
     badges,
     certs,
-    reviewSchedules,
     ratings,
     questions,
     answers,
@@ -410,17 +400,6 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         revokedAt: true,
         revokedReason: true,
         path: { select: { title: true } },
-      },
-    }),
-    prisma.reviewSchedule.findMany({
-      where: { userId },
-      select: {
-        easeFactor: true,
-        intervalDays: true,
-        repetitions: true,
-        nextReviewAt: true,
-        lastReviewedAt: true,
-        lesson: { select: { title: true, slug: true } },
       },
     }),
     prisma.rating.findMany({
@@ -754,15 +733,6 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       verifyUrl: `${APP_URL}/verify/${c.publicId}`,
       revokedAt: c.revokedAt,
       revokedReason: c.revokedReason,
-    })),
-    reviewSchedules: reviewSchedules.map((rs) => ({
-      lessonTitle: rs.lesson.title,
-      lessonSlug: rs.lesson.slug,
-      easeFactor: rs.easeFactor,
-      intervalDays: rs.intervalDays,
-      repetitions: rs.repetitions,
-      nextReviewAt: rs.nextReviewAt,
-      lastReviewedAt: rs.lastReviewedAt,
     })),
     reviewCards: reviewCards.map((card) => ({
       lessonTitle: card.lesson.title,

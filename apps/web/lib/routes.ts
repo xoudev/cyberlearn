@@ -59,11 +59,22 @@ function notForCrawlers(href: string): AppRoute {
   return { href, protected: false, disallow: true, icon: null };
 }
 
+/**
+ * A sidebar entry that opens a window over the page instead of leading to one
+ * (lib/sidebar/items.ts): the sidebar lists it under its address, with its
+ * icon, and the address itself is a redirect to the window (next.config), so
+ * there is no page behind it to guard.
+ */
+function opensWindow(href: string, icon: SidebarIcon): AppRoute {
+  return { href, protected: false, disallow: true, icon };
+}
+
 export const APP_ROUTES: readonly AppRoute[] = [
   signedIn("/dashboard", "dashboard"),
   signedIn("/paths", "route"),
   signedIn("/lessons", "book"),
-  signedIn("/revisions", "review"),
+  // The day's recall, a window over the page (?rappel=1).
+  opensWindow("/revisions", "review"),
   signedIn("/notes", "note"),
   // Public, like the catalogue: a definition is worth reading before signing
   // up too, and the sitemap offers it. Signed in, its layout draws the app
@@ -91,7 +102,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   // Tabs of the profile now.
   notForCrawlers("/badges"),
   notForCrawlers("/certificates"),
-  // The old SM-2 queue's address, sent on to the revisions.
+  // An older address of the retired SM-2 queue, sent on to the day's recall.
   notForCrawlers("/review"),
   // Account flows and the API.
   notForCrawlers("/account"),

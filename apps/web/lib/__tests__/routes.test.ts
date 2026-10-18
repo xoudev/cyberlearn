@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { navGroupsFor } from "@cyberlearn/lib/navigation/groups";
 import robots from "@/app/robots";
+import { sidebarGroups } from "@/lib/sidebar/items";
 import {
   APP_ROUTES,
   isProtectedRoute,
@@ -89,7 +90,14 @@ describe("the registry names no page that is not there", () => {
   );
 
   it("protects nothing that has no page: the retired addresses are redirects", () => {
-    for (const href of ["/review", "/badges", "/certificates", "/settings", "/changelog"]) {
+    for (const href of [
+      "/revisions",
+      "/review",
+      "/badges",
+      "/certificates",
+      "/settings",
+      "/changelog",
+    ]) {
       expect(hasPage(href)).toBe(false);
       expect(isProtectedRoute(href)).toBe(false);
       expect(disallowed()).toContain(href);
@@ -118,10 +126,27 @@ describe("the registry names no page that is not there", () => {
 
 describe("the sidebar and the registry agree", () => {
   const listed = navGroupsFor("web").flatMap((group) => group.entries);
+  // The entries that open a window over the page rather than lead to one.
+  const windows = sidebarGroups({ hasClasses: true, showRevisions: true, duelInvitations: 0 })
+    .flatMap((group) => group.items)
+    .filter((item) => item.opens !== undefined)
+    .map((item) => item.href);
+  const pages = listed.map((entry) => entry.href).filter((href) => !windows.includes(href));
 
-  it.each(listed.map((entry) => entry.href))("%s has a page and an icon", (href) => {
+  it.each(pages)("%s has a page and an icon", (href) => {
     expect(hasPage(href)).toBe(true);
     expect(sidebarIconOf(href)).not.toBeNull();
+  });
+
+  it("finds the one entry that opens a window: the day's recall", () => {
+    expect(windows).toEqual(["/revisions"]);
+  });
+
+  it.each(windows)("%s has an icon, and only a redirect to its window behind it", (href) => {
+    expect(sidebarIconOf(href)).not.toBeNull();
+    expect(hasPage(href)).toBe(false);
+    expect(isProtectedRoute(href)).toBe(false);
+    expect(disallowed()).toContain(href);
   });
 
   it("gives an icon to the pages the sidebar lists, and to no other", () => {
