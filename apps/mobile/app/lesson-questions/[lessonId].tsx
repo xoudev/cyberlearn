@@ -5,6 +5,7 @@ import { colors } from "@cyberlearn/tokens";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { ReportContentChip } from "@/components/content-report";
 import { HeldNotice, MessageInput } from "@/components/forum";
+import { FriendMark } from "@/components/friends";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
@@ -96,17 +97,25 @@ function AuthorLine({
   extra?: string;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  // The friend mark is a drawing, which cannot sit inside a line of text:
+  // the name and the rest of the line are two texts either side of it.
   return (
-    <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-      <Text style={{ color: author ? colors.textPrimary : colors.textMuted }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+      <Text
+        variant="mono"
+        style={{ fontSize: 10.5, color: author ? colors.textPrimary : colors.textMuted }}
+      >
         {author?.name ?? "Utilisateur supprimé"}
       </Text>
-      {author ? (
-        <Text style={{ color: theme.accent }}>{` ${levelLabel(author.level)}`}</Text>
-      ) : null}
-      {` · ${qaDate(date)}`}
-      {extra !== undefined ? ` · ${extra}` : ""}
-    </Text>
+      {author?.isFriend === true ? <FriendMark size={11} /> : null}
+      <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+        {author ? (
+          <Text style={{ color: theme.accent }}>{` ${levelLabel(author.level)}`}</Text>
+        ) : null}
+        {` · ${qaDate(date)}`}
+        {extra !== undefined ? ` · ${extra}` : ""}
+      </Text>
+    </View>
   );
 }
 

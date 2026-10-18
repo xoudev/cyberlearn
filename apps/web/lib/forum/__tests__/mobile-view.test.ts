@@ -32,7 +32,18 @@ describe("toMobileTopicSummary", () => {
     const out = toMobileTopicSummary(TOPIC);
     expect(out.createdAt).toBe("2026-09-20T08:00:00.000Z");
     expect(out.lastPostAt).toBe("2026-09-24T09:30:00.000Z");
-    expect(out.author).toEqual({ id: "user-2", name: "sam", level: 7, role: "TEACHER" });
+    expect(out.author).toEqual({
+      id: "user-2",
+      name: "sam",
+      level: 7,
+      role: "TEACHER",
+      isFriend: false,
+    });
+  });
+
+  it("marks an author who is one of the reader's friends", () => {
+    expect(toMobileTopicSummary(TOPIC, new Set(["user-2"])).author?.isFriend).toBe(true);
+    expect(toMobileTopicSummary(TOPIC, new Set(["user-9"])).author?.isFriend).toBe(false);
   });
 
   it("never sends the stored avatar value", () => {

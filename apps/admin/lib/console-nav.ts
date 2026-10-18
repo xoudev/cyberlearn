@@ -21,6 +21,7 @@ export type ConsoleNavIcon =
   | "target"
   | "flag"
   | "ticket"
+  | "megaphone"
   | "shield"
   | "alert"
   | "flask"
@@ -88,6 +89,12 @@ export const CONSOLE_MAIN_SECTIONS: readonly ConsoleSection[] = [
     keywords: ["diplômes", "attestations", "révocation"],
   },
   { label: "Tickets", href: "/tickets", icon: "ticket", count: "tickets", keywords: ["support"] },
+  {
+    label: "Annonces",
+    href: "/announcements",
+    icon: "megaphone",
+    keywords: ["notifications", "message", "diffusion", "envoi"],
+  },
   {
     label: "Modération",
     href: "/moderation",
@@ -231,6 +238,7 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["users", "Utilisateurs"],
   ["certificates", "Certificats"],
   ["tickets", "Tickets"],
+  ["announcements", "Annonces"],
   ["moderation", "Modération"],
   ["lab", "Banc d'essai"],
   ["audit", "Audit log"],

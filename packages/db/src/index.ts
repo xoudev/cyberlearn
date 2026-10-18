@@ -20,6 +20,8 @@ export {
 export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
 export {
   friendshipRepository,
+  type FriendActivityRow,
+  type FriendActor,
   type FriendEdge,
   type FriendPerson,
   type RequestResult,
@@ -46,6 +48,8 @@ export {
   consoleUserWhere,
   generatedUsername,
   CONSOLE_PROFILE_ACTION,
+  announcementAudienceWhere,
+  type AnnouncementAudience,
   type ChangeRoleResult,
   type ConsoleProfile,
   type ConsoleProfileField,
@@ -234,8 +238,15 @@ export {
   type ReportedContent,
   type ReportQueue,
 } from "./repositories/content-report.repository.js";
-export { notificationRepository } from "./repositories/notification.repository.js";
-export type { NotificationItem } from "./repositories/notification.repository.js";
+export {
+  notificationRepository,
+  NOTIFICATION_BATCH_SIZE,
+} from "./repositories/notification.repository.js";
+export type {
+  NotificationBatchAudit,
+  NotificationItem,
+  NotificationRow,
+} from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
 export type {
   LeaderboardEntry,

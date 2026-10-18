@@ -26,9 +26,9 @@ import {
   type DuelResultOutcome,
 } from "@cyberlearn/lib/social/duel";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
-import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelView } from "@/lib/social/duels";
 import { answerDuelAction, duelViewAction } from "../../_actions/duel-actions";
+import { DuelAvatar, DuelName } from "../../_components/duel-face";
 import { ChallengeButton } from "../../_components/challenge-button";
 import { pad2, plural, whenOf } from "../../_components/duel-words";
 import { RespondButtons } from "../../_components/respond-buttons";
@@ -117,7 +117,11 @@ function SideStats({
   );
 }
 
-/** Both players face to face: monogram and name at the edges, the scores meeting in the middle. */
+/**
+ * Both players face to face: picture and name at the edges (the other's name
+ * opens their profile when it would open for the reader), the scores meeting
+ * in the middle.
+ */
 function Scoreboard({
   view,
   outcome,
@@ -140,9 +144,7 @@ function Scoreboard({
       <CornerBrackets color="var(--dl-accent)" size={12} thickness={2} />
       <div className="dl-side" data-side="reader">
         <div className="dl-side__who">
-          <span className="dl-mono dl-mono--lg" data-me="true" aria-hidden="true">
-            {initialsOf(view.reader.name)}
-          </span>
+          <DuelAvatar player={view.reader} size="lg" me />
           <span className="dl-side__name">
             <strong>Toi</strong>
             <span>{view.reader.name}</span>
@@ -164,11 +166,11 @@ function Scoreboard({
 
       <div className="dl-side" data-side="other">
         <div className="dl-side__who">
-          <span className="dl-mono dl-mono--lg" aria-hidden="true">
-            {initialsOf(view.other.name)}
-          </span>
+          <DuelAvatar player={view.other} size="lg" />
           <span className="dl-side__name">
-            <strong>{view.other.name}</strong>
+            <strong>
+              <DuelName player={view.other} />
+            </strong>
             {view.other.username !== null && <span>@{view.other.username}</span>}
           </span>
         </div>

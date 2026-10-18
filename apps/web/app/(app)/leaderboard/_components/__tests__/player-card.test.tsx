@@ -8,8 +8,12 @@ import type { BoardRow } from "@/lib/leaderboard/boards";
 vi.mock("@/app/(app)/_settings/privacy/_actions/update-privacy", () => ({
   setFriendsLeaderboardAction: vi.fn(),
 }));
+vi.mock("@/app/(app)/_actions/friend-actions", () => ({
+  sendFriendRequestAction: vi.fn(),
+  sendFriendRequestByHandleAction: vi.fn(),
+}));
 
-const { PlayerCard, showsFriendMark } = await import("../LeaderboardClient");
+const { addableHandle, PlayerCard, showsFriendMark } = await import("../LeaderboardClient");
 
 /**
  * A row of the board as the server hands it over: named or anonymous, a
@@ -91,6 +95,34 @@ describe("PlayerCard", () => {
     expect(html).toContain("@alex");
     // React preloads the picture with a <link href>; what matters is no <a>.
     expect(html).not.toContain("<a ");
+  });
+});
+
+describe("the row's Ajouter", () => {
+  it("asks a stranger, or agrees with somebody who asked, on a public row", () => {
+    expect(render(row({ friendship: "none" }))).toContain('aria-label="Ajouter @alex en ami"');
+    expect(render(row({ friendship: "incoming" }))).toContain(
+      'aria-label="Accepter la demande de @alex"',
+    );
+  });
+
+  it("says a request already sent, and offers nothing to a friend", () => {
+    expect(render(row({ friendship: "outgoing" }))).toContain("Demande envoyée");
+    expect(render(row({ friendship: "friends", isFriend: true }))).not.toContain("Ajouter");
+  });
+
+  it("offers nothing on an anonymous row, the reader's own, or the friends board", () => {
+    expect(render({ ...ANONYMOUS, friendship: null })).not.toContain("Ajouter");
+    expect(render(row({ friendship: "none", isCurrentUser: true }))).not.toContain("Ajouter");
+    expect(render(row({ friendship: "none" }), false)).not.toContain("Ajouter");
+    // A board built without relations (an older caller) offers nothing either.
+    expect(render(row())).not.toContain("Ajouter");
+  });
+
+  it("asks by the handle the row shows", () => {
+    expect(addableHandle(row({ friendship: "none" }))).toBe("alex");
+    expect(addableHandle(row({ friendship: "none", username: null }))).toBeNull();
+    expect(addableHandle(row({ friendship: "friends" }))).toBeNull();
   });
 });
 

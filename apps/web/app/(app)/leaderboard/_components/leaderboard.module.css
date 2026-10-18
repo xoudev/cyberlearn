@@ -130,6 +130,12 @@
   min-width: 0;
 }
 
+/* "Ajouter" on a public row: lifted over the stretched profile link below. */
+.addFriend {
+  position: relative;
+  z-index: 1;
+}
+
 /* A row whose name opens a profile: the whole card answers the click, the
    link inside it stays the one thing a keyboard or a screen reader meets. */
 .linkedCard {

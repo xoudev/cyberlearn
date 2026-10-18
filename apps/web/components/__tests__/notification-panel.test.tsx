@@ -9,8 +9,13 @@ const m = vi.hoisted(() => ({
   markNotificationReadAction: vi.fn<(id: string) => Promise<{ success: boolean }>>(),
   markAllNotificationsReadAction: vi.fn(),
 }));
+const friends = vi.hoisted(() => ({
+  acceptFriendRequestAction: vi.fn<(id: string) => Promise<{ ok: boolean; error?: string }>>(),
+  declineFriendRequestAction: vi.fn<(id: string) => Promise<{ ok: boolean; error?: string }>>(),
+}));
 
 vi.mock("@/app/(app)/_actions/notification-actions", () => m);
+vi.mock("@/app/(app)/_actions/friend-actions", () => friends);
 vi.mock("@cyberlearn/db/supabase/client", () => {
   const channel = {
     on: () => channel,
@@ -212,6 +217,89 @@ describe("NotificationPanel rows", () => {
     expect(screen.queryByRole("button", { name: /Déjà lue/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /Déjà lue/ })).toBeNull();
     expect(screen.getByText("Déjà lue")).toBeTruthy();
+  });
+});
+
+describe("NotificationPanel friend requests", () => {
+  const SAM = "44444444-4444-4444-8444-444444444444";
+  const REQUEST_ID = "55555555-5555-4555-8555-555555555555";
+
+  function withRequest(waitingSenders: string[], metadata: unknown = { fromUserId: SAM }): void {
+    m.getNotificationsAction.mockResolvedValue({
+      success: true,
+      unreadCount: 1,
+      waitingSenders,
+      notifications: [
+        notice({
+          id: REQUEST_ID,
+          type: "FRIEND_REQUEST",
+          title: "Demande d'ami",
+          body: "Sam souhaite t'ajouter.",
+          actionUrl: "/u/sam",
+          metadata: metadata as NotificationItem["metadata"],
+        }),
+      ],
+    });
+  }
+
+  async function openWith(): Promise<void> {
+    render(<NotificationPanel initialUnreadCount={1} userId="me" />);
+    fireEvent.click(screen.getByRole("button", { name: "1 notifications non lues" }));
+    await screen.findByText("Demande d'ami");
+  }
+
+  beforeEach(() => {
+    friends.acceptFriendRequestAction.mockResolvedValue({ ok: true });
+    friends.declineFriendRequestAction.mockResolvedValue({ ok: true });
+  });
+
+  it("answers a request from its notice, beside the link rather than inside it", async () => {
+    withRequest([SAM]);
+    await openWith();
+    const group = screen.getByRole("group", { name: "Répondre à la demande d'ami" });
+    expect(group.closest("a")).toBeNull();
+    expect(screen.getByRole("link", { name: /Demande d'ami/ }).getAttribute("href")).toBe("/u/sam");
+
+    fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
+    expect(friends.acceptFriendRequestAction).toHaveBeenCalledWith(SAM);
+    expect((await screen.findByRole("status")).textContent).toBe("Vous êtes amis.");
+    expect(m.markNotificationReadAction).toHaveBeenCalledWith(REQUEST_ID);
+    expect(screen.queryByRole("button", { name: "Refuser" })).toBeNull();
+  });
+
+  it("refuses only the request: the decline that leaves a friendship alone", async () => {
+    withRequest([SAM]);
+    await openWith();
+    fireEvent.click(screen.getByRole("button", { name: "Refuser" }));
+    expect(friends.declineFriendRequestAction).toHaveBeenCalledWith(SAM);
+    expect((await screen.findByRole("status")).textContent).toBe("Demande refusée.");
+  });
+
+  it("says a request answered elsewhere is no longer waiting, and drops the buttons", async () => {
+    friends.acceptFriendRequestAction.mockResolvedValue({
+      ok: false,
+      error: "Cette demande n'est plus en attente.",
+    });
+    withRequest([SAM]);
+    await openWith();
+    fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
+    expect((await screen.findByRole("status")).textContent).toBe(
+      "Cette demande n'est plus en attente.",
+    );
+    expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
+  });
+
+  it("offers no answer once the request no longer waits, nor on an older notice", async () => {
+    withRequest([]);
+    await openWith();
+    expect(screen.queryByRole("group", { name: "Répondre à la demande d'ami" })).toBeNull();
+    cleanup();
+
+    // From before the sender was written down: it keeps its link, nothing more.
+    withRequest([SAM], null);
+    await openWith();
+    expect(screen.queryByRole("group", { name: "Répondre à la demande d'ami" })).toBeNull();
+    expect(screen.getByRole("link", { name: /Demande d'ami/ })).toBeTruthy();
   });
 });
 

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { TOPICS_PER_PAGE, forumRepository } from "@cyberlearn/db";
+import { TOPICS_PER_PAGE, forumRepository, friendshipRepository } from "@cyberlearn/db";
 import { pageParam, toMobileTopicSummary } from "@/lib/forum/mobile-view";
 import { userFromBearer } from "../../_lib/auth";
 
@@ -20,7 +20,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   const page = pageParam(params.get("page"));
 
-  const section = await forumRepository.listTopics(slug.data, user.id, page);
+  const [section, friends] = await Promise.all([
+    forumRepository.listTopics(slug.data, user.id, page),
+    // For the mark beside an author who is a friend, as on the site.
+    friendshipRepository.friendIds(user.id),
+  ]);
   if (!section) {
     return NextResponse.json({ ok: false, error: "Section introuvable." }, { status: 404 });
   }
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       accent: section.category.accent,
       topicCount: section.total,
     },
-    topics: section.topics.map(toMobileTopicSummary),
+    topics: section.topics.map((topic) => toMobileTopicSummary(topic, friends)),
     page,
     pages: Math.max(1, Math.ceil(section.total / TOPICS_PER_PAGE)),
   });

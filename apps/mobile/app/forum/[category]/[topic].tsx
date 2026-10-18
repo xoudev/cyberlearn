@@ -7,6 +7,7 @@ import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { ReportContentChip } from "@/components/content-report";
 import { ForumTag, HeldNotice, MessageInput, Pager } from "@/components/forum";
+import { FriendMark } from "@/components/friends";
 import { Avatar } from "@/components/media";
 import { NoteMarkdown } from "@/components/note-markdown";
 import { Screen } from "@/components/screen";
@@ -99,9 +100,15 @@ function ThreadBody({
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {topic.pinned ? <ForumTag kind="pinned" /> : null}
           {topic.locked ? <ForumTag kind="locked" /> : null}
-          <Text variant="micro" style={{ color: topic.categoryAccent }}>
-            Ouvert par {topic.author?.name ?? "Compte supprimé"} · {forumDate(topic.createdAt)}
-          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+            <Text variant="micro" style={{ color: topic.categoryAccent }}>
+              Ouvert par {topic.author?.name ?? "Compte supprimé"}
+            </Text>
+            {topic.author?.isFriend === true ? <FriendMark size={11} /> : null}
+            <Text variant="micro" style={{ color: topic.categoryAccent }}>
+              {` · ${forumDate(topic.createdAt)}`}
+            </Text>
+          </View>
         </View>
         <Text variant="display" style={{ fontSize: 24 }}>
           {topic.title}
@@ -229,6 +236,7 @@ function PostCard({
             ) : (
               <Text variant="h3">{name}</Text>
             )}
+            {post.author?.isFriend === true && !post.mine ? <FriendMark size={12} /> : null}
             {role !== null ? (
               <Text variant="micro" style={{ color: theme.accent, fontSize: 9 }}>
                 {role}

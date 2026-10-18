@@ -104,6 +104,14 @@ function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null 
           <path d="M6 5 V12 M10 5 V12" strokeDasharray="1.5 1.5" />
         </svg>
       );
+    case "megaphone":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M2.5 6.5 V9.5 H5 L11.5 13 V3 L5 6.5 Z" />
+          <path d="M5 9.5 L6 13.5 H7.5 L7 10.5" />
+          <path d="M13.5 6.5 V9.5" />
+        </svg>
+      );
     case "shield":
       return (
         <svg viewBox="0 0 16 16" {...s}>

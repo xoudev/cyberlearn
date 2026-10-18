@@ -2260,6 +2260,31 @@ button.notif-row:hover {
   outline: 2px solid var(--cosmetic-accent);
   outline-offset: -2px;
 }
+/* A friend request answered from its notice: the row, then its two buttons
+   under the text (past the 32px mark and its gap), one rule under both. */
+.notif-item {
+  border-bottom: 1px solid #1a1640;
+}
+.notif-item > .notif-row {
+  border-bottom: 0;
+}
+.notif-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 18px 14px 62px;
+}
+.notif-answer--said {
+  font: 11px var(--font-mono);
+  color: var(--color-text-muted);
+}
+.notif-answer-error {
+  flex-basis: 100%;
+  font: 11px var(--font-mono);
+  color: var(--color-danger);
+}
 
 /* A challenge's hints, each a button (hints-panel.tsx). */
 .hint-row:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -2846,6 +2871,79 @@ button.notif-row:hover {
   display: block;
   height: 100%;
   background: var(--color-danger);
+}
+
+/* "Tes amis": a friend's moment a line, its "Défier" at the end
+   (dashboard/_components/friends-activity.tsx). */
+.dash-friends {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-subtle);
+}
+.dash-friend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.dash-friend:last-child {
+  border-bottom: 0;
+}
+.dash-friend-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  object-fit: cover;
+  font: 700 11px var(--font-sans);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+}
+.dash-friend-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+.dash-friend-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+a.dash-friend-name:hover {
+  color: var(--cosmetic-accent);
+}
+.dash-friend-when {
+  display: block;
+  font: 11px var(--font-mono);
+  color: var(--color-text-muted);
+}
+.dash-friend-busy {
+  flex-shrink: 0;
+  font: 11px var(--font-mono);
+  color: var(--color-text-muted);
+}
+.dash-friends-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border-subtle);
+}
+.dash-friends-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 /* The day's recall: where it stands and the button that opens it, no count. */
@@ -6106,6 +6204,84 @@ a.fp-name:hover {
 .fp-error {
   font: 11px var(--font-mono);
   color: #ff6b7a;
+}
+
+/* "Ajouter" beside a classmate or a public line of the leaderboard
+   (components/add-friend-chip.tsx): small enough to sit in the name's line. */
+.add-friend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.add-friend-btn {
+  padding: 2px 7px;
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  cursor: pointer;
+}
+.add-friend-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
+}
+.add-friend-btn:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
+}
+.add-friend-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.add-friend-sent {
+  margin-left: 8px;
+  font: 9.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+.add-friend-mark {
+  margin-left: 6px;
+}
+.add-friend-error {
+  font: 10.5px var(--font-mono);
+  color: #ff6b7a;
+  white-space: normal;
+}
+
+/* Opening somebody's profile by their handle, at the top of the panel. */
+.fp-find {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 18px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.fp-find-label {
+  padding-left: 0;
+  padding-right: 0;
+}
+.fp-find-row {
+  display: flex;
+  gap: 6px;
+}
+.fp-find-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font: 12px var(--font-mono);
+  color: var(--color-text-primary);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+}
+.fp-find-input:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: -1px;
+}
+.fp-find-input[aria-invalid="true"] {
+  border-color: #ff6b7a;
 }
 
 /* On a profile the controls stand alone rather than in a dense row, so they

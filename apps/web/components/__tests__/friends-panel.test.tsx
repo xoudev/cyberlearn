@@ -10,8 +10,24 @@ const m = vi.hoisted(() => ({
   acceptFriendRequestAction: vi.fn<(id: string) => Promise<FriendActionResult>>(),
   removeFriendAction: vi.fn<(id: string) => Promise<FriendActionResult>>(),
 }));
+const nav = vi.hoisted(() => ({
+  push: vi.fn<(href: string) => void>(),
+  openDialog: vi.fn<(key: string, value?: string) => void>(),
+}));
 
 vi.mock("@/app/(app)/_actions/friend-actions", () => m);
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: nav.push }) }));
+// The hook and the host are covered once (query-dialog-host.test.tsx): here,
+// which window "Défier" opens, and for whom.
+vi.mock("@/hooks/use-query-dialog", () => ({
+  useQueryDialog: (key: string) => ({
+    value: null,
+    open: (value?: string) => {
+      nav.openDialog(key, value);
+    },
+    close: vi.fn(),
+  }),
+}));
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -42,6 +58,7 @@ function entry(
   displayName: string,
   status: "PENDING" | "ACCEPTED",
   profileOpen = true,
+  duelOpen = false,
 ): FriendEntry {
   return {
     id: `edge-${id}`,
@@ -50,6 +67,7 @@ function entry(
     createdAt: new Date("2026-10-01T10:00:00.000Z"),
     avatarSrc: null,
     profileOpen,
+    duelOpen,
     person: {
       id,
       username: displayName.toLowerCase(),
@@ -172,6 +190,79 @@ describe("FriendsPanel rows", () => {
     await openPanel();
     fireEvent.click(within(rowOf("Sam")).getByRole("button", { name: "Refuser" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Impossible pour l'instant/);
+  });
+});
+
+describe("FriendsPanel challenges", () => {
+  it("opens the Défier window over the page, the friend picked, and gets out of its way", async () => {
+    await openPanel();
+    fireEvent.click(within(rowOf("Alex")).getByRole("button", { name: "Défier Alex en duel" }));
+    expect(nav.openDialog).toHaveBeenCalledWith("duel", ALEX);
+    expect(screen.queryByText("Alex")).toBeNull();
+  });
+
+  it("greys Défier while a duel is open between the two, and says why", async () => {
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [],
+      friends: [entry(ALEX, "Alex", "ACCEPTED", true, true)],
+      outgoing: [],
+    });
+    await openPanel();
+    const button = within(rowOf("Alex")).getByRole("button", { name: "Duel en cours avec Alex" });
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(button.textContent).toBe("Duel en cours");
+    fireEvent.click(button);
+    expect(nav.openDialog).not.toHaveBeenCalled();
+  });
+
+  it("reads the lists again on the next opening, where the duel made since is greyed", async () => {
+    await openPanel();
+    fireEvent.click(within(rowOf("Alex")).getByRole("button", { name: "Défier Alex en duel" }));
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(1);
+
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [entry(SAM, "Sam", "PENDING")],
+      friends: [entry(ALEX, "Alex", "ACCEPTED", true, true)],
+      outgoing: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    expect(await screen.findByRole("button", { name: "Duel en cours avec Alex" })).toBeTruthy();
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers no duel on a request: a duel is between friends", async () => {
+    await openPanel();
+    expect(within(rowOf("Sam")).queryByRole("button", { name: /Défier/ })).toBeNull();
+  });
+});
+
+describe("FriendsPanel search", () => {
+  it("opens the profile behind a typed handle, and closes", async () => {
+    await openPanel();
+    fireEvent.change(screen.getByLabelText("Ouvrir un profil"), { target: { value: " @Alex " } });
+    fireEvent.click(screen.getByRole("button", { name: "Ouvrir" }));
+    expect(nav.push).toHaveBeenCalledWith("/u/alex");
+    expect(screen.queryByLabelText("Ouvrir un profil")).toBeNull();
+  });
+
+  it("says, under the field, what a handle is when the one typed cannot be", async () => {
+    await openPanel();
+    const field = screen.getByLabelText("Ouvrir un profil");
+    fireEvent.change(field, { target: { value: "a" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ouvrir" }));
+    expect(nav.push).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Un pseudo compte de 3 à 32 caractères : lettres, chiffres et tirets.",
+    );
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("tells somebody without anyone yet where to find people", async () => {
+    m.getFriendsAction.mockResolvedValue({ incoming: [], friends: [], outgoing: [] });
+    render(<FriendsPanel initialRequestCount={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Amis" }));
+    expect(await screen.findByText(/Personne pour l'instant/)).toBeTruthy();
+    expect(screen.getByText(/ta classe ou le classement/)).toBeTruthy();
   });
 });
 

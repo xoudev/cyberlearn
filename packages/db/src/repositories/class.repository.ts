@@ -308,6 +308,38 @@ export const classRepository = {
     });
   },
 
+  /**
+   * The live classes, by school then name, with what a picker prints beside
+   * each and how many members it has.
+   */
+  async listLiveOptions(): Promise<
+    {
+      id: string;
+      name: string;
+      promotion: string;
+      school: string;
+      members: number;
+    }[]
+  > {
+    const rows = await prisma.class.findMany({
+      where: LIVE_CLASS_FILTER,
+      orderBy: [{ promotion: { establishment: { name: "asc" } } }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        promotion: { select: { name: true, establishment: { select: { name: true } } } },
+        _count: { select: { members: true } },
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      promotion: row.promotion.name,
+      school: row.promotion.establishment.name,
+      members: row._count.members,
+    }));
+  },
+
   async findById(classId: string) {
     return prisma.class.findUnique({
       where: { id: classId },

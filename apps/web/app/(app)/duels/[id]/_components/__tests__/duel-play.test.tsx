@@ -58,8 +58,8 @@ const BASE: DuelView = {
   status: "ACTIVE",
   pathTitle: "Linux",
   pathSlug: "linux",
-  reader: { id: "me", name: "Moi", username: "moi" },
-  other: { id: "alex", name: "Alex", username: "alex" },
+  reader: { id: "me", name: "Moi", username: "moi", avatarSrc: null, profileHref: null },
+  other: { id: "alex", name: "Alex", username: "alex", avatarSrc: null, profileHref: "/u/alex" },
   readerIsChallenger: true,
   questionCount: 2,
   readerScore: { answered: 0, correct: 0 },
@@ -98,6 +98,25 @@ describe("DuelPlay", () => {
     expect(m.answerDuelAction).toHaveBeenCalledWith({ duelId: "d1", index: 0, selected: 0 });
     expect(screen.getByText("Raté. La bonne réponse : Liste.")).toBeTruthy();
     expect(screen.getByText("Que fait chmod ?")).toBeTruthy();
+  });
+
+  it("draws both pictures, and opens the other's profile from their name", () => {
+    render(
+      <DuelPlay
+        initial={{ ...BASE, other: { ...BASE.other, avatarSrc: "https://signed/alex.png" } }}
+      />,
+    );
+    const scores = screen.getByLabelText("Les scores");
+    expect(scores.querySelector("img")?.getAttribute("src")).toBe("https://signed/alex.png");
+    expect(screen.getByRole("link", { name: "Alex" }).getAttribute("href")).toBe("/u/alex");
+    // The reader's own side is not a link.
+    expect(screen.queryByRole("link", { name: "Moi" })).toBeNull();
+  });
+
+  it("names the other without a link when their profile is closed to the reader", () => {
+    render(<DuelPlay initial={{ ...BASE, other: { ...BASE.other, profileHref: null } }} />);
+    expect(screen.queryByRole("link", { name: "Alex" })).toBeNull();
+    expect(screen.getAllByText("Alex").length).toBeGreaterThan(0);
   });
 
   it("reads the duel again every few seconds while it is going on", async () => {

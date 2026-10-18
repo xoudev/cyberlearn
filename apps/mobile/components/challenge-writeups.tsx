@@ -4,6 +4,7 @@ import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { ActionChip, GradientButton } from "@/components/buttons";
 import { ReportContentChip } from "@/components/content-report";
+import { FriendMark } from "@/components/friends";
 import { NoteMarkdown } from "@/components/note-markdown";
 import { Card, Text } from "@/components/ui";
 import { deleteWriteupApi, fetchWriteupsApi, publishWriteupApi } from "@/lib/api";
@@ -64,9 +65,12 @@ function OtherWriteup({ writeup }: { writeup: WriteupView }): React.JSX.Element 
   return (
     <Card style={{ gap: 8 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-        <Text variant="micro" style={{ color: colors.textSecondary }}>
-          {writeup.author?.name ?? "Compte supprimé"}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+          <Text variant="micro" style={{ color: colors.textSecondary }}>
+            {writeup.author?.name ?? "Compte supprimé"}
+          </Text>
+          {writeup.author?.isFriend === true ? <FriendMark size={11} /> : null}
+        </View>
         <Text variant="micro">
           {new Date(writeup.updatedAt).toLocaleDateString("fr-FR", {
             day: "numeric",
