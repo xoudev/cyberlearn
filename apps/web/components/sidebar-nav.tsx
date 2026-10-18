@@ -21,6 +21,8 @@ interface SidebarNavProps {
   hasClasses: boolean;
   /** False once someone has switched spaced repetition off in their settings. */
   showRevisions: boolean;
+  /** Duel invitations waiting on the reader's answer, counted beside « Duels ». */
+  duelInvitations: number;
   level: number;
   rankName: string;
   displayName: string;
@@ -88,19 +90,23 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
           <path d="M6 6.5h4M6 9.5h4" />
         </svg>
       );
-    case "badge":
+    case "glossary":
+      // A page of words under a magnifier: the definitions to look up.
       return (
         <svg {...STROKE}>
-          <path d="M8 1.5l5.5 3.2v6.6L8 14.5l-5.5-3.2V4.7z" />
-          <circle cx="8" cy="8" r="2" />
+          <path d="M3 2h7l2 2v4.5" />
+          <path d="M3 2v12h5" />
+          <path d="M5.5 5.5h4M5.5 8h2.5" />
+          <circle cx="11" cy="11.5" r="2.2" />
+          <path d="M12.6 13.1l1.6 1.6" />
         </svg>
       );
-    case "cert":
+    case "profile":
+      // Somebody's head and shoulders: their own page.
       return (
         <svg {...STROKE}>
-          <rect x="2" y="3" width="12" height="8" />
-          <path d="M5 13.5l1.5-2M11 13.5l-1.5-2" />
-          <circle cx="8" cy="7" r="1.5" />
+          <circle cx="8" cy="5.5" r="2.8" />
+          <path d="M2.5 14.5c0-3 2.4-4.8 5.5-4.8s5.5 1.8 5.5 4.8" />
         </svg>
       );
     case "trophy":
@@ -123,14 +129,6 @@ function NavIcon({ name }: { name: SidebarIcon }): React.ReactElement {
         <svg {...STROKE}>
           <path d="M2.5 2.5l8 8M13.5 2.5l-8 8" />
           <path d="M9 12.5l3.5-3.5M7 12.5L3.5 9M11.5 13.5l2-2M4.5 13.5l-2-2" />
-        </svg>
-      );
-    case "tournament":
-      // A flag on its pole: the CTF's prize.
-      return (
-        <svg {...STROKE}>
-          <path d="M3.5 14.5V1.5" />
-          <path d="M3.5 2.5h8l-2 3 2 3h-8" />
         </svg>
       );
     case "classes":
@@ -190,7 +188,7 @@ function NavItemInside({ item }: { item: SidebarItem }): React.ReactElement {
       {item.count !== null && (
         <span
           className="sidebar-label sidebar-nav-count"
-          aria-label={`${String(item.count)} à faire`}
+          aria-label={item.countLabel ?? `${String(item.count)} à faire`}
         >
           {item.count}
         </span>
@@ -236,11 +234,13 @@ function DialogNavItem({
 // ── Main component ────────────────────────────────────────────────────────────
 
 /**
- * The sidebar: the pages of the site in three groups, and the account block.
+ * The sidebar: the pages of the site in four groups under the dashboard
+ * (lib/sidebar/items.ts), and the account block.
  *
  * Folded, it keeps the icons and loses the words; on a phone it is the drawer
- * the navbar's button opens, always unfolded. It counts nothing: "Révisions"
- * opens the day's recall without saying how much waits behind it.
+ * the navbar's button opens, always unfolded. It counts one thing, the duel
+ * invitations waiting on the reader; "Révisions" opens the day's recall
+ * without saying how much waits behind it.
  *
  * The account block is who is signed in, a link to their profile and the way
  * out. The small links it used to carry are gone: news and settings are in
@@ -249,6 +249,7 @@ function DialogNavItem({
 export function SidebarNav({
   hasClasses,
   showRevisions,
+  duelInvitations,
   level,
   rankName,
   displayName,
@@ -269,7 +270,7 @@ export function SidebarNav({
     void handleSignOut();
   };
 
-  const groups = sidebarGroups({ hasClasses, showRevisions });
+  const groups = sidebarGroups({ hasClasses, showRevisions, duelInvitations });
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">

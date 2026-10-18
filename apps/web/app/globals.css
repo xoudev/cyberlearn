@@ -2801,6 +2801,53 @@ button.notif-row:hover {
   color: var(--cosmetic-accent);
 }
 
+/* The tournaments under way: one line each, the time gone by, the way in. */
+.dash-live {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dash-live-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-default);
+  border-left: 2px solid var(--color-danger);
+  background: var(--color-bg-elevated);
+}
+.dash-live-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.dash-live-text b {
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+.dash-live-text span {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+.dash-live-bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 3px;
+  background: var(--color-border-default);
+}
+.dash-live-bar i {
+  display: block;
+  height: 100%;
+  background: var(--color-danger);
+}
+
 /* The day's recall: where it stands and the button that opens it, no count. */
 .dash-rev-note {
   margin: 4px 0 0;
