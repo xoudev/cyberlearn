@@ -23,7 +23,8 @@ export const NEW_LESSON_HEADER = {
 export const IMPORT_HEADER = {
   crumbs: LESSON_CRUMBS,
   title: "Importer une leçon MDX",
-  description: "Format : frontmatter YAML + corps MDX · 500 Ko au plus · extension .mdx uniquement",
+  description:
+    "Format : frontmatter YAML + corps MDX · 500 Ko au plus · extension .mdx uniquement · une leçon déjà en base se met à jour, après comparaison",
 };
 
 export const REPORTS_HEADER = {

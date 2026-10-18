@@ -234,6 +234,14 @@ export {
   LESSON_PREVIEW_TTL_MS,
 } from "./repositories/lesson-preview.repository.js";
 export {
+  lessonFileRepository,
+  LESSON_FROM_FILE_ACTIONS,
+  type LessonFileRow,
+  type LessonOutsideFiles,
+  type LessonFileWrite,
+  type LessonFileWriteAction,
+} from "./repositories/lesson-file.repository.js";
+export {
   quizReportRepository,
   QUIZ_REPORT_REASONS,
   type QuizReportReasonValue,

@@ -24,7 +24,14 @@ export {
   type QuizFile,
   type QuizFileQuestion,
 } from "./quiz-files";
-export { quizMatches, syncQuiz, type QuizSyncResult, type StoredQuiz } from "./quiz-sync";
+export {
+  quizChanges,
+  quizMatches,
+  syncQuiz,
+  type QuizSyncResult,
+  type StoredQuiz,
+} from "./quiz-sync";
+export { changedValue, type CatalogueChange } from "./changes";
 export {
   findChallengeDir,
   loadChallengeFiles,
@@ -32,6 +39,7 @@ export {
 } from "./challenge-files";
 export {
   ChallengeSyncError,
+  challengeChanges,
   challengeMatches,
   syncChallenge,
   type ChallengeSyncResult,

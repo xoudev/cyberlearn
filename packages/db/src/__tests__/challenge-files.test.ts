@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseChallengeFile, type ChallengeFile } from "@cyberlearn/types";
 import { findChallengeDir, loadChallengeFiles } from "../catalogue/challenge-files";
-import { challengeMatches, type StoredChallenge } from "../catalogue/challenge-sync";
+import {
+  challengeChanges,
+  challengeMatches,
+  type StoredChallenge,
+} from "../catalogue/challenge-sync";
 
 function challenge(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -115,6 +119,11 @@ describe("challengeMatches", () => {
     xpReward: file.xpReward,
     maxAttempts: file.maxAttempts,
     orderIndex: file.orderIndex,
+    timeLimitMin: 0,
+    flag: null,
+    starterCode: null,
+    attachmentUrl: null,
+    resourceUrl: null,
     machine: { files: { "flag.txt": "{{FLAG}}" } },
     prerequisiteRefCode: null,
     hints: [{ content: "Regarde flag.txt.", xpCost: 10 }],
@@ -130,5 +139,63 @@ describe("challengeMatches", () => {
     );
     expect(challengeMatches({ ...stored, hints: [] }, file)).toBe(false);
     expect(challengeMatches({ ...stored, prerequisiteRefCode: "CL-CHG-001" }, file)).toBe(false);
+  });
+
+  it("has nothing to list where it matches, and names each field that differs", () => {
+    expect(challengeChanges(stored, file)).toEqual([]);
+    expect(
+      challengeChanges(
+        {
+          ...stored,
+          xpReward: 40,
+          instructions: "Ancien énoncé.",
+          prerequisiteRefCode: "CL-CHG-001",
+          machine: { files: { "flag.txt": "x", "vieux.txt": "y" } },
+          hints: [
+            { content: "Regarde flag.txt.", xpCost: 5 },
+            { content: "Un indice en trop.", xpCost: 0 },
+          ],
+        },
+        file,
+      ),
+    ).toEqual([
+      { kind: "changed", label: "XP", before: "40", after: "50" },
+      { kind: "changed", label: "Prérequis", before: "CL-CHG-001", after: "aucun" },
+      { kind: "modified", label: "Énoncé", value: "Texte réécrit." },
+      { kind: "modified", label: "Machine", value: "Fichiers réécrits : flag.txt, vieux.txt." },
+      { kind: "changed", label: "Indice 1 (coût)", before: "5 XP", after: "10 XP" },
+      { kind: "removed", label: "Indice 2", value: "Un indice en trop." },
+    ]);
+  });
+
+  it("lists what the console set and the sync empties, the flag without its value", () => {
+    const edited: StoredChallenge = {
+      ...stored,
+      timeLimitMin: 30,
+      flag: "CL{secret-console}",
+      starterCode: "print('hello')",
+      attachmentUrl: "https://example.test/dump.pcap",
+      resourceUrl: "nc ctf.example.test 1337",
+    };
+    expect(challengeMatches(edited, file)).toBe(false);
+    const changes = challengeChanges(edited, file);
+    expect(changes).toEqual([
+      { kind: "changed", label: "Durée limite", before: "30 min", after: "aucune" },
+      {
+        kind: "removed",
+        label: "Flag",
+        value: "Flag fixe saisi dans la console (non affiché) : chaque joueur reçoit le sien.",
+      },
+      { kind: "removed", label: "Code de départ", value: "Texte retiré." },
+      { kind: "removed", label: "Pièce jointe", value: "https://example.test/dump.pcap" },
+      { kind: "removed", label: "Ressource", value: "nc ctf.example.test 1337" },
+    ]);
+    expect(JSON.stringify(changes)).not.toContain("secret-console");
+  });
+
+  it("takes a field the editor saved blank for an empty one", () => {
+    const blank: StoredChallenge = { ...stored, flag: "", attachmentUrl: "", resourceUrl: "" };
+    expect(challengeMatches(blank, file)).toBe(true);
+    expect(challengeChanges(blank, file)).toEqual([]);
   });
 });

@@ -51,9 +51,9 @@ disponibles, pour une base locale notamment ; les scripts et la console
 
 ## Mettre à jour une leçon déjà importée
 
-L'import refuse un refCode qui existe déjà. Une correction faite ici après
-l'import n'arrive donc pas seule sur le site : elle passe par la même page,
-section des mises à jour.
+La base est ce que le site lit : une correction faite ici après l'import
+n'arrive pas seule sur le site, et rien n'y est remplacé sans avoir été montré.
+Elle passe par la même page, section des mises à jour.
 
 - La page compare chaque fichier de ce dossier à sa leçon en base et montre les
   différences : champs du frontmatter, puis passages du contenu.
@@ -64,7 +64,27 @@ section des mises à jour.
   fichier passe les mêmes contrôles qu'à l'import. Le slug, le statut et
   l'image de couverture ne changent jamais.
 - Chaque mise à jour est journalisée (`lesson.sync`). Elle est refusée si la
-  leçon a changé entre l'affichage et la confirmation.
+  leçon a changé entre l'affichage et la confirmation, ou si ses nouveaux
+  prérequis mènent de nouveau à elle (une boucle, cherchée sur tout le
+  catalogue).
+- Un contenu réécrit d'un bout à l'autre sur des milliers de lignes n'est pas
+  comparé ligne à ligne : la page donne le nombre de lignes au plus, sans les
+  passages.
+
+Les parcours, les examens et les défis déjà en base y disent aussi ce qu'une
+synchronisation écrirait (« Ce qui sera écrit ») : champs, modules et place de
+chaque leçon pour un parcours, réglages et questions pour un examen, champs
+(dont ceux réglés dans la console que la synchronisation vide : durée limite,
+flag, code de départ, pièce jointe, ressource), fichiers de la machine et
+indices pour un défi. Les leçons du catalogue
+qu'aucun fichier ne déclare sont listées à part (« En base, sans fichier dans le
+dépôt ») : la synchronisation n'y touche pas et ne supprime jamais une leçon.
+
+L'import manuel (`/lessons/import`) ne refuse plus un refCode qui existe : il
+montre les mêmes différences avec la leçon en base et propose « Mettre à
+jour », après confirmation (journalisé `lesson.import.update`, compté dans la
+même limite horaire que les imports). Une erreur du fichier y donne sa ligne,
+et un clic sur « ligne N » place le curseur de l'éditeur dessus.
 
 Les fichiers sont embarqués dans le déploiement de l'admin
 (`outputFileTracingIncludes` dans `apps/admin/next.config.ts`) : la page lit la

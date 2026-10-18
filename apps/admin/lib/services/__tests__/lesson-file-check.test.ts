@@ -70,6 +70,77 @@ describe("checkLessonFile", () => {
     ]);
   });
 
+  it("places a YAML error in the file, and says the same the second time", async () => {
+    // An unclosed quote on line 4: js-yaml runs to the end of the
+    // frontmatter, the closing "---" on line 10.
+    const broken = `${FRONTMATTER.replace("title: Une lecon de test", 'title: "Une lecon')}\n## S\n`;
+    const first = await checkLessonFile(broken);
+    if (first.ok) throw new Error("accepted a broken frontmatter");
+    expect(first.errors).toEqual([
+      {
+        line: 10,
+        column: 1,
+        message: expect.stringMatching(
+          /^Frontmatter, ligne 10, colonne 1 : YAML illisible \(/,
+        ) as unknown,
+      },
+    ]);
+    // gray-matter cached the file before parsing it, and handed back an
+    // empty frontmatter the second time: other errors for the same file.
+    expect(await checkLessonFile(broken)).toEqual(first);
+  });
+
+  it("places a frontmatter field the schema refuses at the line of its key", async () => {
+    const result = await checkLessonFile(
+      `${FRONTMATTER.replace("xpReward: 50", "xpReward: -5")}\n## S\n\nDu texte.\n`,
+    );
+    if (result.ok) throw new Error("accepted a negative XP");
+    expect(result.errors).toEqual([
+      {
+        field: "xpReward",
+        line: 9,
+        message: expect.stringMatching(/^Frontmatter, ligne 9 \(xpReward\) : /) as unknown,
+      },
+    ]);
+  });
+
+  it("names a missing field without a line, there being none", async () => {
+    const result = await checkLessonFile(
+      `${FRONTMATTER.replace("xpReward: 50\n", "")}\n## S\n\nDu texte.\n`,
+    );
+    if (result.ok) throw new Error("accepted a lesson without XP");
+    expect(result.errors.map(({ field, line }) => ({ field, line }))).toEqual([
+      { field: "xpReward", line: undefined },
+    ]);
+  });
+
+  it("places an injection in the file, past code blocks that keep their lines", async () => {
+    // The fenced block holds a handler the check must not see, and spans
+    // three lines that must still count: the script is on line 18, after
+    // inline code blanked to its own width.
+    const body = [
+      "## S",
+      "",
+      "```js",
+      "button.onClick = run;",
+      "```",
+      "",
+      "Texte avec `onClick=` cité, puis <script>alert(1)</script>",
+    ].join("\n");
+    const result = await checkLessonFile(`${FRONTMATTER}\n${body}\n`);
+    if (result.ok) throw new Error("accepted a script");
+    expect(result.errors).toEqual([
+      {
+        field: "contentMdx",
+        line: 18,
+        column: 34,
+        message: expect.stringMatching(
+          /^Ligne 18, colonne 34 : contenu rejeté, injection potentielle détectée/,
+        ) as unknown,
+      },
+    ]);
+  });
+
   it("refuses the frontmatter before reading the body", async () => {
     const result = await checkLessonFile(
       `${FRONTMATTER.replace("CL-LSN-001-V01", "LSN-1")}\n## S\n\nUn mot \u2014 un autre.\n`,
