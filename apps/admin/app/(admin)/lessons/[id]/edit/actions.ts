@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
 import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
 import {
@@ -171,5 +172,5 @@ export async function updateLessonAction(
     return { error: "Erreur lors de la mise à jour.", problems: [] };
   }
 
-  redirect("/lessons");
+  redirect(withSavedNotice("/lessons"));
 }

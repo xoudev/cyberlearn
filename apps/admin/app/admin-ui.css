@@ -144,6 +144,151 @@
   letter-spacing: 0.04em;
 }
 
+/* ─── Quick search (⌘K) ────────────────────────────────────────
+   The panel under the top bar's field: pages and actions, then the accounts,
+   lessons and tickets the server found, each group under its name. The line
+   the arrow keys are on is the one aria-selected marks. */
+.a-cmd {
+  position: relative;
+}
+.a-cmd-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  max-height: min(440px, calc(100vh - 90px));
+  overflow-y: auto;
+  background: var(--a-surface);
+  border: 1px solid var(--a-border-2);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--a-bg) 60%, transparent);
+}
+.a-cmd-group + .a-cmd-group {
+  border-top: 1px solid var(--a-border-2);
+}
+.a-cmd-group-label {
+  padding: 10px 14px 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
+.a-cmd-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--a-border);
+  color: var(--a-fg-2);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.a-cmd-group .a-cmd-option:last-child {
+  border-bottom: none;
+}
+.a-cmd-option[aria-selected="true"] {
+  background: var(--a-hover);
+  color: var(--a-fg);
+  box-shadow: inset 2px 0 0 var(--a-accent);
+}
+.a-cmd-option-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.a-cmd-option-label,
+.a-cmd-option-sublabel {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.a-cmd-option-sublabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--a-muted);
+}
+.a-cmd-hint {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
+.a-cmd-hint[data-kind="action"] {
+  color: var(--a-accent);
+}
+.a-cmd-status {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--a-border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--a-muted);
+}
+.a-cmd-panel > [role="listbox"]:empty + .a-cmd-status {
+  border-top: none;
+}
+
+/* ─── Toasts ───────────────────────────────────────────────────
+   Sonner ships its own look - rounded, near-black, a system sans. These rules
+   give it the console's floating panel instead: square corners, the raised
+   surface, a hairline border, and a coloured left edge that says at a glance
+   which kind of message it is. The same treatment as the site's toasts
+   (apps/web/app/globals.css), on the console's own names.
+
+   The selectors carry [data-styled="true"] on purpose: sonner's own rules are
+   written with two attributes, so a rule with fewer ties on specificity and
+   loses on source order. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  --toast-edge: var(--a-accent);
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 0;
+  background: var(--a-surface);
+  border: 1px solid var(--a-border-2);
+  border-left: 2px solid var(--toast-edge);
+  box-shadow: 0 8px 40px color-mix(in srgb, var(--a-bg) 70%, transparent);
+  font-family: var(--font-sans);
+  color: var(--a-fg);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-edge: var(--a-danger);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-edge: var(--a-warning);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  --toast-edge: var(--a-info);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  margin: 0;
+  color: var(--toast-edge);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font: 500 13px / 1.45 var(--font-sans);
+  color: var(--a-fg);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  margin-top: 4px;
+  font: 12px / 1.5 var(--font-sans);
+  color: var(--a-muted);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  border-radius: 0;
+  border-color: var(--a-border-2);
+  background: var(--a-surface);
+  color: var(--a-muted);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+  color: var(--a-fg);
+  border-color: var(--toast-edge);
+}
+
 /* ─── Sidebar ──────────────────────────────────────────────── */
 
 .a-side-item {

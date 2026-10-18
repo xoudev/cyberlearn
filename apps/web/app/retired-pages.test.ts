@@ -6,9 +6,10 @@ import { profileTabHref } from "@cyberlearn/lib/social/profile-tabs";
 import nextConfig from "../next.config";
 
 /**
- * Pages that became windows over another page, or tabs of another page: the
- * page is gone, and its address still lands somewhere, with the window open
- * (docs/dev/dialogs.md) or on the tab.
+ * Pages that became windows over another page, or tabs of another page, or
+ * that only ever redirected: the page is gone, and its address still lands
+ * somewhere, with the window open (docs/dev/dialogs.md), on the tab, or on
+ * the page it was sending people to.
  */
 
 const RETIRED = [
@@ -37,6 +38,12 @@ const RETIRED = [
     page: "app/(app)/tournaments/page.tsx",
     source: "/tournaments",
     destination: challengesTabHref("tournois"),
+  },
+  {
+    // The old SM-2 queue: a page that only redirected, now the redirect alone.
+    page: "app/(app)/review",
+    source: "/review",
+    destination: "/revisions",
   },
 ];
 

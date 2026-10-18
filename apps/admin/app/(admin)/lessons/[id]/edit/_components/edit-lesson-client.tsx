@@ -107,6 +107,13 @@ export interface LessonData {
   status: string;
 }
 
+/** The code the lesson's first path would give it, offered and never applied by itself. */
+export interface RefCodeSuggestion {
+  refCode: string;
+  pathTitle: string;
+  position: number;
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const initialState: UpdateLessonState = {};
@@ -115,11 +122,13 @@ export function EditLessonClient({
   lesson,
   coverPreview,
   lessonUrlPrefix,
+  refCodeSuggestion,
 }: {
   lesson: LessonData;
   coverPreview: string | null;
   /** The lesson's address on the learner site, up to the slug. */
   lessonUrlPrefix: string;
+  refCodeSuggestion: RefCodeSuggestion | null;
 }): React.ReactElement {
   const boundAction = updateLessonAction.bind(null, lesson.id);
   const [state, action, isPending] = useActionState(boundAction, initialState);
@@ -127,6 +136,11 @@ export function EditLessonClient({
   // Controlled, so the address under the field follows what is typed rather
   // than the slug the lesson had when the page loaded.
   const [slug, setSlug] = useState(lesson.slug);
+  // The code is an advanced setting: the manifests and the sync know a lesson
+  // by it, so the field opens on request, or when the save refused it.
+  const [refCode, setRefCode] = useState(lesson.refCode);
+  const [editingRefCode, setEditingRefCode] = useState(false);
+  const refCodeOpen = editingRefCode || state.fieldErrors?.refCode !== undefined;
   const preview = useLessonPreview(refreshLessonPreviewAction);
 
   return (
@@ -166,15 +180,67 @@ export function EditLessonClient({
             <Label req hint="// doit être unique">
               Ref code
             </Label>
-            <input
-              name="refCode"
-              type="text"
-              required
-              defaultValue={lesson.refCode}
-              placeholder="CL-LSN-001-V01"
-              className="le-input"
-              style={BASE_INPUT}
-            />
+            {refCodeOpen ? (
+              <input
+                name="refCode"
+                type="text"
+                required
+                value={refCode}
+                onChange={(e) => {
+                  setRefCode(e.target.value);
+                }}
+                placeholder="CL-LSN-01001-V01"
+                className="le-input"
+                style={BASE_INPUT}
+              />
+            ) : (
+              <div
+                style={{
+                  ...BASE_INPUT,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  padding: "6px 6px 6px 14px",
+                }}
+              >
+                <input type="hidden" name="refCode" value={refCode} />
+                <span>{refCode}</span>
+                <button
+                  type="button"
+                  className="a-btn a-btn--ghost a-btn--sm"
+                  onClick={() => {
+                    setEditingRefCode(true);
+                  }}
+                >
+                  Modifier
+                </button>
+              </div>
+            )}
+            {refCodeSuggestion !== null && refCodeSuggestion.refCode !== refCode && (
+              <Help>
+                Code proposé d&apos;après le parcours {refCodeSuggestion.pathTitle}, position{" "}
+                {refCodeSuggestion.position} :{" "}
+                <b style={{ color: TURQ }}>{refCodeSuggestion.refCode}</b>{" "}
+                <button
+                  type="button"
+                  className="a-btn a-btn--ghost a-btn--sm"
+                  style={{ marginLeft: 6 }}
+                  onClick={() => {
+                    setRefCode(refCodeSuggestion.refCode);
+                  }}
+                >
+                  Utiliser ce code
+                </button>
+              </Help>
+            )}
+            {refCode !== lesson.refCode && (
+              <Help>
+                Pas encore enregistré : <b style={{ color: TURQ }}>{lesson.refCode}</b> jusqu&apos;à
+                la sauvegarde. Le fichier de la leçon et les manifestes de parcours qui citent
+                l&apos;ancien code sont à mettre à jour dans le dépôt.
+              </Help>
+            )}
             <Help>
               Format :{" "}
               <b style={{ color: TURQ }}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROTECTED_ROUTE_PREFIXES } from "@/lib/protected-routes";
+import { PROTECTED_ROUTE_PREFIXES } from "@/lib/routes";
 import robots from "./robots";
 import { SITE_URL } from "./site-url";
 import sitemap from "./sitemap";

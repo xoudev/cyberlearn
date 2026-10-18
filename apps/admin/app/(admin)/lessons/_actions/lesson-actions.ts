@@ -3,12 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { lessonRepository, pathRepository, prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
-import { nextLessonRefCode } from "@/lib/next-ref-code";
+import { lessonRefCodeFor, nextLessonRefCode, nextPathLessonNumber } from "@/lib/next-ref-code";
 import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
 import {
   asTyped,
@@ -16,6 +17,7 @@ import {
   editorProblemsOf,
   type LessonEditorProblem,
 } from "@cyberlearn/lib/mdx-check";
+import { readLessonLinks } from "./lesson-links";
 
 const createLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
@@ -95,26 +97,70 @@ export async function createLessonAction(
   // From here the content passed: a refusal says so with an empty list, which
   // takes down what the editor marked from an earlier save.
 
-  try {
-    const lesson = await prisma.lesson.create({
-      data: {
-        ...data,
-        contentMdx: contentMdx.text,
-        coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-        authorId: admin.id,
-        status: publishNow ? "PUBLISHED" : "DRAFT",
-        publishedAt: publishNow ? new Date() : null,
-      },
-    });
+  const links = readLessonLinks(formData);
+  if (!links.ok) {
+    return { error: links.error, fieldErrors: { [links.field]: links.error }, problems: [] };
+  }
+  const { pathIds, prerequisiteIds } = links.links;
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.create",
-        targetType: "Lesson",
-        targetId: lesson.id,
-        metadata: { title: lesson.title, status: lesson.status },
-      },
+  // The console creates catalogue lessons, so only catalogue paths and
+  // prerequisites: a class's would promise the lesson to people who cannot
+  // open it, or close it to everyone outside that class.
+  const [paths, prerequisites] = await Promise.all([
+    pathIds.length === 0
+      ? Promise.resolve([])
+      : prisma.path.findMany({
+          where: { id: { in: pathIds }, audience: "CATALOGUE" },
+          select: { id: true, refCode: true },
+        }),
+    prerequisiteIds.length === 0
+      ? Promise.resolve([])
+      : prisma.lesson.findMany({
+          where: { id: { in: prerequisiteIds }, audience: "CATALOGUE" },
+          select: { id: true },
+        }),
+  ]);
+  if (paths.length !== pathIds.length) {
+    const error = "Un des parcours choisis n'existe plus.";
+    return { error, fieldErrors: { pathIds: error }, problems: [] };
+  }
+  if (prerequisites.length !== prerequisiteIds.length) {
+    const error = "Une des leçons choisies comme prérequis n'existe plus.";
+    return { error, fieldErrors: { prerequisiteIds: error }, problems: [] };
+  }
+  const pathRefCode = new Map(paths.map((path) => [path.id, path.refCode]));
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const lesson = await tx.lesson.create({
+        data: {
+          ...data,
+          contentMdx: contentMdx.text,
+          coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+          authorId: admin.id,
+          status: publishNow ? "PUBLISHED" : "DRAFT",
+          publishedAt: publishNow ? new Date() : null,
+        },
+      });
+
+      // In the order chosen: each path takes the lesson at its end.
+      for (const pathId of pathIds) await pathRepository.attachLesson(pathId, lesson.id, tx);
+      await lessonRepository.replacePrerequisites(lesson.id, prerequisiteIds, tx);
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "lesson.create",
+          targetType: "Lesson",
+          targetId: lesson.id,
+          metadata: {
+            title: lesson.title,
+            status: lesson.status,
+            paths: pathIds.map((pathId) => pathRefCode.get(pathId) ?? pathId),
+            prerequisites: prerequisiteIds.length,
+          },
+        },
+      });
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
@@ -131,7 +177,7 @@ export async function createLessonAction(
     return { error: "Erreur lors de la création.", problems: [] };
   }
 
-  redirect("/lessons");
+  redirect(withSavedNotice("/lessons", "created"));
 }
 
 // ── Next refCode ──────────────────────────────────────────────────────────────
@@ -139,15 +185,43 @@ export async function createLessonAction(
 /**
  * Proposes a refCode for the new-lesson form. Every lesson code is read, not
  * just the last one in string order: see nextLessonRefCode for why.
+ *
+ * With the first path chosen for the lesson, the code is that path's: its PP,
+ * and the rank the lesson will take at the end of it, recaps not counted
+ * (nextPathLessonNumber, lessonRefCodeFor). Without one, or for a path that
+ * gives no PP, the next code of the catalogue.
  */
-export async function getNextRefCodeAction(): Promise<{ nextRefCode: string }> {
+export async function getNextRefCodeAction(
+  pathId?: string | null,
+): Promise<{ nextRefCode: string }> {
   await requireAdminAction();
 
-  const lessons = await prisma.lesson.findMany({
-    where: { refCode: { startsWith: "CL-LSN-" } },
-    select: { refCode: true },
-  });
-  return { nextRefCode: nextLessonRefCode(lessons.map((lesson) => lesson.refCode)) };
+  const path = z.guid().safeParse(pathId);
+  const [lessons, firstPath] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { refCode: { startsWith: "CL-LSN-" } },
+      select: { refCode: true },
+    }),
+    path.success
+      ? prisma.path.findUnique({
+          where: { id: path.data },
+          select: { refCode: true, lessons: { select: { lesson: { select: { refCode: true } } } } },
+        })
+      : Promise.resolve(null),
+  ]);
+  const taken = lessons.map((lesson) => lesson.refCode);
+  // Appended at the end: every lesson of the path comes before it.
+  const fromPath = firstPath
+    ? lessonRefCodeFor(
+        firstPath.refCode,
+        nextPathLessonNumber(
+          firstPath.refCode,
+          firstPath.lessons.map((link) => link.lesson.refCode),
+        ),
+        taken,
+      )
+    : null;
+  return { nextRefCode: fromPath ?? nextLessonRefCode(taken) };
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────

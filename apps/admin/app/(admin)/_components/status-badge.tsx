@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useOptimistic, useTransition } from "react";
+import { notifyResult } from "@/lib/notify";
 import { toneColor } from "./admin-ui";
 import { CONTENT_STATUS, type ContentStatus } from "./content-status";
 
@@ -22,7 +23,6 @@ export function StatusBadge({
 }): React.JSX.Element {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<ContentStatus>(currentStatus);
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(confirmed);
 
@@ -31,15 +31,16 @@ export function StatusBadge({
 
   function pick(next: ContentStatus) {
     setOpen(false);
-    setError(null);
     startTransition(async () => {
       setOptimisticStatus(next);
       const res = await action(entityId, next);
-      if (res.error) {
-        setError(res.error);
-      } else {
-        setConfirmed(next);
-      }
+      // In a toast rather than a popup under the badge: the badge sits in a
+      // table, whose overflow clipped the popup, and the success said nothing.
+      const ok = notifyResult(res, {
+        success: `Statut mis à jour : ${statusMeta(next).label.toLowerCase()}.`,
+        error: "Le statut n'a pas pu être changé.",
+      });
+      if (ok) setConfirmed(next);
     });
   }
 
@@ -172,46 +173,6 @@ export function StatusBadge({
             ))}
           </div>
         </>
-      )}
-
-      {error !== null && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            right: 0,
-            zIndex: 50,
-            background: "var(--a-surface)",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
-            padding: "6px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--a-danger)",
-            whiteSpace: "nowrap",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          {error}
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            style={{
-              color: "var(--a-muted)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
-        </div>
       )}
     </div>
   );

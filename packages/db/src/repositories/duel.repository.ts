@@ -48,8 +48,16 @@ export interface DuelResults {
 /** Overdue open duels settled per read: more than a reader could leave behind in a day. */
 const OVERDUE_BATCH = 50;
 
+/** Invitations listed at most: more than a day's worth, since one lapses after a day. */
+const INVITATIONS_LISTED = 10;
+
 function playedBy(userId: string): Prisma.DuelWhereInput {
   return { OR: [{ challengerId: userId }, { opponentId: userId }] };
+}
+
+/** An invitation sent to the reader, still waiting on their answer. */
+function invitationsTo(userId: string, now: Date): Prisma.DuelWhereInput {
+  return { opponentId: userId, status: "PENDING", expiresAt: { gt: now } };
 }
 
 export const duelRepository = {
@@ -111,6 +119,28 @@ export const duelRepository = {
   ): Promise<boolean> {
     const { count } = await prisma.duel.updateMany({ where: { id, status: from }, data });
     return count === 1;
+  },
+
+  /**
+   * How many invitations wait on the reader's answer: the number beside
+   * "Duels" in the site's sidebar. One past its time is not counted, as
+   * recordFor leaves it out: it lapses when read.
+   */
+  async countInvitations(userId: string, now: Date): Promise<number> {
+    return prisma.duel.count({ where: invitationsTo(userId, now) });
+  },
+
+  /**
+   * The invitations waiting on the reader's answer, the one lapsing first
+   * first: the dashboard's "Défis reçus".
+   */
+  async listInvitationsFor(userId: string, now: Date, take = INVITATIONS_LISTED) {
+    return prisma.duel.findMany({
+      where: invitationsTo(userId, now),
+      orderBy: { expiresAt: "asc" },
+      take,
+      select: DUEL,
+    });
   },
 
   /** The reader's duels: the open ones, then the last ones settled. */
