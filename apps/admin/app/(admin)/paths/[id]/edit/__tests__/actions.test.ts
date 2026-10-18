@@ -19,9 +19,15 @@ const m = vi.hoisted(() => {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     replaceLessons: vi.fn(),
+    loggerError: vi.fn(),
     transaction: vi.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
   };
 });
+
+vi.mock("@cyberlearn/lib/logger", () => ({
+  logger: { error: m.loggerError },
+  errorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
+}));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
@@ -92,6 +98,23 @@ describe("updatePathAction", () => {
       targetId: PATH,
       metadata: { lessonCount: 2 },
     });
+  });
+
+  it("gives the transaction time to write a long path, row after row", async () => {
+    // Linux has 90 lessons and the repository writes them one at a time:
+    // Prisma's default of 5 s is not enough against the remote database.
+    await expect(updatePathAction(PATH, {}, form([L2, L1]))).rejects.toThrow("REDIRECT /paths");
+    expect(m.transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 60_000 });
+  });
+
+  it("logs a failed save and answers with the generic error", async () => {
+    m.replaceLessons.mockRejectedValueOnce(new Error("Transaction already closed"));
+    const state = await updatePathAction(PATH, {}, form([L1]));
+    expect(state.error).toBe("Erreur lors de la mise à jour.");
+    expect(m.loggerError).toHaveBeenCalledWith(
+      { scope: "admin", err: "Transaction already closed" },
+      "path update failed",
+    );
   });
 
   it("empties the path when the list is empty, still through the repository", async () => {

@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { z } from "zod";
 import { pathRepository, prisma } from "@cyberlearn/db";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
+import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { requireAdminAction } from "@/lib/auth";
 import { readPathLessonIds } from "../../_actions/lesson-ids";
 
@@ -28,6 +29,16 @@ const updatePathSchema = z.object({
     .or(z.literal("")),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
+
+/**
+ * How long the save may hold its transaction. replaceLessons writes the path's
+ * lessons one row after the other, and a path holds up to MAX_PATH_LESSONS of
+ * them: Linux has 90, Réseaux 92. Prisma's default of 5 s can run out on the
+ * remote database before the last row, and the whole save is then lost. The
+ * sync runs the same loop and allows itself two minutes (path-sync.ts). Not
+ * exported: a "use server" module exports its actions only.
+ */
+const SAVE_PATH_TIMEOUT_MS = 60_000;
 
 export interface UpdatePathState {
   error?: string;
@@ -96,35 +107,39 @@ export async function updatePathAction(
     status === "PUBLISHED" && existing.status !== "PUBLISHED" ? new Date() : existing.publishedAt;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.path.update({
-        where: { id },
-        data: {
-          ...data,
-          coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-          status,
-          publishedAt,
-        },
-      });
-      // Not a delete and a recreate: that dropped every lesson's module and
-      // flag, so one save emptied the modules the sync had filled.
-      await pathRepository.replaceLessons(id, orderedLessonIds, tx);
-      await tx.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "path.update",
-          targetType: "Path",
-          targetId: id,
-          metadata: { title: data.title, status, lessonCount: orderedLessonIds.length },
-        },
-      });
-    });
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.path.update({
+          where: { id },
+          data: {
+            ...data,
+            coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+            status,
+            publishedAt,
+          },
+        });
+        // Not a delete and a recreate: that dropped every lesson's module and
+        // flag, so one save emptied the modules the sync had filled.
+        await pathRepository.replaceLessons(id, orderedLessonIds, tx);
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "path.update",
+            targetType: "Path",
+            targetId: id,
+            metadata: { title: data.title, status, lessonCount: orderedLessonIds.length },
+          },
+        });
+      },
+      { timeout: SAVE_PATH_TIMEOUT_MS },
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode"))
       return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
     if (msg.includes("Unique constraint") && msg.includes("slug"))
       return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+    logger.error({ scope: "admin", err: errorMessage(e) }, "path update failed");
     return { error: "Erreur lors de la mise à jour." };
   }
 
