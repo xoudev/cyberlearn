@@ -10,7 +10,13 @@ import { requireAdminAction } from "@/lib/auth";
 import { withSavedNotice } from "@/lib/saved-notice";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
 import { lessonRefCodeFor, nextLessonRefCode, nextPathLessonNumber } from "@/lib/next-ref-code";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 import { readLessonLinks } from "./lesson-links";
 
 const createLessonSchema = z.object({
@@ -20,17 +26,28 @@ const createLessonSchema = z.object({
     .regex(LESSON_SLUG, LESSON_SLUG_HINT)
     .min(LESSON_LIMITS.slugMin)
     .max(LESSON_LIMITS.slugMax),
-  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  title: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.titleMin)
+    .max(LESSON_LIMITS.titleMax)
+    .refine(holdsNoEmDash, emDashInField("Le titre")),
   description: z
     .string()
     .trim()
     .min(LESSON_LIMITS.descriptionMin)
-    .max(LESSON_LIMITS.descriptionMax),
+    .max(LESSON_LIMITS.descriptionMax)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
   xpReward: z.coerce.number().int().nonnegative().max(LESSON_LIMITS.xpMax),
-  contentMdx: z.string().trim().min(10),
+  // Trimmed, which is what is checked and stored, and as typed, which is
+  // where the editor marks what the check found (asTyped).
+  contentMdx: z
+    .string()
+    .transform((typed) => ({ typed, text: typed.trim() }))
+    .pipe(z.object({ typed: z.string(), text: z.string().min(10) })),
   coverImageUrl: z
     .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
@@ -41,6 +58,11 @@ const createLessonSchema = z.object({
 export interface CreateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
+  /**
+   * What the content check found, each at its line, for the editor to mark:
+   * empty once it passed, absent when the form stopped before it.
+   */
+  problems?: LessonEditorProblem[];
 }
 
 export async function createLessonAction(
@@ -60,17 +82,25 @@ export async function createLessonAction(
     return { error: "Formulaire invalide.", fieldErrors };
   }
 
-  // Refused before it reaches the database: see checkLessonMdx.
-  const render = await checkLessonMdx(parsed.data.contentMdx);
+  const { coverImageUrl, publishNow, contentMdx, ...data } = parsed.data;
+
+  // Refused before it reaches the database: see checkLessonMdx and authoring.ts.
+  const render = asTyped(await checkLessonForSave(contentMdx.text), contentMdx.typed);
   if (!render.ok) {
     return {
-      error: "Le contenu ne s'affiche pas.",
+      error:
+        render.kind === undefined ? "Le contenu ne s'affiche pas." : "Le contenu est à corriger.",
       fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+      problems: editorProblemsOf(render),
     };
   }
+  // From here the content passed: a refusal says so with an empty list, which
+  // takes down what the editor marked from an earlier save.
 
   const links = readLessonLinks(formData);
-  if (!links.ok) return { error: links.error, fieldErrors: { [links.field]: links.error } };
+  if (!links.ok) {
+    return { error: links.error, fieldErrors: { [links.field]: links.error }, problems: [] };
+  }
   const { pathIds, prerequisiteIds } = links.links;
 
   // The console creates catalogue lessons, so only catalogue paths and
@@ -92,21 +122,20 @@ export async function createLessonAction(
   ]);
   if (paths.length !== pathIds.length) {
     const error = "Un des parcours choisis n'existe plus.";
-    return { error, fieldErrors: { pathIds: error } };
+    return { error, fieldErrors: { pathIds: error }, problems: [] };
   }
   if (prerequisites.length !== prerequisiteIds.length) {
     const error = "Une des leçons choisies comme prérequis n'existe plus.";
-    return { error, fieldErrors: { prerequisiteIds: error } };
+    return { error, fieldErrors: { prerequisiteIds: error }, problems: [] };
   }
   const pathRefCode = new Map(paths.map((path) => [path.id, path.refCode]));
-
-  const { coverImageUrl, publishNow, ...data } = parsed.data;
 
   try {
     await prisma.$transaction(async (tx) => {
       const lesson = await tx.lesson.create({
         data: {
           ...data,
+          contentMdx: contentMdx.text,
           coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
           authorId: admin.id,
           status: publishNow ? "PUBLISHED" : "DRAFT",
@@ -136,12 +165,16 @@ export async function createLessonAction(
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode")) {
-      return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
+      return {
+        error: "Ce refCode existe déjà.",
+        fieldErrors: { refCode: "Déjà utilisé" },
+        problems: [],
+      };
     }
     if (msg.includes("Unique constraint") && msg.includes("slug")) {
-      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" }, problems: [] };
     }
-    return { error: "Erreur lors de la création." };
+    return { error: "Erreur lors de la création.", problems: [] };
   }
 
   redirect(withSavedNotice("/lessons", "created"));

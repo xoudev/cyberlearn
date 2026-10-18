@@ -7,7 +7,7 @@
  */
 import React from "react";
 import { describe, expect, it } from "vitest";
-import { extractDiagramSource } from "@/lib/mdx/extract-diagram-source";
+import { extractDiagramSource } from "./diagram-source.js";
 
 const p = (...children: React.ReactNode[]): React.ReactElement =>
   React.createElement("p", null, ...children);

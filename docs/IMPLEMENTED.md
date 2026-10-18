@@ -283,7 +283,7 @@
 | `/moderation` | File de relecture des contenus signalés |
 | `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
 | `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
-| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
+| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/settings` | Configuration de l'application |
@@ -431,6 +431,27 @@
 - Mise à jour du statut (OPEN → IN_PROGRESS → RESOLVED → CLOSED)
 - Fil de conversation avec le demandeur ; une demande RESOLVED ou CLOSED
   n'accepte plus de message, de part ni d'autre
+- Page d'un ticket lue par le dépôt (`ticketRepository.findWithThread`) : le
+  demandeur mène à sa fiche (`/users/[id]`)
+- Appel d'un bannissement : carte « Bannissement contesté » (motif, date et
+  auteur de la décision, durée restante en mots de `banTimeLeft`, état en
+  cours, levé ou expiré, motif de la levée) et bouton « Lever », qui lève ce
+  bannissement-là et aucun autre, seulement s'il est encore en cours (le
+  filtre est dans la requête qui écrit) ; ligne d'audit
+  `admin.user.ban_lifted` avec le ticket et le bannissement, réponse
+  facultative au demandeur postée avant de passer le ticket en RESOLVED ; le
+  champ « Motif de la levée » est le même composant que sur la fiche
+- Assignation à un administrateur (ou à personne), refusée pour tout autre
+  compte, sans déplacer la date de dernière activité du ticket ; colonne
+  « Assigné à » et facette « Assignation » (« À moi », « Non assigné ») dans
+  la liste ; audit `ticket.assign`
+- Notes internes (table `ticket_notes`, RLS : aucun droit pour `anon` ni
+  `authenticated`, lecture réservée à ADMIN) : carte « Notes internes » à
+  part du fil, jamais lue par le site ni par l'app (`findForRequester`,
+  `findForUser`) ; même règle qu'une réponse, aucune note sur une demande
+  RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
+  compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
+  texte de la note
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)

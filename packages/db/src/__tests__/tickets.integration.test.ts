@@ -64,6 +64,8 @@ describe("tickets (integration, real DB)", () => {
   afterAll(async () => {
     if (!configured) return;
     await prisma.contactTicket.deleteMany({ where: { id: { in: [ticketId, resolvedTicketId] } } });
+    // Assigning and noting write audit rows, which would outlive their actor.
+    await prisma.auditLog.deleteMany({ where: { actorId: staff } });
     await prisma.user.deleteMany({ where: { id: { in: USER_IDS } } });
   });
 
@@ -254,6 +256,103 @@ describe("tickets (integration, real DB)", () => {
       await prisma.contactTicket.delete({ where: { id: doomed } });
 
       expect(await prisma.ticketMessage.count({ where: { ticketId: doomed } })).toBe(0);
+    });
+  });
+
+  describe("the team's side: assignment and notes", () => {
+    it("gives a ticket to an administrator without moving its updatedAt", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+
+      const result = await ticketRepository.assign({ ticketId, assigneeId: staff, actorId: staff });
+
+      expect(result).toEqual({ ok: true, changed: true });
+      const after = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { assigneeId: true, updatedAt: true },
+      });
+      expect(after?.assigneeId).toBe(staff);
+      // updatedAt orders the requester's own list: taking a ticket in hand
+      // must not reorder it.
+      expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime());
+    });
+
+    it("refuses to give a ticket to an account that is not an administrator", async () => {
+      if (!configured) return;
+      const result = await ticketRepository.assign({
+        ticketId,
+        assigneeId: stranger,
+        actorId: staff,
+      });
+      expect(result).toEqual({ ok: false, reason: "NOT_ADMIN" });
+      const row = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { assigneeId: true },
+      });
+      expect(row?.assigneeId).toBe(staff);
+    });
+
+    it("adds a note to an open ticket and lists it, without moving updatedAt", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+
+      const result = await ticketRepository.addNote({
+        ticketId,
+        authorId: staff,
+        body: "Lycée déjà connu, voir avec la région.",
+      });
+
+      expect(result.ok).toBe(true);
+      const notes = await ticketRepository.listNotes(ticketId);
+      expect(notes.map((n) => n.body)).toEqual(["Lycée déjà connu, voir avec la région."]);
+      expect(notes[0]?.author?.displayName).toBe("Équipe");
+      const after = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { updatedAt: true },
+      });
+      expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime());
+    });
+
+    it("never hands the note or the assignee to the requester's read", async () => {
+      if (!configured) return;
+      const ticket = await ticketRepository.findForRequester(ticketId, requester);
+      expect(ticket).not.toBeNull();
+      expect(Object.keys(ticket ?? {})).not.toContain("notes");
+      expect(Object.keys(ticket ?? {})).not.toContain("assigneeId");
+      expect(JSON.stringify(ticket)).not.toContain("voir avec la région");
+    });
+
+    it("refuses a note on a resolved ticket, and writes nothing", async () => {
+      if (!configured) return;
+      const result = await ticketRepository.addNote({
+        ticketId: resolvedTicketId,
+        authorId: staff,
+        body: "Pour mémoire.",
+      });
+      expect(result).toEqual({ ok: false, reason: "TERMINAL" });
+      expect(await prisma.ticketNote.count({ where: { ticketId: resolvedTicketId } })).toBe(0);
+    });
+
+    it("tells a missing ticket apart from a finished one", async () => {
+      if (!configured) return;
+      expect(
+        await ticketRepository.addNote({ ticketId: randomUUID(), authorId: staff, body: "Rien." }),
+      ).toEqual({ ok: false, reason: "NOT_FOUND" });
+    });
+
+    it("takes the notes with the ticket when the ticket goes", async () => {
+      if (!configured) return;
+      const doomed = await makeTicket(`Éphémère noté ${suffix}`, "OPEN");
+      await ticketRepository.addNote({ ticketId: doomed, authorId: staff, body: "Une note." });
+      await prisma.contactTicket.delete({ where: { id: doomed } });
+
+      expect(await prisma.ticketNote.count({ where: { ticketId: doomed } })).toBe(0);
     });
   });
 });

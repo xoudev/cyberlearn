@@ -206,7 +206,7 @@ export function LessonEditor({
             Blocs ou code · aperçu rendu par le site · le même éditeur que la console
           </span>
         </div>
-        <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
+        <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} problems={state.problems} />
       </div>
 
       <div className="tle-actions">

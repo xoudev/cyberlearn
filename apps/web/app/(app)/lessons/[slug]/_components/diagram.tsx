@@ -6,7 +6,7 @@ import type mermaidLib from "mermaid";
 import type { MermaidConfig } from "mermaid";
 import { diagramOutline } from "@cyberlearn/lib/mdx-diagram-outline";
 import { BORDER, MONO, MUTED } from "@cyberlearn/ui";
-import { extractDiagramSource } from "@/lib/mdx/extract-diagram-source";
+import { extractDiagramSource } from "@cyberlearn/lib/mdx-diagram-source";
 type MermaidAPI = typeof mermaidLib;
 
 // Mermaid is imported dynamically inside useEffect so it is never evaluated

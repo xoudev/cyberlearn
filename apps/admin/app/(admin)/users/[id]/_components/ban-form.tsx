@@ -8,6 +8,7 @@ import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
 import { banUserAction, liftBanAction, type BanUserState } from "../../../_actions/user-actions";
 import { Card, Tag } from "../../../_components/admin-ui";
+import { LiftReasonField } from "../../../_components/lift-reason-field";
 
 /**
  * Banning somebody, and letting them back in.
@@ -111,17 +112,7 @@ export function BanForm({
             style={{ marginTop: 16 }}
           >
             <input type="hidden" name="userId" value={userId} />
-            <label className="a-field">
-              <span className="a-label">
-                Motif de la levée<span className="a-label-optional"> · optionnel</span>
-              </span>
-              <input
-                name="reason"
-                maxLength={500}
-                className="a-input"
-                placeholder="Appel accepté : faux positif"
-              />
-            </label>
+            <LiftReasonField />
             <button type="submit" disabled={liftPending} className="a-btn a-btn--ghost">
               {liftPending ? "Levée…" : "Lever le bannissement"}
             </button>

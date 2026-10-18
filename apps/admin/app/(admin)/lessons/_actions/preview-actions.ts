@@ -2,7 +2,12 @@
 
 import { z } from "zod";
 import { LESSON_PREVIEW_TOKEN, lessonPreviewRepository } from "@cyberlearn/db";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave } from "@cyberlearn/lib/mdx-authoring";
+import {
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 import { requireAdminAction } from "@/lib/auth";
 import { learnerUrl } from "@/lib/learner-url";
 
@@ -13,7 +18,10 @@ import { learnerUrl } from "@/lib/learner-url";
  *
  * The draft is checked before it is stored, with the check the save runs: a
  * draft that does not render would show a "section indisponible" notice and
- * report to Sentry, when what the author needs is the line that is wrong.
+ * report to Sentry, when what the author needs is the line that is wrong. A
+ * draft that renders but breaks a rule of the catalogue (an em dash, say) is
+ * shown, and its problems come back with the address, for the editor to mark
+ * before the save refuses them.
  */
 
 const inputSchema = z.object({
@@ -23,8 +31,8 @@ const inputSchema = z.object({
 });
 
 export type LessonPreviewResult =
-  | { ok: true; token: string; url: string }
-  | { ok: false; error: string };
+  | { ok: true; token: string; url: string; problems: LessonEditorProblem[] }
+  | { ok: false; error: string; problems?: LessonEditorProblem[] };
 
 export async function refreshLessonPreviewAction(input: unknown): Promise<LessonPreviewResult> {
   const admin = await requireAdminAction();
@@ -32,8 +40,12 @@ export async function refreshLessonPreviewAction(input: unknown): Promise<Lesson
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Aperçu impossible : contenu invalide." };
 
-  const render = await checkLessonMdx(parsed.data.contentMdx);
-  if (!render.ok) return { ok: false, error: describeLessonMdxProblem(render) };
+  const check = await checkLessonForSave(parsed.data.contentMdx);
+  const problems = editorProblemsOf(check);
+  // The gravest problem comes first: absent a kind, the draft does not render.
+  if (!check.ok && check.kind === undefined) {
+    return { ok: false, error: describeLessonMdxProblem(check), problems };
+  }
 
   const now = new Date();
   const { contentMdx } = parsed.data;
@@ -44,5 +56,5 @@ export async function refreshLessonPreviewAction(input: unknown): Promise<Lesson
   ) {
     token = await lessonPreviewRepository.issue(admin.id, contentMdx, now);
   }
-  return { ok: true, token, url: learnerUrl(`/preview/${token}`) };
+  return { ok: true, token, url: learnerUrl(`/preview/${token}`), problems };
 }
