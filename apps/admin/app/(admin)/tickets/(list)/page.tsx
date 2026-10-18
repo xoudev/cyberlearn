@@ -13,7 +13,13 @@ import { KpiCard, PageHeader, Tag, type Tone } from "../../_components/admin-ui"
 import { DataGrid, type GridRow } from "../../_components/data-grid";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TICKET_COLUMNS, TICKET_KPI_LABELS, TICKETS_HEADER } from "../_components/ticket-columns";
-import { STATUS_META, THEME_META } from "../ticket-meta";
+import {
+  adminName,
+  ASSIGNMENT_FACET_OPTIONS,
+  assignmentOf,
+  STATUS_META,
+  THEME_META,
+} from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -32,7 +38,7 @@ function formatDate(d: Date): string {
 }
 
 export default async function AdminTicketsPage(): Promise<React.ReactElement> {
-  await requireAdminPage();
+  const viewer = await requireAdminPage();
   const read = await prisma.contactTicket.findMany({
     select: {
       id: true,
@@ -45,6 +51,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
       createdAt: true,
       updatedAt: true,
       user: { select: { username: true, displayName: true } },
+      assignee: { select: { id: true, username: true, displayName: true } },
       messages: LAST_TICKET_MESSAGE,
     },
   });
@@ -75,15 +82,24 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
       ? `@${t.user.username}`
       : (t.user?.displayName ?? t.email ?? "anonyme");
     const status = STATUS_META[t.status] ?? { label: t.status, color: "var(--a-muted)" };
+    const assigneeLabel = t.assignee !== null ? adminName(t.assignee) : null;
 
     return {
       id: t.id,
-      search: `${t.subject} ${userLabel} ${theme.label} ${status.label}`.toLowerCase(),
-      facets: [t.status, t.theme, t.awaiting ? AWAITING : ""],
+      search:
+        `${t.subject} ${userLabel} ${theme.label} ${status.label} ${assigneeLabel ?? ""}`.toLowerCase(),
+      facets: [
+        t.status,
+        t.theme,
+        t.awaiting ? AWAITING : "",
+        assignmentOf(t.assignee?.id ?? null, viewer.id),
+      ],
       sort: [
         t.subject.toLowerCase(),
         t.theme,
         userLabel.toLowerCase(),
+        // Sorted on what the cell reads, « Personne » included.
+        (assigneeLabel ?? "Personne").toLowerCase(),
         0,
         t.createdAt.getTime(),
         t.status,
@@ -119,6 +135,19 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
         <span key="u" className="mono" style={{ color: "var(--a-muted)" }}>
           {userLabel}
         </span>,
+        assigneeLabel !== null ? (
+          <span
+            key="a"
+            className="mono"
+            style={{ color: t.assignee?.id === viewer.id ? "var(--a-accent)" : "var(--a-fg-2)" }}
+          >
+            {t.assignee?.id === viewer.id ? `${assigneeLabel} (toi)` : assigneeLabel}
+          </span>
+        ) : (
+          <span key="a" style={{ color: "var(--a-muted)" }}>
+            Personne
+          </span>
+        ),
         t.jiraIssueKey && t.jiraIssueUrl ? (
           <a
             key="j"
@@ -235,6 +264,10 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           {
             label: "Suivi",
             options: [{ value: AWAITING, label: "Réponse en attente" }],
+          },
+          {
+            label: "Assignation",
+            options: [...ASSIGNMENT_FACET_OPTIONS],
           },
         ]}
         searchPlaceholder="Rechercher un sujet, un utilisateur…"

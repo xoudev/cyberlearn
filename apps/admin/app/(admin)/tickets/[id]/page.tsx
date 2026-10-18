@@ -2,12 +2,16 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isTicketOpen, prisma } from "@cyberlearn/db";
+import { isTicketOpen, ticketRepository, userRepository } from "@cyberlearn/db";
 import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
+import { AppealedBanCard } from "../_components/AppealedBanCard";
+import { TicketAssignee } from "../_components/TicketAssignee";
+import { TicketNotes } from "../_components/TicketNotes";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TICKET_CARDS, TICKET_CRUMBS } from "../_components/ticket-columns";
 import { TicketThread } from "../_components/TicketThread";
-import { STATUS_META, THEME_META } from "../ticket-meta";
+import { describeAppealedBan } from "../appealed-ban";
+import { adminName, STATUS_META, THEME_META } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
 import { routeIdOrNotFound } from "@/lib/route-id";
@@ -73,39 +77,17 @@ export default async function AdminTicketPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
-  await requireAdminPage();
+  const viewer = await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const ticket = await prisma.contactTicket.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      subject: true,
-      theme: true,
-      message: true,
-      status: true,
-      email: true,
-      jiraIssueKey: true,
-      jiraIssueUrl: true,
-      userAgent: true,
-      createdAt: true,
-      updatedAt: true,
-      user: { select: { id: true, username: true, displayName: true, email: true } },
-      // Set when the ticket contests a ban: the account it is about, which is
-      // where the ban is lifted.
-      appealFor: { select: { userId: true } },
-      messages: {
-        orderBy: { createdAt: "asc" },
-        select: {
-          id: true,
-          body: true,
-          fromStaff: true,
-          createdAt: true,
-          author: { select: { displayName: true } },
-        },
-      },
-    },
-  });
+  // Through the repository: the account behind the ticket, who has it in hand
+  // and the ban it contests come with it; the team's notes are read apart, so
+  // no read of the ticket carries them by accident.
+  const [ticket, notes, admins] = await Promise.all([
+    ticketRepository.findWithThread(id),
+    ticketRepository.listNotes(id),
+    userRepository.listAdmins(),
+  ]);
 
   if (!ticket) notFound();
 
@@ -115,10 +97,22 @@ export default async function AdminTicketPage({
     ? `@${ticket.user.username}`
     : (ticket.user?.displayName ?? "Visiteur non connecté");
   const contactEmail = ticket.email ?? ticket.user?.email ?? null;
+  const open = isTicketOpen(ticket.status);
 
   // Formatted here: the server owns the locale, and a Date crossing to a client
   // component renders differently on the two sides of the boundary.
   const stamp = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const format = (date: Date): string => stamp.format(date);
+
+  // An assignee demoted since keeps their place in the list, named as such,
+  // rather than the control falling back to a value it cannot show.
+  const assignable = admins.map((admin) => ({ id: admin.id, name: adminName(admin) }));
+  if (ticket.assignee !== null && !admins.some((admin) => admin.id === ticket.assignee?.id)) {
+    assignable.push({
+      id: ticket.assignee.id,
+      name: `${adminName(ticket.assignee)} (plus administrateur)`,
+    });
+  }
 
   return (
     <main className="a-page">
@@ -150,23 +144,56 @@ export default async function AdminTicketPage({
               {ticket.message}
             </p>
           </Card>
+
+          {/* The ban an appeal contests, next to what the person wrote about
+              it, and lifted from here. */}
+          {ticket.appealFor !== null && (
+            <div style={{ marginTop: 18 }}>
+              <AppealedBanCard
+                ticketId={ticket.id}
+                ticketOpen={open}
+                ban={describeAppealedBan(ticket.appealFor, new Date(), format)}
+              />
+            </div>
+          )}
         </div>
 
         <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
           <Card title={TICKET_CARDS.status} pad>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10.5,
-                  color: "var(--a-muted)",
-                }}
-              >
-                mis à jour le {formatDateTime(ticket.updatedAt)}
-              </span>
+            <div style={{ display: "grid", gap: 13 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10.5,
+                    color: "var(--a-muted)",
+                  }}
+                >
+                  mis à jour le {formatDateTime(ticket.updatedAt)}
+                </span>
+              </div>
+              <DetailRow label="Assigné à">
+                <TicketAssignee
+                  ticketId={ticket.id}
+                  assigneeId={ticket.assignee?.id ?? null}
+                  viewerId={viewer.id}
+                  admins={assignable}
+                />
+              </DetailRow>
             </div>
           </Card>
+
+          <TicketNotes
+            ticketId={ticket.id}
+            open={open}
+            notes={notes.map((note) => ({
+              id: note.id,
+              body: note.body,
+              stamp: format(note.createdAt),
+              authorName: note.author?.displayName ?? null,
+            }))}
+          />
 
           <Card title={TICKET_CARDS.details} pad>
             <div style={{ display: "grid", gap: 13 }}>
@@ -181,18 +208,6 @@ export default async function AdminTicketPage({
                   requester
                 )}
               </DetailRow>
-              {ticket.appealFor !== null && (
-                <DetailRow label="Bannissement contesté">
-                  {/* Lifted or kept from the account's page, which shows the
-                      ban, its reason and the ones before it. */}
-                  <Link
-                    href={`/users/${ticket.appealFor.userId}`}
-                    style={{ color: "var(--a-accent)" }}
-                  >
-                    Voir le bannissement sur le compte
-                  </Link>
-                </DetailRow>
-              )}
               <DetailRow label="Email">
                 {contactEmail ? (
                   <a href={`mailto:${contactEmail}`} style={{ color: "var(--a-accent)" }}>
@@ -248,15 +263,15 @@ export default async function AdminTicketPage({
       <Card title={TICKET_CARDS.conversation}>
         <TicketThread
           ticketId={ticket.id}
-          open={isTicketOpen(ticket.status)}
+          open={open}
           requesterName={requester}
           openingMessage={ticket.message}
-          openingStamp={stamp.format(ticket.createdAt)}
+          openingStamp={format(ticket.createdAt)}
           messages={ticket.messages.map((m) => ({
             id: m.id,
             body: m.body,
             fromStaff: m.fromStaff,
-            stamp: stamp.format(m.createdAt),
+            stamp: format(m.createdAt),
             authorName: m.author?.displayName ?? null,
           }))}
         />

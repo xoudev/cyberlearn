@@ -13,7 +13,7 @@ export default function AdminTicketsLoading(): React.ReactElement {
         description={TICKETS_HEADER.description}
       />
       <KpiGridSkeleton labels={TICKET_KPI_LABELS} />
-      <DataGridSkeleton columns={TICKET_COLUMNS} facets={3} rows={10} leadLines={2} />
+      <DataGridSkeleton columns={TICKET_COLUMNS} facets={4} rows={10} leadLines={2} />
     </main>
   );
 }
