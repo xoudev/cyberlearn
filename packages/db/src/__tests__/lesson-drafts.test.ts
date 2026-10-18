@@ -383,6 +383,24 @@ describe("lessonDraftRepository.publish", () => {
     expect(tx.lesson.updateMany).not.toHaveBeenCalled();
   });
 
+  it("refuses when the lesson moves between the check and the write", async () => {
+    // The fingerprint check reads the lesson as the draft left it; a sync
+    // commits; publish() reads it again, with the sync's updatedAt.
+    const SYNCED_AT = new Date("2026-10-18T11:59:30.000Z");
+    tx.lesson.findUnique.mockResolvedValueOnce(lessonRow()).mockResolvedValueOnce({
+      ...lessonRow({ ...PUBLISHED, title: "Les ports, synchronisés" }, 2),
+      updatedAt: SYNCED_AT,
+    });
+    const result = await lessonDraftRepository.publish(LESSON, EDITED, {
+      actorId: ADMIN,
+      expectedUpdatedAt: DRAFT_AT,
+    });
+    expect(result).toEqual({ ok: false, reason: "stale" });
+    expect(tx.lesson.updateMany).not.toHaveBeenCalled();
+    expect(tx.lessonVersion.create).not.toHaveBeenCalled();
+    expect(tx.lessonDraft.delete).not.toHaveBeenCalled();
+  });
+
   it("publishes over it once told to", async () => {
     tx.lesson.findUnique.mockResolvedValue(
       lessonRow({ ...PUBLISHED, title: "Les ports, synchronisés" }),

@@ -178,21 +178,28 @@ export const lessonDraftRepository = {
         if (draft === null || !sameStamp(draft.updatedAt, options.expectedUpdatedAt)) {
           return { ok: false, reason: "draft_changed" };
         }
+        // The lesson's updatedAt as the fingerprint was checked against it.
+        // publish() reads the lesson again and writes on that second read: a
+        // sync or an import committing between the two would otherwise be
+        // replaced unseen. Passed on, it makes that publish `stale`.
+        let checkedAt: Date | undefined;
         if (options.force !== true) {
           const lesson = await tx.lesson.findUnique({
             where: { id: lessonId },
-            select: LESSON_CONTENT_SELECT,
+            select: { ...LESSON_CONTENT_SELECT, updatedAt: true },
           });
           if (!lesson) return { ok: false, reason: "not_found" };
           if (lessonContentHash(lesson) !== draft.baseContentHash) {
             return { ok: false, reason: "lesson_changed" };
           }
+          checkedAt = lesson.updatedAt;
         }
 
         const published = await lessonVersionRepository.publish(
           {
             lessonId,
             changes: content,
+            ...(checkedAt !== undefined ? { expectedUpdatedAt: checkedAt } : {}),
             source: "CONSOLE",
             actorId: options.actorId,
             audit: {
