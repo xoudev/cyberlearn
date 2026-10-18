@@ -10,6 +10,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
  * moved under this editor: another tab, another administrator) stops the
  * autosave for good; the page has to be reloaded to see what the other one
  * wrote. Any other failure waits for the next change, or for flush().
+ *
+ * `paused` holds the saves a pause would start, while the editor does
+ * something a save must not cross (a publish, a discard): a save sent then
+ * would carry the draft's updatedAt from before it, and land after it. What
+ * is typed meanwhile shows as pending, and is saved after the next pause once
+ * `paused` is false again. flush() still saves: it is called on purpose.
  */
 
 /** How long the typing has to stop before the draft is saved. */
@@ -61,12 +67,15 @@ export function useDraftAutosave<T>({
   save,
   delay = AUTOSAVE_PAUSE_MS,
   savedAt = null,
+  paused = false,
 }: {
   value: T;
   save: (value: T) => Promise<AutosaveResult>;
   delay?: number;
   /** When the draft the page opened with was saved, if it opened with one. */
   savedAt?: Date | null;
+  /** No save starts by itself while true. */
+  paused?: boolean;
 }): DraftAutosave<T> {
   const key = useMemo(() => JSON.stringify(value), [value]);
   const [savedKey, setSavedKey] = useState(key);
@@ -130,12 +139,13 @@ export function useDraftAutosave<T>({
     setState((s) =>
       s.status === "pending" || s.status === "saving" ? s : { ...s, status: "pending" },
     );
+    if (paused) return;
     timer.current = setTimeout(() => {
       timer.current = null;
       void run();
     }, delay);
     return clearTimer;
-  }, [key, savedKey, delay, run, clearTimer]);
+  }, [key, savedKey, delay, run, clearTimer, paused]);
 
   const flush = useCallback(async (): Promise<boolean> => {
     clearTimer();

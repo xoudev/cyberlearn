@@ -188,6 +188,65 @@ describe("useDraftAutosave", () => {
     await settle(AUTOSAVE_PAUSE_MS * 2);
     expect(save).not.toHaveBeenCalled();
   });
+
+  describe("paused, as during a publish", () => {
+    function setupPausable(save: (value: { text: string }) => Promise<AutosaveResult>) {
+      return renderHook(
+        ({ value, paused }: { value: { text: string }; paused: boolean }) =>
+          useDraftAutosave({ value, save, paused }),
+        { initialProps: { value: { text: "a" }, paused: false } },
+      );
+    }
+
+    it("starts no save on a pause, and says what is typed is pending", async () => {
+      const save = vi.fn(
+        (): Promise<AutosaveResult> => Promise.resolve({ ok: true, savedAt: SAVED_AT }),
+      );
+      const { result, rerender } = setupPausable(save);
+      rerender({ value: { text: "a" }, paused: true });
+      rerender({ value: { text: "ab" }, paused: true });
+      await settle(AUTOSAVE_PAUSE_MS * 3);
+      expect(save).not.toHaveBeenCalled();
+      expect(result.current).toMatchObject({ status: "pending", dirty: true });
+    });
+
+    it("holds a pause that was already running when it started", async () => {
+      const save = vi.fn(
+        (): Promise<AutosaveResult> => Promise.resolve({ ok: true, savedAt: SAVED_AT }),
+      );
+      const { rerender } = setupPausable(save);
+      rerender({ value: { text: "ab" }, paused: false });
+      await settle(AUTOSAVE_PAUSE_MS - 100);
+      rerender({ value: { text: "ab" }, paused: true });
+      await settle(AUTOSAVE_PAUSE_MS * 2);
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it("saves what was typed meanwhile after the next pause once it ends", async () => {
+      const save = vi.fn(
+        (): Promise<AutosaveResult> => Promise.resolve({ ok: true, savedAt: SAVED_AT }),
+      );
+      const { result, rerender } = setupPausable(save);
+      rerender({ value: { text: "ab" }, paused: true });
+      await settle(AUTOSAVE_PAUSE_MS * 2);
+      rerender({ value: { text: "ab" }, paused: false });
+      await settle(AUTOSAVE_PAUSE_MS);
+      expect(save).toHaveBeenCalledExactlyOnceWith({ text: "ab" });
+      expect(result.current).toMatchObject({ status: "saved", dirty: false });
+    });
+
+    it("still saves on flush", async () => {
+      const save = vi.fn(
+        (): Promise<AutosaveResult> => Promise.resolve({ ok: true, savedAt: SAVED_AT }),
+      );
+      const { result, rerender } = setupPausable(save);
+      rerender({ value: { text: "ab" }, paused: true });
+      await act(async () => {
+        await result.current.flush();
+      });
+      expect(save).toHaveBeenCalledExactlyOnceWith({ text: "ab" });
+    });
+  });
 });
 
 describe("useSaveShortcut", () => {
