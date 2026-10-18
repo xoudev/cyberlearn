@@ -304,6 +304,46 @@ describe("the sign-in screens", () => {
   });
 });
 
+/**
+ * The rules of admin-ui.css allowed to write a colour out: the two white
+ * grounds named above RAW_COLOUR_ALLOWED. Nothing else in the stylesheet
+ * does, so a primary button back on #fff, a diff line back on its own pink,
+ * or a third white ground nobody wrote down fails here.
+ */
+const WHITE_GROUNDS = [".a-qr-canvas", ".a-mail-frame"] as const;
+
+describe("the console stylesheet", () => {
+  /** The whole rule for a selector that opens a line, braces included. */
+  function rule(selector: string): string | undefined {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    return new RegExp(`^${escaped} \\{[^}]*\\}`, "mu").exec(css)?.[0];
+  }
+
+  it.each(WHITE_GROUNDS.map((selector) => [selector]))(
+    "keeps %s on its white ground",
+    (selector) => {
+      expect(rule(selector), selector).toMatch(/background: #ffffff;/u);
+    },
+  );
+
+  it("writes out no other colour", () => {
+    let rest = css;
+    for (const selector of WHITE_GROUNDS) rest = rest.replace(rule(selector) ?? "", "");
+    const written = rest.split("\n").filter((line) => RAW_COLOUR.test(line));
+    expect(written).toEqual([]);
+  });
+
+  it("gives the primary button and the diff lines their colours by name", () => {
+    expect(rule(".a-btn--primary")).toMatch(/\bcolor: var\(--a-fg\);/u);
+    expect(rule('.a-diff-line[data-kind="added"]')).toMatch(
+      /\bcolor: color-mix\(in srgb, var\(--a-accent\) \d+%, var\(--a-fg\)\);/u,
+    );
+    expect(rule('.a-diff-line[data-kind="removed"]')).toMatch(
+      /\bcolor: color-mix\(in srgb, var\(--a-danger\) \d+%, var\(--a-fg\)\);/u,
+    );
+  });
+});
+
 describe("the content status", () => {
   it("gives the edit forms' status field the labels and colours of the list badge", () => {
     expect(CONTENT_STATUS_OPTIONS).toEqual([
