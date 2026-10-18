@@ -53,6 +53,7 @@
 | `/revisions` · `/review` | Ancienne file SM-2, plus reliée, retirée ensuite |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
+| `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
@@ -185,6 +186,10 @@
   TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED
 - Badge de comptage non-lu dans la navbar
 - Marquer une ou toutes les notifications comme lues
+- Le panneau de la barre du haut montre les 20 dernières ; « Tout voir » mène à
+  l'historique `/notifications`, paginé par curseur (date puis identifiant) pour
+  qu'une notification arrivée entre deux pages ne décale rien. L'app pagine sa
+  boîte de 50 en 50 avec « Charger plus »
 
 #### Contact & Support
 - Formulaire à 8 thèmes (BUG, QUESTION, FEATURE_REQUEST, SECURITY,
@@ -247,16 +252,16 @@
 | `/` | Redirige vers `/dashboard` |
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
-| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), sélection et changement de statut groupé |
+| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
-| `/lessons/[id]/edit` | Éditer une leçon |
+| `/lessons/[id]/edit` | Éditer une leçon ; avis des apprenants (note et commentaire), comme sur un parcours |
 | `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |
 | `/paths` | Liste des parcours |
 | `/paths/new` | Créer un parcours |
-| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) |
+| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) ; avis des apprenants |
 | `/paths/[id]/quiz` | Composer l'examen final d'un parcours |
 | `/badges` | Liste des badges |
 | `/badges/new` | Créer un badge (10 types de critères) |
@@ -269,10 +274,14 @@
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
+| `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
+| `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
+| `/reference/cosmetics` · `/reference/quests` · `/reference/seasons` · `/reference/forum-categories` · `/reference/placement` | Référentiels en consultation seule, 25 par page avec recherche et filtres : cosmétiques, quêtes, saisons de ligue, sections du forum, questions du test de positionnement. Un bandeau cite le fichier qui écrit les lignes (seed, migration ou tâche planifiée) |
+| `/account` | Mon compte : identité, double authentification, méthodes et dernière connexion, mes actions (le journal filtré sur soi), fermer ses autres sessions ou toutes ; le mot de passe se change sur le site |
 | `/settings` | Configuration de l'application |
 
 ---
@@ -389,6 +398,22 @@
 - Export CSV du filtre courant (séparateur point-virgule, UTF-8 avec BOM,
   cellules prises pour des formules neutralisées), 50 000 lignes au plus :
   au-delà, la page demande un filtre plus étroit ; l'export est lui-même tracé
+
+#### Tâches planifiées
+- Les six routes `apps/web/app/api/cron/*` consignent chaque passage dans le
+  journal d'audit (`actorId` nul, action `cron.<nom>`, cible `Cron`) : réussite,
+  durée, bilan, cause d'un échec. L'écriture n'échoue jamais la tâche
+- La liste `CRON_JOBS` (`packages/lib/src/cron/jobs.ts`) donne chemin, planning
+  et libellé ; un test la compare à `apps/web/vercel.json`. `keep-alive` est
+  appelée par cron-job.org, hors de `vercel.json`
+- `/system/crons` dit pour chacune : en ordre, en échec, en retard (passage dû
+  depuis plus d'une heure et absent), jamais vue
+
+#### Tournois
+- Un flag disqualifié garde sa ligne (`disqualifiedAt`, `disqualifiedById`,
+  `disqualifiedReason`) : il ne compte plus dans aucun classement, sur le site
+  comme dans l'app, et ne peut pas être soumis de nouveau. Rétablissable.
+  L'export RGPD du joueur reprend la date et le motif, pas l'auteur
 
 ---
 
