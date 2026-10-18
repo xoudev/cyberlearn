@@ -7,7 +7,13 @@ import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { withSavedNotice } from "@/lib/saved-notice";
 import { LESSON_LIMITS, LESSON_SLUG, LESSON_SLUG_HINT } from "@/lib/lesson-limits";
-import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
+import { checkLessonForSave, emDashInField, holdsNoEmDash } from "@cyberlearn/lib/mdx-authoring";
+import {
+  asTyped,
+  describeLessonMdxProblem,
+  editorProblemsOf,
+  type LessonEditorProblem,
+} from "@cyberlearn/lib/mdx-check";
 
 const updateLessonSchema = z.object({
   refCode: lessonRefCodeSchema,
@@ -16,17 +22,28 @@ const updateLessonSchema = z.object({
     .regex(LESSON_SLUG, LESSON_SLUG_HINT)
     .min(LESSON_LIMITS.slugMin)
     .max(LESSON_LIMITS.slugMax),
-  title: z.string().trim().min(LESSON_LIMITS.titleMin).max(LESSON_LIMITS.titleMax),
+  title: z
+    .string()
+    .trim()
+    .min(LESSON_LIMITS.titleMin)
+    .max(LESSON_LIMITS.titleMax)
+    .refine(holdsNoEmDash, emDashInField("Le titre")),
   description: z
     .string()
     .trim()
     .min(LESSON_LIMITS.descriptionMin)
-    .max(LESSON_LIMITS.descriptionMax),
+    .max(LESSON_LIMITS.descriptionMax)
+    .refine(holdsNoEmDash, emDashInField("La description")),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
   xpReward: z.coerce.number().int().nonnegative().max(LESSON_LIMITS.xpMax),
-  contentMdx: z.string().trim().min(10),
+  // Trimmed, which is what is checked and stored, and as typed, which is
+  // where the editor marks what the check found (asTyped).
+  contentMdx: z
+    .string()
+    .transform((typed) => ({ typed, text: typed.trim() }))
+    .pipe(z.object({ typed: z.string(), text: z.string().min(10) })),
   coverImageUrl: z
     .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
@@ -37,6 +54,11 @@ const updateLessonSchema = z.object({
 export interface UpdateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
+  /**
+   * What the content check found, each at its line, for the editor to mark:
+   * empty once it passed, absent when the form stopped before it.
+   */
+  problems?: LessonEditorProblem[];
 }
 
 export async function updateLessonAction(
@@ -69,16 +91,20 @@ export async function updateLessonAction(
 
   // Refused before it reaches the database. The editor used to save anything,
   // and on 22 September two saves in a row broke a lesson for everyone who
-  // opened it (Sentry JAVASCRIPT-NEXTJS-14 and -15).
-  const render = await checkLessonMdx(parsed.data.contentMdx);
+  // opened it (Sentry JAVASCRIPT-NEXTJS-14 and -15). The catalogue's rules,
+  // which CI applied to content/ alone, are applied here too (authoring.ts).
+  const { coverImageUrl, status, contentMdx, ...data } = parsed.data;
+  const render = asTyped(await checkLessonForSave(contentMdx.text), contentMdx.typed);
   if (!render.ok) {
     return {
-      error: "Le contenu ne s'affiche pas.",
+      error:
+        render.kind === undefined ? "Le contenu ne s'affiche pas." : "Le contenu est à corriger.",
       fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+      problems: editorProblemsOf(render),
     };
   }
-
-  const { coverImageUrl, status, ...data } = parsed.data;
+  // From here the content passed: a refusal says so with an empty list, which
+  // takes down what the editor marked from an earlier save.
 
   const refCodeChanged = data.refCode !== existing.refCode;
   const slugChanged = data.slug !== existing.slug;
@@ -99,9 +125,13 @@ export async function updateLessonAction(
         : Promise.resolve(null),
     ]);
     if (refConflict)
-      return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
+      return {
+        error: "Ce refCode existe déjà.",
+        fieldErrors: { refCode: "Déjà utilisé" },
+        problems: [],
+      };
     if (slugConflict)
-      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" }, problems: [] };
   }
 
   const publishedAt =
@@ -113,6 +143,7 @@ export async function updateLessonAction(
         where: { id },
         data: {
           ...data,
+          contentMdx: contentMdx.text,
           coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
           status,
           publishedAt,
@@ -131,10 +162,14 @@ export async function updateLessonAction(
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode"))
-      return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
+      return {
+        error: "Ce refCode existe déjà.",
+        fieldErrors: { refCode: "Déjà utilisé" },
+        problems: [],
+      };
     if (msg.includes("Unique constraint") && msg.includes("slug"))
-      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
-    return { error: "Erreur lors de la mise à jour." };
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" }, problems: [] };
+    return { error: "Erreur lors de la mise à jour.", problems: [] };
   }
 
   redirect(withSavedNotice("/lessons"));

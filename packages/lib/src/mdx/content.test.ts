@@ -1,17 +1,18 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkLessonMdx } from "./check.js";
+import { checkLessonForSave } from "./authoring.js";
 import { extractLessonQuizzes } from "./quizzes.js";
 
 /**
- * Every lesson in the repository renders.
+ * Every lesson in the repository renders, and keeps the catalogue's rules.
  *
  * The same check the editors run before saving, over every file in content/.
  * It is what makes that check safe to have added: had any lesson already
  * failed it, that lesson would have become impossible to edit. None does -
  * and from here on, a commit that breaks one fails this instead of breaking a
- * page for the students who open it.
+ * page for the students who open it. The rules (authoring.ts) are the ones
+ * the CI jobs apply to these files, so this also keeps the two readings agreed.
  */
 
 const ROOT = path.resolve(__dirname, "../../../../content");
@@ -35,7 +36,7 @@ describe("the lessons in content/", () => {
 
   it.each(FILES.map((f) => [path.relative(ROOT, f), f]))("%s renders", async (_name, file) => {
     const body = readFileSync(file, "utf8").replace(/^---[\s\S]*?---\n/, "");
-    const result = await checkLessonMdx(body);
+    const result = await checkLessonForSave(body);
     expect(result).toEqual({ ok: true });
   });
 

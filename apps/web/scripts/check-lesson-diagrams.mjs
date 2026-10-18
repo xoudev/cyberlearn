@@ -44,7 +44,7 @@ mermaid.initialize({ startOnLoad: false });
 // Copies, not imports. The page's own pieces live in TypeScript sources: the
 // remark list in packages/lib (LESSON_REMARK_PLUGINS, whose modules import each
 // other as "./x.js" and "../y" for files that are x.ts and y.ts) and the
-// extractor below in apps/web. Plain node cannot load either without a
+// extractor below, also in packages/lib. Plain node cannot load either without a
 // TypeScript loader, which the web app does not depend on. The two remark
 // plugins left out of REMARK_PLUGINS deal only with {…} expressions, the
 // values of component props and import/export lines; none of them changes the
@@ -53,7 +53,8 @@ mermaid.initialize({ startOnLoad: false });
 // last (rehypeGlossary) reads no component's children but a Callout's.
 const REMARK_PLUGINS = [remarkGfm];
 
-// Kept in sync with apps/web/lib/mdx/extract-diagram-source.ts.
+// Kept in sync with packages/lib/src/mdx/diagram-source.ts, which the page and
+// the save-time check (packages/lib/src/mdx/authoring.ts) share.
 const BLOCK_TAGS = new Set([
   "p",
   "div",

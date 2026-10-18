@@ -571,7 +571,12 @@ export function NewLessonForm({
           <Label req hint="// blocs ou MDX · aperçu du site">
             Contenu MDX
           </Label>
-          <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} />
+          <MdxEditorPanel
+            value={mdx}
+            onChange={setMdx}
+            preview={preview}
+            problems={state.problems}
+          />
           <FieldErr msg={state.fieldErrors?.contentMdx} />
         </div>
 

@@ -2,7 +2,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { storedHash } from "../crypto/cracking";
-import { checkLessonMdx } from "./check.js";
+import {
+  asTyped,
+  checkLessonMdx,
+  describeLessonMdxProblem,
+  describeLessonMdxProblemAt,
+  placedAfter,
+} from "./check.js";
 
 /**
  * Asked before a lesson is saved: will it render?
@@ -494,12 +500,169 @@ describe("what does not - everything else", () => {
     expect(r.section).toBe("introduction");
   });
 
-  it("stops at the first broken section, which is the one to fix", async () => {
+  it("reports every broken section, the first one first", async () => {
     const r = await checkLessonMdx(
       "## A\n\n<Quiz correct={True} />\n\n## B\n\n<Quiz correct={None} />",
     );
     if (r.ok) throw new Error("accepted True");
     expect(r.section).toBe("A");
+    expect(r.problems.map((p) => p.section)).toEqual(["A", "B"]);
+    expect(r.total).toBe(2);
+    expect(describeLessonMdxProblem(r)).toMatch(/Il y a aussi un autre problème\.$/);
+  });
+});
+
+describe("where each problem is", () => {
+  // Lines and columns count from 1 in the whole lesson, as the editor shows
+  // them, whatever section the problem is in.
+  const at = (r: Awaited<ReturnType<typeof checkLessonMdx>>): unknown =>
+    r.ok ? "accepted" : { line: r.line, column: r.column };
+
+  it("points at a tag left open, without the compiler's own place in the message", async () => {
+    const r = await checkLessonMdx("## A\n\nok\n\n## B\n\nTexte.\n\n<Callout>\n\nx\n");
+    if (r.ok) throw new Error("accepted an open tag");
+    expect(at(r)).toEqual({ line: 9, column: 1 });
+    expect(r.section).toBe("B");
+    expect(r.message).toBe("Expected a closing tag for `<Callout>`");
+  });
+
+  it("points at a tag left open in a paragraph, not at the paragraph", async () => {
+    // The compiler writes the tag's place in the middle of its message, and
+    // gives the start of the paragraph as its own: two lines too high.
+    const r = await checkLessonMdx(
+      "## A\n\nok\n\n## B\n\nUne ligne,\nune autre,\net la dernière ouvre <Callout> ici.\n\nSuite.\n",
+    );
+    if (r.ok) throw new Error("accepted an open tag");
+    expect(at(r)).toEqual({ line: 9, column: 22 });
+    expect(r.section).toBe("B");
+    expect(r.message).toBe("Expected a closing tag for `<Callout>` before the end of `paragraph`");
+  });
+
+  it("points at a tag left open in the introduction, and in an emphasis", async () => {
+    const intro = await checkLessonMdx("Intro <Callout>\n\n## Suite\n\nOk.");
+    if (intro.ok) throw new Error("accepted an open tag");
+    expect(at(intro)).toEqual({ line: 1, column: 7 });
+    expect(intro.section).toBe("introduction");
+
+    const emphasis = await checkLessonMdx("## S\n\n*mis en <Callout> avant*\n");
+    if (emphasis.ok) throw new Error("accepted an open tag");
+    expect(at(emphasis)).toEqual({ line: 3, column: 9 });
+    expect(emphasis.message).toContain("`emphasis`");
+    // The section's own numbering would mislead next to the lesson's.
+    expect(emphasis.message).not.toMatch(/\(\d+:\d+/);
+  });
+
+  it("points at a component the page does not know, not at the heading", async () => {
+    const r = await checkLessonMdx("## S\n\nTexte.\n\n  <Calout>Attention.</Calout>\n");
+    if (r.ok) throw new Error("accepted an unknown component");
+    expect(at(r)).toEqual({ line: 5, column: 3 });
+    expect(r.message).toContain("`Calout`");
+  });
+
+  it("points at the refused value itself, in the third section", async () => {
+    const r = await checkLessonMdx(
+      '## A\n\nok\n\n## B\n\nok\n\n## C\n\n<Quiz id="q" question="?" options={["a", "b"]} correct={True} />',
+    );
+    expect(at(r)).toEqual({ line: 11, column: 57 });
+  });
+
+  it("points at a value past an indented line of code, where the editor has it", async () => {
+    // The compiler reads the indentation of the second line as escapes, which
+    // are longer; the column is the one of the text as written.
+    const r = await checkLessonMdx(
+      "## S\n\n<CodePlayground starterCode={`if ok:\n    print(1)`} validate={True} />",
+    );
+    expect(at(r)).toEqual({ line: 4, column: 26 });
+  });
+
+  it("points at a misconfigured exercise's tag, and at each of them", async () => {
+    const r = await checkLessonMdx(
+      `## Trouve la faille
+
+<FindTheFlaw id="f" code={\`a = 1\`} options={["Injection", "Rien"]} explanation="Parce que." line={5} correct={0} />
+
+Puis :
+
+  <FindTheFlaw id="g" code={\`a = 1\`} options={["Injection", "Rien"]} explanation="Parce que." line={1} correct={4} />`,
+    );
+    if (r.ok) throw new Error("accepted two broken exercises");
+    expect(r.problems.map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 3, column: 1 },
+      { line: 7, column: 3 },
+    ]);
+  });
+
+  it("points at a quiz without an id, in its section of the lesson", async () => {
+    const r = await checkLessonMdx(
+      'Intro.\n\n## Un\n\nok\n\n## Deux\n\n<Quiz question="A" options={["a", "b"]} correct={0} />',
+    );
+    if (r.ok) throw new Error("accepted a quiz without an id");
+    expect(r.kind).toBe("quiz");
+    expect(r.section).toBe("Deux");
+    expect(at(r)).toEqual({ line: 9, column: 1 });
+  });
+
+  it("names the introduction, and its line, for a fault above the first heading", async () => {
+    const r = await checkLessonMdx("<Quiz correct={True} />\n\n## Suite\n\nOk.");
+    if (r.ok) throw new Error("accepted True");
+    expect(r.section).toBe("introduction");
+    expect(at(r)).toEqual({ line: 1, column: 16 });
+  });
+
+  it("says the line and the column in the sentence the form shows", async () => {
+    const r = await checkLessonMdx("## S\n\n<Quiz correct={True} />");
+    if (r.ok) throw new Error("accepted True");
+    expect(describeLessonMdxProblem(r)).toMatch(
+      /^La section « S » ne s'afficherait pas \(ligne 3, colonne 16\), donc rien n'a été enregistré\. <Quiz>, attribut « correct » : « True » n'existe pas ici/,
+    );
+    expect(describeLessonMdxProblemAt(r)).toMatch(
+      /^La section « S », ligne 3, colonne 16, ne s'afficherait pas : <Quiz>/,
+    );
+  });
+
+  it("puts a section that does not render before a quiz that cannot be scored", async () => {
+    const r = await checkLessonMdx(
+      '## Un\n\n<Quiz question="A" options={["a", "b"]} correct={0} />\n\n## Deux\n\n<Quiz correct={True} />',
+    );
+    if (r.ok) throw new Error("accepted True");
+    expect(r.problems.map((p) => p.kind ?? "render")).toEqual(["render", "quiz"]);
+  });
+});
+
+describe("asTyped", () => {
+  // The forms trim the lesson before checking it, and the editor shows it as
+  // typed: blank lines at the top move every problem down, and the indent of
+  // the first line moves the problems on that line right.
+  const typed =
+    "\n\n  <Quiz correct={True} />\n\n## Un\n\nok\n\n## Deux\n\n<Quiz correct={None} />\n";
+
+  it("moves each problem to its place in the text as typed", async () => {
+    const r = asTyped(await checkLessonMdx(typed.trim()), typed);
+    if (r.ok) throw new Error("accepted True");
+    expect(r.problems.map(({ section, line, column }) => ({ section, line, column }))).toEqual([
+      { section: "introduction", line: 3, column: 18 },
+      { section: "Deux", line: 11, column: 16 },
+    ]);
+    expect({ line: r.line, column: r.column }).toEqual({ line: 3, column: 18 });
+    expect(describeLessonMdxProblem(r)).toContain("(ligne 3, colonne 18)");
+  });
+
+  it("leaves a result alone when nothing was trimmed, or when there is no problem", async () => {
+    const refused = await checkLessonMdx(typed.trim());
+    expect(asTyped(refused, typed.trim())).toBe(refused);
+    const accepted = await checkLessonMdx("## S\n\nok");
+    expect(asTyped(accepted, "\n\n## S\n\nok")).toBe(accepted);
+  });
+
+  it("moves the problems past what precedes the text, a lesson file's frontmatter", async () => {
+    const r = placedAfter(
+      await checkLessonMdx("<Quiz correct={True} />"),
+      "---\ntitle: T\n---\n\n",
+    );
+    if (r.ok) throw new Error("accepted True");
+    expect(r.problems.map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 5, column: 16 },
+    ]);
   });
 });
 
