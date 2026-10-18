@@ -5,6 +5,7 @@ import {
   deadlineLine,
   duelDay,
   duelMeta,
+  duelProfileTarget,
   duelWhen,
   invitationMeta,
   outcomeTone,
@@ -44,6 +45,16 @@ const WHEN = new Intl.DateTimeFormat("fr-FR", {
 const DAY = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
 
 describe("duels in the app", () => {
+  it("opens a player's profile only when the server offered one", () => {
+    const alex = DUEL.other;
+    expect(duelProfileTarget({ ...alex, profileHref: "/u/alex" })).toBe("alex");
+    // Closed to the reader, or the reader's own side.
+    expect(duelProfileTarget({ ...alex, profileHref: null })).toBeNull();
+    // A server from before the links.
+    expect(duelProfileTarget(alex)).toBeNull();
+    expect(duelProfileTarget({ ...alex, profileHref: "/u/alex", username: null })).toBeNull();
+  });
+
   it("writes the dates the way the site does, on the phone's clock", () => {
     expect(duelWhen(DUEL.expiresAt)).toBe(WHEN.format(new Date(DUEL.expiresAt)));
     expect(duelDay(DUEL.createdAt)).toBe(DAY.format(new Date(DUEL.createdAt)));

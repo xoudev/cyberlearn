@@ -215,6 +215,21 @@ describe("FriendsPanel challenges", () => {
     expect(nav.openDialog).not.toHaveBeenCalled();
   });
 
+  it("reads the lists again on the next opening, where the duel made since is greyed", async () => {
+    await openPanel();
+    fireEvent.click(within(rowOf("Alex")).getByRole("button", { name: "Défier Alex en duel" }));
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(1);
+
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [entry(SAM, "Sam", "PENDING")],
+      friends: [entry(ALEX, "Alex", "ACCEPTED", true, true)],
+      outgoing: [],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    expect(await screen.findByRole("button", { name: "Duel en cours avec Alex" })).toBeTruthy();
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(2);
+  });
+
   it("offers no duel on a request: a duel is between friends", async () => {
     await openPanel();
     expect(within(rowOf("Sam")).queryByRole("button", { name: /Défier/ })).toBeNull();

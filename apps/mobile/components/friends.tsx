@@ -264,16 +264,23 @@ export function FriendsActivityCard({ items }: { items: FriendActivityItem[] }):
  * rows carry no id; the server finds it only among the players it names).
  * Once sent it says so; once friends it becomes the mark. A refusal is said
  * in an alert, and the chip stays to try again.
+ *
+ * What it learned belongs to one person and one reading of the server, so it
+ * is keyed by both: the board's rows are keyed by rank and kept across a new
+ * period (keepPreviousData), and the chip would hand "Demande envoyée" or the
+ * mark to whoever takes the rank next.
  */
-export function AddFriendChip({
-  username,
-  name,
-  view,
-}: {
+export function AddFriendChip(props: AddFriendChipProps): React.JSX.Element | null {
+  return <RowFriendChip key={`@${props.username}:${props.view}`} {...props} />;
+}
+
+interface AddFriendChipProps {
   username: string;
   name: string;
   view: FriendshipView;
-}): React.JSX.Element | null {
+}
+
+function RowFriendChip({ username, name, view }: AddFriendChipProps): React.JSX.Element | null {
   const queryClient = useQueryClient();
   const [state, setState] = useState<FriendshipView>(view);
   const [pending, setPending] = useState(false);

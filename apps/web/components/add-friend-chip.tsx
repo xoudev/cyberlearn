@@ -32,18 +32,30 @@ import {
  * The leaderboard's rows carry no id, by choice (leaderboard.visibility.ts):
  * there the request goes by the handle the row shows, and the server finds
  * the id only among the players that board names.
+ *
+ * What the chip learned (a request sent, a refusal) belongs to one person
+ * and to one reading of the server: it is keyed by both. A list keyed by
+ * rank keeps the slot when another player takes the rank (a new period on
+ * the leaderboard), and the chip would otherwise hand "Demande envoyée" or
+ * the friend mark to somebody nothing was sent to.
  */
-export function AddFriendChip({
-  target,
-  name,
-  view,
-}: {
+export function AddFriendChip(props: AddFriendChipProps): React.JSX.Element | null {
+  return <RowFriendChip key={chipKey(props.target, props.view)} {...props} />;
+}
+
+interface AddFriendChipProps {
   target: { id: string } | { username: string };
   /** Who it is, for the button's name on a screen reader. */
   name: string;
   /** Where the reader stands with them, as the server read it. */
   view: FriendshipView;
-}): React.JSX.Element | null {
+}
+
+function chipKey(target: AddFriendChipProps["target"], view: FriendshipView): string {
+  return "id" in target ? `id:${target.id}:${view}` : `@${target.username}:${view}`;
+}
+
+function RowFriendChip({ target, name, view }: AddFriendChipProps): React.JSX.Element | null {
   const [state, setState] = useState<FriendshipView>(view);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();

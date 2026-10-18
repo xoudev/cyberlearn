@@ -2,7 +2,6 @@ import type { DuelResultCounts, HeadToHead } from "@cyberlearn/lib/social/duel";
 import type { FriendActivityItem } from "@cyberlearn/lib/social/friend-activity";
 import {
   friendRequestSender,
-  rowFriendAction,
   UNFRIEND_DETAIL,
   unfriendQuestion,
   type FriendshipView,
@@ -264,11 +263,12 @@ export function showsFriendMark(entry: {
 }
 
 /**
- * The handle a public row's "Ajouter" asks by, or null when the row offers
- * none: the server says where the reader stands only on a named row that is
- * not their own (`friendship`), a friend already carries the mark, and a
- * request on its way is said rather than offered again. A server from
- * before it sends nothing, which offers nothing.
+ * The handle a public row's chip is about, or null when the row has none to
+ * show, as on the site (LeaderboardClient's addableHandle): the server says
+ * where the reader stands only on a named row that is not their own
+ * (`friendship`), and a friend already carries the mark. A request on its way
+ * keeps the chip, which says "Demande envoyée" instead of offering again. A
+ * server from before it sends nothing, which offers nothing.
  */
 export function addableHandle(entry: {
   isCurrentUser: boolean;
@@ -277,7 +277,7 @@ export function addableHandle(entry: {
 }): string | null {
   if (entry.isCurrentUser || entry.username === null) return null;
   const view = entry.friendship ?? null;
-  if (view === null || rowFriendAction(view) === null) return null;
+  if (view === null || view === "friends") return null;
   return entry.username;
 }
 

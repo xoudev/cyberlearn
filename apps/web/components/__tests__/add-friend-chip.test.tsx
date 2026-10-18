@@ -67,4 +67,32 @@ describe("AddFriendChip", () => {
     rerender(<AddFriendChip key="sent" target={{ id: SAM }} name="Sam" view="outgoing" />);
     expect(screen.getByText("Demande envoyée")).toBeTruthy();
   });
+
+  it("forgets a request sent to somebody else when another player takes the slot", async () => {
+    // The leaderboard keys its cards by rank: a new period puts another
+    // player in the same place, under the same chip.
+    const { rerender } = render(
+      <AddFriendChip target={{ username: "alice" }} name="@alice" view="none" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter @alice en ami" }));
+    expect(await screen.findByText("Demande envoyée")).toBeTruthy();
+
+    rerender(<AddFriendChip target={{ username: "bob" }} name="@bob" view="none" />);
+    expect(screen.queryByText("Demande envoyée")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter @bob en ami" }));
+    expect(m.sendFriendRequestByHandleAction).toHaveBeenLastCalledWith("bob");
+    expect(await screen.findByText("Demande envoyée")).toBeTruthy();
+  });
+
+  it("follows what the server says of the person in its place, without a click", () => {
+    const { rerender } = render(
+      <AddFriendChip target={{ username: "alice" }} name="@alice" view="none" />,
+    );
+    rerender(<AddFriendChip target={{ username: "bob" }} name="@bob" view="outgoing" />);
+    expect(screen.getByText("Demande envoyée")).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+
+    rerender(<AddFriendChip target={{ username: "bob" }} name="@bob" view="friends" />);
+    expect(screen.getByRole("img", { name: "Ami" })).toBeTruthy();
+  });
 });

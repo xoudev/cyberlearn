@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  addableHandle,
+  answerableSender,
   boardName,
   friendsBoardNotice,
   friendsCountLabel,
@@ -84,10 +86,44 @@ describe("the friends board", () => {
     expect(showsFriendMark(named)).toBe(false);
   });
 
+  it("puts a chip beside a public row as the site does: not on the reader, a friend, nor a nameless row", () => {
+    const row = { isCurrentUser: false, username: "alex" };
+    expect(addableHandle({ ...row, friendship: "none" })).toBe("alex");
+    expect(addableHandle({ ...row, friendship: "incoming" })).toBe("alex");
+    // A request on its way keeps the chip, which says it was sent.
+    expect(addableHandle({ ...row, friendship: "outgoing" })).toBe("alex");
+    expect(addableHandle({ ...row, friendship: "friends" })).toBeNull();
+    expect(addableHandle({ ...row, friendship: "none", isCurrentUser: true })).toBeNull();
+    expect(addableHandle({ ...row, friendship: "none", username: null })).toBeNull();
+    // A private row, or a server from before the chip, says nothing.
+    expect(addableHandle({ ...row, friendship: null })).toBeNull();
+    expect(addableHandle(row)).toBeNull();
+  });
+
   it("names everybody: nobody on it is anonymous", () => {
     expect(boardName({ displayName: "Alex", username: "alex" })).toBe("Alex");
     expect(boardName({ displayName: "", username: "alex" })).toBe("@alex");
     expect(boardName({ displayName: null, username: null })).toBe("?");
+  });
+});
+
+describe("answering a request from its notification", () => {
+  const SAM = "22222222-2222-4222-8222-222222222222";
+  const request = { type: "FRIEND_REQUEST", metadata: { fromUserId: SAM } };
+
+  it("answers for a sender still waiting on the reader", () => {
+    expect(answerableSender(request, new Set([SAM]))).toBe(SAM);
+  });
+
+  it("offers nothing once the request is no longer waiting", () => {
+    expect(answerableSender(request, new Set())).toBeNull();
+  });
+
+  it("offers nothing on another notification, nor one without its sender", () => {
+    const waiting = new Set([SAM]);
+    expect(answerableSender({ ...request, type: "DUEL_INVITE" }, waiting)).toBeNull();
+    expect(answerableSender({ type: "FRIEND_REQUEST" }, waiting)).toBeNull();
+    expect(answerableSender({ type: "FRIEND_REQUEST", metadata: null }, waiting)).toBeNull();
   });
 });
 

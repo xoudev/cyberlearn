@@ -325,11 +325,14 @@ export function FriendsPanel({
     setOpen(false);
   }, []);
 
-  // The window draws over the page, so the panel gets out of its way.
+  // The window draws over the page, so the panel gets out of its way. A duel
+  // made there greys that friend's "Défier", which only the server knows of:
+  // the next opening reads the lists again instead of the ones held here.
   const duelWindow = useQueryDialog(DUEL_QUERY);
   const challenge = useCallback(
     (personId: string) => {
       setOpen(false);
+      setLoaded(false);
       duelWindow.open(personId);
     },
     [duelWindow],
