@@ -9,7 +9,7 @@
  * completion would roll back. These replay the statements that code sends
  * (what Prisma generated for its upsert, its grade and its reset) and check
  * they run and change nothing, and that the rows awaiting conversion stay
- * where db:backfill-review-cards reads them.
+ * where db:backfill-review-cards reads them, and in the learner's GDPR export.
  *
  * What the clients get (an empty queue for the installed apps, nothing of the
  * legacy table) is in rls.integration.test.ts.
@@ -21,6 +21,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
+import { reviewScheduleLegacyRepository } from "../repositories/review-schedule-legacy.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 const learner = randomUUID();
@@ -121,5 +122,19 @@ describe("the retired SM-2 queue (integration, real DB)", () => {
       DELETE FROM "public"."review_schedules" WHERE "userId" = ${learner}::uuid`;
     expect([graded, cleared]).toEqual([0, 0]);
     expect(await legacyRows()).toEqual([legacyRow]);
+  });
+
+  it("lists the rows awaiting conversion in the learner's GDPR export, and nobody else's", async () => {
+    if (!configured) return;
+    const rows = await reviewScheduleLegacyRepository.listForExport(learner);
+    expect(rows).toEqual([
+      expect.objectContaining({
+        lessonTitle: "Une leçon",
+        lessonSlug: `rs-lesson-${suffix}`,
+        intervalDays: 6,
+        repetitions: 2,
+      }),
+    ]);
+    expect(await reviewScheduleLegacyRepository.listForExport(randomUUID())).toEqual([]);
   });
 });

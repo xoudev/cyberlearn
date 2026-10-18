@@ -246,11 +246,14 @@ pnpm --filter @cyberlearn/db db:backfill-review-cards --apply     # écrit les c
 **Quand :** l'ancienne file est retirée du site et de l'app (migration
 `20261018120000_retire_review_schedules`). Plus rien n'y ajoute de ligne :
 celles qui restent attendent leur conversion dans `review_schedules_legacy`,
-la table renommée, lue par ce seul script et fermée à tout client. **Cette
-table est supprimée dans une version ultérieure, une fois la conversion
-passée en production** : lancer `--apply` avant de déployer cette version,
-sans quoi les lignes non converties partent avec elle. Une passe lancée après
-la première n'écrit rien.
+la table renommée, fermée à tout client. Deux lectures seulement : ce script,
+et l'export RGPD (`/api/me/export`, section `reviewSchedules`), qui liste les
+lignes d'un apprenant tant que la plateforme les garde
+(`reviewScheduleLegacyRepository` de `packages/db`). **Cette table est
+supprimée dans une version ultérieure, une fois la conversion passée en
+production** : lancer `--apply` avant de déployer cette version, sans quoi les
+lignes non converties partent avec elle. La lecture de l'export part avec la
+table, dans la même version. Une passe lancée après la première n'écrit rien.
 
 Chaque ligne de `review_schedules_legacy` (un apprenant, une leçon) devient :
 

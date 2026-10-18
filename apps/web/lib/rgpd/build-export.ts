@@ -1,4 +1,4 @@
-import { prisma } from "@cyberlearn/db";
+import { prisma, reviewScheduleLegacyRepository } from "@cyberlearn/db";
 import { readDraw, readSessionAnswers } from "@cyberlearn/lib/revisions/cards";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
@@ -115,6 +115,20 @@ export interface ExportPayload {
     verifyUrl: string;
     revokedAt: Date | null;
     revokedReason: string | null;
+  }[];
+  /**
+   * The retired lesson-level review queue (SM-2): its rows are kept, out of
+   * use, until they are converted into review cards and a later release drops
+   * their table. Listed until then, since the platform still holds them.
+   */
+  reviewSchedules: {
+    lessonTitle: string;
+    lessonSlug: string;
+    easeFactor: number;
+    intervalDays: number;
+    repetitions: number;
+    nextReviewAt: Date;
+    lastReviewedAt: Date;
   }[];
   /** The lesson questions to be asked again, each in its box, retired ones included. */
   reviewCards: {
@@ -284,6 +298,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     hintReveals,
     badges,
     certs,
+    reviewSchedules,
     ratings,
     questions,
     answers,
@@ -402,6 +417,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         path: { select: { title: true } },
       },
     }),
+    reviewScheduleLegacyRepository.listForExport(userId),
     prisma.rating.findMany({
       where: { userId },
       select: {
@@ -734,6 +750,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       revokedAt: c.revokedAt,
       revokedReason: c.revokedReason,
     })),
+    reviewSchedules,
     reviewCards: reviewCards.map((card) => ({
       lessonTitle: card.lesson.title,
       lessonSlug: card.lesson.slug,

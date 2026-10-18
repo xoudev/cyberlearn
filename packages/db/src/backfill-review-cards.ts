@@ -1,8 +1,9 @@
 // One-off conversion of the lesson-level review queue (SM-2) into review
 // cards (review_cards, Leitner), run by hand with `db:backfill-review-cards`.
 // The queue is retired: nothing writes its rows any more, and they wait in
-// review_schedules_legacy, read by this script alone, until a later release
-// drops the table once the conversion has run in production (docs/DEPLOY.md).
+// review_schedules_legacy, read by this script (and listed in the GDPR
+// export), until a later release drops the table once the conversion has run
+// in production (docs/DEPLOY.md).
 //
 // An SM-2 row says a learner finished a lesson and reviews it. It becomes the
 // cards a completion enqueues today (apps/web/lib/lessons/complete.ts), with
