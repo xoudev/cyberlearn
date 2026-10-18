@@ -57,6 +57,7 @@ describe("updateRevisionsAction", () => {
     await updateRevisionsAction({}, makeFormData("false"));
     expect(mockRevalidatePath).toHaveBeenCalledWith("/", "layout");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/dashboard");
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/revisions");
+    // /revisions is a redirect to the daily recall since #527: no page to refresh.
+    expect(mockRevalidatePath).not.toHaveBeenCalledWith("/revisions");
   });
 });
