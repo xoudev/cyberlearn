@@ -719,6 +719,9 @@ export const classRepository = {
         url: true,
         releasedAt: true,
         afterCompletion: true,
+        // Taken down by the moderation: still the teacher's to read, and
+        // marked as out of the students' sight rather than silently missing.
+        isHidden: true,
         createdAt: true,
         assignment: { select: { lessonId: true, lesson: { select: { title: true } } } },
       },
@@ -740,6 +743,9 @@ export const classRepository = {
     const rows = await prisma.classResource.findMany({
       where: {
         classId: { in: classIds },
+        // A resource the moderation took down is out of the students' sight,
+        // as the policy on the table has it for the Data API.
+        isHidden: false,
         OR: [{ releasedAt: null }, { releasedAt: { lte: new Date() } }],
       },
       orderBy: { createdAt: "desc" },

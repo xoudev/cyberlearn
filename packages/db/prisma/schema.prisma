@@ -100,6 +100,8 @@ model User {
   classResources    ClassResource[]         @relation("ClassResourceAuthor")
   notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
   noteReports       NoteReport[]            @relation("NoteReporter")
+  contentReports    ContentReport[]         @relation("ContentReporter")
+  contentReportsResolved ContentReport[]    @relation("ContentReportResolver")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
   authoredLessons   Lesson[]                @relation("LessonAuthor")
@@ -336,6 +338,9 @@ model ClassResource {
   /// Withheld from a student until they have finished the assigned lesson.
   /// Meaningless without an assignment, and ignored when there is none.
   afterCompletion Boolean   @default(false)
+  /// Taken down by the moderation: out of the students' sight, still listed
+  /// for its teacher with the reason it is not shown.
+  isHidden        Boolean   @default(false)
   createdById     String?   @db.Uuid
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1477,6 +1482,69 @@ model ModerationEvent {
   @@index([outcome, createdAt])
   @@index([userId])
   @@map("moderation_events")
+}
+
+/// What a learner can report: everything one person publishes to others,
+/// one value per table.
+enum ContentReportSurface {
+  FORUM_POST
+  LESSON_QUESTION
+  LESSON_ANSWER
+  CHALLENGE_WRITEUP
+  CLASS_RESOURCE
+}
+
+/// The same reasons as a reported note: the forms word them the same way.
+enum ContentReportReason {
+  HATE
+  SEXUAL
+  SPAM
+  PERSONAL_DATA
+  OTHER
+}
+
+/// What the team did with a report. HIDDEN and DELETED say what happened to
+/// the content; DISMISSED, that it was read and left as it was.
+enum ContentReportStatus {
+  OPEN
+  HIDDEN
+  DELETED
+  DISMISSED
+}
+
+/// A learner telling the team that something published on the platform is not
+/// acceptable: a forum message, a question or an answer under a lesson, a
+/// challenge solution, a class resource.
+///
+/// Not a ModerationEvent, for the reason NoteReport is not: those are attached
+/// to the author and count towards the flags that restrict an account, and a
+/// report is somebody's claim, not a verdict.
+///
+/// contentId points into the table its surface names, with no foreign key: one
+/// column cannot reference five tables. Destroying content from the console
+/// closes its open reports in the same transaction. One report per reporter
+/// and content; reporting again updates it and reopens it.
+model ContentReport {
+  id           String               @id @default(uuid()) @db.Uuid
+  surface      ContentReportSurface
+  contentId    String               @db.Uuid
+  /// Null once the reporter's account is erased: the report stays.
+  reporterId   String?              @db.Uuid
+  reason       ContentReportReason
+  comment      String?              @db.VarChar(500)
+  status       ContentReportStatus  @default(OPEN)
+  resolvedAt   DateTime?
+  resolvedById String?              @db.Uuid
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  reporter   User? @relation("ContentReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("ContentReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, surface, contentId])
+  @@index([status])
+  @@index([surface, contentId])
+  @@map("content_reports")
 }
 
 /// Where a friendship stands.

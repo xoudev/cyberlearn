@@ -211,6 +211,25 @@ export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";
+export {
+  contentModerationRepository,
+  CONTENT_AUDIT_ACTION,
+  CONTENT_SURFACES,
+  type ConsoleContentQuery,
+  type ConsoleContentRow,
+  type ContentAuthor,
+  type ContentGesture,
+  type ContentGestureResult,
+  type ContentNotice,
+  type ContentSurface,
+  type ModeratedContent,
+} from "./repositories/content-moderation.repository.js";
+export {
+  contentReportRepository,
+  CONTENT_REPORT_REASONS,
+  type ContentReportReasonValue,
+  type ReportedContent,
+} from "./repositories/content-report.repository.js";
 export { notificationRepository } from "./repositories/notification.repository.js";
 export type { NotificationItem } from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";

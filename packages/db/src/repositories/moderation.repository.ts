@@ -7,6 +7,7 @@ import {
 } from "@cyberlearn/lib";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { recountForumReplies } from "./content-moderation.repository.js";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
@@ -150,11 +151,23 @@ const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
     },
   },
   [MODERATION_SURFACE.forumPost]: {
+    // The thread's reply count follows: a held reply never counted, and one
+    // brought back has to, or the section's list says less than the thread.
     restore: async (id) => {
-      await prisma.forumPost.updateMany({ where: { id }, data: { isHidden: false } });
+      await prisma.$transaction(async (tx) => {
+        const post = await tx.forumPost.findUnique({ where: { id }, select: { topicId: true } });
+        if (post === null) return;
+        await tx.forumPost.updateMany({ where: { id }, data: { isHidden: false } });
+        await recountForumReplies(tx, post.topicId);
+      });
     },
     destroy: async (id) => {
-      await prisma.forumPost.deleteMany({ where: { id } });
+      await prisma.$transaction(async (tx) => {
+        const post = await tx.forumPost.findUnique({ where: { id }, select: { topicId: true } });
+        if (post === null) return;
+        await tx.forumPost.deleteMany({ where: { id } });
+        await recountForumReplies(tx, post.topicId);
+      });
     },
   },
   [MODERATION_SURFACE.challengeWriteup]: {

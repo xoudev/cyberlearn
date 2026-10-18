@@ -213,6 +213,25 @@ describe("class resources (integration, real DB)", () => {
     expect(rows[0]?.assignment?.lesson.title).toBe(`TP ${suffix}`);
   });
 
+  it("takes a resource the moderation hid out of the students' sight, not the teacher's", async () => {
+    if (!configured) return;
+    const { id } = await classRepository.createResource({
+      classId,
+      assignmentId: null,
+      title: "Lien douteux",
+      body: null,
+      url: "https://example.org",
+      releasedAt: null,
+      afterCompletion: false,
+      createdById: teacher,
+    });
+    await prisma.classResource.updateMany({ where: { id }, data: { isHidden: true } });
+
+    expect(await titlesForStudent()).toEqual([]);
+    const rows = await classRepository.listResourcesForTeacher([classId]);
+    expect(rows.map((r) => [r.title, r.isHidden])).toEqual([["Lien douteux", true]]);
+  });
+
   it("does not leak the withholding rule to the student payload", async () => {
     if (!configured) return;
     await classRepository.createResource({
