@@ -287,7 +287,12 @@ SM-2 ne sont pas modifiées. Règles et tests :
 Pour les versions de l'app installées avant les cartes, qui lisaient la file
 elles-mêmes, `review_schedules` est désormais une vue vide, bâtie sur
 `review_cards` : elle ne dépend pas de `review_schedules_legacy` et reste en
-place quand cette table est supprimée.
+place quand cette table est supprimée. Elle accepte aussi, sans rien en
+garder, les écritures du déploiement précédent : la migration part quelques
+minutes avant le nouveau code (voir « Ce qui part tout seul sur un merge »),
+et pendant ce temps l'ancien code écrit encore une ligne chaque fois qu'une
+leçon est terminée pour la première fois. Refusée, cette écriture annulerait
+la fin de leçon entière.
 
 ---
 

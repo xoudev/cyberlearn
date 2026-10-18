@@ -12,7 +12,8 @@
 -- through the Data API: review_schedules, with the lesson embedded
 -- (lesson:lessons(...)). A missing table would be an error screen in them.
 -- review_schedules becomes an empty view, which they read as a queue with
--- nothing due.
+-- nothing due. The view takes and drops the writes of the site's previous
+-- deployment too, still serving while this migration lands (see its trigger).
 
 -- ─── The table, under its new name ──────────────────────────────────────────
 -- The constraints and indexes follow it, under the names Prisma gives a table
@@ -82,3 +83,37 @@ BEGIN
   EXECUTE 'GRANT SELECT ON public.review_schedules TO authenticated';
 END
 $$;
+
+-- ─── The previous deployment's writes: taken, and dropped ──────────────────
+-- The migrations race the Vercel build (.github/workflows/migrate.yml): this
+-- one lands in seconds, the code that no longer writes the queue goes live
+-- minutes later. Until then the previous deployment upserts a schedule at
+-- every first completion of a lesson, and still grades and clears the queue.
+-- The view would refuse that insert (easeFactor is a constant here, not a
+-- column it can write), and the error would roll the whole completion back:
+-- for those minutes, nobody with revisions on could finish a new lesson.
+--
+-- So every write to the view is taken and dropped, and the old code runs to
+-- the end: a completion commits, with the review cards that code enqueues in
+-- the same transaction; a grade or a reset finds nothing to change. The row
+-- an insert hands back is the one it was given, which is what Prisma asks
+-- for. No client gets this far: SELECT is all they hold on the view. The
+-- trigger goes with the view.
+CREATE OR REPLACE FUNCTION private.review_schedules_drop_write()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+REVOKE ALL ON FUNCTION private.review_schedules_drop_write() FROM PUBLIC;
+
+CREATE TRIGGER review_schedules_drop_write
+  INSTEAD OF INSERT OR UPDATE OR DELETE ON public.review_schedules
+  FOR EACH ROW EXECUTE FUNCTION private.review_schedules_drop_write();
