@@ -10,7 +10,8 @@
     "./tokens.css": "./src/tokens.css",
     "./dialogs.css": "./src/dialogs.css",
     "./skeleton.css": "./src/skeleton.css",
-    "./mdx-editor": "./src/components/mdx-editor-panel.tsx"
+    "./mdx-editor": "./src/components/mdx-editor-panel.tsx",
+    "./lesson-studio": "./src/components/lesson-studio/index.ts"
   },
   "scripts": {
     "build": "tsc",

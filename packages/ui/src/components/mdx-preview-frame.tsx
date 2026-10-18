@@ -2,6 +2,12 @@
 
 import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MOBILE_PREVIEW_WIDTH,
+  type PreviewDevice,
+  readStoredDevice,
+  storeDevice,
+} from "./mdx-editor-layout";
 import type { MdxProblem } from "./mdx-problems";
 
 /**
@@ -18,6 +24,10 @@ import type { MdxProblem } from "./mdx-problems";
  * the line, before the author has saved anything. Either way it lists the
  * problems the save would refuse, each at its line and column, which the
  * panel marks in the editor as the author types.
+ *
+ * The page is framed at the pane's width, or at a phone's: the site lays
+ * itself out for the width of the frame, so "MOBILE" shows the lesson as the
+ * phone's browser does, without leaving the editor.
  */
 
 export type MdxPreviewResult =
@@ -153,17 +163,20 @@ export function usePreviewRefresh(
 
 // ── Chrome ─────────────────────────────────────────────────────────────────────
 
-/** A small button of a pane's header: RAFRAÎCHIR, SITE, RAPIDE. */
+/** A small button of a pane's header: RAFRAÎCHIR, SITE, RAPIDE, BUREAU, MOBILE. */
 export function PaneButton({
   children,
   onClick,
   title,
   disabled = false,
+  pressed,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   title: string;
   disabled?: boolean;
+  /** A toggle's state, for a button that is one of a pair. */
+  pressed?: boolean;
 }): React.ReactElement {
   return (
     <button
@@ -171,12 +184,18 @@ export function PaneButton({
       title={title}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={pressed}
       style={{
         height: 20,
         padding: "0 8px",
-        border: `1px solid ${BORDER}`,
+        border: `1px solid ${pressed === true ? ACCENT : BORDER}`,
         background: "transparent",
-        color: disabled ? "var(--color-text-faint)" : "var(--color-text-muted)",
+        color:
+          pressed === true
+            ? ACCENT
+            : disabled
+              ? "var(--color-text-faint)"
+              : "var(--color-text-muted)",
         fontFamily: MONO,
         fontSize: 9,
         fontWeight: 700,
@@ -206,6 +225,16 @@ export function MdxPreviewFrame({
 }): React.ReactElement {
   const { state, refreshNow } = usePreviewRefresh(value, preview);
   const frame = useRef<HTMLIFrameElement>(null);
+  const [device, setDevice] = useState<PreviewDevice>("desktop");
+  // After mounting: the server renders the default, and storage is the browser's.
+  useEffect(() => {
+    const stored = readStoredDevice();
+    if (stored !== null) setDevice(stored);
+  }, []);
+  const chooseDevice = useCallback((next: PreviewDevice) => {
+    setDevice(next);
+    storeDevice(next);
+  }, []);
 
   // The panel hands a state setter, which keeps its identity: this runs once
   // per answer of the site.
@@ -232,7 +261,8 @@ export function MdxPreviewFrame({
   return (
     <div
       style={{
-        height: 620,
+        height: "100%",
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
         background: "#060422",
@@ -278,6 +308,24 @@ export function MdxPreviewFrame({
           {status}
         </span>
         <PaneButton
+          title="La leçon à la largeur du panneau"
+          pressed={device === "desktop"}
+          onClick={() => {
+            chooseDevice("desktop");
+          }}
+        >
+          BUREAU
+        </PaneButton>
+        <PaneButton
+          title={`La leçon à la largeur d'un téléphone (${String(MOBILE_PREVIEW_WIDTH)} px)`}
+          pressed={device === "mobile"}
+          onClick={() => {
+            chooseDevice("mobile");
+          }}
+        >
+          MOBILE
+        </PaneButton>
+        <PaneButton
           title="Envoyer le brouillon au site maintenant"
           onClick={refreshNow}
           disabled={state.busy}
@@ -310,11 +358,22 @@ export function MdxPreviewFrame({
         </p>
       )}
 
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div
+        data-device={device}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          justifyContent: "center",
+          padding: device === "mobile" ? "12px 0" : 0,
+          background: device === "mobile" ? "#04031A" : "transparent",
+        }}
+      >
         {state.url === null ? (
           <div
             style={{
               height: "100%",
+              flex: 1,
               display: "grid",
               placeItems: "center",
               color: "var(--color-text-muted)",
@@ -331,9 +390,9 @@ export function MdxPreviewFrame({
             title="Aperçu de la leçon, rendu par le site"
             referrerPolicy="no-referrer"
             style={{
-              width: "100%",
+              width: device === "mobile" ? `min(${String(MOBILE_PREVIEW_WIDTH)}px, 100%)` : "100%",
               height: "100%",
-              border: 0,
+              border: device === "mobile" ? `1px solid ${BORDER}` : 0,
               display: "block",
               background: "var(--color-bg-base)",
             }}
