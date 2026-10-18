@@ -7,6 +7,15 @@
 import React, { startTransition, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ModalShell } from "@cyberlearn/ui";
+import {
+  RECALL_EMPTY,
+  RECALL_END_NOTE,
+  RECALL_META,
+  RECALL_MISSING,
+  RECALL_OFF,
+  RECALL_PASSAGE,
+  recallVerdictTitle,
+} from "@cyberlearn/lib/revisions/recall-copy";
 import { rightAnswersWord } from "@cyberlearn/lib/social/duel";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import type {
@@ -115,14 +124,12 @@ function Verdict({
       </span>
       <div className="rp-verdict__body">
         <p className="rp-verdict__title">
-          {verdict.correct
-            ? "Bonne réponse."
-            : `Raté. La bonne réponse : ${right ?? KEYS[verdict.correctIndex] ?? ""}.`}
+          {recallVerdictTitle(verdict.correct, right ?? KEYS[verdict.correctIndex] ?? "")}
         </p>
         {verdict.explanation !== null && <p className="rp-verdict__why">{verdict.explanation}</p>}
         {verdict.passage !== null && (
           <Link href={verdict.passage.href} className="rp-link">
-            Revoir ce passage <span aria-hidden="true">→</span>
+            {RECALL_PASSAGE} <span aria-hidden="true">→</span>
           </Link>
         )}
       </div>
@@ -214,11 +221,7 @@ function End({
         <p className="rp-end__score">
           <b>{result.correct}</b> {rightAnswersWord(result.correct)} sur {result.total}
         </p>
-        <p className="rp-end__note">
-          {mode === "daily"
-            ? "Les questions ratées reviennent demain, les autres de plus en plus tard. Le rappel compte pour ta série."
-            : "Une révision libre, sans XP : c'est le rappel du jour qui en rapporte."}
-        </p>
+        <p className="rp-end__note">{RECALL_END_NOTE[mode]}</p>
       </div>
       {verdicts.length > 0 && (
         <ol className="rp-end__list">
@@ -242,7 +245,7 @@ function End({
                   </p>
                   {!verdict.correct && verdict.passage !== null && (
                     <Link href={verdict.passage.href} className="rp-link">
-                      Revoir ce passage <span aria-hidden="true">→</span>
+                      {RECALL_PASSAGE} <span aria-hidden="true">→</span>
                     </Link>
                   )}
                 </div>
@@ -390,9 +393,7 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
   const daily = request.kind === "daily";
   const eyebrow = daily ? "Révisions" : "Réviser ce module";
   const title = view?.title ?? (daily ? "Rappel du jour" : "Réviser ce module");
-  const meta = daily
-    ? "Quelques questions de tes leçons, deux minutes. Tes réponses sont gardées : tu peux reprendre plus tard."
-    : "Six questions au plus sur les leçons faites de ce module, sans XP.";
+  const meta = RECALL_META[request.kind];
 
   let body: React.ReactNode;
   let actions: React.ReactNode = (
@@ -431,22 +432,16 @@ function RappelWindow({ value, onClose }: QueryDialogProps): React.JSX.Element {
   } else if (view.status === "off") {
     body = (
       <div className="rp-quiet">
-        <p>La répétition espacée est coupée dans tes réglages : aucune question ne revient.</p>
+        <p>{RECALL_OFF}</p>
         <Link href="/settings/preferences" className="rp-link">
           Ouvrir les préférences <span aria-hidden="true">→</span>
         </Link>
       </div>
     );
   } else if (view.status === "missing") {
-    body = <p className="rp-quiet">Ce module n&apos;est pas disponible.</p>;
+    body = <p className="rp-quiet">{RECALL_MISSING}</p>;
   } else if (view.status === "empty") {
-    body = (
-      <p className="rp-quiet">
-        {view.mode === "daily"
-          ? "Rien à revoir aujourd'hui. Une question ratée dans une leçon revient ici le lendemain, puis de plus en plus tard tant que tu y réponds juste."
-          : "Rien à réviser dans ce module pour l'instant : ses questions arrivent ici quand tu as terminé une de ses leçons."}
-      </p>
-    );
+    body = <p className="rp-quiet">{RECALL_EMPTY[view.mode]}</p>;
   } else if (ended) {
     body = (
       <End
