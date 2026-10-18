@@ -10,7 +10,7 @@ import {
   userRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { classmateIdentity, studentIdentity } from "@/lib/classes/roster-names";
+import { classmateIdentity, namedToClass, studentIdentity } from "@/lib/classes/roster-names";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
 import { StudentWork, type StudentWorkItem } from "./_components/student-work";
@@ -45,11 +45,9 @@ const WEEK_MS = 7 * 86_400_000;
 export default async function MyClassPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  const [taught, memberships, friendIds] = await Promise.all([
+  const [taught, memberships] = await Promise.all([
     classRepository.findForTeacher(authUser.id),
     classRepository.findForMember(authUser.id),
-    // For the mark beside a classmate who is also a friend.
-    friendshipRepository.friendIds(authUser.id),
   ]);
 
   // No class either way, no page. An empty shell saying so is a page that
@@ -104,10 +102,23 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
       taughtClassIds.flatMap((id) => (rosters.get(id)?.members ?? []).map((m) => m.user.id)),
     ),
   ];
-  const openToReader =
+  // The reader's relations with the classmates their rows name, for the
+  // friend mark and "Ajouter": never with a classmate shown as "Anonyme".
+  const namedClassmateIds = [
+    ...new Set(
+      memberships.flatMap((m) =>
+        (rosters.get(m.id)?.members ?? [])
+          .filter((mem) => namedToClass(mem.user, authUser.id))
+          .map((mem) => mem.user.id),
+      ),
+    ),
+  ];
+  const [openToReader, relations] = await Promise.all([
     taughtMemberIds.length === 0
       ? new Set<string>()
-      : await userRepository.profilesOpenTo(authUser.id, taughtMemberIds);
+      : userRepository.profilesOpenTo(authUser.id, taughtMemberIds),
+    friendshipRepository.viewsOf(authUser.id, namedClassmateIds),
+  ]);
 
   const now = Date.now();
   const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
@@ -313,7 +324,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
                 }))}
                 people={roster.members.map((mem) => ({
                   id: mem.user.id,
-                  ...classmateIdentity(mem.user, authUser.id, friendIds),
+                  ...classmateIdentity(mem.user, authUser.id, relations),
                   level: mem.user.level,
                   xpTotal: mem.user.xpTotal,
                   completed: completedByUser.get(mem.user.id) ?? 0,

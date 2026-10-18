@@ -33,7 +33,10 @@ const periodSchema = z.enum(LEADERBOARD_PERIODS).catch("all");
  * then the XP earned since it opened, as on the site). `period`,
  * `periodSince` and `totalPlayers` are new; an older build reads past them.
  *
- * So is each row's `avatarSrc`, on both boards: see withAvatarSrc.
+ * So is each row's `avatarSrc`, on both boards: see withAvatarSrc. And each
+ * public row's `friendship` (buildLeaderboard), where the reader stands with
+ * that player, for the app's "Ajouter"; null on an anonymised row and on the
+ * reader's own, absent from the friends board.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);

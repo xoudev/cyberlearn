@@ -11,15 +11,15 @@ import {
 } from "@cyberlearn/lib/social/duel";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
-import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelSummary } from "@/lib/social/duels";
 import { ChallengeButton } from "./challenge-button";
+import { DuelAvatar, DuelName } from "./duel-face";
 import { dayOf, plural, whenOf } from "./duel-words";
 import { RespondButtons } from "./respond-buttons";
 import "./duels.css";
 
 /**
- * An invitation, as the duel it would start: the friend's monogram, who
+ * An invitation, as the duel it would start: the friend's picture, who
  * challenges the reader on which path, when the offer lapses, and the answer.
  */
 function InvitationCard({ duel }: { duel: DuelSummary }): React.ReactElement {
@@ -27,12 +27,13 @@ function InvitationCard({ duel }: { duel: DuelSummary }): React.ReactElement {
     <li className="dl-invites__item">
       <article className="dl-invite">
         <p className="dl-invite__eyebrow">Défi reçu</p>
-        <span className="dl-mono dl-mono--lg" aria-hidden="true">
-          {initialsOf(duel.other.name)}
-        </span>
+        <DuelAvatar player={duel.other} size="lg" />
         <div>
           <p className="dl-invite__text">
-            <strong>{duel.other.name}</strong> te défie sur «&nbsp;{duel.pathTitle}&nbsp;»
+            <strong>
+              <DuelName player={duel.other} />
+            </strong>{" "}
+            te défie sur «&nbsp;{duel.pathTitle}&nbsp;»
           </p>
           <p className="dl-invite__meta">
             {duel.questionCount} {plural(duel.questionCount, "question")} · expire{" "}
@@ -49,7 +50,9 @@ function InvitationCard({ duel }: { duel: DuelSummary }): React.ReactElement {
 
 /**
  * One of the reader's duels: the path and its outcome in a word, both
- * players face to face with their scores, the small print, and the way in.
+ * players face to face with their pictures and scores (the other's name
+ * opens their profile when it would open for the reader), the small print,
+ * and the way in.
  */
 function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
   const outcome = outcomeOf(duel);
@@ -67,9 +70,7 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
       </div>
       <div className="dl-card__vs">
         <div className="dl-card__side">
-          <span className="dl-mono dl-mono--sm" data-me="true" aria-hidden="true">
-            {initialsOf(duel.reader.name)}
-          </span>
+          <DuelAvatar player={duel.reader} size="sm" me />
           <span className="dl-card__name">Toi</span>
         </div>
         {wasPlayed(outcome) ? (
@@ -87,12 +88,9 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
           </p>
         )}
         <div className="dl-card__side dl-card__side--other">
-          <span className="dl-mono dl-mono--sm" aria-hidden="true">
-            {initialsOf(duel.other.name)}
-          </span>
-          <span className="dl-card__name" title={duel.other.name}>
-            {duel.other.name}
-          </span>
+          <DuelAvatar player={duel.other} size="sm" />
+          {/* Its own link, beside the card's way in rather than inside it. */}
+          <DuelName player={duel.other} className="dl-card__name" title={duel.other.name} />
         </div>
       </div>
       <p className="dl-card__meta">{duelSmallPrint(duel, { when: whenOf, day: dayOf })}</p>

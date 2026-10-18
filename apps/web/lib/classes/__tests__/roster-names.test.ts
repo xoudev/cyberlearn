@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { classmateIdentity, studentIdentity, type RosterPerson } from "../roster-names";
+import {
+  classmateIdentity,
+  namedToClass,
+  studentIdentity,
+  type RosterPerson,
+} from "../roster-names";
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -9,7 +14,7 @@ function person(id: string, publicProfile: boolean, displayName = "Nom"): Roster
   return { id, username: `u-${id.slice(0, 4)}`, displayName, preferences: { publicProfile } };
 }
 
-const FRIENDS = new Set([FRIEND]);
+const FRIENDS = new Map([[FRIEND, "friends" as const]]);
 
 describe("classmateIdentity", () => {
   it("never shows a student their own row as Anonyme", () => {
@@ -19,6 +24,7 @@ describe("classmateIdentity", () => {
       username: "u-1111",
       visible: true,
       isFriend: false,
+      friendship: null,
     });
   });
 
@@ -28,6 +34,7 @@ describe("classmateIdentity", () => {
       username: null,
       visible: false,
       isFriend: false,
+      friendship: null,
     });
   });
 
@@ -37,7 +44,25 @@ describe("classmateIdentity", () => {
       username: "u-2222",
       visible: true,
       isFriend: true,
+      friendship: "friends",
     });
+  });
+
+  it("tells a named row where the reader stands, a stranger reading as none", () => {
+    const relations = new Map([[OTHER, "incoming" as const]]);
+    expect(classmateIdentity(person(OTHER, true), ME, relations).friendship).toBe("incoming");
+    expect(classmateIdentity(person(FRIEND, true), ME, relations).friendship).toBe("none");
+  });
+
+  it("says nothing on an Anonyme row, even to somebody it asked", () => {
+    const relations = new Map([[OTHER, "incoming" as const]]);
+    expect(classmateIdentity(person(OTHER, false), ME, relations).friendship).toBeNull();
+  });
+
+  it("reads relations only for the classmates a row names", () => {
+    expect(namedToClass(person(OTHER, true), ME)).toBe(true);
+    expect(namedToClass(person(OTHER, false), ME)).toBe(false);
+    expect(namedToClass(person(ME, true), ME)).toBe(false);
   });
 
   it("falls through an empty display name to the handle", () => {

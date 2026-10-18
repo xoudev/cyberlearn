@@ -1,6 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { levelLabel } from "@cyberlearn/lib/gamification/level-label";
+import type { FriendshipView } from "@cyberlearn/lib/social/friendship";
+import { AddFriendChip } from "@/components/add-friend-chip";
 import { FriendMark } from "@/components/friend-mark";
 import { ProgressBar } from "@/components/progress-bar";
 
@@ -36,6 +38,11 @@ export interface StudentClassMember {
    * "Anonyme" row: the mark would say which classmate it is.
    */
   isFriend: boolean;
+  /**
+   * Where the reader stands with them, for "Ajouter": null on the reader's
+   * own row and on an "Anonyme" one, which offers nothing.
+   */
+  friendship: FriendshipView | null;
   level: number;
   xpTotal: number;
   completed: number;
@@ -159,6 +166,12 @@ export function StudentClass({
                 )}
                 {p.visible && p.isFriend && p.id !== userId && <FriendMark size={12} />}
                 {p.id === userId && <b className="cls-person__you">toi</b>}
+                {p.visible &&
+                  p.friendship !== null &&
+                  p.friendship !== "friends" &&
+                  p.id !== userId && (
+                    <AddFriendChip target={{ id: p.id }} name={p.name} view={p.friendship} />
+                  )}
               </span>
               <ProgressBar
                 value={best === 0 ? 0 : (p.completed / best) * 100}

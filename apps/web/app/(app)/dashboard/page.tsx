@@ -3,6 +3,7 @@ import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { LevelRing } from "./_components/level-ring";
 import { MissionCard, type MissionCardProps } from "./_components/mission-card";
 import { DailyRecallCard } from "./_components/daily-recall-card";
+import { FriendsActivity } from "./_components/friends-activity";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
@@ -25,6 +26,7 @@ import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { dailyRecallState } from "@/lib/revisions/daily-recall";
 import { RappelButton } from "@/components/rappel/rappel-button";
 import { savedLearningAnswers } from "@/lib/paths/suggestions";
+import { friendsActivityFor } from "@/lib/friends/friends-activity";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -44,7 +46,8 @@ export default function DashboardPage(): React.ReactElement {
  *
  * So it has one strong card, the mission, with the module it sits in drawn
  * beside it; under it the day's recall and the week; and at the bottom, in
- * one line, where the reader stands. The level is a ring in the header, the
+ * one line, where the reader stands; between the two, for a reader with
+ * friends, what they did lately. The level is a ring in the header, the
  * streak a flame beside the greeting. Nothing is numbered, nothing pretends
  * to be a terminal.
  */
@@ -72,6 +75,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     recentLessons,
     wantsRevisions,
     learningAnswers,
+    friends,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -154,6 +158,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
     revisionsEnabled(authUser.id),
     // What they said they came for at sign-up, step 3.
     savedLearningAnswers(authUser.id),
+    // "Tes amis": the friends' recent moments, nothing for a reader without one.
+    friendsActivityFor(authUser.id),
   ]);
 
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
@@ -322,6 +328,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
             </div>
           </section>
         </div>
+
+        {/* ── The reader's friends ─────────────────────────────────────────── */}
+        {friends.hasFriends && <FriendsActivity items={friends.items} now={now.getTime()} />}
 
         {/* ── Where the reader stands ──────────────────────────────────────── */}
         <Standing stats={stats} badges={badgeRows} badgeTotal={badgeTotal} />

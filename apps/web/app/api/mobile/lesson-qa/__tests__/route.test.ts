@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   postLessonAnswer: vi.fn<(u: string, input: unknown) => Promise<unknown>>(),
   acceptLessonAnswer: vi.fn<(u: string, id: unknown) => Promise<unknown>>(),
   upvoteLessonAnswer: vi.fn<(u: string, id: unknown) => Promise<unknown>>(),
+  friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
 }));
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
@@ -21,6 +22,7 @@ vi.mock("@cyberlearn/db", () => ({
   lessonsVisibleTo: (userId: string) => ({ visibleTo: userId }),
   prisma: { lesson: { findFirst: m.findLesson } },
   qaRepository: { findQuestionsByLesson: m.findQuestionsByLesson },
+  friendshipRepository: { friendIds: m.friendIds },
   ratingRepository: {
     findUserLessonRating: m.findUserLessonRating,
     findLessonStats: m.findLessonStats,
@@ -54,6 +56,7 @@ beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
   m.userFromBearer.mockResolvedValue({ id: "user-1", email: null });
   m.findLesson.mockResolvedValue({ id: LESSON_ID });
+  m.friendIds.mockResolvedValue(new Set());
 });
 
 describe("every lesson Q&A and rating route", () => {
@@ -165,6 +168,37 @@ describe("GET /api/mobile/lesson-qa", () => {
       author: { id: "user-2", name: "Sam", level: 9 },
     });
     expect(body.questions[1]).toMatchObject({ mine: false, author: null });
+  });
+
+  it("marks the authors who are the reader's friends, as the lesson page does", async () => {
+    m.findQuestionsByLesson.mockResolvedValue([
+      {
+        id: "q-1",
+        title: "Une question",
+        content: "…",
+        isResolved: false,
+        createdAt: new Date("2026-09-20T08:00:00.000Z"),
+        user: { id: "user-2", displayName: "Sam", username: "sam", level: 9 },
+        _count: { answers: 1 },
+        answers: [
+          {
+            id: "a-1",
+            content: "…",
+            isAccepted: false,
+            upvotes: 0,
+            createdAt: new Date("2026-09-21T08:00:00.000Z"),
+            user: { id: "user-3", displayName: "Lou", username: "lou", level: 2 },
+          },
+        ],
+      },
+    ]);
+    m.friendIds.mockResolvedValue(new Set(["user-2"]));
+    const body = (await (await QA(get(`lesson-qa?lessonId=${LESSON_ID}`))).json()) as {
+      questions: { author: { isFriend: boolean }; answers: { author: { isFriend: boolean } }[] }[];
+    };
+    expect(m.friendIds).toHaveBeenCalledWith("user-1");
+    expect(body.questions[0]?.author.isFriend).toBe(true);
+    expect(body.questions[0]?.answers[0]?.author.isFriend).toBe(false);
   });
 });
 

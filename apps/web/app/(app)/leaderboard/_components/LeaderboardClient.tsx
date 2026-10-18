@@ -20,6 +20,7 @@ import styles from "./leaderboard.module.css";
 import "./leaderboard.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Crumb } from "@/components/crumb";
+import { AddFriendChip } from "@/components/add-friend-chip";
 import { FriendMark } from "@/components/friend-mark";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { initialsOf } from "@/lib/avatar/glyphs";
@@ -69,6 +70,19 @@ export function showsFriendMark(entry: BoardRow): boolean {
     !entry.isCurrentUser &&
     (entry.username !== null || entry.displayName !== null)
   );
+}
+
+/**
+ * The handle a row's "Ajouter" asks by, or null when the row offers none. The
+ * server says where the reader stands only on a PUBLIC row that is not their
+ * own (`friendship`, leaderboard.visibility.ts); a friend already carries
+ * the mark, and a row without a handle cannot be asked by one.
+ */
+export function addableHandle(entry: BoardRow): string | null {
+  if (entry.isCurrentUser || entry.username === null) return null;
+  const view = entry.friendship ?? null;
+  if (view === null || view === "friends") return null;
+  return entry.username;
 }
 
 /** The name on a row, as a link to the profile when the server gave one. */
@@ -441,6 +455,16 @@ export function PlayerCard({
           #{entry.rank}
         </span>
         {entry.isCurrentUser ? <span className={styles.you}>Toi</span> : null}
+        {markFriends && entry.friendship != null && addableHandle(entry) !== null ? (
+          // Above the card's stretched profile link, which would take its click.
+          <span className={styles.addFriend}>
+            <AddFriendChip
+              target={{ username: entry.username ?? "" }}
+              name={`@${handle}`}
+              view={entry.friendship}
+            />
+          </span>
+        ) : null}
       </div>
       <div className={styles.playerIdentity}>
         <HexAvatar
