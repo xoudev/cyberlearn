@@ -1846,6 +1846,9 @@ enum XpSource {
   CHALLENGE
   REVIEW
   EXERCISE
+  /// A correction made by hand from the console: XP added, or taken back
+  /// (a negative amount). Its reason is in the audit log.
+  ADJUSTMENT
 }
 
 // One row per XP credit, written inside creditXp's transaction. Append-only and

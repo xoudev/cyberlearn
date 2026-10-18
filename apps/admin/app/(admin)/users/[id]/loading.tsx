@@ -56,10 +56,11 @@ function ParagraphSkeleton({ lines }: { lines: readonly string[] }): React.React
 /**
  * An account while it loads, in the page's order. First its figures, then
  * two columns: on the left the account, its sign-in, its profile, its
- * progress and its certificates; on the right its ban, tickets, moderation,
- * audit log, preferences and classes. The two gestures that cannot be undone
- * close the page. The second-factor card only shows for an account that has
- * one, which most do not, so it does not wait here.
+ * progress, its XP, streak and badges, and its certificates; on the right
+ * its ban, tickets, moderation, audit log, preferences and classes. The two
+ * gestures that cannot be undone close the page. The second-factor card
+ * only shows for an account that has one, which most do not, so it does not
+ * wait here.
  */
 export default function UserLoading(): React.ReactElement {
   return (
@@ -116,6 +117,19 @@ export default function UserLoading(): React.ReactElement {
               <div style={{ marginTop: 12 }}>
                 <FormSkeleton rows={[1, { height: 52 }]} submit={150} />
               </div>
+            </div>
+          </Card>
+
+          {/* Its four gestures, folded: one line each until opened. */}
+          <Card title={USER_CARDS.gamification} pad>
+            <div className="a-stack-tight" aria-hidden="true">
+              {[200, 150, 210, 120].map((width, index) => (
+                <div key={index} className="a-disclosure">
+                  <div className="a-disclosure-head">
+                    <LineSkeleton width={width} height={12} />
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
 

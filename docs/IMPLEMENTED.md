@@ -264,7 +264,7 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), double authentification, remise à zéro complète, suppression |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
@@ -342,6 +342,24 @@
   (`quiz_attempts.cooldownWaivedAt`) ou clore sans délai une tentative jamais
   rendue dont le temps est écoulé, remettre une leçon à zéro ou la marquer
   terminée sans XP
+- Corrections d'XP, de série et de badges, avec un motif inscrit dans l'audit
+  log et une confirmation qui nomme le compte : ajouter ou retirer de l'XP
+  (une ligne `ADJUSTMENT` du registre `xp_ledger`, total jamais sous zéro,
+  niveau recalculé sans notification, saison et classements de la semaine et
+  du mois suivent), fixer la série, son record et les gels en réserve (le
+  record suit une série mise au-dessus et ne descend que si on le change,
+  jamais sous la série ; une série rendue après une interruption compte le
+  jour même comme actif), attribuer un badge (ses XP et la notification d'un
+  badge obtenu) ou le retirer, en reprenant au choix les XP qu'il a rapportés
+  (jamais sous zéro, l'avis dit ce qui a vraiment été repris). Le retrait est
+  refusé tant que le compte remplit encore le critère du badge, sans lui et
+  sans les XP repris : rien ne marque un badge comme retiré, et la collection
+  ou la leçon suivante le rendrait, XP compris. On corrige d'abord ce qui le
+  remplit, le critère, ou on désactive le badge.
+  Les vingt dernières lignes du registre d'XP se lisent sur la fiche. Le
+  crédit d'XP (`creditXp`), la saison (`recordSeasonXp`) et l'attribution de
+  badges (`awardBadges`) vivent dans `@cyberlearn/db/gamification`, partagés
+  par le site et la console
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte
 - Suppression complète du compte et de ce qu'il possède, avec e-mail à la clé
@@ -461,7 +479,7 @@
 | `ProgressStatus` | NOT_STARTED, IN_PROGRESS, COMPLETED |
 | `BadgeRarity` | COMMON, RARE, EPIC, LEGENDARY |
 | `BadgeCriterionType` | LESSON_COMPLETED, PATH_COMPLETED, XP_THRESHOLD, STREAK_DAYS, CATEGORY_MASTERY, PERFECT_QUIZ, LESSON_SPECIFIC, LEVEL, BADGE_EARNED, CUSTOM |
-| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW |
+| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW, EXERCISE, ADJUSTMENT |
 | `QuestType` | LESSON_COMPLETED, PERFECT_QUIZ, STREAK_DAYS, FORUM_POST, WEEKLY_BONUS |
 | `SeasonStatus` | ACTIVE, CLOSING, CLOSED |
 | `LeagueDivision` | BRONZE, ARGENT, OR, PLATINE, DIAMANT |
