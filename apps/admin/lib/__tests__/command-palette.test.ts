@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   fetchConsoleSearch,
   flattenGroups,
+  isConsolePath,
   matchDestinations,
   moveCursor,
   normalize,
@@ -155,10 +156,28 @@ describe("parseSearchResults", () => {
   });
 
   it("only follows a path of this console", () => {
-    for (const href of ["https://evil.example/x", "//evil.example", "javascript:alert(1)"]) {
+    for (const href of [
+      "https://evil.example/x",
+      "//evil.example",
+      "javascript:alert(1)",
+      // The URL parser reads a backslash as a slash, and drops tabs and line breaks.
+      "/\\evil.example",
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "\\\\evil.example",
+    ]) {
+      expect(isConsolePath(href)).toBe(false);
       expect(
         parseSearchResults({ users: [{ ...hit("a"), href }], lessons: [], tickets: [] }),
       ).toBeNull();
+    }
+  });
+});
+
+describe("isConsolePath", () => {
+  it("takes the console's own pages, with their query and fragment", () => {
+    for (const href of ["/users/u1", "/lessons/l1/edit", "/tickets?status=OPEN#t1", "/"]) {
+      expect(isConsolePath(href)).toBe(true);
     }
   });
 });
@@ -168,16 +187,21 @@ describe("fetchConsoleSearch", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks GET /search with the term encoded, and reads the answer", async () => {
+  it("posts the term in a JSON body, never in the address, and reads the answer", async () => {
     const answer = { users: [], lessons: [hit("l")], tickets: [] };
     const fetchMock = vi.fn().mockResolvedValue(Response.json(answer));
     vi.stubGlobal("fetch", fetchMock);
     const signal = new AbortController().signal;
 
-    expect(await fetchConsoleSearch("amélie & co", signal)).toEqual(answer);
+    expect(await fetchConsoleSearch("amelie@lycee.fr", signal)).toEqual(answer);
     expect(fetchMock).toHaveBeenCalledWith(
-      "/search?q=am%C3%A9lie+%26+co",
-      expect.objectContaining({ signal, cache: "no-store" }),
+      "/search",
+      expect.objectContaining({
+        method: "POST",
+        signal,
+        cache: "no-store",
+        body: JSON.stringify({ q: "amelie@lycee.fr" }),
+      }),
     );
   });
 

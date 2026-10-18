@@ -14,6 +14,16 @@ import { requireAdminAction } from "@/lib/auth";
 /** Nothing here is for a cache: the rows change, and they name people. */
 const NO_STORE = { "Cache-Control": "private, no-store" };
 
+/** The body, or undefined when it is not JSON: the schema refuses both alike. */
+async function jsonBody(request: Request): Promise<unknown> {
+  try {
+    const body: unknown = await request.json();
+    return body;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * The accounts, lessons and tickets the top bar's quick search offers for a
  * term, a few of each.
@@ -24,14 +34,16 @@ const NO_STORE = { "Cache-Control": "private, no-store" };
  * and a search typed letter by letter has to drop the request it no longer
  * needs, which a fetch does with its AbortSignal.
  *
- * The term is never logged: it is often somebody's address or name.
+ * A POST although it changes nothing, because the term is usually somebody's
+ * e-mail or name. In a query string it would be kept by the browser history,
+ * the host's access logs and Sentry, whose breadcrumbs, spans and replays
+ * record URLs; Sentry records no body (lib/sentry/data-collection.ts), and
+ * this route does not log the term either.
  */
-export async function GET(request: Request): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
   await requireAdminAction();
 
-  const parsed = consoleSearchSchema.safeParse({
-    q: new URL(request.url).searchParams.get("q") ?? "",
-  });
+  const parsed = consoleSearchSchema.safeParse(await jsonBody(request));
   if (!parsed.success) {
     return Response.json(
       { error: "La recherche demande entre 2 et 100 caractères." },

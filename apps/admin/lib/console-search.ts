@@ -11,7 +11,7 @@ import {
 import { ROLE_LABEL } from "./roles";
 
 /**
- * The server side of the top bar's quick search (GET /search): what it
+ * The server side of the top bar's quick search (POST /search): what it
  * accepts, and how each row it finds is shown. The route reads through the
  * repositories, at most CONSOLE_SEARCH_TAKE rows of each kind.
  */

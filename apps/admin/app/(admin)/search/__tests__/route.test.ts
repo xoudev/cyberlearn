@@ -19,7 +19,8 @@ vi.mock("@cyberlearn/lib/logger", () => ({
   errorMessage: (error: unknown) => String(error),
 }));
 
-const { GET } = await import("../route");
+const route = await import("../route");
+const { POST } = route;
 const { parseSearchResults } = await import("@/lib/command-palette");
 
 /**
@@ -32,8 +33,19 @@ const USER = "22222222-2222-4222-8222-222222222222";
 const LESSON = "33333333-3333-4333-8333-333333333333";
 const TICKET = "44444444-4444-4444-8444-444444444444";
 
-function request(query: string): Request {
-  return new Request(`https://admin.cyberlearn.fr/search${query}`);
+const URL_OF_SEARCH = "https://admin.cyberlearn.fr/search";
+
+/** The search as the browser sends it: the term in a JSON body. */
+function request(q: string): Request {
+  return rawRequest(JSON.stringify({ q }));
+}
+
+function rawRequest(body: string): Request {
+  return new Request(URL_OF_SEARCH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
 }
 
 beforeEach(() => {
@@ -44,23 +56,31 @@ beforeEach(() => {
   m.searchTickets.mockResolvedValue([]);
 });
 
-describe("GET /search", () => {
+describe("POST /search", () => {
+  it("takes no GET, so the term never rides in an address", () => {
+    expect(route).not.toHaveProperty("GET");
+  });
+
   it("checks the caller is an administrator before searching anything", async () => {
     m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT:/access-denied"));
-    await expect(GET(request("?q=amelie"))).rejects.toThrow("NEXT_REDIRECT:/access-denied");
+    await expect(POST(request("amelie"))).rejects.toThrow("NEXT_REDIRECT:/access-denied");
     expect(m.searchUsers).not.toHaveBeenCalled();
     expect(m.searchLessons).not.toHaveBeenCalled();
     expect(m.searchTickets).not.toHaveBeenCalled();
   });
 
   it.each([
-    ["no query", ""],
-    ["one character", "?q=a"],
-    ["a lone @ and a letter", "?q=%40a"],
-    ["blanks", "?q=%20%20%20"],
-    ["more than a hundred characters", `?q=${"x".repeat(101)}`],
-  ])("refuses %s with a 400, and searches nothing", async (_name, query) => {
-    const response = await GET(request(query));
+    ["an empty term", JSON.stringify({ q: "" })],
+    ["one character", JSON.stringify({ q: "a" })],
+    ["a lone @ and a letter", JSON.stringify({ q: "@a" })],
+    ["blanks", JSON.stringify({ q: "   " })],
+    ["more than a hundred characters", JSON.stringify({ q: "x".repeat(101) })],
+    ["no term", JSON.stringify({})],
+    ["a term that is not text", JSON.stringify({ q: 42 })],
+    ["a body that is not JSON", "q=amelie"],
+    ["no body", ""],
+  ])("refuses %s with a 400, and searches nothing", async (_name, body) => {
+    const response = await POST(rawRequest(body));
     expect(response.status).toBe(400);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(await response.json()).toEqual({
@@ -70,7 +90,7 @@ describe("GET /search", () => {
   });
 
   it("searches the three kinds with the trimmed term, without its @, five of each", async () => {
-    await GET(request("?q=%20%40amelie%20"));
+    await POST(request(" @amelie "));
     expect(m.searchUsers).toHaveBeenCalledWith("amelie", 5);
     expect(m.searchLessons).toHaveBeenCalledWith("amelie", 5);
     expect(m.searchTickets).toHaveBeenCalledWith("amelie", 5);
@@ -106,7 +126,7 @@ describe("GET /search", () => {
       },
     ]);
 
-    const response = await GET(request("?q=ame"));
+    const response = await POST(request("ame"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
@@ -147,7 +167,7 @@ describe("GET /search", () => {
       { id: TICKET, subject: "Question", status: "OPEN", email: "invite@x.fr", user: null },
       { id: USER, subject: "Ancien", status: "CLOSED", email: null, user: null },
     ]);
-    const body = parseSearchResults(await (await GET(request("?q=qu"))).json());
+    const body = parseSearchResults(await (await POST(request("qu"))).json());
     expect(body?.tickets.map((t) => t.sublabel)).toEqual([
       "Ouvert · invite@x.fr",
       "Fermé · anonyme",
@@ -156,7 +176,7 @@ describe("GET /search", () => {
 
   it("says the search failed, without the term or the error, and logs it", async () => {
     m.searchLessons.mockRejectedValue(new Error("connection reset"));
-    const response = await GET(request("?q=amelie%40lycee.fr"));
+    const response = await POST(request("amelie@lycee.fr"));
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "La recherche a échoué. Réessaie." });
     expect(m.loggerError).toHaveBeenCalledOnce();

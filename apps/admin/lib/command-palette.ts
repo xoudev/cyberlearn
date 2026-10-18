@@ -6,7 +6,7 @@ import type { ConsoleDestination } from "./console-nav";
  * through. Pure, so the browser and the tests read the same rules.
  *
  * Pages and actions are matched here, in the browser, from console-nav.ts.
- * Accounts, lessons and tickets are searched on the server (GET /search),
+ * Accounts, lessons and tickets are searched on the server (POST /search),
  * once at least two characters are typed.
  */
 
@@ -27,7 +27,7 @@ export interface SearchHit {
   href: string;
 }
 
-/** What GET /search answers. */
+/** What POST /search answers. */
 export interface ConsoleSearchResults {
   users: SearchHit[];
   lessons: SearchHit[];
@@ -160,6 +160,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Any origin will do: only whether a path leaves it matters. */
+const PATH_BASE = new URL("https://console.invalid");
+
+/**
+ * True for a path of this console, and nothing that leaves it. Checked by
+ * resolving it the way the browser will, not by its first characters: the
+ * URL parser reads "/\host" as "//host" and drops a tab or a line break,
+ * so a prefix test lets those through to another host.
+ */
+export function isConsolePath(href: string): boolean {
+  if (!href.startsWith("/")) return false;
+  try {
+    return new URL(href, PATH_BASE).origin === PATH_BASE.origin;
+  } catch {
+    return false;
+  }
+}
+
 function isSearchHit(value: unknown): value is SearchHit {
   return (
     isRecord(value) &&
@@ -167,9 +185,8 @@ function isSearchHit(value: unknown): value is SearchHit {
     typeof value.label === "string" &&
     typeof value.sublabel === "string" &&
     typeof value.href === "string" &&
-    // Only a path of this console: the list turns it into a navigation.
-    value.href.startsWith("/") &&
-    !value.href.startsWith("//")
+    // The list turns it into a navigation.
+    isConsolePath(value.href)
   );
 }
 
@@ -194,19 +211,23 @@ export function parseSearchResults(value: unknown): ConsoleSearchResults | null 
  * Asks the server for the accounts, lessons and tickets matching a term.
  * Throws when the answer is not one - a refusal, an expired session sent to
  * the sign-in page, a failure - and when the signal aborts it.
+ *
+ * The term goes in the body, never in the address: it is usually somebody's
+ * e-mail or name, and an address is kept by the browser history, the host's
+ * access logs and Sentry (fetch breadcrumbs, sampled spans, error replays),
+ * which collects no body (lib/sentry/data-collection.ts).
  */
 export async function fetchConsoleSearch(
   term: string,
   signal: AbortSignal,
 ): Promise<ConsoleSearchResults> {
-  const response = await fetch(
-    `${CONSOLE_SEARCH_PATH}?${new URLSearchParams({ q: term }).toString()}`,
-    {
-      signal,
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    },
-  );
+  const response = await fetch(CONSOLE_SEARCH_PATH, {
+    method: "POST",
+    signal,
+    cache: "no-store",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ q: term }),
+  });
   if (!response.ok) throw new Error(`search answered ${String(response.status)}`);
   const results = parseSearchResults(await response.json());
   if (results === null) throw new Error("search answered something else");
