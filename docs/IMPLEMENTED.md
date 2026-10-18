@@ -275,8 +275,8 @@
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
 | `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
-| `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
-| `/lessons/[id]/edit` | Éditer une leçon ; les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, et un lien vers tous |
+| `/lessons/new` | Créer une leçon (éditeur MDX + preview), qui s'ouvre ensuite dans son studio |
+| `/lessons/[id]` | Studio de la leçon : sa fiche dans un rail, l'éditeur et l'aperçu du site côte à côte sur toute la largeur, brouillon enregistré seul, « Publier les changements », versions à restaurer ; dessous, ses parcours et prérequis, et les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, avec un lien vers tous. `/lessons/[id]/edit` y redirige (`next.config.ts`) |
 | `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
 | `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
 | `/challenges` | Liste des challenges |
@@ -316,6 +316,19 @@
 
 #### Gestion des leçons
 - Création et édition par blocs (titres, Markdown, et les vingt-huit composants sous forme de champs, exercices et labos compris, validés par le parseur de la page) ou en MDX ; l'aperçu est rendu par le site lui-même (`/preview/<jeton>`, rafraîchi après chaque pause, un aperçu rapide approximatif reste à côté) ; le panneau Guide liste les 28 composants par famille, avec leurs exemples à insérer, une recherche et un lien vers le guide de rédaction (registre `packages/lib/src/mdx/components.ts`)
+- Studio de leçon (`/lessons/[id]`) : ce qui est tapé part dans un brouillon
+  serveur (`lesson_drafts`, un par leçon) après chaque pause de deux secondes
+  ou tout de suite avec ⌘S, jamais dans la leçon ; l'état est affiché
+  (« Brouillon enregistré à 14:05 », « Modifications non enregistrées »).
+  « Publier les changements » applique les règles du formulaire et la
+  vérification du MDX au brouillon, le recopie dans la leçon, incrémente
+  `lessons.version`, garde la version (`lesson_versions`) et l'inscrit au
+  journal (`lesson.publish`) : `lessonVersionRepository.publish`, la fonction
+  par laquelle passeront aussi l'import et la synchronisation. Une version se
+  remet dans le brouillon ; un brouillon modifié dans un autre onglet, ou une
+  leçon changée depuis le début du brouillon, est signalé avant d'écrire.
+  Séparateur déplaçable entre l'éditeur et l'aperçu, aperçu bureau ou mobile
+  (390 px), alerte avant de quitter avec des modifications non enregistrées
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED, ligne par ligne ou sur
   une sélection, gardée d'une page à l'autre
 - Liste lue page par page par la base ; ses filtres sont dans l'adresse, et les
