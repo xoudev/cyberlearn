@@ -247,8 +247,17 @@ export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";
-export { notificationRepository } from "./repositories/notification.repository.js";
-export type { NotificationItem } from "./repositories/notification.repository.js";
+export {
+  notificationRepository,
+  notificationPageWhere,
+  NOTIFICATION_PAGE_MAX,
+} from "./repositories/notification.repository.js";
+export type {
+  NotificationCursor,
+  NotificationItem,
+  NotificationPage,
+  NotificationPageQuery,
+} from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
 export type {
   LeaderboardEntry,

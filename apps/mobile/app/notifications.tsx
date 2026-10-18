@@ -12,11 +12,12 @@ import { Card, SectionLabel, Text } from "@/components/ui";
 import {
   markAllNotificationsRead,
   markNotificationRead,
-  useNotifications,
+  useNotificationHistory,
   type NotificationItem,
 } from "@/lib/queries";
 import { inAppRouteFor } from "@/lib/notification-links";
 import { notificationMeta } from "@/lib/notification-meta";
+import { flattenNotificationPages } from "@/lib/notification-pages";
 import { useSession } from "@/lib/session";
 
 const TYPE_META: Record<string, { icon: string; color: string }> = {
@@ -36,9 +37,12 @@ export default function Notifications(): React.JSX.Element {
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const { data, isLoading, error, refetch } = useNotifications(userId);
+  const { data, isLoading, error, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useNotificationHistory(userId);
+  // Every page loaded so far, fifty at a time; "Charger plus" adds the next.
+  const items = data === undefined ? undefined : flattenNotificationPages(data.pages);
 
-  const unread = (data ?? []).filter((n) => n.readAt === null).length;
+  const unread = (items ?? []).filter((n) => n.readAt === null).length;
 
   async function readAll(): Promise<void> {
     if (!userId) return;
@@ -75,18 +79,18 @@ export default function Notifications(): React.JSX.Element {
 
       {isLoading ? (
         <ListSkeleton rows={5} />
-      ) : error && data === undefined ? (
+      ) : error && items === undefined ? (
         // A failed refresh keeps the list it already has; only a first load
         // that failed says so, instead of passing for an empty inbox.
         <ErrorState onRetry={() => void refetch()} code="NOTIF_LOAD" />
-      ) : (data ?? []).length === 0 ? (
+      ) : (items ?? []).length === 0 ? (
         <EmptyState
           title="Rien pour l'instant"
           body="Tes badges, montées de niveau et certificats apparaîtront ici."
         />
       ) : (
         <View style={{ gap: 10 }}>
-          {(data ?? []).map((n: NotificationItem, i) => {
+          {(items ?? []).map((n: NotificationItem, i) => {
             const meta = notificationMeta(n.type);
             const isUnread = n.readAt === null;
             const route = inAppRouteFor(n.actionUrl);
@@ -160,6 +164,16 @@ export default function Notifications(): React.JSX.Element {
               </Rise>
             );
           })}
+          {hasNextPage ? (
+            <View style={{ alignItems: "center", marginTop: 6 }}>
+              <ActionChip
+                label={isFetchingNextPage ? "Chargement…" : "Charger plus"}
+                tone="neutral"
+                disabled={isFetchingNextPage}
+                onPress={() => void fetchNextPage()}
+              />
+            </View>
+          ) : null}
         </View>
       )}
     </Screen>

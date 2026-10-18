@@ -27,5 +27,6 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/wrapped",
   "/duels",
   "/tournaments",
+  "/notifications",
   "/onboarding",
 ] as const;

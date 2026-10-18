@@ -370,6 +370,27 @@ export function NotificationPanel({
               ))}
             </div>
           )}
+
+          {/* The panel shows the last twenty: the rest are on the history. */}
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              padding: "10px 18px",
+              borderTop: "1px solid var(--color-border-subtle)",
+              background: "var(--color-bg-elevated)",
+              textAlign: "center",
+            }}
+          >
+            <Link
+              href="/notifications"
+              onClick={close}
+              className="link-action mono-label mono-label--xs"
+              style={{ color: "var(--color-info)" }}
+            >
+              Tout voir
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -388,8 +409,10 @@ function isRouteHandler(href: string): boolean {
  *
  * It used to be a clickable <div>: no role, out of the tab order, deaf to
  * Enter, and following it reloaded the whole site.
+ *
+ * Exported for the history page (/notifications), which lists the same rows.
  */
-function NotificationRow({
+export function NotificationRow({
   item,
   onRead,
   onFollow,
