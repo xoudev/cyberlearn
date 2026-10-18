@@ -145,12 +145,17 @@ export default async function AnnouncementsPage({
             searchKey: null,
           }}
           toolbar={
-            <Link
-              href={gridHref("/audit", {}, { action: ANNOUNCEMENT_ACTION })}
-              className="a-btn a-btn--ghost a-btn--sm"
-            >
-              Ouvrir dans l&apos;audit log
-            </Link>
+            // Only once something was sent: the audit page drops an action
+            // filter it has no row of, so before the first announcement the
+            // link would open the whole log rather than the announcements.
+            slice.total > 0 ? (
+              <Link
+                href={gridHref("/audit", {}, { action: ANNOUNCEMENT_ACTION })}
+                className="a-btn a-btn--ghost a-btn--sm"
+              >
+                Ouvrir dans l&apos;audit log
+              </Link>
+            ) : undefined
           }
           emptyTitle="Aucune annonce envoyée"
           emptyText="Chaque annonce envoyée d'ici s'ajoute à cette liste, lue dans l'audit log."
