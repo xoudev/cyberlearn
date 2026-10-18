@@ -9,6 +9,12 @@ export interface QaAuthor {
   id: string;
   name: string;
   level: number;
+  /**
+   * One of the reader's friends, marked beside the name as on the lesson
+   * page. A Q&A author is always named, so the mark hides nothing. Absent
+   * from a server older than the marks.
+   */
+  isFriend?: boolean;
 }
 
 export interface QaAnswer {

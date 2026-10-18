@@ -28,6 +28,7 @@ import { useCosmetics } from "@/lib/cosmetics";
 import {
   boardRecord,
   duelMeta,
+  duelProfileTarget,
   invitationMeta,
   outcomeTone,
   type DuelBoard,
@@ -165,6 +166,7 @@ function DuelsBody({
                 <Text variant="micro" style={{ color: theme.accent }}>
                   Défi reçu
                 </Text>
+                <DuelPlayerName player={duel.other} />
                 <Text variant="bodySm" style={{ color: colors.textPrimary }}>
                   {`${duel.other.name} te défie sur « ${duel.pathTitle} »`}
                 </Text>
@@ -347,9 +349,43 @@ function SectionCount({ text }: { text: string }): React.JSX.Element {
 }
 
 /**
+ * The other player of an invitation: their picture and name, the name
+ * opening their profile when the server offered one (duelProfileTarget).
+ * Outside the card's buttons, which answer the duel.
+ */
+function DuelPlayerName({ player }: { player: DuelSummary["other"] }): React.JSX.Element {
+  const router = useRouter();
+  const target = duelProfileTarget(player);
+  const body = (
+    <>
+      <Avatar avatarUrl={player.avatarSrc ?? null} displayName={player.name} size={36} />
+      <Text variant="h3" numberOfLines={1} style={{ flexShrink: 1 }}>
+        {player.name}
+      </Text>
+    </>
+  );
+  if (target === null) {
+    return <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>{body}</View>;
+  }
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Profil de ${player.name}`}
+      onPress={() => {
+        router.push({ pathname: "/u/[username]", params: { username: target } });
+      }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}
+    >
+      {body}
+    </Pressable>
+  );
+}
+
+/**
  * One of the reader's duels: the path and its outcome in a word, both
- * players face to face with their right answers, the small print, and what
- * opening it does.
+ * players face to face with their pictures and right answers, the small
+ * print, and what opening it does. The whole card opens the duel, whose
+ * screen opens the other's profile.
  */
 function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): React.JSX.Element {
   const { theme } = useCosmetics();
@@ -380,6 +416,11 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
           <Pill label={OUTCOME_LABEL[outcome]} color={tone} />
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Avatar
+            avatarUrl={duel.reader.avatarSrc ?? null}
+            displayName={duel.reader.name}
+            size={28}
+          />
           <Text variant="h3" style={{ flex: 1 }}>
             Toi
           </Text>
@@ -397,6 +438,11 @@ function DuelCard({ duel, onOpen }: { duel: DuelSummary; onOpen: () => void }): 
           <Text variant="h3" numberOfLines={1} style={{ flex: 1, textAlign: "right" }}>
             {duel.other.name}
           </Text>
+          <Avatar
+            avatarUrl={duel.other.avatarSrc ?? null}
+            displayName={duel.other.name}
+            size={28}
+          />
         </View>
         <Text variant="mono" style={{ fontSize: 11, color: colors.textMuted }}>
           {duelMeta(duel)}
