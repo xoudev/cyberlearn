@@ -169,6 +169,7 @@
 - Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
 - Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
 - L'ancienne file SM-2 tourne encore à côté, jusqu'à son retrait : `ReviewSchedule` créé à chaque complétion, page `/revisions` (plus reliée depuis la barre latérale ni le tableau de bord) et route `/api/mobile/review` pour les versions de l'app déjà installées, l'app d'aujourd'hui ne la lisant plus (`reviewRepository`, `@cyberlearn/lib/revisions/session`)
+- Conversion de l'ancienne file en cartes : `db:backfill-review-cards`, lancé à la main une fois avant le retrait de la file (essai par défaut, `--apply` pour écrire, sans effet à la deuxième passe). Les leçons qui ne donnent pas de carte en fin de leçon n'en donnent pas non plus ; avec les réponses enregistrées, les cartes de la fin de leçon ; sans réponse, la dernière question dans la boîte que l'intervalle SM-2 avait atteinte ; jamais avant la date de l'ancienne file, le retard réparti sur cinq jours. Détail et moment dans `docs/DEPLOY.md`
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
@@ -406,6 +407,9 @@
   gate CI fail-closed (aucune table exposée, >= 56 policies)
 - Seeds séparés : `db:seed`, `db:seed-paths`, `db:seed-quizzes`,
   `db:seed-cosmetics`, `db:seed-season`
+- Scripts lancés à la main, en essai par défaut (`--apply` pour écrire) :
+  `db:backfill-badge-xp`, `db:backfill-daily-streaks`,
+  `db:backfill-review-cards` (voir `docs/DEPLOY.md`)
 - Les sources ne sont jamais compilées à côté d'elles-mêmes (`noEmit` +
   garde `.gitignore`) : un `.js` émis passerait devant son `.ts` à la
   résolution et les tests liraient le dernier build
