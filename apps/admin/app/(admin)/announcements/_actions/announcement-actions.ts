@@ -44,15 +44,27 @@ export type SendAnnouncementResult =
 
 const PATH = "/announcements";
 
+const COUNT_FAILED = "Les destinataires n'ont pas pu être comptés. Réessaie.";
+const READ_FAILED = "Les destinataires n'ont pas pu être lus. Rien n'a été envoyé.";
+
 /**
  * The audience in words, or why it cannot be sent to: a class chosen on the
  * page that was archived since is not a class anybody would expect to reach.
+ * When the classes cannot be read at all, `unreadable` is the sentence the
+ * form shows - the action's own, since only it knows what was not done.
  */
 async function resolveLabel(
   audience: AnnouncementAudience,
+  unreadable: string,
 ): Promise<{ ok: true; label: string } | { ok: false; error: string }> {
   if (audience.kind !== "CLASSES") return { ok: true, label: audienceLabel(audience, new Map()) };
-  const live = new Map((await classRepository.listLiveOptions()).map((c) => [c.id, c.name]));
+  let live: Map<string, string>;
+  try {
+    live = new Map((await classRepository.listLiveOptions()).map((c) => [c.id, c.name]));
+  } catch (error) {
+    logger.error({ scope: "announcements", err: errorMessage(error) }, "class read failed");
+    return { ok: false, error: unreadable };
+  }
   if (audience.classIds.some((id) => !live.has(id))) {
     return {
       ok: false,
@@ -69,7 +81,7 @@ export async function countAnnouncementRecipientsAction(input: unknown): Promise
   const parsed = announcementSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: announcementProblem(parsed.error) };
 
-  const label = await resolveLabel(parsed.data.audience);
+  const label = await resolveLabel(parsed.data.audience, COUNT_FAILED);
   if (!label.ok) return label;
 
   try {
@@ -80,7 +92,7 @@ export async function countAnnouncementRecipientsAction(input: unknown): Promise
     return { ok: true, recipients };
   } catch (error) {
     logger.error({ scope: "announcements", err: errorMessage(error) }, "recipient count failed");
-    return { ok: false, error: "Les destinataires n'ont pas pu être comptés. Réessaie." };
+    return { ok: false, error: COUNT_FAILED };
   }
 }
 
@@ -96,7 +108,7 @@ export async function sendAnnouncementAction(input: unknown): Promise<SendAnnoun
   if (!parsed.success) return { ok: false, error: announcementProblem(parsed.error) };
   const { confirmedRecipients, ...announcement } = parsed.data;
 
-  const label = await resolveLabel(announcement.audience);
+  const label = await resolveLabel(announcement.audience, READ_FAILED);
   if (!label.ok) return label;
 
   let userIds: string[];
@@ -104,7 +116,7 @@ export async function sendAnnouncementAction(input: unknown): Promise<SendAnnoun
     userIds = await userRepository.idsForAudience(announcement.audience, new Date());
   } catch (error) {
     logger.error({ scope: "announcements", err: errorMessage(error) }, "audience read failed");
-    return { ok: false, error: "Les destinataires n'ont pas pu être lus. Rien n'a été envoyé." };
+    return { ok: false, error: READ_FAILED };
   }
 
   if (userIds.length === 0) {

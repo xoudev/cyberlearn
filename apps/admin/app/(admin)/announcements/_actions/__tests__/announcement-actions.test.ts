@@ -154,6 +154,20 @@ describe("countAnnouncementRecipientsAction", () => {
     expect(errorOf(result)).toMatch(/archivée/u);
     expect(m.countForAudience).not.toHaveBeenCalled();
   });
+
+  it("answers in words when the classes cannot be read, rather than throwing", async () => {
+    m.listLiveOptions.mockRejectedValue(new Error("connection reset"));
+    const result = await countAnnouncementRecipientsAction({
+      ...VALID,
+      audience: { kind: "CLASSES", classIds: [CLASS_A] },
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: "Les destinataires n'ont pas pu être comptés. Réessaie.",
+    });
+    expect(m.logError).toHaveBeenCalled();
+    expect(m.countForAudience).not.toHaveBeenCalled();
+  });
 });
 
 describe("sendAnnouncementAction", () => {
@@ -213,6 +227,22 @@ describe("sendAnnouncementAction", () => {
     expect(errorOf(result)).toMatch(/a changé/u);
     expect(m.createMany).not.toHaveBeenCalled();
     expect(m.checkAnnouncementRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("sends nothing, and says so, when the classes cannot be read", async () => {
+    m.listLiveOptions.mockRejectedValue(new Error("connection reset"));
+    const result = await sendAnnouncementAction({
+      ...VALID,
+      audience: { kind: "CLASSES", classIds: [CLASS_A] },
+      confirmedRecipients: 3,
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: "Les destinataires n'ont pas pu être lus. Rien n'a été envoyé.",
+    });
+    expect(m.logError).toHaveBeenCalled();
+    expect(m.idsForAudience).not.toHaveBeenCalled();
+    expect(m.createMany).not.toHaveBeenCalled();
   });
 
   it("sends nothing to an audience that has emptied", async () => {
