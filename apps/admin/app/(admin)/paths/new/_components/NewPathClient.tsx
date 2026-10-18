@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState, useState } from "react";
+import React, { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { createPathAction, type CreatePathState } from "../../_actions/path-actions";
 import { Select } from "@cyberlearn/ui";
@@ -401,6 +401,7 @@ function LessonPicker({
   onClose: () => void;
 }) {
   const [q, setQ] = useState("");
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const filtered = available.filter(
     (l) =>
       !selected.includes(l.id) &&
@@ -433,6 +434,9 @@ function LessonPicker({
         onClick={(e) => {
           e.stopPropagation();
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
       >
         {/* header */}
         <div
@@ -455,31 +459,40 @@ function LessonPicker({
               color: "#B8B5D1",
             }}
           >
-            <span style={{ color: "#7F7BA9" }}>{"// "}</span>AJOUTER UNE LEÇON
+            <span style={{ color: "#7F7BA9" }}>{"// "}</span>AJOUTER DES LEÇONS
+            <span style={{ color: "#7F7BA9", marginLeft: 10, letterSpacing: "0.04em" }}>
+              {selected.length} dans le parcours
+            </span>
           </span>
           <button
             type="button"
             onClick={onClose}
+            className="adm-btn-ghost"
             style={{
               background: "none",
-              border: 0,
-              color: "#7F7BA9",
+              border: `1px solid ${BORDER}`,
+              color: "#B8B5D1",
               cursor: "pointer",
               fontFamily: MONO,
-              fontSize: 13,
+              fontSize: 11,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              padding: "6px 12px",
             }}
           >
-            ✕
+            Terminé
           </button>
         </div>
         {/* search */}
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
           <input
+            ref={searchRef}
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
             }}
             placeholder="Rechercher…"
+            aria-label="Rechercher une leçon"
             autoFocus
             style={{ ...BASE_INPUT, padding: "10px 14px" }}
           />
@@ -508,9 +521,12 @@ function LessonPicker({
                 <button
                   key={l.id}
                   type="button"
+                  // The picker stays open: a path is built several lessons at
+                  // a time, and the lesson just added leaves the list. Focus
+                  // goes back to the search, since the button it was on is gone.
                   onClick={() => {
                     onAdd(l);
-                    onClose();
+                    searchRef.current?.focus();
                   }}
                   style={{
                     width: "100%",

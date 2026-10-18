@@ -593,4 +593,32 @@ export const lessonRepository = {
       },
     });
   },
+
+  /**
+   * Every prerequisite link of the catalogue, for the console's cycle check
+   * before a lesson's prerequisites change. A few rows per lesson: the whole
+   * graph is read once rather than walked query by query.
+   */
+  async findPrerequisiteEdges(
+    db: Prisma.TransactionClient = prisma,
+  ): Promise<{ lessonId: string; prerequisiteId: string }[]> {
+    return db.lessonPrerequisite.findMany({ select: { lessonId: true, prerequisiteId: true } });
+  },
+
+  /**
+   * Gives a lesson exactly these prerequisites. Runs in the caller's
+   * transaction, which also checked them and writes the audit line.
+   */
+  async replacePrerequisites(
+    lessonId: string,
+    prerequisiteIds: readonly string[],
+    db: Prisma.TransactionClient = prisma,
+  ): Promise<void> {
+    await db.lessonPrerequisite.deleteMany({ where: { lessonId } });
+    if (prerequisiteIds.length === 0) return;
+    await db.lessonPrerequisite.createMany({
+      data: prerequisiteIds.map((prerequisiteId) => ({ lessonId, prerequisiteId })),
+      skipDuplicates: true,
+    });
+  },
 };
