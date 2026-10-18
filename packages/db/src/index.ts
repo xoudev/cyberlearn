@@ -186,6 +186,7 @@ export {
   cronRunAction,
   cronRunFrom,
   CRON_RUN_TARGET,
+  WITHOUT_CRON_RUNS,
   type CronJobRuns,
   type CronRunInput,
   type CronRunSummary,

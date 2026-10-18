@@ -137,6 +137,8 @@ export interface AuditListParams {
   from: string | undefined;
   /** Last day shown, included. */
   to: string | undefined;
+  /** The scheduled jobs' runs shown too (`?crons=1`): left out by default, nobody did them. */
+  crons: boolean;
   dir: SortDir;
   page: number;
 }
@@ -148,9 +150,23 @@ export function parseAuditListParams(raw: RawParams): AuditListParams {
     action: valid(actionSchema, first(raw, "action")),
     from: dayParam(raw, "from"),
     to: dayParam(raw, "to"),
+    crons: first(raw, "crons") === "1",
     dir: sortParam(raw, ["date"])?.dir ?? "desc",
     page: pageParam(raw),
   };
+}
+
+/**
+ * Whether the list shows the jobs' runs: when asked, and when the filter
+ * itself names them (a "cron." action, the "Cron" target), which would
+ * otherwise match nothing.
+ */
+export function showsCronRuns(params: AuditListParams): boolean {
+  return (
+    params.crons ||
+    params.action?.startsWith("cron.") === true ||
+    params.target.toLowerCase() === "cron"
+  );
 }
 
 /**
@@ -174,6 +190,7 @@ export function auditFilterOf(params: AuditListParams): AuditFilter {
     action: params.action,
     from: params.from !== undefined ? parisDayStart(params.from) : undefined,
     until: params.to !== undefined ? parisDayEnd(params.to) : undefined,
+    hideCronRuns: !showsCronRuns(params),
   };
 }
 
@@ -193,6 +210,7 @@ export function auditListSearch(params: AuditListParams): Record<string, string>
   if (params.action !== undefined) out.action = params.action;
   if (params.from !== undefined) out.from = params.from;
   if (params.to !== undefined) out.to = params.to;
+  if (params.crons) out.crons = "1";
   if (params.dir === "asc") out.sort = sortValue("date", "asc");
   if (params.page > 1) out.page = String(params.page);
   return out;

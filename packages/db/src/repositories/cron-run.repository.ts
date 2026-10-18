@@ -16,6 +16,15 @@ import { prisma } from "../prisma.js";
 /** The audit log's targetType for a job's run. */
 export const CRON_RUN_TARGET = "Cron";
 
+/**
+ * The audit log without the jobs' runs: what people did. The dashboard's feed
+ * reads it, and /audit by default, so the runs of a day (about ten) do not
+ * push an administrator's gestures out of sight.
+ */
+export const WITHOUT_CRON_RUNS = {
+  targetType: { not: CRON_RUN_TARGET },
+} as const satisfies Prisma.AuditLogWhereInput;
+
 /** The audit action a job's runs are written under: "cron.retention". */
 export function cronRunAction(job: string): string {
   return `cron.${job}`;

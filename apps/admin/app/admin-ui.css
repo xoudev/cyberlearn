@@ -905,6 +905,26 @@
 .a-filter input[type="date"] {
   color-scheme: dark;
 }
+/* A yes or no among the filters, as tall as the fields beside it. */
+.a-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--a-fg);
+  cursor: pointer;
+}
+.a-filter-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--a-accent);
+}
 .a-filter-actions {
   display: flex;
   flex-wrap: wrap;

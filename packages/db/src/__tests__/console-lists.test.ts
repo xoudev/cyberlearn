@@ -218,6 +218,13 @@ describe("auditWhere", () => {
   it("matches everything with no filter", () => {
     expect(auditWhere({ actor: " ", target: "", action: "" })).toEqual({ AND: [] });
   });
+
+  it("leaves the scheduled jobs' runs out only when asked", () => {
+    expect(auditWhere({ hideCronRuns: true })).toEqual({
+      AND: [{ targetType: { not: "Cron" } }],
+    });
+    expect(auditWhere({ hideCronRuns: false })).toEqual({ AND: [] });
+  });
 });
 
 describe("auditLogRepository", () => {

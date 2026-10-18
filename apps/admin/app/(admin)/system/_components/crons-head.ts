@@ -12,7 +12,7 @@ export const CRONS_HEADER = {
   crumbs: [{ label: "Système" }] as const satisfies readonly [Crumb],
   title: "Tâches planifiées",
   description:
-    "Les tâches que Vercel lance chaque nuit, et celle que cron-job.org appelle toutes les 6 h. Chaque passage est consigné dans l'audit log sous cron.<nom> : le dernier, sa durée, ce qu'il a fait, et la dernière erreur.",
+    "Les tâches que Vercel lance chaque nuit, et celle que cron-job.org appelle toutes les 6 h. Chaque passage est consigné dans l'audit log sous cron.<nom>, où il n'apparaît que sur demande (filtre « Tâches planifiées ») : le dernier, sa durée, ce qu'il a fait, et la dernière erreur.",
 };
 
 export const CRON_KPI_LABELS = ["En ordre", "En échec", "En retard", "Jamais vues"] as const;

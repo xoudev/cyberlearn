@@ -14,6 +14,7 @@ import {
   parsePendingListParams,
   parseUserListParams,
   pendingListSearch,
+  showsCronRuns,
   userListSearch,
   userQueryOf,
   withKnownAction,
@@ -96,6 +97,7 @@ describe("the audit log's parameters", () => {
       action: "admin.user.mfa_reset",
       from: "2026-10-01",
       to: "2026-10-07",
+      crons: false,
       dir: "asc",
       page: 2,
     });
@@ -141,6 +143,20 @@ describe("the audit log's parameters", () => {
     expect(parisDayEnd("2026-12-31")).toEqual(new Date("2026-12-31T23:00:00Z"));
     // The day the clocks go back is 25 hours long.
     expect(parisDayEnd("2026-10-25")).toEqual(new Date("2026-10-25T23:00:00Z"));
+  });
+
+  it("hides the scheduled jobs' runs unless asked, or named by the filter", () => {
+    expect(auditFilterOf(parseAuditListParams({})).hideCronRuns).toBe(true);
+
+    const asked = parseAuditListParams({ crons: "1" });
+    expect(auditFilterOf(asked).hideCronRuns).toBe(false);
+    expect(auditListSearch(asked)).toEqual({ crons: "1" });
+    // Anything but "1" is the default, and a link leaves the default out.
+    expect(parseAuditListParams({ crons: "yes" }).crons).toBe(false);
+
+    expect(showsCronRuns(parseAuditListParams({ action: "cron.retention" }))).toBe(true);
+    expect(showsCronRuns(parseAuditListParams({ target: "cron" }))).toBe(true);
+    expect(showsCronRuns(parseAuditListParams({ action: "lesson.create" }))).toBe(false);
   });
 
   it("has no date bound without a day", () => {
