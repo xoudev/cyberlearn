@@ -76,6 +76,12 @@ export interface LessonUpdatePreview {
   hash: string;
   fields: LessonFieldChange[];
   hunks: LessonDiffHunk[];
+  /**
+   * The content changes over a stretch too long to compare line by line (a
+   * file rewritten from top to bottom): no passage is shown, and `added` and
+   * `removed` count the whole stretch, which is the most that changes.
+   */
+  hunksOmitted: boolean;
   added: number;
   removed: number;
   quizImpacts: LessonQuizImpact[];

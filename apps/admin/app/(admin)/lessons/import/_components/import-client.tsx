@@ -14,7 +14,13 @@ import {
   importLessonBatchAction,
   updateLessonFromImportAction,
 } from "../actions";
-import { DiffHunks, FieldChanges, LessonUpdateNotes } from "../../_components/lesson-diff";
+import {
+  changedLines,
+  DiffHunks,
+  FieldChanges,
+  LessonUpdateNotes,
+  lineCounts,
+} from "../../_components/lesson-diff";
 
 const EXAMPLE_MDX = `---
 refCode: CL-LSN-001-V01
@@ -91,7 +97,8 @@ function updateOf(file: BatchFile | undefined): LessonUpdatePreview | null {
 }
 
 function isUnchanged(update: LessonUpdatePreview): boolean {
-  return update.fields.length === 0 && update.hunks.length === 0;
+  // The counts, not the passages: a content too changed to compare has none.
+  return update.fields.length === 0 && update.added + update.removed === 0;
 }
 
 /** What the batch has written so far: new lessons, and lessons brought up to date. */
@@ -1075,7 +1082,7 @@ function ValidationPanel({
             {STATUS_LABEL[update.status] ?? update.status}).{" "}
             {isUnchanged(update)
               ? "Le fichier ne change rien."
-              : `Le fichier change ${String(update.fields.length)} champ${update.fields.length > 1 ? "s" : ""} et ${String(update.added + update.removed)} ligne${update.added + update.removed > 1 ? "s" : ""} du contenu.`}
+              : `Le fichier change ${String(update.fields.length)} champ${update.fields.length > 1 ? "s" : ""} et ${changedLines(update)} du contenu.`}
           </p>
           {!isUnchanged(update) && (
             <button type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={onShowDiff}>
@@ -1184,7 +1191,6 @@ function UpdatePanel({
   onConfirm: () => void;
 }) {
   const unchanged = isUnchanged(update);
-  const lines = update.added + update.removed;
   return (
     <div className="import-update">
       <div className="a-sync-card-title">
@@ -1195,9 +1201,7 @@ function UpdatePanel({
         <Link href={`/lessons/${update.lessonId}/edit`} className="a-sync-name">
           {update.title}
         </Link>
-        <div className="a-sync-file">
-          Leçon en base · +{update.added} −{update.removed} ligne{lines > 1 ? "s" : ""}
-        </div>
+        <div className="a-sync-file">Leçon en base · {lineCounts(update)}</div>
       </div>
 
       {unchanged ? (
@@ -1213,8 +1217,7 @@ function UpdatePanel({
             <div className="a-sync-confirm">
               <p>
                 « {update.title} » sera réécrite avec ce fichier : {update.fields.length} champ
-                {update.fields.length > 1 ? "s" : ""} et {lines} ligne{lines > 1 ? "s" : ""} du
-                contenu changent.{" "}
+                {update.fields.length > 1 ? "s" : ""} et {changedLines(update)} du contenu changent.{" "}
                 {update.status === "PUBLISHED"
                   ? "Elle est publiée : le site et l'app afficheront ce contenu dès la mise à jour."
                   : "Son statut ne change pas."}{" "}

@@ -79,6 +79,25 @@ export function ChangeList({ changes }: { changes: CatalogueChange[] }): React.R
   );
 }
 
+/**
+ * How many lines of the content change, as a sentence says it: "3 lignes",
+ * or "au plus 3 400 lignes" when the stretch was too long to compare.
+ */
+export function changedLines(
+  update: Pick<LessonUpdatePreview, "added" | "removed" | "hunksOmitted">,
+): string {
+  const n = update.added + update.removed;
+  return `${update.hunksOmitted ? "au plus " : ""}${String(n)} ligne${n > 1 ? "s" : ""}`;
+}
+
+/** The counts of a lesson's card: "+2 −1 lignes", "au plus" when not compared line by line. */
+export function lineCounts(
+  update: Pick<LessonUpdatePreview, "added" | "removed" | "hunksOmitted">,
+): string {
+  const n = update.added + update.removed;
+  return `+${String(update.added)} −${String(update.removed)} ligne${n > 1 ? "s" : ""}${update.hunksOmitted ? " au plus" : ""}`;
+}
+
 /** A lesson's fields its file changes, old value then new. */
 export function FieldChanges({
   fields,
@@ -99,15 +118,25 @@ export function FieldChanges({
 
 /**
  * What an update would also replace or leave as it is: edits made in the
- * console, quizzes already answered, a slug the file names differently.
+ * console, quizzes already answered, a slug the file names differently; and
+ * a content too changed for its passages to be shown.
  */
 export function LessonUpdateNotes({
   update,
 }: {
-  update: Pick<LessonUpdatePreview, "editedInConsoleAt" | "quizImpacts" | "slugDiffers">;
+  update: Pick<
+    LessonUpdatePreview,
+    "editedInConsoleAt" | "quizImpacts" | "slugDiffers" | "hunksOmitted"
+  >;
 }): React.ReactElement {
   return (
     <>
+      {update.hunksOmitted ? (
+        <p className="a-sync-warn" data-tone="warning">
+          Le contenu change sur trop de lignes d&apos;un seul tenant pour être comparé ligne à ligne
+          : les passages ne sont pas affichés. Relis le fichier avant de confirmer.
+        </p>
+      ) : null}
       {update.editedInConsoleAt !== null ? (
         <p className="a-sync-warn" data-tone="warning">
           Modifiée dans l&apos;éditeur le {DATE.format(update.editedInConsoleAt)}, après son dernier

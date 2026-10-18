@@ -29,7 +29,13 @@ import {
 } from "@/lib/services/repository-import.service";
 import type { CatalogueChange } from "@cyberlearn/db/catalogue";
 import { SYNC_HEADER, SYNC_KPI_LABELS } from "../_components/lesson-headers";
-import { ChangeList, DiffHunks, FieldChanges, LessonUpdateNotes } from "../_components/lesson-diff";
+import {
+  ChangeList,
+  DiffHunks,
+  FieldChanges,
+  LessonUpdateNotes,
+  lineCounts,
+} from "../_components/lesson-diff";
 import { PublishCatalogueButton, RunAllButton, RunOneButton } from "./_components/sync-controls";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -115,8 +121,7 @@ function UpdateCard({ u }: { u: LessonUpdate }): React.ReactElement {
             {u.title}
           </Link>
           <div className="a-sync-file">
-            content/lessons/{u.file} · +{u.added} −{u.removed} ligne
-            {u.added + u.removed > 1 ? "s" : ""}
+            content/lessons/{u.file} · {lineCounts(u)}
           </div>
         </div>
         <RunOneButton kind="update" target={{ refCode: u.refCode, hash: u.hash, title: u.title }} />

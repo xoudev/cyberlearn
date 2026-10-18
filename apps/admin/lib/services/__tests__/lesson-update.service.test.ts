@@ -24,7 +24,7 @@ vi.mock("@cyberlearn/db", () => ({
   lessonRepository: { findPrerequisiteEdges: m.edges },
 }));
 
-const { applyLessonContentUpdate, fieldsOfRow, lessonHash } = await import(
+const { applyLessonContentUpdate, compareLesson, fieldsOfRow, lessonHash } = await import(
   "../lesson-update.service"
 );
 
@@ -215,5 +215,35 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
   it("reads no link for a file without prerequisites", async () => {
     await applyLessonContentUpdate(FILE, SEEN, "admin-1", source);
     expect(m.edges).not.toHaveBeenCalled();
+  });
+});
+
+describe("compareLesson", () => {
+  const context = { answers: new Map<string, number>(), editedInConsoleAt: null };
+  const lines = (word: string, count: number): string =>
+    Array.from({ length: count }, (_, i) => `${word} ${String(i)}`).join(String.fromCharCode(10));
+
+  it("shows the passages of a content compared line by line", () => {
+    const preview = compareLesson(
+      ROW,
+      { slug: ROW.slug, fields: fieldsOfRow({ ...ROW, contentMdx: BODY }) },
+      context,
+    );
+    expect(preview).toMatchObject({ added: 1, removed: 1, hunksOmitted: false });
+    expect(preview.hunks).toHaveLength(1);
+  });
+
+  it("counts, without passages, a content rewritten over too many lines to compare", () => {
+    const row = { ...ROW, contentMdx: lines("avant", 2_100) };
+    const file = {
+      slug: ROW.slug,
+      fields: fieldsOfRow({ ...ROW, contentMdx: lines("après", 2_100) }),
+    };
+    expect(compareLesson(row, file, context)).toMatchObject({
+      hunks: [],
+      hunksOmitted: true,
+      added: 2_100,
+      removed: 2_100,
+    });
   });
 });

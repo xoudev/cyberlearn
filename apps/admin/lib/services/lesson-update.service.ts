@@ -8,7 +8,7 @@ import type {
   LessonUpdatePreview,
 } from "@cyberlearn/types";
 import { findPrerequisiteCycle } from "@/lib/lesson-prerequisites";
-import { diffHunks, diffLines, diffStats } from "@/lib/text-diff";
+import { compareLines, diffHunks, diffStats } from "@/lib/text-diff";
 import { checkLessonFile, type LessonFileMetadata } from "./lesson-file-check";
 
 /**
@@ -138,7 +138,10 @@ export function compareLesson(
 ): LessonUpdatePreview {
   const before = fieldsOfRow(row);
   const after = file.fields;
-  const { added, removed } = diffStats(diffLines(before.contentMdx, after.contentMdx));
+  // One diff for the counts and the passages: on a long lesson it is the
+  // costly part of the comparison.
+  const diff = compareLines(before.contentMdx, after.contentMdx);
+  const { added, removed } = diffStats(diff.lines);
   // Reading a lesson's quizzes parses its MDX, twice: only worth it where
   // somebody answered one. On 189 changed lessons, parsing them all took most
   // of a ten-second page load.
@@ -156,7 +159,8 @@ export function compareLesson(
     status: row.status,
     hash: lessonHash(before),
     fields: fieldChanges(before, after),
-    hunks: diffHunks(before.contentMdx, after.contentMdx, 2),
+    hunks: diff.exact ? diffHunks(diff.lines, 2) : [],
+    hunksOmitted: !diff.exact,
     added,
     removed,
     quizImpacts,
