@@ -4,19 +4,14 @@
  * Longest common subsequence over lines. Lessons run to a few hundred lines,
  * so the quadratic table stays small (a 600-line lesson against itself is
  * 360 000 cells), and no dependency is needed for it.
+ *
+ * The shapes are @cyberlearn/types', where the import's result names them.
  */
 
-export type DiffLine =
-  | { kind: "same"; text: string; before: number; after: number }
-  | { kind: "removed"; text: string; before: number }
-  | { kind: "added"; text: string; after: number };
+import type { LessonDiffHunk, LessonDiffLine } from "@cyberlearn/types";
 
-export interface DiffHunk {
-  /** 1-based first line of the hunk in the old and new text. */
-  beforeStart: number;
-  afterStart: number;
-  lines: DiffLine[];
-}
+export type DiffLine = LessonDiffLine;
+export type DiffHunk = LessonDiffHunk;
 
 export function splitLines(text: string): string[] {
   const normalized = text.replace(/\r\n?/g, "\n");
