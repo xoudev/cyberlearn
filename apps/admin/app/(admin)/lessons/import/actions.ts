@@ -210,17 +210,14 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
   // lesson, the differences to update it instead.
   if (validationResult.update) return { status: "exists", result: validationResult };
 
-  // Import
-  const { lessonId, refCode } = await importValidatedLesson(
+  // Import: the lesson, its first version and its `lesson.import.success`
+  // audit row, in one transaction.
+  const { lessonId } = await importValidatedLesson(
     validationResult.metadata,
     validationResult.body,
     admin.id,
+    { refCode: validationResult.metadata.refCode, contentHash },
   );
-
-  await writeAuditLog(admin.id, "lesson.import.success", lessonId, {
-    refCode,
-    contentHash,
-  });
 
   return { status: "success", lessonId, warnings: validationResult.warnings };
 }
@@ -427,7 +424,12 @@ const updateInputSchema = z.object({
 });
 
 export type ImportUpdateResult =
-  | { status: "success"; lessonId: string }
+  /**
+   * `version`: the lesson's version after the write. `draftKept`: a studio
+   * draft was open on the lesson; it stays, and the studio says the lesson
+   * moved under it.
+   */
+  | { status: "success"; lessonId: string; version: number; draftKept: boolean }
   | {
       status: "refused";
       reason: "not_found" | "stale" | "invalid" | "prerequisite" | "unavailable";
@@ -441,8 +443,9 @@ export type ImportUpdateResult =
  * Writes a file over the lesson that holds its refCode, once the admin has
  * seen the differences and confirmed. `hash` is the fingerprint of the lesson
  * as the validation showed it: a lesson that changed since is not written
- * over, and the admin validates again to see what it is now. Logged
- * `lesson.import.update`, and counted in the same hourly budget as imports.
+ * over, and the admin validates again to see what it is now. Published as a
+ * new version of the lesson (IMPORT), logged `lesson.import.update`, and
+ * counted in the same hourly budget as imports.
  */
 export async function updateLessonFromImportAction(input: {
   name: string;
@@ -476,5 +479,10 @@ export async function updateLessonFromImportAction(input: {
       errors: result.errors ?? [],
     };
   }
-  return { status: "success", lessonId: result.lessonId };
+  return {
+    status: "success",
+    lessonId: result.lessonId,
+    version: result.version,
+    draftKept: result.draftKept,
+  };
 }

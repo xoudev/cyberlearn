@@ -67,7 +67,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.findByRefCode.mockResolvedValue(ROW);
   m.links.mockResolvedValue([]);
-  m.write.mockResolvedValue(true);
+  m.write.mockResolvedValue({ ok: true, version: 4, draftKept: false });
   m.edges.mockResolvedValue([]);
   m.refCodes.mockImplementation((ids: string[]) =>
     Promise.resolve(new Map(ids.map((id) => [id, CODES[id] ?? id]))),
@@ -95,7 +95,7 @@ describe("applyLessonContentUpdate from the import", () => {
       kind: "import",
       file: "lecon.mdx",
     });
-    expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
+    expect(result).toEqual({ ok: true, lessonId: "lesson-1", version: 4, draftKept: false });
     const [write] = m.write.mock.calls[0] as [
       { fields: { contentMdx: string; xpReward: number }; audit: Record<string, unknown> },
     ];
@@ -207,9 +207,26 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
       "admin-1",
       source,
     );
-    expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
+    expect(result).toEqual({ ok: true, lessonId: "lesson-1", version: 4, draftKept: false });
     const [write] = m.write.mock.calls[0] as [{ prerequisiteIds: string[] }];
     expect(write.prerequisiteIds).toEqual(["lesson-2"]);
+  });
+
+  it("keeps a CRLF body as stored when the file only changes the prerequisites", async () => {
+    // Stored with CRLF (a file imported as it was): the comparison reads the
+    // same text, so the write must too, or the publish would see a change.
+    const crlf = { ...ROW, contentMdx: BODY.replaceAll("\n", "\r\n"), xpReward: 50 };
+    m.findByRefCode.mockResolvedValue(crlf);
+    m.links.mockResolvedValue([{ id: "lesson-2", refCode: "CL-LSN-002-V01" }]);
+    const result = await applyLessonContentUpdate(
+      requiring("CL-LSN-002-V01"),
+      lessonHash(fieldsOfRow(crlf)),
+      "admin-1",
+      source,
+    );
+    expect(result).toMatchObject({ ok: true });
+    const [write] = m.write.mock.calls[0] as [{ fields: { contentMdx: string } }];
+    expect(write.fields.contentMdx).toBe(crlf.contentMdx);
   });
 
   it("reads no link for a file without prerequisites", async () => {
@@ -219,7 +236,11 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
 });
 
 describe("compareLesson", () => {
-  const context = { answers: new Map<string, number>(), editedInConsoleAt: null };
+  const context = {
+    answers: new Map<string, number>(),
+    editedInConsoleAt: null,
+    draftSavedAt: null,
+  };
   const lines = (word: string, count: number): string =>
     Array.from({ length: count }, (_, i) => `${word} ${String(i)}`).join(String.fromCharCode(10));
 
@@ -231,6 +252,23 @@ describe("compareLesson", () => {
     );
     expect(preview).toMatchObject({ added: 1, removed: 1, hunksOmitted: false });
     expect(preview.hunks).toHaveLength(1);
+  });
+
+  it("mentions an open studio draft only when the content changes", () => {
+    const saved = new Date("2026-10-18T09:30:00Z");
+    const withDraft = { ...context, draftSavedAt: saved };
+    const prerequisitesOnly = {
+      slug: ROW.slug,
+      fields: { ...fieldsOfRow(ROW), prerequisites: ["CL-LSN-002-V01"] },
+    };
+    // Same content, same fingerprint: the draft's base still holds.
+    expect(compareLesson(ROW, prerequisitesOnly, withDraft).draftSavedAt).toBeNull();
+
+    const retitled = {
+      slug: ROW.slug,
+      fields: { ...prerequisitesOnly.fields, title: "Un autre titre" },
+    };
+    expect(compareLesson(ROW, retitled, withDraft).draftSavedAt).toEqual(saved);
   });
 
   it("counts, without passages, a content rewritten over too many lines to compare", () => {

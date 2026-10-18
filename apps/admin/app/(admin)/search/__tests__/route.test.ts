@@ -146,7 +146,7 @@ describe("POST /search", () => {
           id: LESSON,
           label: "Le modèle OSI",
           sublabel: "CL-LSN-01001-V01 · Archivé",
-          href: `/lessons/${LESSON}/edit`,
+          href: `/lessons/${LESSON}`,
         },
       ],
       tickets: [

@@ -211,6 +211,34 @@ Mermaid. L'aperçu les montre sans bloquer le rendu ; la sauvegarde les
 refuse. Seul l'analyseur de Mermaid reste à la CI (`content:diagrams`, voir
 5.10) : la console ne dépend pas de Mermaid.
 
+Dans la console, une leçon s'ouvre dans son **studio** (`/lessons/<id>`) :
+sa fiche dans un rail à gauche, l'éditeur et l'aperçu du site à droite, sur
+toute la largeur de la fenêtre. Ce qui est tapé n'atteint pas la leçon : il
+part dans son brouillon (`lesson_drafts`) après chaque pause de deux
+secondes, ou tout de suite avec ⌘S (Ctrl+S), et la barre du studio dit où il
+en est. Les apprenants, sur le site comme dans l'app, lisent la version
+publiée jusqu'à « Publier les changements », qui refuse ce que la sauvegarde
+refusait, puis recopie le brouillon dans la leçon et garde la version
+précédente. La liste des versions, sous la fiche, remet n'importe laquelle
+dans le brouillon, à publier comme une modification. Le séparateur entre
+l'éditeur et l'aperçu se déplace (double-clic : largeur par défaut), et
+l'aperçu se cadre à la largeur d'un téléphone avec « MOBILE ». Le statut de la
+leçon, lui, s'applique tout de suite, à la version publiée. Une leçon de
+classe n'a ni brouillon ni versions : l'éditeur du professeur enregistre dans
+la leçon, avec le même ⌘S et la même alerte avant de quitter une page
+modifiée.
+
+L'import d'un fichier (« Mettre à jour » sur `/lessons/import`, ou une leçon
+créée) et la synchronisation avec le dépôt (`/lessons/sync`) publient par la
+même fonction que le studio (`lessonVersionRepository.publish`) : chaque
+écriture crée une version, marquée « Import » ou « Synchronisation » dans la
+liste du studio, et une seule ligne du journal d'audit. Une mise à jour est
+refusée si la leçon a changé depuis que ses différences ont été affichées. Un
+brouillon ouvert dans le studio n'est jamais touché : les différences le
+signalent avant de confirmer, et le studio, à sa prochaine ouverture, dit que
+la leçon a changé depuis le début du brouillon ; sa publication demande avant
+de remplacer ce que le fichier a écrit.
+
 L'éditeur s'ouvre en **blocs** : la leçon découpée en titres, en passages de
 Markdown et en composants, chacun sous forme de champs (ton et texte d'un
 encadré, question, options et bonne réponse d'un quiz, fichiers et

@@ -4,18 +4,18 @@ import React, { useId, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MultiSelect, type MultiSelectOption } from "@cyberlearn/ui";
-import { Card, Tag } from "../../../../_components/admin-ui";
-import { CONTENT_STATUS, type ContentStatus } from "../../../../_components/content-status";
+import { Card, Tag } from "../../../_components/admin-ui";
+import { CONTENT_STATUS, type ContentStatus } from "../../../_components/content-status";
 import {
   setLessonPathsAction,
   setLessonPrerequisitesAction,
   type LessonLinksResult,
-} from "../../../_actions/lesson-links-actions";
+} from "../../_actions/lesson-links-actions";
 
 /**
  * Where a lesson sits in the catalogue: the paths it is in, at which place and
  * in which module, and the lessons it requires. Both are saved here, each on
- * its own, apart from the lesson's form below.
+ * its own, apart from the studio above: neither goes through the draft.
  *
  * Client-side because the two lists are edited in place; the page reads
  * everything they show.

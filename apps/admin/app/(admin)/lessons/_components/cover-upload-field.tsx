@@ -29,16 +29,31 @@ const btnBase: React.CSSProperties = {
  * paste an image URL (re-hosted into the bucket) or upload a file. Both paths
  * store a `__cover:` marker in a hidden `coverImageUrl` field that the form
  * submits, and show a live preview.
+ *
+ * The lesson studio has no form to submit: it hears each change through
+ * `onChange`, and passes `keepPrevious`, since the cover it replaces is still
+ * the published lesson's, or a past version's, until a publish says otherwise.
  */
 export function CoverUploadField({
   initialMarker,
   initialPreview,
+  onChange,
+  keepPrevious = false,
 }: {
   initialMarker: string | null;
   initialPreview: string | null;
+  /** Each new marker, "" once the cover is removed, with the preview it shows for it. */
+  onChange?: (marker: string, preview: string | null) => void;
+  /** Never removes the cover it replaces from the bucket. */
+  keepPrevious?: boolean;
 }): React.ReactElement {
-  const [marker, setMarker] = useState(initialMarker ?? "");
-  const [preview, setPreview] = useState<string | null>(initialPreview);
+  const [marker, setMarkerState] = useState(initialMarker ?? "");
+  const [preview, setPreviewState] = useState<string | null>(initialPreview);
+  const setCover = (next: string, nextPreview: string | null): void => {
+    setMarkerState(next);
+    setPreviewState(nextPreview);
+    onChange?.(next, nextPreview);
+  };
   const [urlValue, setUrlValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, startTask] = useTransition();
@@ -51,8 +66,7 @@ export function CoverUploadField({
     error?: string;
   }): void {
     if (res.ok && res.marker) {
-      setMarker(res.marker);
-      setPreview(res.previewUrl ?? null);
+      setCover(res.marker, res.previewUrl ?? null);
       setUrlValue("");
     } else {
       setError(res.error ?? "Échec.");
@@ -66,7 +80,7 @@ export function CoverUploadField({
     setError(null);
     const fd = new FormData();
     fd.set("cover", file);
-    if (marker) fd.set("previous", marker);
+    if (marker && !keepPrevious) fd.set("previous", marker);
     startTask(async () => {
       applyResult(await uploadLessonCoverAction({}, fd));
     });
@@ -78,15 +92,14 @@ export function CoverUploadField({
     setError(null);
     const fd = new FormData();
     fd.set("url", u);
-    if (marker) fd.set("previous", marker);
+    if (marker && !keepPrevious) fd.set("previous", marker);
     startTask(async () => {
       applyResult(await importLessonCoverFromUrlAction({}, fd));
     });
   }
 
   function handleRemove(): void {
-    setMarker("");
-    setPreview(null);
+    setCover("", null);
     setUrlValue("");
     setError(null);
   }

@@ -239,12 +239,34 @@ export {
   LESSON_PREVIEW_TTL_MS,
 } from "./repositories/lesson-preview.repository.js";
 export {
+  lessonVersionRepository,
+  LESSON_CONTENT_SELECT,
+  LESSON_VERSIONS_LISTED,
+  lessonBaseOf,
+  lessonContentHash,
+  lessonContentOf,
+  sameLessonContent,
+  type LessonBase,
+  type LessonContent,
+  type LessonVersionRow,
+  type PublishLessonInput,
+  type PublishLessonResult,
+} from "./repositories/lesson-version.repository.js";
+export {
+  lessonDraftRepository,
+  type LessonDraftRow,
+  type PublishLessonDraftResult,
+  type SaveLessonDraftResult,
+} from "./repositories/lesson-draft.repository.js";
+export {
   lessonFileRepository,
   LESSON_FROM_FILE_ACTIONS,
   type LessonFileRow,
   type LessonOutsideFiles,
+  type LessonFileCreate,
   type LessonFileWrite,
   type LessonFileWriteAction,
+  type LessonFileWriteResult,
 } from "./repositories/lesson-file.repository.js";
 export {
   quizReportRepository,
@@ -432,6 +454,7 @@ export {
   LeagueDivision,
   XpSource,
   WrappedPeriod,
+  LessonVersionSource,
 } from "@prisma/client";
 export {
   ticketRepository,

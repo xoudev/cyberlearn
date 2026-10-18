@@ -53,6 +53,10 @@ const STATUS_LABEL: Record<string, string> = {
   ARCHIVED: "archivée",
 };
 
+/** Shown once a lesson that had a studio draft open is updated from its file. */
+const DRAFT_KEPT_WARNING =
+  "Le brouillon ouvert dans le studio est gardé tel quel : le studio signale que la leçon a changé depuis, et sa publication remplacerait ce contenu.";
+
 interface BatchFile {
   name: string;
   content: string;
@@ -340,7 +344,10 @@ export function ImportClient(): React.ReactElement {
                 ...f,
                 imported: {
                   lessonId: res.lessonId,
-                  warnings: f.validation?.warnings ?? [],
+                  warnings: [
+                    ...(f.validation?.warnings ?? []),
+                    ...(res.draftKept ? [DRAFT_KEPT_WARNING] : []),
+                  ],
                   updated: true,
                 },
               }
@@ -520,7 +527,7 @@ export function ImportClient(): React.ReactElement {
                 onOpenEditor={
                   f.imported
                     ? () => {
-                        router.push(`/lessons/${f.imported?.lessonId ?? ""}/edit`);
+                        router.push(`/lessons/${f.imported?.lessonId ?? ""}`);
                       }
                     : undefined
                 }
@@ -590,7 +597,7 @@ export function ImportClient(): React.ReactElement {
             <button
               type="button"
               onClick={() => {
-                router.push(`/lessons/${current.imported?.lessonId ?? ""}/edit`);
+                router.push(`/lessons/${current.imported?.lessonId ?? ""}`);
               }}
               style={{
                 marginTop: 10,
@@ -1198,7 +1205,7 @@ function UpdatePanel({
           <span className="a-sync-ref">{update.refCode}</span>
           <span className="a-sync-ref">{STATUS_LABEL[update.status] ?? update.status}</span>
         </div>
-        <Link href={`/lessons/${update.lessonId}/edit`} className="a-sync-name">
+        <Link href={`/lessons/${update.lessonId}`} className="a-sync-name">
           {update.title}
         </Link>
         <div className="a-sync-file">Leçon en base · {lineCounts(update)}</div>

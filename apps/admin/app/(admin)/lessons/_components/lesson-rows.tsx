@@ -20,7 +20,7 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
       cells: [
         // The title leads; ref, slug and length are the line under it.
         <div key="t" style={{ minWidth: 220, maxWidth: 420 }}>
-          <Link href={`/lessons/${lesson.id}/edit`} className="a-row-link">
+          <Link href={`/lessons/${lesson.id}`} className="a-row-link">
             <span className="a-row-link-title" style={{ fontSize: 14 }}>
               {lesson.title}
             </span>

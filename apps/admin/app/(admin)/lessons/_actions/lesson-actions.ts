@@ -130,8 +130,9 @@ export async function createLessonAction(
   }
   const pathRefCode = new Map(paths.map((path) => [path.id, path.refCode]));
 
+  let createdId: string;
   try {
-    await prisma.$transaction(async (tx) => {
+    createdId = await prisma.$transaction(async (tx) => {
       const lesson = await tx.lesson.create({
         data: {
           ...data,
@@ -161,6 +162,7 @@ export async function createLessonAction(
           },
         },
       });
+      return lesson.id;
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
@@ -177,7 +179,9 @@ export async function createLessonAction(
     return { error: "Erreur lors de la création.", problems: [] };
   }
 
-  redirect(withSavedNotice("/lessons", "created"));
+  // Into its studio: a lesson is created to be written, and the list said
+  // nothing of where it had gone.
+  redirect(withSavedNotice(`/lessons/${createdId}`, "created"));
 }
 
 // ── Next refCode ──────────────────────────────────────────────────────────────

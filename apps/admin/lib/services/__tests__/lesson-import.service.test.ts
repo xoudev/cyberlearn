@@ -7,6 +7,7 @@ const m = vi.hoisted(() => ({
   findMany: vi.fn(),
   answers: vi.fn(),
   edits: vi.fn(),
+  drafts: vi.fn(),
   edges: vi.fn(),
   refCodes: vi.fn(),
 }));
@@ -19,6 +20,7 @@ vi.mock("@cyberlearn/db", () => ({
     findByRefCodesForLinks: m.findMany,
     quizAnswerCounts: m.answers,
     consoleEditsSinceFile: m.edits,
+    openDrafts: m.drafts,
     refCodesByIds: m.refCodes,
   },
   lessonRepository: { findPrerequisiteEdges: m.edges },
@@ -52,6 +54,7 @@ beforeEach(() => {
   m.findMany.mockResolvedValue([]); // no prerequisite found in DB
   m.answers.mockResolvedValue([]);
   m.edits.mockResolvedValue(new Map());
+  m.drafts.mockResolvedValue(new Map());
   m.edges.mockResolvedValue([]);
   m.refCodes.mockResolvedValue(new Map());
 });
@@ -98,6 +101,7 @@ describe("validateMdxContent - a refCode already in the database", () => {
       removed: 1,
       slugDiffers: null,
       editedInConsoleAt: null,
+      draftSavedAt: null,
     });
     expect(result.update?.hash).toMatch(/^[a-f0-9]{64}$/);
     expect(
@@ -127,6 +131,24 @@ describe("validateMdxContent - a refCode already in the database", () => {
     m.edits.mockResolvedValue(new Map([["lesson-1", edited]]));
     const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
     expect(result.update?.editedInConsoleAt).toEqual(edited);
+  });
+
+  it("says when a studio draft is open on the lesson, which the update keeps", async () => {
+    const saved = new Date("2026-10-18T09:30:00Z");
+    m.findByRefCode.mockResolvedValue(
+      lessonRow("CL-LSN-002-V01", body.replace("ordinaire", "banal")),
+    );
+    m.drafts.mockResolvedValue(new Map([["lesson-1", saved]]));
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.update?.draftSavedAt).toEqual(saved);
+    expect(m.drafts).toHaveBeenCalledWith(["lesson-1"]);
+  });
+
+  it("says nothing of the draft when the file would leave the content as it is", async () => {
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    m.drafts.mockResolvedValue(new Map([["lesson-1", new Date("2026-10-18T09:30:00Z")]]));
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.update?.draftSavedAt).toBeNull();
   });
 
   it("refuses a prerequisite that already requires the lesson, before anything is confirmed", async () => {

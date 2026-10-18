@@ -95,7 +95,7 @@ export default async function LessonRatingsPage({
   return (
     <main className="a-page">
       <PageHeader
-        crumbs={[...LESSON_CRUMBS, { label: lesson.title, href: `/lessons/${id}/edit` }]}
+        crumbs={[...LESSON_CRUMBS, { label: lesson.title, href: `/lessons/${id}` }]}
         title={LESSON_RATINGS_HEADER.title}
         description={LESSON_RATINGS_HEADER.description}
       />

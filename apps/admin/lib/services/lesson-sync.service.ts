@@ -204,9 +204,10 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
   });
 
   const ids = pending.map((p) => p.row.id);
-  const [answerCounts, edits] = await Promise.all([
+  const [answerCounts, edits, drafts] = await Promise.all([
     lessonFileRepository.quizAnswerCounts(ids),
     lessonFileRepository.consoleEditsSinceFile(ids),
+    lessonFileRepository.openDrafts(ids),
   ]);
   const answers = new Map<string, Map<string, number>>();
   for (const c of answerCounts) {
@@ -219,6 +220,7 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
     ...compareLesson(row, file, {
       answers: answers.get(row.id) ?? new Map(),
       editedInConsoleAt: edits.get(row.id) ?? null,
+      draftSavedAt: drafts.get(row.id) ?? null,
     }),
     file: file.file,
   }));

@@ -32,6 +32,9 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *                   rather than by a statement here: a lesson someone else is
  *                   part-way through must not go with its author, and the
  *                   byline then says the account is gone.
+ *   LessonDraft     updatedById → null, and LessonVersion publishedById → null,
+ *                   by their foreign keys too: a draft and a lesson's history
+ *                   are the lesson's, and stay with it.
  *
  * Hard-deleted by Prisma cascade: profile, preferences, placement test, lesson
  * and path and challenge progress, hint reveals, badges, review cards and

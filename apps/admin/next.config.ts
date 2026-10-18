@@ -41,6 +41,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // The lesson form became the lesson's studio, at the lesson's own address.
+  // The old one still leads there: a bookmark, a link pasted in a ticket.
+  redirects: () =>
+    Promise.resolve([
+      { source: "/lessons/:id/edit", destination: "/lessons/:id", permanent: false },
+    ]),
   images: {
     // Next 16 raised the default to four hours. A badge icon replaced under the
     // same public URL would then stay stale that long; one minute is what the

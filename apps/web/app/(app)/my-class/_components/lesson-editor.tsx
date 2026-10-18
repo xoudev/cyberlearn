@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useActionState, useEffect, useState } from "react";
+import React, { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSaveShortcut, useUnsavedChangesGuard } from "@cyberlearn/ui/lesson-studio";
 import { MdxEditorPanel, useLessonPreview } from "@cyberlearn/ui/mdx-editor";
 import {
   createClassLessonAction,
@@ -30,7 +31,13 @@ import { Select } from "@cyberlearn/ui";
  * over the same fields. The difference is which action it posts to and what
  * happens afterwards - a new lesson opens so its author can see what the class
  * will see, a reopened one stays put so they can keep working.
+ *
+ * It shares the console studio's habits too (@cyberlearn/ui/lesson-studio):
+ * ⌘S saves, and leaving with something unsaved asks first. Not its draft: a
+ * class lesson is saved into the lesson, which only its class reads.
  */
+
+const LEAVE_WARNING = "Des modifications ne sont pas enregistrées. Quitter la page quand même ?";
 
 const CATEGORIES = [
   { value: "CYBERSEC", label: "Cybersécurité" },
@@ -99,6 +106,29 @@ export function LessonEditor({
   );
   const [mdx, setMdx] = useState(draft?.contentMdx ?? STARTER);
   const preview = useLessonPreview(refreshLessonPreviewAction);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Something typed since the page opened or since the last save that went
+  // through: leaving then asks first. Reset in the render that brings the
+  // save's answer, as React suggests for state that follows another value.
+  const [dirty, setDirty] = useState(false);
+  const [answered, setAnswered] = useState(state);
+  if (answered !== state) {
+    setAnswered(state);
+    if (state.ok === true) setDirty(false);
+  }
+  const touched = (): void => {
+    setDirty(true);
+  };
+  useUnsavedChangesGuard(dirty, LEAVE_WARNING);
+
+  // ⌘S saves a lesson being reopened, as in the console's studio. A new one
+  // is published for the class by its button alone: a shortcut is no way to
+  // put a lesson in front of a class.
+  const saveNow = (): void => {
+    formRef.current?.requestSubmit();
+  };
+  useSaveShortcut(saveNow, mode === "edit" && !pending);
 
   // A created lesson is worth opening: the point of writing one is what the
   // class ends up reading, and the rendered page is the only place that shows
@@ -109,7 +139,18 @@ export function LessonEditor({
   }, [createdSlug, router]);
 
   return (
-    <form action={formAction} className="tle-form">
+    <form
+      ref={formRef}
+      action={formAction}
+      // React 19 puts every field back to its defaultValue once the action has
+      // answered: a refused save showed its error over the old values, and the
+      // next save wrote them back. Cancelling that reset keeps what was typed.
+      onReset={(event) => {
+        event.preventDefault();
+      }}
+      onChange={touched}
+      className="tle-form"
+    >
       {mode === "create" ? (
         <input type="hidden" name="classId" value={classId} />
       ) : (
@@ -155,6 +196,7 @@ export function LessonEditor({
               required
               defaultValue={draft?.category ?? "CYBERSEC"}
               options={CATEGORIES}
+              onChange={touched}
             />
           </label>
 
@@ -165,6 +207,7 @@ export function LessonEditor({
               required
               defaultValue={draft?.difficulty ?? "BEGINNER"}
               options={DIFFICULTIES}
+              onChange={touched}
             />
           </label>
 
@@ -206,7 +249,16 @@ export function LessonEditor({
             Blocs ou code · aperçu rendu par le site · le même éditeur que la console
           </span>
         </div>
-        <MdxEditorPanel value={mdx} onChange={setMdx} preview={preview} problems={state.problems} />
+        <MdxEditorPanel
+          value={mdx}
+          onChange={(value) => {
+            setMdx(value);
+            setDirty(true);
+          }}
+          preview={preview}
+          problems={state.problems}
+          onSave={mode === "edit" ? saveNow : undefined}
+        />
       </div>
 
       <div className="tle-actions">

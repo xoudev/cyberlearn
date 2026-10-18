@@ -96,7 +96,7 @@ function OnlyInDatabaseSection({
             {lessons.map((l) => (
               <li key={l.lessonId}>
                 <span className="a-sync-ref">{l.refCode}</span>{" "}
-                <Link href={`/lessons/${l.lessonId}/edit`}>{l.title}</Link>{" "}
+                <Link href={`/lessons/${l.lessonId}`}>{l.title}</Link>{" "}
                 <span className="a-sync-file">{STATUS[l.status]?.label ?? l.status}</span>
               </li>
             ))}
@@ -117,7 +117,7 @@ function UpdateCard({ u }: { u: LessonUpdate }): React.ReactElement {
             <span className="a-sync-ref">{u.refCode}</span>
             <Tag tone={status.tone}>{status.label}</Tag>
           </div>
-          <Link href={`/lessons/${u.lessonId}/edit`} className="a-sync-name">
+          <Link href={`/lessons/${u.lessonId}`} className="a-sync-name">
             {u.title}
           </Link>
           <div className="a-sync-file">

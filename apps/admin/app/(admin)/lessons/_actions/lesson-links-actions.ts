@@ -22,7 +22,7 @@ export interface LessonLinksResult {
 }
 
 function revalidateLesson(lessonId: string): void {
-  revalidatePath(`/lessons/${lessonId}/edit`);
+  revalidatePath(`/lessons/${lessonId}`);
   revalidatePath("/lessons");
 }
 

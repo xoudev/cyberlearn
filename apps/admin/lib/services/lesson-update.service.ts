@@ -119,6 +119,8 @@ export interface LessonUpdateContext {
   answers: ReadonlyMap<string, number>;
   /** Last edit in the console since the lesson last came from a file. */
   editedInConsoleAt: Date | null;
+  /** When the studio draft open on the lesson was last saved, if one is. */
+  draftSavedAt: Date | null;
 }
 
 /** A file, as compared: its slug (never written) and the fields it would write. */
@@ -152,19 +154,26 @@ export function compareLesson(
       if (answers > 0) quizImpacts.push({ quizId, answers, change });
     }
   }
+  const fields = fieldChanges(before, after);
+  // A file that changes only the prerequisites writes no version: the
+  // content, and so the fingerprint a studio draft keeps, stays as it was, and
+  // the draft has nothing to be warned about.
+  const contentChanges =
+    before.contentMdx !== after.contentMdx || fields.some((f) => f.field !== "prerequisites");
   return {
     lessonId: row.id,
     refCode: row.refCode,
     title: row.title,
     status: row.status,
     hash: lessonHash(before),
-    fields: fieldChanges(before, after),
+    fields,
     hunks: diff.exact ? diffHunks(diff.lines, 2) : [],
     hunksOmitted: !diff.exact,
     added,
     removed,
     quizImpacts,
     editedInConsoleAt: context.editedInConsoleAt,
+    draftSavedAt: contentChanges ? context.draftSavedAt : null,
     slugDiffers: row.slug === file.slug ? null : { database: row.slug, file: file.slug },
   };
 }
@@ -174,13 +183,15 @@ export async function previewLessonUpdate(
   row: LessonFileRow,
   file: LessonFileFields,
 ): Promise<LessonUpdatePreview> {
-  const [counts, edits] = await Promise.all([
+  const [counts, edits, drafts] = await Promise.all([
     lessonFileRepository.quizAnswerCounts([row.id]),
     lessonFileRepository.consoleEditsSinceFile([row.id]),
+    lessonFileRepository.openDrafts([row.id]),
   ]);
   return compareLesson(row, file, {
     answers: new Map(counts.map((c) => [c.quizId, c.answers])),
     editedInConsoleAt: edits.get(row.id) ?? null,
+    draftSavedAt: drafts.get(row.id) ?? null,
   });
 }
 
@@ -217,7 +228,17 @@ export type LessonFileSource =
   | { kind: "import"; file: string };
 
 export type ApplyResult =
-  | { ok: true; lessonId: string }
+  | {
+      ok: true;
+      lessonId: string;
+      /** The lesson's version after the write. */
+      version: number;
+      /**
+       * A studio draft was open on the lesson the file gave a new version:
+       * kept, and the studio says the lesson moved under it.
+       */
+      draftKept: boolean;
+    }
   | {
       ok: false;
       reason: "unavailable" | "not_found" | "stale" | "invalid" | "prerequisite";
@@ -246,12 +267,14 @@ const REFUSALS = {
 
 /**
  * Writes a lesson file over the lesson that holds its refCode, after the same
- * checks as an import.
+ * checks as an import, and publishes it as the studio does: a new version,
+ * kept with its source, and one audit row (lessonFileRepository.writeFromFile).
  *
  * `expectedHash` is the fingerprint the admin saw: if the lesson changed
  * since (an edit in another tab), nothing is written. The write itself is
- * conditioned on the row's updatedAt, in the same statement, so an edit
- * landing between the check and the write cannot be overwritten either.
+ * conditioned on the row's updatedAt as it was read here, so an edit landing
+ * between the check and the write (a studio publish, another sync) cannot be
+ * overwritten either. A studio draft open on the lesson is kept.
  */
 export async function applyLessonContentUpdate(
   content: string,
@@ -303,7 +326,11 @@ export async function applyLessonContentUpdate(
     lessonId: row.id,
     expectedUpdatedAt: row.updatedAt,
     fields: {
-      contentMdx: body,
+      // The comparison reads the body normalised, the publish compares it as
+      // stored: a lesson kept with CRLF whose file says the same text keeps
+      // its own, or a file that changes only the prerequisites would still
+      // leave a version and outdate a studio draft.
+      contentMdx: normalizeBody(row.contentMdx) === body ? row.contentMdx : body,
       title: m.title,
       description: m.description,
       category: m.category,
@@ -325,6 +352,6 @@ export async function applyLessonContentUpdate(
             metadata: { refCode: m.refCode, file: source.file, contentHash, source: "import" },
           },
   });
-  if (!written) return { ok: false, reason: "stale", message: words.moved };
-  return { ok: true, lessonId: row.id };
+  if (!written.ok) return { ok: false, reason: "stale", message: words.moved };
+  return { ok: true, lessonId: row.id, version: written.version, draftKept: written.draftKept };
 }

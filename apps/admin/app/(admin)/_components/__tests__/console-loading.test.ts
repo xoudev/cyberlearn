@@ -146,7 +146,8 @@ describe("console loading states", () => {
     "%s is a console page in the console's style",
     (_n, path) => {
       const source = readFileSync(path, "utf8");
-      expect(source).toContain('<main className="a-page" aria-busy="true">');
+      // The page's width too: the lesson studio's is the window's.
+      expect(source).toMatch(/<main className="a-page" aria-busy="true"(?: data-width="full")?>/u);
       expect(source).toContain("<PageHeader");
       // No colour of its own, and square like the console.
       expect(source).not.toMatch(/#[0-9a-f]{3,8}\b/iu);
@@ -238,7 +239,7 @@ describe("console loading states", () => {
     if (typeof component !== "function") return;
     // SAFETY: a loading.tsx default export is a component without props.
     const html = renderToStaticMarkup(React.createElement(component as () => React.ReactElement));
-    expect(html).toMatch(/^<main class="a-page" aria-busy="true">/u);
+    expect(html).toMatch(/^<main class="a-page" aria-busy="true"(?: data-width="full")?>/u);
     expect(html).toContain('<h1 class="a-h1">');
     expect(html).toContain("cl-skel");
   });
