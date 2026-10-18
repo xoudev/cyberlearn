@@ -146,6 +146,15 @@ export async function importLessonFromRepository(
       errors: explainMissingPrerequisites(result.errors, files),
     };
   }
+  // In the database since the page was drawn: an update now, shown with its
+  // differences in the list of updates, never a second lesson.
+  if (result.update) {
+    return {
+      ok: false,
+      reason: "conflict",
+      message: `${refCode} est déjà en base. Recharge la page : elle apparaîtra parmi les mises à jour.`,
+    };
+  }
 
   let lessonId: string;
   try {

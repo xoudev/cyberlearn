@@ -206,6 +206,26 @@ describe("importLessonFromRepository", () => {
     });
   });
 
+  it("never creates a second lesson for a refCode the database got since the page was drawn", async () => {
+    write("lessons/f1/01008-le-bit.mdx", LESSON);
+    m.validateMdxContent.mockResolvedValue({
+      valid: true,
+      errors: [],
+      warnings: [],
+      metadata: METADATA,
+      body: "Corps",
+      update: { lessonId: "lesson-1" },
+    });
+    const result = await importLessonFromRepository(
+      "CL-LSN-01008-V01",
+      "admin-1",
+      path.join(root, "lessons"),
+    );
+    expect(result).toMatchObject({ ok: false, reason: "conflict" });
+    expect(m.importValidatedLesson).not.toHaveBeenCalled();
+    expect(m.auditCreate).not.toHaveBeenCalled();
+  });
+
   it("reports a lesson another tab has just imported instead of failing", async () => {
     write("lessons/f1/01008-le-bit.mdx", LESSON);
     m.validateMdxContent.mockResolvedValue({

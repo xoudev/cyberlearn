@@ -269,7 +269,7 @@
 | `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
 | `/lessons/[id]/edit` | Éditer une leçon |
-| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
+| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier), par glisser-déposer ; une leçon déjà en base se met à jour après diff et confirmation ; chaque erreur donne sa ligne |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |

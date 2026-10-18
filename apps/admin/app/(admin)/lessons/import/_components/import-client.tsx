@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState, useTransition, useCallback } from "react";
+import React, { useState, useTransition, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ImportValidationResult, ImportValidationError } from "@cyberlearn/types";
-import { validateImportBatchAction, importLessonBatchAction } from "../actions";
+import type {
+  ImportValidationResult,
+  ImportValidationError,
+  LessonUpdatePreview,
+} from "@cyberlearn/types";
+import { offsetOfLine } from "@/lib/text-position";
+import {
+  validateImportBatchAction,
+  importLessonBatchAction,
+  updateLessonFromImportAction,
+} from "../actions";
+import { DiffHunks, FieldChanges, LessonUpdateNotes } from "../../_components/lesson-diff";
 
 const EXAMPLE_MDX = `---
 refCode: CL-LSN-001-V01
@@ -30,12 +41,25 @@ const MAX_FILES = 30;
 // Mirror of the server-side aggregate cap (BATCH_MAX_TOTAL_BYTES).
 const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
 
+const STATUS_LABEL: Record<string, string> = {
+  PUBLISHED: "publiée",
+  DRAFT: "brouillon",
+  ARCHIVED: "archivée",
+};
+
 interface BatchFile {
   name: string;
   content: string;
   validation: ImportValidationResult | null;
-  imported: { lessonId: string; warnings: string[] } | null;
+  /** Written: imported as a new DRAFT, or an existing lesson updated from it. */
+  imported: { lessonId: string; warnings: string[]; updated: boolean } | null;
 }
+
+/** Where the update of the selected file stands, once its differences are shown. */
+type UpdateStep =
+  | { step: "confirm" }
+  | { step: "running" }
+  | { step: "failed"; message: string; details: string[] };
 
 function readAsBatchFile(file: File): Promise<BatchFile> {
   return new Promise((resolve, reject) => {
@@ -52,6 +76,36 @@ function readAsBatchFile(file: File): Promise<BatchFile> {
   });
 }
 
+/** The update states without those of these files: theirs start over. */
+function withoutKeys(
+  states: Record<string, UpdateStep>,
+  names: readonly string[],
+): Record<string, UpdateStep> {
+  return Object.fromEntries(Object.entries(states).filter(([name]) => !names.includes(name)));
+}
+
+/** A file validated as an update of a lesson already in the database. */
+function updateOf(file: BatchFile | undefined): LessonUpdatePreview | null {
+  if (!file || file.imported || file.validation?.valid !== true) return null;
+  return file.validation.update ?? null;
+}
+
+function isUnchanged(update: LessonUpdatePreview): boolean {
+  return update.fields.length === 0 && update.hunks.length === 0;
+}
+
+/** What the batch has written so far: new lessons, and lessons brought up to date. */
+function writtenSummary(files: readonly BatchFile[]): string {
+  const created = files.filter((f) => f.imported && !f.imported.updated).length;
+  const updated = files.filter((f) => f.imported?.updated === true).length;
+  return [
+    created > 0 ? `${String(created)} importée${created > 1 ? "s" : ""}` : null,
+    updated > 0 ? `${String(updated)} mise${updated > 1 ? "s" : ""} à jour` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
+}
+
 export function ImportClient(): React.ReactElement {
   const router = useRouter();
   const [files, setFiles] = useState<BatchFile[]>([]);
@@ -60,13 +114,26 @@ export function ImportClient(): React.ReactElement {
   const [batchSummary, setBatchSummary] = useState<string | null>(null);
   const [isValidating, startValidation] = useTransition();
   const [isImporting, startImport] = useTransition();
+  const [dragging, setDragging] = useState(false);
+  // dragenter and dragleave fire for every child the pointer crosses: the
+  // zone is left when as many leaves as enters have been seen.
+  const dragDepth = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const [view, setView] = useState<"editor" | "diff">("editor");
+  const [updates, setUpdates] = useState<Record<string, UpdateStep>>({});
 
   const current: BatchFile | undefined = files[selected];
-  const busy = isValidating || isImporting;
+  const currentUpdate = updateOf(current);
+  const updating = Object.values(updates).some((u) => u.step === "running");
+  const busy = isValidating || isImporting || updating;
+  // New lessons only: a file that matches a lesson in the database is
+  // updated from its own panel, once its differences are read.
   const validCount = files.filter(
-    (f) => f.validation?.valid === true && f.imported === null,
+    (f) => f.validation?.valid === true && !f.validation.update && f.imported === null,
   ).length;
   const importedCount = files.filter((f) => f.imported !== null).length;
+  const showDiff = currentUpdate !== null && view === "diff";
 
   const addFiles = useCallback(
     async (incoming: FileList) => {
@@ -112,15 +179,22 @@ export function ImportClient(): React.ReactElement {
       }
       const totalBytes = kept.reduce((sum, f) => sum + f.content.length, 0);
       if (totalBytes > MAX_TOTAL_BYTES) {
-        problems.push("lot trop volumineux (max 4 Mo au total), retirez des fichiers");
+        problems.push("lot trop volumineux (max 4 Mo au total), retire des fichiers");
       }
 
       setFiles(kept);
+      setUpdates((prev) =>
+        withoutKeys(
+          prev,
+          loaded.map((nf) => nf.name),
+        ),
+      );
       setFileError(problems.length > 0 ? `Attention : ${problems.join(" · ")}` : null);
 
       // Select the first newly added file; otherwise keep a valid selection.
       const firstNew = loaded.length > 0 ? kept.findIndex((f) => f.name === loaded[0]?.name) : -1;
       setSelected(firstNew >= 0 ? firstNew : Math.min(selected, Math.max(0, kept.length - 1)));
+      setView("editor");
     },
     [files, selected],
   );
@@ -128,6 +202,8 @@ export function ImportClient(): React.ReactElement {
   const handleFileDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
+      dragDepth.current = 0;
+      setDragging(false);
       if (e.dataTransfer.files.length > 0) void addFiles(e.dataTransfer.files);
     },
     [addFiles],
@@ -141,11 +217,27 @@ export function ImportClient(): React.ReactElement {
     [addFiles],
   );
 
+  /** Puts the editor's cursor on the line an error names, and scrolls it into view. */
+  const goToLine = useCallback((line: number, column?: number) => {
+    setView("editor");
+    // After the render that brings the editor back, if the diff was showing.
+    requestAnimationFrame(() => {
+      const el = editorRef.current;
+      if (!el) return;
+      const offset = offsetOfLine(el.value, line, column);
+      el.focus();
+      el.setSelectionRange(offset, offset);
+      const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight) || 20;
+      el.scrollTop = Math.max(0, (line - 3) * lineHeight);
+    });
+  }, []);
+
   function handleValidate() {
     const toValidate = files.filter((f) => f.imported === null);
     if (toValidate.length === 0) return;
     setFileError(null);
     setBatchSummary(null);
+    setUpdates({});
     startValidation(async () => {
       const res = await validateImportBatchAction(
         toValidate.map((f) => ({ name: f.name, content: f.content })),
@@ -165,7 +257,9 @@ export function ImportClient(): React.ReactElement {
   }
 
   function handleImport() {
-    const toImport = files.filter((f) => f.validation?.valid === true && f.imported === null);
+    const toImport = files.filter(
+      (f) => f.validation?.valid === true && !f.validation.update && f.imported === null,
+    );
     if (toImport.length === 0) return;
     setFileError(null);
     setBatchSummary(null);
@@ -185,6 +279,7 @@ export function ImportClient(): React.ReactElement {
       }
       const ok = res.outcomes.filter((o) => o.status === "success").length;
       const ko = res.outcomes.filter((o) => o.status === "validation_error").length;
+      const exists = res.outcomes.filter((o) => o.status === "exists").length;
       const skipped = res.outcomes.filter((o) => o.status === "skipped").length;
       const byName = new Map(res.outcomes.map((o) => [o.name, o]));
       setFiles((prev) =>
@@ -192,9 +287,12 @@ export function ImportClient(): React.ReactElement {
           const outcome = byName.get(f.name);
           if (!outcome) return f;
           if (outcome.status === "success") {
-            return { ...f, imported: { lessonId: outcome.lessonId, warnings: outcome.warnings } };
+            return {
+              ...f,
+              imported: { lessonId: outcome.lessonId, warnings: outcome.warnings, updated: false },
+            };
           }
-          if (outcome.status === "validation_error") {
+          if (outcome.status === "validation_error" || outcome.status === "exists") {
             return { ...f, validation: outcome.result, imported: null };
           }
           return f; // skipped: untouched, retry later
@@ -203,6 +301,7 @@ export function ImportClient(): React.ReactElement {
       setBatchSummary(
         `${String(ok)} leçon${ok > 1 ? "s" : ""} importée${ok > 1 ? "s" : ""} en DRAFT` +
           (ko > 0 ? ` · ${String(ko)} refusée${ko > 1 ? "s" : ""}` : "") +
+          (exists > 0 ? ` · ${String(exists)} déjà en base entre-temps (à mettre à jour)` : "") +
           (skipped > 0
             ? ` · ${String(skipped)} non traitée${skipped > 1 ? "s" : ""} (limite)`
             : ""),
@@ -210,11 +309,67 @@ export function ImportClient(): React.ReactElement {
     });
   }
 
+  async function confirmUpdate(file: BatchFile, update: LessonUpdatePreview): Promise<void> {
+    setUpdates((prev) => ({ ...prev, [file.name]: { step: "running" } }));
+    let res: Awaited<ReturnType<typeof updateLessonFromImportAction>>;
+    try {
+      res = await updateLessonFromImportAction({
+        name: file.name,
+        content: file.content,
+        hash: update.hash,
+      });
+    } catch {
+      setUpdates((prev) => ({
+        ...prev,
+        [file.name]: { step: "failed", message: "La requête a échoué. Réessaie.", details: [] },
+      }));
+      return;
+    }
+    if (res.status === "success") {
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.name === file.name
+            ? {
+                ...f,
+                imported: {
+                  lessonId: res.lessonId,
+                  warnings: f.validation?.warnings ?? [],
+                  updated: true,
+                },
+              }
+            : f,
+        ),
+      );
+      setUpdates((prev) => withoutKeys(prev, [file.name]));
+      setView("editor");
+      return;
+    }
+    const failure =
+      res.status === "rate_limited"
+        ? {
+            message: "Limite d'import atteinte pour cette heure : réessaie plus tard.",
+            details: [],
+          }
+        : res.status === "invalid_input"
+          ? { message: res.message, details: [] }
+          : {
+              message: res.message,
+              details: res.errors.map((e) =>
+                e.line === undefined && e.field ? `${e.field} : ${e.message}` : e.message,
+              ),
+            };
+    setUpdates((prev) => ({ ...prev, [file.name]: { step: "failed", ...failure } }));
+  }
+
   function handleEditorChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const content = e.target.value;
+    const name = current?.name;
     setFiles((prev) =>
       prev.map((f, i) => (i === selected ? { ...f, content, validation: null } : f)),
     );
+    if (name !== undefined) {
+      setUpdates((prev) => withoutKeys(prev, [name]));
+    }
     setBatchSummary(null);
   }
 
@@ -222,82 +377,90 @@ export function ImportClient(): React.ReactElement {
     const next = files.filter((_, i) => i !== index);
     setFiles(next);
     setSelected((s) => Math.max(0, Math.min(index < s ? s - 1 : s, next.length - 1)));
+    setView("editor");
   }
 
   function newFile(name: string, content: string) {
     if (files.some((f) => f.name === name) || files.length >= MAX_FILES) return;
     setFiles((prev) => [...prev, { name, content, validation: null, imported: null }]);
     setSelected(files.length);
+    setView("editor");
+  }
+
+  function openPicker() {
+    inputRef.current?.click();
   }
 
   return (
     <div className="import-grid">
       {/* Panel 1 - Drop zone + file list + validation results */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Drop zone */}
+        {/* Drop zone: the whole of it opens the picker, by pointer or keyboard. */}
         <div
+          role="button"
+          tabIndex={0}
+          className="import-dropzone"
+          data-dragging={dragging ? "true" : undefined}
+          aria-label="Ajouter des fichiers .mdx : dépose-les ici, ou appuie sur Entrée pour les choisir"
+          onClick={openPicker}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openPicker();
+            }
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            dragDepth.current += 1;
+            setDragging(true);
+          }}
           onDragOver={(e) => {
             e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }}
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) setDragging(false);
           }}
           onDrop={handleFileDrop}
-          style={{
-            border: "2px dashed #2A2560",
-            padding: "24px 16px",
-            textAlign: "center",
-            cursor: "pointer",
-            background: "rgba(5,4,26,0.4)",
-            transition: "border-color 150ms ease",
-          }}
         >
           <svg
             width="28"
             height="28"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#2A2560"
+            stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
-            style={{ marginBottom: 10 }}
+            className="import-dropzone-icon"
+            aria-hidden="true"
           >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
             <line x1="12" y1="18" x2="12" y2="12" />
             <polyline points="9 15 12 12 15 15" />
           </svg>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#7F7BA9",
-              margin: "0 0 10px",
-            }}
-          >
-            {files.length === 0
-              ? "Glissez un ou plusieurs fichiers .mdx ici"
-              : `${String(files.length)} fichier${files.length > 1 ? "s" : ""} dans le lot`}
+          <p className="import-dropzone-text">
+            {dragging
+              ? "Dépose les fichiers .mdx"
+              : files.length === 0
+                ? "Glisse un ou plusieurs fichiers .mdx ici"
+                : `${String(files.length)} fichier${files.length > 1 ? "s" : ""} dans le lot`}
           </p>
-          <label
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "var(--a-info)",
-              border: "1px solid #2A2560",
-              padding: "6px 12px",
-              cursor: "pointer",
-            }}
-          >
+          <span className="import-dropzone-browse" aria-hidden="true">
             Parcourir
-            <input
-              type="file"
-              accept=".mdx"
-              multiple
-              onChange={handleFileChange}
-              style={{ display: "none" }}
-            />
-          </label>
+          </span>
         </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".mdx"
+          multiple
+          onChange={handleFileChange}
+          tabIndex={-1}
+          aria-hidden="true"
+          style={{ display: "none" }}
+        />
 
         {fileError && <ErrorBanner message={fileError} />}
         {batchSummary && (
@@ -338,6 +501,7 @@ export function ImportClient(): React.ReactElement {
                 active={i === selected}
                 onSelect={() => {
                   setSelected(i);
+                  setView(updateOf(f) ? "diff" : "editor");
                 }}
                 onRemove={
                   busy
@@ -375,7 +539,13 @@ export function ImportClient(): React.ReactElement {
         )}
 
         {current?.validation && !current.imported && !isValidating && (
-          <ValidationPanel result={current.validation} />
+          <ValidationPanel
+            result={current.validation}
+            onGoTo={goToLine}
+            onShowDiff={() => {
+              setView("diff");
+            }}
+          />
         )}
 
         {current?.imported && (
@@ -395,7 +565,7 @@ export function ImportClient(): React.ReactElement {
                 marginBottom: 6,
               }}
             >
-              ✓ Leçon importée en DRAFT
+              {current.imported.updated ? "✓ Leçon mise à jour" : "✓ Leçon importée en DRAFT"}
             </div>
             {current.imported.warnings.map((w, i) => (
               <div
@@ -478,17 +648,18 @@ export function ImportClient(): React.ReactElement {
             {isImporting
               ? "Import…"
               : importedCount > 0 && validCount === 0
-                ? `${String(importedCount)} importée${importedCount > 1 ? "s" : ""} ✓`
+                ? `${writtenSummary(files)} ✓`
                 : `Importer ${String(validCount)} leçon${validCount > 1 ? "s" : ""} en DRAFT`}
           </button>
         </div>
       </div>
 
-      {/* Panel 2 - MDX editor (selected file) */}
+      {/* Panel 2 - MDX editor, or the differences with the lesson in the database */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
+          minHeight: 0,
           background: "rgba(5,4,26,0.6)",
           border: "1px solid #1F1B47",
         }}
@@ -500,6 +671,7 @@ export function ImportClient(): React.ReactElement {
             display: "flex",
             alignItems: "center",
             gap: 10,
+            flexWrap: "wrap",
           }}
         >
           <span
@@ -511,12 +683,34 @@ export function ImportClient(): React.ReactElement {
               color: "#7F7BA9",
             }}
           >
-            ÉDITEUR MDX
+            {showDiff ? "DIFFÉRENCES AVEC LA BASE" : "ÉDITEUR MDX"}
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#7F7BA9" }}>
             {current?.name ?? "aucun fichier"}
-            {current?.imported ? " · importée (lecture seule)" : ""}
+            {current?.imported ? " · écrite (lecture seule)" : ""}
           </span>
+          {currentUpdate && (
+            <span className="import-view-toggle">
+              <button
+                type="button"
+                aria-pressed={view === "editor"}
+                onClick={() => {
+                  setView("editor");
+                }}
+              >
+                Fichier
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "diff"}
+                onClick={() => {
+                  setView("diff");
+                }}
+              >
+                Différences
+              </button>
+            </span>
+          )}
           {files.length === 0 && (
             <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
               <button
@@ -558,25 +752,42 @@ export function ImportClient(): React.ReactElement {
             </span>
           )}
         </div>
-        <textarea
-          value={current?.content ?? ""}
-          onChange={handleEditorChange}
-          disabled={current?.imported !== null || busy}
-          spellCheck={false}
-          placeholder={`---\nrefCode: CL-LSN-001-V01\nslug: ma-lecon\ntitle: Ma Leçon\n...\n---\n\n# Contenu MDX`}
-          style={{
-            flex: 1,
-            resize: "none",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            padding: "16px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "#B8B5D1",
-            lineHeight: 1.7,
-          }}
-        />
+        {showDiff && current ? (
+          <UpdatePanel
+            update={currentUpdate}
+            state={updates[current.name] ?? null}
+            busy={busy}
+            onAsk={() => {
+              setUpdates((prev) => ({ ...prev, [current.name]: { step: "confirm" } }));
+            }}
+            onCancel={() => {
+              setUpdates((prev) => withoutKeys(prev, [current.name]));
+            }}
+            onConfirm={() => void confirmUpdate(current, currentUpdate)}
+          />
+        ) : (
+          <textarea
+            ref={editorRef}
+            value={current?.content ?? ""}
+            onChange={handleEditorChange}
+            disabled={current?.imported !== null || busy}
+            spellCheck={false}
+            aria-label="Contenu du fichier MDX"
+            placeholder={`---\nrefCode: CL-LSN-001-V01\nslug: ma-lecon\ntitle: Ma Leçon\n...\n---\n\n# Contenu MDX`}
+            style={{
+              flex: 1,
+              resize: "none",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              padding: "16px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "#B8B5D1",
+              lineHeight: 1.7,
+            }}
+          />
+        )}
         <div
           style={{
             padding: "8px 16px",
@@ -629,7 +840,7 @@ export function ImportClient(): React.ReactElement {
                 paddingTop: 20,
               }}
             >
-              Validez le lot pour voir l&apos;aperçu…
+              Valide le lot pour voir l&apos;aperçu…
             </div>
           )}
         </div>
@@ -653,22 +864,27 @@ function FileRow({
   onRemove?: (() => void) | undefined;
   onOpenEditor?: (() => void) | undefined;
 }) {
+  const update = updateOf(file);
   const status = file.imported
-    ? { color: "#0AFFD4", label: "importée" }
+    ? { color: "#0AFFD4", label: file.imported.updated ? "mise à jour" : "importée" }
     : file.validation === null
       ? { color: "#7F7BA9", label: "à valider" }
-      : file.validation.valid
-        ? {
-            color: "#0AFFD4",
-            label:
-              file.validation.warnings.length > 0
-                ? `valide · ${String(file.validation.warnings.length)} ⚠`
-                : "valide",
-          }
-        : {
-            color: "var(--a-danger)",
-            label: `${String(file.validation.errors.length)} erreur${file.validation.errors.length > 1 ? "s" : ""}`,
-          };
+      : update
+        ? isUnchanged(update)
+          ? { color: "#7F7BA9", label: "identique" }
+          : { color: "var(--a-warning)", label: "à mettre à jour" }
+        : file.validation.valid
+          ? {
+              color: "#0AFFD4",
+              label:
+                file.validation.warnings.length > 0
+                  ? `valide · ${String(file.validation.warnings.length)} ⚠`
+                  : "valide",
+            }
+          : {
+              color: "var(--a-danger)",
+              label: `${String(file.validation.errors.length)} erreur${file.validation.errors.length > 1 ? "s" : ""}`,
+            };
 
   return (
     <div
@@ -789,12 +1005,33 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-function ValidationPanel({ result }: { result: ImportValidationResult }) {
+function ValidationPanel({
+  result,
+  onGoTo,
+  onShowDiff,
+}: {
+  result: ImportValidationResult;
+  onGoTo: (line: number, column?: number) => void;
+  onShowDiff: () => void;
+}) {
+  const update = result.valid ? (result.update ?? null) : null;
+  const tone = !result.valid
+    ? "var(--a-danger)"
+    : update && !isUnchanged(update)
+      ? "var(--a-warning)"
+      : "#0AFFD4";
+  const label = !result.valid
+    ? `${String(result.errors.length)} ERREUR${result.errors.length > 1 ? "S" : ""}`
+    : update
+      ? isUnchanged(update)
+        ? "IDENTIQUE À LA BASE"
+        : "LEÇON EXISTANTE · À METTRE À JOUR"
+      : "VALIDE";
   return (
     <div
       style={{
         background: "rgba(5,4,26,0.6)",
-        border: `1px solid ${result.valid ? "rgba(10,255,212,0.25)" : "color-mix(in srgb, var(--a-danger) 30%, transparent)"}`,
+        border: `1px solid color-mix(in srgb, ${tone} 30%, transparent)`,
       }}
     >
       {/* Status */}
@@ -812,11 +1049,9 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
             width: 8,
             height: 8,
             borderRadius: 999,
-            background: result.valid ? "#0AFFD4" : "var(--a-danger)",
+            background: tone,
             display: "inline-block",
-            boxShadow: result.valid
-              ? "0 0 6px rgba(10,255,212,0.6)"
-              : "0 0 6px color-mix(in srgb, var(--a-danger) 60%, transparent)",
+            boxShadow: `0 0 6px color-mix(in srgb, ${tone} 60%, transparent)`,
           }}
         />
         <span
@@ -825,20 +1060,36 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
             fontSize: 10,
             letterSpacing: "0.1em",
             fontWeight: 700,
-            color: result.valid ? "#0AFFD4" : "var(--a-danger)",
+            color: tone,
           }}
         >
-          {result.valid
-            ? "VALIDE"
-            : `${String(result.errors.length)} ERREUR${result.errors.length > 1 ? "S" : ""}`}
+          {label}
         </span>
       </div>
+
+      {/* An existing lesson: what the file would change is in the middle panel. */}
+      {update && (
+        <div className="import-update-summary">
+          <p>
+            {update.refCode} est déjà en base (« {update.title} »,{" "}
+            {STATUS_LABEL[update.status] ?? update.status}).{" "}
+            {isUnchanged(update)
+              ? "Le fichier ne change rien."
+              : `Le fichier change ${String(update.fields.length)} champ${update.fields.length > 1 ? "s" : ""} et ${String(update.added + update.removed)} ligne${update.added + update.removed > 1 ? "s" : ""} du contenu.`}
+          </p>
+          {!isUnchanged(update) && (
+            <button type="button" className="a-btn a-btn--ghost a-btn--sm" onClick={onShowDiff}>
+              Voir les différences
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Errors */}
       {result.errors.length > 0 && (
         <div style={{ padding: "8px 0" }}>
           {result.errors.map((e, i) => (
-            <ErrorItem key={i} error={e} />
+            <ErrorItem key={i} error={e} onGoTo={onGoTo} />
           ))}
         </div>
       )}
@@ -868,7 +1119,14 @@ function ValidationPanel({ result }: { result: ImportValidationResult }) {
   );
 }
 
-function ErrorItem({ error }: { error: ImportValidationError }) {
+function ErrorItem({
+  error,
+  onGoTo,
+}: {
+  error: ImportValidationError;
+  onGoTo: (line: number, column?: number) => void;
+}) {
+  const { line, column } = error;
   return (
     <div style={{ padding: "6px 14px", display: "flex", gap: 8, alignItems: "flex-start" }}>
       <span
@@ -882,24 +1140,125 @@ function ErrorItem({ error }: { error: ImportValidationError }) {
         ✕
       </span>
       <div>
-        {error.field && (
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              color: "#FF8090",
-              marginBottom: 2,
-              display: "block",
-            }}
-          >
+        {(error.field !== undefined || line !== undefined) && (
+          <span className="import-error-place">
             {error.field}
-            {error.line ? `:${String(error.line)}` : ""}
+            {line !== undefined ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onGoTo(line, column);
+                }}
+                title="Placer le curseur de l'éditeur sur cette ligne"
+              >
+                ligne {line}
+              </button>
+            ) : null}
           </span>
         )}
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#B8B5D1" }}>
           {error.message}
         </span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * What the file would write over the lesson that holds its refCode, with the
+ * button that does it: a confirmation first, which says what stays as it is.
+ */
+function UpdatePanel({
+  update,
+  state,
+  busy,
+  onAsk,
+  onCancel,
+  onConfirm,
+}: {
+  update: LessonUpdatePreview;
+  state: UpdateStep | null;
+  busy: boolean;
+  onAsk: () => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const unchanged = isUnchanged(update);
+  const lines = update.added + update.removed;
+  return (
+    <div className="import-update">
+      <div className="a-sync-card-title">
+        <div className="a-sync-meta">
+          <span className="a-sync-ref">{update.refCode}</span>
+          <span className="a-sync-ref">{STATUS_LABEL[update.status] ?? update.status}</span>
+        </div>
+        <Link href={`/lessons/${update.lessonId}/edit`} className="a-sync-name">
+          {update.title}
+        </Link>
+        <div className="a-sync-file">
+          Leçon en base · +{update.added} −{update.removed} ligne{lines > 1 ? "s" : ""}
+        </div>
+      </div>
+
+      {unchanged ? (
+        <p className="a-sync-warn" data-tone="info">
+          Le fichier est identique à la leçon en base : rien à mettre à jour.
+        </p>
+      ) : (
+        <>
+          <LessonUpdateNotes update={update} />
+          <FieldChanges fields={update.fields} />
+
+          {state?.step === "confirm" ? (
+            <div className="a-sync-confirm">
+              <p>
+                « {update.title} » sera réécrite avec ce fichier : {update.fields.length} champ
+                {update.fields.length > 1 ? "s" : ""} et {lines} ligne{lines > 1 ? "s" : ""} du
+                contenu changent.{" "}
+                {update.status === "PUBLISHED"
+                  ? "Elle est publiée : le site et l'app afficheront ce contenu dès la mise à jour."
+                  : "Son statut ne change pas."}{" "}
+                Le slug et l&apos;image de couverture restent ceux de la leçon.
+              </p>
+              <div className="a-head-actions">
+                <button type="button" className="a-btn a-btn--primary" onClick={onConfirm}>
+                  Confirmer la mise à jour
+                </button>
+                <button type="button" className="a-btn a-btn--ghost" onClick={onCancel}>
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button
+                type="button"
+                className="a-btn a-btn--primary"
+                disabled={busy}
+                onClick={onAsk}
+              >
+                {state?.step === "running" ? "Mise à jour…" : "Mettre à jour"}
+              </button>
+            </div>
+          )}
+          {state?.step === "failed" ? (
+            <ul className="a-sync-failures" role="alert">
+              <li>
+                {state.message}
+                {state.details.length > 0 ? (
+                  <ul>
+                    {state.details.map((d) => (
+                      <li key={d}>{d}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            </ul>
+          ) : null}
+
+          {update.hunks.length > 0 ? <DiffHunks hunks={update.hunks} /> : null}
+        </>
+      )}
     </div>
   );
 }

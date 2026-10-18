@@ -2,12 +2,22 @@ import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
-  findFirst: vi.fn(),
+  findByRefCode: vi.fn(),
+  findIdBySlug: vi.fn(),
   findMany: vi.fn(),
+  answers: vi.fn(),
+  edits: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  prisma: { lesson: { findFirst: m.findFirst, findMany: m.findMany } },
+  prisma: {},
+  lessonFileRepository: {
+    findByRefCode: m.findByRefCode,
+    findIdBySlug: m.findIdBySlug,
+    findByRefCodesForLinks: m.findMany,
+    quizAnswerCounts: m.answers,
+    consoleEditsSinceFile: m.edits,
+  },
 }));
 
 import { validateMdxContent, orderBatchByPrerequisites } from "../lesson-import.service";
@@ -33,8 +43,93 @@ Un contenu de test parfaitement ordinaire en Markdown.
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.findFirst.mockResolvedValue(null); // no refCode/slug conflict in DB
+  m.findByRefCode.mockResolvedValue(null); // a new lesson
+  m.findIdBySlug.mockResolvedValue(null); // its slug is free
   m.findMany.mockResolvedValue([]); // no prerequisite found in DB
+  m.answers.mockResolvedValue([]);
+  m.edits.mockResolvedValue(new Map());
+});
+
+/** The row the database holds for mdx(refCode), with a body of its own. */
+function lessonRow(refCode: string, body: string, over: Record<string, unknown> = {}) {
+  return {
+    id: "lesson-1",
+    refCode,
+    slug: `lecon-${refCode.slice(7, 10)}`,
+    status: "PUBLISHED",
+    updatedAt: new Date("2026-09-01T10:00:00Z"),
+    contentMdx: body,
+    title: "Une lecon de test",
+    description: "Une description suffisamment longue pour le schema de validation.",
+    category: "DEV",
+    difficulty: "BEGINNER",
+    estimatedMinutes: 10,
+    xpReward: 50,
+    prerequisites: [] as { prerequisite: { refCode: string } }[],
+    ...over,
+  };
+}
+
+describe("validateMdxContent - a refCode already in the database", () => {
+  const body = "# Introduction\n\nUn contenu de test parfaitement ordinaire en Markdown.";
+
+  it("is an update to show, not a refusal: fields and passages that change", async () => {
+    m.findByRefCode.mockResolvedValue(
+      lessonRow("CL-LSN-002-V01", body.replace("ordinaire", "banal"), { xpReward: 30 }),
+    );
+    m.findIdBySlug.mockResolvedValue("lesson-1");
+
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.update).toMatchObject({
+      lessonId: "lesson-1",
+      refCode: "CL-LSN-002-V01",
+      status: "PUBLISHED",
+      fields: [{ field: "xpReward", label: "XP", before: "30", after: "50" }],
+      added: 1,
+      removed: 1,
+      slugDiffers: null,
+      editedInConsoleAt: null,
+    });
+    expect(result.update?.hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(
+      result.update?.hunks[0]?.lines.some(
+        (l) => l.kind === "added" && l.text.includes("ordinaire"),
+      ),
+    ).toBe(true);
+  });
+
+  it("says when the file is the lesson already, word for word", async () => {
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.update).toMatchObject({ fields: [], hunks: [], added: 0, removed: 0 });
+  });
+
+  it("keeps the lesson's slug: another lesson's slug in the file is pointed out, not refused", async () => {
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body, { slug: "ancien-slug" }));
+    m.findIdBySlug.mockResolvedValue("lesson-9");
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.valid).toBe(true);
+    expect(result.update?.slugDiffers).toEqual({ database: "ancien-slug", file: "lecon-002" });
+  });
+
+  it("warns about edits made in the console since the lesson last came from a file", async () => {
+    const edited = new Date("2026-09-10T08:00:00Z");
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    m.edits.mockResolvedValue(new Map([["lesson-1", edited]]));
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.update?.editedInConsoleAt).toEqual(edited);
+  });
+
+  it("still refuses a new lesson whose slug another lesson has", async () => {
+    m.findIdBySlug.mockResolvedValue("lesson-9");
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.valid).toBe(false);
+    expect(result.errors.map((e) => e.field)).toEqual(["slug"]);
+    expect(result.update).toBeUndefined();
+  });
 });
 
 describe("validateMdxContent - batch awareness", () => {
@@ -87,10 +182,16 @@ describe("validateMdxContent - frontmatter errors", () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors).toEqual([
-      { field: "category", message: "Valeur attendue : DEV, CYBERSEC ou NETWORK." },
+      {
+        field: "category",
+        line: 6,
+        message: "Frontmatter, ligne 6 (category) : Valeur attendue : DEV, CYBERSEC ou NETWORK.",
+      },
       {
         field: "difficulty",
-        message: "Valeur attendue : BEGINNER, INTERMEDIATE, ADVANCED ou EXPERT.",
+        line: 7,
+        message:
+          "Frontmatter, ligne 7 (difficulty) : Valeur attendue : BEGINNER, INTERMEDIATE, ADVANCED ou EXPERT.",
       },
     ]);
   });
