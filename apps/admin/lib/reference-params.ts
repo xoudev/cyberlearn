@@ -1,5 +1,6 @@
 import type {
   Category,
+  ConsoleLessonRatingQuery,
   ConsoleSolveQuery,
   ConsoleSolveStatus,
   CosmeticReferenceQuery,
@@ -15,8 +16,8 @@ import type {
 import { oneOf, pageParam, searchParam, type RawParams } from "./grid-params";
 
 /**
- * The filters of the console's read-only reference lists and of a
- * tournament's flags: read from the URL, written back into its links, and
+ * The filters of the console's read-only reference lists, of a tournament's
+ * flags and of a lesson's ratings: read from the URL, written back into its links, and
  * turned into the repository's query. Same rules as list-params.ts: a parse
  * never fails, and a search leaves the defaults out.
  */
@@ -178,4 +179,30 @@ export function parseSolveListParams(raw: RawParams): SolveListParams {
 
 export function solveQueryOf(tournamentId: string, params: SolveListParams): ConsoleSolveQuery {
   return { tournamentId, ...params, pageSize: REFERENCE_PAGE_SIZE };
+}
+
+// ─── A lesson's ratings ─────────────────────────────────────────────────────
+
+/** The scores a rating can hold, as the URL writes them. */
+export const RATING_SCORE_VALUES = ["5", "4", "3", "2", "1"] as const;
+
+export interface RatingListParams extends ReferenceListParams {
+  score: (typeof RATING_SCORE_VALUES)[number] | undefined;
+}
+
+export function parseRatingListParams(raw: RawParams): RatingListParams {
+  return { ...base(raw), score: oneOf(raw, "score", RATING_SCORE_VALUES) };
+}
+
+export function ratingQueryOf(
+  lessonId: string,
+  params: RatingListParams,
+): ConsoleLessonRatingQuery {
+  return {
+    lessonId,
+    q: params.q,
+    score: params.score === undefined ? undefined : Number(params.score),
+    page: params.page,
+    pageSize: REFERENCE_PAGE_SIZE,
+  };
 }

@@ -15,6 +15,9 @@ import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Éditer la leçon" };
 
+/** The ratings the lesson's page lists under its form; the rest are on its ratings page. */
+const LATEST_RATINGS = 10;
+
 export default async function EditLessonPage({
   params,
 }: {
@@ -43,7 +46,8 @@ export default async function EditLessonPage({
         ratingsCount: true,
       },
     }),
-    ratingRepository.findLessonRatings(id),
+    // The latest only: the card links to the page that holds every one.
+    ratingRepository.findLessonRatings(id, LATEST_RATINGS),
   ]);
 
   if (!lesson) notFound();
@@ -74,6 +78,7 @@ export default async function EditLessonPage({
         subject="cette leçon"
         avg={lesson.avgRating}
         count={lesson.ratingsCount}
+        allHref={`/lessons/${lesson.id}/ratings`}
       />
     </main>
   );

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import type { ConsoleRatingRow } from "@cyberlearn/db";
 import { Card, EmptyState } from "./admin-ui";
 
@@ -15,15 +16,31 @@ export function ratingSummary(avg: number | null, count: number): string | null 
 }
 
 /**
+ * What the card says under its rows when they are not all of them: "Les 10
+ * plus récents sur 64.", or null when every rating is shown.
+ */
+export function ratingsShownText(shown: number, count: number): string | null {
+  if (shown >= count) return null;
+  return shown === 1
+    ? `Le plus récent sur ${String(count)}.`
+    : `Les ${String(shown)} plus récents sur ${String(count)}.`;
+}
+
+/**
  * What learners said about a lesson or a path: the note, and the comment
  * written to the team, newest first. Comments are not shown to other learners.
  * The path's page drew it alone; the lesson's page now reads the same card.
+ *
+ * It lists the latest only. When there are more, it says how many it shows
+ * out of how many, and links to the page that pages through all of them when
+ * there is one (a lesson's, /lessons/[id]/ratings).
  */
 export function RatingsCard({
   ratings,
   subject,
   avg,
   count,
+  allHref,
 }: {
   ratings: readonly ConsoleRatingRow[];
   /** "ce parcours", "cette leçon": what nobody has rated yet. */
@@ -31,8 +48,11 @@ export function RatingsCard({
   /** The average kept on the row, over every rating and not only the ones listed. */
   avg: number | null;
   count: number;
+  /** The page listing every rating, when there is one. */
+  allHref?: string;
 }): React.ReactElement {
   const summary = ratingSummary(avg, count);
+  const partial = ratingsShownText(ratings.length, count);
   return (
     <div style={{ marginTop: 24 }}>
       <Card
@@ -78,6 +98,22 @@ export function RatingsCard({
               </tbody>
             </table>
           </div>
+        )}
+        {partial !== null && ratings.length > 0 && (
+          <p
+            className="mono"
+            style={{ margin: "14px 0 0", fontSize: 11.5, color: "var(--a-muted)" }}
+          >
+            {partial}
+            {allHref !== undefined && (
+              <>
+                {" "}
+                <Link href={allHref} style={{ color: "var(--a-accent)" }}>
+                  Voir tous les avis →
+                </Link>
+              </>
+            )}
+          </p>
         )}
       </Card>
     </div>

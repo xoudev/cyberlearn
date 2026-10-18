@@ -6,7 +6,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ratingRepository } from "../repositories/rating.repository.js";
+import { consoleLessonRatingWhere, ratingRepository } from "../repositories/rating.repository.js";
 import {
   cosmeticReferenceWhere,
   forumCategoryReferenceWhere,
@@ -184,6 +184,7 @@ describe("ratingRepository.findLessonRatings", () => {
         score: true,
         feedback: true,
         updatedAt: true,
+        userId: true,
         user: { select: { displayName: true, username: true } },
       },
     });
@@ -194,6 +195,45 @@ describe("ratingRepository.findLessonRatings", () => {
     expect(firstArg(mockPrisma.rating.findMany)).toMatchObject({
       where: { pathId: "path-1" },
       take: 50,
+    });
+  });
+});
+
+describe("a lesson's ratings, page by page", () => {
+  const base = { lessonId: "lesson-1", q: "", score: undefined, page: 1, pageSize: 25 };
+
+  it("keeps to the lesson with no filter, and narrows to a score", () => {
+    expect(consoleLessonRatingWhere(base)).toEqual({ AND: [{ lessonId: "lesson-1" }] });
+    expect(consoleLessonRatingWhere({ ...base, score: 2 })).toEqual({
+      AND: [{ lessonId: "lesson-1" }, { score: 2 }],
+    });
+  });
+
+  it("searches the comment and the learner, without the @", () => {
+    expect(consoleLessonRatingWhere({ ...base, q: " @camille " })).toEqual({
+      AND: [
+        { lessonId: "lesson-1" },
+        {
+          OR: [
+            { feedback: insensitive("camille") },
+            { user: { is: { username: insensitive("camille") } } },
+            { user: { is: { displayName: insensitive("camille") } } },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("reads one page past the first, newest first, every rating reachable", async () => {
+    mockPrisma.rating.count.mockResolvedValue(60);
+    mockPrisma.rating.findMany.mockResolvedValue([]);
+    const slice = await ratingRepository.listLessonRatingsForConsole({ ...base, page: 3 });
+    expect(slice).toMatchObject({ total: 60, page: 3 });
+    expect(firstArg(mockPrisma.rating.findMany)).toMatchObject({
+      where: { AND: [{ lessonId: "lesson-1" }] },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      skip: 50,
+      take: 25,
     });
   });
 });

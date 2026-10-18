@@ -163,7 +163,12 @@ export {
   type SolveDecisionResult,
 } from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
-export { ratingRepository, type ConsoleRatingRow } from "./repositories/rating.repository.js";
+export {
+  ratingRepository,
+  consoleLessonRatingWhere,
+  type ConsoleLessonRatingQuery,
+  type ConsoleRatingRow,
+} from "./repositories/rating.repository.js";
 export {
   referenceRepository,
   cosmeticReferenceWhere,

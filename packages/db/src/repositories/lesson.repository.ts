@@ -521,6 +521,17 @@ export const lessonRepository = {
   },
 
   /**
+   * A lesson as the console's page of its ratings heads it: its title, and
+   * the average and count kept on the row over every rating.
+   */
+  async findRatingTotals(lessonId: string) {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, title: true, avgRating: true, ratingsCount: true },
+    });
+  },
+
+  /**
    * Who wrote a lesson, for the byline in the rail.
    *
    * The author is null once that account is erased: the lesson survives them,

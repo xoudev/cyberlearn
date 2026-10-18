@@ -5,7 +5,9 @@ import {
   parseCosmeticListParams,
   parsePlacementListParams,
   parseSeasonListParams,
+  parseRatingListParams,
   parseSolveListParams,
+  ratingQueryOf,
   referenceSearch,
   REFERENCE_PAGE_SIZE,
   seasonListSearch,
@@ -84,5 +86,21 @@ describe("the reference lists' words", () => {
       { id: "3", text: "UDP" },
     ]);
     expect(placementOptions({ id: "a" })).toEqual([]);
+  });
+});
+
+describe("a lesson's ratings' parameters", () => {
+  it("reads a score from 1 to 5 as a number, and drops anything else", () => {
+    const params = parseRatingListParams({ score: "2", q: " lent ", page: "3" });
+    expect(params).toEqual({ q: "lent", page: 3, score: "2" });
+    expect(ratingQueryOf("lesson-1", params)).toEqual({
+      lessonId: "lesson-1",
+      q: "lent",
+      score: 2,
+      page: 3,
+      pageSize: REFERENCE_PAGE_SIZE,
+    });
+    expect(parseRatingListParams({ score: "6" }).score).toBeUndefined();
+    expect(ratingQueryOf("lesson-1", parseRatingListParams({})).score).toBeUndefined();
   });
 });
