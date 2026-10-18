@@ -7,6 +7,7 @@ import type {
   ConsoleCertificateSort,
   ConsoleCertificateStatus,
   ConsoleContentQuery,
+  ConsolePage,
   ConsoleLessonFolder,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
@@ -36,7 +37,7 @@ import {
 
 /**
  * The filters of the console's server-side lists (accounts, audit log,
- * lessons, certificates, published content): read from the URL, written back
+ * lessons, certificates, published content, reports): read from the URL, written back
  * into its links, and turned into the repository's query.
  *
  * Each list has a parse, which never fails, and a search, which is the
@@ -416,4 +417,22 @@ export function contentQueryOf(params: ContentListParams): ConsoleContentQuery {
     page: params.page,
     pageSize: CONTENT_PAGE_SIZE,
   };
+}
+
+// ─── Content reports (moderation) ───────────────────────────────────────────
+
+/** A card per reported content, with every report on it: fewer than rows. */
+export const REPORTS_PAGE_SIZE = 20;
+
+/** A page and nothing else: the queue has one order, the most reported first. */
+export interface ReportListParams {
+  page: number;
+}
+
+export function parseReportListParams(raw: RawParams): ReportListParams {
+  return { page: pageParam(raw) };
+}
+
+export function reportQueryOf(params: ReportListParams): ConsolePage {
+  return { page: params.page, pageSize: REPORTS_PAGE_SIZE };
 }

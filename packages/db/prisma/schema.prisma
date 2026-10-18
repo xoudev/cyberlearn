@@ -1535,6 +1535,10 @@ model ContentReport {
   status       ContentReportStatus  @default(OPEN)
   resolvedAt   DateTime?
   resolvedById String?              @db.Uuid
+  /// When the reporter last filed it: written by them alone, when they report
+  /// and when they report again. The hourly limit counts on it, not on
+  /// updatedAt, which moves when the console closes the report.
+  reportedAt   DateTime             @default(now())
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
 
@@ -2021,16 +2025,20 @@ model ForumTopic {
 }
 
 model ForumPost {
-  id        String    @id @default(uuid()) @db.Uuid
-  topicId   String    @db.Uuid
-  authorId  String?   @db.Uuid // null after RGPD anonymization
-  content   String    @db.Text
-  isHidden  Boolean   @default(false)
+  id                 String    @id @default(uuid()) @db.Uuid
+  topicId            String    @db.Uuid
+  authorId           String?   @db.Uuid // null after RGPD anonymization
+  content            String    @db.Text
+  isHidden           Boolean   @default(false)
+  /// Hidden by the moderation (the console, or an administrator on someone
+  /// else's message), not by its author: only such a message may be shown
+  /// again from the console. An author's own withdrawal is final.
+  hiddenByModeration Boolean   @default(false)
   /// Set on every edit after the first save, so a thread cannot be rewritten
   /// under a reader without any trace.
-  editedAt  DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  editedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   topic  ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
   author User?      @relation("ForumPostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
@@ -2072,14 +2080,17 @@ model ExerciseCompletion {
 /// version replaces the old one. Screened like every text a person publishes
 /// to another: what the screen flags is written hidden and goes to the queue.
 model ChallengeWriteup {
-  id          String   @id @default(uuid()) @db.Uuid
-  challengeId String   @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  challengeId        String   @db.Uuid
   /// Null after RGPD anonymization: the solution stays, its author does not.
-  userId      String?  @db.Uuid
-  content     String   @db.Text
-  isHidden    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  userId             String?  @db.Uuid
+  content            String   @db.Text
+  isHidden           Boolean  @default(false)
+  /// Hidden by the console, not held by the screen: publishing again never
+  /// brings such a solution back, only the console does.
+  hiddenByModeration Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)

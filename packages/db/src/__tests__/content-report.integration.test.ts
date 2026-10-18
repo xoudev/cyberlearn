@@ -5,6 +5,9 @@
  * Only what the reporter can see can be reported; one report per reporter
  * and content, reopened when filed again; hiding a reply takes it out of the
  * thread's count and closes its reports, journalled and told to its author;
+ * a message its author withdrew is never shown again from the console; the
+ * console closing a report does not use up its reporter's hourly limit; a
+ * solution the console hid stays hidden when its author publishes again;
  * deleting a thread's opening message deletes the thread and closes the
  * reports of every message in it; an erased reporter's report stays, unnamed.
  *
@@ -18,12 +21,14 @@ import { prisma } from "../prisma.js";
 import { contentModerationRepository } from "../repositories/content-moderation.repository.js";
 import { contentReportRepository } from "../repositories/content-report.repository.js";
 import { forumRepository } from "../repositories/forum.repository.js";
+import { writeupRepository } from "../repositories/writeup.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 const author = randomUUID();
 const reader = randomUUID();
 const admin = randomUUID();
 const categoryId = randomUUID();
+const challengeId = randomUUID();
 let topicId = "";
 let openingId = "";
 let replyId = "";
@@ -92,6 +97,7 @@ describe("content reports and moderation (integration, real DB)", () => {
     await prisma.contentReport.deleteMany({
       where: { contentId: { in: [openingId, replyId] } },
     });
+    await prisma.challenge.deleteMany({ where: { id: challengeId } });
     await prisma.notification.deleteMany({ where: { userId: { in: [author, reader] } } });
     await prisma.auditLog.deleteMany({ where: { actorId: admin } });
     await prisma.forumTopic.deleteMany({ where: { categoryId } });
@@ -135,16 +141,18 @@ describe("content reports and moderation (integration, real DB)", () => {
 
   it("lists the reported content for the console, with its author and its reports", async () => {
     if (!configured) return;
-    const group = (await contentReportRepository.openByContent()).find(
-      (g) => g.contentId === replyId,
-    );
+    const queue = await contentReportRepository.openByContent({ page: 1, pageSize: 200 });
+    const group = queue.rows.find((g) => g.contentId === replyId);
     expect(group?.content).toMatchObject({
       surface: "FORUM_POST",
       text: "Une réponse que quelqu'un va signaler.",
       author: { id: author, displayName: "Auteur" },
       opensThread: false,
       learnerPath: `/forum/reports-${suffix}/une-question-de-reseau`,
+      pendingReview: false,
+      authorWithdrew: false,
     });
+    expect(queue.openReports).toBeGreaterThanOrEqual(1);
     expect(group?.reports).toEqual([
       expect.objectContaining({ reason: "HATE", reporterUsername: `crr${suffix}` }),
     ]);
@@ -223,6 +231,9 @@ describe("content reports and moderation (integration, real DB)", () => {
       reason: "OTHER",
       comment: null,
     });
+    // The console closing it moves updatedAt, not the reporter's hour.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const since = new Date();
     expect(
       await contentModerationRepository.dismissReports({
         surface: "FORUM_POST",
@@ -231,6 +242,110 @@ describe("content reports and moderation (integration, real DB)", () => {
       }),
     ).toBe(1);
     expect(await prisma.forumPost.count({ where: { id: replyId, isHidden: false } })).toBe(1);
+    expect(await contentReportRepository.countSince(reader, since)).toBe(0);
+  });
+
+  it("never shows again from the console a message its author withdrew", async () => {
+    if (!configured) return;
+    const withdrawn = await forumRepository.reply({
+      topicId,
+      authorId: author,
+      content: "Un message que son auteur retire lui-même.",
+    });
+    if (withdrawn === null) throw new Error("no reply");
+    expect(await forumRepository.hidePost(withdrawn.postId, { id: author, isAdmin: false })).toBe(
+      true,
+    );
+
+    const slice = await contentModerationRepository.listForConsole({
+      surface: "FORUM_POST",
+      hidden: true,
+      q: "retire lui-même",
+      page: 1,
+      pageSize: 25,
+    });
+    expect(slice.rows.find((r) => r.id === withdrawn.postId)).toMatchObject({
+      isHidden: true,
+      authorWithdrew: true,
+      pendingReview: false,
+    });
+    expect(
+      await contentModerationRepository.apply({
+        surface: "FORUM_POST",
+        id: withdrawn.postId,
+        gesture: "restore",
+        actorId: admin,
+        notice: NOTICE,
+      }),
+    ).toEqual({ ok: false, reason: "AUTHOR_WITHDRAWN" });
+    expect(await prisma.forumPost.count({ where: { id: withdrawn.postId, isHidden: true } })).toBe(
+      1,
+    );
+  });
+
+  it("keeps a solution the console hid hidden when its author publishes it again", async () => {
+    if (!configured) return;
+    await prisma.challenge.create({
+      data: {
+        id: challengeId,
+        refCode: `CL-CHG-T${suffix}`,
+        slug: `signalements-${suffix}`,
+        title: "Défi de test",
+        description: "Pour les tests",
+        instructions: "Rien à faire.",
+        category: "CYBERSEC",
+        difficulty: "BEGINNER",
+        type: "CTF",
+        xpReward: 10,
+      },
+    });
+    const text = "Une solution que la console va masquer, avec assez de texte pour passer.";
+    const written = await writeupRepository.upsert({
+      challengeId,
+      userId: author,
+      content: text,
+      isHidden: false,
+    });
+    if (written === null) throw new Error("no writeup");
+    expect(
+      await contentModerationRepository.apply({
+        surface: "CHALLENGE_WRITEUP",
+        id: written.id,
+        gesture: "hide",
+        actorId: admin,
+        notice: null,
+      }),
+    ).toMatchObject({ ok: true });
+
+    expect(
+      await writeupRepository.upsert({
+        challengeId,
+        userId: author,
+        content: text,
+        isHidden: false,
+      }),
+    ).toBeNull();
+    expect(await writeupRepository.findOwn(author, challengeId)).toMatchObject({
+      isHidden: true,
+      hiddenByModeration: true,
+    });
+
+    // Shown again by the console, it is its author's to replace again.
+    await contentModerationRepository.apply({
+      surface: "CHALLENGE_WRITEUP",
+      id: written.id,
+      gesture: "restore",
+      actorId: admin,
+      notice: null,
+    });
+    expect(
+      await writeupRepository.upsert({
+        challengeId,
+        userId: author,
+        content: text,
+        isHidden: false,
+      }),
+    ).toEqual({ id: written.id });
   });
 
   it("deletes the thread with its opening message, and closes every message's reports", async () => {

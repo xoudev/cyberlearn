@@ -15,8 +15,10 @@ import {
   parseContentListParams,
   parseLessonListParams,
   parsePendingListParams,
+  parseReportListParams,
   parseUserListParams,
   pendingListSearch,
+  reportQueryOf,
   userListSearch,
   userQueryOf,
   withKnownAction,
@@ -293,6 +295,18 @@ describe("the published-content list's parameters", () => {
       surface: "FORUM_POST",
       state: undefined,
     });
+  });
+});
+
+describe("the report queue's parameters", () => {
+  it("opens on the first page, twenty contents to a page", () => {
+    expect(reportQueryOf(parseReportListParams({}))).toEqual({ page: 1, pageSize: 20 });
+  });
+
+  it("reads a page, and drops one that is not", () => {
+    expect(reportQueryOf(parseReportListParams({ page: "3" }))).toEqual({ page: 3, pageSize: 20 });
+    expect(parseReportListParams({ page: "-1" })).toEqual({ page: 1 });
+    expect(parseReportListParams({ page: "deux" })).toEqual({ page: 1 });
   });
 });
 

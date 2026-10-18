@@ -278,7 +278,7 @@
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/moderation` | File de relecture des contenus signalés |
 | `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
-| `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord ; masquer, supprimer, classer sans suite |
+| `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
@@ -382,10 +382,17 @@
   que le geste ; masquer ou supprimer le message qui ouvre un sujet emporte le
   sujet, supprimer une question emporte ses réponses ; le compte des réponses
   d'un sujet est recompté à chaque geste. Un contenu encore dans la file du
-  filtre se décide dans la file
+  filtre se décide dans la file. Un message du forum retiré par son auteur ne
+  se réaffiche jamais depuis la console : seul ce que la modération a masqué
+  revient (colonne `hiddenByModeration`, posée par la console et par un
+  administrateur qui retire le message d'un autre) ; une solution masquée ne
+  revient pas quand son auteur la republie ; masquer ou supprimer une réponse
+  acceptée rouvre sa question, la réafficher la résout de nouveau
 - Signalements des apprenants groupés par contenu, avec la raison, le
   commentaire et le signaleur : masquer ou supprimer les classe, « Classer sans
   suite » les ferme et laisse le contenu (`moderation.report.dismiss`) ; une
+  suppression depuis la file du filtre les ferme aussi ; la limite horaire d'un
+  signaleur se compte sur `reportedAt`, que la console ne touche pas ; une
   ressource de classe masquée reste listée pour son enseignant, marquée comme
   telle, et sort de la vue de ses élèves (colonne `isHidden`, appliquée aussi
   par la RLS de `class_resources`)

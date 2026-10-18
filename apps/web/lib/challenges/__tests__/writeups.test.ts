@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   countVisible: vi.fn<(challengeId: string) => Promise<number>>(),
   findOwn: vi.fn<(userId: string, challengeId: string) => Promise<unknown>>(),
   listOthers: vi.fn<(challengeId: string, viewerId: string) => Promise<unknown[]>>(),
-  upsert: vi.fn<(input: unknown) => Promise<{ id: string }>>(),
+  upsert: vi.fn<(input: unknown) => Promise<{ id: string } | null>>(),
   deleteOwn: vi.fn<(userId: string, challengeId: string) => Promise<number>>(),
   screen:
     vi.fn<
@@ -68,7 +68,12 @@ describe("writeupBoardFor", () => {
 
   it("opens the others' solutions once it is solved, an erased author left nameless", async () => {
     const at = new Date("2026-10-01T10:00:00Z");
-    m.findOwn.mockResolvedValue({ content: "Ma solution.", isHidden: true, updatedAt: at });
+    m.findOwn.mockResolvedValue({
+      content: "Ma solution.",
+      isHidden: true,
+      hiddenByModeration: false,
+      updatedAt: at,
+    });
     m.listOthers.mockResolvedValue([
       {
         id: "w-2",
@@ -81,7 +86,12 @@ describe("writeupBoardFor", () => {
     expect(await writeupBoardFor("u1", CHALLENGE)).toEqual({
       solved: true,
       count: 3,
-      own: { content: "Ma solution.", isHidden: true, updatedAt: "2026-10-01T10:00:00.000Z" },
+      own: {
+        content: "Ma solution.",
+        isHidden: true,
+        hiddenByModeration: false,
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
       others: [
         {
           id: "w-2",
@@ -156,6 +166,30 @@ describe("publishWriteup", () => {
     });
     expect(m.screen).not.toHaveBeenCalled();
     expect(m.upsert).not.toHaveBeenCalled();
+  });
+
+  it("refuses to publish over a solution a moderator hid, before screening anything", async () => {
+    m.findOwn.mockResolvedValue({
+      content: "Ma solution.",
+      isHidden: true,
+      hiddenByModeration: true,
+      updatedAt: new Date(),
+    });
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toEqual({
+      ok: false,
+      error:
+        "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.",
+    });
+    expect(m.screen).not.toHaveBeenCalled();
+    expect(m.upsert).not.toHaveBeenCalled();
+  });
+
+  it("says so when a moderator hid it between the check and the write", async () => {
+    m.upsert.mockResolvedValue(null);
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toMatchObject(
+      { ok: false, error: expect.stringContaining("masquée par la modération") as unknown },
+    );
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
   it("holds a flagged solution for review, tied to its event and announced", async () => {

@@ -19,7 +19,7 @@ import {
   parseContentListParams,
 } from "@/lib/list-params";
 import { ContentActions } from "../_components/content-actions";
-import { AuthorLink, ContentPlace, ContentText } from "../_components/content-cells";
+import { AuthorLink, ContentPlace, ContentState, ContentText } from "../_components/content-cells";
 import { CONTENT_COLUMNS } from "../_components/content-columns";
 import { CONTENT_HEADER } from "../_components/moderation-head";
 
@@ -69,7 +69,7 @@ export default async function AdminContentPage({
         </span>
       ),
       <span key="s" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {c.isHidden ? <Tag tone="danger">Masqué</Tag> : <Tag tone="accent">Visible</Tag>}
+        <ContentState content={c} />
         {c.opensThread && <Tag>Ouvre le sujet</Tag>}
       </span>,
       <ContentActions
@@ -78,6 +78,7 @@ export default async function AdminContentPage({
         contentId={c.id}
         hidden={c.isHidden}
         pendingReview={c.pendingReview}
+        authorWithdrew={c.authorWithdrew}
         opensThread={c.opensThread}
         replies={c.replies}
       />,

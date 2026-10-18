@@ -4,8 +4,9 @@ import {
   CONTENT_SURFACES,
   contentModerationRepository,
   type ContentSurface,
-  type ModeratedContent,
+  type ReviewableContent,
 } from "./content-moderation.repository.js";
+import { readSlice, type ConsolePage, type ConsoleSlice } from "./console-page.js";
 
 export const CONTENT_REPORT_REASONS = [
   "HATE",
@@ -28,11 +29,12 @@ export interface ReportedContent {
   surface: ContentSurface;
   contentId: string;
   /**
-   * The content as it is now; null when it no longer exists (its author's
-   * account was erased with it, or a teacher removed their resource), and
-   * the reports can only be closed.
+   * The content as it is now, with whether the screen's queue still holds
+   * it; null when it no longer exists (its author's account was erased with
+   * it, or a teacher removed their resource), and the reports can only be
+   * closed.
    */
-  content: ModeratedContent | null;
+  content: ReviewableContent | null;
   reports: {
     id: string;
     reason: ContentReportReasonValue;
@@ -42,6 +44,14 @@ export interface ReportedContent {
     reporterUsername: string | null;
   }[];
 }
+
+/** One page of the report queue, one content per entry. */
+export interface ReportQueue extends ConsoleSlice<ReportedContent> {
+  /** Open reports over every page, where `total` counts contents. */
+  openReports: number;
+}
+
+const OPEN = { status: "OPEN" } as const;
 
 export const contentReportRepository = {
   /**
@@ -63,32 +73,73 @@ export const contentReportRepository = {
     await prisma.contentReport.upsert({
       where: { reporterId_surface_contentId: { reporterId, surface, contentId } },
       create: { reporterId, surface, contentId, reason, comment },
-      update: { reason, comment, status: "OPEN", resolvedAt: null, resolvedById: null },
+      update: {
+        reason,
+        comment,
+        status: "OPEN",
+        resolvedAt: null,
+        resolvedById: null,
+        reportedAt: new Date(),
+      },
     });
   },
 
-  /** How many reports this person filed or changed since `since`: the rate limit. */
+  /**
+   * How many reports this person filed or filed again since `since`: the
+   * rate limit. Read from reportedAt, which only the reporter moves: the
+   * console closing their reports bumps updatedAt, and must not use up
+   * their hour.
+   */
   async countSince(reporterId: string, since: Date): Promise<number> {
-    return prisma.contentReport.count({ where: { reporterId, updatedAt: { gte: since } } });
+    return prisma.contentReport.count({ where: { reporterId, reportedAt: { gte: since } } });
   },
 
   /** Contents with at least one open report. */
   async countOpenContents(): Promise<number> {
     const rows = await prisma.contentReport.groupBy({
       by: ["surface", "contentId"],
-      where: { status: "OPEN" },
+      where: OPEN,
     });
     return rows.length;
   },
 
   /**
-   * Open reports grouped by content, the most reported first and, among
-   * equals, the one waiting longest. Each group carries the content as it is
-   * now, read from its own table.
+   * One page of the open reports grouped by content, the most reported first
+   * and, among equals, the one waiting longest. Each group carries the
+   * content as it is now, read from its own table, and whether the screen's
+   * queue still holds it. Paged by content, as the console's other lists are
+   * by row: the database groups and pages, and only that page's reports are
+   * read.
    */
-  async openByContent(): Promise<ReportedContent[]> {
+  async openByContent(page: ConsolePage): Promise<ReportQueue> {
+    const [slice, openReports] = await Promise.all([
+      readSlice(
+        page,
+        () => contentReportRepository.countOpenContents(),
+        (window) =>
+          prisma.contentReport.groupBy({
+            by: ["surface", "contentId"],
+            where: OPEN,
+            orderBy: [
+              { _count: { id: "desc" } },
+              { _min: { createdAt: "asc" } },
+              { surface: "asc" },
+              { contentId: "asc" },
+            ],
+            ...window,
+          }),
+      ),
+      prisma.contentReport.count({ where: OPEN }),
+    ]);
+    if (slice.rows.length === 0) {
+      return { rows: [], total: slice.total, page: slice.page, openReports };
+    }
+
     const rows = await prisma.contentReport.findMany({
-      where: { status: "OPEN" },
+      where: {
+        ...OPEN,
+        OR: slice.rows.map((g) => ({ surface: g.surface, contentId: g.contentId })),
+      },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -101,14 +152,16 @@ export const contentReportRepository = {
       },
     });
 
-    const groups = new Map<string, ReportedContent>();
+    // In the page's order, which the database decided.
+    const groups = new Map<string, ReportedContent>(
+      slice.rows.map((g) => [
+        `${g.surface}:${g.contentId}`,
+        { surface: g.surface, contentId: g.contentId, content: null, reports: [] },
+      ]),
+    );
     for (const r of rows) {
-      const key = `${r.surface}:${r.contentId}`;
-      let group = groups.get(key);
-      if (group === undefined) {
-        group = { surface: r.surface, contentId: r.contentId, content: null, reports: [] };
-        groups.set(key, group);
-      }
+      const group = groups.get(`${r.surface}:${r.contentId}`);
+      if (group === undefined) continue;
       group.reports.push({
         id: r.id,
         reason: r.reason,
@@ -118,7 +171,7 @@ export const contentReportRepository = {
       });
     }
 
-    // One read per surface for the whole queue, not one per report.
+    // One read per surface for the whole page, not one per report.
     const all = [...groups.values()];
     for (const surface of CONTENT_SURFACES) {
       const ids = all.filter((g) => g.surface === surface).map((g) => g.contentId);
@@ -129,7 +182,6 @@ export const contentReportRepository = {
       }
     }
 
-    // Stable: equal counts keep the order of their oldest report.
-    return all.sort((a, b) => b.reports.length - a.reports.length);
+    return { rows: all, total: slice.total, page: slice.page, openReports };
   },
 };

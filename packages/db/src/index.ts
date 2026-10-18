@@ -223,12 +223,14 @@ export {
   type ContentNotice,
   type ContentSurface,
   type ModeratedContent,
+  type ReviewableContent,
 } from "./repositories/content-moderation.repository.js";
 export {
   contentReportRepository,
   CONTENT_REPORT_REASONS,
   type ContentReportReasonValue,
   type ReportedContent,
+  type ReportQueue,
 } from "./repositories/content-report.repository.js";
 export { notificationRepository } from "./repositories/notification.repository.js";
 export type { NotificationItem } from "./repositories/notification.repository.js";

@@ -112,6 +112,13 @@ describe("moderateContentAction", () => {
       form({ surface: "FORUM_POST", contentId: POST, gesture: "hide" }),
     );
     expect(again.error).toContain("déjà dans cet état");
+
+    apply.mockResolvedValue({ ok: false, reason: "AUTHOR_WITHDRAWN" });
+    const withdrawn = await moderateContentAction(
+      {},
+      form({ surface: "FORUM_POST", contentId: POST, gesture: "restore" }),
+    );
+    expect(withdrawn.error).toContain("retiré ce message lui-même");
   });
 
   it("refuses a surface, a gesture or an id it does not know", async () => {

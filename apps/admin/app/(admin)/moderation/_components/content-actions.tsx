@@ -19,13 +19,16 @@ import {
  * question each gesture asks first: every one reaches the author, and a
  * deletion takes what goes with the content (a thread, a question's answers).
  * Content the filter's queue still holds is decided there: the row says so
- * and leads to it, rather than offering a gesture the queue would undo.
+ * and leads to it, rather than offering a gesture the queue would undo. A
+ * forum message its author withdrew is not offered « Réafficher »: that
+ * withdrawal is final, and only a deletion is left.
  */
 export function ContentActions({
   surface,
   contentId,
   hidden,
   pendingReview,
+  authorWithdrew = false,
   opensThread,
   replies,
   withDismiss = false,
@@ -35,6 +38,8 @@ export function ContentActions({
   contentId: string;
   hidden: boolean;
   pendingReview: boolean;
+  /** Hidden by its author, not by the moderation: never shown again from here. */
+  authorWithdrew?: boolean;
   opensThread: boolean;
   replies: number;
   /** On a report: « Classer sans suite » closes the reports and keeps the content. */
@@ -84,9 +89,11 @@ export function ContentActions({
       ) : (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {!dismissOnly &&
-            (hidden
-              ? gestureForm("restore", "Réafficher", "a-btn--ghost")
-              : gestureForm("hide", "Masquer", "a-btn--ghost"))}
+            (!hidden
+              ? gestureForm("hide", "Masquer", "a-btn--ghost")
+              : authorWithdrew
+                ? null
+                : gestureForm("restore", "Réafficher", "a-btn--ghost"))}
           {!dismissOnly && gestureForm("delete", "Supprimer", "a-btn--danger")}
           {(withDismiss || dismissOnly) && (
             <form action={action}>
@@ -99,6 +106,11 @@ export function ContentActions({
             </form>
           )}
         </div>
+      )}
+      {!pendingReview && !dismissOnly && hidden && authorWithdrew && (
+        <span className="a-field-hint">
+          Retiré par son auteur : il ne se réaffiche pas d&apos;ici.
+        </span>
       )}
       {state.error !== undefined && (
         <p className="a-form-error" role="alert">

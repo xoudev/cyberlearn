@@ -55,6 +55,8 @@ const REFUSED = {
     "Rien n'a changé : ce contenu est déjà dans cet état, quelqu'un l'a peut-être traité entre-temps.",
   PENDING_REVIEW:
     "Ce contenu attend une décision dans la file de relecture du filtre : c'est là qu'il se traite.",
+  AUTHOR_WITHDRAWN:
+    "Son auteur a retiré ce message lui-même : la console ne le réaffiche pas. Il peut seulement être supprimé.",
 } as const;
 
 function reportsLine(count: number): string {

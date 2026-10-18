@@ -24,7 +24,13 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     },
     forumTopic: { updateMany: vi.fn(), deleteMany: vi.fn() },
     lessonQuestion: { findMany: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
-    lessonAnswer: { findMany: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
+    lessonAnswer: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      updateManyAndReturn: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    challengeWriteup: { findMany: vi.fn(), updateMany: vi.fn() },
     contentReport: { updateMany: vi.fn() },
     auditLog: { create: vi.fn() },
     notification: { create: vi.fn() },
@@ -58,11 +64,12 @@ const ANSWER_ROW = {
   question: { title: "Le masque /26 ?", lesson: { title: "Sous-réseaux", slug: "sous-reseaux" } },
 };
 
-function opening(isHidden = false): Record<string, unknown> {
+function opening(isHidden = false, hiddenByModeration = false): Record<string, unknown> {
   return {
     id: ID,
     content: "Ouverture du sujet.",
     isHidden,
+    hiddenByModeration,
     createdAt: new Date("2026-10-01T10:00:00Z"),
     author: AUTHOR,
     topic: {
@@ -83,7 +90,8 @@ beforeEach(() => {
   tx.auditLog.create.mockResolvedValue({});
   tx.notification.create.mockResolvedValue({});
   tx.lessonAnswer.findMany.mockResolvedValue([ANSWER_ROW]);
-  tx.lessonAnswer.updateMany.mockResolvedValue({ count: 1 });
+  tx.lessonAnswer.updateManyAndReturn.mockResolvedValue([{ questionId: "q-1", isAccepted: false }]);
+  tx.lessonQuestion.updateMany.mockResolvedValue({ count: 1 });
 });
 
 describe("contentModerationRepository.apply", () => {
@@ -99,10 +107,13 @@ describe("contentModerationRepository.apply", () => {
 
     expect(result).toMatchObject({ ok: true, reportsClosed: 2 });
     expect(mockPrisma.$transaction).toHaveBeenCalledOnce();
-    expect(tx.lessonAnswer.updateMany).toHaveBeenCalledWith({
+    expect(tx.lessonAnswer.updateManyAndReturn).toHaveBeenCalledWith({
       where: { id: ID, isHidden: false },
       data: { isHidden: true },
+      select: { questionId: true, isAccepted: true },
     });
+    // Not the accepted answer: its question stays as it was.
+    expect(tx.lessonQuestion.updateMany).not.toHaveBeenCalled();
     expect(tx.contentReport.updateMany).toHaveBeenCalledWith({
       where: { surface: "LESSON_ANSWER", contentId: ID, status: "OPEN" },
       data: expect.objectContaining({ status: "HIDDEN", resolvedById: ADMIN }) as unknown,
@@ -139,12 +150,65 @@ describe("contentModerationRepository.apply", () => {
       actorId: ADMIN,
       notice: NOTICE,
     });
-    expect(tx.lessonAnswer.updateMany).toHaveBeenCalledWith({
+    expect(tx.lessonAnswer.updateManyAndReturn).toHaveBeenCalledWith({
       where: { id: ID, isHidden: true },
       data: { isHidden: false },
+      select: { questionId: true, isAccepted: true },
     });
     expect(tx.contentReport.updateMany).not.toHaveBeenCalled();
     expect(firstAction()).toBe(CONTENT_AUDIT_ACTION.restore);
+  });
+
+  it("opens again the question of an accepted answer it hides, and resolves it when shown", async () => {
+    tx.lessonAnswer.updateManyAndReturn.mockResolvedValue([
+      { questionId: "q-1", isAccepted: true },
+    ]);
+    await contentModerationRepository.apply({
+      surface: "LESSON_ANSWER",
+      id: ID,
+      gesture: "hide",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(tx.lessonQuestion.updateMany).toHaveBeenCalledWith({
+      where: { id: "q-1" },
+      data: { isResolved: false },
+    });
+
+    vi.clearAllMocks();
+    tx.moderationEvent.findMany.mockResolvedValue([]);
+    tx.lessonAnswer.findMany.mockResolvedValue([{ ...ANSWER_ROW, isHidden: true }]);
+    tx.lessonAnswer.updateManyAndReturn.mockResolvedValue([
+      { questionId: "q-1", isAccepted: true },
+    ]);
+    await contentModerationRepository.apply({
+      surface: "LESSON_ANSWER",
+      id: ID,
+      gesture: "restore",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(tx.lessonQuestion.updateMany).toHaveBeenCalledWith({
+      where: { id: "q-1" },
+      data: { isResolved: true },
+    });
+  });
+
+  it("opens again the question of an accepted answer it deletes", async () => {
+    tx.lessonAnswer.findUnique.mockResolvedValue({ questionId: "q-1", isAccepted: true });
+    tx.lessonAnswer.deleteMany.mockResolvedValue({ count: 1 });
+    const result = await contentModerationRepository.apply({
+      surface: "LESSON_ANSWER",
+      id: ID,
+      gesture: "delete",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(result.ok).toBe(true);
+    expect(tx.lessonQuestion.updateMany).toHaveBeenCalledWith({
+      where: { id: "q-1" },
+      data: { isResolved: false },
+    });
   });
 
   it("does not notify a moderator about their own message", async () => {
@@ -160,7 +224,7 @@ describe("contentModerationRepository.apply", () => {
   });
 
   it("changes nothing on a second click: the row is already in that state", async () => {
-    tx.lessonAnswer.updateMany.mockResolvedValue({ count: 0 });
+    tx.lessonAnswer.updateManyAndReturn.mockResolvedValue([]);
     const result = await contentModerationRepository.apply({
       surface: "LESSON_ANSWER",
       id: ID,
@@ -252,6 +316,11 @@ describe("contentModerationRepository.apply", () => {
     });
 
     expect(result.ok).toBe(true);
+    // Marked as the moderation's: the console may show it again later.
+    expect(tx.forumPost.updateMany).toHaveBeenCalledWith({
+      where: { id: ID, isHidden: false },
+      data: { isHidden: true, hiddenByModeration: true },
+    });
     // The screen records a held thread against its topic: both are checked.
     expect(tx.moderationEvent.findMany).toHaveBeenCalledWith({
       where: { contentId: { in: [ID, TOPIC] }, outcome: "PENDING" },
@@ -269,6 +338,79 @@ describe("contentModerationRepository.apply", () => {
       data: expect.objectContaining({
         metadata: expect.objectContaining({ opensThread: true, replies: 2 }) as unknown,
       }) as unknown,
+    });
+  });
+});
+
+describe("a forum message taken down", () => {
+  beforeEach(() => {
+    tx.forumPost.findFirst.mockResolvedValue({ id: ID });
+    tx.forumPost.count.mockResolvedValue(2);
+  });
+
+  it("is never shown again from the console when its author withdrew it", async () => {
+    tx.forumPost.findMany.mockResolvedValue([opening(true, false)]);
+    const result = await contentModerationRepository.apply({
+      surface: "FORUM_POST",
+      id: ID,
+      gesture: "restore",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(result).toEqual({ ok: false, reason: "AUTHOR_WITHDRAWN" });
+    expect(tx.forumPost.updateMany).not.toHaveBeenCalled();
+    expect(tx.forumTopic.updateMany).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+  });
+
+  it("is shown again, with its thread, when the moderation hid it", async () => {
+    tx.forumPost.findMany.mockResolvedValue([opening(true, true)]);
+    tx.forumPost.findUnique.mockResolvedValue({ topicId: TOPIC, isHidden: true });
+    tx.forumPost.updateMany.mockResolvedValue({ count: 1 });
+    const result = await contentModerationRepository.apply({
+      surface: "FORUM_POST",
+      id: ID,
+      gesture: "restore",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(result.ok).toBe(true);
+    // The condition sits in the update: an author withdrawing it in between wins.
+    expect(tx.forumPost.updateMany).toHaveBeenCalledWith({
+      where: { id: ID, isHidden: true, hiddenByModeration: true },
+      data: { isHidden: false, hiddenByModeration: false },
+    });
+    expect(tx.forumTopic.updateMany).toHaveBeenCalledWith({
+      where: { id: TOPIC },
+      data: { isHidden: false },
+    });
+  });
+});
+
+describe("a challenge solution hidden by the console", () => {
+  it("is marked as the moderation's, so its author cannot publish it back", async () => {
+    tx.challengeWriteup.findMany.mockResolvedValue([
+      {
+        id: ID,
+        content: "Ma solution.",
+        isHidden: false,
+        createdAt: new Date(),
+        user: AUTHOR,
+        challenge: { title: "Premier flag", slug: "premier-flag" },
+      },
+    ]);
+    tx.challengeWriteup.updateMany.mockResolvedValue({ count: 1 });
+    await contentModerationRepository.apply({
+      surface: "CHALLENGE_WRITEUP",
+      id: ID,
+      gesture: "hide",
+      actorId: ADMIN,
+      notice: NOTICE,
+    });
+    expect(tx.challengeWriteup.updateMany).toHaveBeenCalledWith({
+      where: { id: ID, isHidden: false },
+      data: { isHidden: true, hiddenByModeration: true },
     });
   });
 });

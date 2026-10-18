@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
-import type { ContentAuthor, ModeratedContent } from "@cyberlearn/db";
+import type { ContentAuthor, ModeratedContent, ReviewableContent } from "@cyberlearn/db";
 import { contentExcerpt } from "@/lib/content-moderation";
 import { learnerUrl } from "@/lib/learner-url";
+import { Tag } from "../../_components/admin-ui";
 
 /**
  * How the content list and the reports draw one piece of content and its
@@ -70,5 +71,25 @@ export function AuthorLink({ author }: { author: ContentAuthor | null }): React.
         )}
       </span>
     </Link>
+  );
+}
+
+/**
+ * Where a piece of content stands: visible, hidden, or withdrawn by its
+ * author, which the console cannot undo. A message the filter still holds
+ * reads as hidden: the queue decides it, and the actions say so.
+ */
+export function ContentState({
+  content,
+  hiddenLabel = "Masqué",
+}: {
+  content: ReviewableContent;
+  hiddenLabel?: string;
+}): React.ReactElement {
+  if (!content.isHidden) return <Tag tone="accent">Visible</Tag>;
+  return content.authorWithdrew && !content.pendingReview ? (
+    <Tag>Retiré par l&apos;auteur</Tag>
+  ) : (
+    <Tag tone="danger">{hiddenLabel}</Tag>
   );
 }

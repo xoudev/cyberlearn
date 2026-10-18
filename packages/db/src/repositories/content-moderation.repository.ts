@@ -80,14 +80,26 @@ export interface ModeratedContent {
   threadId: string | null;
   /** The replies that go with a thread's opening message, or a question's answers. */
   replies: number;
+  /**
+   * A hidden forum message the moderation did not hide: its author withdrew
+   * it, and that is final, so the console never shows it again. The screen's
+   * holds read the same until their review, and pendingReview, which the
+   * console checks first, tells them apart. False everywhere else: the other
+   * surfaces are only ever hidden by the screen or by the console.
+   */
+  authorWithdrew: boolean;
+}
+
+/** The content, and whether the screen's queue still holds a decision about it. */
+export interface ReviewableContent extends ModeratedContent {
+  /** Still in the screen's queue: decided there, not from the console's lists. */
+  pendingReview: boolean;
 }
 
 /** A row of the console's list: the content, and what is waiting on it. */
-export interface ConsoleContentRow extends ModeratedContent {
+export interface ConsoleContentRow extends ReviewableContent {
   /** Open reports about it. */
   openReports: number;
-  /** Still in the screen's queue: decided there, not from the list. */
-  pendingReview: boolean;
 }
 
 export interface ConsoleContentQuery extends ConsolePage {
@@ -105,14 +117,41 @@ export interface ContentNotice {
 
 export type ContentGestureResult =
   | { ok: true; content: ModeratedContent; reportsClosed: number }
-  | { ok: false; reason: "NOT_FOUND" | "UNCHANGED" | "PENDING_REVIEW" };
+  | { ok: false; reason: "NOT_FOUND" | "UNCHANGED" | "PENDING_REVIEW" | "AUTHOR_WITHDRAWN" };
 
 type Db = Prisma.TransactionClient;
 
 /** A row removed by a deletion, its own or by the cascade: its reports are closed. */
-interface RemovedRow {
+export interface RemovedRow {
   surface: ContentSurface;
   id: string;
+}
+
+/**
+ * Closes, as DELETED, the open reports about rows a deletion took, in the
+ * deletion's own transaction: the console's, and the screen's queue when it
+ * destroys what it held. How many it closed.
+ *
+ * Without it a report outlives its content: the sidebar counts it, and the
+ * report queue says its author or a teacher removed it, which nobody did.
+ */
+export async function closeReportsOfRemoved(
+  db: Db,
+  removed: readonly RemovedRow[],
+  actorId: string,
+  now: Date = new Date(),
+): Promise<number> {
+  let closed = 0;
+  for (const surface of CONTENT_SURFACES) {
+    const ids = removed.filter((r) => r.surface === surface).map((r) => r.id);
+    if (ids.length === 0) continue;
+    const { count } = await db.contentReport.updateMany({
+      where: { surface, contentId: { in: ids }, status: "OPEN" },
+      data: { status: "DELETED", resolvedAt: now, resolvedById: actorId },
+    });
+    closed += count;
+  }
+  return closed;
 }
 
 const AUTHOR = { select: { id: true, username: true, displayName: true } } as const;
@@ -135,6 +174,22 @@ async function pendingIn(db: Db, contentIds: string[]): Promise<Set<string>> {
     select: { contentId: true },
   });
   return new Set(rows.flatMap((r) => (r.contentId === null ? [] : [r.contentId])));
+}
+
+/** These contents, each with whether the screen's queue still holds it. */
+async function withPending(
+  db: Db,
+  handler: SurfaceHandler,
+  contents: ModeratedContent[],
+): Promise<ReviewableContent[]> {
+  const pending = await pendingIn(
+    db,
+    contents.flatMap((content) => handler.reviewIds(content)),
+  );
+  return contents.map((content) => ({
+    ...content,
+    pendingReview: handler.reviewIds(content).some((id) => pending.has(id)),
+  }));
 }
 
 /**
@@ -184,6 +239,7 @@ const FORUM_POST_SELECT = {
   id: true,
   content: true,
   isHidden: true,
+  hiddenByModeration: true,
   createdAt: true,
   author: AUTHOR,
   topic: {
@@ -215,6 +271,7 @@ function forumPostContent(row: ForumPostRow): ModeratedContent {
     opensThread,
     threadId: row.topic.id,
     replies: opensThread ? row.topic.replyCount : 0,
+    authorWithdrew: row.isHidden && !row.hiddenByModeration,
   };
 }
 
@@ -270,9 +327,11 @@ const forumPostHandler: SurfaceHandler = {
   async setHidden(db, id, hidden) {
     const place = await forumPlace(db, id);
     if (place === null || place.isHidden === hidden) return false;
+    // Marked as the moderation's when hidden, and shown again only when it
+    // is, in the same statement: a message its author withdrew stays down.
     const { count } = await db.forumPost.updateMany({
-      where: { id, isHidden: !hidden },
-      data: { isHidden: hidden },
+      where: hidden ? { id, isHidden: false } : { id, isHidden: true, hiddenByModeration: true },
+      data: { isHidden: hidden, hiddenByModeration: hidden },
     });
     if (count === 0) return false;
     // The opening message carries the thread; a reply moves the count.
@@ -344,6 +403,7 @@ function questionContent(row: QuestionRow): ModeratedContent {
     opensThread: false,
     threadId: null,
     replies: row._count.answers,
+    authorWithdrew: false,
   };
 }
 
@@ -434,6 +494,7 @@ function answerContent(row: AnswerRow): ModeratedContent {
     opensThread: false,
     threadId: null,
     replies: 0,
+    authorWithdrew: false,
   };
 }
 
@@ -469,15 +530,37 @@ const lessonAnswerHandler: SurfaceHandler = {
     return rows.map(answerContent);
   },
   async setHidden(db, id, hidden) {
-    const { count } = await db.lessonAnswer.updateMany({
+    const [answer] = await db.lessonAnswer.updateManyAndReturn({
       where: { id, isHidden: !hidden },
       data: { isHidden: hidden },
+      select: { questionId: true, isAccepted: true },
     });
-    return count > 0;
+    if (answer === undefined) return false;
+    // The accepted answer is what resolves its question: out of sight, the
+    // question is open again for its readers, and resolved again with it.
+    if (answer.isAccepted) {
+      await db.lessonQuestion.updateMany({
+        where: { id: answer.questionId },
+        data: { isResolved: !hidden },
+      });
+    }
+    return true;
   },
   async destroy(db, id) {
+    const answer = await db.lessonAnswer.findUnique({
+      where: { id },
+      select: { questionId: true, isAccepted: true },
+    });
+    if (answer === null) return [];
     const { count } = await db.lessonAnswer.deleteMany({ where: { id } });
-    return count === 0 ? [] : [{ surface: "LESSON_ANSWER", id }];
+    if (count === 0) return [];
+    if (answer.isAccepted) {
+      await db.lessonQuestion.updateMany({
+        where: { id: answer.questionId },
+        data: { isResolved: false },
+      });
+    }
+    return [{ surface: "LESSON_ANSWER", id }];
   },
   async reportable(viewerId, id) {
     const row = await prisma.lessonAnswer.findFirst({
@@ -520,6 +603,7 @@ function writeupContent(row: WriteupRow): ModeratedContent {
     opensThread: false,
     threadId: null,
     replies: 0,
+    authorWithdrew: false,
   };
 }
 
@@ -555,9 +639,11 @@ const challengeWriteupHandler: SurfaceHandler = {
     return rows.map(writeupContent);
   },
   async setHidden(db, id, hidden) {
+    // Marked as the moderation's, so that its author publishing again does
+    // not bring it back (writeupRepository.upsert): only the console does.
     const { count } = await db.challengeWriteup.updateMany({
       where: { id, isHidden: !hidden },
-      data: { isHidden: hidden },
+      data: { isHidden: hidden, hiddenByModeration: hidden },
     });
     return count > 0;
   },
@@ -612,6 +698,7 @@ function resourceContent(row: ResourceRow): ModeratedContent {
     opensThread: false,
     threadId: null,
     replies: 0,
+    authorWithdrew: false,
   };
 }
 
@@ -701,10 +788,14 @@ function journalExcerpt(text: string): string {
 }
 
 export const contentModerationRepository = {
-  /** The rows of these ids that still exist, for the report queue. */
-  async read(surface: ContentSurface, ids: string[]): Promise<ModeratedContent[]> {
+  /**
+   * The rows of these ids that still exist, for the report queue, each with
+   * whether the screen's queue still holds it.
+   */
+  async read(surface: ContentSurface, ids: string[]): Promise<ReviewableContent[]> {
     if (ids.length === 0) return [];
-    return HANDLERS[surface].read(prisma, ids);
+    const handler = HANDLERS[surface];
+    return withPending(prisma, handler, await handler.read(prisma, ids));
   },
 
   /**
@@ -733,7 +824,7 @@ export const contentModerationRepository = {
       (window) => handler.list(query, window),
     );
     const ids = slice.rows.map((r) => r.id);
-    const [reports, pending] = await Promise.all([
+    const [reports, rows] = await Promise.all([
       ids.length === 0
         ? Promise.resolve([])
         : prisma.contentReport.groupBy({
@@ -741,19 +832,12 @@ export const contentModerationRepository = {
             where: { surface: query.surface, contentId: { in: ids }, status: "OPEN" },
             _count: { _all: true },
           }),
-      pendingIn(
-        prisma,
-        slice.rows.flatMap((row) => handler.reviewIds(row)),
-      ),
+      withPending(prisma, handler, slice.rows),
     ]);
     const open = new Map(reports.map((r) => [r.contentId, r._count._all]));
     return {
       ...slice,
-      rows: slice.rows.map((row) => ({
-        ...row,
-        openReports: open.get(row.id) ?? 0,
-        pendingReview: handler.reviewIds(row).some((id) => pending.has(id)),
-      })),
+      rows: rows.map((row) => ({ ...row, openReports: open.get(row.id) ?? 0 })),
     };
   },
 
@@ -764,8 +848,8 @@ export const contentModerationRepository = {
    * author's notice.
    *
    * Refused, changing nothing, when the content is gone, already in the
-   * state asked for (a second click, or a second moderator), or still waiting
-   * in the screen's queue.
+   * state asked for (a second click, or a second moderator), still waiting
+   * in the screen's queue, or, to be shown again, withdrawn by its author.
    */
   async apply(input: {
     surface: ContentSurface;
@@ -782,21 +866,16 @@ export const contentModerationRepository = {
       if ((await pendingIn(tx, handler.reviewIds(content))).size > 0) {
         return { ok: false, reason: "PENDING_REVIEW" };
       }
+      if (input.gesture === "restore" && content.authorWithdrew) {
+        return { ok: false, reason: "AUTHOR_WITHDRAWN" };
+      }
 
       const now = new Date();
       let reportsClosed = 0;
       if (input.gesture === "delete") {
         const removed = await handler.destroy(tx, input.id);
         if (removed.length === 0) return { ok: false, reason: "NOT_FOUND" };
-        for (const surface of CONTENT_SURFACES) {
-          const ids = removed.filter((r) => r.surface === surface).map((r) => r.id);
-          if (ids.length === 0) continue;
-          const { count } = await tx.contentReport.updateMany({
-            where: { surface, contentId: { in: ids }, status: "OPEN" },
-            data: { status: "DELETED", resolvedAt: now, resolvedById: input.actorId },
-          });
-          reportsClosed += count;
-        }
+        reportsClosed = await closeReportsOfRemoved(tx, removed, input.actorId, now);
       } else {
         const hidden = input.gesture === "hide";
         if (!(await handler.setHidden(tx, input.id, hidden))) {

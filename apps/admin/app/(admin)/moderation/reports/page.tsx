@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { contentReportRepository, type ReportedContent } from "@cyberlearn/db";
 import {
   CONTENT_REPORT_REASON_KEYS,
@@ -8,8 +9,11 @@ import {
 } from "@cyberlearn/lib/moderation/report-reasons";
 import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
 import { ContentActions } from "../_components/content-actions";
-import { AuthorLink, ContentPlace, ContentText } from "../_components/content-cells";
+import { AuthorLink, ContentPlace, ContentState, ContentText } from "../_components/content-cells";
 import { REPORTS_HEADER } from "../_components/moderation-head";
+import { gridHref } from "@/lib/grid-href";
+import type { RawParams } from "@/lib/grid-params";
+import { REPORTS_PAGE_SIZE, parseReportListParams, reportQueryOf } from "@/lib/list-params";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -34,7 +38,9 @@ function ReportedContentCard({ group }: { group: ReportedContent }): React.React
             <Tag tone="warning">
               {group.reports.length} signalement{group.reports.length > 1 ? "s" : ""}
             </Tag>
-            {content?.isHidden === true && <Tag tone="danger">Déjà masqué</Tag>}
+            {content?.isHidden === true && (
+              <ContentState content={content} hiddenLabel="Déjà masqué" />
+            )}
             {content?.opensThread === true && <Tag>Ouvre le sujet</Tag>}
           </div>
         </div>
@@ -91,7 +97,8 @@ function ReportedContentCard({ group }: { group: ReportedContent }): React.React
             surface={group.surface}
             contentId={group.contentId}
             hidden={content.isHidden}
-            pendingReview={false}
+            pendingReview={content.pendingReview}
+            authorWithdrew={content.authorWithdrew}
             opensThread={content.opensThread}
             replies={content.replies}
             withDismiss
@@ -102,15 +109,67 @@ function ReportedContentCard({ group }: { group: ReportedContent }): React.React
   );
 }
 
+/** Previous and next, as links: the queue is paged by the URL (?page=). */
+function ReportsPager({
+  page,
+  pageCount,
+  total,
+}: {
+  page: number;
+  pageCount: number;
+  total: number;
+}): React.ReactElement | null {
+  if (pageCount <= 1) return null;
+  const href = (target: number): string =>
+    gridHref("/moderation/reports", {}, { page: target > 1 ? String(target) : null });
+  // The grid's pager strip, framed as a card of its own under the cards.
+  return (
+    <nav className="a-card a-pager" aria-label="Pagination" style={{ marginTop: 14 }}>
+      <span>
+        Page {page} / {pageCount} · {total.toLocaleString("fr-FR")} contenu{total > 1 ? "s" : ""}
+      </span>
+      <div className="a-pager-btns">
+        {page > 1 ? (
+          <Link href={href(page - 1)} className="a-pager-btn" aria-label="Page précédente">
+            ←
+          </Link>
+        ) : (
+          <span className="a-pager-btn" aria-disabled="true" data-disabled="true">
+            ←
+          </span>
+        )}
+        {page < pageCount ? (
+          <Link href={href(page + 1)} className="a-pager-btn" aria-label="Page suivante">
+            →
+          </Link>
+        ) : (
+          <span className="a-pager-btn" aria-disabled="true" data-disabled="true">
+            →
+          </span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
 /**
  * What learners reported about each other's content. Kept apart from the
  * filter's queue: a report is one person's claim, and nothing is held
- * against the author until somebody here has read the content.
+ * against the author until somebody here has read the content. One card per
+ * content, the most reported first, 20 to a page (?page=): the database
+ * groups and pages them.
  */
-export default async function ContentReportsPage(): Promise<React.ReactElement> {
+export default async function ContentReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawParams>;
+}): Promise<React.ReactElement> {
   await requireAdminPage();
-  const groups = await contentReportRepository.openByContent();
-  const total = groups.reduce((n, g) => n + g.reports.length, 0);
+  const params = parseReportListParams(await searchParams);
+  const queue = await contentReportRepository.openByContent(reportQueryOf(params));
+  const contents = queue.total;
+  const reports = queue.openReports;
+  const pageCount = Math.max(1, Math.ceil(contents / REPORTS_PAGE_SIZE));
 
   return (
     <main className="a-page">
@@ -118,20 +177,23 @@ export default async function ContentReportsPage(): Promise<React.ReactElement> 
         crumbs={REPORTS_HEADER.crumbs}
         title={REPORTS_HEADER.title}
         description={
-          groups.length === 0
+          contents === 0
             ? REPORTS_HEADER.description
-            : `${String(total)} signalement${total > 1 ? "s" : ""} ouvert${total > 1 ? "s" : ""} sur ${String(groups.length)} contenu${groups.length > 1 ? "s" : ""}. ${REPORTS_HEADER.description}`
+            : `${String(reports)} signalement${reports > 1 ? "s" : ""} ouvert${reports > 1 ? "s" : ""} sur ${String(contents)} contenu${contents > 1 ? "s" : ""}. ${REPORTS_HEADER.description}`
         }
         actions={<GhostLink href="/moderation/content">Contenus publiés</GhostLink>}
       />
-      {groups.length === 0 ? (
+      {queue.rows.length === 0 ? (
         <EmptyState title="Aucun signalement ouvert" text="Rien à relire pour l'instant." />
       ) : (
-        <div className="a-report-cards">
-          {groups.map((g) => (
-            <ReportedContentCard key={`${g.surface}:${g.contentId}`} group={g} />
-          ))}
-        </div>
+        <>
+          <div className="a-report-cards">
+            {queue.rows.map((g) => (
+              <ReportedContentCard key={`${g.surface}:${g.contentId}`} group={g} />
+            ))}
+          </div>
+          <ReportsPager page={queue.page} pageCount={pageCount} total={contents} />
+        </>
       )}
     </main>
   );
