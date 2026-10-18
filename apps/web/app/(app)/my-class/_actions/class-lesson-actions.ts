@@ -43,14 +43,22 @@ const lessonSchema = z.object({
   // rewards sits on the same leaderboard as everyone else, and a lesson worth
   // a thousand points would make that ranking meaningless for their class.
   xpReward: z.coerce.number().int().nonnegative().max(200),
-  contentMdx: z.string().trim().min(10).max(100_000),
+  // Trimmed, which is what is checked and stored, and as typed, which is
+  // where the editor marks what the check found (asTyped).
+  contentMdx: z
+    .string()
+    .transform((typed) => ({ typed, text: typed.trim() }))
+    .pipe(z.object({ typed: z.string(), text: z.string().min(10).max(100_000) })),
 });
 
 export interface ClassLessonState {
   error?: string;
   ok?: boolean;
   slug?: string;
-  /** What the content check refused, each at its line, for the editor to mark. */
+  /**
+   * What the content check found, each at its line, for the editor to mark:
+   * empty once it passed, absent when the form stopped before it.
+   */
   problems?: LessonEditorProblem[];
 }
 
@@ -59,15 +67,11 @@ export interface ClassLessonState {
  * keeps the catalogue's rules (authoring.ts). Its problems are placed in the
  * text as typed, which the schema trims before checking it.
  */
-async function contentRefusal(
-  contentMdx: string,
-  formData: FormData,
-): Promise<ClassLessonState | null> {
-  const typed = formData.get("contentMdx");
-  const check = asTyped(
-    await checkLessonForSave(contentMdx),
-    typeof typed === "string" ? typed : "",
-  );
+async function contentRefusal(contentMdx: {
+  typed: string;
+  text: string;
+}): Promise<ClassLessonState | null> {
+  const check = asTyped(await checkLessonForSave(contentMdx.text), contentMdx.typed);
   if (check.ok) return null;
   return { error: describeLessonMdxProblem(check), problems: editorProblemsOf(check) };
 }
@@ -88,14 +92,15 @@ export async function createClassLessonAction(
 
   // Refused before it reaches the class: a lesson that does not render is a
   // lesson its students open onto an error. See checkLessonMdx.
-  const refusal = await contentRefusal(parsed.data.contentMdx, formData);
+  const refusal = await contentRefusal(parsed.data.contentMdx);
   if (refusal !== null) return refusal;
 
-  const { classId, ...lesson } = parsed.data;
+  const { classId, contentMdx, ...lesson } = parsed.data;
   const created = await classRepository.createClassLesson({
     classId,
     authorId: user.id,
     ...lesson,
+    contentMdx: contentMdx.text,
   });
 
   await prisma.auditLog.create({
@@ -109,7 +114,8 @@ export async function createClassLessonAction(
   });
 
   revalidatePath("/my-class");
-  return { ok: true, slug: created.slug };
+  // The content passed: the empty list takes down what an earlier save marked.
+  return { ok: true, slug: created.slug, problems: [] };
 }
 
 const editSchema = lessonSchema.omit({ classId: true }).extend({ lessonId: z.guid() });
@@ -128,14 +134,14 @@ export async function updateClassLessonAction(
     return { error: "Cette leçon n'est pas la tienne." };
   }
 
-  const refusal = await contentRefusal(parsed.data.contentMdx, formData);
+  const refusal = await contentRefusal(parsed.data.contentMdx);
   if (refusal !== null) return refusal;
 
-  const { lessonId, ...data } = parsed.data;
-  await classRepository.updateClassLesson(lessonId, data);
+  const { lessonId, contentMdx, ...data } = parsed.data;
+  await classRepository.updateClassLesson(lessonId, { ...data, contentMdx: contentMdx.text });
 
   revalidatePath("/my-class");
-  return { ok: true };
+  return { ok: true, problems: [] };
 }
 
 export async function deleteClassLessonAction(lessonId: string): Promise<{ ok: boolean }> {

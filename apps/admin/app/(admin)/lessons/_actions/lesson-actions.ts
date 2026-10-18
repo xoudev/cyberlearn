@@ -40,7 +40,12 @@ const createLessonSchema = z.object({
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.coerce.number().int().positive().max(LESSON_LIMITS.minutesMax),
   xpReward: z.coerce.number().int().nonnegative().max(LESSON_LIMITS.xpMax),
-  contentMdx: z.string().trim().min(10),
+  // Trimmed, which is what is checked and stored, and as typed, which is
+  // where the editor marks what the check found (asTyped).
+  contentMdx: z
+    .string()
+    .transform((typed) => ({ typed, text: typed.trim() }))
+    .pipe(z.object({ typed: z.string(), text: z.string().min(10) })),
   coverImageUrl: z
     .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
@@ -51,7 +56,10 @@ const createLessonSchema = z.object({
 export interface CreateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
-  /** What the content check refused, each at its line, for the editor to mark. */
+  /**
+   * What the content check found, each at its line, for the editor to mark:
+   * empty once it passed, absent when the form stopped before it.
+   */
   problems?: LessonEditorProblem[];
 }
 
@@ -72,12 +80,10 @@ export async function createLessonAction(
     return { error: "Formulaire invalide.", fieldErrors };
   }
 
+  const { coverImageUrl, publishNow, contentMdx, ...data } = parsed.data;
+
   // Refused before it reaches the database: see checkLessonMdx and authoring.ts.
-  const typed = formData.get("contentMdx");
-  const render = asTyped(
-    await checkLessonForSave(parsed.data.contentMdx),
-    typeof typed === "string" ? typed : "",
-  );
+  const render = asTyped(await checkLessonForSave(contentMdx.text), contentMdx.typed);
   if (!render.ok) {
     return {
       error:
@@ -86,13 +92,14 @@ export async function createLessonAction(
       problems: editorProblemsOf(render),
     };
   }
-
-  const { coverImageUrl, publishNow, ...data } = parsed.data;
+  // From here the content passed: a refusal says so with an empty list, which
+  // takes down what the editor marked from an earlier save.
 
   try {
     const lesson = await prisma.lesson.create({
       data: {
         ...data,
+        contentMdx: contentMdx.text,
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
         authorId: admin.id,
         status: publishNow ? "PUBLISHED" : "DRAFT",
@@ -112,12 +119,16 @@ export async function createLessonAction(
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode")) {
-      return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
+      return {
+        error: "Ce refCode existe déjà.",
+        fieldErrors: { refCode: "Déjà utilisé" },
+        problems: [],
+      };
     }
     if (msg.includes("Unique constraint") && msg.includes("slug")) {
-      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" }, problems: [] };
     }
-    return { error: "Erreur lors de la création." };
+    return { error: "Erreur lors de la création.", problems: [] };
   }
 
   redirect("/lessons");

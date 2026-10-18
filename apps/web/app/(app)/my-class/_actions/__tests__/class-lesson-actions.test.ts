@@ -61,12 +61,21 @@ describe("updateClassLessonAction", () => {
     form.set("description", `Une description ${EM_DASH} assez longue.`);
     const state = await updateClassLessonAction({}, form);
     expect(state.error).toMatch(/^La description contient un tiret cadratin/);
+    // The content went unchecked: the editor keeps what it marks.
+    expect(state.problems).toBeUndefined();
     expect(updateClassLesson).not.toHaveBeenCalled();
   });
 
-  it("saves a lesson that renders and keeps the rules", async () => {
-    const state = await updateClassLessonAction({}, lessonForm("## S\n\nUn mot, puis un autre.\n"));
-    expect(state).toEqual({ ok: true });
-    expect(updateClassLesson).toHaveBeenCalledTimes(1);
+  it("saves the trimmed text of a lesson that renders and keeps the rules", async () => {
+    const state = await updateClassLessonAction(
+      {},
+      lessonForm("\n\n## S\n\nUn mot, puis un autre.\n"),
+    );
+    // The empty list takes down what an earlier save marked in the editor.
+    expect(state).toEqual({ ok: true, problems: [] });
+    expect(updateClassLesson).toHaveBeenCalledWith(
+      LESSON_ID,
+      expect.objectContaining({ contentMdx: "## S\n\nUn mot, puis un autre." }),
+    );
   });
 });

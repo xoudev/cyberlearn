@@ -77,12 +77,31 @@ describe("createLessonAction", () => {
     form.set("title", `Une leçon ${EM_DASH} la suite`);
     const state = await createLessonAction({}, form);
     expect(state.fieldErrors?.title).toMatch(/^Le titre contient un tiret cadratin/);
+    // The content went unchecked: the editor keeps what it marks.
+    expect(state.problems).toBeUndefined();
     expect(lessonCreate).not.toHaveBeenCalled();
   });
 
-  it("creates a lesson that renders and keeps the rules", async () => {
-    await createLessonAction({}, lessonForm("## S\n\nUn mot, puis un autre.\n"));
-    expect(lessonCreate).toHaveBeenCalledTimes(1);
+  it("refuses a lesson too short once trimmed, before the content check", async () => {
+    const state = await createLessonAction({}, lessonForm("\n\n  ## S  \n\n"));
+    expect(state.fieldErrors?.contentMdx).toBeDefined();
+    expect(state.problems).toBeUndefined();
+    expect(lessonCreate).not.toHaveBeenCalled();
+  });
+
+  // The empty list takes down what an earlier save marked in the editor.
+  it("says the content passed when the save fails after the check", async () => {
+    lessonCreate.mockRejectedValue(new Error("Unique constraint failed on the fields: (`slug`)"));
+    const state = await createLessonAction({}, lessonForm("## S\n\nUn mot, puis un autre.\n"));
+    expect(state.fieldErrors?.slug).toBe("Déjà utilisé");
+    expect(state.problems).toEqual([]);
+  });
+
+  it("creates a lesson that renders and keeps the rules, with its text trimmed", async () => {
+    await createLessonAction({}, lessonForm("\n\n## S\n\nUn mot, puis un autre.\n"));
+    expect(lessonCreate.mock.lastCall).toMatchObject([
+      { data: { contentMdx: "## S\n\nUn mot, puis un autre." } },
+    ]);
     expect(redirect).toHaveBeenCalledWith("/lessons");
   });
 });
