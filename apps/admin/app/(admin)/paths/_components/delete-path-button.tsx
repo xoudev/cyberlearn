@@ -91,7 +91,7 @@ export function DeletePathButton({
               : "transparent",
           border: `1px solid ${hov && !disabled ? "color-mix(in srgb, var(--a-danger) 30%, transparent)" : "transparent"}`,
           borderRadius: 4,
-          color: disabled ? "#2A2560" : "var(--a-danger)",
+          color: disabled ? "var(--a-border-2)" : "var(--a-danger)",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,

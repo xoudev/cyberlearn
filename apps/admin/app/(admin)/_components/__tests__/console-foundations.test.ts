@@ -207,6 +207,75 @@ describe("the console chrome", () => {
   });
 });
 
+/**
+ * The components still allowed to write a colour out, and why. A path ending
+ * in "/" covers the folder under it.
+ *
+ * The two white grounds the console needs are not here because they are not
+ * in a component: the QR code's canvas (.a-qr-canvas, a scanner wants dark
+ * modules on a light ground) and the e-mail preview's frame (.a-mail-frame, the
+ * ground a mail client gives a message) are rules of admin-ui.css.
+ */
+const RAW_COLOUR_ALLOWED = [
+  // Rendered when the root layout itself has failed, so before admin-ui.css
+  // and the tokens it names are there to be read.
+  "global-error.tsx",
+  // The lesson studio and the import and sync screens are being rewritten in
+  // their own pull requests (plan items 20a and 20c). Their forms move to the
+  // palette once those land, and this line goes with them.
+  "(admin)/lessons/",
+] as const;
+
+function allowedRawColour(path: string): boolean {
+  const name = where(path);
+  return RAW_COLOUR_ALLOWED.some((allowed) =>
+    allowed.endsWith("/") ? name.startsWith(allowed) : name === allowed,
+  );
+}
+
+describe("the console's pages and forms", () => {
+  // Every component of the console, the chrome above included: the forms had
+  // kept their own BORDER, DANGER and TURQ constants, and the hex of the dark
+  // palette inline, long after the chrome had moved to the tokens.
+  const components = filesUnder(APP, (path) => /\.tsx?$/u.test(path));
+  const checked = components.filter((path) => !allowedRawColour(path));
+
+  it("finds the components under (admin) and (auth)", () => {
+    expect(checked.filter((path) => path.startsWith(ADMIN)).length).toBeGreaterThan(100);
+    expect(checked.filter((path) => path.startsWith(AUTH)).length).toBeGreaterThan(5);
+  });
+
+  it.each(checked.map((path) => [where(path), path]))(
+    "%s names its colours from the palette",
+    (_name, path) => {
+      expect(readFileSync(path, "utf8")).not.toMatch(RAW_COLOUR);
+    },
+  );
+
+  it.each(RAW_COLOUR_ALLOWED.map((allowed) => [allowed]))(
+    "still needs its exception for %s, or the line is dropped",
+    (allowed) => {
+      // An exception outlives its reason silently unless something checks:
+      // once the files it covers name their colours, it has to go.
+      const covered = components.filter(
+        (path) => allowedRawColour(path) && where(path).startsWith(allowed),
+      );
+      expect(covered.length, allowed).toBeGreaterThan(0);
+      expect(
+        covered.some((path) => RAW_COLOUR.test(readFileSync(path, "utf8"))),
+        allowed,
+      ).toBe(true);
+    },
+  );
+
+  it("names a lesson's category with the site's catalogue colours", () => {
+    const palette = consolePalette();
+    for (const category of ["cybersec", "dev", "network"]) {
+      expect(palette.get(`--a-category-${category}`)).toBe(`var(--color-category-${category})`);
+    }
+  });
+});
+
 describe("the sign-in screens", () => {
   const screens = filesUnder(AUTH, (path) => path.endsWith(".tsx"));
 
