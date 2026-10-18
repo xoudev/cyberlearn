@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CHROME_BOTTOM } from "@/lib/chrome";
 import {
+  activeSectionHref,
   CONSOLE_MAIN_SECTIONS,
   CONSOLE_SYSTEM_SECTIONS,
   type ConsoleCountKey,
@@ -118,6 +119,13 @@ function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null 
           <path d="M5.8 8 L7.4 9.6 L10.4 6.4" />
         </svg>
       );
+    case "alert":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 1.8 L14.6 13.8 H1.4 Z" />
+          <path d="M8 6 V9.6 M8 11.6 V11.7" />
+        </svg>
+      );
     case "flask":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -194,12 +202,18 @@ export function AdminSidebar({
   const pathname = usePathname();
   const { open, close } = useAdminMobileSidebar();
 
+  // The entry the page sits under, the most specific when two match:
+  // /moderation/reports is under Signalements, not under Modération too.
+  const activeHref = activeSectionHref(pathname, [
+    ...CONSOLE_MAIN_SECTIONS,
+    ...CONSOLE_SYSTEM_SECTIONS,
+  ]);
+
   // The sections are the quick search's too (lib/console-nav.ts): one list, so
   // a section added here cannot be missing from the search again.
   const renderItem = (item: ConsoleSection): React.ReactElement => {
     const count = item.count !== undefined ? counts[item.count] : null;
-    const prefix = item.match ?? item.href;
-    const isActive = pathname === prefix || pathname.startsWith(prefix + "/");
+    const isActive = item.href === activeHref;
     const isAlert = item.href === "/tickets" && (count ?? 0) > 0;
     return (
       <Link

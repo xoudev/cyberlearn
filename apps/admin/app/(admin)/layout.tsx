@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
-import { prisma, ticketRepository } from "@cyberlearn/db";
+import { contentReportRepository, prisma, ticketRepository } from "@cyberlearn/db";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
@@ -13,10 +13,10 @@ import { SavedNoticeToast } from "./_components/saved-notice-toast";
 // root's template and the tab read "Admin · Cyber Learn · Admin".
 
 // Sidebar counts are informative badges - a 30s cache keeps every navigation
-// from paying six count queries while staying fresh enough for admin work.
+// from paying seven count queries while staying fresh enough for admin work.
 const getSidebarCounts = unstable_cache(
   async () => {
-    const [lessons, paths, badges, challenges, users, tickets] = await Promise.all([
+    const [lessons, paths, badges, challenges, users, tickets, reports] = await Promise.all([
       prisma.lesson.count({ where: { status: "PUBLISHED" } }),
       prisma.path.count({ where: { status: "PUBLISHED" } }),
       prisma.badge.count(),
@@ -26,8 +26,10 @@ const getSidebarCounts = unstable_cache(
       // back after an answer - a reply on a ticket in progress changes no
       // status, so counting OPEN alone never showed it.
       ticketRepository.countNeedingTeam(),
+      // Contents learners reported and nobody has read yet.
+      contentReportRepository.countOpenContents(),
     ]);
-    return { lessons, paths, badges, challenges, users, tickets };
+    return { lessons, paths, badges, challenges, users, tickets, reports };
   },
   ["admin-sidebar-counts"],
   { revalidate: 30 },

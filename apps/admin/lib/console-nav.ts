@@ -23,6 +23,7 @@ export type ConsoleNavIcon =
   | "ticket"
   | "megaphone"
   | "shield"
+  | "alert"
   | "flask"
   | "log"
   | "layers"
@@ -30,7 +31,15 @@ export type ConsoleNavIcon =
   | "cog";
 
 /** The counts the layout reads for the sidebar's badges. */
-export type ConsoleCountKey = "lessons" | "paths" | "badges" | "challenges" | "users" | "tickets";
+export type ConsoleCountKey =
+  | "lessons"
+  | "paths"
+  | "badges"
+  | "challenges"
+  | "users"
+  | "tickets"
+  /** Contents with an open report: what learners are waiting on the team for. */
+  | "reports";
 
 export interface ConsoleSection {
   label: string;
@@ -96,6 +105,13 @@ export const CONSOLE_MAIN_SECTIONS: readonly ConsoleSection[] = [
     icon: "shield",
     keywords: ["signalements", "messages"],
   },
+  {
+    label: "Signalements",
+    href: "/moderation/reports",
+    icon: "alert",
+    count: "reports",
+    keywords: ["contenus signalés", "forum", "solutions", "ressources", "modération"],
+  },
   // Five read-only lists under one entry: active on any of them. The other
   // four are sub-pages of the quick search.
   {
@@ -160,6 +176,12 @@ const SUB_PAGES: readonly ConsoleDestination[] = [
     href: "/moderation/notes",
     kind: "page",
     keywords: ["signalements", "partage", "modération"],
+  },
+  {
+    label: "Contenus publiés",
+    href: "/moderation/content",
+    kind: "page",
+    keywords: ["masquer", "réafficher", "forum", "solutions", "ressources", "modération"],
   },
   {
     label: "Établissements et promos",
@@ -275,6 +297,8 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["reports", "Questions signalées"],
   ["sync", "Synchronisation"],
   ["notes", "Notes signalées"],
+  ["moderation/reports", "Signalements"],
+  ["moderation/content", "Contenus publiés"],
   ["structure", "Établissements et promos"],
   ["reference", "Référentiels"],
   ["cosmetics", "Cosmétiques"],
@@ -294,6 +318,25 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["import", "Import MDX"],
   ["quiz", "Quiz"],
 ]);
+
+/**
+ * The section of the sidebar an address sits under: the most specific when
+ * two match, so /moderation/reports lights Signalements and not Modération
+ * too. Null when the address is under none of them.
+ */
+export function activeSectionHref(
+  pathname: string,
+  sections: readonly ConsoleSection[],
+): string | null {
+  // An entry matches on its prefix (match, or its href when it has none).
+  let best: { href: string; prefix: string } | null = null;
+  for (const section of sections) {
+    const prefix = section.match ?? section.href;
+    if (pathname !== prefix && !pathname.startsWith(`${prefix}/`)) continue;
+    if (best === null || prefix.length > best.prefix.length) best = { href: section.href, prefix };
+  }
+  return best?.href ?? null;
+}
 
 /** The breadcrumb of a console address: one name per segment it knows. */
 export function breadcrumbOf(pathname: string): string[] {

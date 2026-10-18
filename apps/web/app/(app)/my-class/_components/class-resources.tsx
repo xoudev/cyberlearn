@@ -26,6 +26,8 @@ export interface TeacherResourceRow {
   releaseLabel: string | null;
   released: boolean;
   afterCompletion: boolean;
+  /** Taken down by the moderation: the class no longer sees it. */
+  hidden: boolean;
   assignmentTitle: string | null;
 }
 
@@ -64,9 +66,13 @@ export function ClassResources({
       ) : (
         <ul className="cls-work">
           {resources.map((r) => (
-            <li key={r.id} className="cls-work__row" data-state={r.released ? "done" : "todo"}>
+            <li
+              key={r.id}
+              className="cls-work__row"
+              data-state={r.released && !r.hidden ? "done" : "todo"}
+            >
               <span className="cls-work__mark" aria-hidden="true">
-                {r.released ? "✓" : "🔒"}
+                {r.hidden ? "⊘" : r.released ? "✓" : "🔒"}
               </span>
               <span className="cls-work__body">
                 {r.url !== null ? (
@@ -83,12 +89,14 @@ export function ClassResources({
                 )}
                 <span className="cls-work__note">
                   {r.assignmentTitle !== null && `Corrigé de « ${r.assignmentTitle} » · `}
-                  {r.released
-                    ? "visible par la classe"
-                    : r.releaseLabel !== null
-                      ? `visible le ${r.releaseLabel}`
-                      : "non publié"}
-                  {r.afterCompletion && " · une fois la leçon faite"}
+                  {r.hidden
+                    ? "masquée par la modération : la classe ne la voit plus"
+                    : r.released
+                      ? "visible par la classe"
+                      : r.releaseLabel !== null
+                        ? `visible le ${r.releaseLabel}`
+                        : "non publié"}
+                  {!r.hidden && r.afterCompletion && " · une fois la leçon faite"}
                 </span>
               </span>
               <button

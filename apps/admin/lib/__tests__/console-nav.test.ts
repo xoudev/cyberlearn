@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  activeSectionHref,
   breadcrumbOf,
   CONSOLE_DESTINATIONS,
   CONSOLE_MAIN_SECTIONS,
@@ -83,6 +84,32 @@ describe("the sidebar", () => {
   it("lists Tournois", () => {
     expect(CONSOLE_MAIN_SECTIONS.map((s) => s.href)).toContain("/tournaments");
   });
+
+  it("lists Signalements with its count, once", () => {
+    const reports = CONSOLE_MAIN_SECTIONS.filter((s) => s.href === "/moderation/reports");
+    expect(reports).toEqual([expect.objectContaining({ label: "Signalements", count: "reports" })]);
+  });
+});
+
+describe("activeSectionHref", () => {
+  const sections = [...CONSOLE_MAIN_SECTIONS, ...CONSOLE_SYSTEM_SECTIONS];
+
+  it("lights the most specific section, not its parent too", () => {
+    expect(activeSectionHref("/moderation/reports", sections)).toBe("/moderation/reports");
+    expect(activeSectionHref("/moderation", sections)).toBe("/moderation");
+    expect(activeSectionHref("/moderation/content", sections)).toBe("/moderation");
+  });
+
+  it("lights a section from a page under it, and nothing elsewhere", () => {
+    expect(activeSectionHref("/lessons/abc/edit", sections)).toBe("/lessons");
+    expect(activeSectionHref("/lessonsx", sections)).toBeNull();
+    expect(activeSectionHref("/search", sections)).toBeNull();
+  });
+
+  it("lights an entry from any page under its match prefix", () => {
+    expect(activeSectionHref("/reference/quests", sections)).toBe("/reference/cosmetics");
+    expect(activeSectionHref("/reference/cosmetics", sections)).toBe("/reference/cosmetics");
+  });
 });
 
 describe("breadcrumbOf", () => {
@@ -91,6 +118,8 @@ describe("breadcrumbOf", () => {
     expect(breadcrumbOf("/classes")).toEqual(["Classes"]);
     expect(breadcrumbOf("/moderation")).toEqual(["Modération"]);
     expect(breadcrumbOf("/moderation/notes")).toEqual(["Modération", "Notes signalées"]);
+    expect(breadcrumbOf("/moderation/reports")).toEqual(["Modération", "Signalements"]);
+    expect(breadcrumbOf("/moderation/content")).toEqual(["Modération", "Contenus publiés"]);
     expect(breadcrumbOf("/lessons/reports")).toEqual(["Leçons", "Questions signalées"]);
     expect(breadcrumbOf("/lessons/sync")).toEqual(["Leçons", "Synchronisation"]);
     expect(breadcrumbOf("/classes/structure")).toEqual(["Classes", "Établissements et promos"]);
@@ -124,10 +153,11 @@ describe("the quick search's words", () => {
     expect(labels("tournoi")).toEqual(["Tournois", "Nouveau tournoi"]);
   });
 
-  it("finds both reported lists by « signalements »", () => {
+  it("finds every reported list by « signalements », the reports queue first", () => {
     expect(labels("signalements")).toEqual(
-      expect.arrayContaining(["Questions signalées", "Notes signalées"]),
+      expect.arrayContaining(["Signalements", "Questions signalées", "Notes signalées"]),
     );
+    expect(labels("signalements")[0]).toBe("Signalements");
   });
 
   it("finds the sync by « synchro »", () => {

@@ -1,7 +1,12 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { isActionableEvent, moderationRepository, noteReportRepository } from "@cyberlearn/db";
+import {
+  contentReportRepository,
+  isActionableEvent,
+  moderationRepository,
+  noteReportRepository,
+} from "@cyberlearn/db";
 import { banRefusal } from "@/lib/account-guards";
 import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag } from "../../_components/admin-ui";
 import { MODERATION_HEADER, MODERATION_KPI_LABELS } from "../_components/moderation-head";
@@ -61,11 +66,12 @@ function formatDate(d: Date): string {
  */
 export default async function AdminModerationPage(): Promise<React.ReactElement> {
   const viewer = await requireAdminPage();
-  const [pending, resolved, counts, reportedNotes] = await Promise.all([
+  const [pending, resolved, counts, reportedNotes, reportedContents] = await Promise.all([
     moderationRepository.listPending(100),
     moderationRepository.listResolved(30),
     moderationRepository.countsByOutcome(),
     noteReportRepository.countOpenNotes(),
+    contentReportRepository.countOpenContents(),
   ]);
 
   const overturned = counts.OVERTURNED ?? 0;
@@ -79,8 +85,17 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
         title={MODERATION_HEADER.title}
         description={MODERATION_HEADER.description}
         actions={
-          // Reports by people, kept apart from the filter's own queue.
-          <GhostLink href="/moderation/notes">Notes signalées · {String(reportedNotes)}</GhostLink>
+          // Reports by people, kept apart from the filter's own queue, and the
+          // published content a moderator acts on by hand.
+          <>
+            <GhostLink href="/moderation/reports">
+              Signalements · {String(reportedContents)}
+            </GhostLink>
+            <GhostLink href="/moderation/notes">
+              Notes signalées · {String(reportedNotes)}
+            </GhostLink>
+            <GhostLink href="/moderation/content">Contenus publiés</GhostLink>
+          </>
         }
       />
 

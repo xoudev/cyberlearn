@@ -16,6 +16,8 @@ import { randomUUID } from "node:crypto";
 const TEST_USER_A_EMAIL = "rls-test-a@test.cyberlearn.internal";
 const TEST_USER_B_EMAIL = "rls-test-b@test.cyberlearn.internal";
 const TEST_PASSWORD = "TestPassword123!";
+/** The content User B reports; kept on account erasure, so removed by this id. */
+const CONTENT_REPORT_TARGET = randomUUID();
 
 describe("RLS policies (integration)", () => {
   // All vars initialized in beforeAll after setupFiles has loaded env
@@ -220,6 +222,19 @@ describe("RLS policies (integration)", () => {
     });
     if (qrErr) throw new Error(`Failed to insert quiz_report: ${qrErr.message}`);
 
+    // User B's report on a forum message, with a comment written for the team.
+    // contentId points nowhere: the column has no foreign key.
+    const { error: crErr } = await adminClient.from("content_reports").insert({
+      id: randomUUID(),
+      surface: "FORUM_POST",
+      contentId: CONTENT_REPORT_TARGET,
+      reporterId: userBId,
+      reason: "HATE",
+      comment: "Insultes envers un membre.",
+      updatedAt: new Date().toISOString(),
+    });
+    if (crErr) throw new Error(`Failed to insert content_report: ${crErr.message}`);
+
     configured = true;
   });
 
@@ -227,6 +242,7 @@ describe("RLS policies (integration)", () => {
     if (!configured) return;
     // Kept on account erasure (userId set null), so removed by quiz id.
     await adminClient.from("quiz_reports").delete().like("quizId", "rls-report-%");
+    await adminClient.from("content_reports").delete().eq("contentId", CONTENT_REPORT_TARGET);
     await adminClient.from("user_lesson_progress").delete().in("userId", [userAId, userBId]);
     if (quizId) {
       // Cascades to quiz_questions + quiz_attempts.
@@ -711,6 +727,67 @@ describe("RLS policies (integration)", () => {
         .eq("quizId", "rls-report-q");
       await clientB.from("quiz_reports").delete().eq("quizId", "rls-report-q");
       expect(await bReport()).toEqual({ reason: "AMBIGUOUS", status: "OPEN" });
+    });
+  });
+
+  describe("content_reports", () => {
+    // Written by the server, which checks the reporter can see the content
+    // and did not write it. A client reads its own reports and nothing else:
+    // who reported something is not its author's to know, and the comment is
+    // for the team.
+    async function bContentReport(): Promise<{ reason: string; status: string } | undefined> {
+      const { data } = await adminClient
+        .from("content_reports")
+        .select("reason, status")
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      return data?.[0];
+    }
+
+    it("user B can read their own reports", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("content_reports")
+        .select("surface, reason")
+        .eq("reporterId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([{ surface: "FORUM_POST", reason: "HATE" }]);
+    });
+
+    it("user A cannot read user B's reports or comments", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("content_reports")
+        .select("*")
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("a client cannot file a report without the server's checks", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("content_reports").insert({
+        id: randomUUID(),
+        surface: "LESSON_ANSWER",
+        contentId: randomUUID(),
+        reporterId: userAId,
+        reason: "SPAM",
+        updatedAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot change or erase a report", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("content_reports")
+        .update({ status: "DISMISSED" })
+        .eq("contentId", CONTENT_REPORT_TARGET);
+      await clientB.from("content_reports").delete().eq("contentId", CONTENT_REPORT_TARGET);
+      expect(await bContentReport()).toEqual({ reason: "HATE", status: "OPEN" });
     });
   });
 

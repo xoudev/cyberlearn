@@ -2,6 +2,7 @@ import Link from "next/link";
 import React from "react";
 import type { WriteupBoard } from "@/lib/challenges/writeups";
 import { FriendMark } from "@/components/friend-mark";
+import { ReportContentButton } from "@/components/report-content-dialog";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { WriteupEditor } from "./writeup-editor";
 
@@ -55,7 +56,11 @@ export function WriteupsSection({
             initial={
               board.own === null
                 ? null
-                : { content: board.own.content, isHidden: board.own.isHidden }
+                : {
+                    content: board.own.content,
+                    isHidden: board.own.isHidden,
+                    hiddenByModeration: board.own.hiddenByModeration,
+                  }
             }
           />
           {board.others.length === 0 ? (
@@ -90,7 +95,11 @@ export function WriteupsSection({
                       )}
                       {writeup.author?.isFriend === true && <FriendMark size={12} />}
                     </span>
-                    <span>{dayFormat.format(new Date(writeup.updatedAt))}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                      {dayFormat.format(new Date(writeup.updatedAt))}
+                      {/* The others' only: the reader's own is in the editor above. */}
+                      <ReportContentButton surface="CHALLENGE_WRITEUP" contentId={writeup.id} />
+                    </span>
                   </div>
                   <div
                     style={{ fontSize: 14, lineHeight: 1.65, color: "var(--color-text-secondary)" }}

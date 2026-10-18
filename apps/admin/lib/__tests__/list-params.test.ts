@@ -6,14 +6,19 @@ import {
   auditListSearch,
   certificateListSearch,
   certificateQueryOf,
+  contentListSearch,
+  contentQueryOf,
   lessonListSearch,
   lessonQueryOf,
   parseAuditListParams,
   parseCertificateListParams,
+  parseContentListParams,
   parseLessonListParams,
   parsePendingListParams,
+  parseReportListParams,
   parseUserListParams,
   pendingListSearch,
+  reportQueryOf,
   showsCronRuns,
   userListSearch,
   userQueryOf,
@@ -267,6 +272,57 @@ describe("the certificate list's parameters", () => {
     expect(certificateListSearch(parseCertificateListParams({ sort: "issued" }))).toEqual({
       sort: "issued",
     });
+  });
+});
+
+describe("the published-content list's parameters", () => {
+  it("opens on the forum's messages, visible and hidden, page 1", () => {
+    const params = parseContentListParams({});
+    expect(params).toEqual({ surface: "FORUM_POST", state: undefined, q: "", page: 1 });
+    expect(contentListSearch(params)).toEqual({});
+    expect(contentQueryOf(params)).toEqual({
+      surface: "FORUM_POST",
+      hidden: undefined,
+      q: "",
+      page: 1,
+      pageSize: 25,
+    });
+  });
+
+  it("reads a surface, a state, a search and a page", () => {
+    const params = parseContentListParams({
+      surface: "CLASS_RESOURCE",
+      state: "hidden",
+      q: " corrigé ",
+      page: "3",
+    });
+    expect(contentListSearch(params)).toEqual({
+      surface: "CLASS_RESOURCE",
+      state: "hidden",
+      q: "corrigé",
+      page: "3",
+    });
+    expect(contentQueryOf(params)).toMatchObject({ hidden: true, q: "corrigé", page: 3 });
+    expect(contentQueryOf(parseContentListParams({ state: "visible" })).hidden).toBe(false);
+  });
+
+  it("ignores what it does not know, rather than failing", () => {
+    expect(parseContentListParams({ surface: "forum.post", state: "deleted" })).toMatchObject({
+      surface: "FORUM_POST",
+      state: undefined,
+    });
+  });
+});
+
+describe("the report queue's parameters", () => {
+  it("opens on the first page, twenty contents to a page", () => {
+    expect(reportQueryOf(parseReportListParams({}))).toEqual({ page: 1, pageSize: 20 });
+  });
+
+  it("reads a page, and drops one that is not", () => {
+    expect(reportQueryOf(parseReportListParams({ page: "3" }))).toEqual({ page: 3, pageSize: 20 });
+    expect(parseReportListParams({ page: "-1" })).toEqual({ page: 1 });
+    expect(parseReportListParams({ page: "deux" })).toEqual({ page: 1 });
   });
 });
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { ReportContentButton } from "@/components/report-content-dialog";
 
 /**
  * What the class has been given, from the student's side.
@@ -10,6 +11,9 @@ import React from "react";
  * Nothing says a resource is being withheld. Telling a student there is a
  * corrigé they cannot open yet is a worse experience than not knowing: it is
  * an itch, and it invites them to go looking.
+ *
+ * A resource can be reported to the team, like anything else somebody
+ * publishes: one the moderation takes down leaves this list.
  */
 
 export interface StudentResourceItem {
@@ -52,9 +56,12 @@ export function StudentResources({
               ) : (
                 <span className="cls-res__title">{r.title}</span>
               )}
-              <span className="cls-res__meta">
-                {r.assignmentTitle !== null && `${r.assignmentTitle} · `}
-                {r.createdLabel}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <span className="cls-res__meta">
+                  {r.assignmentTitle !== null && `${r.assignmentTitle} · `}
+                  {r.createdLabel}
+                </span>
+                <ReportContentButton surface="CLASS_RESOURCE" contentId={r.id} />
               </span>
             </div>
             {r.body !== null && r.body.length > 0 && (
