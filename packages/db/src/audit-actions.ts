@@ -156,6 +156,8 @@ export const AUDIT_ACTION = {
     examCooldownWaived: "admin.user.exam_cooldown.waived",
     streakCorrect: "admin.user.streak.correct",
     xpAdjust: "admin.user.xp.adjust",
+    /** The account's GDPR export, downloaded from its page: the file carries all of its data. */
+    dataExported: "admin.user.data.exported",
   },
 } as const;
 

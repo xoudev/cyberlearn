@@ -83,7 +83,7 @@
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
-| `/api/me/export` | Export des données personnelles (RGPD Art. 20) |
+| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |
@@ -292,7 +292,8 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression. « Exporter les données (RGPD) » télécharge le fichier que l'apprenant obtient sur le site |
+| `/users/[id]/export` | Export RGPD d'un compte, pour une demande faite à l'équipe : le même fichier JSON que `/api/me/export`, construit par le même `buildExportPayload` de `@cyberlearn/db`. Inscrit au journal (`admin.user.data.exported`) avant de partir, et refusé si l'inscription échoue ; 10 exports par heure et par administrateur |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |

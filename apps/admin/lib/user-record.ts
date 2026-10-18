@@ -61,3 +61,18 @@ export function examWait(
     ? { state: "waiting", until }
     : { state: "open" };
 }
+
+/**
+ * The name of the GDPR export the console downloads for an account: the
+ * account's id, so two exports on one desk are not mixed up, and the day in
+ * Paris, like the audit log's export.
+ */
+export function userExportFilename(userId: string, now: Date): string {
+  const day = new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  return `cyberlearn-export-${userId}-${day}.json`;
+}

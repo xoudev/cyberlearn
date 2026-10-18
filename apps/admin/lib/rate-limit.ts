@@ -36,6 +36,22 @@ const announcementRateLimit = redis
     })
   : null;
 
+/**
+ * 10 GDPR exports per hour per administrator. Each one reads the whole of an
+ * account and hands it over in one file, which is why the learner's own export
+ * is held to one a day: here a session that is not its owner's, or a script,
+ * stops at a handful of accounts instead of walking the user base. Keyed on
+ * the administrator rather than the account, so a request answered twice (a
+ * file lost, a second letter) is not refused for a day.
+ */
+const userExportRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "1 h"),
+      prefix: "rl:admin:user-export",
+    })
+  : null;
+
 const LIMIT_TIMEOUT_MS = 1_000;
 
 /**
@@ -96,4 +112,14 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 export async function checkAnnouncementRateLimit(adminId: string): Promise<boolean> {
   if (!announcementRateLimit) return true;
   return allowedBy(announcementRateLimit, adminId, "announcement");
+}
+
+/**
+ * Whether this administrator may export another account's data now. Fails
+ * open like the other two: the ADMIN role and a TOTP challenge stand in front
+ * of it, and every export is written to the audit log either way.
+ */
+export async function checkUserExportRateLimit(adminId: string): Promise<boolean> {
+  if (!userExportRateLimit) return true;
+  return allowedBy(userExportRateLimit, adminId, "user export");
 }
