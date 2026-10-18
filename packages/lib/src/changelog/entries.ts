@@ -42,11 +42,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "new",
-        text: "« Réviser ce module · 2 min », dans l'en-tête de chaque module d'un parcours dont tu as terminé une leçon : six questions au plus sur ses leçons faites, corrigées une à une avec leur explication et « Revoir ce passage ». Une révision libre, quand tu veux, sans XP et sans toucher à ton rappel du jour. Dans l'app aussi.",
+        text: "« Réviser ce module · 2 min », dans l'en-tête de chaque module dont tu as terminé au moins une leçon : six questions au plus sur ses leçons faites, corrigées une à une avec leur explication et « Revoir ce passage ». Une révision libre, quand tu veux, sans XP et sans toucher à ton rappel du jour. Dans l'app aussi.",
       },
       {
         type: "improved",
-        text: "Le rappel du jour remplace l'ancienne file de révisions, où tu notais toi-même chaque leçon terminée (Oublié, Difficile, Facile) : elle est retirée du site et de l'app. Ce qui t'y attendait est converti en questions du rappel du jour, sans repartir de zéro : rien ne revient plus tôt que prévu, et ce qui était déjà en retard arrive sur cinq jours plutôt que d'un coup. Les anciens liens vers les révisions ouvrent le rappel du jour ; une version plus ancienne de l'app montre une file vide, mets-la à jour pour le retrouver.",
+        text: "Le rappel du jour remplace l'ancienne file de révisions, où tu notais toi-même chaque leçon terminée (Oublié, Difficile, Facile) : elle est retirée du site et de l'app. Ce qui t'y attendait est gardé pour devenir des questions du rappel du jour, sans repartir de zéro : rien n'y reviendra plus tôt que prévu, et ce qui était déjà en retard arrivera sur cinq jours plutôt que d'un coup. Les anciens liens vers les révisions ouvrent le rappel du jour ; une version plus ancienne de l'app montre une file vide, mets-la à jour pour le retrouver.",
       },
       {
         type: "new",
@@ -74,7 +74,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improved",
-        text: "Pour les professeurs, l'éditeur des leçons de classe souligne chaque problème dans le texte et les liste tous sous « À corriger », chacun avec sa ligne et sa colonne, qu'un clic rejoint, au lieu de ne citer que le premier. L'enregistrement applique aussi les règles des leçons du site (pas de note de rédaction oubliée, pas de tiret cadratin, des schémas qui se dessinent), et l'aperçu signale leurs écarts pendant que tu écris.",
+        text: "Pour les professeurs, l'éditeur des leçons de classe souligne chaque problème dans le texte et les liste tous sous « À corriger », chacun avec sa ligne et sa colonne, qu'un clic rejoint, au lieu de ne citer que le premier. L'enregistrement applique aussi les règles des leçons du site (pas de note de rédaction oubliée, pas de tiret cadratin, pas d'étiquette de schéma que la mise en forme du texte changerait, comme *mot* ou [texte](lien)), et l'aperçu signale leurs écarts pendant que tu écris.",
       },
     ],
   },
