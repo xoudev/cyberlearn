@@ -58,11 +58,13 @@ function yamlError(e: unknown): ImportValidationError {
 function frontmatterKeyLine(fileContent: string, key: string): number | null {
   const lines = fileContent.split("\n");
   if (lines[0]?.trim() !== "---") return null;
-  const pattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:`);
+  // The key, then optional blanks and a colon: no RegExp built from the key.
+  const isKeyLine = (line: string): boolean =>
+    line.startsWith(key) && /^\s*:/.test(line.slice(key.length));
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i] ?? "";
     if (line.trim() === "---") return null;
-    if (pattern.test(line)) return i + 1;
+    if (isKeyLine(line)) return i + 1;
   }
   return null;
 }
