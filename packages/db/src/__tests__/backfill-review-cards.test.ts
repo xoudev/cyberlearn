@@ -85,9 +85,14 @@ describe("conversionLesson", () => {
     }
   });
 
-  it("reads a draft or archived lesson as unpublished, and MDX that does not parse as no quiz", () => {
-    expect(conversionLesson(lessonRow({ id: "l1", status: "DRAFT" })).published).toBe(false);
-    expect(conversionLesson(lessonRow({ id: "l2", status: "ARCHIVED" })).published).toBe(false);
+  it("reads a draft or archived lesson's quizzes all the same, and MDX that does not parse as no quiz", () => {
+    for (const status of ["DRAFT", "ARCHIVED"]) {
+      expect(conversionLesson(lessonRow({ id: "l1", status }))).toMatchObject({
+        published: false,
+        reviewable: true,
+        quizIds: ["q-1", "q-2", "q-3"],
+      });
+    }
     expect(conversionLesson(lessonRow({ id: "l3", contentMdx: "<Quiz id=" })).quizIds).toEqual([]);
   });
 });
@@ -140,6 +145,25 @@ describe("conversionDueDates", () => {
     );
     expect(due.get("overdue")).toEqual(day("2026-10-17"));
     expect(due.get("later")).toEqual(day("2026-10-31"));
+  });
+
+  it("spreads only the lessons due already: the others keep their day", () => {
+    const due = conversionDueDates(
+      [
+        schedule("overdue", { nextReviewAt: new Date("2026-10-10T09:00:00.000Z") }),
+        // 20:00 in Paris today: due already, so in the spread.
+        schedule("today", { nextReviewAt: new Date("2026-10-17T18:00:00.000Z") }),
+        schedule("tomorrow-a", { nextReviewAt: new Date("2026-10-18T09:00:00.000Z") }),
+        schedule("tomorrow-b", { nextReviewAt: new Date("2026-10-18T09:00:00.000Z") }),
+        schedule("tomorrow-c", { nextReviewAt: new Date("2026-10-18T09:00:00.000Z") }),
+      ],
+      NOW,
+    );
+    expect(due.get("overdue")).toEqual(day("2026-10-17"));
+    expect(due.get("today")).toEqual(day("2026-10-18"));
+    expect(due.get("tomorrow-a")).toEqual(day("2026-10-18"));
+    expect(due.get("tomorrow-b")).toEqual(day("2026-10-18"));
+    expect(due.get("tomorrow-c")).toEqual(day("2026-10-18"));
   });
 
   it("gives the same days to the same rows, in whatever order they come", () => {
@@ -232,11 +256,10 @@ describe("planUserConversion", () => {
     expect(plan).toEqual({ lessonId: "l1", outcome: "alreadyConverted", cards: [] });
   });
 
-  it("gives no card for a lesson unpublished, not reviewable, without quiz or gone", () => {
+  it("gives no card for a lesson not reviewable, without quiz or not read", () => {
     const plan = planUserConversion(
-      [schedule("draft"), schedule("bilan"), schedule("empty"), schedule("missing")],
+      [schedule("bilan"), schedule("empty"), schedule("missing")],
       lessonMap(
-        lessonRow({ id: "draft", status: "DRAFT" }),
         lessonRow({ id: "bilan", slug: "linux-bilan-module-3" }),
         lessonRow({ id: "empty", contentMdx: "# Rien à demander" }),
       ),
@@ -245,10 +268,39 @@ describe("planUserConversion", () => {
       NOW,
     );
     expect(plan.map(({ lessonId, outcome, cards }) => [lessonId, outcome, cards.length])).toEqual([
-      ["draft", "unpublished", 0],
       ["bilan", "notReviewable", 0],
       ["empty", "noQuiz", 0],
-      ["missing", "unpublished", 0],
+      ["missing", "lessonNotFound", 0],
+    ]);
+  });
+
+  it("converts a draft or archived lesson's row as any other: its cards wait for it to be published", () => {
+    const plan = planUserConversion(
+      [
+        schedule("draft", { intervalDays: 6, repetitions: 2 }),
+        schedule("archived", { nextReviewAt: new Date("2026-10-11T09:00:00.000Z") }),
+      ],
+      lessonMap(
+        lessonRow({ id: "draft", status: "DRAFT" }),
+        lessonRow({ id: "archived", status: "ARCHIVED" }),
+      ),
+      new Map([["archived", [{ quizId: "q-1", correct: false }]]]),
+      new Set(),
+      NOW,
+    );
+    expect(plan).toEqual([
+      {
+        lessonId: "draft",
+        outcome: "fromSchedule",
+        cards: [{ quizId: "q-3", box: 2, dueAt: day("2026-10-17"), everCorrect: false }],
+      },
+      {
+        lessonId: "archived",
+        outcome: "fromAnswers",
+        cards: [
+          { quizId: "q-1", box: CARD_FIRST_BOX, dueAt: day("2026-10-18"), everCorrect: false },
+        ],
+      },
     ]);
   });
 
@@ -382,10 +434,13 @@ function fakeStore(): FakeStore {
       lessonRow({ id: "l1" }),
       lessonRow({ id: "l2", title: "Projet : un pare-feu" }),
       lessonRow({ id: "l3" }),
+      lessonRow({ id: "l4", status: "DRAFT" }),
     ],
     schedules: [
       { userId: USER_A, ...schedule("l1") },
       { userId: USER_A, ...schedule("l2") },
+      // Unpublished for an edit while the script runs: converted all the same.
+      { userId: USER_A, ...schedule("l4") },
       { userId: USER_B, ...schedule("l1", { intervalDays: 6, repetitions: 2 }) },
       { userId: USER_B, ...schedule("l3") },
     ],
@@ -421,25 +476,29 @@ describe("backfillReviewCards", () => {
     expect(report).toMatchObject({
       applied: false,
       users: 2,
-      schedules: 4,
+      schedules: 5,
       outcomes: {
         fromAnswers: 1,
-        fromSchedule: 1,
+        fromSchedule: 2,
         alreadyConverted: 1,
-        unpublished: 0,
+        lessonNotFound: 0,
         notReviewable: 1,
         noQuiz: 0,
       },
-      cardsPlanned: 3,
+      unpublishedLessons: 1,
+      cardsPlanned: 4,
       cardsCreated: 0,
-      dueDays: { "2026-10-17": 3 },
+      dueDays: { "2026-10-17": 3, "2026-10-18": 1 },
       lastSpreadDay: "2026-10-21",
     });
     expect(report.perUser).toEqual([
-      { userId: USER_A, lessons: 1, cards: 2 },
+      { userId: USER_A, lessons: 2, cards: 3 },
       { userId: USER_B, lessons: 1, cards: 1 },
     ]);
-    expect(report.perLesson).toEqual([{ lessonId: "l1", slug: "lecon-l1", learners: 2, cards: 3 }]);
+    expect(report.perLesson).toEqual([
+      { lessonId: "l1", slug: "lecon-l1", learners: 2, cards: 3 },
+      { lessonId: "l4", slug: "lecon-l4", learners: 1, cards: 1 },
+    ]);
   });
 
   it("writes the cards, and a second run writes nothing", async () => {
@@ -447,7 +506,7 @@ describe("backfillReviewCards", () => {
     const client = makeFakeDb(store);
 
     const first = await backfillReviewCards({ apply: true, now: NOW, client });
-    expect(first.cardsCreated).toBe(3);
+    expect(first.cardsCreated).toBe(4);
     expect(store.cards).toEqual(
       expect.arrayContaining([
         {
@@ -474,9 +533,17 @@ describe("backfillReviewCards", () => {
           dueAt: day("2026-10-17"),
           everCorrect: false,
         },
+        {
+          userId: USER_A,
+          lessonId: "l4",
+          quizId: "q-3",
+          box: CARD_FIRST_BOX,
+          dueAt: day("2026-10-18"),
+          everCorrect: false,
+        },
       ]),
     );
-    expect(store.cards).toHaveLength(4);
+    expect(store.cards).toHaveLength(5);
 
     // A day later, with the lesson's MDX changed: still nothing to write.
     const l1 = store.lessons.find((lesson) => lesson.id === "l1");
@@ -488,7 +555,34 @@ describe("backfillReviewCards", () => {
     });
     expect(second.cardsPlanned).toBe(0);
     expect(second.cardsCreated).toBe(0);
-    expect(second.outcomes.alreadyConverted).toBe(3);
-    expect(store.cards).toHaveLength(4);
+    expect(second.outcomes.alreadyConverted).toBe(4);
+    expect(store.cards).toHaveLength(5);
+  });
+
+  it("on a later run, converts only the rows added since", async () => {
+    const store = fakeStore();
+    const client = makeFakeDb(store);
+    await backfillReviewCards({ apply: true, now: NOW, client });
+
+    // A completion from an app build that sends no answer: a row, no card.
+    store.schedules.push({
+      userId: USER_B,
+      ...schedule("l4", { nextReviewAt: new Date("2026-10-20T09:00:00.000Z") }),
+    });
+    const later = await backfillReviewCards({
+      apply: true,
+      now: new Date("2026-10-19T08:00:00.000Z"),
+      client,
+    });
+    expect(later.cardsCreated).toBe(1);
+    expect(later.perUser).toEqual([{ userId: USER_B, lessons: 1, cards: 1 }]);
+    expect(store.cards).toContainEqual({
+      userId: USER_B,
+      lessonId: "l4",
+      quizId: "q-3",
+      box: CARD_FIRST_BOX,
+      dueAt: day("2026-10-20"),
+      everCorrect: false,
+    });
   });
 });

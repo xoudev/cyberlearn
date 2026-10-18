@@ -1,11 +1,13 @@
 /**
  * One-off conversion of the lesson-level review queue (review_schedules,
  * SM-2) into review cards (review_cards, Leitner). Run by hand, in
- * production, once: see docs/DEPLOY.md for when, and the head of
+ * production: once the cards are live, and one last time right before the
+ * old queue is removed. See docs/DEPLOY.md for when, and the head of
  * src/backfill-review-cards.ts for the rules.
  *
  * Idempotent: a lesson the learner already has a card for is left alone, so a
- * second run writes nothing. The SM-2 rows are not touched.
+ * second run straight after writes nothing; a later one converts only the
+ * rows added in between. The SM-2 rows are not touched.
  *
  * Dry-run (default; counts only, nothing written):
  *   pnpm --filter @cyberlearn/db db:backfill-review-cards
@@ -33,7 +35,7 @@ const OUTCOME_LABELS: Record<ConversionOutcome, string> = {
   fromAnswers: "converted from the answers on record",
   fromSchedule: "converted from the SM-2 interval (no answer on record)",
   alreadyConverted: "skipped, the learner has cards for the lesson",
-  unpublished: "skipped, lesson not published",
+  lessonNotFound: "skipped, lesson not read (row added during the run: re-run)",
   notReviewable: "skipped, module review, project or class lesson",
   noQuiz: "skipped, no quiz to ask in the lesson",
 };
@@ -56,6 +58,11 @@ async function main(): Promise<void> {
   console.log(`SM-2 rows read:            ${String(report.schedules)}`);
   for (const outcome of CONVERSION_OUTCOMES) {
     console.log(`  ${OUTCOME_LABELS[outcome]}: ${String(report.outcomes[outcome])}`);
+  }
+  if (report.unpublishedLessons > 0) {
+    console.log(
+      `  of the rows converted, for a draft or archived lesson (cards hidden until it is published): ${String(report.unpublishedLessons)}`,
+    );
   }
   console.log(
     args.apply

@@ -7,10 +7,15 @@
 // cards a completion enqueues today (apps/web/lib/lessons/complete.ts), with
 // what the old row knew:
 //
-// - A lesson whose completion enqueues nothing gives nothing here either: not
-//   published, a module review, a project or a class lesson
-//   (isReviewableLesson), or no quiz to ask in its current MDX
-//   (extractLessonQuizzes: a lesson that does not parse has none).
+// - A lesson whose completion enqueues nothing gives nothing here either: a
+//   module review, a project or a class lesson (isReviewableLesson), or no
+//   quiz to ask in its current MDX (extractLessonQuizzes: a lesson that does
+//   not parse has none).
+// - A lesson that is a draft or archived when the script runs is converted
+//   all the same: an admin can publish it again, and the old queue only hid
+//   its rows meanwhile (LIVE_REVIEW_FILTER). Every read of the cards filters
+//   on the same, so its cards stay hidden until it is published again, and
+//   its learners' history is not lost with the old queue.
 // - With the learner's answers on record (lesson_quiz_answers, kept since
 //   24 September 2026), the cards are cardsForCompletion's: every question
 //   missed, and the last one answered right. An answer to a quiz the lesson
@@ -21,14 +26,17 @@
 //   reached (boxForSchedule), so months of reviews do not start over. It was
 //   never answered, so it is not marked answered right (everCorrect) and
 //   does not retire on its own (isStale).
-// - Due dates: never before the row had the lesson due, and the lessons due
-//   already spread over CONVERSION_SPREAD_DAYS days from today, the most
-//   overdue first, so nobody gets their whole backlog in one session.
+// - Due dates: the lessons due already (today or before) spread over
+//   CONVERSION_SPREAD_DAYS days from today, the most overdue first, so nobody
+//   gets their whole backlog in one session; the others keep the day the row
+//   had them due.
 // - A lesson the learner already has a card for, retired or not, is left
 //   alone: its cards came from a completion since the cards shipped, or from
-//   an earlier run. A second run writes nothing. The writes go through
-//   reviewCardRepository.enqueueForLesson, which skips a card already there
-//   anyway.
+//   an earlier run. A second run straight after writes nothing. A later one
+//   converts the rows created in between: until the old queue goes, a
+//   completion with no answer on record still adds a row and no card. The
+//   writes go through reviewCardRepository.enqueueForLesson, which skips a
+//   card already there anyway.
 //
 // The revision switch (spacedRepetition) is not read: a completion leaves the
 // rows of a learner who turned it off alone, so that turning it back on picks
@@ -44,6 +52,7 @@ import {
   cardsForCompletion,
   dayStart,
   dueAfter,
+  dueCutoff,
   isReviewableLesson,
   type CompletionAnswer,
   type NewCard,
@@ -66,8 +75,8 @@ export type ConversionOutcome =
   | "fromSchedule"
   /** The learner has a card for the lesson already: left alone. */
   | "alreadyConverted"
-  /** The lesson is a draft or archived. */
-  | "unpublished"
+  /** The lesson was not read: its first row came while the run went on. */
+  | "lessonNotFound"
   /** A module review, a project or a class lesson. */
   | "notReviewable"
   /** The lesson has no quiz to ask, or its MDX does not parse. */
@@ -77,7 +86,7 @@ export const CONVERSION_OUTCOMES: readonly ConversionOutcome[] = [
   "fromAnswers",
   "fromSchedule",
   "alreadyConverted",
-  "unpublished",
+  "lessonNotFound",
   "notReviewable",
   "noQuiz",
 ];
@@ -94,10 +103,11 @@ export interface ScheduleRow {
 export interface ConversionLesson {
   id: string;
   slug: string;
+  /** A draft or archived lesson is converted too; its cards stay hidden until it is published. */
   published: boolean;
   /** isReviewableLesson: not a module review, a project or a class lesson. */
   reviewable: boolean;
-  /** Its quizzes as it has them now, in order; empty when not published or not reviewable. */
+  /** Its quizzes as it has them now, in order; empty when not reviewable. */
   quizIds: readonly string[];
 }
 
@@ -127,8 +137,7 @@ export function conversionLesson(row: ConversionLessonRow): ConversionLesson {
     slug: row.slug,
     published,
     reviewable,
-    quizIds:
-      published && reviewable ? extractLessonQuizzes(row.contentMdx).map((quiz) => quiz.id) : [],
+    quizIds: reviewable ? extractLessonQuizzes(row.contentMdx).map((quiz) => quiz.id) : [],
   };
 }
 
@@ -151,27 +160,33 @@ export function boxForSchedule(
 }
 
 /**
- * The day each lesson's cards are due, by lesson id: never before the day the
- * row had it due, and the lessons due already spread over
- * CONVERSION_SPREAD_DAYS days from today, the most overdue first, one lesson
- * a day in turn. The same rows give the same days, in whatever order they
- * come.
+ * The day each lesson's cards are due, by lesson id. The lessons due already
+ * (on the day of `now` or before) spread over CONVERSION_SPREAD_DAYS days
+ * from today, the most overdue first, one lesson a day in turn; the others
+ * keep the day the row had them due. The same rows give the same days, in
+ * whatever order they come.
  */
 export function conversionDueDates(
   schedules: readonly Pick<ScheduleRow, "lessonId" | "nextReviewAt">[],
   now: Date,
 ): Map<string, Date> {
-  const ordered = [...schedules].sort(
-    (a, b) =>
-      a.nextReviewAt.getTime() - b.nextReviewAt.getTime() ||
-      (a.lessonId < b.lessonId ? -1 : a.lessonId > b.lessonId ? 1 : 0),
-  );
+  const today = dueCutoff(now);
   const due = new Map<string, Date>();
-  ordered.forEach((schedule, rank) => {
+  const overdue: Pick<ScheduleRow, "lessonId" | "nextReviewAt">[] = [];
+  for (const schedule of schedules) {
     const wasDue = dayStart(dayKey(schedule.nextReviewAt));
-    const slot = dueAfter(now, rank % CONVERSION_SPREAD_DAYS);
-    due.set(schedule.lessonId, wasDue.getTime() > slot.getTime() ? wasDue : slot);
-  });
+    if (wasDue.getTime() > today.getTime()) due.set(schedule.lessonId, wasDue);
+    else overdue.push(schedule);
+  }
+  overdue
+    .sort(
+      (a, b) =>
+        a.nextReviewAt.getTime() - b.nextReviewAt.getTime() ||
+        (a.lessonId < b.lessonId ? -1 : a.lessonId > b.lessonId ? 1 : 0),
+    )
+    .forEach((schedule, rank) => {
+      due.set(schedule.lessonId, dueAfter(now, rank % CONVERSION_SPREAD_DAYS));
+    });
   return due;
 }
 
@@ -182,7 +197,7 @@ function outcomeOf(
   converted: boolean,
 ): ConversionOutcome {
   if (converted) return "alreadyConverted";
-  if (!lesson?.published) return "unpublished";
+  if (lesson === undefined) return "lessonNotFound";
   if (!lesson.reviewable) return "notReviewable";
   if (lesson.quizIds.length === 0) return "noQuiz";
   const ids = new Set(lesson.quizIds);
@@ -283,6 +298,8 @@ export interface BackfillReviewCardsReport {
   schedules: number;
   /** SM-2 rows by what became of them. */
   outcomes: Record<ConversionOutcome, number>;
+  /** Rows given cards for a lesson that is a draft or archived now: hidden until it is published. */
+  unpublishedLessons: number;
   cardsPlanned: number;
   /** Cards written: 0 on a dry run. */
   cardsCreated: number;
@@ -301,7 +318,7 @@ function emptyOutcomes(): Record<ConversionOutcome, number> {
     fromAnswers: 0,
     fromSchedule: 0,
     alreadyConverted: 0,
-    unpublished: 0,
+    lessonNotFound: 0,
     notReviewable: 0,
     noQuiz: 0,
   };
@@ -350,6 +367,7 @@ export async function backfillReviewCards(
     users: userIds.length,
     schedules: 0,
     outcomes: emptyOutcomes(),
+    unpublishedLessons: 0,
     cardsPlanned: 0,
     cardsCreated: 0,
     dueDays: {},
@@ -406,6 +424,7 @@ export async function backfillReviewCards(
       for (const planned of plan) {
         report.outcomes[planned.outcome] += 1;
         if (planned.cards.length === 0) continue;
+        if (lessons.get(planned.lessonId)?.published === false) report.unpublishedLessons += 1;
         userLessons += 1;
         userCards += planned.cards.length;
         const lessonTally = perLesson.get(planned.lessonId) ?? { learners: 0, cards: 0 };
