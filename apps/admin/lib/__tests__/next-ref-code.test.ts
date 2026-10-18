@@ -29,9 +29,9 @@ function codes(prefix: string, from: number, to: number): string[] {
 const LINUX_ROWS = (() => {
   const rows: string[] = [];
   const lessons = codes("02", 1, 80);
-  for (let module = 0; module < 10; module++) {
-    rows.push(...lessons.slice(module * 8, module * 8 + 8));
-    rows.push(`CL-LSN-02${String(901 + module)}-V01`);
+  for (let moduleIndex = 0; moduleIndex < 10; moduleIndex++) {
+    rows.push(...lessons.slice(moduleIndex * 8, moduleIndex * 8 + 8));
+    rows.push(`CL-LSN-02${String(901 + moduleIndex)}-V01`);
   }
   return rows;
 })();
