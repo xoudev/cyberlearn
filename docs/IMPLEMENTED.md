@@ -213,6 +213,13 @@
 - Filtrage à la publication : un contenu signalé est masqué avant relecture
 - File de relecture côté console : restaurer ou supprimer
 - L'auteur est notifié de la décision, et la retrouve dans ses réglages
+- « Signaler » sous ce que d'autres publient (message du forum, question ou
+  réponse sous une leçon, solution de défi, ressource de classe), sur le site et
+  dans l'app (sauf les ressources, que l'app ne montre pas encore) : les raisons
+  d'une note signalée, un commentaire facultatif, vingt par heure au plus,
+  seulement ce que le lecteur voit et jamais le sien (table `content_reports`,
+  lue par son seul auteur sous RLS, écrite par le serveur) ; l'auteur ne sait
+  pas qui l'a signalé, et rien n'est retiré avant la relecture
 - Bannissement avec motif, durée, échéance et dépôt d'appel
 
 #### Saisons, quêtes et cosmétiques
@@ -270,6 +277,8 @@
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/moderation` | File de relecture des contenus signalés |
+| `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
+| `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord ; masquer, supprimer, classer sans suite |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
@@ -366,6 +375,20 @@
 - File de relecture des contenus bloqués à la publication
 - Restaurer ou supprimer, décision notifiée à l'auteur
 - Une décision peut porter une sanction
+- Contenus publiés (forum, questions-réponses, solutions, ressources de
+  classe) : masquer, réafficher, supprimer, chaque geste confirmé, prévenu à
+  l'auteur (avis de modération) et inscrit dans l'audit log
+  (`moderation.content.hide`, `.restore`, `.delete`) dans la même transaction
+  que le geste ; masquer ou supprimer le message qui ouvre un sujet emporte le
+  sujet, supprimer une question emporte ses réponses ; le compte des réponses
+  d'un sujet est recompté à chaque geste. Un contenu encore dans la file du
+  filtre se décide dans la file
+- Signalements des apprenants groupés par contenu, avec la raison, le
+  commentaire et le signaleur : masquer ou supprimer les classe, « Classer sans
+  suite » les ferme et laisse le contenu (`moderation.report.dismiss`) ; une
+  ressource de classe masquée reste listée pour son enseignant, marquée comme
+  telle, et sort de la vue de ses élèves (colonne `isHidden`, appliquée aussi
+  par la RLS de `class_resources`)
 
 #### Classes et établissements
 - Établissements et promotions, création et édition

@@ -24,7 +24,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  soixante-douze : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`,
+  soixante-treize : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`,
   `challenges`, `challenges/complete`, `challenges/detail`, `challenges/flag`,
   `challenges/hint`, `challenges/writeups`, `duels`, `duels/play`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
@@ -37,7 +37,8 @@ c'est lui qu'on relit avant de commencer une surface :
   `onboarding/avatar`, `onboarding/finish`, `onboarding/goals`,
   `onboarding/profile`, `password`, `path-covers`, `placement`,
   `placement/submit`, `profile`, `progress`, `quests/claim`, `quiz-answer`,
-  `quiz-report`, `rank`, `rating`, `review`, `review-cards`, `search`, `settings/profile`,
+  `quiz-report`, `rank`, `rating`, `reports`, `review`, `review-cards`, `search`,
+  `settings/profile`,
   `sheet`, `streak`, `support`, `support/reply`, `support/ticket`, `tournaments`,
   `tournaments/play`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
@@ -113,6 +114,7 @@ RLS — jamais réécrites côté app.
 | Aide & demandes : déposer une demande (mêmes thèmes, même liste pour un établissement, même limite de débit, réponse à l'adresse du compte), la liste, le fil et la réponse ; une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`, envoyé à l'app en `acceptsReplies`) ; une demande finie dit quand et si l'équipe a répondu, et comment en ouvrir une autre (mêmes mots, `ticketConclusion`) ; même service de dépôt pour un compte connecté (`fileAccountTicket`) | ✅ (fenêtre « Nouvelle demande » sur `/support` et sous une demande finie, `?request=1` ; la page publique `/contact` reste pour les visiteurs) | ✅ (écran `support/new`) |
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel, « Se déconnecter » quel que soit l'état de l'appel ; « Tes données » : l'export RGPD et l'adresse privacy@ pour une suppression (l'export reste sur le web, voir plus bas : l'app dit où le trouver et ouvre la page du site) | ✅ (`/banned`, avec le bouton d'export) | ✅ (`app/banned.tsx`, renvoie au site) |
 | Modération côté auteur : ce qui a été signalé, où, quand et ce qu'il en est advenu, sans score ni règle (mêmes mots, `@cyberlearn/lib/moderation/record`) ; les avis de modération y mènent | ✅ (volet des paramètres, Modération) | ✅ (`app/moderation.tsx`) |
+| « Signaler » ce que d'autres ont publié : un message du forum, une question ou une réponse sous une leçon, une solution de défi ; les raisons d'une note signalée, mot pour mot, un commentaire facultatif pour l'équipe (`@cyberlearn/lib/moderation/report-reasons`), vingt signalements par heure au plus, seulement ce que le lecteur voit, selon les règles de la page qui le montre, et jamais le sien (même service `apps/web/lib/moderation/content-report.ts`, route `reports` dans l'app). Rien n'est retiré avant que la console l'ait relu, et l'auteur ne sait pas qui l'a signalé ; un contenu que la console masque ou supprime est annoncé à son auteur par un avis de modération, des deux côtés, avec les accords du nom (« ton message a été supprimé », « ta question a été supprimée ») | ✅ (fenêtre « Signaler » sous chaque message, question, réponse et solution des autres) | ✅ (feuille « Signaler », `components/content-report.tsx`) |
 
 Fenêtres du site, écrans de l'app : les nouveautés, un nouveau sujet du forum,
 une nouvelle demande d'aide, le défi lancé à un ami (« Défier un ami ») et la
@@ -151,6 +153,7 @@ sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
 | Surface | Ce qui manque à l'app, et ce qui le bloque |
 | --- | --- |
 | **La marque « Ami » hors du classement** : à côté de l'auteur d'un sujet ou d'un message du forum, d'une question ou d'une réponse sous une leçon, d'une solution de défi, d'un camarade de classe, d'un joueur de tournoi | L'app la montre dans le classement et la ligue (`components/friends.tsx`, `FriendMark`). Ailleurs, la donnée n'arrive pas encore partout : les solutions et les tournois l'envoient déjà (`isFriend`, ajouté sans rien retirer à `challenges/writeups` et `tournaments`), il reste à la dessiner ; le forum, les questions-réponses et la classe se lisent par des routes ou sous RLS qui ne la calculent pas, et une ligne anonyme ne doit jamais la recevoir. Rien ne bloque d'autre que le travail |
+| **Ressources de la classe, côté élève** (corrigés et documents partagés par l'enseignant, et leur « Signaler ») | L'écran Ma classe de l'app montre le travail donné et ses dates, pas encore les ressources : la route `my-class` ne les envoie pas. Le « Signaler » d'une ressource vient avec elles, par la même route `reports` que les autres contenus, le service sachant déjà qui peut la lire (membre de la classe, ressource publiée, leçon faite quand elle l'attend). Une ressource masquée par la modération ne sort plus de `listResourcesForStudent`, ni de la RLS de `class_resources` : l'app n'aura rien à filtrer. Rien ne bloque d'autre que le travail |
 
 ### Volontairement web-only
 
@@ -172,6 +175,7 @@ Chacune de ces lignes est une décision, pas une dette.
 | **Export RGPD, suppression de compte** | Actions irréversibles qui demandent une confirmation lue posément. Elles restent sur le web, et l'app y renvoie |
 | **Épingler ou fermer un sujet du forum** | Geste de modération réservé aux administrateurs, fait depuis le site. L'app affiche l'état (« Épinglé », « Fermé ») et refuse une réponse dans un sujet fermé, comme le site |
 | **Remise à zéro d'une progression** | Action d'administration, sur le compte de quelqu'un d'autre. Elle vit dans la console, pas dans une app apprenant |
+| **Modération des contenus publiés** (liste de la console par type de contenu, masquer, réafficher, supprimer, file des signalements, « Classer sans suite ») | Gestes d'administration, sur ce que d'autres ont publié : ils vivent dans la console. Ce que l'auteur en voit marche partout : l'avis de modération dans la boîte de réception, et le contenu masqué qui n'est plus montré aux autres, par les mêmes lectures sur le site et dans l'app |
 | **Gestion des certificats** (liste de la console, révocation avec un motif, rétablissement) | Action d'administration, sur le certificat de quelqu'un d'autre : elle vit dans la console. Ce que le titulaire en voit marche partout : la notification (sa marque dans `lib/notification-meta.ts`, son lien vers le sous-onglet Certificats), le certificat révoqué avec son motif dans la liste et sur son écran, la page de vérification |
 | **Mise en page de la page d'une leçon** (barre d'outils collée sous la barre du haut, plan des sections et notes en tiroirs, notes ancrées à côté du texte à partir de 1440 px, « Mode focus » qui replie la barre latérale du site, `lessons/[slug]/_components/lesson-toolbar.tsx` ; chaque composant dans un bloc à sa taille, dans la mesure du texte ou large selon le champ `width` du registre `@cyberlearn/lib/mdx-components`, ateliers disposés selon la largeur du bloc : octets 16, 8 ou 4 par ligne, panneaux côte à côte, terminaux et éditeurs plus hauts, `lesson-mdx-components.ts`) | Une disposition d'écran large, pas une fonction : l'app a son propre écran de leçon, qui occupe déjà tout le téléphone, avec sa progression par section et son bouton « ✎ Notes ». Il n'y a pas de barre latérale à replier, ni de place pour lire et écrire côte à côte. Le champ `width` est fixé par type de composant, jamais écrit dans le MDX : l'app l'ignore et dessine chaque bloc à la largeur du téléphone, comme avant |
 | **Touche « / » des recherches** (catalogue de leçons, parcours, badges, bloc-notes : elle place le curseur dans le champ, `apps/web/hooks/use-slash-focus.ts`) | Un raccourci de clavier physique, sans action propre : sur un téléphone, on touche le champ, qui est déjà en haut de l'écran |

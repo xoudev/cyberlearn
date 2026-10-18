@@ -13,6 +13,8 @@ interface SidebarCounts {
   challenges: number;
   users: number;
   tickets: number;
+  /** Contents with an open report: what learners are waiting on the team for. */
+  reports: number;
 }
 
 interface AdminSidebarProps {
@@ -111,6 +113,13 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M5.8 8 L7.4 9.6 L10.4 6.4" />
         </svg>
       );
+    case "alert":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 1.8 L14.6 13.8 H1.4 Z" />
+          <path d="M8 6 V9.6 M8 11.6 V11.7" />
+        </svg>
+      );
     case "flask":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -184,6 +193,7 @@ export function AdminSidebar({
     { label: "Certificats", href: "/certificates", icon: "certificate" },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
     { label: "Modération", href: "/moderation", icon: "shield" },
+    { label: "Signalements", href: "/moderation/reports", icon: "alert", count: counts.reports },
   ];
 
   const sysItems = [
@@ -192,13 +202,23 @@ export function AdminSidebar({
     { label: "Paramètres", href: "/settings", icon: "cog" },
   ];
 
+  // The entry the page sits under, the most specific when two match:
+  // /moderation/reports is under Signalements, not under Modération too.
+  const activeHref = [...mainItems, ...sysItems]
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(href + "/"))
+    .reduce<string | null>(
+      (best, href) => (best === null || href.length > best.length ? href : best),
+      null,
+    );
+
   const renderItem = (item: {
     label: string;
     href: string;
     icon: string;
     count?: number | null;
   }): React.ReactElement => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    const isActive = item.href === activeHref;
     const isAlert = item.href === "/tickets" && (item.count ?? 0) > 0;
     return (
       <Link

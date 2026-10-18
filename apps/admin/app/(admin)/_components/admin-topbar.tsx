@@ -48,6 +48,8 @@ const DESTINATIONS: Destination[] = [
   { label: "Certificats", href: "/certificates", hint: "page" },
   { label: "Tickets", href: "/tickets", hint: "page" },
   { label: "Modération", href: "/moderation", hint: "page" },
+  { label: "Signalements", href: "/moderation/reports", hint: "page" },
+  { label: "Contenus publiés", href: "/moderation/content", hint: "page" },
   { label: "Banc d'essai", href: "/lab", hint: "page" },
   { label: "Audit log", href: "/audit", hint: "page" },
   { label: "Paramètres", href: "/settings", hint: "page" },

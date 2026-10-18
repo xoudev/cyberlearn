@@ -6,16 +6,19 @@ import type {
   ConsoleCertificateQuery,
   ConsoleCertificateSort,
   ConsoleCertificateStatus,
+  ConsoleContentQuery,
   ConsoleLessonFolder,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
   ConsoleLessonSort,
   ConsoleUserQuery,
   ConsoleUserSort,
+  ContentSurface,
   Difficulty,
   SortDir,
   UserRole,
 } from "@cyberlearn/db";
+import { CONTENT_REPORT_SURFACE_KEYS } from "@cyberlearn/lib/moderation/report-reasons";
 import { sortValue } from "./grid-href";
 import {
   dayParam,
@@ -33,8 +36,8 @@ import {
 
 /**
  * The filters of the console's server-side lists (accounts, audit log,
- * lessons, certificates): read from the URL, written back into its links, and
- * turned into the repository's query.
+ * lessons, certificates, published content): read from the URL, written back
+ * into its links, and turned into the repository's query.
  *
  * Each list has a parse, which never fails, and a search, which is the
  * opposite: the parameters a link to the same list carries, with the defaults
@@ -366,5 +369,51 @@ export function certificateQueryOf(params: CertificateListParams): ConsoleCertif
     sort: params.sort,
     page: params.page,
     pageSize: CERTIFICATES_PAGE_SIZE,
+  };
+}
+
+// ─── Published content (moderation) ─────────────────────────────────────────
+
+export const CONTENT_PAGE_SIZE = 25;
+
+/** The list shows one surface at a time: five tables, five shapes of row. */
+export const DEFAULT_CONTENT_SURFACE: ContentSurface = "FORUM_POST";
+
+export const CONTENT_STATE_VALUES = ["visible", "hidden"] as const;
+
+export type ContentState = (typeof CONTENT_STATE_VALUES)[number];
+
+export interface ContentListParams {
+  surface: ContentSurface;
+  state: ContentState | undefined;
+  q: string;
+  page: number;
+}
+
+export function parseContentListParams(raw: RawParams): ContentListParams {
+  return {
+    surface: oneOf(raw, "surface", CONTENT_REPORT_SURFACE_KEYS) ?? DEFAULT_CONTENT_SURFACE,
+    state: oneOf(raw, "state", CONTENT_STATE_VALUES),
+    q: searchParam(raw),
+    page: pageParam(raw),
+  };
+}
+
+export function contentListSearch(params: ContentListParams): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (params.surface !== DEFAULT_CONTENT_SURFACE) out.surface = params.surface;
+  if (params.state !== undefined) out.state = params.state;
+  if (params.q !== "") out.q = params.q;
+  if (params.page > 1) out.page = String(params.page);
+  return out;
+}
+
+export function contentQueryOf(params: ContentListParams): ConsoleContentQuery {
+  return {
+    surface: params.surface,
+    hidden: params.state === undefined ? undefined : params.state === "hidden",
+    q: params.q,
+    page: params.page,
+    pageSize: CONTENT_PAGE_SIZE,
   };
 }
