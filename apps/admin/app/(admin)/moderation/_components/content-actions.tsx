@@ -4,6 +4,7 @@ import React, { useActionState } from "react";
 import Link from "next/link";
 import type { ContentGesture, ContentSurface } from "@cyberlearn/db";
 import { contentGestureQuestion } from "@/lib/content-moderation";
+import { notifyResult } from "@/lib/notify";
 import {
   dismissContentReportsAction,
   moderateContentAction,
@@ -117,21 +118,24 @@ export function ContentActions({
           {state.error}
         </p>
       )}
-      {state.message !== undefined && (
-        <p className="a-field-hint" role="status">
-          {state.message}
-        </p>
-      )}
     </div>
   );
 }
 
-/** Sends each form to its own action; both report into the one outcome above. */
-function runContentAction(
+/**
+ * Sends each form to its own action. A gesture that went through is said in a
+ * toast, like the console's other gestures: the row usually leaves with it (a
+ * report closed, a content off the list it was on), and an outcome drawn in
+ * the row went with the row. A refusal stays in the row, next to its buttons.
+ */
+async function runContentAction(
   prev: ContentActionState,
   formData: FormData,
 ): Promise<ContentActionState> {
-  return formData.get("intent") === "dismiss"
-    ? dismissContentReportsAction(prev, formData)
-    : moderateContentAction(prev, formData);
+  const result =
+    formData.get("intent") === "dismiss"
+      ? await dismissContentReportsAction(prev, formData)
+      : await moderateContentAction(prev, formData);
+  notifyResult(result, { success: result.message, error: false });
+  return result;
 }
