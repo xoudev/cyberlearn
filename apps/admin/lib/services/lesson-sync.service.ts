@@ -7,7 +7,8 @@ import { prisma } from "@cyberlearn/db";
 import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
 import { importLessonMetadataSchema, type ImportValidationError } from "@cyberlearn/types";
 import { diffHunks, diffLines, diffStats, type DiffHunk } from "@/lib/text-diff";
-import { checkLessonFile, orderBatchByPrerequisites } from "./lesson-import.service";
+import { checkLessonFile } from "./lesson-file-check";
+import { orderBatchByPrerequisites } from "./lesson-import.service";
 
 /**
  * Updating lessons already in the database from their files in the repository.

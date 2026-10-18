@@ -89,13 +89,37 @@ describe("escapeProblem, asked before a lesson is saved", () => {
 });
 
 describe("checkLessonMdx", () => {
-  it("refuses the lesson, names the section and says nothing was saved", async () => {
+  it("refuses the lesson, names the section and the backslash's place, and says nothing was saved", async () => {
     const r = await checkLessonMdx(`## Quiz\n\n${quiz('"C:\\Windows"')}`);
     if (r.ok) throw new Error("accepted a lost backslash");
     expect(r.section).toBe("Quiz");
     expect(r.kind).toBe("text");
+    // Line 3, and column 55 is the backslash itself, after `"C:`.
     expect(describeLessonMdxProblem(r)).toBe(
-      "La section « Quiz » : <Quiz>, attribut « options » : dans « C:\\Windows », la barre oblique inverse de \\W disparaîtrait, car entre accolades le texte suit les règles de JavaScript. Écris \\\\W pour la garder, ou retire-la. Rien n'a été enregistré.",
+      "La section « Quiz », ligne 3, colonne 55 : <Quiz>, attribut « options » : dans « C:\\Windows », la barre oblique inverse de \\W disparaîtrait, car entre accolades le texte suit les règles de JavaScript. Écris \\\\W pour la garder, ou retire-la. Rien n'a été enregistré.",
     );
+  });
+
+  it("points at a backslash on a later line of a template, indented as written", async () => {
+    // MDX takes some of a continuation line's indentation before the string
+    // reaches the tree: the column is the one in the editor all the same.
+    const mdx =
+      "## Shell\n\n<SimulatedTerminal\n  commands={[{ cmd: `ls`, output: `a\n    C:\\Temp` }]}\n/>";
+    const r = await checkLessonMdx(mdx);
+    if (r.ok) throw new Error("accepted a lost backslash");
+    expect(r.kind).toBe("text");
+    expect({ line: r.line, column: r.column }).toEqual({ line: 5, column: 7 });
+  });
+
+  it("reports every string that loses one, not only the first", async () => {
+    const r = await checkLessonMdx(
+      `## Quiz\n\n${quiz('"C:\\Windows"')}\n\n## Encore\n\n<Quiz id="r" question="Où ?" options={["\\d+", "b"]} correct={1} />`,
+    );
+    if (r.ok) throw new Error("accepted lost backslashes");
+    expect(r.problems.map((p) => [p.section, p.line])).toEqual([
+      ["Quiz", 3],
+      ["Encore", 7],
+    ]);
+    expect(describeLessonMdxProblem(r)).toMatch(/Il y a aussi un autre problème\.$/);
   });
 });

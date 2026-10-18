@@ -6,8 +6,9 @@ import { LineSkeleton, TitleSkeleton } from "../../_components/page-skeletons";
 import { TICKET_CARDS, TICKET_CRUMBS } from "../_components/ticket-columns";
 
 /**
- * A ticket while it loads: the message beside its status and details, then
- * the conversation.
+ * A ticket while it loads: the message beside its status, the team's notes
+ * and the details, then the conversation. The card of a contested ban is left
+ * out: only the read says whether the ticket is an appeal.
  */
 export default function TicketLoading(): React.ReactElement {
   return (
@@ -33,9 +34,24 @@ export default function TicketLoading(): React.ReactElement {
 
         <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
           <Card title={TICKET_CARDS.status} pad>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <Skeleton as="span" w={140} h={32} />
-              <Skeleton as="span" w={150} h={10} />
+            <div style={{ display: "grid", gap: 13 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <Skeleton as="span" w={140} h={32} />
+                <Skeleton as="span" w={150} h={10} />
+              </div>
+              {/* Who has it in hand. */}
+              <span style={{ display: "flex", justifyContent: "space-between", gap: 14 }}>
+                <Skeleton as="span" w={80} h={9} />
+                <Skeleton as="span" w={140} h={28} />
+              </span>
+            </div>
+          </Card>
+
+          <Card title={TICKET_CARDS.notes} pad>
+            <div style={{ display: "grid", gap: 12 }}>
+              <Skeleton as="span" w="80%" h={11} />
+              <Skeleton h={64} />
+              <Skeleton as="span" w={130} h={32} />
             </div>
           </Card>
 

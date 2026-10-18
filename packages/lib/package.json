@@ -26,6 +26,8 @@
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
     "./mdx-exercises": "./src/mdx/exercises.ts",
     "./mdx-diagram-outline": "./src/mdx/diagram-outline.ts",
+    "./mdx-diagram-source": "./src/mdx/diagram-source.ts",
+    "./mdx-authoring": "./src/mdx/authoring.ts",
     "./onboarding/*": "./src/onboarding/*.ts",
     "./markdown/*": "./src/markdown/*.ts",
     "./paths/*": "./src/paths/*.ts",

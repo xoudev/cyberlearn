@@ -30,6 +30,7 @@ const { mockTx, mockPrisma, mockStorageRemove, mockDeleteUser, mockCleanupError,
       tournamentSolve: { count: vi.fn(), updateMany: vi.fn() },
       rating: { count: vi.fn(), updateMany: vi.fn() },
       contactTicket: { count: vi.fn(), updateMany: vi.fn() },
+      ticketNote: { deleteMany: vi.fn() },
       auditLog: { count: vi.fn(), updateMany: vi.fn(), create: vi.fn() },
     };
 
@@ -113,6 +114,7 @@ beforeEach(() => {
   mockTx.tournamentSolve.updateMany.mockResolvedValue({ count: 4 });
   mockTx.rating.updateMany.mockResolvedValue({ count: 1 });
   mockTx.contactTicket.updateMany.mockResolvedValue({ count: 1 });
+  mockTx.ticketNote.deleteMany.mockResolvedValue({ count: 2 });
   mockTx.auditLog.updateMany.mockResolvedValue({ count: 3 });
   mockTx.user.delete.mockResolvedValue({});
   mockTx.auditLog.create.mockResolvedValue({});
@@ -131,6 +133,7 @@ describe("happy path", () => {
     expect(summary.tournamentSolvesAnonymized).toBe(4);
     expect(summary.ratingsAnonymized).toBe(1);
     expect(summary.contactTicketsAnonymized).toBe(1);
+    expect(summary.ticketNotesDeleted).toBe(2);
     expect(summary.auditLogsAnonymized).toBe(3);
     expect(summary.authIdentityDeleted).toBe(true);
   });
@@ -182,6 +185,19 @@ describe("happy path", () => {
     });
   });
 
+  it("deletes the team's notes on their tickets, before the tickets lose their userId", async () => {
+    await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    // The ticket stays, anonymised, until retention purges it; what the team
+    // wrote about the person does not wait for that.
+    expect(mockTx.ticketNote.deleteMany).toHaveBeenCalledWith({
+      where: { ticket: { userId: MOCK_USER_ID } },
+    });
+    expect(mockTx.ticketNote.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      mockTx.contactTicket.updateMany.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
   it("anonymises audit logs: actorId=null, actorHashedId set, anonymized=true", async () => {
     await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
 
@@ -222,6 +238,7 @@ describe("happy path", () => {
             tournamentSolvesAnonymized: 4,
             ratingsAnonymized: 1,
             contactTicketsAnonymized: 1,
+            ticketNotesDeleted: 2,
             auditLogsAnonymized: 3,
           }),
         }),

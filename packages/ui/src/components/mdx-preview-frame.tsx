@@ -2,6 +2,7 @@
 
 import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MdxProblem } from "./mdx-problems";
 
 /**
  * The site's rendering of a draft, inside the editor.
@@ -14,10 +15,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
  *
  * What the site answers is an address, or the reason the draft cannot be
  * drawn: the same check the save runs, so the error names the section and
- * the line, before the author has saved anything.
+ * the line, before the author has saved anything. Either way it lists the
+ * problems the save would refuse, each at its line and column, which the
+ * panel marks in the editor as the author types.
  */
 
-export type MdxPreviewResult = { ok: true; url: string } | { ok: false; error: string };
+export type MdxPreviewResult =
+  | { ok: true; url: string; problems?: readonly MdxProblem[] }
+  | { ok: false; error: string; problems?: readonly MdxProblem[] };
 
 export interface MdxEditorPreview {
   /** Sends the draft to the site; resolves with the page to frame, or why it cannot be drawn. */
@@ -31,7 +36,10 @@ export interface MdxEditorPreview {
 export type LessonPreviewAction = (input: {
   token: string | null;
   contentMdx: string;
-}) => Promise<{ ok: true; token: string; url: string } | { ok: false; error: string }>;
+}) => Promise<
+  | { ok: true; token: string; url: string; problems?: readonly MdxProblem[] }
+  | { ok: false; error: string; problems?: readonly MdxProblem[] }
+>;
 
 /** A `preview` for the panel, from the app's action: keeps the token between refreshes. */
 export function useLessonPreview(action: LessonPreviewAction): MdxEditorPreview {
@@ -41,7 +49,9 @@ export function useLessonPreview(action: LessonPreviewAction): MdxEditorPreview 
       const result = await action({ token: token.current, contentMdx: mdx });
       if (!result.ok) return result;
       token.current = result.token;
-      return { ok: true, url: result.url };
+      return result.problems === undefined
+        ? { ok: true, url: result.url }
+        : { ok: true, url: result.url, problems: result.problems };
     },
     [action],
   );
@@ -62,9 +72,18 @@ export interface PreviewState {
   stale: boolean;
   /** Bumped each time the frame should reload. */
   version: number;
+  /** What the site found wrong in the last draft it answered for; null until it has. */
+  problems: readonly MdxProblem[] | null;
 }
 
-const INITIAL: PreviewState = { url: null, error: null, busy: false, stale: true, version: 0 };
+const INITIAL: PreviewState = {
+  url: null,
+  error: null,
+  busy: false,
+  stale: true,
+  version: 0,
+  problems: null,
+};
 
 export function usePreviewRefresh(
   value: string,
@@ -92,17 +111,20 @@ export function usePreviewRefresh(
     if (id !== sends.current) return;
     if (result.ok) {
       accepted.current = mdx;
-      const url = result.url;
+      const { url, problems = [] } = result;
       setState((s) => ({
         url,
         error: null,
         busy: false,
         stale: latest.current !== mdx,
         version: s.version + 1,
+        problems,
       }));
     } else {
-      const error = result.error;
-      setState((s) => ({ ...s, error, busy: false }));
+      // A refusal without problems (the site did not answer, the draft could
+      // not be read) says nothing of the text: the last ones found stand.
+      const { error, problems } = result;
+      setState((s) => ({ ...s, error, busy: false, problems: problems ?? s.problems }));
     }
   }, []);
 
@@ -173,14 +195,23 @@ export function MdxPreviewFrame({
   value,
   preview,
   onQuick,
+  onProblems,
 }: {
   value: string;
   preview: MdxEditorPreview;
   /** Switches the pane to the quick preview. */
   onQuick: () => void;
+  /** Handed the problems of each draft the site answers for, for the editor to mark. */
+  onProblems?: (problems: readonly MdxProblem[]) => void;
 }): React.ReactElement {
   const { state, refreshNow } = usePreviewRefresh(value, preview);
   const frame = useRef<HTMLIFrameElement>(null);
+
+  // The panel hands a state setter, which keeps its identity: this runs once
+  // per answer of the site.
+  useEffect(() => {
+    if (state.problems !== null) onProblems?.(state.problems);
+  }, [state.problems, onProblems]);
 
   // Setting src again, even to the same address, makes the frame load it
   // again; the version changes on every accepted draft.

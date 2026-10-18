@@ -284,7 +284,7 @@
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
 | `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
-| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation |
+| `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période ; les passages des tâches planifiées masqués sauf demande (`?crons=1`, ou un filtre qui les nomme) |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
@@ -414,6 +414,27 @@
 - Mise à jour du statut (OPEN → IN_PROGRESS → RESOLVED → CLOSED)
 - Fil de conversation avec le demandeur ; une demande RESOLVED ou CLOSED
   n'accepte plus de message, de part ni d'autre
+- Page d'un ticket lue par le dépôt (`ticketRepository.findWithThread`) : le
+  demandeur mène à sa fiche (`/users/[id]`)
+- Appel d'un bannissement : carte « Bannissement contesté » (motif, date et
+  auteur de la décision, durée restante en mots de `banTimeLeft`, état en
+  cours, levé ou expiré, motif de la levée) et bouton « Lever », qui lève ce
+  bannissement-là et aucun autre, seulement s'il est encore en cours (le
+  filtre est dans la requête qui écrit) ; ligne d'audit
+  `admin.user.ban_lifted` avec le ticket et le bannissement, réponse
+  facultative au demandeur postée avant de passer le ticket en RESOLVED ; le
+  champ « Motif de la levée » est le même composant que sur la fiche
+- Assignation à un administrateur (ou à personne), refusée pour tout autre
+  compte, sans déplacer la date de dernière activité du ticket ; colonne
+  « Assigné à » et facette « Assignation » (« À moi », « Non assigné ») dans
+  la liste ; audit `ticket.assign`
+- Notes internes (table `ticket_notes`, RLS : aucun droit pour `anon` ni
+  `authenticated`, lecture réservée à ADMIN) : carte « Notes internes » à
+  part du fil, jamais lue par le site ni par l'app (`findForRequester`,
+  `findForUser`) ; même règle qu'une réponse, aucune note sur une demande
+  RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
+  compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
+  texte de la note
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)
