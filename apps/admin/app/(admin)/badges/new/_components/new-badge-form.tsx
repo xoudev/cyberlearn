@@ -24,24 +24,21 @@ interface Props {
   paths: PathOption[];
 }
 
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-
 const LABEL_STYLE: React.CSSProperties = {
   display: "block",
   fontFamily: "var(--font-mono)",
   fontSize: 9.5,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  color: "#7F7BA9",
+  color: "var(--a-muted)",
   marginBottom: 6,
 };
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
-  background: "rgba(5,4,26,0.8)",
-  border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
+  background: "color-mix(in srgb, var(--a-surface-2) 80%, transparent)",
+  border: "1px solid var(--a-border-2)",
+  color: "var(--a-fg)",
   fontFamily: "var(--font-mono)",
   fontSize: 13,
   padding: "11px 14px",
@@ -68,7 +65,7 @@ function Field({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             margin: "0 0 6px",
           }}
         >
@@ -78,7 +75,12 @@ function Field({
       {children}
       {error && (
         <p
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: DANGER, margin: "4px 0 0" }}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--a-danger)",
+            margin: "4px 0 0",
+          }}
         >
           {error}
         </p>
@@ -114,7 +116,14 @@ function CriterionFields({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {criterionError && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: DANGER, margin: 0 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--a-danger)",
+            margin: 0,
+          }}
+        >
           {criterionError}
         </p>
       )}
@@ -144,9 +153,11 @@ function CriterionFields({
                 name="criterion_withCertificate"
                 type="checkbox"
                 value="1"
-                style={{ accentColor: "#0AFFD4", width: 16, height: 16 }}
+                style={{ accentColor: "var(--a-accent)", width: 16, height: 16 }}
               />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#B8B5D1" }}>
+              <span
+                style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--a-fg-2)" }}
+              >
                 Obtenir un certificat (peu importe le parcours)
               </span>
             </label>
@@ -307,12 +318,12 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
         <div
           style={{
             padding: "13px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.35)",
-            borderLeft: `3px solid ${DANGER}`,
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--a-danger) 35%, transparent)",
+            borderLeft: "3px solid var(--a-danger)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: DANGER,
+            color: "var(--a-danger)",
             marginBottom: 24,
           }}
         >
@@ -417,9 +428,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
             <div
               style={{
                 gridColumn: "1 / -1",
-                background: "rgba(10,8,38,0.6)",
-                border: "1px solid #1F1B47",
-                borderLeft: "3px solid #2A2560",
+                background: "color-mix(in srgb, var(--a-surface) 60%, transparent)",
+                border: "1px solid var(--a-border)",
+                borderLeft: "3px solid var(--a-border-2)",
                 borderRadius: 8,
                 padding: "18px 20px",
               }}
@@ -430,7 +441,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
                   fontSize: 9,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   margin: "0 0 14px",
                 }}
               >
@@ -453,9 +464,9 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
             disabled={isPending}
             style={{
               padding: "13px 28px",
-              background: "#0024FF",
-              border: "1px solid #0024FF",
-              color: "#fff",
+              background: "var(--a-blue)",
+              border: "1px solid var(--a-blue)",
+              color: "var(--a-fg)",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 11,
@@ -477,8 +488,8 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               background: "transparent",
-              border: `1px solid ${BORDER}`,
-              color: "#7F7BA9",
+              border: "1px solid var(--a-border-2)",
+              color: "var(--a-muted)",
             }}
           >
             Annuler

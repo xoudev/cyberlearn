@@ -70,12 +70,7 @@ export function EmailViewer({
             sandbox=""
             title={`Aperçu · ${current.label}`}
             srcDoc={current.html}
-            style={{
-              width: "100%",
-              height: 620,
-              border: "1px solid var(--a-border)",
-              background: "#fff",
-            }}
+            className="a-mail-frame"
           />
         )}
       </div>

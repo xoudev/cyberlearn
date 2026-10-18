@@ -39,6 +39,10 @@
   --a-rarity-rare: var(--color-rarity-rare);
   --a-rarity-epic: var(--color-rarity-epic);
   --a-rarity-legendary: var(--color-rarity-legendary);
+  /* A lesson's category, as the site's catalogue colours it. */
+  --a-category-cybersec: var(--color-category-cybersec);
+  --a-category-dev: var(--color-category-dev);
+  --a-category-network: var(--color-category-network);
 
   /* The shared <Select>: its defaults are the web app's palette, so the two
      values that differ here are named rather than the whole scale restated.
@@ -479,7 +483,7 @@
 .a-btn--primary {
   background: var(--a-blue);
   border-color: var(--a-blue);
-  color: #fff;
+  color: var(--a-fg);
 }
 .a-btn--primary:hover {
   filter: brightness(1.25);
@@ -1884,12 +1888,14 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* The text of a changed line: its tone, lifted towards the foreground so a
+   long hunk stays readable on the tinted ground. */
 .a-diff-line[data-kind="removed"] {
-  color: #ffb3c0;
+  color: color-mix(in srgb, var(--a-danger) 40%, var(--a-fg));
   background: color-mix(in srgb, var(--a-danger) 12%, transparent);
 }
 .a-diff-line[data-kind="added"] {
-  color: #b8fff2;
+  color: color-mix(in srgb, var(--a-accent) 30%, var(--a-fg));
   background: color-mix(in srgb, var(--a-accent) 10%, transparent);
 }
 .a-diff-sign {
@@ -2019,4 +2025,15 @@
   color: var(--a-fg-2);
   border-left: 2px solid var(--a-info);
   background: color-mix(in srgb, var(--a-info) 7%, transparent);
+}
+
+/* ─── E-mail preview (/lab) ────────────────────────────────── */
+
+/* The ground a mail client gives a message, white whatever the theme: a
+   template that forgets to paint its own shows it here as it would there. */
+.a-mail-frame {
+  width: 100%;
+  height: 620px;
+  border: 1px solid var(--a-border);
+  background: #ffffff;
 }
