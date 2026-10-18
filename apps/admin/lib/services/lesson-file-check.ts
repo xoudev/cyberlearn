@@ -26,6 +26,68 @@ const INJECTION_PATTERNS = [
   /dangerouslySetInnerHTML/i,
 ];
 
+/**
+ * A frontmatter gray-matter could not read, at its place when js-yaml gave
+ * one. js-yaml counts from 0 in the frontmatter, which gray-matter hands it
+ * from the end of the opening "---": its line 0 is the file's line 1.
+ */
+function yamlError(e: unknown): ImportValidationError {
+  const mark = e instanceof Error && "mark" in e ? e.mark : null;
+  if (
+    typeof mark === "object" &&
+    mark !== null &&
+    "line" in mark &&
+    typeof mark.line === "number" &&
+    "column" in mark &&
+    typeof mark.column === "number"
+  ) {
+    const line = mark.line + 1;
+    const column = mark.column + 1;
+    const reason =
+      e instanceof Error && "reason" in e && typeof e.reason === "string" ? e.reason : "";
+    return {
+      line,
+      column,
+      message: `Frontmatter, ligne ${String(line)}, colonne ${String(column)} : YAML illisible${reason === "" ? "" : ` (${reason})`}`,
+    };
+  }
+  return { message: `Erreur de parsing YAML: ${e instanceof Error ? e.message : "inconnu"}` };
+}
+
+/** The line of a top-level key of the frontmatter, 1-based in the file; null if absent. */
+function frontmatterKeyLine(fileContent: string, key: string): number | null {
+  const lines = fileContent.split("\n");
+  if (lines[0]?.trim() !== "---") return null;
+  const pattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:`);
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    if (line.trim() === "---") return null;
+    if (pattern.test(line)) return i + 1;
+  }
+  return null;
+}
+
+/**
+ * A place in the body as a place in the file, both 1-based: the lines of
+ * `before` (the frontmatter, and what the trim took) come first, and its
+ * last, unfinished line pushes the body's first one to the right.
+ */
+function placeInFile(
+  before: string,
+  body: string,
+  index: number,
+): { line: number; column: number } {
+  const upTo = body.slice(0, index);
+  const lineInBody = upTo.split("\n").length;
+  const columnInBody = index - (upTo.lastIndexOf("\n") + 1) + 1;
+  const lines = before.split("\n").length - 1;
+  const columns = before.length - (before.lastIndexOf("\n") + 1);
+  return {
+    line: lineInBody + lines,
+    column: lineInBody === 1 ? columnInBody + columns : columnInBody,
+  };
+}
+
 /** Metadata as the import schema reads it off a lesson file's frontmatter. */
 export type LessonFileMetadata = NonNullable<ImportValidationResult["metadata"]>;
 
@@ -52,15 +114,12 @@ export async function checkLessonFile(fileContent: string): Promise<LessonFileCh
   // ── Layer 1: Parse frontmatter ────────────────────────────────────────────
   let parsed: matter.GrayMatterFile<string>;
   try {
-    parsed = matter(fileContent);
+    // Options, even empty, keep gray-matter from caching the file before it
+    // parses it: validated a second time, a file whose YAML it could not read
+    // came back with an empty frontmatter and other errors than the first.
+    parsed = matter(fileContent, {});
   } catch (e) {
-    return {
-      ok: false,
-      errors: [
-        { message: `Erreur de parsing YAML: ${e instanceof Error ? e.message : "inconnu"}` },
-      ],
-      warnings: [],
-    };
+    return { ok: false, errors: [yamlError(e)], warnings: [] };
   }
 
   const body = parsed.content.trim();
@@ -69,36 +128,54 @@ export async function checkLessonFile(fileContent: string): Promise<LessonFileCh
   const metaParsed = importLessonMetadataSchema.safeParse(parsed.data);
   if (!metaParsed.success) {
     for (const issue of metaParsed.error.issues) {
-      errors.push({
-        field: issue.path.join("."),
-        message: issue.message,
-      });
+      const field = issue.path.join(".");
+      const key = issue.path[0];
+      const line = typeof key === "string" ? frontmatterKeyLine(fileContent, key) : null;
+      errors.push(
+        line === null
+          ? { field, message: issue.message }
+          : {
+              field,
+              line,
+              message: `Frontmatter, ligne ${String(line)} (${field}) : ${issue.message}`,
+            },
+      );
     }
     return { ok: false, errors, warnings };
   }
 
   const metadata = metaParsed.data;
 
+  // The frontmatter and what the trim took off the top, before the body:
+  // what a place in the body is moved by to be a place in the file.
+  const start = fileContent.lastIndexOf(body);
+  const before = fileContent.slice(0, start);
+
   // ── Layer 3: Injection detection + MDX dry-run compile ───────────────────
-  // Strip fenced and inline code blocks so patterns like onChange= in code
-  // examples don't trigger false positives.
-  const bodyWithoutCode = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+  // Blank out fenced and inline code blocks so patterns like onChange= in
+  // code examples don't trigger false positives. Blanked rather than cut, to
+  // the same length and with their line breaks: a match then sits where it
+  // is in the body, and its line can be given.
+  const blank = (code: string): string => code.replace(/[^\n]/g, " ");
+  const bodyWithoutCode = body.replace(/```[\s\S]*?```/g, blank).replace(/`[^`\n]*`/g, blank);
 
   for (const pattern of INJECTION_PATTERNS) {
     const match = pattern.exec(bodyWithoutCode);
     if (match) {
-      // Find the line number in the original body for the matched position
-      const matchIndexInStripped = match.index;
       const snippet = bodyWithoutCode
-        .slice(Math.max(0, matchIndexInStripped - 40), matchIndexInStripped + 60)
-        .replace(/\n/g, " ")
+        .slice(Math.max(0, match.index - 40), match.index + 60)
+        .replace(/\s+/g, " ")
         .trim();
+      const { line, column } = placeInFile(before, body, match.index);
 
       return {
         ok: false,
         errors: [
           {
-            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) - contexte : "…${snippet}…"`,
+            field: "contentMdx",
+            line,
+            column,
+            message: `Ligne ${String(line)}, colonne ${String(column)} : contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) - contexte : "…${snippet}…"`,
           },
         ],
         warnings,
@@ -126,10 +203,7 @@ export async function checkLessonFile(fileContent: string): Promise<LessonFileCh
   // prop compiles perfectly well and only fails when it runs. Then the rules
   // CI applies to content/: an authoring note, an em dash, a diagram that
   // markdown rewrites.
-  // The frontmatter and what the trim took off the top, before the body.
-  const start = fileContent.lastIndexOf(body);
-  const before = fileContent.slice(0, start);
-
+  //
   // The typography rule holds for the whole file, as CI applies it: a title
   // or a description is published too. Those of the body are the save
   // check's, below.
@@ -139,6 +213,7 @@ export async function checkLessonFile(fileContent: string): Promise<LessonFileCh
     return {
       ...(field === undefined ? {} : { field }),
       line: problem.line,
+      column: problem.column,
       message: `Frontmatter, ligne ${String(problem.line)}, colonne ${String(problem.column)} : ${problem.message}`,
     };
   });
@@ -149,6 +224,7 @@ export async function checkLessonFile(fileContent: string): Promise<LessonFileCh
     const listed: ImportValidationError[] = render.problems.map((problem) => ({
       field: "contentMdx",
       line: problem.line,
+      column: problem.column,
       message: describeLessonMdxProblemAt(problem),
     }));
     const rest = render.total - render.problems.length;
