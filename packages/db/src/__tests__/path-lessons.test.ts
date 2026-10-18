@@ -70,6 +70,119 @@ describe("planPathLessons", () => {
     expect(plan.map((row) => row.moduleId)).toEqual([null, null]);
   });
 
+  it("files a lesson moved into the middle of another module under that module", () => {
+    // The editor shows one list: "a" dropped between c and d is in M2 there.
+    const plan = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: false },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "c", moduleId: M2, isRequired: true },
+        { lessonId: "d", moduleId: M2, isRequired: true },
+      ],
+      ["b", "c", "a", "d"],
+    );
+    expect(plan).toEqual([
+      { lessonId: "b", position: 1, moduleId: M1, isRequired: true },
+      { lessonId: "c", position: 2, moduleId: M2, isRequired: true },
+      { lessonId: "a", position: 3, moduleId: M2, isRequired: false },
+      { lessonId: "d", position: 4, moduleId: M2, isRequired: true },
+    ]);
+  });
+
+  it("re-files lessons dropped there together, or apart, and a new one beside them", () => {
+    const existing = ["a", "b", "c", "d", "e", "f", "g", "h"].map((lessonId, index) => ({
+      lessonId,
+      moduleId: index < 3 ? M1 : M2,
+      isRequired: true,
+    }));
+    // b and c, together, between f and g, with a new lesson between them.
+    const together = planPathLessons(existing, ["a", "d", "e", "f", "b", "new", "c", "g", "h"]);
+    expect(together.map((row) => row.moduleId)).toEqual([M1, M2, M2, M2, M2, M2, M2, M2, M2]);
+    // b between e and f, c between g and h.
+    const apart = planPathLessons(existing, ["a", "d", "e", "b", "f", "g", "c", "h"]);
+    expect(apart.map((row) => row.moduleId)).toEqual([M1, M2, M2, M2, M2, M2, M2, M2]);
+  });
+
+  it("reads one lesson moved down as one move, not its neighbours moved up", () => {
+    // a, first of M1, dropped after c: c, between b and a, did not move.
+    const plan = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: true },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "c", moduleId: M2, isRequired: true },
+        { lessonId: "d", moduleId: M2, isRequired: true },
+      ],
+      ["b", "c", "a", "d"],
+    );
+    expect(plan.map((row) => row.moduleId)).toEqual([M1, M2, M2, M2]);
+  });
+
+  it("files a lesson moved past a module's last lesson under that module", () => {
+    const M3 = "m3";
+    const plan = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: true },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "c", moduleId: M2, isRequired: true },
+        { lessonId: "d", moduleId: M2, isRequired: true },
+        { lessonId: "e", moduleId: M3, isRequired: true },
+      ],
+      ["b", "c", "d", "a", "e"],
+    );
+    expect(plan.map((row) => row.moduleId)).toEqual([M1, M2, M2, M2, M3]);
+  });
+
+  it("keeps the module of a lesson moved to a module's edge", () => {
+    const existing = [
+      { lessonId: "a", moduleId: M1, isRequired: true },
+      { lessonId: "b", moduleId: M1, isRequired: true },
+      { lessonId: "c", moduleId: M2, isRequired: true },
+      { lessonId: "d", moduleId: M2, isRequired: true },
+    ];
+    // "b" before a, first of M1; "d" before c, first of M2.
+    const plan = planPathLessons(existing, ["b", "a", "d", "c"]);
+    expect(plan.map((row) => row.moduleId)).toEqual([M1, M1, M2, M2]);
+  });
+
+  it("never empties a module by a reorder", () => {
+    // M2 holds c alone, now between a and b: re-filing it would empty M2.
+    const plan = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: true },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "c", moduleId: M2, isRequired: true },
+      ],
+      ["a", "c", "b"],
+    );
+    expect(plan.map((row) => row.moduleId)).toEqual([M1, M2, M1]);
+  });
+
+  it("files a lesson out of any module into the module around it, never the reverse", () => {
+    const into = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: true },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "loose", moduleId: null, isRequired: true },
+        { lessonId: "stray", moduleId: null, isRequired: true },
+      ],
+      ["a", "loose", "b", "stray"],
+    );
+    expect(into.map((row) => row.moduleId)).toEqual([M1, M1, M1, null]);
+
+    // c dropped after the lessons the sync left out of any module.
+    const out = planPathLessons(
+      [
+        { lessonId: "a", moduleId: M1, isRequired: true },
+        { lessonId: "b", moduleId: M1, isRequired: true },
+        { lessonId: "c", moduleId: M1, isRequired: true },
+        { lessonId: "x", moduleId: null, isRequired: true },
+        { lessonId: "y", moduleId: null, isRequired: true },
+      ],
+      ["a", "b", "x", "y", "c"],
+    );
+    expect(out.map((row) => row.moduleId)).toEqual([M1, M1, null, null, M1]);
+  });
+
   it("drops the lessons that are no longer listed", () => {
     const plan = planPathLessons(
       [
@@ -117,17 +230,34 @@ describe("pathRepository.replaceLessons", () => {
     });
     expect(writeOrder()).toEqual(["deleteMany", "updateMany", "upsert", "upsert", "upsert"]);
 
-    // A kept lesson only moves: its module and flag are not written over.
+    // A kept lesson moves and keeps its module; its flag is not written over.
     expect(mockPrisma.pathLesson.upsert).toHaveBeenNthCalledWith(1, {
       where: { pathId_lessonId: { pathId: PATH, lessonId: "b" } },
       create: { pathId: PATH, lessonId: "b", position: 1, moduleId: M2, isRequired: false },
-      update: { position: 1 },
+      update: { position: 1, moduleId: M2 },
     });
     // The new one follows "a" into its module.
     expect(mockPrisma.pathLesson.upsert).toHaveBeenNthCalledWith(3, {
       where: { pathId_lessonId: { pathId: PATH, lessonId: "new" } },
       create: { pathId: PATH, lessonId: "new", position: 3, moduleId: M1, isRequired: true },
-      update: { position: 3 },
+      update: { position: 3, moduleId: M1 },
+    });
+  });
+
+  it("writes the module of a lesson moved into the middle of another", async () => {
+    mockPrisma.pathLesson.findMany.mockResolvedValue([
+      { lessonId: "a", moduleId: M1, isRequired: true },
+      { lessonId: "b", moduleId: M1, isRequired: true },
+      { lessonId: "c", moduleId: M2, isRequired: true },
+      { lessonId: "d", moduleId: M2, isRequired: true },
+    ]);
+
+    await pathRepository.replaceLessons(PATH, ["b", "c", "a", "d"]);
+
+    expect(mockPrisma.pathLesson.upsert).toHaveBeenNthCalledWith(3, {
+      where: { pathId_lessonId: { pathId: PATH, lessonId: "a" } },
+      create: { pathId: PATH, lessonId: "a", position: 3, moduleId: M2, isRequired: true },
+      update: { position: 3, moduleId: M2 },
     });
   });
 

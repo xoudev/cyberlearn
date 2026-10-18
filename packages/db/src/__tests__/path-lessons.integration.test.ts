@@ -142,6 +142,19 @@ describe("console writes to a path's lessons (integration, real DB)", () => {
     ]);
   });
 
+  it("files a lesson dragged into the middle of another module under that module", async () => {
+    if (!configured) return;
+    await prisma.$transaction((tx) =>
+      pathRepository.replaceLessons(pathId, [lesson(3), lesson(2), lesson(1), lesson(4)], tx),
+    );
+    expect(await links()).toEqual([
+      [lesson(3), 1, firstModule],
+      [lesson(2), 2, secondModule],
+      [lesson(1), 3, secondModule],
+      [lesson(4), 4, secondModule],
+    ]);
+  });
+
   it("replaces a lesson's prerequisites", async () => {
     if (!configured) return;
     await lessonRepository.replacePrerequisites(lesson(4), [lesson(1), lesson(2)]);

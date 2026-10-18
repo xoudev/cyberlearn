@@ -246,7 +246,8 @@ export const pathRepository = {
   /**
    * Gives a path exactly these lessons, in this order.
    *
-   * A lesson already in the path keeps its module and isRequired, and a new
+   * A lesson already in the path keeps its module and isRequired, unless it
+   * was moved into the middle of another module, which it then joins; a new
    * one joins its neighbour's module (planPathLessons). Positions are 1-based,
    * as the sync writes them. Lessons left out are unlinked.
    */
@@ -273,7 +274,8 @@ export const pathRepository = {
       await db.pathLesson.upsert({
         where: { pathId_lessonId: { pathId, lessonId: row.lessonId } },
         create: { pathId, ...row },
-        update: { position: row.position },
+        // Never isRequired: the console does not edit it.
+        update: { position: row.position, moduleId: row.moduleId },
       });
     }
   },
