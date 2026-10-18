@@ -99,7 +99,13 @@ export interface TournamentChallengeView {
     attachmentUrl: string | null;
     resourceUrl: string | null;
   };
+  /** The player gave this flag: it can no longer be given, whether it still counts or not. */
   solved: boolean;
+  /**
+   * Set when the console took the flag back, with its reason. Optional: a
+   * server older than the app does not send it, and that reads as "not taken back".
+   */
+  disqualified?: { reason: string | null } | null;
 }
 
 export type TournamentFlagReply =
@@ -150,6 +156,7 @@ export function challengeStateColor(state: TournamentChallengeState, over: boole
 /** The colour of the reader's status on a challenge's page. */
 export const CHALLENGE_STATUS_COLOR: Record<TournamentChallengeStatus, string> = {
   solved: colors.success,
+  disqualified: colors.danger,
   open: TOURNAMENT_ACCENT,
   closed: colors.textSecondary,
   watch: colors.textSecondary,

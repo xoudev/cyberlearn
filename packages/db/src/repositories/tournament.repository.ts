@@ -82,6 +82,13 @@ export type ConsoleSolveRow = Prisma.TournamentSolveGetPayload<{
   select: typeof CONSOLE_SOLVE_ROW;
 }>;
 
+/** A player's own flag, as their challenge page and a new submission read it. */
+export interface OwnSolve {
+  /** Set once the console took it back: it stays recorded, and counts for nobody. */
+  disqualifiedAt: Date | null;
+  disqualifiedReason: string | null;
+}
+
 /** Why the console's gesture on a flag wrote nothing. */
 export type SolveDecisionResult =
   | { ok: true }
@@ -236,15 +243,20 @@ export const tournamentRepository = {
   },
 
   /**
-   * Whether this player already found this flag here. A disqualified flag
-   * counts: the console took it back, and submitting it again must not score
-   * it again.
+   * This player's flag for this challenge here, or null before they found it.
+   * A disqualified one is returned too, with its reason: the console took it
+   * back, submitting it again must not score it again, and the player's page
+   * says why it no longer counts.
    */
-  async hasSolved(tournamentId: string, challengeId: string, userId: string): Promise<boolean> {
-    const count = await prisma.tournamentSolve.count({
+  async findOwnSolve(
+    tournamentId: string,
+    challengeId: string,
+    userId: string,
+  ): Promise<OwnSolve | null> {
+    return prisma.tournamentSolve.findFirst({
       where: { tournamentId, challengeId, userId },
+      select: { disqualifiedAt: true, disqualifiedReason: true },
     });
-    return count > 0;
   },
 
   /** Records a flag found; false when this player had already found it. */

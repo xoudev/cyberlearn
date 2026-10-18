@@ -21,7 +21,7 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     tx,
     mockPrisma: {
       $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
-      tournamentSolve: { count: vi.fn(), findMany: vi.fn() },
+      tournamentSolve: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
       tournament: { findMany: vi.fn(), findUnique: vi.fn() },
     },
   };
@@ -91,11 +91,14 @@ describe("tournamentRepository.listSolves", () => {
     });
   });
 
-  it("still counts a disqualified flag as found, so it cannot score twice", async () => {
-    mockPrisma.tournamentSolve.count.mockResolvedValue(1);
-    expect(await tournamentRepository.hasSolved(T, CHALLENGE, PLAYER)).toBe(true);
-    expect(firstArg(mockPrisma.tournamentSolve.count)).toEqual({
+  it("still finds a disqualified flag, with its reason, so it cannot score twice", async () => {
+    const taken = { disqualifiedAt: NOW, disqualifiedReason: "Flag partagé entre équipes" };
+    mockPrisma.tournamentSolve.findFirst.mockResolvedValue(taken);
+    expect(await tournamentRepository.findOwnSolve(T, CHALLENGE, PLAYER)).toEqual(taken);
+    // No filter on the disqualification: the row is the player's whatever became of it.
+    expect(firstArg(mockPrisma.tournamentSolve.findFirst)).toEqual({
       where: { tournamentId: T, challengeId: CHALLENGE, userId: PLAYER },
+      select: { disqualifiedAt: true, disqualifiedReason: true },
     });
   });
 });

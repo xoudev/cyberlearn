@@ -639,10 +639,12 @@ export function teamFoundLabel(found: number, total: number): string {
 }
 
 /** Where the reader stands with one challenge, on its own page. */
-export type TournamentChallengeStatus = "solved" | "open" | "closed" | "watch";
+export type TournamentChallengeStatus = "solved" | "disqualified" | "open" | "closed" | "watch";
 
 export const CHALLENGE_STATUS_LABELS: Record<TournamentChallengeStatus, string> = {
   solved: "Trouvé",
+  // Found, then taken back by the console: it counts for nobody.
+  disqualified: "Disqualifié",
   open: "À trouver",
   // The board's word for a challenge nobody can find any more.
   closed: "Pas trouvé",
@@ -666,7 +668,9 @@ export interface TournamentChallengeAccess {
 export function challengeStatus(
   access: TournamentChallengeAccess,
   solved: boolean,
+  disqualified = false,
 ): TournamentChallengeStatus {
+  if (disqualified) return "disqualified";
   if (solved) return "solved";
   if (access.myTeam === null) return "watch";
   if (access.phase === "FINISHED") return "closed";
@@ -677,4 +681,28 @@ export function challengeStatus(
 export function flagNotice(access: TournamentChallengeAccess): string | null {
   if (access.phase === "FINISHED") return "Le tournoi est terminé : les flags ne comptent plus.";
   return access.canPlay ? null : "Seuls les élèves des classes du tournoi y donnent un flag.";
+}
+
+/** The console's reason, without the full stop the sentence around it adds. */
+function reasonOf(reason: string | null): string | null {
+  const trimmed = reason?.trim().replace(/[.\s]+$/u, "") ?? "";
+  return trimmed === "" ? null : trimmed;
+}
+
+/**
+ * What a player's page says of a flag the console took back: why, when the
+ * console said, and that it no longer counts, for them or for their team.
+ */
+export function disqualifiedFlagText(reason: string | null, myTeam: string | null): string {
+  const why = reasonOf(reason);
+  const team = myTeam ?? "ton équipe";
+  return `${why === null ? "" : `Motif : ${why}. `}Ce flag ne compte plus, ni pour toi ni pour ${team}.`;
+}
+
+/** The answer to a flag given again after the console took it back. */
+export function disqualifiedFlagError(reason: string | null): string {
+  const why = reasonOf(reason);
+  return why === null
+    ? "Ton flag pour ce défi a été disqualifié : il ne compte plus."
+    : `Ton flag pour ce défi a été disqualifié (${why}) : il ne compte plus.`;
 }

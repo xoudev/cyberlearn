@@ -159,6 +159,7 @@ export {
   type ConsoleSolveQuery,
   type ConsoleSolveRow,
   type ConsoleSolveStatus,
+  type OwnSolve,
   type SolveDecisionResult,
 } from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
