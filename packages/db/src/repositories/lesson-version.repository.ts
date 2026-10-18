@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import type { Category, Difficulty, LessonVersionSource, Prisma } from "@prisma/client";
+import type { AuditAction } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
+import { auditLogRepository } from "./audit-log.repository.js";
 
 /**
  * What a lesson publishes, and the one function that publishes it.
@@ -8,20 +10,25 @@ import { prisma } from "../prisma.js";
  * A lesson's content changes from four places, each of which had its own
  * update: the console's form, the import, the sync with the repository and a
  * teacher's editor. None kept what it replaced, and lessons.version was never
- * bumped. publish() is the one way a catalogue lesson's content is to change:
- * it writes the fields, bumps the version, keeps what was published in
+ * bumped. publish() is the one way a catalogue lesson's content changes: it
+ * writes the fields, bumps the version, keeps what was published in
  * lesson_versions and writes the audit row, in one transaction. The console's
- * studio calls it with the draft. The import and the sync are the next to
- * move onto it, each with its file, its source and its own audit action, in
- * their own transaction when they have one (`tx`); until they do, what they
- * write keeps no version. A teacher's class lesson keeps no history: its
- * editor saves into the lesson, as before.
+ * studio calls it with the draft (lessonDraftRepository.publish). A file,
+ * from the import page or the repository, calls it with its fields, its
+ * source and its own audit action, in the transaction that also writes the
+ * lesson's prerequisites (lessonFileRepository). A teacher's class lesson
+ * keeps no history: its editor saves into the lesson, as before.
  *
  * An import that creates a lesson has nothing to change: it creates the row
  * in its transaction, then calls publish() with `created`, which records what
  * the new lesson holds as its first version, from that source, with its audit
  * row. Called with `changes` instead, it would find the content unchanged and
  * record nothing.
+ *
+ * A studio draft open on a lesson that a file rewrites is left as it is. It
+ * keeps the fingerprint of the lesson it was started from, which no longer
+ * matches: the studio says so, and its publish asks before it replaces what
+ * the file wrote (lessonDraftRepository.publish).
  *
  * The first publish of a lesson that has no version yet keeps what the lesson
  * held before as its current version (a BASELINE), so the state every lesson
@@ -117,10 +124,13 @@ export function lessonBaseOf(lesson: LessonContent & { version: number }): Lesso
 interface PublishLessonCommon {
   lessonId: string;
   source: Exclude<LessonVersionSource, "BASELINE">;
-  /** Who published: null for a job with no one behind it. */
-  actorId: string | null;
-  /** The audit row written with it, in the same transaction; the version is added to its metadata. */
-  audit: { action: string; metadata?: Prisma.InputJsonObject };
+  /** Who published: the administrator behind the studio, the import or the sync. */
+  actorId: string;
+  /**
+   * The audit row written with it, in the same transaction, under a name of
+   * the catalogue (audit-actions.ts); the version is added to its metadata.
+   */
+  audit: { action: AuditAction; metadata?: Prisma.InputJsonObject };
   now?: Date;
 }
 
@@ -131,8 +141,8 @@ export type PublishLessonInput = PublishLessonCommon &
         changes: Partial<LessonContent>;
         /**
          * The lesson's updatedAt as the caller read it, when what it publishes
-         * was decided from that state (the sync's diff): nothing is written if
-         * it moved.
+         * was decided from that state (the diff a sync or an import showed):
+         * nothing is written if it moved.
          */
         expectedUpdatedAt?: Date;
         created?: never;
@@ -165,6 +175,24 @@ export type PublishLessonResult =
       version: number;
     };
 
+/** The one audit row of a publish, in its transaction, with the version it left. */
+async function recordPublish(
+  tx: Prisma.TransactionClient,
+  input: PublishLessonInput,
+  version: number,
+): Promise<void> {
+  await auditLogRepository.record(
+    {
+      actorId: input.actorId,
+      action: input.audit.action,
+      targetType: "Lesson",
+      targetId: input.lessonId,
+      metadata: { ...input.audit.metadata, version },
+    },
+    tx,
+  );
+}
+
 async function publishIn(
   tx: Prisma.TransactionClient,
   input: PublishLessonInput,
@@ -188,15 +216,7 @@ async function publishIn(
         publishedAt: now,
       },
     });
-    await tx.auditLog.create({
-      data: {
-        actorId: input.actorId,
-        action: input.audit.action,
-        targetType: "Lesson",
-        targetId: input.lessonId,
-        metadata: { ...input.audit.metadata, version: before.version },
-      },
-    });
+    await recordPublish(tx, input, before.version);
     return { ok: true, version: before.version, content: previous, updatedAt: before.updatedAt };
   }
 
@@ -247,15 +267,7 @@ async function publishIn(
       publishedAt: now,
     },
   });
-  await tx.auditLog.create({
-    data: {
-      actorId: input.actorId,
-      action: input.audit.action,
-      targetType: "Lesson",
-      targetId: input.lessonId,
-      metadata: { ...input.audit.metadata, version },
-    },
-  });
+  await recordPublish(tx, input, version);
   return { ok: true, version, content, updatedAt: now };
 }
 

@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   links: vi.fn(),
   answers: vi.fn(),
   edits: vi.fn(),
+  drafts: vi.fn(),
   write: vi.fn(),
   outside: vi.fn(),
   edges: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock("@cyberlearn/db", () => ({
     findByRefCodesForLinks: m.links,
     quizAnswerCounts: m.answers,
     consoleEditsSinceFile: m.edits,
+    openDrafts: m.drafts,
     writeFromFile: m.write,
     catalogueLessonsOutside: m.outside,
     refCodesByIds: m.refCodes,
@@ -107,8 +109,9 @@ beforeEach(() => {
   mkdirSync(dir, { recursive: true });
   m.answers.mockResolvedValue([]);
   m.edits.mockResolvedValue(new Map());
+  m.drafts.mockResolvedValue(new Map());
   m.links.mockResolvedValue([]);
-  m.write.mockResolvedValue(true);
+  m.write.mockResolvedValue({ ok: true, version: 2, draftKept: false });
   m.outside.mockResolvedValue([]);
   m.edges.mockResolvedValue([]);
   m.refCodes.mockResolvedValue(new Map());
@@ -264,6 +267,18 @@ describe("lessonSyncOverview", () => {
     expect((await lessonSyncOverview(dir)).updates[0]?.editedInConsoleAt).toBeNull();
   });
 
+  it("says when a studio draft is open on a lesson its file would update", async () => {
+    write("python/05.mdx", file("CL-LSN-005-V01", `${BODY}\n\nFin.`));
+    m.findMany.mockResolvedValue([row("CL-LSN-005-V01")]);
+    const saved = new Date("2026-10-18T09:30:00Z");
+    m.drafts.mockResolvedValue(new Map([["id-CL-LSN-005-V01", saved]]));
+    expect((await lessonSyncOverview(dir)).updates[0]?.draftSavedAt).toEqual(saved);
+    expect(m.drafts).toHaveBeenCalledWith(["id-CL-LSN-005-V01"]);
+
+    m.drafts.mockResolvedValue(new Map());
+    expect((await lessonSyncOverview(dir)).updates[0]?.draftSavedAt).toBeNull();
+  });
+
   it("points out a different slug, which the update will not touch", async () => {
     write(
       "python/05.mdx",
@@ -285,7 +300,7 @@ describe("applyLessonUpdate", () => {
 
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
 
-    expect(result).toEqual({ ok: true, lessonId: r.id });
+    expect(result).toEqual({ ok: true, lessonId: r.id, version: 2, draftKept: false });
     expect(m.findUnique).toHaveBeenCalledWith("CL-LSN-005-V01");
     const [args] = m.write.mock.calls[0] as [
       {
@@ -328,12 +343,25 @@ describe("applyLessonUpdate", () => {
     write("python/05.mdx", file("CL-LSN-005-V01", edited));
     const r = row("CL-LSN-005-V01");
     m.findUnique.mockResolvedValue(r);
-    m.write.mockResolvedValue(false);
+    m.write.mockResolvedValue({ ok: false });
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
     expect(result).toMatchObject({
       ok: false,
       reason: "stale",
       message: "La leçon a été modifiée pendant la mise à jour. Recharge la page.",
+    });
+  });
+
+  it("says the studio draft open on the lesson is kept", async () => {
+    write("python/05.mdx", file("CL-LSN-005-V01", edited));
+    const r = row("CL-LSN-005-V01");
+    m.findUnique.mockResolvedValue(r);
+    m.write.mockResolvedValue({ ok: true, version: 5, draftKept: true });
+    expect(await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir)).toEqual({
+      ok: true,
+      lessonId: r.id,
+      version: 5,
+      draftKept: true,
     });
   });
 

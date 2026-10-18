@@ -16,7 +16,7 @@ const m = vi.hoisted(() => ({
   versionFind: vi.fn(),
   versionCurrent: vi.fn(),
   lessonFindFirst: vi.fn(),
-  auditCreate: vi.fn(),
+  auditRecord: vi.fn(),
   resolveCover: vi.fn(),
 }));
 
@@ -60,9 +60,9 @@ vi.mock("@cyberlearn/db", () => ({
     publish: m.draftPublish,
   },
   lessonVersionRepository: { find: m.versionFind, current: m.versionCurrent },
+  auditLogRepository: { record: m.auditRecord },
   prisma: {
     lesson: { findFirst: m.lessonFindFirst },
-    auditLog: { create: m.auditCreate },
   },
 }));
 
@@ -112,7 +112,7 @@ beforeEach(() => {
   m.draftDiscard.mockResolvedValue(true);
   m.draftPublish.mockResolvedValue({ ok: true, version: 2, content: CONTENT, updatedAt: SAVED_AT });
   m.lessonFindFirst.mockResolvedValue(null);
-  m.auditCreate.mockResolvedValue({});
+  m.auditRecord.mockResolvedValue(undefined);
   m.versionCurrent.mockResolvedValue({ ...CONTENT, version: 2 });
   m.resolveCover.mockImplementation((marker: string) =>
     Promise.resolve(`https://signed.example/${marker}`),
@@ -330,15 +330,18 @@ describe("discardLessonDraftAction", () => {
   it("drops the draft and writes down who did", async () => {
     expect(await discardLessonDraftAction({ lessonId: LESSON })).toMatchObject({ ok: true });
     expect(m.draftDiscard).toHaveBeenCalledExactlyOnceWith(LESSON);
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: { actorId: "admin-1", action: "lesson.draft.discard", targetId: LESSON },
+    expect(m.auditRecord.mock.calls[0]?.[0]).toMatchObject({
+      actorId: "admin-1",
+      action: "lesson.draft.discard",
+      targetType: "Lesson",
+      targetId: LESSON,
     });
   });
 
   it("writes nothing down when there was no draft", async () => {
     m.draftDiscard.mockResolvedValue(false);
     await discardLessonDraftAction({ lessonId: LESSON });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("hands back the lesson as it is now, for the studio to go back to", async () => {

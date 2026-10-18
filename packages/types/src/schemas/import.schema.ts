@@ -87,6 +87,11 @@ export interface LessonUpdatePreview {
   quizImpacts: LessonQuizImpact[];
   /** Last edit in the console since the lesson last came from a file, if any. */
   editedInConsoleAt: Date | null;
+  /**
+   * When the studio draft open on the lesson was last saved, if one is. The
+   * update keeps it, and the studio then says the lesson moved under it.
+   */
+  draftSavedAt: Date | null;
   /** The slug is never changed by an update: links to the lesson would break. */
   slugDiffers: { database: string; file: string } | null;
 }

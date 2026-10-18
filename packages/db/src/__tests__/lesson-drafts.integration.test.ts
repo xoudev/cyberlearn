@@ -4,7 +4,9 @@
  *
  * Two things are held here. The repository's conditional writes, which only
  * Postgres can prove: a second tab cannot save over the first, a publish bumps
- * lessons.version and keeps both what the lesson held and what it now holds.
+ * lessons.version and keeps both what the lesson held and what it now holds,
+ * and so does a file written over a lesson by the import or the sync, with a
+ * single audit row, leaving a studio draft as it was.
  * And the Data API: neither table is reachable by a client role, signed in or
  * not, since a draft is what has not been published yet. The site and the app
  * read lessons.contentMdx, which is why the draft has a table of its own.
@@ -17,6 +19,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { prisma } from "../prisma.js";
 import { lessonDraftRepository } from "../repositories/lesson-draft.repository.js";
+import { lessonFileRepository } from "../repositories/lesson-file.repository.js";
 import {
   lessonBaseOf,
   lessonContentOf,
@@ -257,7 +260,7 @@ describe("lesson drafts and versions (integration)", () => {
     await lessonDraftRepository.discard(lessonId);
   });
 
-  it("records a lesson created in the caller's transaction as its first version", async () => {
+  it("creates an imported lesson with its first version and its one audit row", async () => {
     if (!configured) return;
     const fresh: LessonContent = {
       ...PUBLISHED,
@@ -265,43 +268,174 @@ describe("lesson drafts and versions (integration)", () => {
       slug: `importee-${suffix}`,
       title: "Une leçon importée",
     };
-    const result = await prisma.$transaction(async (tx) => {
-      const lesson = await tx.lesson.create({ data: fresh, select: { id: true } });
-      return lessonVersionRepository.publish(
-        {
-          lessonId: lesson.id,
-          created: true,
-          source: "IMPORT",
-          actorId: adminId,
-          audit: { action: "lesson.import", metadata: { file: "importee.mdx" } },
-        },
-        tx,
-      );
+    const result = await lessonFileRepository.createFromFile({
+      fields: fresh,
+      actorId: adminId,
+      prerequisiteRefCodes: [],
+      auditMetadata: { refCode: fresh.refCode, file: "importee.mdx" },
     });
-    expect(result).toMatchObject({ ok: true, version: 1, content: fresh });
-    if (!result.ok) return;
-    const created = await prisma.lesson.findFirstOrThrow({
-      where: { slug: fresh.slug },
-      select: { id: true, version: true },
-    });
+    expect(result).toMatchObject({ refCode: fresh.refCode, version: 1 });
     try {
-      expect(created.version).toBe(1);
+      const created = await prisma.lesson.findUniqueOrThrow({
+        where: { id: result.lessonId },
+        select: { version: true, status: true, authorId: true },
+      });
+      expect(created).toEqual({ version: 1, status: "DRAFT", authorId: adminId });
       const versions = await prisma.lessonVersion.findMany({
-        where: { lessonId: created.id },
+        where: { lessonId: result.lessonId },
         select: { version: true, source: true, title: true, publishedById: true },
       });
       expect(versions).toEqual([
         { version: 1, source: "IMPORT", title: fresh.title, publishedById: adminId },
       ]);
-      expect(
-        await prisma.auditLog.count({
-          where: { targetId: created.id, action: "lesson.import" },
-        }),
-      ).toBe(1);
+      const audit = await prisma.auditLog.findMany({
+        where: { targetId: result.lessonId },
+        select: { action: true, metadata: true },
+      });
+      expect(audit).toEqual([
+        {
+          action: "lesson.import.success",
+          metadata: { refCode: fresh.refCode, file: "importee.mdx", version: 1 },
+        },
+      ]);
     } finally {
-      await prisma.auditLog.deleteMany({ where: { targetId: created.id } });
-      await prisma.lesson.delete({ where: { id: created.id } });
+      await prisma.auditLog.deleteMany({ where: { targetId: result.lessonId } });
+      await prisma.lesson.delete({ where: { id: result.lessonId } });
     }
+  });
+
+  describe("a file written over a lesson", () => {
+    /** A lesson of its own for each case, at version 1 with nothing recorded, as before the studio. */
+    async function lessonFromFile(tag: string): Promise<{ id: string; updatedAt: Date }> {
+      return prisma.lesson.create({
+        data: {
+          ...PUBLISHED,
+          refCode: `DRF-${suffix}-${tag}`,
+          slug: `fichier-${tag.toLowerCase()}-${suffix}`,
+          status: "PUBLISHED",
+          publishedAt: new Date(),
+        },
+        select: { id: true, updatedAt: true },
+      });
+    }
+
+    const FROM_FILE = {
+      contentMdx: "## Corrigée\n\nCe que le fichier dit maintenant.",
+      title: "Une leçon corrigée par son fichier",
+      description: PUBLISHED.description,
+      category: PUBLISHED.category,
+      difficulty: PUBLISHED.difficulty,
+      estimatedMinutes: PUBLISHED.estimatedMinutes,
+      xpReward: PUBLISHED.xpReward,
+    };
+
+    async function trace(id: string): Promise<{
+      version: number;
+      versions: { version: number; source: string }[];
+      audit: { action: string; metadata: unknown }[];
+    }> {
+      const [lesson, versions, audit] = await Promise.all([
+        prisma.lesson.findUniqueOrThrow({ where: { id }, select: { version: true } }),
+        prisma.lessonVersion.findMany({
+          where: { lessonId: id },
+          orderBy: { version: "asc" },
+          select: { version: true, source: true },
+        }),
+        prisma.auditLog.findMany({
+          where: { targetId: id },
+          select: { action: true, metadata: true },
+        }),
+      ]);
+      return { version: lesson.version, versions, audit };
+    }
+
+    async function remove(id: string): Promise<void> {
+      await prisma.auditLog.deleteMany({ where: { targetId: id } });
+      await prisma.lesson.delete({ where: { id } });
+    }
+
+    it("from the import page: one version from the import, one audit row", async () => {
+      if (!configured) return;
+      const lesson = await lessonFromFile("IMP");
+      try {
+        const written = await lessonFileRepository.writeFromFile({
+          lessonId: lesson.id,
+          expectedUpdatedAt: lesson.updatedAt,
+          fields: FROM_FILE,
+          prerequisiteIds: [],
+          audit: { actorId: adminId, action: "lesson.import.update", metadata: { file: "a.mdx" } },
+        });
+        expect(written).toEqual({ ok: true, version: 2, draftKept: false });
+        expect(await trace(lesson.id)).toEqual({
+          version: 2,
+          // What the lesson held before is kept too, as the studio's first publish keeps it.
+          versions: [
+            { version: 1, source: "BASELINE" },
+            { version: 2, source: "IMPORT" },
+          ],
+          audit: [{ action: "lesson.import.update", metadata: { file: "a.mdx", version: 2 } }],
+        });
+
+        // The same diff confirmed again, from a tab that still shows it: refused.
+        const again = await lessonFileRepository.writeFromFile({
+          lessonId: lesson.id,
+          expectedUpdatedAt: lesson.updatedAt,
+          fields: { ...FROM_FILE, title: "Une autre correction" },
+          prerequisiteIds: [],
+          audit: { actorId: adminId, action: "lesson.import.update", metadata: { file: "a.mdx" } },
+        });
+        expect(again).toEqual({ ok: false });
+        expect((await trace(lesson.id)).versions).toHaveLength(2);
+      } finally {
+        await remove(lesson.id);
+      }
+    });
+
+    it("from the repository: one version from the sync, one audit row, the studio draft kept", async () => {
+      if (!configured) return;
+      const lesson = await lessonFromFile("SYN");
+      try {
+        const loaded = await lessonVersionRepository.current(lesson.id);
+        if (loaded === null) throw new Error("lesson gone");
+        const base = lessonBaseOf(loaded);
+        const draft: LessonContent = { ...lessonContentOf(loaded), title: "Écrite au studio" };
+        const saved = await lessonDraftRepository.save(lesson.id, draft, {
+          actorId: adminId,
+          expectedUpdatedAt: null,
+          base,
+        });
+        if (!saved.ok) throw new Error("draft not saved");
+
+        const written = await lessonFileRepository.writeFromFile({
+          lessonId: lesson.id,
+          expectedUpdatedAt: lesson.updatedAt,
+          fields: FROM_FILE,
+          prerequisiteIds: [],
+          audit: { actorId: adminId, action: "lesson.sync", metadata: { file: "b.mdx" } },
+        });
+        expect(written).toEqual({ ok: true, version: 2, draftKept: true });
+        expect(await trace(lesson.id)).toEqual({
+          version: 2,
+          versions: [
+            { version: 1, source: "BASELINE" },
+            { version: 2, source: "SYNC" },
+          ],
+          audit: [{ action: "lesson.sync", metadata: { file: "b.mdx", version: 2 } }],
+        });
+
+        // The draft is there as it was, on a base the lesson has moved from:
+        // its publish asks before replacing what the file wrote.
+        const kept = await lessonDraftRepository.get(lesson.id);
+        expect(kept).toMatchObject({ title: draft.title, baseContentHash: base.contentHash });
+        const refused = await lessonDraftRepository.publish(lesson.id, draft, {
+          actorId: adminId,
+          expectedUpdatedAt: saved.updatedAt,
+        });
+        expect(refused).toEqual({ ok: false, reason: "lesson_changed" });
+      } finally {
+        await remove(lesson.id);
+      }
+    });
   });
 
   it("goes with its lesson, and keeps the history when its author's account goes", async () => {

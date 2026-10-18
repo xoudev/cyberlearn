@@ -67,7 +67,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.findByRefCode.mockResolvedValue(ROW);
   m.links.mockResolvedValue([]);
-  m.write.mockResolvedValue(true);
+  m.write.mockResolvedValue({ ok: true, version: 4, draftKept: false });
   m.edges.mockResolvedValue([]);
   m.refCodes.mockImplementation((ids: string[]) =>
     Promise.resolve(new Map(ids.map((id) => [id, CODES[id] ?? id]))),
@@ -95,7 +95,7 @@ describe("applyLessonContentUpdate from the import", () => {
       kind: "import",
       file: "lecon.mdx",
     });
-    expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
+    expect(result).toEqual({ ok: true, lessonId: "lesson-1", version: 4, draftKept: false });
     const [write] = m.write.mock.calls[0] as [
       { fields: { contentMdx: string; xpReward: number }; audit: Record<string, unknown> },
     ];
@@ -207,7 +207,7 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
       "admin-1",
       source,
     );
-    expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
+    expect(result).toEqual({ ok: true, lessonId: "lesson-1", version: 4, draftKept: false });
     const [write] = m.write.mock.calls[0] as [{ prerequisiteIds: string[] }];
     expect(write.prerequisiteIds).toEqual(["lesson-2"]);
   });
@@ -219,7 +219,11 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
 });
 
 describe("compareLesson", () => {
-  const context = { answers: new Map<string, number>(), editedInConsoleAt: null };
+  const context = {
+    answers: new Map<string, number>(),
+    editedInConsoleAt: null,
+    draftSavedAt: null,
+  };
   const lines = (word: string, count: number): string =>
     Array.from({ length: count }, (_, i) => `${word} ${String(i)}`).join(String.fromCharCode(10));
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  auditLogRepository,
   lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
@@ -11,6 +12,7 @@ import {
   type LessonBase,
   type LessonContent,
 } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { checkLessonForSave } from "@cyberlearn/lib/mdx-authoring";
 import {
   asTyped,
@@ -267,14 +269,12 @@ export async function discardLessonDraftAction(input: unknown): Promise<DiscardL
 
   // Written down: a draft is work, and "who threw mine away" has an answer.
   if (await lessonDraftRepository.discard(lessonId)) {
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.draft.discard",
-        targetType: "Lesson",
-        targetId: lessonId,
-        metadata: {},
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.lesson.draftDiscard,
+      targetType: "Lesson",
+      targetId: lessonId,
+      metadata: {},
     });
   }
   revalidatePath(`/lessons/${lessonId}`);

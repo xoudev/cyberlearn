@@ -8,9 +8,10 @@ const m = vi.hoisted(() => ({
   findMany: vi.fn(),
   answers: vi.fn(),
   edits: vi.fn(),
+  drafts: vi.fn(),
+  create: vi.fn(),
   auditCount: vi.fn(),
   auditCreate: vi.fn(),
-  transaction: vi.fn(),
   apply: vi.fn(),
 }));
 
@@ -18,7 +19,6 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     auditLog: { count: m.auditCount, create: m.auditCreate },
-    $transaction: m.transaction,
   },
   lessonFileRepository: {
     findByRefCode: m.findByRefCode,
@@ -26,6 +26,8 @@ vi.mock("@cyberlearn/db", () => ({
     findByRefCodesForLinks: m.findMany,
     quizAnswerCounts: m.answers,
     consoleEditsSinceFile: m.edits,
+    openDrafts: m.drafts,
+    createFromFile: m.create,
   },
 }));
 vi.mock("@/lib/services/lesson-update.service", async (importOriginal) => ({
@@ -68,6 +70,14 @@ beforeEach(() => {
   m.findMany.mockResolvedValue([]);
   m.answers.mockResolvedValue([]);
   m.edits.mockResolvedValue(new Map());
+  m.drafts.mockResolvedValue(new Map());
+  m.create.mockImplementation((input: { fields: { refCode: string } }) =>
+    Promise.resolve({
+      lessonId: `id-${input.fields.refCode}`,
+      refCode: input.fields.refCode,
+      version: 1,
+    }),
+  );
   m.auditCount.mockResolvedValue(0);
   m.auditCreate.mockResolvedValue({});
 });
@@ -158,7 +168,28 @@ describe("importLessonBatchAction", () => {
     expect(res.outcomes).toMatchObject([{ name: "a.mdx", status: "exists" }]);
     const [outcome] = res.outcomes;
     expect(outcome?.status === "exists" && outcome.result.update?.lessonId).toBe("lesson-1");
-    expect(m.transaction).not.toHaveBeenCalled();
+    expect(m.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a new lesson in one write, which records its version and its audit row", async () => {
+    const content = mdx("CL-LSN-001-V01", "lecon-a");
+    const res = await importLessonBatchAction([{ name: "a.mdx", content }]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [{ name: "a.mdx", status: "success", lessonId: "id-CL-LSN-001-V01" }],
+    });
+    expect(m.create).toHaveBeenCalledExactlyOnceWith({
+      fields: expect.objectContaining({ refCode: "CL-LSN-001-V01", slug: "lecon-a" }) as unknown,
+      actorId: "admin-1",
+      prerequisiteRefCodes: [],
+      auditMetadata: {
+        refCode: "CL-LSN-001-V01",
+        contentHash: expect.stringMatching(/^[a-f0-9]{64}$/) as unknown,
+      },
+    });
+    // The success row is the publish's own: none is written beside it.
+    expect(m.auditCreate).not.toHaveBeenCalled();
   });
 
   it("counts updates in the hourly budget, with imports", async () => {
@@ -180,14 +211,24 @@ describe("updateLessonFromImportAction", () => {
   const input = { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a"), hash: HASH };
 
   it("writes the file over its lesson, from the import, with the fingerprint seen", async () => {
-    m.apply.mockResolvedValue({ ok: true, lessonId: "lesson-1" });
+    m.apply.mockResolvedValue({ ok: true, lessonId: "lesson-1", version: 3, draftKept: false });
     expect(await updateLessonFromImportAction(input)).toEqual({
       status: "success",
       lessonId: "lesson-1",
+      version: 3,
+      draftKept: false,
     });
     expect(m.apply).toHaveBeenCalledWith(input.content, HASH, "admin-1", {
       kind: "import",
       file: "a.mdx",
+    });
+  });
+
+  it("says when the studio draft open on the lesson is kept", async () => {
+    m.apply.mockResolvedValue({ ok: true, lessonId: "lesson-1", version: 3, draftKept: true });
+    expect(await updateLessonFromImportAction(input)).toMatchObject({
+      status: "success",
+      draftKept: true,
     });
   });
 

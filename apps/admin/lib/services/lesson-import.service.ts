@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { ImportValidationResult, ImportValidationError } from "@cyberlearn/types";
-import { lessonFileRepository, prisma } from "@cyberlearn/db";
+import { lessonFileRepository, type Prisma } from "@cyberlearn/db";
 import { checkLessonFile } from "./lesson-file-check";
 import {
   fieldsOfFile,
@@ -109,52 +109,40 @@ export interface ImportResult {
 }
 
 /**
- * Atomically imports a validated MDX lesson into the database.
- * Creates the lesson in DRAFT status + prerequisite links.
+ * Atomically imports a validated MDX lesson into the database: the lesson in
+ * DRAFT status, its prerequisite links, its first version and its
+ * `lesson.import.success` audit row, in one transaction
+ * (lessonFileRepository.createFromFile). `auditMetadata` is what that row
+ * says of where the file came from.
  */
 export async function importValidatedLesson(
   metadata: Awaited<ReturnType<typeof validateMdxContent>>["metadata"] & NonNullable<unknown>,
   body: string,
   authorId: string,
+  // Prisma's JSON input type: what the audit row's column takes.
+  auditMetadata: Prisma.InputJsonObject,
 ): Promise<ImportResult> {
   const contentHash = crypto.createHash("sha256").update(body).digest("hex");
 
-  const lesson = await prisma.$transaction(async (tx) => {
-    const created = await tx.lesson.create({
-      data: {
-        refCode: metadata.refCode,
-        slug: metadata.slug,
-        title: metadata.title,
-        description: metadata.description,
-        category: metadata.category,
-        difficulty: metadata.difficulty,
-        estimatedMinutes: metadata.estimatedMinutes,
-        xpReward: metadata.xpReward,
-        coverImageUrl: metadata.coverImageUrl ?? null,
-        contentMdx: body,
-        status: "DRAFT",
-        authorId: authorId,
-      },
-    });
-
-    if (metadata.prerequisites.length > 0) {
-      const prereqLessons = await tx.lesson.findMany({
-        where: { refCode: { in: metadata.prerequisites } },
-        select: { id: true, refCode: true },
-      });
-
-      await tx.lessonPrerequisite.createMany({
-        data: prereqLessons.map((p) => ({
-          lessonId: created.id,
-          prerequisiteId: p.id,
-        })),
-      });
-    }
-
-    return created;
+  const lesson = await lessonFileRepository.createFromFile({
+    fields: {
+      refCode: metadata.refCode,
+      slug: metadata.slug,
+      title: metadata.title,
+      description: metadata.description,
+      category: metadata.category,
+      difficulty: metadata.difficulty,
+      estimatedMinutes: metadata.estimatedMinutes,
+      xpReward: metadata.xpReward,
+      coverImageUrl: metadata.coverImageUrl ?? null,
+      contentMdx: body,
+    },
+    actorId: authorId,
+    prerequisiteRefCodes: metadata.prerequisites,
+    auditMetadata,
   });
 
-  return { lessonId: lesson.id, refCode: lesson.refCode, contentHash };
+  return { lessonId: lesson.lessonId, refCode: lesson.refCode, contentHash };
 }
 
 // ── Batch ordering ────────────────────────────────────────────────────────────

@@ -83,13 +83,22 @@ export const AUDIT_ACTION = {
   },
   lesson: {
     create: "lesson.create",
+    /** The console's lesson form, before the studio: rows already written keep it. */
     update: "lesson.update",
     status: "lesson.status",
     statusBulk: "lesson.status.bulk",
     delete: "lesson.delete",
     paths: "lesson.paths",
     prerequisites: "lesson.prerequisites",
+    /** The studio's « Publier les changements ». */
+    publish: "lesson.publish",
+    /** The studio's « Abandonner le brouillon ». */
+    draftDiscard: "lesson.draft.discard",
+    /** A lesson created from a file: uploaded on the import page, or from the repository. */
     importSuccess: "lesson.import.success",
+    /** A file uploaded on the import page, written over the lesson that holds its refCode. */
+    importUpdate: "lesson.import.update",
+    /** A lesson updated from its file in the repository. */
     sync: "lesson.sync",
   },
   /** A person's decision on what the automatic screen took down. */

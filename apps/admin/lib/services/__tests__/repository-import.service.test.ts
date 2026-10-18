@@ -191,19 +191,20 @@ describe("importLessonFromRepository", () => {
 
     expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
     expect(m.validateMdxContent).toHaveBeenCalledWith(LESSON);
-    expect(m.importValidatedLesson).toHaveBeenCalledWith(METADATA, "Corps de la leçon.", "admin-1");
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
-        actorId: "admin-1",
-        action: "lesson.import.success",
-        targetId: "lesson-1",
-        metadata: {
-          refCode: "CL-LSN-01008-V01",
-          source: "repository",
-          file: "f1/01008-le-bit.mdx",
-        },
+    // Where it came from goes into the import's own audit row, written with
+    // the lesson and its first version: none is written beside it.
+    expect(m.importValidatedLesson).toHaveBeenCalledWith(
+      METADATA,
+      "Corps de la leçon.",
+      "admin-1",
+      {
+        refCode: "CL-LSN-01008-V01",
+        contentHash: expect.stringMatching(/^[a-f0-9]{64}$/) as unknown,
+        source: "repository",
+        file: "f1/01008-le-bit.mdx",
       },
-    });
+    );
+    expect(m.auditCreate).not.toHaveBeenCalled();
   });
 
   it("never creates a second lesson for a refCode the database got since the page was drawn", async () => {

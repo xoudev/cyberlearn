@@ -79,7 +79,7 @@ describe("lessonVersionRepository.publish", () => {
     changes: { contentMdx: EDITED.contentMdx },
     source: "CONSOLE" as const,
     actorId: ADMIN,
-    audit: { action: "lesson.publish", metadata: { title: "Les ports" } },
+    audit: { action: "lesson.publish" as const, metadata: { title: "Les ports" } },
     now: NOW,
   };
 
@@ -187,14 +187,14 @@ describe("lessonVersionRepository.publish", () => {
 });
 
 describe("lessonVersionRepository.publish, for a lesson an import has just created", () => {
-  // What the import is to do: create the row in its transaction, then call
-  // publish with `created` in that same transaction.
+  // What the import does (lessonFileRepository.createFromFile): create the
+  // row in its transaction, then call publish with `created` in that same one.
   const created = {
     lessonId: LESSON,
     created: true as const,
     source: "IMPORT" as const,
     actorId: ADMIN,
-    audit: { action: "lesson.import", metadata: { file: "les-ports.mdx" } },
+    audit: { action: "lesson.import.success" as const, metadata: { file: "les-ports.mdx" } },
     now: NOW,
   };
 
@@ -226,7 +226,7 @@ describe("lessonVersionRepository.publish, for a lesson an import has just creat
     expect(tx.auditLog.create).toHaveBeenCalledExactlyOnceWith({
       data: {
         actorId: ADMIN,
-        action: "lesson.import",
+        action: "lesson.import.success",
         targetType: "Lesson",
         targetId: LESSON,
         metadata: { file: "les-ports.mdx", version: 1 },

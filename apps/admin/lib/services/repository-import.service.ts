@@ -156,9 +156,16 @@ export async function importLessonFromRepository(
     };
   }
 
+  // The lesson, its first version and its `lesson.import.success` audit row,
+  // in one transaction.
   let lessonId: string;
   try {
-    ({ lessonId } = await importValidatedLesson(result.metadata, result.body, actorId));
+    ({ lessonId } = await importValidatedLesson(result.metadata, result.body, actorId, {
+      refCode,
+      contentHash: crypto.createHash("sha256").update(source.content).digest("hex"),
+      source: "repository",
+      file: source.file,
+    }));
   } catch (error) {
     // Two tabs importing the same file: the second finds the row the first wrote.
     if (isUniqueViolation(error)) {
@@ -170,21 +177,6 @@ export async function importLessonFromRepository(
     }
     throw error;
   }
-
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "lesson.import.success",
-      targetType: "lesson",
-      targetId: lessonId,
-      metadata: {
-        refCode,
-        contentHash: crypto.createHash("sha256").update(source.content).digest("hex"),
-        source: "repository",
-        file: source.file,
-      },
-    },
-  });
   return { ok: true, lessonId };
 }
 

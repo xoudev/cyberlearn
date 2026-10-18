@@ -1,3 +1,4 @@
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import {
   LESSON_CONTENT_SELECT,
@@ -195,7 +196,7 @@ export const lessonDraftRepository = {
             source: "CONSOLE",
             actorId: options.actorId,
             audit: {
-              action: "lesson.publish",
+              action: AUDIT_ACTION.lesson.publish,
               metadata: { title: content.title, refCode: content.refCode },
             },
             ...(options.now !== undefined ? { now: options.now } : {}),

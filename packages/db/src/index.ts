@@ -258,8 +258,10 @@ export {
   LESSON_FROM_FILE_ACTIONS,
   type LessonFileRow,
   type LessonOutsideFiles,
+  type LessonFileCreate,
   type LessonFileWrite,
   type LessonFileWriteAction,
+  type LessonFileWriteResult,
 } from "./repositories/lesson-file.repository.js";
 export {
   quizReportRepository,
