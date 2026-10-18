@@ -372,14 +372,17 @@ export async function listDuelsFor(userId: string): Promise<DuelSummary[]> {
  * The invitations waiting on the reader's answer, the one lapsing first
  * first: the dashboard's "Défis reçus". Asked of the database rather than
  * filtered out of listDuelsFor, which reads the answers of twenty duels; a
- * pending duel has none, and one past its time is not asked for.
+ * pending duel has none, and one past its time is not asked for. The faces
+ * are drawn as on the duels' list: the dashboard shows the same card.
  */
 export async function listDuelInvitationsFor(
   userId: string,
   now: Date = new Date(),
 ): Promise<DuelSummary[]> {
   const duels = await duelRepository.listInvitationsFor(userId, now);
-  return duels.map((duel) => summaryOf(duel, userId, []));
+  if (duels.length === 0) return [];
+  const faces = await facesFor(userId, duels);
+  return duels.map((duel) => summaryOf(duel, userId, [], faces));
 }
 
 /**

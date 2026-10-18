@@ -351,6 +351,37 @@ describe("listDuelInvitationsFor", () => {
     });
     expect(m.listAnswers).not.toHaveBeenCalled();
   });
+
+  it("draws the challenger's picture and profile link, as the duels' list does", async () => {
+    m.listInvitationsFor.mockResolvedValue([
+      duelRow({
+        status: "PENDING",
+        challengerId: FRIEND,
+        opponentId: ME,
+        acceptedAt: null,
+        challenger: {
+          id: FRIEND,
+          displayName: "Alex",
+          username: "alex",
+          avatarUrl: "__upload:alex.png",
+        },
+        opponent: { id: ME, displayName: "Moi", username: "moi", avatarUrl: null },
+      }),
+    ]);
+    const [only] = await listDuelInvitationsFor(ME);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith(ME, [FRIEND]);
+    expect(only?.other).toMatchObject({
+      avatarSrc: "https://signed/__upload:alex.png",
+      profileHref: "/u/alex",
+    });
+  });
+
+  it("asks for no picture when no invitation waits", async () => {
+    m.listInvitationsFor.mockResolvedValue([]);
+    expect(await listDuelInvitationsFor(ME)).toEqual([]);
+    expect(m.resolveAvatarSrcMany).not.toHaveBeenCalled();
+    expect(m.profilesOpenTo).not.toHaveBeenCalled();
+  });
 });
 
 describe("duelRecordFor", () => {
