@@ -1,4 +1,5 @@
 import { Prisma, type TournamentTeamScope } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { LIVE_CLASS_FILTER } from "./class.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice } from "./console-page.js";
@@ -50,10 +51,7 @@ function inTournament(tournamentId: string) {
 const COUNTED_SOLVE = { disqualifiedAt: null } as const satisfies Prisma.TournamentSolveWhereInput;
 
 /** The audit actions of the console's two gestures on a flag. */
-export const TOURNAMENT_SOLVE_AUDIT_ACTION = {
-  disqualify: "tournament.solve.disqualify",
-  requalify: "tournament.solve.requalify",
-} as const;
+export const TOURNAMENT_SOLVE_AUDIT_ACTION = AUDIT_ACTION.tournamentSolve;
 
 /** A flag's state in the console's list. */
 export type ConsoleSolveStatus = "valid" | "disqualified";

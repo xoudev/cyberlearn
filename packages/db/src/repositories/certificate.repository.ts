@@ -3,6 +3,7 @@ import {
   parseCertificateReference,
   publicIdPrefixRange,
 } from "@cyberlearn/lib/social/certificate-code";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 
@@ -40,10 +41,7 @@ const PREFIX_CANDIDATES = 10;
 // ─── Console ────────────────────────────────────────────────────────────────
 
 /** The audit actions the console writes on a certificate. */
-export const CERTIFICATE_AUDIT_ACTION = {
-  revoke: "admin.certificate.revoke",
-  reinstate: "admin.certificate.reinstate",
-} as const;
+export const CERTIFICATE_AUDIT_ACTION = AUDIT_ACTION.certificate;
 
 /** A certificate's state in the console's list: still valid, or revoked. */
 export type ConsoleCertificateStatus = "active" | "revoked";

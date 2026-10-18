@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /**
@@ -38,7 +39,7 @@ const BAN_VIEW = {
 export type BanView = Prisma.UserBanGetPayload<{ select: typeof BAN_VIEW }>;
 
 /** The journal's action for a lift, from whichever page of the console it came. */
-const BAN_LIFTED_ACTION = "admin.user.ban_lifted";
+const BAN_LIFTED_ACTION = AUDIT_ACTION.user.banLifted;
 
 export const banRepository = {
   /**
