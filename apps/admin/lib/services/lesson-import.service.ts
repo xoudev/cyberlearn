@@ -2,7 +2,12 @@ import crypto from "node:crypto";
 import type { ImportValidationResult, ImportValidationError } from "@cyberlearn/types";
 import { lessonFileRepository, prisma } from "@cyberlearn/db";
 import { checkLessonFile } from "./lesson-file-check";
-import { fieldsOfFile, previewLessonUpdate } from "./lesson-update.service";
+import {
+  fieldsOfFile,
+  prerequisiteLoop,
+  prerequisiteLoopMessage,
+  previewLessonUpdate,
+} from "./lesson-update.service";
 
 /** Batch awareness for multi-file imports. */
 export interface BatchValidationContext {
@@ -14,7 +19,8 @@ export interface BatchValidationContext {
  * Four-layer validation pipeline for MDX lesson import: the file's own
  * checks (checkLessonFile), then
  *
- * Layer 4 - Business rules: a slug another lesson has, prerequisites exist
+ * Layer 4 - Business rules: a slug another lesson has, prerequisites exist,
+ *           and for a lesson already in the database, none leads back to it
  *
  * A refCode already in the database is not a refusal: the file can update
  * that lesson, and the result carries what it would change (`update`) for the
@@ -48,8 +54,11 @@ export async function validateMdxContent(
     });
   }
 
+  const prereqLessons =
+    metadata.prerequisites.length > 0
+      ? await lessonFileRepository.findByRefCodesForLinks(metadata.prerequisites)
+      : [];
   if (metadata.prerequisites.length > 0) {
-    const prereqLessons = await lessonFileRepository.findByRefCodesForLinks(metadata.prerequisites);
     const foundRefCodes = new Set(prereqLessons.map((l) => l.refCode));
     const peerRefCodes = new Set(batch?.peerRefCodes ?? []);
     for (const prereq of metadata.prerequisites) {
@@ -64,6 +73,19 @@ export async function validateMdxContent(
         field: "prerequisites",
         message: `Prerequis introuvable: ${prereq}`,
       });
+    }
+  }
+
+  // A lesson already in the database can be required by others: its new
+  // prerequisites must not lead back to it. A new lesson cannot close a loop
+  // with the database, nothing in it requires a lesson it does not hold.
+  if (existing !== null && errors.length === 0) {
+    const loop = await prerequisiteLoop(
+      existing.id,
+      prereqLessons.map((l) => l.id),
+    );
+    if (loop !== null) {
+      errors.push({ field: "prerequisites", message: prerequisiteLoopMessage(loop) });
     }
   }
 

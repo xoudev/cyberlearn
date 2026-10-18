@@ -7,6 +7,8 @@ const m = vi.hoisted(() => ({
   findMany: vi.fn(),
   answers: vi.fn(),
   edits: vi.fn(),
+  edges: vi.fn(),
+  refCodes: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -17,7 +19,9 @@ vi.mock("@cyberlearn/db", () => ({
     findByRefCodesForLinks: m.findMany,
     quizAnswerCounts: m.answers,
     consoleEditsSinceFile: m.edits,
+    refCodesByIds: m.refCodes,
   },
+  lessonRepository: { findPrerequisiteEdges: m.edges },
 }));
 
 import { validateMdxContent, orderBatchByPrerequisites } from "../lesson-import.service";
@@ -48,6 +52,8 @@ beforeEach(() => {
   m.findMany.mockResolvedValue([]); // no prerequisite found in DB
   m.answers.mockResolvedValue([]);
   m.edits.mockResolvedValue(new Map());
+  m.edges.mockResolvedValue([]);
+  m.refCodes.mockResolvedValue(new Map());
 });
 
 /** The row the database holds for mdx(refCode), with a body of its own. */
@@ -121,6 +127,37 @@ describe("validateMdxContent - a refCode already in the database", () => {
     m.edits.mockResolvedValue(new Map([["lesson-1", edited]]));
     const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
     expect(result.update?.editedInConsoleAt).toEqual(edited);
+  });
+
+  it("refuses a prerequisite that already requires the lesson, before anything is confirmed", async () => {
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    m.findMany.mockResolvedValue([{ id: "lesson-3", refCode: "CL-LSN-003-V01" }]);
+    m.edges.mockResolvedValue([{ lessonId: "lesson-3", prerequisiteId: "lesson-1" }]);
+    m.refCodes.mockResolvedValue(
+      new Map([
+        ["lesson-1", "CL-LSN-002-V01"],
+        ["lesson-3", "CL-LSN-003-V01"],
+      ]),
+    );
+
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01", ["CL-LSN-003-V01"]));
+
+    expect(result.valid).toBe(false);
+    expect(result.update).toBeUndefined();
+    expect(result.errors).toEqual([
+      {
+        field: "prerequisites",
+        message:
+          "Ces prérequis forment une boucle : CL-LSN-002-V01 → CL-LSN-003-V01 → CL-LSN-002-V01. Aucune de ces leçons ne pourrait s'ouvrir.",
+      },
+    ]);
+  });
+
+  it("looks for no loop for a new lesson: nothing in the database requires it", async () => {
+    m.findMany.mockResolvedValue([{ id: "lesson-3", refCode: "CL-LSN-003-V01" }]);
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01", ["CL-LSN-003-V01"]));
+    expect(result.valid).toBe(true);
+    expect(m.edges).not.toHaveBeenCalled();
   });
 
   it("still refuses a new lesson whose slug another lesson has", async () => {

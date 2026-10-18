@@ -105,6 +105,16 @@ export const lessonFileRepository = {
     });
   },
 
+  /** The refCodes of these lessons, by id: how a prerequisite loop is named to the admin. */
+  async refCodesByIds(ids: readonly string[]): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    const rows = await prisma.lesson.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true, refCode: true },
+    });
+    return new Map(rows.map((r) => [r.id, r.refCode]));
+  },
+
   /**
    * The catalogue's lessons that none of these refCodes names: in the
    * database without a file in the repository (written in the console, or

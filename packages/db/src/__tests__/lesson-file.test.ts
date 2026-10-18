@@ -126,6 +126,29 @@ describe("quizAnswerCounts", () => {
   });
 });
 
+describe("refCodesByIds", () => {
+  it("names each lesson found by its refCode", async () => {
+    mockPrisma.lesson.findMany.mockResolvedValue([
+      { id: LESSON, refCode: "CL-LSN-001-V01" },
+      { id: PREREQ, refCode: "CL-LSN-002-V01" },
+    ]);
+    const named = await lessonFileRepository.refCodesByIds([LESSON, PREREQ]);
+    expect(mockPrisma.lesson.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [LESSON, PREREQ] } },
+      select: { id: true, refCode: true },
+    });
+    expect([...named]).toEqual([
+      [LESSON, "CL-LSN-001-V01"],
+      [PREREQ, "CL-LSN-002-V01"],
+    ]);
+  });
+
+  it("reads nothing for no lesson", async () => {
+    expect((await lessonFileRepository.refCodesByIds([])).size).toBe(0);
+    expect(mockPrisma.lesson.findMany).not.toHaveBeenCalled();
+  });
+});
+
 describe("catalogueLessonsOutside", () => {
   it("asks for the catalogue's lessons that no file names, by refCode", async () => {
     const outside = [

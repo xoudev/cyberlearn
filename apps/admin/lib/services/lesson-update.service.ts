@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { lessonFileRepository, type LessonFileRow } from "@cyberlearn/db";
+import { lessonFileRepository, lessonRepository, type LessonFileRow } from "@cyberlearn/db";
 import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
 import type {
   ImportValidationError,
@@ -7,6 +7,7 @@ import type {
   LessonQuizImpact,
   LessonUpdatePreview,
 } from "@cyberlearn/types";
+import { findPrerequisiteCycle } from "@/lib/lesson-prerequisites";
 import { diffHunks, diffLines, diffStats } from "@/lib/text-diff";
 import { checkLessonFile, type LessonFileMetadata } from "./lesson-file-check";
 
@@ -179,6 +180,33 @@ export async function previewLessonUpdate(
   });
 }
 
+/**
+ * The loop giving a lesson these prerequisites would close, as the refCodes
+ * from it back to it, or null. Read across the whole catalogue, as the
+ * console's prerequisite editor reads it: ordering a batch by its
+ * prerequisites (orderBatchByPrerequisites) only sees a loop inside the batch,
+ * and a file can require a lesson that already requires it.
+ */
+export async function prerequisiteLoop(
+  lessonId: string,
+  prerequisiteIds: readonly string[],
+): Promise<string[] | null> {
+  if (prerequisiteIds.length === 0) return null;
+  const cycle = findPrerequisiteCycle(
+    lessonId,
+    prerequisiteIds,
+    await lessonRepository.findPrerequisiteEdges(),
+  );
+  if (cycle === null) return null;
+  const refCodes = await lessonFileRepository.refCodesByIds(cycle);
+  return cycle.map((id) => refCodes.get(id) ?? id);
+}
+
+/** A prerequisite loop, as the import and the sync refuse it. */
+export function prerequisiteLoopMessage(loop: readonly string[]): string {
+  return `Ces prérequis forment une boucle : ${loop.join(" → ")}. Aucune de ces leçons ne pourrait s'ouvrir.`;
+}
+
 /** Where the file comes from: the repository, or a file dropped on the import page. */
 export type LessonFileSource =
   | { kind: "repository"; file: string }
@@ -253,6 +281,16 @@ export async function applyLessonContentUpdate(
       reason: "prerequisite",
       message: `Prérequis absent de la base : ${missing.join(", ")}. Importe-le d'abord.`,
     };
+  }
+  // Checked at the write, whatever the comparison showed: the sync page does
+  // not look for loops, and a sibling of an import batch may have come in
+  // since, with this lesson as its prerequisite.
+  const loop = await prerequisiteLoop(
+    row.id,
+    prereqs.map((p) => p.id),
+  );
+  if (loop !== null) {
+    return { ok: false, reason: "prerequisite", message: prerequisiteLoopMessage(loop) };
   }
 
   const body = normalizeBody(check.body);

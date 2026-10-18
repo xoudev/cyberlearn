@@ -10,6 +10,8 @@ const m = vi.hoisted(() => ({
   findByRefCode: vi.fn(),
   links: vi.fn(),
   write: vi.fn(),
+  edges: vi.fn(),
+  refCodes: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -17,7 +19,9 @@ vi.mock("@cyberlearn/db", () => ({
     findByRefCode: m.findByRefCode,
     findByRefCodesForLinks: m.links,
     writeFromFile: m.write,
+    refCodesByIds: m.refCodes,
   },
+  lessonRepository: { findPrerequisiteEdges: m.edges },
 }));
 
 const { applyLessonContentUpdate, fieldsOfRow, lessonHash } = await import(
@@ -64,7 +68,26 @@ beforeEach(() => {
   m.findByRefCode.mockResolvedValue(ROW);
   m.links.mockResolvedValue([]);
   m.write.mockResolvedValue(true);
+  m.edges.mockResolvedValue([]);
+  m.refCodes.mockImplementation((ids: string[]) =>
+    Promise.resolve(new Map(ids.map((id) => [id, CODES[id] ?? id]))),
+  );
 });
+
+/** The refCodes of the lessons the loop cases name. */
+const CODES: Record<string, string> = {
+  "lesson-1": "CL-LSN-001-V01",
+  "lesson-2": "CL-LSN-002-V01",
+  "lesson-3": "CL-LSN-003-V01",
+};
+
+/** FILE, requiring these lessons. */
+function requiring(...refCodes: string[]): string {
+  return FILE.replace(
+    "prerequisites: []",
+    `prerequisites: [${refCodes.map((r) => `"${r}"`).join(", ")}]`,
+  );
+}
 
 describe("applyLessonContentUpdate from the import", () => {
   it("writes the file over the lesson and logs lesson.import.update", async () => {
@@ -127,5 +150,70 @@ describe("applyLessonContentUpdate from the import", () => {
       errors: [{ field: "xpReward", line: 9 }],
     });
     expect(m.findByRefCode).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyLessonContentUpdate and prerequisite loops", () => {
+  const source = { kind: "import", file: "lecon.mdx" } as const;
+
+  it("refuses a lesson that requires itself", async () => {
+    m.links.mockResolvedValue([{ id: "lesson-1", refCode: "CL-LSN-001-V01" }]);
+    const result = await applyLessonContentUpdate(
+      requiring("CL-LSN-001-V01"),
+      SEEN,
+      "admin-1",
+      source,
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: "prerequisite",
+      message:
+        "Ces prérequis forment une boucle : CL-LSN-001-V01 → CL-LSN-001-V01. Aucune de ces leçons ne pourrait s'ouvrir.",
+    });
+    expect(m.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses a prerequisite that already requires the lesson, through the catalogue", async () => {
+    m.links.mockResolvedValue([{ id: "lesson-2", refCode: "CL-LSN-002-V01" }]);
+    m.edges.mockResolvedValue([
+      { lessonId: "lesson-2", prerequisiteId: "lesson-3" },
+      { lessonId: "lesson-3", prerequisiteId: "lesson-1" },
+    ]);
+    const result = await applyLessonContentUpdate(
+      requiring("CL-LSN-002-V01"),
+      SEEN,
+      "admin-1",
+      source,
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "prerequisite",
+      message: expect.stringContaining(
+        "CL-LSN-001-V01 → CL-LSN-002-V01 → CL-LSN-003-V01 → CL-LSN-001-V01",
+      ) as unknown,
+    });
+    expect(m.write).not.toHaveBeenCalled();
+  });
+
+  it("writes prerequisites that lead nowhere back", async () => {
+    m.links.mockResolvedValue([{ id: "lesson-2", refCode: "CL-LSN-002-V01" }]);
+    m.edges.mockResolvedValue([
+      { lessonId: "lesson-2", prerequisiteId: "lesson-3" },
+      { lessonId: "lesson-3", prerequisiteId: "lesson-9" },
+    ]);
+    const result = await applyLessonContentUpdate(
+      requiring("CL-LSN-002-V01"),
+      SEEN,
+      "admin-1",
+      source,
+    );
+    expect(result).toEqual({ ok: true, lessonId: "lesson-1" });
+    const [write] = m.write.mock.calls[0] as [{ prerequisiteIds: string[] }];
+    expect(write.prerequisiteIds).toEqual(["lesson-2"]);
+  });
+
+  it("reads no link for a file without prerequisites", async () => {
+    await applyLessonContentUpdate(FILE, SEEN, "admin-1", source);
+    expect(m.edges).not.toHaveBeenCalled();
   });
 });

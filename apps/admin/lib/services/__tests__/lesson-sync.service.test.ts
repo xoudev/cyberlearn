@@ -12,6 +12,8 @@ const m = vi.hoisted(() => ({
   edits: vi.fn(),
   write: vi.fn(),
   outside: vi.fn(),
+  edges: vi.fn(),
+  refCodes: vi.fn(),
 }));
 
 // The repository's own queries and its transaction are tested in
@@ -25,7 +27,9 @@ vi.mock("@cyberlearn/db", () => ({
     consoleEditsSinceFile: m.edits,
     writeFromFile: m.write,
     catalogueLessonsOutside: m.outside,
+    refCodesByIds: m.refCodes,
   },
+  lessonRepository: { findPrerequisiteEdges: m.edges },
 }));
 
 const { applyLessonUpdate, findLessonsDir, lessonHash, lessonSyncOverview, readRepositoryLessons } =
@@ -106,6 +110,8 @@ beforeEach(() => {
   m.links.mockResolvedValue([]);
   m.write.mockResolvedValue(true);
   m.outside.mockResolvedValue([]);
+  m.edges.mockResolvedValue([]);
+  m.refCodes.mockResolvedValue(new Map());
 });
 
 afterEach(() => {
@@ -351,6 +357,35 @@ describe("applyLessonUpdate", () => {
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
     expect(result).toMatchObject({ ok: false, reason: "prerequisite" });
     expect(m.links).toHaveBeenCalledWith(["CL-LSN-004-V01"]);
+    expect(m.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses prerequisites that lead back to the lesson, naming the loop", async () => {
+    write(
+      "python/05.mdx",
+      file("CL-LSN-005-V01", edited).replace(
+        "prerequisites: []",
+        'prerequisites: ["CL-LSN-004-V01"]',
+      ),
+    );
+    const r = row("CL-LSN-005-V01");
+    m.findUnique.mockResolvedValue(r);
+    m.links.mockResolvedValue([{ id: "id-CL-LSN-004-V01", refCode: "CL-LSN-004-V01" }]);
+    m.edges.mockResolvedValue([{ lessonId: "id-CL-LSN-004-V01", prerequisiteId: r.id }]);
+    m.refCodes.mockResolvedValue(
+      new Map([
+        [r.id, "CL-LSN-005-V01"],
+        ["id-CL-LSN-004-V01", "CL-LSN-004-V01"],
+      ]),
+    );
+    const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "prerequisite",
+      message: expect.stringContaining(
+        "CL-LSN-005-V01 → CL-LSN-004-V01 → CL-LSN-005-V01",
+      ) as unknown,
+    });
     expect(m.write).not.toHaveBeenCalled();
   });
 
