@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   answers: vi.fn(),
   edits: vi.fn(),
   write: vi.fn(),
+  outside: vi.fn(),
 }));
 
 // The repository's own queries and its transaction are tested in
@@ -23,6 +24,7 @@ vi.mock("@cyberlearn/db", () => ({
     quizAnswerCounts: m.answers,
     consoleEditsSinceFile: m.edits,
     writeFromFile: m.write,
+    catalogueLessonsOutside: m.outside,
   },
 }));
 
@@ -103,6 +105,7 @@ beforeEach(() => {
   m.edits.mockResolvedValue(new Map());
   m.links.mockResolvedValue([]);
   m.write.mockResolvedValue(true);
+  m.outside.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -176,6 +179,26 @@ describe("lessonSyncOverview", () => {
       { file: "a.mdx", refCode: "CL-LSN-001-V01", title: "Listes et tuples" },
     ]);
     expect(o.unreadable[0]?.file).toBe("b.mdx");
+  });
+
+  it("lists the catalogue lessons no file holds, which the sync leaves alone", async () => {
+    write("a.mdx", file("CL-LSN-001-V01"));
+    // Unreadable, but its lesson has a file all the same.
+    write("b.mdx", "---\nrefCode: CL-LSN-002-V01\nslug: 12\n---\n\nTexte");
+    m.findMany.mockResolvedValue([row("CL-LSN-001-V01")]);
+    m.outside.mockResolvedValue([
+      { id: "id-900", refCode: "CL-LSN-900-V01", title: "Écrite dans la console", status: "DRAFT" },
+    ]);
+    const o = await lessonSyncOverview(dir);
+    expect(m.outside).toHaveBeenCalledWith(["CL-LSN-001-V01", "CL-LSN-002-V01"]);
+    expect(o.onlyInDatabase).toEqual([
+      {
+        lessonId: "id-900",
+        refCode: "CL-LSN-900-V01",
+        title: "Écrite dans la console",
+        status: "DRAFT",
+      },
+    ]);
   });
 
   it("says which values a category it cannot read may take", async () => {

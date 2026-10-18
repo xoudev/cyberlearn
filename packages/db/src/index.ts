@@ -187,6 +187,7 @@ export {
   lessonFileRepository,
   LESSON_FROM_FILE_ACTIONS,
   type LessonFileRow,
+  type LessonOutsideFiles,
   type LessonFileWrite,
   type LessonFileWriteAction,
 } from "./repositories/lesson-file.repository.js";

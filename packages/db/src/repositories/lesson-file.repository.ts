@@ -1,4 +1,4 @@
-import type { Category, Difficulty, Prisma } from "@prisma/client";
+import type { Category, ContentStatus, Difficulty, Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 
 /**
@@ -30,6 +30,14 @@ export const LESSON_FILE_ROW = {
 } as const satisfies Prisma.LessonSelect;
 
 export type LessonFileRow = Prisma.LessonGetPayload<{ select: typeof LESSON_FILE_ROW }>;
+
+/** A catalogue lesson no file of the repository holds. */
+export interface LessonOutsideFiles {
+  id: string;
+  refCode: string;
+  title: string;
+  status: ContentStatus;
+}
 
 /** The audit actions after which a lesson holds what a file said. */
 export const LESSON_FROM_FILE_ACTIONS = [
@@ -94,6 +102,19 @@ export const lessonFileRepository = {
     return prisma.lesson.findMany({
       where: { refCode: { in: [...refCodes] } },
       select: { id: true, refCode: true },
+    });
+  },
+
+  /**
+   * The catalogue's lessons that none of these refCodes names: in the
+   * database without a file in the repository (written in the console, or
+   * their file taken out). A sync leaves them as they are; the console says so.
+   */
+  async catalogueLessonsOutside(refCodes: readonly string[]): Promise<LessonOutsideFiles[]> {
+    return prisma.lesson.findMany({
+      where: { audience: "CATALOGUE", refCode: { notIn: [...refCodes] } },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true, status: true },
     });
   },
 

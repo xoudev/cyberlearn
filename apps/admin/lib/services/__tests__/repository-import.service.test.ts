@@ -341,6 +341,71 @@ describe("pathSyncOverview", () => {
     m.pathFindMany.mockResolvedValue([syncedRow([{ refCode: "CL-LSN-03001-V01", module: 1 }])]);
     const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
     expect(state?.upToDate).toBe(false);
+    expect(state?.changes).toEqual([
+      { kind: "changed", label: "Module 1", before: "Les bases", after: "Les fondations" },
+    ]);
+  });
+
+  it("says what a sync would overwrite: fields, modules, where each lesson lands", async () => {
+    write(
+      "paths/reseaux.json",
+      manifest({
+        estimatedHours: 80,
+        modules: [
+          { title: "Les bases", lessons: ["CL-LSN-03002-V01", "CL-LSN-03001-V01"] },
+          { title: "L'adressage", lessons: ["CL-LSN-03003-V01"] },
+          // Not imported yet: nothing to place until it is.
+          { title: "Le routage", lessons: ["CL-LSN-03004-V01"] },
+        ],
+      }),
+    );
+    m.lessonFindMany.mockResolvedValue([
+      { refCode: "CL-LSN-03001-V01" },
+      { refCode: "CL-LSN-03002-V01" },
+      { refCode: "CL-LSN-03003-V01" },
+      { refCode: "CL-LSN-03099-V01" },
+    ]);
+    m.pathFindMany.mockResolvedValue([
+      syncedRow([
+        { refCode: "CL-LSN-03001-V01", module: 1 },
+        { refCode: "CL-LSN-03099-V01", module: 1 },
+        { refCode: "CL-LSN-03002-V01", module: 1 },
+      ]),
+    ]);
+    const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
+    expect(state?.upToDate).toBe(false);
+    expect(state?.changes).toEqual([
+      { kind: "changed", label: "Durée (h)", before: "70", after: "80" },
+      { kind: "added", label: "Module 3", value: "Le routage" },
+      {
+        kind: "changed",
+        label: "CL-LSN-03002-V01",
+        before: "position 3 · module 1",
+        after: "position 1 · module 1",
+      },
+      {
+        kind: "changed",
+        label: "CL-LSN-03001-V01",
+        before: "position 1 · module 1",
+        after: "position 2 · module 1",
+      },
+      { kind: "added", label: "CL-LSN-03003-V01", value: "position 3 · module 2" },
+      // Out of the manifest: kept, at the end and out of any module.
+      {
+        kind: "changed",
+        label: "CL-LSN-03099-V01",
+        before: "position 2 · module 1",
+        after: "position 4 · hors module (plus dans le manifeste)",
+      },
+    ]);
+  });
+
+  it("lists nothing for a path already up to date", async () => {
+    write("paths/reseaux.json", manifest());
+    m.lessonFindMany.mockResolvedValue([{ refCode: "CL-LSN-03001-V01" }]);
+    m.pathFindMany.mockResolvedValue([syncedRow([{ refCode: "CL-LSN-03001-V01", module: 1 }])]);
+    const [state] = (await pathSyncOverview(path.join(root, "paths"))).paths;
+    expect(state).toMatchObject({ upToDate: true, changes: [] });
   });
 });
 

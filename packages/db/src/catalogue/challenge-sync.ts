@@ -13,6 +13,7 @@
 
 import type { PrismaClient } from "@prisma/client";
 import type { ChallengeFile } from "@cyberlearn/types";
+import { changedValue, type CatalogueChange } from "./changes";
 
 export interface ChallengeSyncResult {
   challengeId: string;
@@ -168,4 +169,69 @@ export function challengeMatches(stored: StoredChallenge, file: ChallengeFile): 
       return row?.content === hint.content && row.xpCost === hint.xpCost;
     })
   );
+}
+
+/**
+ * What syncChallenge would change, in words: each field the file rewrites,
+ * the machine's files, and the hints, matched by their place as the sync
+ * matches them. Empty when challengeMatches holds; the console lists it
+ * before anyone confirms a sync.
+ */
+export function challengeChanges(stored: StoredChallenge, file: ChallengeFile): CatalogueChange[] {
+  const title = storedTitle(stored.machine);
+  const changes: CatalogueChange[] = [
+    ...changedValue("Titre", stored.title, file.title),
+    ...changedValue("Slug", stored.slug, file.slug),
+    ...changedValue("Domaine", stored.category, file.category),
+    ...changedValue("Difficulté", stored.difficulty, file.difficulty),
+    ...changedValue("Type", stored.type, "CTF"),
+    ...changedValue("XP", stored.xpReward, file.xpReward),
+    ...changedValue("Essais", stored.maxAttempts, file.maxAttempts),
+    ...changedValue("Ordre", stored.orderIndex, file.orderIndex),
+    ...changedValue("Prérequis", stored.prerequisiteRefCode, file.prerequisite ?? null),
+    ...changedValue(
+      "Machine (titre)",
+      typeof title === "string" ? title : null,
+      file.machine.title ?? null,
+    ),
+  ];
+  if (stored.description !== file.description) {
+    changes.push({ kind: "modified", label: "Description", value: "Texte réécrit." });
+  }
+  if (stored.instructions !== file.instructions) {
+    changes.push({ kind: "modified", label: "Énoncé", value: "Texte réécrit." });
+  }
+
+  const files = storedFiles(stored.machine) ?? {};
+  const rewritten = [...new Set([...Object.keys(files), ...Object.keys(file.machine.files)])]
+    .filter((path) => files[path] !== file.machine.files[path])
+    .sort();
+  if (rewritten.length > 0) {
+    changes.push({
+      kind: "modified",
+      label: "Machine",
+      value: `Fichiers réécrits : ${rewritten.join(", ")}.`,
+    });
+  }
+
+  for (let i = 0; i < Math.max(stored.hints.length, file.hints.length); i++) {
+    const label = `Indice ${String(i + 1)}`;
+    const saved = stored.hints.at(i);
+    const hint = file.hints.at(i);
+    if (!saved && hint) changes.push({ kind: "added", label, value: hint.content });
+    else if (saved && !hint) changes.push({ kind: "removed", label, value: saved.content });
+    else if (saved && hint) {
+      if (saved.content !== hint.content) {
+        changes.push({ kind: "modified", label, value: hint.content });
+      }
+      changes.push(
+        ...changedValue(
+          `${label} (coût)`,
+          `${String(saved.xpCost)} XP`,
+          `${String(hint.xpCost)} XP`,
+        ),
+      );
+    }
+  }
+  return changes;
 }

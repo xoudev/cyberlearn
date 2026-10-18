@@ -125,3 +125,18 @@ describe("quizAnswerCounts", () => {
     ]);
   });
 });
+
+describe("catalogueLessonsOutside", () => {
+  it("asks for the catalogue's lessons that no file names, by refCode", async () => {
+    const outside = [
+      { id: LESSON, refCode: "CL-LSN-900-V01", title: "Écrite ici", status: "DRAFT" },
+    ];
+    mockPrisma.lesson.findMany.mockResolvedValue(outside);
+    expect(await lessonFileRepository.catalogueLessonsOutside(["CL-LSN-001-V01"])).toEqual(outside);
+    expect(mockPrisma.lesson.findMany).toHaveBeenCalledWith({
+      where: { audience: "CATALOGUE", refCode: { notIn: ["CL-LSN-001-V01"] } },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true, status: true },
+    });
+  });
+});

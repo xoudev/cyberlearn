@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseChallengeFile, type ChallengeFile } from "@cyberlearn/types";
 import { findChallengeDir, loadChallengeFiles } from "../catalogue/challenge-files";
-import { challengeMatches, type StoredChallenge } from "../catalogue/challenge-sync";
+import {
+  challengeChanges,
+  challengeMatches,
+  type StoredChallenge,
+} from "../catalogue/challenge-sync";
 
 function challenge(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -130,5 +134,32 @@ describe("challengeMatches", () => {
     );
     expect(challengeMatches({ ...stored, hints: [] }, file)).toBe(false);
     expect(challengeMatches({ ...stored, prerequisiteRefCode: "CL-CHG-001" }, file)).toBe(false);
+  });
+
+  it("has nothing to list where it matches, and names each field that differs", () => {
+    expect(challengeChanges(stored, file)).toEqual([]);
+    expect(
+      challengeChanges(
+        {
+          ...stored,
+          xpReward: 40,
+          instructions: "Ancien énoncé.",
+          prerequisiteRefCode: "CL-CHG-001",
+          machine: { files: { "flag.txt": "x", "vieux.txt": "y" } },
+          hints: [
+            { content: "Regarde flag.txt.", xpCost: 5 },
+            { content: "Un indice en trop.", xpCost: 0 },
+          ],
+        },
+        file,
+      ),
+    ).toEqual([
+      { kind: "changed", label: "XP", before: "40", after: "50" },
+      { kind: "changed", label: "Prérequis", before: "CL-CHG-001", after: "aucun" },
+      { kind: "modified", label: "Énoncé", value: "Texte réécrit." },
+      { kind: "modified", label: "Machine", value: "Fichiers réécrits : flag.txt, vieux.txt." },
+      { kind: "changed", label: "Indice 1 (coût)", before: "5 XP", after: "10 XP" },
+      { kind: "removed", label: "Indice 2", value: "Un indice en trop." },
+    ]);
   });
 });

@@ -1879,6 +1879,17 @@
 .a-sync-extra {
   margin-top: 18px;
 }
+/* What syncing a path, an exam or a challenge would write, under its line. */
+.a-sync-changes {
+  margin: 6px 0 4px;
+}
+.a-sync-changes .a-sync-fields {
+  margin-top: 8px;
+}
+/* The confirmation of one lesson's update, in its card's head. */
+.a-sync-card-head .a-sync-confirm {
+  max-width: 420px;
+}
 .a-sync-plain {
   display: grid;
   gap: 6px;

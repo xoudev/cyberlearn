@@ -88,6 +88,20 @@ export interface SyncOverview {
   /** In an order where each lesson follows its prerequisites: the import order. */
   notImported: { file: string; refCode: string; title: string }[];
   unreadable: { file: string; message: string }[];
+  /**
+   * Catalogue lessons no file of the repository holds: written in the
+   * console, or their file taken out. The sync never touches them, and never
+   * deletes a lesson: the database is what the site reads.
+   */
+  onlyInDatabase: { lessonId: string; refCode: string; title: string; status: string }[];
+}
+
+/**
+ * The refCode a file declares, read off its frontmatter even when the file is
+ * unreadable otherwise: its lesson has a file, broken as it may be.
+ */
+function declaredRefCode(content: string): string | null {
+  return /^refCode:\s*["']?([^"'\s]+)/m.exec(content)?.[1] ?? null;
 }
 
 interface ParsedFile {
@@ -141,6 +155,7 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
     updates: [],
     notImported: [],
     unreadable: [],
+    onlyInDatabase: [],
   };
   if (dir === null) return empty;
 
@@ -151,7 +166,16 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
     (p): p is { file: string; message: string } => !("refCode" in p),
   );
 
-  const rows = await lessonFileRepository.findByRefCodes(readable.map((p) => p.refCode));
+  const declared = [
+    ...new Set([
+      ...readable.map((p) => p.refCode),
+      ...files.flatMap((f) => declaredRefCode(f.content) ?? []),
+    ]),
+  ];
+  const [rows, outside] = await Promise.all([
+    lessonFileRepository.findByRefCodes(readable.map((p) => p.refCode)),
+    lessonFileRepository.catalogueLessonsOutside(declared),
+  ]);
   const byRefCode = new Map(rows.map((r) => [r.refCode, r]));
 
   let unchanged = 0;
@@ -199,7 +223,14 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
     file: file.file,
   }));
 
-  return { available: true, unchanged, updates, notImported, unreadable };
+  const onlyInDatabase = outside.map((l) => ({
+    lessonId: l.id,
+    refCode: l.refCode,
+    title: l.title,
+    status: l.status,
+  }));
+
+  return { available: true, unchanged, updates, notImported, unreadable, onlyInDatabase };
 }
 
 /**
