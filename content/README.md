@@ -64,12 +64,19 @@ Elle passe par la même page, section des mises à jour.
   fichier passe les mêmes contrôles qu'à l'import. Le slug, le statut et
   l'image de couverture ne changent jamais.
 - Chaque mise à jour est journalisée (`lesson.sync`). Elle est refusée si la
-  leçon a changé entre l'affichage et la confirmation.
+  leçon a changé entre l'affichage et la confirmation, ou si ses nouveaux
+  prérequis mènent de nouveau à elle (une boucle, cherchée sur tout le
+  catalogue).
+- Un contenu réécrit d'un bout à l'autre sur des milliers de lignes n'est pas
+  comparé ligne à ligne : la page donne le nombre de lignes au plus, sans les
+  passages.
 
 Les parcours, les examens et les défis déjà en base y disent aussi ce qu'une
 synchronisation écrirait (« Ce qui sera écrit ») : champs, modules et place de
-chaque leçon pour un parcours, réglages et questions pour un examen, champs,
-fichiers de la machine et indices pour un défi. Les leçons du catalogue
+chaque leçon pour un parcours, réglages et questions pour un examen, champs
+(dont ceux réglés dans la console que la synchronisation vide : durée limite,
+flag, code de départ, pièce jointe, ressource), fichiers de la machine et
+indices pour un défi. Les leçons du catalogue
 qu'aucun fichier ne déclare sont listées à part (« En base, sans fichier dans le
 dépôt ») : la synchronisation n'y touche pas et ne supprime jamais une leçon.
 
