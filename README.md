@@ -33,7 +33,7 @@ parcours certifiants - pensé pour la communauté francophone.
   (attribution temps réel + rattrapage rétroactif), classement public.
 - **Test de positionnement** à l'onboarding - dispense automatique des prérequis
   déjà maîtrisés.
-- **Révisions espacées** - planification SM-2 par leçon.
+- **Révisions espacées** - rappel du jour : les questions ratées reviennent, en boîtes de Leitner.
 - **Q&A par leçon**, notifications realtime, profils publics, avatars.
 - **Classes & établissements** - un enseignant compose ses leçons et ses parcours,
   les assigne à sa classe avec une échéance, distribue des corrigés, et suit
@@ -81,7 +81,7 @@ cyberlearn/
 │   └── marketing/      # Rendus Remotion pour la fiche Play Store
 ├── packages/
 │   ├── db/             # Schéma Prisma, migrations (RLS incluse), repositories, clients Supabase
-│   ├── lib/            # Logique métier partagée (XP, SM-2, évaluateur de badges, scoring, guards)
+│   ├── lib/            # Logique métier partagée (XP, révisions, évaluateur de badges, scoring, guards)
 │   ├── ui/             # Composants de marque (XPBar, LevelBadge, BadgeMedallion…) + tokens
 │   ├── types/          # Schémas Zod et types partagés
 │   ├── email/          # Templates React Email

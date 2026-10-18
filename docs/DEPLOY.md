@@ -233,7 +233,7 @@ après ne change rien.
 |---|---|
 | `db:backfill-badge-xp` | Crédite l'XP des badges gagnés avant que les badges en rapportent |
 | `db:backfill-daily-streaks` | Reconstruit les jours d'activité et la plus longue série depuis les leçons terminées |
-| `db:backfill-review-cards` | Convertit l'ancienne file de révisions (SM-2) en cartes du rappel du jour, voir ci-dessous |
+| `db:backfill-review-cards` | Convertit l'ancienne file de révisions (SM-2), gardée dans `review_schedules_legacy`, en cartes du rappel du jour ; à lancer avant la version qui supprime cette table, voir ci-dessous |
 
 ### Conversion des révisions : `db:backfill-review-cards`
 
@@ -243,17 +243,20 @@ pnpm --filter @cyberlearn/db db:backfill-review-cards --verbose   # les mêmes, 
 pnpm --filter @cyberlearn/db db:backfill-review-cards --apply     # écrit les cartes
 ```
 
-**Quand :** une première fois quand le rappel du jour est en production sur le
-site et ses écrans publiés dans l'app, puis **une dernière fois juste avant**
-le retrait de l'ancienne file (`ReviewSchedule`), qui emporte les lignes à
-convertir. Une deuxième passe lancée aussitôt après la première n'écrit rien.
-Une passe plus tardive, elle, convertit les lignes créées entre-temps : tant
-que l'ancienne file existe, une leçon terminée sans réponse au quiz
-enregistrée (depuis une version de l'app qui ne les envoie pas) y ajoute une
-ligne sans donner de carte. C'est pour elles que sert la dernière passe.
+**Quand :** l'ancienne file est retirée du site et de l'app (migration
+`20261018120000_retire_review_schedules`). Plus rien n'y ajoute de ligne :
+celles qui restent attendent leur conversion dans `review_schedules_legacy`,
+la table renommée, lue par ce seul script et fermée à tout client. **Cette
+table est supprimée dans une version ultérieure, une fois la conversion
+passée en production** : lancer `--apply` avant de déployer cette version,
+sans quoi les lignes non converties partent avec elle. Une passe lancée après
+la première n'écrit rien.
 
-Chaque ligne de `review_schedules` (un apprenant, une leçon) devient :
+Chaque ligne de `review_schedules_legacy` (un apprenant, une leçon) devient :
 
+- rien si l'apprenant n'a plus la leçon terminée : sa progression a été remise
+  à zéro depuis (tout le compte, ou la leçon depuis la console), et ni l'une
+  ni l'autre ne touche plus l'ancienne file ;
 - rien pour un bilan de module, un projet, une leçon de classe ou une leçon
   sans quiz, comme à la fin d'une leçon ;
 - rien non plus si l'apprenant a déjà une carte pour la leçon, retirée ou non
@@ -280,6 +283,11 @@ leur donnait. L'interrupteur de répétition espacée n'est pas lu : ses cartes
 restent cachées tant qu'il est coupé, comme l'était l'ancienne file. Les lignes
 SM-2 ne sont pas modifiées. Règles et tests :
 `packages/db/src/backfill-review-cards.ts`.
+
+Pour les versions de l'app installées avant les cartes, qui lisaient la file
+elles-mêmes, `review_schedules` est désormais une vue vide, bâtie sur
+`review_cards` : elle ne dépend pas de `review_schedules_legacy` et reste en
+place quand cette table est supprimée.
 
 ---
 
