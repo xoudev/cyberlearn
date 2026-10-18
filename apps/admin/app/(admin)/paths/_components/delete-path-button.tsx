@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { notifyResult } from "@/lib/notify";
 import { deletePathAction } from "../_actions/path-actions";
 
 function TrashIcon() {
@@ -38,7 +39,6 @@ export function DeletePathButton({
 }): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [hov, setHov] = useState(false);
 
   function handleDelete() {
@@ -47,16 +47,17 @@ export function DeletePathButton({
     )
       return;
 
-    setError(null);
     startTransition(async () => {
       const fd = new FormData();
       fd.set("pathId", pathId);
       const result = await deletePathAction({}, fd);
-      if (result.success) {
-        router.refresh();
-      } else if (result.error) {
-        setError(result.error);
-      }
+      // In a toast rather than a popup under the row: the table's overflow
+      // clipped it, and a deletion that worked said nothing at all.
+      const ok = notifyResult(result, {
+        success: `Parcours « ${pathTitle} » supprimé.`,
+        error: "La suppression a échoué.",
+      });
+      if (ok) router.refresh();
     });
   }
 
@@ -112,46 +113,6 @@ export function DeletePathButton({
           <TrashIcon />
         )}
       </button>
-
-      {error && (
-        <div
-          style={{
-            position: "absolute",
-            right: 0,
-            top: "calc(100% + 4px)",
-            background: "#0A0826",
-            border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
-            borderRadius: 4,
-            padding: "6px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--a-danger)",
-            whiteSpace: "nowrap",
-            zIndex: 50,
-            maxWidth: 280,
-            lineHeight: 1.5,
-          }}
-        >
-          {error}
-          <button
-            type="button"
-            onClick={() => {
-              setError(null);
-            }}
-            style={{
-              marginLeft: 8,
-              color: "#7F7BA9",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
     </div>
   );
 }

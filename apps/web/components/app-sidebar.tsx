@@ -3,7 +3,7 @@ import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { computeLevel } from "@cyberlearn/lib";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
-import { LIVE_CLASS_FILTER, prisma } from "@cyberlearn/db";
+import { classRepository, duelRepository } from "@cyberlearn/db";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
@@ -12,6 +12,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   let level = 1;
   let hasClasses = false;
   let showRevisions = true;
+  let duelInvitations = 0;
   let displayName = "Opérateur";
   let avatarSrc: string | null = null;
 
@@ -21,28 +22,14 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     if (authUser) {
       // "Révisions" opens the day's recall, and counts nothing: how many
       // questions wait is not a number to show (lib/sidebar/items.ts).
-      showRevisions = await revisionsEnabled(authUser.id);
-
-      // The entry follows the classes, not the role. Teaching one and being in
-      // one both count: a student put in a class had nowhere to see their
-      // classmates except their own profile, while the page listing them
-      // existed and was closed to them.
-      //
-      // Archived classes are excluded here for the same reason the pages
-      // exclude them - a count that did not would put back the door with an
-      // empty room behind it. LIVE_CLASS_FILTER is the repository's own rule,
-      // imported rather than restated, because this count and
-      // findForTeacher/findForMember disagreeing is exactly how that bug happens.
-      hasClasses =
-        (await prisma.class.count({
-          where: {
-            ...LIVE_CLASS_FILTER,
-            OR: [
-              { teachers: { some: { teacherId: authUser.id } } },
-              { members: { some: { userId: authUser.id } } },
-            ],
-          },
-        })) > 0;
+      // "Mes classes" follows the classes, not the role: teaching one or being
+      // in one, archived ones left out (classRepository.hasLiveClass). "Duels"
+      // counts the invitations a friend is waiting on an answer to.
+      [showRevisions, hasClasses, duelInvitations] = await Promise.all([
+        revisionsEnabled(authUser.id),
+        classRepository.hasLiveClass(authUser.id),
+        duelRepository.countInvitations(authUser.id, new Date()),
+      ]);
     }
 
     level = computeLevel(dbUser?.xpTotal ?? 0).level;
@@ -59,6 +46,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
       <SidebarNav
         hasClasses={hasClasses}
         showRevisions={showRevisions}
+        duelInvitations={duelInvitations}
         level={level}
         rankName={rankName(level)}
         displayName={displayName}

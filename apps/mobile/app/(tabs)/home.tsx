@@ -4,6 +4,8 @@ import { wrappedWindow } from "@cyberlearn/lib/gamification/wrapped-window";
 import { nextRankName, rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { planSections, sectionNumber } from "@cyberlearn/lib/dashboard/sections";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
+import { receivedInvitations, runningTournaments } from "@cyberlearn/lib/dashboard/your-move";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { View } from "react-native";
@@ -20,7 +22,9 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { WeeklyQuests } from "@/components/weekly-quests";
+import { YourMove } from "@/components/your-move";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
+import { fetchDuelsApi, fetchTournamentsApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "@/lib/db";
 import { firstName, leadAction, pathsTitle, type HomePath, type LeadProgress } from "@/lib/home";
@@ -38,8 +42,9 @@ import { RECALL_STATE_LABEL, type RecallState } from "@cyberlearn/lib/revisions/
 
 /**
  * The home tab: the site's dashboard, rebuilt around the paths (PR #233). The
- * paths lead; a half-finished lesson follows when there is one, then the
- * day's recall while spaced repetition is on; the reader's own record
+ * paths lead; what will not wait follows when there is any (a duel a friend
+ * sent, a tournament under way), then a half-finished lesson when there is
+ * one, then the day's recall while spaced repetition is on; the reader's own record
  * closes. The sections are numbered as on the site, and the numbering closes
  * up behind a section that has nothing to say
  * (@cyberlearn/lib/dashboard/sections).
@@ -51,6 +56,7 @@ export default function Accueil(): React.JSX.Element {
   // Drawn on the server on the day's first look, as the site's dashboard
   // draws it: its state is the one the Révisions screen will open on.
   const recall = useDailyRecall(userId);
+  const queryClient = useQueryClient();
 
   if (isLoading || !data) {
     return (
@@ -65,7 +71,17 @@ export default function Accueil(): React.JSX.Element {
   }
 
   return (
-    <Screen onRefresh={() => Promise.all([refetch(), recall.refetch()])}>
+    <Screen
+      onRefresh={() =>
+        Promise.all([
+          refetch(),
+          recall.refetch(),
+          // What will not wait (HomeBody): pulled again with the rest.
+          queryClient.invalidateQueries({ queryKey: ["duels"] }),
+          queryClient.invalidateQueries({ queryKey: ["tournaments"] }),
+        ])
+      }
+    >
       <HomeBody data={data} userId={userId} recallState={recallCardState(recall.data)} />
     </Screen>
   );
@@ -90,9 +106,31 @@ function HomeBody({
   const streakAnchor = useTourAnchor("home-streak");
   const bellAnchor = useTourAnchor("home-bell");
 
+  // What will not wait, as the site's dashboard shows it: the duels a friend
+  // sent, still waiting on an answer, and the tournaments under way. Same
+  // queries as the Duels and Tournaments screens.
+  const { data: duelBoard } = useQuery({
+    queryKey: ["duels"],
+    queryFn: fetchDuelsApi,
+    staleTime: 60_000,
+  });
+  const { data: tournamentList } = useQuery({
+    queryKey: ["tournaments"],
+    queryFn: fetchTournamentsApi,
+    staleTime: 60_000,
+  });
+  const invitations =
+    duelBoard === undefined ? [] : receivedInvitations(duelBoard.duels, new Date());
+  const liveTournaments =
+    tournamentList === undefined ? [] : runningTournaments(tournamentList.tournaments);
+
   const { me, level, rank, badges, resume, paths, stats } = data;
   const tier = computeTier(level.level);
-  const sections = planSections({ hasResume: resume !== null, hasRecall: recallState !== null });
+  const sections = planSections({
+    hasResume: resume !== null,
+    hasRecall: recallState !== null,
+    hasPlay: invitations.length > 0 || liveTournaments.length > 0,
+  });
   const openRecall = (): void => {
     router.push("/revisions");
   };
@@ -283,7 +321,18 @@ function HomeBody({
         )}
       </Rise>
 
-      {/* 02 · En cours: the half-finished lesson, when there is one */}
+      {/* 02 · À toi de jouer: a duel received, a tournament under way */}
+      {invitations.length > 0 || liveTournaments.length > 0 ? (
+        <Rise index={2}>
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "play") ?? "02"} · à toi de jouer`}
+            title="Ça n'attend pas."
+          />
+          <YourMove invitations={invitations} tournaments={liveTournaments} />
+        </Rise>
+      ) : null}
+
+      {/* En cours: the half-finished lesson, when there is one */}
       {resume ? (
         <Rise index={2}>
           <SectionLabel

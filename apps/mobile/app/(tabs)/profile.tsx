@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { Pressable, Share, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
+import { receivedInvitations } from "@cyberlearn/lib/dashboard/your-move";
 import { publicProfileUrl } from "@cyberlearn/lib/social/portfolio";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { ActionChip } from "@/components/buttons";
@@ -15,37 +15,18 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
-import { fetchFriendsApi, fetchMyAvatarUrl, SITE_URL } from "@/lib/api";
+import { fetchDuelsApi, fetchFriendsApi, fetchMyAvatarUrl, SITE_URL } from "@/lib/api";
 import { revocationLine, validCertificates } from "@/lib/certificates";
 import { RARITY_COLOR } from "@/lib/db";
 import { PROFILE_SUB_TABS, profileSubFrom, type ProfileSub } from "@/lib/profile-tabs";
 import { useProfile } from "@/lib/queries";
 import { CHANGELOG_COPY } from "@/lib/changelog";
+import { hubSections } from "@/lib/hub";
 import { useSession } from "@/lib/session";
 import { useChangelogSeen } from "@/lib/use-changelog-seen";
 
-// In-app screens first, then sections that still live on the web.
-const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
-  // Ma classe leads: it is the only entry here that can carry a deadline, and
-  // the site now e-mails people about those.
-  { label: "Ma classe", route: "/my-class" },
-  { label: "Classement", route: "/leaderboard" },
-  { label: "Amis", route: "/friends" },
-  { label: "Duels", route: "/duels" },
-  { label: "Tournois", route: "/tournaments" },
-  { label: "Bloc-notes", route: "/notes" },
-  { label: "Casier", route: "/locker" },
-  { label: "Révisions", route: "/revisions" },
-  { label: "Hors ligne", route: "/offline" },
-  { label: "Glossaire", route: "/glossary" },
-  { label: "Défis", route: "/challenges" },
-  { label: "Forum", route: "/forum" },
-  { label: "Aide & demandes", route: "/support" },
-  { label: "Notifications", route: "/notifications" },
-  { label: "Ma modération", route: "/moderation" },
-  { label: "Réglages", route: "/settings" },
-  { label: "Nouveautés", route: "/changelog" },
-];
+// The hub, in the groups of the site's sidebar (lib/hub.ts).
+const HUB_SECTIONS = hubSections();
 
 /** The stored form that needs the server to turn it into something drawable. */
 const UPLOAD_PREFIX = "__upload:";
@@ -106,6 +87,15 @@ export default function Profil(): React.JSX.Element {
     staleTime: 60_000,
   });
   const waiting = friends?.incoming.length ?? 0;
+  // The duel invitations waiting on the reader, as the site's sidebar counts
+  // them beside « Duels ». The Duels screen reads the same query.
+  const { data: duelBoard } = useQuery({
+    queryKey: ["duels"],
+    queryFn: fetchDuelsApi,
+    staleTime: 60_000,
+  });
+  const invitations =
+    duelBoard === undefined ? 0 : receivedInvitations(duelBoard.duels, new Date()).length;
 
   if (isLoading || !data) {
     return (
@@ -303,60 +293,59 @@ export default function Profil(): React.JSX.Element {
         </View>
       )}
 
-      {/* Hub */}
-      <View style={{ marginTop: 26 }}>
-        <SectionLabel title="Explorer" />
-        <Card style={{ padding: 0 }}>
-          {HUB_LINKS.map((link, i) => (
-            <View key={link.label}>
-              {i > 0 ? <Divider /> : null}
-              <PressableScale
-                onPress={() => {
-                  if (link.route) {
+      {/* Hub: the screens the tab bar does not lead to, in the site's groups */}
+      {HUB_SECTIONS.map((section, s) => (
+        <View key={section.key} style={{ marginTop: s === 0 ? 26 : 18 }}>
+          <SectionLabel eyebrow={s === 0 ? "explorer" : undefined} title={section.title} />
+          <Card style={{ padding: 0 }}>
+            {section.links.map((link, i) => (
+              <View key={link.key}>
+                {i > 0 ? <Divider /> : null}
+                <PressableScale
+                  onPress={() => {
                     // SAFETY: typed routes are disabled; expo-router accepts any
                     // registered pathname string at runtime.
                     router.push(link.route as never);
-                  } else if (link.url) {
-                    void WebBrowser.openBrowserAsync(link.url);
-                  }
-                }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingHorizontal: 14,
-                  paddingVertical: 14,
-                }}
-              >
-                <Text variant="h3">
-                  {link.label}
-                  {/* Requests waiting on the reader, as the mark next to the
-                      site's bell counts them. */}
-                  {link.route === "/friends" && waiting > 0 ? (
-                    <Text variant="micro" style={{ color: colors.accent }}>
-                      {`  ·  ${String(waiting)} en attente`}
-                    </Text>
-                  ) : null}
-                  {/* The latest release notes not yet opened here, as the
-                      site's sidebar marks them. */}
-                  {link.route === "/changelog" && changelogUnseen ? (
-                    <Text variant="micro" style={{ color: colors.accent }}>
-                      {`  ·  ${CHANGELOG_COPY.unseen}`}
-                    </Text>
-                  ) : null}
-                </Text>
-                {link.url ? (
-                  <Text variant="micro" style={{ color: colors.textMuted }}>
-                    web ↗
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 14,
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Text variant="h3">
+                    {link.label}
+                    {/* Requests waiting on the reader, as the mark next to the
+                        site's bell counts them. */}
+                    {link.key === "friends" && waiting > 0 ? (
+                      <Text variant="micro" style={{ color: colors.accent }}>
+                        {`  ·  ${String(waiting)} en attente`}
+                      </Text>
+                    ) : null}
+                    {/* Duel invitations waiting on an answer, as the site's
+                        sidebar counts them beside « Duels ». */}
+                    {link.key === "duels" && invitations > 0 ? (
+                      <Text variant="micro" style={{ color: colors.accent }}>
+                        {`  ·  ${String(invitations)} en attente`}
+                      </Text>
+                    ) : null}
+                    {/* The latest release notes not yet opened here, as the
+                        site's sidebar marks them. */}
+                    {link.key === "changelog" && changelogUnseen ? (
+                      <Text variant="micro" style={{ color: colors.accent }}>
+                        {`  ·  ${CHANGELOG_COPY.unseen}`}
+                      </Text>
+                    ) : null}
                   </Text>
-                ) : (
                   <ChevronRight color={colors.accent} size={16} />
-                )}
-              </PressableScale>
-            </View>
-          ))}
-        </Card>
-      </View>
+                </PressableScale>
+              </View>
+            ))}
+          </Card>
+        </View>
+      ))}
     </Screen>
   );
 }

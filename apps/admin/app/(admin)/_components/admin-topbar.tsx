@@ -1,125 +1,26 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { breadcrumbOf } from "@/lib/console-nav";
 import { useAdminMobileSidebar } from "./admin-shell-client";
+import { QuickSearch } from "./quick-search";
 
 interface AdminTopbarProps {
   initials: string;
   handle: string;
 }
 
-const SEGMENT_LABELS: Record<string, string> = {
-  dashboard: "Aperçu",
-  lessons: "Leçons",
-  paths: "Parcours",
-  badges: "Badges",
-  challenges: "Challenges",
-  users: "Utilisateurs",
-  pending: "Inscriptions en attente",
-  archives: "Archives",
-  certificates: "Certificats",
-  tickets: "Tickets",
-  lab: "Banc d'essai",
-  audit: "Audit log",
-  settings: "Paramètres",
-  reference: "Référentiels",
-  cosmetics: "Cosmétiques",
-  quests: "Quêtes",
-  seasons: "Saisons",
-  "forum-categories": "Sections du forum",
-  placement: "Positionnement",
-  system: "Système",
-  crons: "Tâches planifiées",
-  account: "Mon compte",
-  flags: "Flags",
-  new: "Nouveau",
-  edit: "Édition",
-  import: "Import MDX",
-  quiz: "Quiz",
-};
-
-interface Destination {
-  label: string;
-  href: string;
-  hint: string;
-}
-
-const DESTINATIONS: Destination[] = [
-  { label: "Aperçu", href: "/dashboard", hint: "page" },
-  { label: "Leçons", href: "/lessons", hint: "page" },
-  { label: "Parcours", href: "/paths", hint: "page" },
-  { label: "Badges", href: "/badges", hint: "page" },
-  { label: "Classes", href: "/classes", hint: "page" },
-  { label: "Challenges", href: "/challenges", hint: "page" },
-  { label: "Utilisateurs", href: "/users", hint: "page" },
-  { label: "Inscriptions en attente", href: "/users/pending", hint: "page" },
-  { label: "Certificats", href: "/certificates", hint: "page" },
-  { label: "Tickets", href: "/tickets", hint: "page" },
-  { label: "Modération", href: "/moderation", hint: "page" },
-  { label: "Référentiels : cosmétiques", href: "/reference/cosmetics", hint: "page" },
-  { label: "Référentiels : quêtes", href: "/reference/quests", hint: "page" },
-  { label: "Référentiels : saisons de ligue", href: "/reference/seasons", hint: "page" },
-  { label: "Référentiels : sections du forum", href: "/reference/forum-categories", hint: "page" },
-  { label: "Référentiels : test de positionnement", href: "/reference/placement", hint: "page" },
-  { label: "Banc d'essai", href: "/lab", hint: "page" },
-  { label: "Audit log", href: "/audit", hint: "page" },
-  { label: "Tâches planifiées (crons)", href: "/system/crons", hint: "page" },
-  { label: "Paramètres", href: "/settings", hint: "page" },
-  { label: "Mon compte", href: "/account", hint: "page" },
-  { label: "Nouvelle leçon", href: "/lessons/new", hint: "action" },
-  { label: "Importer des leçons MDX", href: "/lessons/import", hint: "action" },
-  { label: "Nouveau parcours", href: "/paths/new", hint: "action" },
-  { label: "Nouveau badge", href: "/badges/new", hint: "action" },
-  { label: "Nouveau challenge", href: "/challenges/new", hint: "action" },
-];
-
-function normalize(value: string): string {
-  return value.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-
+/**
+ * The bar across the top of the console: the menu button on a phone, the
+ * logo, where one is (the breadcrumb, named from lib/console-nav.ts like the
+ * sidebar and the quick search), the quick search, and who is signed in.
+ */
 export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.ReactElement {
   const { toggle } = useAdminMobileSidebar();
   const pathname = usePathname();
-  const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [cursor, setCursor] = useState(0);
-
-  const crumbs = pathname
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => SEGMENT_LABELS[segment] ?? null)
-    .filter((s): s is string => s !== null);
-
-  const matches = useMemo(() => {
-    const q = normalize(query.trim());
-    if (!q) return DESTINATIONS;
-    return DESTINATIONS.filter((d) => normalize(d.label).includes(q));
-  }, [query]);
-
-  // ⌘K / Ctrl+K focuses the quick-jump input from anywhere in the console.
-  useEffect(() => {
-    function onKey(event: KeyboardEvent): void {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        inputRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
-  function go(href: string): void {
-    setOpen(false);
-    setQuery("");
-    inputRef.current?.blur();
-    router.push(href);
-  }
+  const crumbs = breadcrumbOf(pathname);
 
   return (
     <header className="a-topbar">
@@ -162,122 +63,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
         )}
       </nav>
 
-      <div className="a-topbar-search" style={{ position: "relative" }}>
-        <div className="a-topbar-search-box">
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="7" cy="7" r="5" />
-            <path d="M11 11 L14 14" />
-          </svg>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Aller à une page ou une action…"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setCursor(0);
-              setOpen(true);
-            }}
-            onFocus={() => {
-              setOpen(true);
-            }}
-            onBlur={() => {
-              // Delay so option clicks land before the list unmounts.
-              setTimeout(() => {
-                setOpen(false);
-              }, 120);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                setCursor((c) => Math.min(c + 1, matches.length - 1));
-              } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                setCursor((c) => Math.max(c - 1, 0));
-              } else if (event.key === "Enter") {
-                const target = matches[cursor];
-                if (target) go(target.href);
-              } else if (event.key === "Escape") {
-                setOpen(false);
-                inputRef.current?.blur();
-              }
-            }}
-          />
-          <span className="a-kbd">⌘K</span>
-        </div>
-
-        {open && matches.length > 0 && (
-          <div
-            role="listbox"
-            style={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: 0,
-              right: 0,
-              zIndex: 60,
-              maxHeight: 320,
-              overflowY: "auto",
-              background: "var(--a-surface)",
-              border: "1px solid var(--a-border-2)",
-              boxShadow: "0 16px 40px color-mix(in srgb, var(--a-bg) 60%, transparent)",
-            }}
-          >
-            {matches.map((destination, index) => (
-              <button
-                key={destination.href + destination.label}
-                type="button"
-                role="option"
-                aria-selected={index === cursor}
-                onMouseEnter={() => {
-                  setCursor(index);
-                }}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  go(destination.href);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  width: "100%",
-                  padding: "10px 14px",
-                  background: index === cursor ? "var(--a-hover)" : "transparent",
-                  border: "none",
-                  borderBottom: "1px solid var(--a-border)",
-                  color: index === cursor ? "var(--a-fg)" : "var(--a-fg-2)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 13,
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
-              >
-                {destination.label}
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: destination.hint === "action" ? "var(--a-accent)" : "var(--a-muted)",
-                  }}
-                >
-                  {destination.hint}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <QuickSearch />
 
       <div
         style={{

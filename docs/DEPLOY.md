@@ -221,6 +221,68 @@ Tous lisent `Authorization: Bearer $CRON_SECRET`.
 
 ---
 
+## Scripts lancés à la main
+
+Certains scripts de `packages/db` ne partent ni sur un merge ni par un cron :
+on les lance à la main, depuis un poste qui a la `DATABASE_URL` de la
+production. Ils sont en mode d'essai par défaut (ils comptent et n'écrivent
+rien), n'écrivent qu'avec `--apply`, et une deuxième passe lancée aussitôt
+après ne change rien.
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `db:backfill-badge-xp` | Crédite l'XP des badges gagnés avant que les badges en rapportent |
+| `db:backfill-daily-streaks` | Reconstruit les jours d'activité et la plus longue série depuis les leçons terminées |
+| `db:backfill-review-cards` | Convertit l'ancienne file de révisions (SM-2) en cartes du rappel du jour, voir ci-dessous |
+
+### Conversion des révisions : `db:backfill-review-cards`
+
+```sh
+pnpm --filter @cyberlearn/db db:backfill-review-cards             # essai : les comptes, rien n'est écrit
+pnpm --filter @cyberlearn/db db:backfill-review-cards --verbose   # les mêmes, par apprenant et par leçon
+pnpm --filter @cyberlearn/db db:backfill-review-cards --apply     # écrit les cartes
+```
+
+**Quand :** une première fois quand le rappel du jour est en production sur le
+site et ses écrans publiés dans l'app, puis **une dernière fois juste avant**
+le retrait de l'ancienne file (`ReviewSchedule`), qui emporte les lignes à
+convertir. Une deuxième passe lancée aussitôt après la première n'écrit rien.
+Une passe plus tardive, elle, convertit les lignes créées entre-temps : tant
+que l'ancienne file existe, une leçon terminée sans réponse au quiz
+enregistrée (depuis une version de l'app qui ne les envoie pas) y ajoute une
+ligne sans donner de carte. C'est pour elles que sert la dernière passe.
+
+Chaque ligne de `review_schedules` (un apprenant, une leçon) devient :
+
+- rien pour un bilan de module, un projet, une leçon de classe ou une leçon
+  sans quiz, comme à la fin d'une leçon ;
+- rien non plus si l'apprenant a déjà une carte pour la leçon, retirée ou non
+  (leçon terminée depuis l'arrivée des cartes, ou passage précédent) ;
+- avec les réponses au quiz enregistrées (depuis le 24 septembre 2026) : les
+  cartes que la fin de leçon met en file, les questions ratées en boîte 1 et la
+  dernière réussie en boîte 3. Une réponse à une question retirée de la leçon
+  ne compte pas (les questions sont relues dans le MDX actuel) ;
+- sans réponse enregistrée : une carte, la dernière question de la leçon, dans
+  la boîte que l'intervalle SM-2 avait atteinte (1, 3, 7 puis 21 jours), pour
+  que des mois de révisions ne repartent pas de zéro.
+
+Une leçon en brouillon ou archivée au moment de la passe (dépubliée le temps
+d'une correction, par exemple) est convertie comme si elle était publiée :
+ses cartes restent cachées tant qu'elle ne l'est pas, comme l'étaient ses
+lignes SM-2, et reviennent avec elle si elle est republiée. Sans cela,
+l'historique de ses apprenants partirait avec l'ancienne file. Le compte rendu
+dit combien de lignes sont dans ce cas.
+
+Les leçons déjà dues (le jour même ou avant) sont réparties sur cinq jours à
+partir du jour même, les plus en retard d'abord : personne ne reçoit tout son
+retard dans la même séance. Les autres gardent la date que l'ancienne file
+leur donnait. L'interrupteur de répétition espacée n'est pas lu : ses cartes
+restent cachées tant qu'il est coupé, comme l'était l'ancienne file. Les lignes
+SM-2 ne sont pas modifiées. Règles et tests :
+`packages/db/src/backfill-review-cards.ts`.
+
+---
+
 ## Commandes utiles (Vercel CLI)
 
 ```sh

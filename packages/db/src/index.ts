@@ -34,6 +34,7 @@ export type {
   CatalogueFilters,
   LessonFilters,
   ConsoleLessonFolder,
+  ConsoleLessonHit,
   ConsoleLessonOrigin,
   ConsoleLessonQuery,
   ConsoleLessonRow,
@@ -50,6 +51,7 @@ export {
   type ConsoleProfileField,
   type ConsoleProfileReset,
   type ConsoleProfileUpdate,
+  type ConsoleUserHit,
   type ConsoleUserQuery,
   type ConsoleUserRow,
   type ConsoleUserSort,
@@ -286,6 +288,26 @@ export { questRepository } from "./repositories/quest.repository.js";
 export type { QuestWithProgress } from "./repositories/quest.repository.js";
 export { streakRepository } from "./repositories/streak.repository.js";
 export type { StreakOverview } from "./repositories/streak.repository.js";
+export {
+  STREAK_CORRECTION_ACTION,
+  type StreakCorrectionResult,
+  type StreakCounters,
+} from "./repositories/streak.repository.js";
+export {
+  BADGE_GRANT_ACTION,
+  BADGE_REVOKE_ACTION,
+  type BadgeGrantResult,
+  type BadgeRevokeResult,
+  type HeldBadge,
+} from "./repositories/badge.repository.js";
+export { xpLedgerRepository, type XpLedgerRow } from "./repositories/xp-ledger.repository.js";
+export {
+  adjustXp,
+  XP_ADJUSTMENT_ACTION,
+  type AdjustXpInput,
+  type AdjustXpResult,
+  type XpStanding,
+} from "./xp/adjust.js";
 export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
 export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
 export { leagueRepository } from "./repositories/league.repository.js";
@@ -373,8 +395,10 @@ export {
   LAST_TICKET_MESSAGE,
   awaitsTeamReply,
   compareTicketsForQueue,
+  consoleTicketWhere,
   isCriticalTicket,
   needsTeam,
   type AddMessageResult,
+  type ConsoleTicketHit,
   type QueueTicket,
 } from "./repositories/ticket.repository.js";

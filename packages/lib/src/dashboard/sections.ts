@@ -17,7 +17,7 @@
  * decision worth testing on its own.
  */
 
-export type DashboardSectionKey = "paths" | "resume" | "recall" | "progress";
+export type DashboardSectionKey = "paths" | "play" | "resume" | "recall" | "progress";
 
 export interface DashboardSection {
   key: DashboardSectionKey;
@@ -34,13 +34,19 @@ export interface DashboardSectionInput {
    * next; it never counts what waits, so it takes no number.
    */
   hasRecall: boolean;
+  /**
+   * A duel invitation waiting on the reader, or a tournament under way
+   * (your-move.ts): what will not wait long, right under the parcours.
+   */
+  hasPlay?: boolean;
 }
 
 /** The order, once and for all. Parcours first is the whole point. */
-const ORDER: DashboardSectionKey[] = ["paths", "resume", "recall", "progress"];
+const ORDER: DashboardSectionKey[] = ["paths", "play", "resume", "recall", "progress"];
 
 export function planSections(input: DashboardSectionInput): DashboardSection[] {
   const shown = ORDER.filter((key) => {
+    if (key === "play") return input.hasPlay === true;
     if (key === "resume") return input.hasResume;
     if (key === "recall") return input.hasRecall;
     // The parcours and the progress band always have something to say: one

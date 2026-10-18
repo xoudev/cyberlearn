@@ -3,26 +3,25 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CHROME_BOTTOM } from "@/lib/chrome";
+import {
+  CONSOLE_MAIN_SECTIONS,
+  CONSOLE_SYSTEM_SECTIONS,
+  type ConsoleCountKey,
+  type ConsoleNavIcon,
+  type ConsoleSection,
+} from "@/lib/console-nav";
 import { signOut } from "../_actions/signout";
 import { useAdminMobileSidebar } from "./admin-shell-client";
-
-interface SidebarCounts {
-  lessons: number;
-  paths: number;
-  badges: number;
-  challenges: number;
-  users: number;
-  tickets: number;
-}
 
 interface AdminSidebarProps {
   initials: string;
   handle: string;
   email: string;
-  counts: SidebarCounts;
+  counts: Record<ConsoleCountKey, number>;
 }
 
-function NavIcon({ name }: { name: string }): React.ReactElement | null {
+function NavIcon({ name }: { name: ConsoleNavIcon }): React.ReactElement | null {
   const s: React.SVGProps<SVGSVGElement> = {
     width: 15,
     height: 15,
@@ -187,40 +186,13 @@ export function AdminSidebar({
   const pathname = usePathname();
   const { open, close } = useAdminMobileSidebar();
 
-  const mainItems = [
-    { label: "Aperçu", href: "/dashboard", icon: "dash", count: null as number | null },
-    { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons },
-    { label: "Parcours", href: "/paths", icon: "route", count: counts.paths },
-    { label: "Badges", href: "/badges", icon: "badge", count: counts.badges },
-    { label: "Classes", href: "/classes", icon: "users" },
-    { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
-    { label: "Tournois", href: "/tournaments", icon: "flag" },
-    { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
-    { label: "Certificats", href: "/certificates", icon: "certificate" },
-    { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
-    { label: "Modération", href: "/moderation", icon: "shield" },
-    // Five read-only lists under one entry: active on any of them.
-    { label: "Référentiels", href: "/reference/cosmetics", match: "/reference", icon: "layers" },
-  ];
-
-  const sysItems = [
-    { label: "Banc d'essai", href: "/lab", icon: "flask" },
-    { label: "Audit log", href: "/audit", icon: "log" },
-    { label: "Tâches planifiées", href: "/system/crons", icon: "clock" },
-    { label: "Paramètres", href: "/settings", icon: "cog" },
-  ];
-
-  const renderItem = (item: {
-    label: string;
-    href: string;
-    /** The prefix that makes the entry current, when it is not the href itself. */
-    match?: string;
-    icon: string;
-    count?: number | null;
-  }): React.ReactElement => {
+  // The sections are the quick search's too (lib/console-nav.ts): one list, so
+  // a section added here cannot be missing from the search again.
+  const renderItem = (item: ConsoleSection): React.ReactElement => {
+    const count = item.count !== undefined ? counts[item.count] : null;
     const prefix = item.match ?? item.href;
     const isActive = pathname === prefix || pathname.startsWith(prefix + "/");
-    const isAlert = item.href === "/tickets" && (item.count ?? 0) > 0;
+    const isAlert = item.href === "/tickets" && (count ?? 0) > 0;
     return (
       <Link
         key={item.href}
@@ -234,9 +206,9 @@ export function AdminSidebar({
           <NavIcon name={item.icon} />
         </span>
         <span style={{ flex: 1 }}>{item.label}</span>
-        {item.count !== null && item.count !== undefined && (
+        {count !== null && (
           <span className="a-side-count" data-alert={isAlert}>
-            {item.count}
+            {count}
           </span>
         )}
       </Link>
@@ -248,7 +220,7 @@ export function AdminSidebar({
       className={`admin-sidebar-fixed${open ? " sidebar-mobile-open" : ""}`}
       style={{
         position: "fixed",
-        top: 58,
+        top: CHROME_BOTTOM,
         left: 0,
         bottom: 0,
         width: 240,
@@ -262,12 +234,12 @@ export function AdminSidebar({
     >
       <div style={{ padding: "20px 0 0" }}>
         <SectionLabel text="Gestion" />
-        <nav style={{ display: "grid", gap: 1 }}>{mainItems.map(renderItem)}</nav>
+        <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_MAIN_SECTIONS.map(renderItem)}</nav>
       </div>
 
       <div style={{ padding: "22px 0 0" }}>
         <SectionLabel text="Système" />
-        <nav style={{ display: "grid", gap: 1 }}>{sysItems.map(renderItem)}</nav>
+        <nav style={{ display: "grid", gap: 1 }}>{CONSOLE_SYSTEM_SECTIONS.map(renderItem)}</nav>
       </div>
 
       <div style={{ flex: 1 }} />

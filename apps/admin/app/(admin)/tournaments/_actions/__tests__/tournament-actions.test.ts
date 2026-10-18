@@ -114,7 +114,7 @@ afterEach(() => {
 describe("createTournamentAction", () => {
   it("saves the window in Paris time, tells the classes, and opens the tournament", async () => {
     await expect(createTournamentAction({}, form(VALID))).rejects.toThrow(
-      `NEXT_REDIRECT:/tournaments/${T}`,
+      `NEXT_REDIRECT:/tournaments/${T}?saved=created`,
     );
     expect(m.create).toHaveBeenCalledWith({
       title: "CTF de la Toussaint",
@@ -242,7 +242,9 @@ describe("deleting and ending", () => {
       error: "Un tournoi commencé ne se supprime pas : ses scores restent. Arrête-le.",
     });
     m.deleteUpcoming.mockResolvedValueOnce(true);
-    await expect(deleteTournamentAction(T)).rejects.toThrow("NEXT_REDIRECT:/tournaments");
+    await expect(deleteTournamentAction(T)).rejects.toThrow(
+      "NEXT_REDIRECT:/tournaments?saved=deleted",
+    );
     expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({ action: "tournament.delete" });
   });
 

@@ -33,6 +33,7 @@ export const USER_CARDS = {
   signIn: "Connexion",
   profile: "Profil",
   progress: "Progression",
+  gamification: "XP, série et badges",
   moderation: "Modération",
   audit: "Journal d'audit",
   preferences: "Préférences",

@@ -11,6 +11,7 @@ import {
   windowProblem,
 } from "@cyberlearn/lib/challenges/tournament";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { announceTournament } from "@/lib/tournament-notice";
 
 /**
@@ -186,7 +187,7 @@ export async function createTournamentAction(
     composition.data.classIds,
   );
   revalidatePath("/tournaments");
-  redirect(`/tournaments/${created.id}`);
+  redirect(withSavedNotice(`/tournaments/${created.id}`, "created"));
 }
 
 export async function updateTournamentAction(
@@ -273,7 +274,7 @@ export async function deleteTournamentAction(id: string): Promise<TournamentForm
   }
   await audit(admin.id, "tournament.delete", id, {});
   revalidatePath("/tournaments");
-  redirect("/tournaments");
+  redirect(withSavedNotice("/tournaments", "deleted"));
 }
 
 export async function endTournamentNowAction(id: string): Promise<TournamentFormState> {
