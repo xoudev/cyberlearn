@@ -1,11 +1,15 @@
 /**
  * Whether new prerequisites for a lesson would close a loop.
  *
- * A lesson that requires, through any number of steps, a lesson that requires
- * it can never be opened by anyone: the site and the app both wait for the
- * prerequisites to be done (`/api/mobile/lesson-access`). The import and the
- * sync order a batch by its prerequisites and refuse a cycle inside it
- * (orderBatchByPrerequisites); the console's own editor has to refuse one too,
+ * Prerequisites are recorded, carried by the import and the sync, and shown in
+ * the console; they gate nothing yet. The site and the app lock a lesson by
+ * its place in a path only (lessonLocks in apps/web/lib/lessons/access.ts,
+ * behind `/api/mobile/lesson-access`), and nothing on the learner's side reads
+ * LessonPrerequisite. A loop still has no meaning: a lesson that requires,
+ * through any number of steps, a lesson that requires it could never be opened
+ * once prerequisites do gate a lesson. The import and the sync order a batch
+ * by its prerequisites and refuse a cycle inside it
+ * (orderBatchByPrerequisites); the console's own editor refuses one too,
  * across the whole catalogue rather than one batch.
  *
  * Pure: the caller reads the links, this walks them.

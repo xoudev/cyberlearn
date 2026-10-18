@@ -236,7 +236,7 @@ export function NewLessonForm({
             <FieldErr msg={state.fieldErrors?.pathIds} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// à terminer avant d'ouvrir celle-ci">Prérequis</Label>
+            <Label hint="// leçons à suivre avant celle-ci">Prérequis</Label>
             <MultiSelect
               aria-label="Prérequis"
               name="prerequisiteIds"
@@ -247,6 +247,10 @@ export function NewLessonForm({
               searchPlaceholder="Titre ou refCode de la leçon…"
               summary={(count) => `${String(count)} prérequis`}
             />
+            <Help>
+              Enregistrés avec la leçon, sans verrou pour l&apos;apprenant : seule sa place dans le
+              parcours décide de son ouverture.
+            </Help>
             <FieldErr msg={state.fieldErrors?.prerequisiteIds} />
           </div>
         </div>

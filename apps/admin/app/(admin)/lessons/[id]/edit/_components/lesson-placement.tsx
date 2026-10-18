@@ -237,9 +237,11 @@ export function LessonPlacement({
             summary={(count) => `${String(count)} prérequis`}
           />
           <span className="a-field-hint">
-            La leçon ne s&apos;ouvre qu&apos;une fois ses prérequis terminés. La synchronisation
-            avec le dépôt réécrit les prérequis depuis le fichier de la leçon : une modification
-            faite ici dure tant que le fichier ne dit pas autre chose.
+            Enregistrés avec la leçon, repris par l&apos;import et la synchronisation, mais sans
+            verrou pour l&apos;apprenant : sur le site comme dans l&apos;app, seule la place de la
+            leçon dans son parcours décide de son ouverture. La synchronisation avec le dépôt
+            réécrit les prérequis depuis le fichier de la leçon : une modification faite ici dure
+            tant que le fichier ne dit pas autre chose.
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <button
