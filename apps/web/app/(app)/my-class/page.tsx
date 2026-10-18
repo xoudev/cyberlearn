@@ -203,6 +203,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
       releaseLabel: r.releasedAt === null ? null : dayFormat.format(r.releasedAt),
       released: r.releasedAt === null || r.releasedAt.getTime() <= now,
       afterCompletion: r.afterCompletion,
+      hidden: r.isHidden,
       assignmentTitle: r.assignment?.lesson.title ?? null,
     });
     resourcesByClass.set(r.classId, list);

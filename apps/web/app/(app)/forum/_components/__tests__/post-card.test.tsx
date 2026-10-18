@@ -134,6 +134,25 @@ describe("PostCard", () => {
     expect(screen.getByRole("link", { name: "Sam" })).toBeTruthy();
   });
 
+  it("offers « Signaler » on somebody else's message, and only where it is asked", () => {
+    render(
+      <PostCard
+        post={POST}
+        avatarSrc={null}
+        profileHref={null}
+        canEdit={false}
+        canRemove={false}
+        canReport
+        path={PATH}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Signaler ce message" })).toBeTruthy();
+    cleanup();
+
+    renderCard(null);
+    expect(screen.queryByRole("button", { name: "Signaler ce message" })).toBeNull();
+  });
+
   it("puts no mark beside anybody else", () => {
     renderCard("/u/sam");
     expect(screen.queryByRole("img", { name: "Ami" })).toBeNull();

@@ -10,6 +10,7 @@ import { editPostAction, hidePostAction } from "../_actions/forum-actions";
 import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 import { ConfirmButton } from "@/components/confirm-button";
 import { FriendMark } from "@/components/friend-mark";
+import { ReportContentButton } from "@/components/report-content-dialog";
 import { Monogram, authorName, formatDate } from "./forum-bits";
 import type { ForumPostView } from "@cyberlearn/db";
 
@@ -20,7 +21,7 @@ import type { ForumPostView } from "@cyberlearn/db";
  * instead of disappearing: a post that silently vanishes reads as a bug, and
  * the author is the one person entitled to know it was theirs that went.
  * Removing asks first, in place, as the app does: it cannot be taken back
- * from here.
+ * from here. Somebody else's message can be reported to the team instead.
  */
 export function PostCard({
   post,
@@ -28,6 +29,7 @@ export function PostCard({
   profileHref,
   canEdit,
   canRemove,
+  canReport = false,
   path,
   hidden = false,
   isFriend = false,
@@ -41,6 +43,8 @@ export function PostCard({
   isFriend?: boolean;
   canEdit: boolean;
   canRemove: boolean;
+  /** Somebody else's message, up: « Signaler » sends it to the team. */
+  canReport?: boolean;
   path: string;
   hidden?: boolean;
 }): React.JSX.Element {
@@ -111,8 +115,9 @@ export function PostCard({
             {post.editedAt !== null && <span> · modifié</span>}
             {hidden && <span style={{ color: "#FF6B7A" }}> · retiré</span>}
           </span>
-          {(canEdit || canRemove) && !hidden && (
+          {(canEdit || canRemove || canReport) && !hidden && (
             <span className="fo-post-tools">
+              {canReport && <ReportContentButton surface="FORUM_POST" contentId={post.id} />}
               {canEdit && (
                 <button
                   type="button"

@@ -9,6 +9,7 @@ import type {
   TournamentView,
 } from "@/lib/tournaments";
 import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
+import type { ContentReportSurfaceKey } from "@cyberlearn/lib/moderation/report-reasons";
 import type { MockOverview } from "@/lib/mock-exam";
 import type {
   ChallengeDetail,
@@ -972,6 +973,29 @@ export async function reportReceivedNoteApi(
     const res = await authedFetch("/api/mobile/notes/report", {
       method: "POST",
       body: JSON.stringify({ noteId, reason, comment }),
+    });
+    const reply = readActionResponse(await res.json());
+    return reply.ok ? { ok: true } : { ok: false, error: reply.error ?? "Signalement refusé." };
+  } catch {
+    return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
+  }
+}
+
+/**
+ * Reports what somebody else published (a forum message, a question or an
+ * answer under a lesson, a challenge solution) to the team, through the
+ * site's service: same reasons, same checks, same hourly limit.
+ */
+export async function reportContentApi(
+  surface: ContentReportSurfaceKey,
+  contentId: string,
+  reason: string,
+  comment: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/reports", {
+      method: "POST",
+      body: JSON.stringify({ surface, contentId, reason, comment }),
     });
     const reply = readActionResponse(await res.json());
     return reply.ok ? { ok: true } : { ok: false, error: reply.error ?? "Signalement refusé." };

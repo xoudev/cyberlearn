@@ -82,6 +82,19 @@ export interface ExportPayload {
     status: string;
     createdAt: Date;
   }[];
+  /**
+   * Every report this person made on what somebody else published (a forum
+   * message, a question or an answer, a solution, a class resource): where,
+   * their reason and comment. Not the content, which is its author's.
+   */
+  contentReports: {
+    surface: string;
+    contentId: string;
+    reason: string;
+    comment: string | null;
+    status: string;
+    createdAt: Date;
+  }[];
   pathsProgress: {
     pathTitle: string;
     pathSlug: string;
@@ -318,6 +331,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     lessonQuizAnswers,
     quizReports,
     noteReports,
+    contentReports,
     reviewCards,
     reviewSessions,
   ] = await Promise.all([
@@ -643,6 +657,18 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.contentReport.findMany({
+      where: { reporterId: userId },
+      select: {
+        surface: true,
+        contentId: true,
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
     prisma.reviewCard.findMany({
       where: { userId },
       select: {
@@ -721,6 +747,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       status: r.status,
       createdAt: r.createdAt,
     })),
+    contentReports,
     pathsProgress: pathProgress.map((p) => ({
       pathTitle: p.path.title,
       pathSlug: p.path.slug,

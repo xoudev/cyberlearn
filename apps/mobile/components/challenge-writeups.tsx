@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { ActionChip, GradientButton } from "@/components/buttons";
+import { ReportContentChip } from "@/components/content-report";
 import { NoteMarkdown } from "@/components/note-markdown";
 import { Card, Text } from "@/components/ui";
 import { deleteWriteupApi, fetchWriteupsApi, publishWriteupApi } from "@/lib/api";
@@ -12,7 +13,7 @@ import { solutionsLabel, type OwnWriteup, type WriteupView } from "@/lib/challen
  * The site's write-ups section, in the app: the count only until the
  * challenge is solved (a solution is the answer), then the reader's own
  * solution to write, replace or remove, and the others' to read, in the same
- * Markdown as the forum.
+ * Markdown as the forum, and to report to the team.
  */
 export function ChallengeWriteups({ challengeId }: { challengeId: string }): React.JSX.Element {
   const { data, isLoading, error } = useQuery({
@@ -75,6 +76,10 @@ function OtherWriteup({ writeup }: { writeup: WriteupView }): React.JSX.Element 
         </Text>
       </View>
       <NoteMarkdown markdown={writeup.content} />
+      {/* The others' only: the reader's own is in the editor. */}
+      <View style={{ alignSelf: "flex-start" }}>
+        <ReportContentChip surface="CHALLENGE_WRITEUP" contentId={writeup.id} />
+      </View>
     </Card>
   );
 }
