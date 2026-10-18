@@ -5,14 +5,14 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockRequireRequestUser, mockPrisma, mockRevalidatePath } = vi.hoisted(() => ({
+const { mockRequireRequestUser, mockSave, mockRevalidatePath } = vi.hoisted(() => ({
   mockRequireRequestUser: vi.fn(),
-  mockPrisma: { userPreferences: { upsert: vi.fn() } },
+  mockSave: vi.fn(),
   mockRevalidatePath: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireRequestUser: mockRequireRequestUser }));
-vi.mock("@cyberlearn/db", () => ({ prisma: mockPrisma }));
+vi.mock("@cyberlearn/db", () => ({ preferencesRepository: { save: mockSave } }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 
 const { updateNotificationsAction } = await import("../update-notifications");
@@ -27,7 +27,7 @@ function makeFormData(fields: Record<string, string>): FormData {
 
 beforeEach(() => {
   mockRequireRequestUser.mockResolvedValue(MOCK_USER);
-  mockPrisma.userPreferences.upsert.mockResolvedValue({});
+  mockSave.mockResolvedValue(undefined);
   mockRevalidatePath.mockReturnValue(undefined);
 });
 
@@ -42,19 +42,19 @@ describe("updateNotificationsAction", () => {
       makeFormData({ reviewReminders: "yes", weeklyDigest: "false" }),
     );
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 
-  it("persists both toggles via upsert", async () => {
+  it("persists both toggles", async () => {
     const result = await updateNotificationsAction(
       {},
       makeFormData({ reviewReminders: "true", weeklyDigest: "false" }),
     );
     expect(result.success).toBe(true);
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: MOCK_USER.id },
-      create: { userId: MOCK_USER.id, reviewReminders: true, weeklyDigest: false },
-      update: { reviewReminders: true, weeklyDigest: false },
+    // An older form without the e-mail switch leaves that column as it is.
+    expect(mockSave).toHaveBeenCalledExactlyOnceWith(MOCK_USER.id, {
+      reviewReminders: true,
+      weeklyDigest: false,
     });
   });
 });
@@ -66,15 +66,10 @@ describe("updateNotificationsAction - the e-mail notices", () => {
       makeFormData({ reviewReminders: "true", weeklyDigest: "true", emailNotifications: "false" }),
     );
     expect(result.success).toBe(true);
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: MOCK_USER.id },
-      create: {
-        userId: MOCK_USER.id,
-        reviewReminders: true,
-        weeklyDigest: true,
-        emailNotifications: false,
-      },
-      update: { reviewReminders: true, weeklyDigest: true, emailNotifications: false },
+    expect(mockSave).toHaveBeenCalledExactlyOnceWith(MOCK_USER.id, {
+      reviewReminders: true,
+      weeklyDigest: true,
+      emailNotifications: false,
     });
   });
 
@@ -84,6 +79,6 @@ describe("updateNotificationsAction - the e-mail notices", () => {
       makeFormData({ reviewReminders: "true", weeklyDigest: "true", emailNotifications: "yes" }),
     );
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 });
