@@ -154,7 +154,7 @@ describe("ticket_notes RLS (integration)", () => {
     if (!configured) return;
     const doomed = randomUUID();
     const now = new Date().toISOString();
-    await admin.from("contact_tickets").insert({
+    const { error: ticketError } = await admin.from("contact_tickets").insert({
       id: doomed,
       userId,
       email: EMAIL,
@@ -164,9 +164,24 @@ describe("ticket_notes RLS (integration)", () => {
       status: "OPEN",
       updatedAt: now,
     });
-    await admin.from("ticket_notes").insert({ id: randomUUID(), ticketId: doomed, body: "Note." });
-    await admin.from("contact_tickets").delete().eq("id", doomed);
-    const { data } = await admin.from("ticket_notes").select("id").eq("ticketId", doomed);
-    expect(data ?? []).toEqual([]);
+    expect(ticketError).toBeNull();
+    const { error: noteError } = await admin
+      .from("ticket_notes")
+      .insert({ id: randomUUID(), ticketId: doomed, body: "Note." });
+    expect(noteError).toBeNull();
+    // The note is there before the ticket goes, or the empty read below would
+    // prove nothing about the cascade.
+    const before = await admin
+      .from("ticket_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("ticketId", doomed);
+    expect(before.error).toBeNull();
+    expect(before.count).toBe(1);
+
+    const { error: deleteError } = await admin.from("contact_tickets").delete().eq("id", doomed);
+    expect(deleteError).toBeNull();
+    const { data, error } = await admin.from("ticket_notes").select("id").eq("ticketId", doomed);
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
   });
 });
