@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { isActiveHref, sidebarGroups } from "../items";
+import { isActiveHref, sidebarGroups, type SidebarInput } from "../items";
 
-const BASE = { hasClasses: false, showRevisions: true };
+const BASE: SidebarInput = { hasClasses: false, showRevisions: true, duelInvitations: 0 };
 
-function labels(input: typeof BASE): string[] {
-  return sidebarGroups(input).flatMap((group) => group.items.map((item) => item.label));
+function hrefs(input: SidebarInput): string[] {
+  return sidebarGroups(input).flatMap((group) => group.items.map((item) => item.href));
+}
+
+function group(input: SidebarInput, label: string): string[] {
+  return (
+    sidebarGroups(input)
+      .find((g) => g.label === label)
+      ?.items.map((item) => item.href) ?? []
+  );
+}
+
+function item(input: SidebarInput, href: string) {
+  return sidebarGroups(input)
+    .flatMap((g) => g.items)
+    .find((i) => i.href === href);
 }
 
 describe("sidebarGroups", () => {
@@ -14,78 +28,100 @@ describe("sidebarGroups", () => {
     expect(first?.items.map((i) => i.href)).toEqual(["/dashboard"]);
   });
 
-  it("lists the three groups in reading order", () => {
+  it("lists the five groups in reading order", () => {
     expect(sidebarGroups(BASE).map((g) => g.label)).toEqual([
       null,
       "Apprendre",
+      "S'entraîner",
       "Progression",
       "Communauté",
     ]);
   });
 
-  it("leaves the revisions out once they are switched off", () => {
-    expect(labels(BASE)).toContain("Révisions");
-    expect(labels({ ...BASE, showRevisions: false })).not.toContain("Révisions");
+  it("learns from the paths, the lessons, the revisions, the notes and the glossary", () => {
+    expect(group(BASE, "Apprendre")).toEqual([
+      "/paths",
+      "/lessons",
+      "/revisions",
+      "/notes",
+      "/glossaire",
+    ]);
   });
 
-  it("opens the day's recall in its window, and counts nothing waiting", () => {
-    const revisions = sidebarGroups(BASE)
-      .flatMap((g) => g.items)
-      .find((i) => i.label === "Révisions");
-    expect(revisions?.opens).toEqual({ query: "rappel", value: "1" });
-    expect(revisions?.count).toBeNull();
+  it("practises with the challenges and the duels", () => {
+    expect(group(BASE, "S'entraîner")).toEqual(["/challenges", "/duels"]);
   });
 
-  it("counts nothing anywhere", () => {
-    const counts = sidebarGroups({ ...BASE, hasClasses: true })
-      .flatMap((g) => g.items)
-      .map((i) => i.count);
-    expect(counts.every((count) => count === null)).toBe(true);
-  });
-
-  it("shows the classes only to somebody who has one", () => {
-    expect(labels(BASE)).not.toContain("Mes classes");
-    expect(labels({ ...BASE, hasClasses: true })).toContain("Mes classes");
-  });
-
-  it("lists the locker with the leaderboard", () => {
-    const progress = sidebarGroups(BASE).find((g) => g.label === "Progression");
-    expect(progress?.items.map((i) => i.href)).toEqual(["/locker", "/leaderboard"]);
+  it("follows the progress from the profile, the leaderboard and the locker", () => {
+    expect(group(BASE, "Progression")).toEqual(["/profile", "/leaderboard", "/locker"]);
+    expect(item(BASE, "/profile")?.label).toBe("Mon profil");
   });
 
   it("ends the community with the help page, after the classes", () => {
-    const without = sidebarGroups(BASE).find((g) => g.label === "Communauté");
-    expect(without?.items.map((i) => i.href)).toEqual(["/forum", "/duels", "/support"]);
-    const withClasses = sidebarGroups({ ...BASE, hasClasses: true }).find(
-      (g) => g.label === "Communauté",
-    );
-    expect(withClasses?.items.map((i) => i.href)).toEqual([
+    expect(group(BASE, "Communauté")).toEqual(["/forum", "/support"]);
+    expect(group({ ...BASE, hasClasses: true }, "Communauté")).toEqual([
       "/forum",
-      "/duels",
       "/my-class",
       "/support",
     ]);
   });
 
+  it("leaves the revisions out once they are switched off", () => {
+    expect(hrefs(BASE)).toContain("/revisions");
+    expect(hrefs({ ...BASE, showRevisions: false })).not.toContain("/revisions");
+  });
+
+  it("opens the day's recall in its window, and counts nothing waiting", () => {
+    const revisions = item(BASE, "/revisions");
+    expect(revisions?.opens).toEqual({ query: "rappel", value: "1" });
+    expect(revisions?.count).toBeNull();
+  });
+
+  it("counts the duel invitations waiting on the reader, and says what they are", () => {
+    expect(item({ ...BASE, duelInvitations: 1 }, "/duels")).toMatchObject({
+      count: 1,
+      countLabel: "1 invitation en attente",
+    });
+    expect(item({ ...BASE, duelInvitations: 3 }, "/duels")).toMatchObject({
+      count: 3,
+      countLabel: "3 invitations en attente",
+    });
+  });
+
+  it("draws no zero beside the duels", () => {
+    expect(item(BASE, "/duels")?.count).toBeNull();
+  });
+
+  it("counts nothing but the duels", () => {
+    const counted = sidebarGroups({ hasClasses: true, showRevisions: true, duelInvitations: 2 })
+      .flatMap((g) => g.items)
+      .filter((i) => i.count !== null)
+      .map((i) => i.href);
+    expect(counted).toEqual(["/duels"]);
+  });
+
+  it("gives every entry an icon of its own", () => {
+    const icons = sidebarGroups({ ...BASE, hasClasses: true })
+      .flatMap((g) => g.items)
+      .map((i) => i.icon);
+    expect(new Set(icons).size).toBe(icons.length);
+  });
+
   it("lists no page that became a tab: badges, certificates, tournaments", () => {
     for (const hasClasses of [false, true]) {
-      const hrefs = sidebarGroups({ ...BASE, hasClasses }).flatMap((g) =>
-        g.items.map((i) => i.href),
-      );
+      const listed = hrefs({ ...BASE, hasClasses });
       for (const href of ["/badges", "/certificates", "/tournaments"]) {
-        expect(hrefs).not.toContain(href);
+        expect(listed).not.toContain(href);
       }
       // The tournaments are reached from the challenges, listed for everyone.
-      expect(hrefs).toContain("/challenges");
+      expect(listed).toContain("/challenges");
     }
   });
 
-  it("keeps the account pages out of the list: they are reached from the navbar", () => {
-    const hrefs = sidebarGroups({ ...BASE, hasClasses: true }).flatMap((g) =>
-      g.items.map((i) => i.href),
-    );
-    for (const href of ["/profile", "/settings", "/changelog"]) {
-      expect(hrefs).not.toContain(href);
+  it("keeps the windows out of the list: they are reached from the navbar", () => {
+    const listed = hrefs({ ...BASE, hasClasses: true });
+    for (const href of ["/settings", "/changelog", "/review"]) {
+      expect(listed).not.toContain(href);
     }
   });
 });

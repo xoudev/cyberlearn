@@ -3,6 +3,8 @@ import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { LevelRing } from "./_components/level-ring";
 import { MissionCard, type MissionCardProps } from "./_components/mission-card";
 import { DailyRecallCard } from "./_components/daily-recall-card";
+import { DuelInvites } from "./_components/duel-invites";
+import { LiveTournaments } from "./_components/live-tournaments";
 import { Standing } from "./_components/standing";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel, msUntilWeekReset } from "@cyberlearn/lib";
@@ -11,6 +13,7 @@ import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
 import { currentLessonId, moduleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
+import { runningTournaments } from "@cyberlearn/lib/dashboard/your-move";
 import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
 import {
   CATALOGUE_PATH,
@@ -25,6 +28,8 @@ import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { dailyRecallState } from "@/lib/revisions/daily-recall";
 import { RappelButton } from "@/components/rappel/rappel-button";
 import { savedLearningAnswers } from "@/lib/paths/suggestions";
+import { listDuelInvitationsFor } from "@/lib/social/duels";
+import { listTournamentsFor } from "@/lib/tournaments/tournaments";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
@@ -43,10 +48,11 @@ export default function DashboardPage(): React.ReactElement {
  * The dashboard answers one question: what do I do now?
  *
  * So it has one strong card, the mission, with the module it sits in drawn
- * beside it; under it the day's recall and the week; and at the bottom, in
- * one line, where the reader stands. The level is a ring in the header, the
- * streak a flame beside the greeting. Nothing is numbered, nothing pretends
- * to be a terminal.
+ * beside it; under it what will not wait, when there is any (a duel a friend
+ * sent, a tournament under way); then the day's recall and the week; and at
+ * the bottom, in one line, where the reader stands. The level is a ring in
+ * the header, the streak a flame beside the greeting. Nothing is numbered,
+ * nothing pretends to be a terminal.
  */
 async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
@@ -72,6 +78,8 @@ async function DashboardContent(): Promise<React.ReactElement> {
     recentLessons,
     wantsRevisions,
     learningAnswers,
+    duelInvites,
+    tournaments,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -154,7 +162,12 @@ async function DashboardContent(): Promise<React.ReactElement> {
     revisionsEnabled(authUser.id),
     // What they said they came for at sign-up, step 3.
     savedLearningAnswers(authUser.id),
+    // What will not wait: the invitations lapse after a day, a tournament
+    // closes at its hour.
+    listDuelInvitationsFor(authUser.id, now),
+    listTournamentsFor(authUser.id, now),
   ]);
+  const liveTournaments = runningTournaments(tournaments);
 
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
   const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
@@ -304,6 +317,18 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
         {/* ── The mission ─────────────────────────────────────────────────── */}
         <MissionCard {...mission} />
+
+        {/* ── What will not wait: a duel received, a tournament under way ─── */}
+        {(duelInvites.length > 0 || liveTournaments.length > 0) && (
+          <div
+            className={`dash-cols${duelInvites.length > 0 && liveTournaments.length > 0 ? "" : " dash-cols--single"}`}
+          >
+            {duelInvites.length > 0 && <DuelInvites duels={duelInvites} />}
+            {liveTournaments.length > 0 && (
+              <LiveTournaments tournaments={liveTournaments} nowMs={now.getTime()} />
+            )}
+          </div>
+        )}
 
         {/* ── What is due, and the week ────────────────────────────────────── */}
         <div className={`dash-cols${wantsRevisions ? "" : " dash-cols--single"}`}>

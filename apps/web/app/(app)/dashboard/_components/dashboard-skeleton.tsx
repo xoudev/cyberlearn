@@ -7,6 +7,11 @@ import { Skeleton, SkeletonText } from "@cyberlearn/ui";
  * with its module route, the day's recall beside the week's quests and
  * streak, and the line saying where the reader stands. Shared by `loading.tsx`
  * (route navigation) and the page's `<Suspense>` fallback.
+ *
+ * The duels received and the tournaments under way have no placeholder: they
+ * are drawn only when there are some, which most visits there are not, and a
+ * block that loads and then vanishes moves the page more than one that
+ * appears.
  */
 
 const QUESTS = [0, 1, 2, 3];

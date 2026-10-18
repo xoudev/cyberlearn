@@ -50,7 +50,8 @@
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
 | `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
-| `/revisions` · `/review` | Ancienne file SM-2, plus reliée, retirée ensuite |
+| `/revisions` | Ancienne file SM-2, plus reliée, retirée ensuite |
+| `/review` | Pas de page : redirection vers `/revisions` (`next.config.ts`) |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
@@ -109,10 +110,12 @@
 #### Dashboard
 - En-tête : la date, le prénom, la série et « Ton rappel du jour t'attend » tant qu'il est à faire, le niveau en anneau avec l'XP et le rang
 - La mission : la leçon en cours, sinon la prochaine du parcours en tête (classement `featured-paths`, à partir du niveau, du test de placement et des derniers domaines travaillés), avec le module en cours dessiné leçon par leçon (`module-route`)
+- Ce qui n'attend pas, seulement quand il y en a : les défis reçus d'un ami, à accepter ou refuser sur place (`listDuelInvitationsFor`, les mêmes cartes que `/duels`), et les tournois en cours, celui qui ferme le premier d'abord, avec la part du temps écoulé et « Entrer » (`runningTournaments` de `@cyberlearn/lib/dashboard/your-move`)
 - Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
-- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; rien n'y est compté, « Révisions » ouvre le rappel du jour
+- Barre latérale : le tableau de bord, puis Apprendre (Parcours, Leçons, Révisions, Bloc-notes, Glossaire), S'entraîner (Défis, Duels), Progression (Mon profil, Classement, Casier) et Communauté (Forum, Mes classes pour qui en a une, Aide), et un bloc compte. Groupes, libellés et ordre partagés avec le hub de l'app (`@cyberlearn/lib/navigation/groups`). Seules les invitations aux duels en attente y sont comptées (`duelRepository.countInvitations`) ; « Révisions » ouvre le rappel du jour
+- Registre des routes (`apps/web/lib/routes.ts`) : pour chaque adresse, si elle demande une session, si `robots.txt` l'écarte et son icône dans la barre latérale. Le middleware, `robots.txt` et la barre latérale le lisent ; un test parcourt `app/(app)` et échoue sur une page connectée absente du registre
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)
