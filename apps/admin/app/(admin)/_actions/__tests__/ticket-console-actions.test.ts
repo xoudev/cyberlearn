@@ -3,11 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn<() => Promise<{ id: string }>>(),
   ticketFindUnique: vi.fn<(args: unknown) => Promise<unknown>>(),
-  ticketUpdateMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
   auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
-  transaction: vi.fn(),
   lift: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
   addMessage: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
+  resolveIfOpen: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
   assign: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   addNote: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   sendTicketReplyEmail: vi.fn<(input: Record<string, unknown>) => Promise<void>>(),
@@ -16,23 +15,19 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
-vi.mock("@cyberlearn/db", () => {
-  const tx = {
-    contactTicket: { updateMany: m.ticketUpdateMany },
+vi.mock("@cyberlearn/db", () => ({
+  prisma: {
+    contactTicket: { findUnique: m.ticketFindUnique },
     auditLog: { create: m.auditCreate },
-  };
-  m.transaction.mockImplementation((run: (client: typeof tx) => Promise<unknown>) => run(tx));
-  return {
-    OPEN_TICKET_STATUSES: ["OPEN", "IN_PROGRESS"],
-    prisma: {
-      contactTicket: { findUnique: m.ticketFindUnique },
-      auditLog: { create: m.auditCreate },
-      $transaction: m.transaction,
-    },
-    banRepository: { lift: m.lift },
-    ticketRepository: { addMessage: m.addMessage, assign: m.assign, addNote: m.addNote },
-  };
-});
+  },
+  banRepository: { lift: m.lift },
+  ticketRepository: {
+    addMessage: m.addMessage,
+    resolveIfOpen: m.resolveIfOpen,
+    assign: m.assign,
+    addNote: m.addNote,
+  },
+}));
 vi.mock("@cyberlearn/email", () => ({ sendTicketReplyEmail: m.sendTicketReplyEmail }));
 vi.mock("@cyberlearn/lib/logger", () => ({
   logger: { error: m.loggerError },
@@ -89,30 +84,27 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: ADMIN });
   m.ticketFindUnique.mockResolvedValue(appealTicket());
-  m.ticketUpdateMany.mockResolvedValue({ count: 1 });
   m.auditCreate.mockResolvedValue({});
   m.lift.mockResolvedValue(true);
   m.addMessage.mockResolvedValue({ ok: true });
+  m.resolveIfOpen.mockResolvedValue(true);
   m.sendTicketReplyEmail.mockResolvedValue(undefined);
 });
 
 describe("liftAppealedBanAction", () => {
   it("lifts the ban the appeal contests, by its id, and resolves the ticket", async () => {
-    // The status read for the e-mail comes after the resolution.
     const result = await liftAppealedBanAction({}, form({ ticketId: TICKET, reason: "" }));
 
     expect(result).toEqual({ ok: true, resolved: true });
-    expect(m.lift).toHaveBeenCalledWith({ userId: LEARNER, banId: BAN, liftedById: ADMIN });
-    expect(m.ticketUpdateMany).toHaveBeenCalledWith({
-      where: { id: TICKET, status: { in: ["OPEN", "IN_PROGRESS"] } },
-      data: { status: "RESOLVED" },
+    // The journal's line rides in the lift's own transaction, the repository's.
+    expect(m.lift).toHaveBeenCalledWith({
+      userId: LEARNER,
+      banId: BAN,
+      liftedById: ADMIN,
+      auditMetadata: { reason: null, ticketId: TICKET, banId: BAN },
     });
-    expect(auditActions()).toEqual(["admin.user.ban_lifted", "ticket.status.update"]);
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
-      targetType: "User",
-      targetId: LEARNER,
-      metadata: { reason: null, ticketId: TICKET, banId: BAN },
-    });
+    expect(m.resolveIfOpen).toHaveBeenCalledWith({ ticketId: TICKET, actorId: ADMIN });
+    expect(m.auditCreate).not.toHaveBeenCalled();
     expect(m.revalidatePath).toHaveBeenCalledWith(`/tickets/${TICKET}`);
     expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
   });
@@ -124,9 +116,7 @@ describe("liftAppealedBanAction", () => {
       banId: BAN,
       liftedById: ADMIN,
       reason: "Appel accepté",
-    });
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
-      metadata: { reason: "Appel accepté" },
+      auditMetadata: { reason: "Appel accepté", ticketId: TICKET, banId: BAN },
     });
   });
 
@@ -142,9 +132,25 @@ describe("liftAppealedBanAction", () => {
     expect(result.error).toMatch(/n'est plus en cours/u);
     expect(m.auditCreate).not.toHaveBeenCalled();
     expect(m.addMessage).not.toHaveBeenCalled();
-    expect(m.ticketUpdateMany).not.toHaveBeenCalled();
+    expect(m.resolveIfOpen).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("says nothing changed when the lift itself fails, rather than throwing", async () => {
+    // The lift and its journal line are one transaction: a failure undid both.
+    m.lift.mockRejectedValue(new Error("connection reset"));
+    const result = await liftAppealedBanAction(
+      {},
+      form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),
+    );
+
+    expect(result).toEqual({
+      error: "Le bannissement n'a pas pu être levé. Rien n'a été modifié.",
+    });
+    expect(m.loggerError).toHaveBeenCalled();
+    expect(m.addMessage).not.toHaveBeenCalled();
+    expect(m.resolveIfOpen).not.toHaveBeenCalled();
   });
 
   it("refuses a ticket that contests no ban", async () => {
@@ -177,6 +183,7 @@ describe("liftAppealedBanAction", () => {
   });
 
   it("posts the reply before resolving, through the repository's gate, and e-mails it", async () => {
+    // The status read for the e-mail comes after the resolution.
     m.ticketFindUnique
       .mockResolvedValueOnce(appealTicket())
       .mockResolvedValueOnce({ status: "RESOLVED" });
@@ -194,13 +201,9 @@ describe("liftAppealedBanAction", () => {
     });
     // A resolved ticket takes no message: the reply has to land first.
     expect(m.addMessage.mock.invocationCallOrder[0]).toBeLessThan(
-      m.ticketUpdateMany.mock.invocationCallOrder[0] ?? 0,
+      m.resolveIfOpen.mock.invocationCallOrder[0] ?? 0,
     );
-    expect(auditActions()).toEqual([
-      "admin.user.ban_lifted",
-      "ticket.reply",
-      "ticket.status.update",
-    ]);
+    expect(auditActions()).toEqual(["ticket.reply"]);
     expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
     expect(m.sendTicketReplyEmail.mock.calls[0]?.[0]).toMatchObject({
       to: "eleve@exemple.fr",
@@ -211,7 +214,7 @@ describe("liftAppealedBanAction", () => {
 
   it("keeps the ban lifted and says so when the ticket was closed in between", async () => {
     m.addMessage.mockResolvedValue({ ok: false, reason: "TERMINAL" });
-    m.ticketUpdateMany.mockResolvedValue({ count: 0 });
+    m.resolveIfOpen.mockResolvedValue(false);
     const result = await liftAppealedBanAction(
       {},
       form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),
@@ -219,18 +222,67 @@ describe("liftAppealedBanAction", () => {
 
     expect(result.ok).toBe(true);
     expect(result.warning).toMatch(/levé, mais la réponse n'est pas partie/u);
-    expect(auditActions()).toEqual(["admin.user.ban_lifted"]);
+    expect(m.auditCreate).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
+  });
+
+  it("warns rather than throws when the reply cannot be written, and leaves the ticket open", async () => {
+    // After the lift has committed: an error page here would hide that the ban
+    // is lifted, and a retry would be told it no longer is.
+    m.addMessage.mockRejectedValue(new Error("connection reset"));
+    const result = await liftAppealedBanAction(
+      {},
+      form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      resolved: false,
+      warning:
+        "Le bannissement est levé, mais la réponse n'a pas pu être enregistrée : le ticket reste ouvert pour la renvoyer.",
+    });
+    // Resolving would close the conversation the answer still has to go into.
+    expect(m.resolveIfOpen).not.toHaveBeenCalled();
+    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
+    expect(m.loggerError).toHaveBeenCalled();
+    expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
+  });
+
+  it("keeps a written reply as sent when only its journal line fails", async () => {
+    m.auditCreate.mockRejectedValue(new Error("connection reset"));
+    const result = await liftAppealedBanAction(
+      {},
+      form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),
+    );
+
+    expect(result).toEqual({ ok: true, resolved: true });
+    expect(m.resolveIfOpen).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+    expect(m.loggerError).toHaveBeenCalled();
+  });
+
+  it("still answers when the status read for the e-mail fails", async () => {
+    m.ticketFindUnique
+      .mockResolvedValueOnce(appealTicket())
+      .mockRejectedValueOnce(new Error("connection reset"));
+    const result = await liftAppealedBanAction(
+      {},
+      form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),
+    );
+
+    expect(result).toEqual({ ok: true, resolved: true });
+    expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
+    expect(m.loggerError).toHaveBeenCalled();
   });
 
   it("lifts from a ticket already finished, and leaves the ticket as it is", async () => {
     // The appeal was closed without a decision, and the team changed its mind.
-    m.ticketUpdateMany.mockResolvedValue({ count: 0 });
+    m.resolveIfOpen.mockResolvedValue(false);
     const result = await liftAppealedBanAction({}, form({ ticketId: TICKET }));
 
     expect(result).toEqual({ ok: true, resolved: false });
     expect(m.lift).toHaveBeenCalledOnce();
-    expect(auditActions()).toEqual(["admin.user.ban_lifted"]);
   });
 
   it("sends no e-mail to someone who turned them off", async () => {
@@ -249,7 +301,7 @@ describe("liftAppealedBanAction", () => {
   });
 
   it("warns rather than throws when the ticket cannot be resolved", async () => {
-    m.transaction.mockRejectedValueOnce(new Error("connection reset"));
+    m.resolveIfOpen.mockRejectedValue(new Error("connection reset"));
     const result = await liftAppealedBanAction({}, form({ ticketId: TICKET }));
     expect(result.ok).toBe(true);
     expect(result.warning).toMatch(/n'a pas pu passer en résolu/u);

@@ -1,6 +1,6 @@
 /**
- * The console's side of a ticket: who has it in hand, and the notes the team
- * leaves itself on it. Prisma is mocked: what this checks is what each call
+ * The console's side of a ticket: who has it in hand, the notes the team
+ * leaves itself on it, and resolving it once an appeal is accepted. Prisma is mocked: what this checks is what each call
  * refuses, the order of the transaction (the role or the lock before the
  * write, the audit row with it), and that the requester's reads never name
  * either. That the lock really holds a status change back is Postgres's part,
@@ -15,7 +15,7 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn(),
     user: { findUnique: vi.fn() },
-    contactTicket: { findUnique: vi.fn() },
+    contactTicket: { findUnique: vi.fn(), updateMany: vi.fn() },
     ticketNote: { create: vi.fn() },
     auditLog: { create: vi.fn() },
   };
@@ -204,5 +204,39 @@ describe("addNote", () => {
       reason: "NOT_FOUND",
     });
     expect(tx.ticketNote.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveIfOpen", () => {
+  const input = { ticketId: TICKET, actorId: ADMIN };
+
+  it("resolves a ticket still open, with the audit row in the same transaction", async () => {
+    tx.contactTicket.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(ticketRepository.resolveIfOpen(input)).resolves.toBe(true);
+
+    // The status filter is in the statement that writes: a ticket closed in
+    // between is not claimed, rather than read as open and then written.
+    expect(tx.contactTicket.updateMany).toHaveBeenCalledWith({
+      where: { id: TICKET, status: { in: ["OPEN", "IN_PROGRESS"] } },
+      data: { status: "RESOLVED" },
+    });
+    expect(mockPrisma.$transaction).toHaveBeenCalledOnce();
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: ADMIN,
+        action: "ticket.status.update",
+        targetType: "ContactTicket",
+        targetId: TICKET,
+        metadata: { status: "RESOLVED" },
+      },
+    });
+  });
+
+  it("leaves a finished ticket as it is, and writes no audit row", async () => {
+    tx.contactTicket.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(ticketRepository.resolveIfOpen(input)).resolves.toBe(false);
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
   });
 });

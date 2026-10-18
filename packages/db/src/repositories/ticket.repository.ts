@@ -439,6 +439,39 @@ export const ticketRepository = {
   },
 
   /**
+   * Resolves a ticket that is still open, or leaves it as it is.
+   *
+   * For a caller that has just given the ticket its answer some other way - an
+   * appeal accepted from the ticket - and must neither reopen nor re-resolve
+   * one already finished. The status filter is in the statement that writes,
+   * so a ticket closed in between stays closed; the audit row lands with the
+   * change or not at all, like a status change from the console's control.
+   *
+   * Returns whether this call is what resolved it. Prisma moves updatedAt with
+   * the status, which is right here: for a finished ticket, updatedAt is when
+   * it was resolved, and retention counts from it.
+   */
+  async resolveIfOpen(input: { ticketId: string; actorId: string }): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+      const claimed = await tx.contactTicket.updateMany({
+        where: { id: input.ticketId, status: { in: [...OPEN_TICKET_STATUSES] } },
+        data: { status: "RESOLVED" satisfies TicketStatus },
+      });
+      if (claimed.count === 0) return false;
+      await tx.auditLog.create({
+        data: {
+          actorId: input.actorId,
+          action: "ticket.status.update",
+          targetType: "ContactTicket",
+          targetId: input.ticketId,
+          metadata: { status: "RESOLVED" },
+        },
+      });
+      return true;
+    });
+  },
+
+  /**
    * Adds one turn to a ticket's conversation.
    *
    * The ticket's updatedAt moves with it, which is what orders the requester's

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   banRepository,
-  OPEN_TICKET_STATUSES,
   prisma,
   ticketRepository,
   type AddNoteResult,
@@ -98,10 +97,12 @@ interface ReplyRecipient {
 /**
  * Tells the requester the team answered, with the answer in the mail.
  *
- * Best effort: the reply is written and on their page whatever happens here,
- * and an address that bounces must not undo it. The status is read after the
- * reply landed, so the mail says what the ticket is now - in progress after a
- * first answer, resolved after an appeal was accepted.
+ * Best effort, and it never throws: the reply is written and on their page
+ * whatever happens here, and neither an address that bounces nor a status
+ * read that fails may turn a reply already written into an error page. The
+ * status is read after the reply landed, so the mail says what the ticket is
+ * now - in progress after a first answer, resolved after an appeal was
+ * accepted.
  */
 async function emailReply(ticket: ReplyRecipient, reply: string): Promise<void> {
   // The account's address when there is an account, the one typed on the form
@@ -110,11 +111,11 @@ async function emailReply(ticket: ReplyRecipient, reply: string): Promise<void> 
   const wantsEmail = ticket.user?.preferences?.emailNotifications !== false;
   if (to === null || !wantsEmail) return;
 
-  const status = await prisma.contactTicket.findUnique({
-    where: { id: ticket.id },
-    select: { status: true },
-  });
   try {
+    const status = await prisma.contactTicket.findUnique({
+      where: { id: ticket.id },
+      select: { status: true },
+    });
     await sendTicketReplyEmail({
       apiKey: env.RESEND_API_KEY,
       from: env.RESEND_FROM_EMAIL,
@@ -229,12 +230,19 @@ export interface LiftAppealState {
  * out in the meantime is refused, and a newer ban issued since is never the
  * one that goes.
  *
+ * The lift and its line in the account's journal are one transaction, the
+ * repository's: the same action as a lift from the account's page, so the
+ * journal shows it whichever page it came from, and the metadata says which
+ * ticket. A failure there changed nothing, and says so.
+ *
  * Then the ticket, in this order: the team's reply when one was written, and
  * the ticket resolved - the appeal has its answer. The reply comes first
  * because a resolved ticket takes no message (AGENTS.md, rule 16); its gate is
  * still the repository's, so a ticket closed in between keeps the ban lifted
- * and says the reply did not go. Neither follow-up can undo the lift: it is
- * the decision, and the warning says what is left to do by hand.
+ * and says the reply did not go. Nothing after the lift can undo it or throw
+ * past it: the lift is the decision, every follow-up runs under its own catch,
+ * and the warning says what is left to do by hand. A retry would only be told
+ * the ban is no longer in force.
  */
 export async function liftAppealedBanAction(
   _prev: LiftAppealState,
@@ -257,13 +265,20 @@ export async function liftAppealedBanAction(
   const ban = ticket.appealFor;
   if (ban === null) return { error: "Ce ticket ne conteste aucun bannissement." };
 
-  const lifted = await banRepository.lift({
-    userId: ban.userId,
-    banId: ban.id,
-    liftedById: admin.id,
-    // exactOptionalPropertyTypes: the key is left out rather than set to nothing.
-    ...(reason !== "" ? { reason } : {}),
-  });
+  let lifted: boolean;
+  try {
+    lifted = await banRepository.lift({
+      userId: ban.userId,
+      banId: ban.id,
+      liftedById: admin.id,
+      // exactOptionalPropertyTypes: the key is left out rather than set to nothing.
+      ...(reason !== "" ? { reason } : {}),
+      auditMetadata: { reason: reason === "" ? null : reason, ticketId, banId: ban.id },
+    });
+  } catch (error) {
+    logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal lift failed");
+    return { error: "Le bannissement n'a pas pu être levé. Rien n'a été modifié." };
+  }
   if (!lifted) {
     return {
       error:
@@ -271,29 +286,37 @@ export async function liftAppealedBanAction(
     };
   }
 
-  // The same action as a lift from the account's page, so the account's
-  // journal shows it whichever page it came from; the ticket says which.
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "admin.user.ban_lifted",
-      targetType: "User",
-      targetId: ban.userId,
-      metadata: { reason: reason === "" ? null : reason, ticketId, banId: ban.id },
-    },
-  });
-
   const warnings: string[] = [];
   let replied = false;
+  // A reply that failed to land keeps the ticket open: resolving it would
+  // close the one conversation the answer still has to go into.
+  let replyFailed = false;
   if (reply !== "") {
-    const added = await ticketRepository.addMessage({
-      ticketId,
-      authorId: admin.id,
-      fromStaff: true,
-      body: reply,
-    });
-    if (added.ok) {
-      replied = true;
+    try {
+      const added = await ticketRepository.addMessage({
+        ticketId,
+        authorId: admin.id,
+        fromStaff: true,
+        body: reply,
+      });
+      replied = added.ok;
+      if (!added.ok) {
+        warnings.push(
+          "la réponse n'est pas partie, le ticket ayant été résolu ou clos entre-temps",
+        );
+      }
+    } catch (error) {
+      logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal reply failed");
+      replyFailed = true;
+      warnings.push(
+        "la réponse n'a pas pu être enregistrée : le ticket reste ouvert pour la renvoyer",
+      );
+    }
+  }
+  if (replied) {
+    // The reply is on the requester's page by now: a journal line that fails
+    // to land is logged, and the console does not call a sent reply unsent.
+    try {
       await prisma.auditLog.create({
         data: {
           actorId: admin.id,
@@ -303,35 +326,21 @@ export async function liftAppealedBanAction(
           metadata: {},
         },
       });
-    } else {
-      warnings.push("la réponse n'est pas partie, le ticket ayant été résolu ou clos entre-temps");
+    } catch (error) {
+      logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal reply audit failed");
     }
   }
 
-  // Whether this lift is what resolved it, read off the committed transaction:
-  // a ticket already finished is left as it is, and says nothing more.
+  // Whether this lift is what resolved it: a ticket already finished is left
+  // as it is, and says nothing more.
   let resolved = false;
-  try {
-    resolved = await prisma.$transaction(async (tx) => {
-      const claimed = await tx.contactTicket.updateMany({
-        where: { id: ticketId, status: { in: [...OPEN_TICKET_STATUSES] } },
-        data: { status: "RESOLVED" },
-      });
-      if (claimed.count === 0) return false;
-      await tx.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "ticket.status.update",
-          targetType: "ContactTicket",
-          targetId: ticketId,
-          metadata: { status: "RESOLVED" },
-        },
-      });
-      return true;
-    });
-  } catch (error) {
-    logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal resolution failed");
-    warnings.push("le ticket n'a pas pu passer en résolu");
+  if (!replyFailed) {
+    try {
+      resolved = await ticketRepository.resolveIfOpen({ ticketId, actorId: admin.id });
+    } catch (error) {
+      logger.error({ scope: "tickets", err: errorMessage(error) }, "appeal resolution failed");
+      warnings.push("le ticket n'a pas pu passer en résolu");
+    }
   }
 
   if (replied) await emailReply(ticket, reply);

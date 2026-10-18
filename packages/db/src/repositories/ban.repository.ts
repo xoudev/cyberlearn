@@ -37,6 +37,9 @@ const BAN_VIEW = {
 
 export type BanView = Prisma.UserBanGetPayload<{ select: typeof BAN_VIEW }>;
 
+/** The journal's action for a lift, from whichever page of the console it came. */
+const BAN_LIFTED_ACTION = "admin.user.ban_lifted";
+
 export const banRepository = {
   /**
    * The ban keeping this account out right now, or null.
@@ -96,28 +99,49 @@ export const banRepository = {
    * against, and accepting it must not lift a newer one issued since. It is in
    * the same statement as the "in force" filter, so a ban lifted or expired in
    * the meantime is refused rather than read and then written.
+   *
+   * `auditMetadata` asks for the journal's `admin.user.ban_lifted` row in the
+   * same transaction, written only when something was lifted: a lift the
+   * journal does not show, or a line for a lift that did not happen, would
+   * both leave the account's record saying something untrue. A failure rolls
+   * the lift back with it, so the caller can say nothing was changed.
    */
   async lift(input: {
     userId: string;
     liftedById: string;
     reason?: string;
     banId?: string;
+    auditMetadata?: Prisma.InputJsonObject;
     now?: Date;
   }): Promise<boolean> {
     const now = input.now ?? new Date();
-    const result = await prisma.userBan.updateMany({
-      where: {
-        userId: input.userId,
-        ...(input.banId !== undefined ? { id: input.banId } : {}),
-        ...activeBanFilter(now),
-      },
-      data: {
-        liftedAt: now,
-        liftedById: input.liftedById,
-        liftReason: input.reason ?? null,
-      },
+    return prisma.$transaction(async (tx) => {
+      const result = await tx.userBan.updateMany({
+        where: {
+          userId: input.userId,
+          ...(input.banId !== undefined ? { id: input.banId } : {}),
+          ...activeBanFilter(now),
+        },
+        data: {
+          liftedAt: now,
+          liftedById: input.liftedById,
+          liftReason: input.reason ?? null,
+        },
+      });
+      if (result.count === 0) return false;
+      if (input.auditMetadata !== undefined) {
+        await tx.auditLog.create({
+          data: {
+            actorId: input.liftedById,
+            action: BAN_LIFTED_ACTION,
+            targetType: "User",
+            targetId: input.userId,
+            metadata: input.auditMetadata,
+          },
+        });
+      }
+      return true;
     });
-    return result.count > 0;
   },
 
   /**
