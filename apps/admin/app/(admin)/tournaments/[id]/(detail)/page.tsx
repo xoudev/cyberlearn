@@ -11,12 +11,12 @@ import {
   tournamentTeams,
   type TournamentPhase,
 } from "@cyberlearn/lib/challenges/tournament";
-import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../_components/admin-ui";
-import { updateTournamentAction } from "../_actions/tournament-actions";
-import { TournamentControls } from "../_components/tournament-controls";
-import { TournamentForm } from "../_components/tournament-form";
-import { TOURNAMENT_CRUMBS } from "../_components/tournament-head";
-import { tournamentOptions } from "../_components/tournament-options";
+import { Card, GhostLink, PageHeader, Tag, type Tone } from "../../../_components/admin-ui";
+import { updateTournamentAction } from "../../_actions/tournament-actions";
+import { TournamentControls } from "../../_components/tournament-controls";
+import { TournamentForm } from "../../_components/tournament-form";
+import { TOURNAMENT_CRUMBS } from "../../_components/tournament-head";
+import { tournamentOptions } from "../../_components/tournament-options";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerUrl } from "@/lib/learner-url";
 import { routeIdOrNotFound } from "@/lib/route-id";
@@ -44,7 +44,9 @@ function siteLink(id: string): string | null {
 
 /**
  * One tournament in the console: its standing by team, its form (open before
- * the start, narrower after), deleting or ending it.
+ * the start, narrower after), deleting or ending it. Its flags, and taking
+ * one back, are a page of their own (../flags), so paging through them never
+ * redraws a form being edited.
  */
 export default async function AdminTournamentPage({ params }: Props): Promise<React.ReactElement> {
   await requireAdminPage();
@@ -111,6 +113,9 @@ export default async function AdminTournamentPage({ params }: Props): Promise<Re
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Tag tone={PHASE_TONE[phase]}>{TOURNAMENT_PHASE_LABELS[phase]}</Tag>
             {link !== null ? <GhostLink href={link}>Voir sur le site</GhostLink> : null}
+            {phase !== "UPCOMING" ? (
+              <GhostLink href={`/tournaments/${id}/flags`}>Flags trouvés</GhostLink>
+            ) : null}
             <TournamentControls tournamentId={id} phase={phase} />
           </div>
         }

@@ -19,6 +19,7 @@ export const AUDIT_FILTER_LABELS = {
   action: "Action",
   from: "Du",
   to: "Au",
+  crons: "Tâches planifiées",
 } as const;
 
 /** Only the date sorts: the log is read newest or oldest first. */

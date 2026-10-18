@@ -8,6 +8,8 @@ import {
   counted,
   countdownLabel,
   dateToParisLocal,
+  disqualifiedFlagError,
+  disqualifiedFlagText,
   durationLabel,
   elapsedShare,
   firstSolves,
@@ -363,6 +365,16 @@ describe("challengeStatus and flagNotice", () => {
     expect(challengeStatus({ phase: "FINISHED", canPlay: false, ...player }, false)).toBe("closed");
   });
 
+  it("is disqualified once the console took the flag back, over and above found", () => {
+    const player = { myTeam: "SIO1-A" };
+    expect(challengeStatus({ phase: "RUNNING", canPlay: true, ...player }, true, true)).toBe(
+      "disqualified",
+    );
+    expect(challengeStatus({ phase: "FINISHED", canPlay: false, ...player }, true, true)).toBe(
+      "disqualified",
+    );
+  });
+
   it("is only to read for someone who plays for no team, before the end as after it", () => {
     const watcher = { canPlay: false, myTeam: null };
     expect(challengeStatus({ phase: "RUNNING", ...watcher }, false)).toBe("watch");
@@ -514,5 +526,28 @@ describe("placeLabel", () => {
   it("writes a rank as a place", () => {
     expect(placeLabel(1)).toBe("1er");
     expect(placeLabel(2)).toBe("2e");
+  });
+});
+
+describe("disqualifiedFlagText and disqualifiedFlagError", () => {
+  it("gives the console's reason, once, and says the flag counts for nobody", () => {
+    expect(disqualifiedFlagText("Flag partagé entre équipes.", "SIO1-A")).toBe(
+      "Motif : Flag partagé entre équipes. Ce flag ne compte plus, ni pour toi ni pour SIO1-A.",
+    );
+    expect(disqualifiedFlagError(" Flag partagé entre équipes ")).toBe(
+      "Ton flag pour ce défi a été disqualifié (Flag partagé entre équipes) : il ne compte plus.",
+    );
+  });
+
+  it("still says it without a reason, or without a team", () => {
+    expect(disqualifiedFlagText(null, null)).toBe(
+      "Ce flag ne compte plus, ni pour toi ni pour ton équipe.",
+    );
+    expect(disqualifiedFlagText("  ", "SIO1-A")).toBe(
+      "Ce flag ne compte plus, ni pour toi ni pour SIO1-A.",
+    );
+    expect(disqualifiedFlagError(null)).toBe(
+      "Ton flag pour ce défi a été disqualifié : il ne compte plus.",
+    );
   });
 });

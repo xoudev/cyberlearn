@@ -1,4 +1,5 @@
 import type { Crumb } from "../../_components/admin-ui";
+import type { GridColumn } from "../../_components/data-grid";
 import type { FormRow } from "../../_components/page-skeletons";
 
 /**
@@ -45,6 +46,25 @@ export const SYNC_KPI_LABELS = [
   "Parcours à synchroniser",
   "Fichiers illisibles",
 ] as const;
+
+/**
+ * Every rating of one lesson, the page its edit page links to under the
+ * latest few. Its trail is LESSON_CRUMBS and the lesson's title.
+ */
+export const LESSON_RATINGS_HEADER = {
+  title: "Avis des apprenants",
+  description:
+    "La note et le commentaire laissés en fin de leçon, du plus récent au plus ancien. Les commentaires ne sont montrés qu'à l'équipe, jamais aux autres apprenants.",
+};
+
+export const LESSON_RATING_KPI_LABELS = ["Note moyenne", "Avis"] as const;
+
+export const LESSON_RATING_COLUMNS: readonly GridColumn[] = [
+  { label: "Note" },
+  { label: "Commentaire" },
+  { label: "Apprenant" },
+  { label: "Date", align: "right" },
+];
 
 /**
  * The shape of the lesson form, for the loading states of the pages that

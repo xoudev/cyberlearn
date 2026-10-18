@@ -5,6 +5,7 @@ import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
 import { learnersWithRecall } from "@/lib/revisions/daily-recall";
 
 /** Reading the lessons of the cards due, once each, takes a while. */
@@ -22,7 +23,20 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
+  // A reminder that could not be written leaves the others to go out, and the run failed all the same.
+  const summary = await trackCronRun("review-reminders", () => sendReminders(new Date()), {
+    failure: (r) => failureCounts([[r.failed, "rappel non envoyé", "rappels non envoyés"]]),
+  });
+  return NextResponse.json({ ok: true, ...summary });
+}
+
+interface ReminderSummary {
+  sent: number;
+  failed: number;
+  skipped: number;
+}
+
+async function sendReminders(now: Date): Promise<ReminderSummary> {
   const startOfDay = new Date(now);
   startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -34,9 +48,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   // no number: how many questions wait is not what brings anyone back.
   const userIds = await learnersWithRecall(await reviewCardRepository.findReminders(now), now);
 
-  if (userIds.length === 0) {
-    return NextResponse.json({ ok: true, sent: 0 });
-  }
+  if (userIds.length === 0) return { sent: 0, failed: 0, skipped: 0 };
 
   // A card stays due until it is answered, so a reader who ignores a
   // reminder would be notified again every day. One reminder per user per
@@ -83,5 +95,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed, skipped });
+  return { sent, failed, skipped };
 }

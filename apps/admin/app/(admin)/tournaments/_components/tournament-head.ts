@@ -1,4 +1,5 @@
 import type { Crumb } from "../../_components/admin-ui";
+import type { GridColumn } from "../../_components/data-grid";
 
 /**
  * What the tournament pages and their loading states share: the headers and
@@ -25,6 +26,28 @@ export const NEW_TOURNAMENT_HEADER = {
   description:
     "Les élèves des classes choisies reçoivent une notification dès l'enregistrement ; les défis restent cachés jusqu'au début.",
 };
+
+/**
+ * A tournament's flags, the page where one is taken back or put back. Its
+ * trail is TOURNAMENT_CRUMBS and the tournament it belongs to.
+ */
+export const TOURNAMENT_SOLVES_HEADER = {
+  title: "Flags trouvés",
+  description:
+    "Un flag disqualifié reste enregistré : le joueur ne peut pas le soumettre de nouveau, et il ne compte plus pour personne, sur le site comme dans l'app. Chaque disqualification et chaque rétablissement est consigné dans l'audit log.",
+};
+
+export const SOLVE_KPI_LABELS = ["Flags qui comptent", "Disqualifiés"] as const;
+
+export const SOLVE_COLUMNS: readonly GridColumn[] = [
+  { label: "Joueur" },
+  { label: "Défi" },
+  { label: "Classe" },
+  { label: "Points", align: "right" },
+  { label: "Trouvé le", align: "right" },
+  { label: "Statut" },
+  { label: "Actions" },
+];
 
 /** The form's three cards, in its order. */
 export const TOURNAMENT_FORM_CARDS = {

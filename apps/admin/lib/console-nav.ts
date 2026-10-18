@@ -26,6 +26,8 @@ export type ConsoleNavIcon =
   | "alert"
   | "flask"
   | "log"
+  | "layers"
+  | "clock"
   | "cog";
 
 /** The counts the layout reads for the sidebar's badges. */
@@ -43,6 +45,8 @@ export interface ConsoleSection {
   label: string;
   href: string;
   icon: ConsoleNavIcon;
+  /** The prefix that makes the entry current, when it is not the href itself. */
+  match?: string;
   /** The count shown beside it, when it has one. */
   count?: ConsoleCountKey;
   /** Other words the quick search finds it by. */
@@ -108,12 +112,27 @@ export const CONSOLE_MAIN_SECTIONS: readonly ConsoleSection[] = [
     count: "reports",
     keywords: ["contenus signalés", "forum", "solutions", "ressources", "modération"],
   },
+  // Five read-only lists under one entry: active on any of them. The other
+  // four are sub-pages of the quick search.
+  {
+    label: "Référentiels",
+    href: "/reference/cosmetics",
+    match: "/reference",
+    icon: "layers",
+    keywords: ["cosmétiques", "casier", "thèmes", "consultation"],
+  },
 ];
 
 /** The sidebar's "Système" block, in its order. */
 export const CONSOLE_SYSTEM_SECTIONS: readonly ConsoleSection[] = [
   { label: "Banc d'essai", href: "/lab", icon: "flask", keywords: ["lab", "test"] },
   { label: "Audit log", href: "/audit", icon: "log", keywords: ["journal", "historique"] },
+  {
+    label: "Tâches planifiées",
+    href: "/system/crons",
+    icon: "clock",
+    keywords: ["crons", "système", "keep-alive", "passages"],
+  },
   { label: "Paramètres", href: "/settings", icon: "cog", keywords: ["réglages", "configuration"] },
 ];
 
@@ -169,6 +188,36 @@ const SUB_PAGES: readonly ConsoleDestination[] = [
     href: "/classes/structure",
     kind: "page",
     keywords: ["structure", "écoles", "lycées", "promotions"],
+  },
+  {
+    label: "Référentiels : quêtes",
+    href: "/reference/quests",
+    kind: "page",
+    keywords: ["quêtes", "semaine"],
+  },
+  {
+    label: "Référentiels : saisons de ligue",
+    href: "/reference/seasons",
+    kind: "page",
+    keywords: ["saisons", "ligues", "classement"],
+  },
+  {
+    label: "Référentiels : sections du forum",
+    href: "/reference/forum-categories",
+    kind: "page",
+    keywords: ["forum", "catégories"],
+  },
+  {
+    label: "Référentiels : test de positionnement",
+    href: "/reference/placement",
+    kind: "page",
+    keywords: ["positionnement", "placement", "questions"],
+  },
+  {
+    label: "Mon compte",
+    href: "/account",
+    kind: "page",
+    keywords: ["profil", "sessions", "connexion", "déconnexion"],
   },
 ];
 
@@ -251,6 +300,17 @@ const SEGMENT_LABELS: ReadonlyMap<string, string> = new Map([
   ["moderation/reports", "Signalements"],
   ["moderation/content", "Contenus publiés"],
   ["structure", "Établissements et promos"],
+  ["reference", "Référentiels"],
+  ["cosmetics", "Cosmétiques"],
+  ["quests", "Quêtes"],
+  ["seasons", "Saisons"],
+  ["forum-categories", "Sections du forum"],
+  ["placement", "Positionnement"],
+  ["system", "Système"],
+  ["crons", "Tâches planifiées"],
+  ["account", "Mon compte"],
+  ["ratings", "Avis"],
+  ["flags", "Flags"],
   ["new", "Nouveau"],
   ["lessons/new", "Nouvelle"],
   ["classes/new", "Créer"],
@@ -268,13 +328,14 @@ export function activeSectionHref(
   pathname: string,
   sections: readonly ConsoleSection[],
 ): string | null {
-  return sections
-    .map((section) => section.href)
-    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
-    .reduce<string | null>(
-      (best, href) => (best === null || href.length > best.length ? href : best),
-      null,
-    );
+  // An entry matches on its prefix (match, or its href when it has none).
+  let best: { href: string; prefix: string } | null = null;
+  for (const section of sections) {
+    const prefix = section.match ?? section.href;
+    if (pathname !== prefix && !pathname.startsWith(`${prefix}/`)) continue;
+    if (best === null || prefix.length > best.prefix.length) best = { href: section.href, prefix };
+  }
+  return best?.href ?? null;
 }
 
 /** The breadcrumb of a console address: one name per segment it knows. */

@@ -201,12 +201,18 @@ export interface ExportPayload {
     finishedAt: Date | null;
     answers: { index: number; selected: number; correct: boolean; answeredAt: Date }[];
   }[];
-  /** The flags found in CTF tournaments, and what each was worth there. */
+  /**
+   * The flags found in CTF tournaments, and what each was worth there. A flag
+   * the team took back keeps its row, with when and why; who took it back is
+   * the team's, not the player's.
+   */
   tournamentSolves: {
     tournamentTitle: string;
     challengeTitle: string;
     points: number;
     solvedAt: Date;
+    disqualifiedAt: Date | null;
+    disqualifiedReason: string | null;
   }[];
   /** The mock exams handed in, with their score by module. */
   mockExams: {
@@ -509,6 +515,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       select: {
         points: true,
         solvedAt: true,
+        disqualifiedAt: true,
+        disqualifiedReason: true,
         tournament: { select: { title: true } },
         challenge: { select: { title: true } },
       },
@@ -860,6 +868,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       challengeTitle: t.challenge.title,
       points: t.points,
       solvedAt: t.solvedAt,
+      disqualifiedAt: t.disqualifiedAt,
+      disqualifiedReason: t.disqualifiedReason,
     })),
     mockExams: mockExams.map((e) => ({
       pathTitle: e.path.title,

@@ -6,6 +6,7 @@ import {
   OPEN_TICKET_STATUSES,
   prisma,
   ticketRepository,
+  WITHOUT_CRON_RUNS,
 } from "@cyberlearn/db";
 import { auditActorName } from "@/lib/audit-export";
 import { roleLabel, roleTone } from "@/lib/roles";
@@ -140,7 +141,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     }),
     prisma.lesson.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.path.count({ where: { status: "PUBLISHED" } }),
+    // What people did: the jobs' runs, ten a day, would push it out of the feed.
     prisma.auditLog.findMany({
+      where: WITHOUT_CRON_RUNS,
       take: 8,
       orderBy: { createdAt: "desc" },
       include: { actor: { select: { username: true, displayName: true, email: true } } },

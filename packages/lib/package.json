@@ -47,6 +47,7 @@
     "./story/*": "./src/story/*.ts",
     "./terminal/*": "./src/terminal/*.ts",
     "./exam/*": "./src/exam/*.ts",
+    "./cron/*": "./src/cron/*.ts",
     "./navigation/*": "./src/navigation/*.ts"
   },
   "scripts": {

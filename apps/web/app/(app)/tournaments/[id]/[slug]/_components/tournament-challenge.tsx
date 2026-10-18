@@ -7,6 +7,7 @@ import {
   CHALLENGE_STATUS_LABELS,
   challengeStatus,
   challengeTypeLabel,
+  disqualifiedFlagText,
   flagNotice,
   tournamentDateLabel,
 } from "@cyberlearn/lib/challenges/tournament";
@@ -21,6 +22,7 @@ import type { TournamentChallengeView } from "@/lib/tournaments/tournaments";
 import {
   IconCheck,
   IconDownload,
+  IconFlag,
   IconLock,
   PhaseBadge,
   Pips,
@@ -47,17 +49,22 @@ export interface TournamentMachine {
  * Server-side: the page hands it the challenge as the service reads it and
  * the machine already built with the player's flag, or null when the
  * challenge has a machine that could not be built (`challenge.onMachine`
- * says whether it has one).
+ * says whether it has one). A flag the console took back is said as such,
+ * with its reason, where a found one would be.
  */
 export function TournamentChallenge({
   tournament,
   challenge,
   solved,
+  disqualified,
   machine,
 }: TournamentChallengeView & { machine: TournamentMachine | null }): React.ReactElement {
   const notice = flagNotice(tournament);
   // Where the reader stands with this challenge, in a word the briefing shows.
-  const status = challengeStatus(tournament, solved);
+  const status = challengeStatus(tournament, solved, disqualified !== null);
+  // Taken back by the console: what the flag block says instead of "found".
+  const takenBack =
+    disqualified === null ? null : disqualifiedFlagText(disqualified.reason, tournament.myTeam);
   // A flag can be given below: the briefing points the way there.
   const playable = !solved && notice === null;
   const board = `/tournaments/${tournament.id}`;
@@ -115,6 +122,8 @@ export function TournamentChallenge({
               <dd className="trn-status" data-status={status}>
                 {status === "solved" ? (
                   <IconCheck />
+                ) : status === "disqualified" ? (
+                  <IconFlag />
                 ) : (
                   <span className="trn-dot" aria-hidden="true" />
                 )}
@@ -211,16 +220,31 @@ export function TournamentChallenge({
               <SectionHead title="Environnement Python" meta="Pyodide · WebAssembly · isolé" />
             ) : (
               // Once no flag can be given, the head no longer invites one.
-              <SectionHead title={notice !== null && !solved ? "Le flag" : "Soumettre le flag"} />
+              <SectionHead
+                title={
+                  (notice !== null && !solved) || takenBack !== null
+                    ? "Le flag"
+                    : "Soumettre le flag"
+                }
+              />
             )}
             {script ? (
+              // A flag taken back is not "solved" to the runner: it says why instead.
               <TournamentScript
                 tournamentId={tournament.id}
                 challengeId={challenge.id}
                 starterCode={challenge.starterCode ?? ""}
-                solved={solved}
-                notice={notice}
+                solved={solved && takenBack === null}
+                notice={takenBack !== null ? `Flag disqualifié · ${takenBack}` : notice}
               />
+            ) : takenBack !== null ? (
+              <div className="trn-done" data-state="disqualified">
+                <IconFlag />
+                <div>
+                  <p className="trn-done__title">Flag disqualifié</p>
+                  <p>{takenBack}</p>
+                </div>
+              </div>
             ) : solved ? (
               <div className="trn-done">
                 <IconCheck />

@@ -105,6 +105,11 @@ describe("activeSectionHref", () => {
     expect(activeSectionHref("/lessonsx", sections)).toBeNull();
     expect(activeSectionHref("/search", sections)).toBeNull();
   });
+
+  it("lights an entry from any page under its match prefix", () => {
+    expect(activeSectionHref("/reference/quests", sections)).toBe("/reference/cosmetics");
+    expect(activeSectionHref("/reference/cosmetics", sections)).toBe("/reference/cosmetics");
+  });
 });
 
 describe("breadcrumbOf", () => {

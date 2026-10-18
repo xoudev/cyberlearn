@@ -111,6 +111,20 @@ const CONSOLE_PROFILE = {
 
 export type ConsoleProfile = Prisma.UserGetPayload<{ select: typeof CONSOLE_PROFILE }>;
 
+const OWN_ACCOUNT = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  role: true,
+  createdAt: true,
+  lastActiveAt: true,
+  _count: { select: { auditLogs: true } },
+} as const satisfies Prisma.UserSelect;
+
+/** The administrator's own account, for the console's « Mon compte ». */
+export type OwnConsoleAccount = Prisma.UserGetPayload<{ select: typeof OWN_ACCOUNT }>;
+
 /** The profile fields the console edits, and the avatar it can only clear. */
 export type ConsoleProfileField = "displayName" | "username" | "bio" | "avatar";
 
@@ -746,6 +760,14 @@ export const userRepository = {
    */
   async findConsoleProfile(userId: string): Promise<ConsoleProfile | null> {
     return prisma.user.findUnique({ where: { id: userId }, select: CONSOLE_PROFILE });
+  },
+
+  /**
+   * The signed-in administrator's own account: who the console knows them
+   * as, and how many entries of the audit log they wrote.
+   */
+  async findOwnConsoleAccount(userId: string): Promise<OwnConsoleAccount | null> {
+    return prisma.user.findUnique({ where: { id: userId }, select: OWN_ACCOUNT });
   },
 
   /**

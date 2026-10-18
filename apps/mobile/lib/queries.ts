@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
@@ -33,6 +33,7 @@ import {
   type CertificateStanding,
 } from "@/lib/certificates";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
+import { nextNotificationOffset, notificationRange } from "@/lib/notification-pages";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import {
   countSince,
@@ -1021,6 +1022,45 @@ export function useNotifications(userId: string | undefined) {
         .order("createdAt", { ascending: false })
         .limit(50);
       // A failed read is an error, not an empty inbox: the screen offers a retry.
+      if (error) throw new Error(error.message);
+      // SAFETY: the columns selected above, in NotificationItem's shape.
+      return ((data ?? []) as NotificationItem[]).map((n) => ({
+        ...n,
+        readAt: dbIsoOrNull(n.readAt),
+        createdAt: dbIso(n.createdAt),
+      }));
+    },
+  });
+}
+
+/**
+ * The inbox screen's history: fifty at a time, newest first, with the pages
+ * after it on demand. Keyed under ["notifications", userId] like the list
+ * above, so every invalidation of the inbox reaches it too.
+ */
+export function useNotificationHistory(userId: string | undefined) {
+  return useInfiniteQuery({
+    queryKey: ["notifications", userId, "history"],
+    enabled: Boolean(userId),
+    refetchInterval: 60_000,
+    initialPageParam: 0,
+    // Annotated: both callbacks are contextually typed, and without it the
+    // pages would be inferred before queryFn says what a page holds.
+    getNextPageParam: (_last: NotificationItem[], pages: NotificationItem[][]) =>
+      nextNotificationOffset(pages),
+    queryFn: async ({ pageParam }): Promise<NotificationItem[]> => {
+      const [from, to] = notificationRange(pageParam);
+      const { data, error } = await supabase
+        .from("notifications")
+        // metadata: a friend request names its sender there, for its notice's
+        // "Accepter" and "Refuser" (answerableSender).
+        .select("id,type,title,body,actionUrl,readAt,createdAt,metadata")
+        .eq("userId", userId as string) // gated by `enabled`
+        // The id settles two notices of the same instant, so a page boundary
+        // never shows one twice or skips one.
+        .order("createdAt", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to);
       if (error) throw new Error(error.message);
       // SAFETY: the columns selected above, in NotificationItem's shape.
       return ((data ?? []) as NotificationItem[]).map((n) => ({

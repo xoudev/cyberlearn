@@ -60,6 +60,22 @@ export function lessonGridRows(lessons: readonly ConsoleLessonRow[]): GridRowBas
           {String(lesson.xpReward)}
         </b>,
         String(lesson._count.progress),
+        lesson.avgRating !== null && lesson.ratingsCount > 0 ? (
+          <span key="r" className="mono" style={{ whiteSpace: "nowrap" }}>
+            <span style={{ color: "var(--a-warning)" }}>
+              {lesson.avgRating.toLocaleString("fr-FR", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}
+            </span>{" "}
+            <span style={{ color: "var(--a-muted)" }}>· {String(lesson.ratingsCount)}</span>
+          </span>
+        ) : (
+          // Nobody rated it yet: no average to show, and none to sort it by.
+          <span key="r" style={{ color: "var(--a-faint)" }}>
+            -
+          </span>
+        ),
         // Keyed on the status: the badge keeps the status it was given, so
         // after a bulk change the refreshed row must bring a new one.
         <StatusBadge

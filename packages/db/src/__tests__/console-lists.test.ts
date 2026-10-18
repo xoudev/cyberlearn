@@ -222,6 +222,13 @@ describe("auditWhere", () => {
   it("matches everything with no filter", () => {
     expect(auditWhere({ actor: " ", target: "", action: "" })).toEqual({ AND: [] });
   });
+
+  it("leaves the scheduled jobs' runs out only when asked", () => {
+    expect(auditWhere({ hideCronRuns: true })).toEqual({
+      AND: [{ targetType: { not: "Cron" } }],
+    });
+    expect(auditWhere({ hideCronRuns: false })).toEqual({ AND: [] });
+  });
 });
 
 describe("auditLogRepository", () => {
@@ -323,6 +330,21 @@ describe("lessonRepository.listForConsole", () => {
       },
       orderBy: [{ xpReward: "desc" }, { title: "asc" }, { id: "asc" }],
     });
+  });
+
+  it("sorts by the learners' average, the lessons nobody rated last either way", async () => {
+    for (const dir of ["asc", "desc"] as const) {
+      mockPrisma.lesson.findMany.mockClear();
+      await lessonRepository.listForConsole({ ...base, sort: { key: "rating", dir } });
+      expect(firstArg(mockPrisma.lesson.findMany)).toMatchObject({
+        orderBy: [
+          { avgRating: { sort: dir, nulls: "last" } },
+          { ratingsCount: "desc" },
+          { title: "asc" },
+          { id: "asc" },
+        ],
+      });
+    }
   });
 
   it("tells a class lesson by its audience", async () => {

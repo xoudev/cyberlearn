@@ -73,7 +73,8 @@ model User {
   duelsReceived     Duel[]                  @relation("DuelOpponent")
   duelAnswers       DuelAnswer[]
   tournamentsMade   Tournament[]            @relation("TournamentCreator")
-  tournamentSolves  TournamentSolve[]
+  tournamentSolves  TournamentSolve[]       @relation("TournamentSolvePlayer")
+  disqualifications TournamentSolve[]       @relation("TournamentSolveDisqualifier")
   auditLogs         AuditLog[]              @relation("ActorLogs")
   placementResult   UserPlacementResult?
   skipWaivers       UserSkipWaiver[]
@@ -2293,14 +2294,22 @@ model TournamentSolve {
   classId      String   @db.Uuid
   points       Int
   solvedAt     DateTime @default(now())
+  /// Set when the console takes the flag back. The row stays: the player
+  /// cannot submit the same flag again, and it scores for nobody.
+  disqualifiedAt     DateTime?
+  /// The administrator who took it back. Never granted to the clients.
+  disqualifiedById   String?   @db.Uuid
+  disqualifiedReason String?   @db.VarChar(300)
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  challenge  Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
-  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tournament     Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  challenge      Challenge  @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+  user           User?      @relation("TournamentSolvePlayer", fields: [userId], references: [id], onDelete: SetNull)
+  disqualifiedBy User?      @relation("TournamentSolveDisqualifier", fields: [disqualifiedById], references: [id], onDelete: SetNull)
+  class          Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, challengeId, userId])
   @@index([tournamentId, solvedAt])
   @@index([userId])
+  @@index([disqualifiedById])
   @@map("tournament_solves")
 }

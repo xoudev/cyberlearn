@@ -287,3 +287,86 @@ export async function endTournamentNowAction(id: string): Promise<TournamentForm
   revalidatePath(`/tournaments/${id}`);
   return { ok: true };
 }
+
+// ─── Flags ──────────────────────────────────────────────────────────────────
+
+export interface SolveActionState {
+  ok?: boolean;
+  error?: string;
+}
+
+const disqualifySchema = z.object({
+  tournamentId: z.guid(),
+  solveId: z.guid(),
+  /**
+   * Required: the player reads it in their data export, and a flag taken back
+   * with no reason is one nobody can answer.
+   */
+  reason: z
+    .string()
+    .trim()
+    .min(5, "Explique le motif : au moins 5 caractères.")
+    .max(300, "Le motif tient en 300 caractères au plus."),
+});
+
+const requalifySchema = z.object({ tournamentId: z.guid(), solveId: z.guid() });
+
+const SOLVE_GONE = "Ce flag n'existe plus dans ce tournoi.";
+
+/** The pages that count the flag: its list, the tournament's standings, the list of tournaments. */
+function revalidateSolves(tournamentId: string): void {
+  revalidatePath("/tournaments");
+  revalidatePath(`/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}/flags`);
+}
+
+/**
+ * Takes a flag back: it stays recorded so the player cannot score it again,
+ * and it leaves every scoreboard, on the site and in the app. The repository
+ * writes it and its audit row in one transaction, only on a flag that still
+ * counts: a second click, or a second administrator, changes nothing.
+ */
+export async function disqualifySolveAction(
+  _prev: SolveActionState,
+  formData: FormData,
+): Promise<SolveActionState> {
+  const admin = await requireAdminAction();
+  const parsed = disqualifySchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+  const { tournamentId } = parsed.data;
+
+  const result = await tournamentRepository.disqualifySolve({
+    tournamentId,
+    solveId: parsed.data.solveId,
+    actorId: admin.id,
+    reason: parsed.data.reason,
+    now: new Date(),
+  });
+  revalidateSolves(tournamentId);
+  if (!result.ok) {
+    return { error: result.reason === "NOT_FOUND" ? SOLVE_GONE : "Ce flag est déjà disqualifié." };
+  }
+  return { ok: true };
+}
+
+/** Puts a disqualified flag back, for a disqualification made in error. Traced too. */
+export async function requalifySolveAction(
+  _prev: SolveActionState,
+  formData: FormData,
+): Promise<SolveActionState> {
+  const admin = await requireAdminAction();
+  const parsed = requalifySchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: "Paramètres invalides." };
+  const { tournamentId } = parsed.data;
+
+  const result = await tournamentRepository.requalifySolve({
+    tournamentId,
+    solveId: parsed.data.solveId,
+    actorId: admin.id,
+  });
+  revalidateSolves(tournamentId);
+  if (!result.ok) {
+    return { error: result.reason === "NOT_FOUND" ? SOLVE_GONE : "Ce flag compte déjà." };
+  }
+  return { ok: true };
+}

@@ -7,6 +7,7 @@ import {
   userRepository,
 } from "@cyberlearn/db";
 import {
+  disqualifiedFlagError,
   firstSolves,
   playerStandings,
   teamClassOf,
@@ -145,7 +146,10 @@ export interface TournamentChallengeView {
     attachmentUrl: string | null;
     resourceUrl: string | null;
   };
+  /** The player gave this flag: it can no longer be given, whether it still counts or not. */
   solved: boolean;
+  /** Set when the console took the flag back, with its reason: it counts for nobody. */
+  disqualified: { reason: string | null } | null;
 }
 
 /** The page's view, plus the machine the site runs; the app is handed the view alone. */
@@ -441,7 +445,7 @@ export async function tournamentChallengeFor(
   const myTeamId =
     access.teamClassId === null ? null : (teamOfClass.get(access.teamClassId) ?? null);
   const { challenge } = entry;
-  const solved = await tournamentRepository.hasSolved(tournament.id, challenge.id, userId);
+  const own = await tournamentRepository.findOwnSolve(tournament.id, challenge.id, userId);
 
   return {
     tournament: {
@@ -468,7 +472,9 @@ export async function tournamentChallengeFor(
       attachmentUrl: challenge.attachmentUrl,
       resourceUrl: challenge.resourceUrl,
     },
-    solved,
+    solved: own !== null,
+    disqualified:
+      own !== null && own.disqualifiedAt !== null ? { reason: own.disqualifiedReason } : null,
     machine: challenge.machine,
   };
 }
@@ -503,7 +509,12 @@ export async function submitTournamentFlag(
   if (entry === null || (entry.challenge.type !== "CTF" && entry.challenge.type !== "SCRIPT")) {
     return { ok: false, error: "Défi introuvable." };
   }
-  if (await tournamentRepository.hasSolved(tournament.id, entry.challenge.id, userId)) {
+  const own = await tournamentRepository.findOwnSolve(tournament.id, entry.challenge.id, userId);
+  if (own !== null) {
+    // Taken back by the console: given again, it still would not count, and the player is told why.
+    if (own.disqualifiedAt !== null) {
+      return { ok: false, error: disqualifiedFlagError(own.disqualifiedReason) };
+    }
     return { ok: true, correct: true, points: 0, already: true };
   }
   const expected = expectedFlag(entry.challenge, userId);
