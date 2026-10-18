@@ -135,11 +135,20 @@ describe("validateMdxContent - a refCode already in the database", () => {
 
   it("says when a studio draft is open on the lesson, which the update keeps", async () => {
     const saved = new Date("2026-10-18T09:30:00Z");
-    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    m.findByRefCode.mockResolvedValue(
+      lessonRow("CL-LSN-002-V01", body.replace("ordinaire", "banal")),
+    );
     m.drafts.mockResolvedValue(new Map([["lesson-1", saved]]));
     const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
     expect(result.update?.draftSavedAt).toEqual(saved);
     expect(m.drafts).toHaveBeenCalledWith(["lesson-1"]);
+  });
+
+  it("says nothing of the draft when the file would leave the content as it is", async () => {
+    m.findByRefCode.mockResolvedValue(lessonRow("CL-LSN-002-V01", body));
+    m.drafts.mockResolvedValue(new Map([["lesson-1", new Date("2026-10-18T09:30:00Z")]]));
+    const result = await validateMdxContent(mdx("CL-LSN-002-V01"));
+    expect(result.update?.draftSavedAt).toBeNull();
   });
 
   it("refuses a prerequisite that already requires the lesson, before anything is confirmed", async () => {

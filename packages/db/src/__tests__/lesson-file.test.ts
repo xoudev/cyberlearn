@@ -215,6 +215,17 @@ describe("writeFromFile", () => {
     ]);
   });
 
+  it("says no draft was outdated when only the prerequisites changed", async () => {
+    // The content, and so the fingerprint the draft keeps, is what it was:
+    // the studio has no conflict to show.
+    tx.lessonDraft.findUnique.mockResolvedValue({ lessonId: LESSON });
+    expect(await lessonFileRepository.writeFromFile(write({ fields: SAME_FIELDS }))).toEqual({
+      ok: true,
+      version: 3,
+      draftKept: false,
+    });
+  });
+
   it("writes no prerequisite of such a file when the row moved", async () => {
     tx.lesson.updateMany.mockResolvedValue({ count: 0 });
     expect(await lessonFileRepository.writeFromFile(write({ fields: SAME_FIELDS }))).toEqual({

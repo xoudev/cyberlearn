@@ -212,6 +212,23 @@ describe("applyLessonContentUpdate and prerequisite loops", () => {
     expect(write.prerequisiteIds).toEqual(["lesson-2"]);
   });
 
+  it("keeps a CRLF body as stored when the file only changes the prerequisites", async () => {
+    // Stored with CRLF (a file imported as it was): the comparison reads the
+    // same text, so the write must too, or the publish would see a change.
+    const crlf = { ...ROW, contentMdx: BODY.replaceAll("\n", "\r\n"), xpReward: 50 };
+    m.findByRefCode.mockResolvedValue(crlf);
+    m.links.mockResolvedValue([{ id: "lesson-2", refCode: "CL-LSN-002-V01" }]);
+    const result = await applyLessonContentUpdate(
+      requiring("CL-LSN-002-V01"),
+      lessonHash(fieldsOfRow(crlf)),
+      "admin-1",
+      source,
+    );
+    expect(result).toMatchObject({ ok: true });
+    const [write] = m.write.mock.calls[0] as [{ fields: { contentMdx: string } }];
+    expect(write.fields.contentMdx).toBe(crlf.contentMdx);
+  });
+
   it("reads no link for a file without prerequisites", async () => {
     await applyLessonContentUpdate(FILE, SEEN, "admin-1", source);
     expect(m.edges).not.toHaveBeenCalled();
@@ -235,6 +252,23 @@ describe("compareLesson", () => {
     );
     expect(preview).toMatchObject({ added: 1, removed: 1, hunksOmitted: false });
     expect(preview.hunks).toHaveLength(1);
+  });
+
+  it("mentions an open studio draft only when the content changes", () => {
+    const saved = new Date("2026-10-18T09:30:00Z");
+    const withDraft = { ...context, draftSavedAt: saved };
+    const prerequisitesOnly = {
+      slug: ROW.slug,
+      fields: { ...fieldsOfRow(ROW), prerequisites: ["CL-LSN-002-V01"] },
+    };
+    // Same content, same fingerprint: the draft's base still holds.
+    expect(compareLesson(ROW, prerequisitesOnly, withDraft).draftSavedAt).toBeNull();
+
+    const retitled = {
+      slug: ROW.slug,
+      fields: { ...prerequisitesOnly.fields, title: "Un autre titre" },
+    };
+    expect(compareLesson(ROW, retitled, withDraft).draftSavedAt).toEqual(saved);
   });
 
   it("counts, without passages, a content rewritten over too many lines to compare", () => {

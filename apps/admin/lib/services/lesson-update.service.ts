@@ -154,20 +154,26 @@ export function compareLesson(
       if (answers > 0) quizImpacts.push({ quizId, answers, change });
     }
   }
+  const fields = fieldChanges(before, after);
+  // A file that changes only the prerequisites writes no version: the
+  // content, and so the fingerprint a studio draft keeps, stays as it was, and
+  // the draft has nothing to be warned about.
+  const contentChanges =
+    before.contentMdx !== after.contentMdx || fields.some((f) => f.field !== "prerequisites");
   return {
     lessonId: row.id,
     refCode: row.refCode,
     title: row.title,
     status: row.status,
     hash: lessonHash(before),
-    fields: fieldChanges(before, after),
+    fields,
     hunks: diff.exact ? diffHunks(diff.lines, 2) : [],
     hunksOmitted: !diff.exact,
     added,
     removed,
     quizImpacts,
     editedInConsoleAt: context.editedInConsoleAt,
-    draftSavedAt: context.draftSavedAt,
+    draftSavedAt: contentChanges ? context.draftSavedAt : null,
     slugDiffers: row.slug === file.slug ? null : { database: row.slug, file: file.slug },
   };
 }
@@ -227,7 +233,10 @@ export type ApplyResult =
       lessonId: string;
       /** The lesson's version after the write. */
       version: number;
-      /** A studio draft was open on the lesson: kept, and the studio says the lesson moved under it. */
+      /**
+       * A studio draft was open on the lesson the file gave a new version:
+       * kept, and the studio says the lesson moved under it.
+       */
       draftKept: boolean;
     }
   | {
@@ -317,7 +326,11 @@ export async function applyLessonContentUpdate(
     lessonId: row.id,
     expectedUpdatedAt: row.updatedAt,
     fields: {
-      contentMdx: body,
+      // The comparison reads the body normalised, the publish compares it as
+      // stored: a lesson kept with CRLF whose file says the same text keeps
+      // its own, or a file that changes only the prerequisites would still
+      // leave a version and outdate a studio draft.
+      contentMdx: normalizeBody(row.contentMdx) === body ? row.contentMdx : body,
       title: m.title,
       description: m.description,
       category: m.category,

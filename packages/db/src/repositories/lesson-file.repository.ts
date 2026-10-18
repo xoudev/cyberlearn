@@ -117,8 +117,9 @@ export type LessonFileWriteResult =
        */
       version: number;
       /**
-       * A studio draft is open on the lesson. It is kept as it was, and the
-       * studio shows that the lesson moved under it.
+       * A studio draft is open on a lesson the file gave a new version. It is
+       * kept as it was, and the studio shows that the lesson moved under it.
+       * False when only the prerequisites changed: the draft's base still holds.
        */
       draftKept: boolean;
     }
@@ -305,11 +306,18 @@ export const lessonFileRepository = {
           })),
         });
       }
-      const draft = await tx.lessonDraft.findUnique({
-        where: { lessonId: write.lessonId },
-        select: { lessonId: true },
-      });
-      return { ok: true, version, draftKept: draft !== null };
+      // Only a new version moves a draft's base: a file that changed only the
+      // prerequisites leaves the content, and so its fingerprint, as it was,
+      // and the studio has nothing to signal.
+      let draftKept = false;
+      if (published.ok) {
+        const draft = await tx.lessonDraft.findUnique({
+          where: { lessonId: write.lessonId },
+          select: { lessonId: true },
+        });
+        draftKept = draft !== null;
+      }
+      return { ok: true, version, draftKept };
     });
   },
 
