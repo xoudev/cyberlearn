@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn(),
   changeRole: vi.fn(),
-  auditCreate: vi.fn(),
+  record: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 
@@ -11,7 +11,7 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   UserRole: { STUDENT: "STUDENT", TEACHER: "TEACHER", ADMIN: "ADMIN" },
   userRepository: { changeRole: m.changeRole },
-  prisma: { auditLog: { create: m.auditCreate } },
+  auditLogRepository: { record: m.record },
   banRepository: {},
   deleteAccount: vi.fn(),
   resetProgress: vi.fn(),
@@ -49,7 +49,7 @@ const TARGET = "22222222-2222-4222-8222-222222222222";
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: ADMIN, email: "admin@x.fr", role: "ADMIN" });
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
 });
 
 describe("updateUserRoleAction", () => {
@@ -64,7 +64,7 @@ describe("updateUserRoleAction", () => {
     m.changeRole.mockResolvedValue({ ok: false, reason: "LAST_ADMIN" });
     const result = await updateUserRoleAction(TARGET, "TEACHER");
     expect(result).toEqual({ ok: false, error: LAST_ADMIN_REFUSAL });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("says the account is gone rather than throwing", async () => {
@@ -90,7 +90,7 @@ describe("updateUserRoleAction", () => {
     expect(await updateUserRoleAction(TARGET, "ADMIN")).toEqual({ ok: true });
     expect(m.changeRole).toHaveBeenCalledWith(TARGET, "ADMIN", { actorId: ADMIN });
     // Never a second write outside the transaction.
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
     expect(m.revalidatePath).toHaveBeenCalledWith("/users");
   });
 

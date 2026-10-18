@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { banRepository, moderationRepository, prisma } from "@cyberlearn/db";
+import { auditLogRepository, banRepository, moderationRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { BAN_DURATIONS, banExpiryFor, isBanDurationKey, moderationNotice } from "@cyberlearn/lib";
 import { sendBanNoticeEmail, sendModerationNoticeEmail } from "@cyberlearn/email";
 import { banRefusal } from "@/lib/account-guards";
@@ -147,14 +148,13 @@ export async function resolveModerationAction(
     }
   }
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: outcome === "UPHELD" ? "moderation.upheld" : "moderation.overturned",
-      targetType: "ModerationEvent",
-      targetId: eventId,
-      metadata: { contentTouched: applied.contentTouched, sanction: sanctionLabel },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action:
+      outcome === "UPHELD" ? AUDIT_ACTION.moderation.upheld : AUDIT_ACTION.moderation.overturned,
+    targetType: "ModerationEvent",
+    targetId: eventId,
+    metadata: { contentTouched: applied.contentTouched, sanction: sanctionLabel },
   });
 
   // ── The follow-up, to the person it was about ───────────────────────────

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, quizRepository } from "@cyberlearn/db";
+import { auditLogRepository, quizRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { requireAdminAction } from "@/lib/auth";
 import {
   newQuestionTargetSchema,
@@ -54,14 +55,12 @@ export async function saveQuizSettingsAction(input: {
 
   const quiz = await quizRepository.upsertQuizByPath({ pathId, ...parsed.data });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "quiz.upsert",
-      targetType: "Quiz",
-      targetId: quiz.id,
-      metadata: { pathId, isActive: parsed.data.isActive },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.quiz.upsert,
+    targetType: "Quiz",
+    targetId: quiz.id,
+    metadata: { pathId, isActive: parsed.data.isActive },
   });
 
   revalidatePath(`/paths/${pathId}/quiz`);
@@ -105,14 +104,12 @@ export async function createQuestionAction(input: {
     isActive: d.isActive,
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "quiz_question.create",
-      targetType: "QuizQuestion",
-      targetId: created.id,
-      metadata: { quizId },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.quiz.questionCreate,
+    targetType: "QuizQuestion",
+    targetId: created.id,
+    metadata: { quizId },
   });
 
   revalidatePath(`/paths/${pathId}/quiz`);
@@ -156,14 +153,12 @@ export async function updateQuestionAction(input: {
     isActive: d.isActive,
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "quiz_question.update",
-      targetType: "QuizQuestion",
-      targetId: questionId,
-      metadata: { quizId: existing.quizId },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.quiz.questionUpdate,
+    targetType: "QuizQuestion",
+    targetId: questionId,
+    metadata: { quizId: existing.quizId },
   });
 
   revalidatePath(`/paths/${pathId}/quiz`);
@@ -185,14 +180,12 @@ export async function deleteQuestionAction(input: {
 
   await quizRepository.deleteQuestion(questionId);
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "quiz_question.delete",
-      targetType: "QuizQuestion",
-      targetId: questionId,
-      metadata: { quizId: existing.quizId },
-    },
+  await auditLogRepository.record({
+    actorId: admin.id,
+    action: AUDIT_ACTION.quiz.questionDelete,
+    targetType: "QuizQuestion",
+    targetId: questionId,
+    metadata: { quizId: existing.quizId },
   });
 
   revalidatePath(`/paths/${pathId}/quiz`);

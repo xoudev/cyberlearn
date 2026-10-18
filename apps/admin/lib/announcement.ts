@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AnnouncementAudience, UserRole } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { ROLE_LABEL, ROLES } from "./roles";
 
 /**
@@ -21,7 +22,7 @@ export const ANNOUNCEMENT_LIMITS = {
 } as const;
 
 /** The audit action an announcement writes, and the one its history reads. */
-export const ANNOUNCEMENT_ACTION = "announcement.send";
+export const ANNOUNCEMENT_ACTION = AUDIT_ACTION.announcement.send;
 export const ANNOUNCEMENT_TARGET = "Announcement";
 
 const AUDIENCE_ROLES = ["STUDENT", "TEACHER", "ADMIN"] as const satisfies readonly UserRole[];

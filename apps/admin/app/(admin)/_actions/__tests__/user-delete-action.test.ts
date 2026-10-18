@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn<() => Promise<{ id: string }>>(),
-  findUnique: vi.fn<(args: unknown) => Promise<unknown>>(),
+  findConsoleTarget: vi.fn<(id: string) => Promise<unknown>>(),
   deleteAccount: vi.fn<(id: string, context: unknown) => Promise<unknown>>(),
-  auditCreate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  record: vi.fn<(entry: unknown) => Promise<void>>(),
   sendAccountDeletedEmail: vi.fn<(options: Record<string, unknown>) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   redirect: vi.fn<(url: string) => never>(),
@@ -13,8 +13,8 @@ const m = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   UserRole: { STUDENT: "STUDENT", TEACHER: "TEACHER", ADMIN: "ADMIN" },
-  userRepository: {},
-  prisma: { user: { findUnique: m.findUnique }, auditLog: { create: m.auditCreate } },
+  userRepository: { findConsoleTarget: m.findConsoleTarget },
+  auditLogRepository: { record: m.record },
   banRepository: {},
   deleteAccount: m.deleteAccount,
   resetProgress: vi.fn(),
@@ -57,7 +57,7 @@ const TYPED = form({ userId: TARGET, confirmEmail: "amelie@exemple.fr" });
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: ADMIN });
-  m.findUnique.mockResolvedValue({
+  m.findConsoleTarget.mockResolvedValue({
     id: TARGET,
     email: "amelie@exemple.fr",
     displayName: "Amélie",
@@ -69,7 +69,7 @@ beforeEach(() => {
     hashedUserId: "hash",
     authIdentityDeleted: true,
   });
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
   m.sendAccountDeletedEmail.mockResolvedValue(undefined);
   m.redirect.mockImplementation((url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`);
@@ -91,6 +91,27 @@ describe("deleteUserAction", () => {
     await expect(deleteUserAction({}, TYPED)).rejects.toThrow(
       "NEXT_REDIRECT:/users?supprime=mail-auth",
     );
+    // The missing notice is written where it can still be acted on, about an
+    // account that is no longer there.
+    expect(m.record).toHaveBeenCalledExactlyOnceWith({
+      actorId: ADMIN,
+      actorHashedId: "hash",
+      action: "admin.user.deleted.notice_failed",
+      targetType: "user",
+      targetId: "hash",
+      anonymized: true,
+      metadata: { error: "resend down" },
+    });
+  });
+
+  it("erases the account under the console's own action", async () => {
+    await expect(deleteUserAction({}, TYPED)).rejects.toThrow("NEXT_REDIRECT");
+    expect(m.findConsoleTarget).toHaveBeenCalledWith(TARGET);
+    expect(m.deleteAccount).toHaveBeenCalledWith(
+      TARGET,
+      expect.objectContaining({ actorId: ADMIN, action: "admin.user.deleted" }),
+    );
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it("stays on the page, with its reason, when it refuses", async () => {
