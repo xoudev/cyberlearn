@@ -20,7 +20,6 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     userLessonProgress: { deleteMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
     lessonQuizAnswer: { deleteMany: vi.fn() },
     reviewCard: { deleteMany: vi.fn() },
-    reviewSchedule: { deleteMany: vi.fn() },
     quiz: { findUnique: vi.fn() },
     quizAttempt: { findFirst: vi.fn(), updateMany: vi.fn() },
     auditLog: { create: vi.fn() },
@@ -58,7 +57,6 @@ beforeEach(() => {
     tx.userLessonProgress,
     tx.lessonQuizAnswer,
     tx.reviewCard,
-    tx.reviewSchedule,
     tx.userSkipWaiver,
   ]) {
     model.deleteMany.mockResolvedValue({ count: 0 });
@@ -140,11 +138,10 @@ describe("lessonProgressRepository.correct", () => {
     expect(tx.userLessonProgress.deleteMany).not.toHaveBeenCalled();
   });
 
-  it("puts a lesson back to never opened: progress, answers, cards and schedule", async () => {
+  it("puts a lesson back to never opened: progress, answers and cards", async () => {
     tx.userLessonProgress.deleteMany.mockResolvedValue({ count: 1 });
     tx.lessonQuizAnswer.deleteMany.mockResolvedValue({ count: 4 });
     tx.reviewCard.deleteMany.mockResolvedValue({ count: 2 });
-    tx.reviewSchedule.deleteMany.mockResolvedValue({ count: 1 });
 
     const result = await lessonProgressRepository.correct(USER, LESSON, "reset", BY);
 
@@ -156,12 +153,7 @@ describe("lessonProgressRepository.correct", () => {
       answersRemoved: 4,
       cardsRemoved: 2,
     });
-    for (const model of [
-      tx.userLessonProgress,
-      tx.lessonQuizAnswer,
-      tx.reviewCard,
-      tx.reviewSchedule,
-    ]) {
+    for (const model of [tx.userLessonProgress, tx.lessonQuizAnswer, tx.reviewCard]) {
       expect(model.deleteMany).toHaveBeenCalledWith({ where: { userId: USER, lessonId: LESSON } });
     }
     expect(audited()).toEqual({
@@ -175,7 +167,6 @@ describe("lessonProgressRepository.correct", () => {
         progressRemoved: 1,
         answersRemoved: 4,
         cardsRemoved: 2,
-        schedulesRemoved: 1,
       },
     });
   });

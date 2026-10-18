@@ -58,7 +58,8 @@ model User {
   badges            UserBadge[]
   certificates      Certificate[]
   notifications     Notification[]
-  reviewSchedules   ReviewSchedule[]
+  /// The retired SM-2 queue's rows, kept for db:backfill-review-cards alone.
+  reviewSchedulesLegacy ReviewScheduleLegacy[]
   reviewCards       ReviewCard[]
   reviewSessions    ReviewSession[]
   contactTickets    ContactTicket[]
@@ -524,7 +525,8 @@ model Lesson {
   exerciseCompletions ExerciseCompletion[]
   quizAnswers      LessonQuizAnswer[]
   quizReports      QuizReport[]
-  reviewSchedules  ReviewSchedule[]
+  /// The retired SM-2 queue's rows, kept for db:backfill-review-cards alone.
+  reviewSchedulesLegacy ReviewScheduleLegacy[]
   reviewCards      ReviewCard[]
   ratings          Rating[]
   questions        LessonQuestion[]
@@ -1609,8 +1611,15 @@ model Notification {
   @@map("notifications")
 }
 
-// SM-2 simplified: ease factor + interval + repetitions
-model ReviewSchedule {
+/// The retired lesson-level review queue (SM-2), one row per learner and
+/// lesson, kept only until db:backfill-review-cards has turned its rows into
+/// review cards in production (docs/DEPLOY.md). Nothing writes it any more and
+/// the backfill script alone reads it; no client role reaches it (migration
+/// 20261018120000_retire_review_schedules). Dropped in a later release.
+///
+/// Its old name is an empty view now, for the app builds that still read the
+/// queue through the Data API.
+model ReviewScheduleLegacy {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @db.Uuid
   lessonId       String   @db.Uuid
@@ -1625,7 +1634,7 @@ model ReviewSchedule {
 
   @@unique([userId, lessonId])
   @@index([nextReviewAt])
-  @@map("review_schedules")
+  @@map("review_schedules_legacy")
 }
 
 /// One lesson quiz question a learner is asked again: a card in a Leitner box.

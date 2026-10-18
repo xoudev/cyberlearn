@@ -111,9 +111,6 @@ describe("resetProgress (integration, real DB)", () => {
       data: { userId: learner, pathId, status: "COMPLETED", completedAt: new Date() },
     });
     await prisma.userBadge.create({ data: { userId: learner, badgeId } });
-    await prisma.reviewSchedule.create({
-      data: { userId: learner, lessonId, nextReviewAt: new Date() },
-    });
     await prisma.userActivityDay.create({
       data: { userId: learner, day: new Date("2026-03-04T00:00:00Z") },
     });
@@ -213,7 +210,6 @@ describe("resetProgress (integration, real DB)", () => {
       lessons: await prisma.userLessonProgress.count({ where: { userId: learner } }),
       paths: await prisma.userPathProgress.count({ where: { userId: learner } }),
       badges: await prisma.userBadge.count({ where: { userId: learner } }),
-      reviews: await prisma.reviewSchedule.count({ where: { userId: learner } }),
       activity: await prisma.userActivityDay.count({ where: { userId: learner } }),
       ledger: await prisma.xpLedger.count({ where: { userId: learner } }),
       waivers: await prisma.userSkipWaiver.count({ where: { userId: learner } }),
@@ -225,7 +221,6 @@ describe("resetProgress (integration, real DB)", () => {
       lessons: 0,
       paths: 0,
       badges: 0,
-      reviews: 0,
       activity: 0,
       ledger: 0,
       waivers: 0,
