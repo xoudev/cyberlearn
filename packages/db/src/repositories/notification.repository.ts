@@ -28,6 +28,12 @@ export interface NotificationPage {
 /** The largest page a caller may ask for. */
 export const NOTIFICATION_PAGE_MAX = 50;
 
+/**
+ * How many notifications a GDPR export lists, the most recent ones: the
+ * export says so in its metadata (rgpd/build-export.ts).
+ */
+export const NOTIFICATION_EXPORT_LIMIT = 1000;
+
 const NOTIFICATION_ITEM = {
   id: true,
   type: true,
@@ -235,5 +241,23 @@ export const notificationRepository = {
       },
       { timeout: CREATE_MANY_TIMEOUT_MS },
     );
+  },
+
+  /** The account's latest notifications, newest first, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.notification.findMany({
+      where: { userId },
+      orderBy: { scheduledFor: "desc" },
+      take: NOTIFICATION_EXPORT_LIMIT,
+      select: {
+        type: true,
+        title: true,
+        body: true,
+        actionUrl: true,
+        scheduledFor: true,
+        sentAt: true,
+        readAt: true,
+      },
+    });
   },
 };

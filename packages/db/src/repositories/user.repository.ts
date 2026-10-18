@@ -1007,4 +1007,23 @@ export const userRepository = {
     });
     return rows.map((row) => row.id);
   },
+
+  /** The account's own columns, for its GDPR export (rgpd/build-export.ts); null once it is gone. */
+  async exportProfileFor(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        bio: true,
+        xpTotal: true,
+        level: true,
+        streakDays: true,
+        lastActiveAt: true,
+        createdAt: true,
+      },
+    });
+  },
 };

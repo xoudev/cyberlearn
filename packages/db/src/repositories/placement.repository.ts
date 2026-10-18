@@ -72,4 +72,27 @@ export const placementRepository = {
     });
     return row?.createdAt ?? null;
   },
+
+  /** The account's scores, for its GDPR export (rgpd/build-export.ts); null when it never sat the test. */
+  async exportResultFor(userId: string) {
+    return prisma.userPlacementResult.findUnique({
+      where: { userId },
+      select: { devScore: true, cybersecScore: true, networkScore: true, completedAt: true },
+    });
+  },
+
+  /**
+   * Every lesson waived for the account, by the test or for any other reason,
+   * for its GDPR export (rgpd/build-export.ts).
+   */
+  async exportSkipWaiversFor(userId: string) {
+    return prisma.userSkipWaiver.findMany({
+      where: { userId },
+      select: {
+        grantedAt: true,
+        grantReason: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+    });
+  },
 };

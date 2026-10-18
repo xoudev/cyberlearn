@@ -185,6 +185,14 @@ export default async function AdminUserPage({
           <>
             {/* What was done to the account, from the console. */}
             <GhostLink href={`/audit?target=${user.id}`}>Journal d&apos;audit</GhostLink>
+            {/* The file its holder downloads from the site, for a request made
+                to the team. A plain link: the file comes from a route, not a
+                page the router could render. No `download` attribute, so a
+                refusal (too many exports, an account gone) opens as a page
+                that says why rather than as a failed download. */}
+            <a href={`/users/${user.id}/export`} className="a-btn a-btn--ghost">
+              Exporter les données (RGPD)
+            </a>
             <GhostLink href="/users">Retour aux comptes</GhostLink>
           </>
         }

@@ -1,7 +1,63 @@
-import { prisma, reviewScheduleLegacyRepository } from "@cyberlearn/db";
 import { readDraw, readSessionAnswers } from "@cyberlearn/lib/revisions/cards";
+import { badgeRepository } from "../repositories/badge.repository.js";
+import { certificateRepository } from "../repositories/certificate.repository.js";
+import { challengeRepository } from "../repositories/challenge.repository.js";
+import { contentReportRepository } from "../repositories/content-report.repository.js";
+import { cosmeticRepository } from "../repositories/cosmetic.repository.js";
+import { duelRepository } from "../repositories/duel.repository.js";
+import { leagueRepository } from "../repositories/league.repository.js";
+import { lessonProgressRepository } from "../repositories/lesson-progress.repository.js";
+import { lessonQuizRepository } from "../repositories/lesson-quiz.repository.js";
+import { mockExamRepository } from "../repositories/mock-exam.repository.js";
+import { noteFolderRepository } from "../repositories/note-folder.repository.js";
+import { noteReportRepository } from "../repositories/note-report.repository.js";
+import { noteRepository } from "../repositories/note.repository.js";
+import {
+  NOTIFICATION_EXPORT_LIMIT,
+  notificationRepository,
+} from "../repositories/notification.repository.js";
+import { pathRepository } from "../repositories/path.repository.js";
+import { placementRepository } from "../repositories/placement.repository.js";
+import { preferencesRepository } from "../repositories/preferences.repository.js";
+import { qaRepository } from "../repositories/qa.repository.js";
+import { questRepository } from "../repositories/quest.repository.js";
+import { quizReportRepository } from "../repositories/quiz-report.repository.js";
+import { quizRepository } from "../repositories/quiz.repository.js";
+import { ratingRepository } from "../repositories/rating.repository.js";
+import { reviewCardRepository } from "../repositories/review-card.repository.js";
+import { reviewScheduleLegacyRepository } from "../repositories/review-schedule-legacy.repository.js";
+import { streakRepository } from "../repositories/streak.repository.js";
+import { ticketRepository } from "../repositories/ticket.repository.js";
+import { tournamentRepository } from "../repositories/tournament.repository.js";
+import { userRepository } from "../repositories/user.repository.js";
+import { wrappedRepository } from "../repositories/wrapped.repository.js";
+import { writeupRepository } from "../repositories/writeup.repository.js";
+import { xpLedgerRepository } from "../repositories/xp-ledger.repository.js";
 
-const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
+/**
+ * Everything the platform holds about one account, as the JSON file it
+ * downloads (RGPD art. 15 and 20).
+ *
+ * This lived in apps/web, behind the account holder's own /api/me/export.
+ * The console answers a request made to the team (a letter, a mail to
+ * privacy@, an account that can no longer sign in) with the same file, so
+ * there is one builder and both apps call it: a section added here reaches
+ * both, and a second copy could not quietly drift from the first.
+ *
+ * Every read goes through the repository of its table, each limited to the
+ * account's own rows. The sections, their keys and their order are the file's
+ * format: a reader of last year's export reads this year's the same way, and
+ * build-export.test.ts pins them.
+ */
+
+export interface ExportOptions {
+  /**
+   * The learner site's address, which the certificates' download and
+   * verification links point at. The caller passes it: each app reads its
+   * own environment.
+   */
+  siteUrl: string;
+}
 
 export interface ExportPayload {
   exportMetadata: {
@@ -306,7 +362,11 @@ export interface ExportPayload {
   answerUpvotes: { answerId: string; createdAt: Date }[];
 }
 
-export async function buildExportPayload(userId: string): Promise<ExportPayload> {
+export async function buildExportPayload(
+  userId: string,
+  options: ExportOptions,
+): Promise<ExportPayload> {
+  const { siteUrl } = options;
   const [
     profile,
     prefs,
@@ -343,363 +403,46 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     quizReports,
     noteReports,
     contentReports,
-    reviewCards,
-    reviewSessions,
+    review,
   ] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        email: true,
-        username: true,
-        displayName: true,
-        avatarUrl: true,
-        bio: true,
-        xpTotal: true,
-        level: true,
-        streakDays: true,
-        lastActiveAt: true,
-        createdAt: true,
-      },
-    }),
-    prisma.userPreferences.findUnique({
-      where: { userId },
-      select: {
-        theme: true,
-        locale: true,
-        emailNotifications: true,
-        reviewReminders: true,
-        weeklyDigest: true,
-        publicProfile: true,
-        learningGoals: true,
-        startingLevel: true,
-      },
-    }),
-    prisma.userPlacementResult.findUnique({
-      where: { userId },
-      select: { devScore: true, cybersecScore: true, networkScore: true, completedAt: true },
-    }),
-    prisma.userLessonProgress.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        attempts: true,
-        bestScore: true,
-        timeSpentSeconds: true,
-        startedAt: true,
-        completedAt: true,
-        lastAccessedAt: true,
-        quizCorrect: true,
-        quizTotal: true,
-        lesson: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.userPathProgress.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        startedAt: true,
-        completedAt: true,
-        path: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.userChallengeProgress.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        attempts: true,
-        startedAt: true,
-        completedAt: true,
-        challenge: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.challengeHintReveal.findMany({
-      where: { userId },
-      select: { hintId: true, revealedAt: true },
-    }),
-    prisma.userBadge.findMany({
-      where: { userId },
-      select: {
-        earnedAt: true,
-        context: true,
-        badge: { select: { name: true, rarity: true, description: true } },
-      },
-    }),
-    prisma.certificate.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        publicId: true,
-        issuedAt: true,
-        expiresAt: true,
-        sha256Hash: true,
-        revokedAt: true,
-        revokedReason: true,
-        path: { select: { title: true } },
-      },
-    }),
+    userRepository.exportProfileFor(userId),
+    preferencesRepository.exportFor(userId),
+    placementRepository.exportResultFor(userId),
+    lessonProgressRepository.exportFor(userId),
+    pathRepository.exportProgressFor(userId),
+    challengeRepository.exportProgressFor(userId),
+    challengeRepository.exportHintRevealsFor(userId),
+    badgeRepository.exportFor(userId),
+    certificateRepository.exportFor(userId),
     reviewScheduleLegacyRepository.listForExport(userId),
-    prisma.rating.findMany({
-      where: { userId },
-      select: {
-        score: true,
-        feedback: true,
-        createdAt: true,
-        lesson: { select: { title: true } },
-        path: { select: { title: true } },
-      },
-    }),
-    prisma.lessonQuestion.findMany({
-      where: { userId },
-      select: {
-        title: true,
-        content: true,
-        isResolved: true,
-        createdAt: true,
-        lesson: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.lessonAnswer.findMany({
-      where: { userId },
-      select: {
-        content: true,
-        isAccepted: true,
-        upvotes: true,
-        createdAt: true,
-        question: { select: { id: true, title: true } },
-      },
-    }),
-    prisma.challengeWriteup.findMany({
-      where: { userId },
-      select: {
-        content: true,
-        isHidden: true,
-        createdAt: true,
-        updatedAt: true,
-        challenge: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.mockExamAttempt.findMany({
-      where: { userId },
-      select: {
-        score: true,
-        domains: true,
-        late: true,
-        startedAt: true,
-        submittedAt: true,
-        path: { select: { title: true } },
-      },
-    }),
-    prisma.duel.findMany({
-      where: { OR: [{ challengerId: userId }, { opponentId: userId }] },
-      select: {
-        challengerId: true,
-        status: true,
-        winnerId: true,
-        createdAt: true,
-        finishedAt: true,
-        path: { select: { title: true } },
-        answers: {
-          where: { userId },
-          select: { index: true, selected: true, correct: true, answeredAt: true },
-        },
-      },
-    }),
-    prisma.tournamentSolve.findMany({
-      where: { userId },
-      orderBy: { solvedAt: "asc" },
-      select: {
-        points: true,
-        solvedAt: true,
-        disqualifiedAt: true,
-        disqualifiedReason: true,
-        tournament: { select: { title: true } },
-        challenge: { select: { title: true } },
-      },
-    }),
-    prisma.contactTicket.findMany({
-      where: { userId },
-      select: {
-        subject: true,
-        theme: true,
-        message: true,
-        status: true,
-        jiraIssueKey: true,
-        createdAt: true,
-      },
-    }),
-    prisma.notification.findMany({
-      where: { userId },
-      orderBy: { scheduledFor: "desc" },
-      take: 1000,
-      select: {
-        type: true,
-        title: true,
-        body: true,
-        actionUrl: true,
-        scheduledFor: true,
-        sentAt: true,
-        readAt: true,
-      },
-    }),
-    prisma.userSkipWaiver.findMany({
-      where: { userId },
-      select: {
-        grantedAt: true,
-        grantReason: true,
-        lesson: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.note.findMany({
-      where: { userId },
-      select: {
-        content: true,
-        wordCount: true,
-        createdAt: true,
-        updatedAt: true,
-        lesson: { select: { title: true } },
-        folder: { select: { name: true } },
-      },
-    }),
-    prisma.noteFolder.findMany({
-      where: { userId },
-      select: { name: true, color: true, createdAt: true },
-    }),
-    prisma.quizAttempt.findMany({
-      where: { userId },
-      select: {
-        score: true,
-        passed: true,
-        answers: true,
-        startedAt: true,
-        submittedAt: true,
-        quiz: { select: { path: { select: { title: true } } } },
-      },
-    }),
-    prisma.userActivityDay.findMany({
-      where: { userId },
-      select: { day: true, count: true },
-      orderBy: { day: "desc" },
-    }),
-    prisma.userQuestProgress.findMany({
-      where: { userId },
-      select: {
-        weekKey: true,
-        progress: true,
-        completed: true,
-        claimed: true,
-        completedAt: true,
-      },
-    }),
-    prisma.leagueMembership.findMany({
-      where: { userId },
-      select: {
-        division: true,
-        seasonXp: true,
-        finalRank: true,
-        globalRank: true,
-        joinedAt: true,
-      },
-    }),
-    prisma.xpLedger.findMany({
-      where: { userId },
-      select: { amount: true, source: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.wrappedSnapshot.findMany({
-      where: { userId },
-      select: { period: true, periodKey: true, payload: true, createdAt: true },
-    }),
-    prisma.userCosmetic.findMany({
-      where: { userId },
-      select: { cosmeticId: true, unlockedAt: true },
-    }),
-    prisma.userCosmeticLoadout.findUnique({
-      where: { userId },
-      select: {
-        terminalTheme: true,
-        hexagonStyle: true,
-        profileFrame: true,
-        accentColor: true,
-      },
-    }),
-    prisma.lessonAnswerUpvote.findMany({
-      where: { userId },
-      select: { answerId: true, createdAt: true },
-    }),
-    prisma.lessonQuizAnswer.findMany({
-      where: { userId },
-      select: {
-        quizId: true,
-        selected: true,
-        correct: true,
-        answeredAt: true,
-        lesson: { select: { title: true } },
-      },
-      orderBy: { answeredAt: "asc" },
-    }),
-    prisma.quizReport.findMany({
-      where: { userId },
-      select: {
-        quizId: true,
-        reason: true,
-        comment: true,
-        status: true,
-        createdAt: true,
-        lesson: { select: { title: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.noteReport.findMany({
-      where: { reporterId: userId },
-      select: {
-        reason: true,
-        comment: true,
-        status: true,
-        createdAt: true,
-        note: { select: { lesson: { select: { title: true } } } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.contentReport.findMany({
-      where: { reporterId: userId },
-      select: {
-        surface: true,
-        contentId: true,
-        reason: true,
-        comment: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.reviewCard.findMany({
-      where: { userId },
-      select: {
-        quizId: true,
-        box: true,
-        dueAt: true,
-        lapses: true,
-        everCorrect: true,
-        lastAnsweredAt: true,
-        retiredAt: true,
-        createdAt: true,
-        lesson: { select: { title: true, slug: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.reviewSession.findMany({
-      where: { userId },
-      select: {
-        day: true,
-        draw: true,
-        answers: true,
-        completedAt: true,
-        xpCredited: true,
-        createdAt: true,
-      },
-      orderBy: { day: "asc" },
-    }),
+    ratingRepository.exportFor(userId),
+    qaRepository.exportQuestionsFor(userId),
+    qaRepository.exportAnswersFor(userId),
+    writeupRepository.exportFor(userId),
+    mockExamRepository.exportFor(userId),
+    duelRepository.exportFor(userId),
+    tournamentRepository.exportSolvesFor(userId),
+    ticketRepository.exportFor(userId),
+    notificationRepository.exportFor(userId),
+    placementRepository.exportSkipWaiversFor(userId),
+    noteRepository.exportFor(userId),
+    noteFolderRepository.exportFor(userId),
+    quizRepository.exportAttemptsFor(userId),
+    streakRepository.exportActivityDaysFor(userId),
+    questRepository.exportProgressFor(userId),
+    leagueRepository.exportMembershipsFor(userId),
+    xpLedgerRepository.exportFor(userId),
+    wrappedRepository.exportFor(userId),
+    cosmeticRepository.exportUnlockedFor(userId),
+    cosmeticRepository.exportLoadoutFor(userId),
+    qaRepository.exportUpvotesFor(userId),
+    lessonQuizRepository.exportFor(userId),
+    quizReportRepository.exportFor(userId),
+    noteReportRepository.exportFor(userId),
+    contentReportRepository.exportFor(userId),
+    reviewCardRepository.exportFor(userId),
   ]);
+  const { cards: reviewCards, sessions: reviewSessions } = review;
 
   return {
     exportMetadata: {
@@ -707,9 +450,9 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       version: "1.0",
       format: "json",
       rgpdContext: "Article 20 RGPD - Droit à la portabilité",
-      rights: `${APP_URL}/privacy#section-7`,
+      rights: `${siteUrl}/privacy#section-7`,
       limitations: {
-        notifications: "Les 1000 notifications les plus récentes sont incluses.",
+        notifications: `Les ${String(NOTIFICATION_EXPORT_LIMIT)} notifications les plus récentes sont incluses.`,
       },
     },
     profile,
@@ -780,8 +523,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       issuedAt: c.issuedAt,
       expiresAt: c.expiresAt,
       sha256Hash: c.sha256Hash,
-      downloadUrl: `${APP_URL}/api/certificates/${c.id}/download`,
-      verifyUrl: `${APP_URL}/verify/${c.publicId}`,
+      downloadUrl: `${siteUrl}/api/certificates/${c.id}/download`,
+      verifyUrl: `${siteUrl}/verify/${c.publicId}`,
       revokedAt: c.revokedAt,
       revokedReason: c.revokedReason,
     })),

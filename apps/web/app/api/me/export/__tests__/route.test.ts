@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { logger } from "@cyberlearn/lib/logger";
 
 vi.stubEnv("IP_SALT", "export-route-test-salt-that-is-at-least-32-chars");
+vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://site.test");
 
 const m = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -18,7 +19,10 @@ const m = vi.hoisted(() => ({
   auditCreate: vi.fn(),
 }));
 
-vi.mock("@cyberlearn/db", () => ({ prisma: { auditLog: { create: m.auditCreate } } }));
+vi.mock("@cyberlearn/db", () => ({
+  prisma: { auditLog: { create: m.auditCreate } },
+  buildExportPayload: m.buildExportPayload,
+}));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: () => Promise.resolve({ auth: { getUser: m.getUser } }),
 }));
@@ -26,7 +30,6 @@ vi.mock("@/lib/rate-limit", () => ({
   checkDataExport: m.checkDataExport,
   releaseDataExport: m.releaseDataExport,
 }));
-vi.mock("@/lib/rgpd/build-export", () => ({ buildExportPayload: m.buildExportPayload }));
 
 const { GET } = await import("../route");
 
@@ -56,6 +59,8 @@ describe("GET /api/me/export", () => {
     expect(res.headers.get("content-disposition")).toContain("attachment");
     expect(m.releaseDataExport).not.toHaveBeenCalled();
     expect(m.auditCreate).toHaveBeenCalledOnce();
+    // The account's own data, with links to this site.
+    expect(m.buildExportPayload).toHaveBeenCalledWith(USER_ID, { siteUrl: "https://site.test" });
   });
 
   it("gives the budget back and answers 500 in JSON when the export fails to build", async () => {

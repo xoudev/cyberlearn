@@ -54,4 +54,18 @@ export const questRepository = {
       };
     });
   },
+
+  /** The account's progress on every week's quests, for its GDPR export (rgpd/build-export.ts). */
+  async exportProgressFor(userId: string) {
+    return prisma.userQuestProgress.findMany({
+      where: { userId },
+      select: {
+        weekKey: true,
+        progress: true,
+        completed: true,
+        claimed: true,
+        completedAt: true,
+      },
+    });
+  },
 };

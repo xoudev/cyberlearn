@@ -114,4 +114,19 @@ export const noteRepository = {
     });
     return res.count > 0;
   },
+
+  /** Every note the account wrote, in full, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.note.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        wordCount: true,
+        createdAt: true,
+        updatedAt: true,
+        lesson: { select: { title: true } },
+        folder: { select: { name: true } },
+      },
+    });
+  },
 };

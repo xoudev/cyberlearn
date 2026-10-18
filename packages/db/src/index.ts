@@ -105,6 +105,11 @@ export {
   type DeletionSummary,
 } from "./rgpd/delete-account.js";
 export {
+  buildExportPayload,
+  type ExportOptions,
+  type ExportPayload,
+} from "./rgpd/build-export.js";
+export {
   purgeExpiredRecords,
   RETENTION_MONTHS,
   type RetentionSummary,

@@ -371,4 +371,19 @@ export const quizRepository = {
   deleteQuestion(id: string) {
     return prisma.quizQuestion.delete({ where: { id } });
   },
+
+  /** Every exam the account sat, with its answers, for its GDPR export (rgpd/build-export.ts). */
+  async exportAttemptsFor(userId: string) {
+    return prisma.quizAttempt.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        passed: true,
+        answers: true,
+        startedAt: true,
+        submittedAt: true,
+        quiz: { select: { path: { select: { title: true } } } },
+      },
+    });
+  },
 };

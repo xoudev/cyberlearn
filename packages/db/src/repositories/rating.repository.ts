@@ -162,4 +162,18 @@ export const ratingRepository = {
       select: { avgRating: true, ratingsCount: true },
     });
   },
+
+  /** Every rating the account gave, on a lesson or a path, for its GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.rating.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        feedback: true,
+        createdAt: true,
+        lesson: { select: { title: true } },
+        path: { select: { title: true } },
+      },
+    });
+  },
 };

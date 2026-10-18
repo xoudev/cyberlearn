@@ -342,4 +342,17 @@ export const pathRepository = {
       data: { position: { decrement: POSITION_PARKING + 1 } },
     });
   },
+
+  /** Every path the account started, for its GDPR export (rgpd/build-export.ts). */
+  async exportProgressFor(userId: string) {
+    return prisma.userPathProgress.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        path: { select: { title: true, slug: true } },
+      },
+    });
+  },
 };

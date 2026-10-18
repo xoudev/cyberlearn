@@ -24,4 +24,21 @@ export const preferencesRepository = {
       update: changes,
     });
   },
+
+  /** The settings as they stand, for the account's GDPR export (rgpd/build-export.ts). */
+  async exportFor(userId: string) {
+    return prisma.userPreferences.findUnique({
+      where: { userId },
+      select: {
+        theme: true,
+        locale: true,
+        emailNotifications: true,
+        reviewReminders: true,
+        weeklyDigest: true,
+        publicProfile: true,
+        learningGoals: true,
+        startingLevel: true,
+      },
+    });
+  },
 };

@@ -432,4 +432,43 @@ export const reviewCardRepository = {
       select: REVIEW_LESSON,
     });
   },
+
+  /**
+   * Every card of the learner, retired ones and those of an archived lesson
+   * included, and every session it played, oldest first: its GDPR export
+   * (rgpd/build-export.ts). The sessions come as stored; the export reads
+   * their draw and answers itself.
+   */
+  async exportFor(userId: string) {
+    const [cards, sessions] = await Promise.all([
+      prisma.reviewCard.findMany({
+        where: { userId },
+        select: {
+          quizId: true,
+          box: true,
+          dueAt: true,
+          lapses: true,
+          everCorrect: true,
+          lastAnsweredAt: true,
+          retiredAt: true,
+          createdAt: true,
+          lesson: { select: { title: true, slug: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.reviewSession.findMany({
+        where: { userId },
+        select: {
+          day: true,
+          draw: true,
+          answers: true,
+          completedAt: true,
+          xpCredited: true,
+          createdAt: true,
+        },
+        orderBy: { day: "asc" },
+      }),
+    ]);
+    return { cards, sessions };
+  },
 };

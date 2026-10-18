@@ -3,7 +3,7 @@ import type * as RateLimit from "../rate-limit";
 
 /**
  * The console's rate limits: the sign-in one keyed on a pseudonymized address,
- * the announcement one on the administrator. Both fail open - Redis
+ * the announcement and GDPR export ones on the administrator. All fail open - Redis
  * unconfigured, erroring or silent lets the request through - because the
  * gates in front of them are the password, the ADMIN role and TOTP, and a
  * dead limiter once locked every administrator out of the console.
@@ -129,6 +129,37 @@ describe("checkAnnouncementRateLimit", () => {
 
     await expect(checkAnnouncementRateLimit(ADMIN)).resolves.toBe(true);
     expect(m.constructed).not.toHaveBeenCalled();
+    expect(m.limit).not.toHaveBeenCalled();
+  });
+});
+
+describe("checkUserExportRateLimit", () => {
+  it("asks the export limiter about this administrator, and passes its answer on", async () => {
+    const { checkUserExportRateLimit } = await load(true);
+
+    await expect(checkUserExportRateLimit(ADMIN)).resolves.toBe(true);
+    m.limit.mockResolvedValue({ success: false });
+    await expect(checkUserExportRateLimit(ADMIN)).resolves.toBe(false);
+
+    expect(m.limit).toHaveBeenCalledWith("rl:admin:user-export", ADMIN);
+    expect(m.limit.mock.calls.every(([prefix]) => prefix === "rl:admin:user-export")).toBe(true);
+  });
+
+  it("lets the export through, and logs it, when Redis answers with an error", async () => {
+    const { checkUserExportRateLimit } = await load(true);
+    m.limit.mockRejectedValue(new Error("Redis unavailable"));
+
+    await expect(checkUserExportRateLimit(ADMIN)).resolves.toBe(true);
+    expect(m.logError).toHaveBeenCalledWith(
+      { scope: "rate-limit", err: "Redis unavailable" },
+      "user export check failed open",
+    );
+  });
+
+  it("lets the export through without asking when Redis is not configured", async () => {
+    const { checkUserExportRateLimit } = await load(false);
+
+    await expect(checkUserExportRateLimit(ADMIN)).resolves.toBe(true);
     expect(m.limit).not.toHaveBeenCalled();
   });
 });

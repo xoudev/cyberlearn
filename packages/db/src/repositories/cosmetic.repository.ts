@@ -98,4 +98,25 @@ export const cosmeticRepository = {
     });
     return row !== null;
   },
+
+  /** Every cosmetic the account unlocked, for its GDPR export (rgpd/build-export.ts). */
+  async exportUnlockedFor(userId: string) {
+    return prisma.userCosmetic.findMany({
+      where: { userId },
+      select: { cosmeticId: true, unlockedAt: true },
+    });
+  },
+
+  /** What the account wears, for its GDPR export (rgpd/build-export.ts); null when it never chose. */
+  async exportLoadoutFor(userId: string) {
+    return prisma.userCosmeticLoadout.findUnique({
+      where: { userId },
+      select: {
+        terminalTheme: true,
+        hexagonStyle: true,
+        profileFrame: true,
+        accentColor: true,
+      },
+    });
+  },
 };
