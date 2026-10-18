@@ -32,6 +32,53 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "3.6",
+    date: "2026-10-18",
+    title: "Rappel du jour, amis et signalements",
+    changes: [
+      {
+        type: "new",
+        text: "Les révisions deviennent le « Rappel du jour » : chaque jour, six questions au plus, tirées des quiz de tes leçons terminées, pour deux minutes. Chaque réponse est corrigée aussitôt, avec la bonne réponse, l'explication et « Revoir ce passage », qui rouvre la leçon sur la section de la question. Une question ratée dans une leçon revient le lendemain, la dernière réussie une semaine plus tard ; chaque bonne réponse l'éloigne (3, 7 puis 21 jours) jusqu'à la retirer, et une erreur la ramène au lendemain. Le rappel rendu rapporte 15 XP, une fois par jour, et compte pour ta série. Il s'ouvre dans une fenêtre depuis « Révisions », la carte du tableau de bord ou sa notification, et plus aucun compteur ne grossit pendant ton absence : la carte dit seulement « à faire », « fait aujourd'hui » ou « rien aujourd'hui ». Dans l'app aussi.",
+      },
+      {
+        type: "new",
+        text: "« Réviser ce module · 2 min », dans l'en-tête de chaque module dont tu as terminé au moins une leçon : six questions au plus sur ses leçons faites, corrigées une à une avec leur explication et « Revoir ce passage ». Une révision libre, quand tu veux, sans XP et sans toucher à ton rappel du jour. Dans l'app aussi.",
+      },
+      {
+        type: "improved",
+        text: "Le rappel du jour remplace l'ancienne file de révisions, où tu notais toi-même chaque leçon terminée (Oublié, Difficile, Facile) : elle est retirée du site et de l'app. Ce qui t'y attendait est gardé pour devenir des questions du rappel du jour, sans repartir de zéro : rien n'y reviendra plus tôt que prévu, et ce qui était déjà en retard arrivera sur cinq jours plutôt que d'un coup. Les anciens liens vers les révisions ouvrent le rappel du jour ; une version plus ancienne de l'app montre une file vide, mets-la à jour pour le retrouver.",
+      },
+      {
+        type: "new",
+        text: "Le panneau des amis, dans la barre du haut, met « Défier » à côté de chacun de tes amis : le défi s'ouvre avec lui déjà choisi, et le bouton devient « Duel en cours » tant qu'un duel vous occupe. « Ouvrir un profil » retrouve quelqu'un par son @pseudo, et tes listes s'affichent en entier, sans plus s'arrêter à soixante amis. « Ajouter » envoie une demande depuis une ligne publique du classement ou depuis la liste de ta classe, et une demande reçue s'accepte ou se refuse directement depuis sa notification. Dans l'app aussi, sauf la liste de ta classe, que l'app n'affiche pas encore.",
+      },
+      {
+        type: "new",
+        text: "« Tes amis » sur le tableau de bord : leurs derniers moments, une ligne chacun (une leçon terminée, un badge, un certificat, un défi résolu, un duel gagné), avec « Défier ». Les cartes de duel et l'écran d'un duel montrent l'avatar des deux joueurs, et le nom de l'autre mène à son profil. Dans l'app aussi, sur l'accueil ; la marque « Ami » y gagne aussi le forum, les questions-réponses des leçons, les solutions des défis et les tournois.",
+      },
+      {
+        type: "improved",
+        text: "La barre latérale se range en cinq groupes : le tableau de bord, Apprendre (parcours, leçons, révisions, bloc-notes, glossaire), S'entraîner (défis, duels), Progression (ton profil, classement, casier) et Communauté (forum, classes, aide). Duels affiche le nombre d'invitations qui attendent ta réponse. Le tableau de bord montre, seulement quand il y en a, les défis reçus d'un ami, à accepter ou refuser sur place, et les tournois en cours, avec « Entrer ». Dans l'app, le hub du profil suit les mêmes groupes et les mêmes noms, avec les invitations à côté de Duels, et l'accueil gagne « À toi de jouer ».",
+      },
+      {
+        type: "new",
+        text: "« Signaler », sous ce que d'autres ont publié : un message du forum, une question ou une réponse sous une leçon, une solution de défi, une ressource de ta classe. Tu choisis une raison et tu peux ajouter un mot pour l'équipe ; l'auteur ne saura pas qui l'a signalé, et rien n'est retiré avant que l'équipe l'ait relu. Si elle masque ou supprime un de tes contenus, un avis de modération te le dit, et une solution masquée ne peut plus qu'être retirée. Dans l'app aussi, sauf les ressources de classe, que l'app n'affiche pas encore.",
+      },
+      {
+        type: "new",
+        text: "Toutes tes notifications, et plus seulement les vingt dernières : « Tout voir », au bas du panneau de la cloche, ouvre leur historique, trente par page avec « Charger plus », toutes ou seulement les non lues, et « Tout marquer comme lu ». Ce que tu y marques lu l'est aussi dans la cloche, sans recharger la page. Dans l'app, la boîte de réception ne s'arrête plus à cinquante : « Charger plus » remonte le reste.",
+      },
+      {
+        type: "new",
+        text: "Pendant un tournoi, un flag disqualifié par l'équipe te le dit sur la page du défi, avec son motif : il ne compte plus, ni pour toi ni pour ton équipe. Dans l'app aussi.",
+      },
+      {
+        type: "improved",
+        text: "Pour les professeurs, l'éditeur des leçons de classe souligne chaque problème dans le texte et les liste tous sous « À corriger », chacun avec sa ligne et sa colonne, qu'un clic rejoint, au lieu de ne citer que le premier. L'enregistrement applique aussi les règles des leçons du site (pas de note de rédaction oubliée, pas de tiret cadratin, pas d'étiquette de schéma que la mise en forme du texte changerait, comme *mot* ou [texte](lien)), et l'aperçu signale leurs écarts pendant que tu écris.",
+      },
+    ],
+  },
+  {
     version: "3.5",
     date: "2026-10-17",
     title: "Leçons recentrées, profil public complet et une semaine de correctifs",
