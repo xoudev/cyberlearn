@@ -1,12 +1,17 @@
-// One-off conversion of the lesson-level review queue (review_schedules,
-// SM-2) into review cards (review_cards, Leitner), run by hand with
-// `db:backfill-review-cards` once the cards have replaced the queue on the
-// site and in the app, and before the queue is removed (docs/DEPLOY.md).
+// One-off conversion of the lesson-level review queue (SM-2) into review
+// cards (review_cards, Leitner), run by hand with `db:backfill-review-cards`.
+// The queue is retired: nothing writes its rows any more, and they wait in
+// review_schedules_legacy, read by this script (and listed in the GDPR
+// export), until a later release drops the table once the conversion has run
+// in production (docs/DEPLOY.md).
 //
 // An SM-2 row says a learner finished a lesson and reviews it. It becomes the
 // cards a completion enqueues today (apps/web/lib/lessons/complete.ts), with
 // what the old row knew:
 //
+// - A lesson the learner no longer has completed gives nothing: its progress
+//   was reset since, the whole account's or the lesson's from the console,
+//   and neither touches the old rows any more.
 // - A lesson whose completion enqueues nothing gives nothing here either: a
 //   module review, a project or a class lesson (isReviewableLesson), or no
 //   quiz to ask in its current MDX (extractLessonQuizzes: a lesson that does
@@ -32,9 +37,8 @@
 //   had them due.
 // - A lesson the learner already has a card for, retired or not, is left
 //   alone: its cards came from a completion since the cards shipped, or from
-//   an earlier run. A second run straight after writes nothing. A later one
-//   converts the rows created in between: until the old queue goes, a
-//   completion with no answer on record still adds a row and no card. The
+//   an earlier run. A second run straight after writes nothing, and so does
+//   a later one: no row has been added since the queue was retired. The
 //   writes go through reviewCardRepository.enqueueForLesson, which skips a
 //   card already there anyway.
 //
@@ -42,7 +46,7 @@
 // rows of a learner who turned it off alone, so that turning it back on picks
 // up where it stopped, and the cards are hidden while it is off as the rows
 // were (apps/web/lib/revisions/daily-recall.ts). The SM-2 rows are not
-// touched: they go with the old queue.
+// touched: they go with the legacy table.
 
 import { dayKey } from "@cyberlearn/lib/gamification/day";
 import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
@@ -75,6 +79,8 @@ export type ConversionOutcome =
   | "fromSchedule"
   /** The learner has a card for the lesson already: left alone. */
   | "alreadyConverted"
+  /** The learner no longer has the lesson completed: its progress was reset since. */
+  | "notCompleted"
   /** The lesson was not read: its first row came while the run went on. */
   | "lessonNotFound"
   /** A module review, a project or a class lesson. */
@@ -86,6 +92,7 @@ export const CONVERSION_OUTCOMES: readonly ConversionOutcome[] = [
   "fromAnswers",
   "fromSchedule",
   "alreadyConverted",
+  "notCompleted",
   "lessonNotFound",
   "notReviewable",
   "noQuiz",
@@ -97,6 +104,11 @@ export interface ScheduleRow {
   nextReviewAt: Date;
   intervalDays: number;
   repetitions: number;
+  /**
+   * Whether the learner still has the lesson completed. A reset since (the
+   * whole account's, or the lesson's from the console) leaves the row behind.
+   */
+  lessonCompleted: boolean;
 }
 
 /** A lesson as the conversion needs it, read once for every learner. */
@@ -192,11 +204,13 @@ export function conversionDueDates(
 
 /** Whether a row gives cards, and from what. */
 function outcomeOf(
+  schedule: ScheduleRow,
   lesson: ConversionLesson | undefined,
   answers: readonly CompletionAnswer[],
   converted: boolean,
 ): ConversionOutcome {
   if (converted) return "alreadyConverted";
+  if (!schedule.lessonCompleted) return "notCompleted";
   if (lesson === undefined) return "lessonNotFound";
   if (!lesson.reviewable) return "notReviewable";
   if (lesson.quizIds.length === 0) return "noQuiz";
@@ -226,7 +240,7 @@ export function planUserConversion(
       schedule,
       lesson,
       answers: lessonAnswers,
-      outcome: outcomeOf(lesson, lessonAnswers, converted.has(schedule.lessonId)),
+      outcome: outcomeOf(schedule, lesson, lessonAnswers, converted.has(schedule.lessonId)),
     };
   });
   const dueDates = conversionDueDates(
@@ -318,6 +332,7 @@ function emptyOutcomes(): Record<ConversionOutcome, number> {
     fromAnswers: 0,
     fromSchedule: 0,
     alreadyConverted: 0,
+    notCompleted: 0,
     lessonNotFound: 0,
     notReviewable: 0,
     noQuiz: 0,
@@ -349,13 +364,13 @@ export async function backfillReviewCards(
 
   // Every lesson with an SM-2 row, its MDX read once for all its learners.
   const lessonRows = await client.lesson.findMany({
-    where: { reviewSchedules: { some: {} } },
+    where: { reviewSchedulesLegacy: { some: {} } },
     select: { id: true, slug: true, title: true, audience: true, status: true, contentMdx: true },
   });
   const lessons = new Map(lessonRows.map((row) => [row.id, conversionLesson(row)]));
 
   const userIds = (
-    await client.reviewSchedule.findMany({
+    await client.reviewScheduleLegacy.findMany({
       distinct: ["userId"],
       orderBy: { userId: "asc" },
       select: { userId: true },
@@ -381,8 +396,8 @@ export async function backfillReviewCards(
 
   for (let start = 0; start < userIds.length; start += batchSize) {
     const batch = userIds.slice(start, start + batchSize);
-    const [schedules, existing, answers] = await Promise.all([
-      client.reviewSchedule.findMany({
+    const [schedules, existing, answers, completions] = await Promise.all([
+      client.reviewScheduleLegacy.findMany({
         where: { userId: { in: batch } },
         select: {
           userId: true,
@@ -401,13 +416,27 @@ export async function backfillReviewCards(
         where: { userId: { in: batch } },
         select: { userId: true, lessonId: true, quizId: true, correct: true },
       }),
+      client.userLessonProgress.findMany({
+        where: { userId: { in: batch }, status: "COMPLETED" },
+        select: { userId: true, lessonId: true },
+      }),
     ]);
     const schedulesByUser = byUser(schedules);
     const existingByUser = byUser(existing);
     const answersByUser = byUser(answers);
+    const completionsByUser = byUser(completions);
 
     for (const userId of batch) {
-      const userSchedules = schedulesByUser.get(userId) ?? [];
+      const completed = new Set((completionsByUser.get(userId) ?? []).map((row) => row.lessonId));
+      const userSchedules = (schedulesByUser.get(userId) ?? []).map(
+        (row): ScheduleRow => ({
+          lessonId: row.lessonId,
+          nextReviewAt: row.nextReviewAt,
+          intervalDays: row.intervalDays,
+          repetitions: row.repetitions,
+          lessonCompleted: completed.has(row.lessonId),
+        }),
+      );
       const converted = new Set((existingByUser.get(userId) ?? []).map((row) => row.lessonId));
       const userAnswers = new Map<string, CompletionAnswer[]>();
       for (const answer of answersByUser.get(userId) ?? []) {

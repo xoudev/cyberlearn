@@ -11,7 +11,7 @@ Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (
 content/lessons/f2-linux/02033-linux-surveiller-direct.mdx
 ```
 
-Un fichier = une leçon, rangé dans le dossier de son parcours et nommé par le numéro de son refCode (`02033` pour `CL-LSN-02033-V01`) suivi de son slug. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
+Un fichier = une leçon, rangé dans le dossier de son parcours et nommé par le numéro de son refCode (`02033` pour `CL-LSN-02033-V01`) suivi de son slug. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible : un refCode déjà en base s'y met à jour, une fois les différences montrées et confirmées.
 
 ---
 

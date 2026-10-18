@@ -200,15 +200,15 @@ describe("RLS policies (integration)", () => {
     });
     if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
 
-    // A review of User B's, due in a week: the date a client would want to
-    // move back, to grade it again for XP.
-    const { error: rsErr } = await adminClient.from("review_schedules").insert({
+    // A row of User B's in the retired SM-2 queue, awaiting conversion, due
+    // in a week: the server's alone now.
+    const { error: rsErr } = await adminClient.from("review_schedules_legacy").insert({
       id: randomUUID(),
       userId: userBId,
       lessonId: publishedLessonId,
       nextReviewAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
     });
-    if (rsErr) throw new Error(`Failed to insert review_schedule: ${rsErr.message}`);
+    if (rsErr) throw new Error(`Failed to insert review_schedules_legacy: ${rsErr.message}`);
 
     // User B's report on a quiz, with a comment written for the team.
     const { error: qrErr } = await adminClient.from("quiz_reports").insert({
@@ -588,13 +588,20 @@ describe("RLS policies (integration)", () => {
     });
   });
 
-  describe("tables the server writes (reviews, waivers, placement, path progress)", () => {
-    // Written only by the server, where grading, placement and completion are
-    // decided. The baseline let a client write its own rows: move a review
-    // back to farm XP, waive any prerequisite, forge a placement or a path.
-    async function bReviewDate(): Promise<string | undefined> {
+  describe("the retired SM-2 queue (review_schedules)", () => {
+    // The app builds installed before the review cards read the queue
+    // themselves, through the Data API, with these columns (lib/revisions.ts
+    // in those builds, the first of them without easeFactor). The name is an
+    // empty view now (20261018120000_retire_review_schedules): they must get
+    // an empty queue, not an error screen.
+    const OLD_APP_COLUMNS = [
+      "id,nextReviewAt,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
+      "id,nextReviewAt,easeFactor,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
+    ];
+
+    async function bLegacyDate(): Promise<string | undefined> {
       const { data } = await adminClient
-        .from("review_schedules")
+        .from("review_schedules_legacy")
         .select("nextReviewAt")
         .eq("userId", userBId)
         .eq("lessonId", publishedLessonId);
@@ -602,29 +609,25 @@ describe("RLS policies (integration)", () => {
       return (data as { nextReviewAt: string }[] | null)?.[0]?.nextReviewAt;
     }
 
-    it("user B can read their own reviews", async () => {
+    it.each(OLD_APP_COLUMNS)("an installed app reads an empty queue: %s", async (columns) => {
       if (!configured) return;
       const clientB = await signInAs(TEST_USER_B_EMAIL);
       const { data, error } = await clientB
         .from("review_schedules")
-        .select("lessonId")
-        .eq("userId", userBId);
+        .select(columns)
+        .eq("userId", userBId)
+        .order("nextReviewAt", { ascending: true });
       expect(error).toBeNull();
-      expect(data).toEqual([{ lessonId: publishedLessonId }]);
+      expect(data).toEqual([]);
     });
 
-    it("a client cannot move a review back to grade it again", async () => {
+    it("anon reads nothing of the queue", async () => {
       if (!configured) return;
-      const before = await bReviewDate();
-      const clientB = await signInAs(TEST_USER_B_EMAIL);
-      await clientB
-        .from("review_schedules")
-        .update({ nextReviewAt: new Date(Date.now() - 86_400_000).toISOString() })
-        .eq("userId", userBId);
-      expect(await bReviewDate()).toBe(before);
+      const { data } = await anonClient.from("review_schedules").select("id");
+      expect(data ?? []).toEqual([]);
     });
 
-    it("a client cannot schedule a review of its own", async () => {
+    it("a client cannot write to the queue's view", async () => {
       if (!configured) return;
       const clientA = await signInAs(TEST_USER_A_EMAIL);
       const { error } = await clientA.from("review_schedules").insert({
@@ -635,6 +638,34 @@ describe("RLS policies (integration)", () => {
       });
       expect(error).not.toBeNull();
     });
+
+    it("the rows awaiting conversion are the server's alone", async () => {
+      if (!configured) return;
+      expect(await bLegacyDate()).toBeDefined();
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data } = await clientB
+        .from("review_schedules_legacy")
+        .select("lessonId")
+        .eq("userId", userBId);
+      expect(data ?? []).toEqual([]);
+    });
+
+    it("a client cannot move a row awaiting conversion", async () => {
+      if (!configured) return;
+      const before = await bLegacyDate();
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("review_schedules_legacy")
+        .update({ nextReviewAt: new Date(Date.now() - 86_400_000).toISOString() })
+        .eq("userId", userBId);
+      expect(await bLegacyDate()).toBe(before);
+    });
+  });
+
+  describe("tables the server writes (waivers, placement, path progress)", () => {
+    // Written only by the server, where placement and completion are
+    // decided. The baseline let a client write its own rows: waive any
+    // prerequisite, forge a placement or a path.
 
     it("a client cannot waive a lesson's prerequisites", async () => {
       if (!configured) return;

@@ -2381,25 +2381,6 @@ button.notif-row:hover {
   }
 }
 
-/* Review row: flex on mobile → 5-col grid on desktop */
-.review-row-layout {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px 16px;
-}
-@media (min-width: 768px) {
-  .review-row-layout {
-    display: grid;
-    grid-template-columns: 64px 1fr auto auto auto;
-    align-items: center;
-    flex-wrap: unset;
-    gap: 20px;
-    padding: 18px 24px;
-  }
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Dashboard
    One column of at most 1180px: the greeting and the level ring, the mission

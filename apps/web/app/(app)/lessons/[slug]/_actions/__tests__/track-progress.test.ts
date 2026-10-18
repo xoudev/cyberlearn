@@ -24,7 +24,6 @@ const m = vi.hoisted(() => ({
     user: { update: vi.fn(), findUniqueOrThrow: vi.fn() },
     userBadge: { createManyAndReturn: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
-    reviewSchedule: { upsert: vi.fn() },
     userActivityDay: { upsert: vi.fn() },
     season: { findFirst: vi.fn() },
     xpLedger: { create: vi.fn() },
@@ -42,7 +41,7 @@ vi.mock("@/lib/lessons/access", () => ({ pathLockOf: m.pathLockOf }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     // Read by revisionsEnabled, which decides whether completing a lesson also
-    // schedules its first review. Null is an account that has expressed no
+    // enqueues its review cards. Null is an account that has expressed no
     // preference, which the helper treats as the schema default: on.
     userPreferences: { findUnique: m.preferencesFindUnique },
     $transaction: m.transaction,
@@ -204,21 +203,21 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(result.xpGained).toBe(0);
     expect(m.tx.xpLedger.create).not.toHaveBeenCalled();
     expect(m.tx.userBadge.createManyAndReturn).not.toHaveBeenCalled();
-    expect(m.tx.reviewSchedule.upsert).not.toHaveBeenCalled();
+    expect(m.enqueueCards).not.toHaveBeenCalled();
     expect(m.tx.userActivityDay.upsert).not.toHaveBeenCalled();
   });
 
-  it("schedules the first review on a first completion", async () => {
+  it("enqueues its review cards on a first completion", async () => {
     m.findProgress.mockResolvedValue(null);
     m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
     m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 1 });
 
     await completeLesson(LESSON_ID);
 
-    expect(m.tx.reviewSchedule.upsert).toHaveBeenCalledTimes(1);
+    expect(m.enqueueCards).toHaveBeenCalledTimes(1);
   });
 
-  it("schedules nothing when the learner has switched revisions off", async () => {
+  it("enqueues nothing when the learner has switched revisions off", async () => {
     // The point of the switch: the queue stops being fed. Everything else about
     // finishing a lesson - the XP, the badges, the streak - is untouched, which
     // is why the credit is asserted alongside the absence.
@@ -229,7 +228,7 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
 
     const result = await completeLesson(LESSON_ID);
 
-    expect(m.tx.reviewSchedule.upsert).not.toHaveBeenCalled();
+    expect(m.enqueueCards).not.toHaveBeenCalled();
     expect(result.xpGained).toBeGreaterThan(0);
   });
 

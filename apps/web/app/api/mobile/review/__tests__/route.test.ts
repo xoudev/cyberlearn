@@ -3,21 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const userFromBearer =
   vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>();
-const gradeReview =
-  vi.fn<
-    (
-      userId: string,
-      input: unknown,
-    ) => Promise<
-      { ok: true; nextReviewAt: Date | null; reviewXp: number; mastered: boolean } | { ok: false }
-    >
-  >();
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: (r: Request) => userFromBearer(r) }));
-vi.mock("@/lib/revisions/grade-review", () => ({
-  gradeReview: (u: string, i: unknown) => gradeReview(u, i),
-  REVIEW_NOT_DUE: "Cette révision n'est plus à faire.",
-}));
 
 const { POST } = await import("../route");
 
@@ -27,56 +14,47 @@ function request(body: string): NextRequest {
   return new NextRequest("https://cyberlearn.fr/api/mobile/review", { method: "POST", body });
 }
 
+/**
+ * What the app builds from before the review cards make of the reply
+ * (GradeReviewReply in their lib/api.ts): `ok`, then either the XP and the
+ * next date, or an error string they show under the review.
+ */
+function readsAsRefusal(reply: unknown): boolean {
+  if (typeof reply !== "object" || reply === null) return false;
+  return "ok" in reply && reply.ok === false && "error" in reply && typeof reply.error === "string";
+}
+
 beforeEach(() => {
   userFromBearer.mockReset();
-  gradeReview.mockReset();
 });
 
-describe("POST /api/mobile/review", () => {
-  it("refuses a caller with no valid token, and grades nothing", async () => {
+describe("POST /api/mobile/review, the retired SM-2 queue", () => {
+  it("refuses a caller with no valid token", async () => {
     userFromBearer.mockResolvedValue(null);
-    expect((await POST(request("{}"))).status).toBe(401);
-    expect(gradeReview).not.toHaveBeenCalled();
+    const res = await POST(request("{}"));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: "Non authentifié." });
   });
 
-  it("refuses a body that is not JSON", async () => {
+  it("grades nothing, and says so in the shape the installed apps read", async () => {
     userFromBearer.mockResolvedValue({ id: "user-1", email: null });
-    expect((await POST(request("pas du json"))).status).toBe(400);
-    expect(gradeReview).not.toHaveBeenCalled();
-  });
-
-  it("grades as the token's user and answers the XP and the next date", async () => {
-    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
-    gradeReview.mockResolvedValue({
-      ok: true,
-      nextReviewAt: new Date("2026-09-30T08:00:00Z"),
-      reviewXp: 5,
-      mastered: false,
-    });
-    const body = { scheduleId: SCHEDULE, quality: 5, userId: "someone-else" };
-    const res = await POST(request(JSON.stringify(body)));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      ok: true,
-      nextReviewAt: "2026-09-30T08:00:00.000Z",
-      reviewXp: 5,
-      mastered: false,
-    });
-    expect(gradeReview).toHaveBeenCalledWith("user-1", body);
-  });
-
-  it("says so when the review was not gradable (not due, not theirs, graded twice)", async () => {
-    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
-    gradeReview.mockResolvedValue({ ok: false });
-    const res = await POST(request(JSON.stringify({ scheduleId: SCHEDULE, quality: 3 })));
-    expect(res.status).toBe(409);
-    expect(await res.json()).toEqual({ ok: false, error: "Cette révision n'est plus à faire." });
-  });
-  it("answers no next date once the lesson is held", async () => {
-    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
-    gradeReview.mockResolvedValue({ ok: true, nextReviewAt: null, reviewXp: 5, mastered: true });
     const res = await POST(request(JSON.stringify({ scheduleId: SCHEDULE, quality: 5 })));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, nextReviewAt: null, reviewXp: 5, mastered: true });
+    expect(res.status).toBe(409);
+    const reply: unknown = await res.json();
+    expect(readsAsRefusal(reply)).toBe(true);
+    expect(reply).toEqual({
+      ok: false,
+      error:
+        "Cette révision n'est plus à faire : mets l'app à jour pour retrouver ton rappel du jour.",
+    });
+  });
+
+  it("answers the same to a body it never reads, JSON or not", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    for (const body of ["pas du json", "{}", JSON.stringify({ scheduleId: "x", quality: 1 })]) {
+      const res = await POST(request(body));
+      expect(res.status).toBe(409);
+      expect(readsAsRefusal(await res.json())).toBe(true);
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkQuizFile, loadQuizFiles, type QuizFile } from "../catalogue/quiz-files";
-import { quizMatches, type StoredQuiz } from "../catalogue/quiz-sync";
+import { quizChanges, quizMatches, type StoredQuiz } from "../catalogue/quiz-sync";
 
 function question(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -123,5 +123,69 @@ describe("quizMatches", () => {
 
   it("sees a quiz switched off in the console", () => {
     expect(quizMatches({ ...stored(), isActive: false }, quiz)).toBe(false);
+  });
+});
+
+describe("quizChanges", () => {
+  const checked = checkQuizFile("reseaux", file()).quiz;
+  if (!checked) throw new Error("the fixture no longer passes its check");
+  const quiz: QuizFile = checked;
+  const stored = (): StoredQuiz => ({
+    passThreshold: 75,
+    questionsToDraw: 1,
+    isActive: true,
+    questions: quiz.questions.map((q) => ({
+      question: q.question,
+      options: q.options.map((o) => ({ ...o })),
+      correctOptionId: q.correctOptionId,
+      explanation: q.explanation ?? null,
+      isActive: true,
+    })),
+  });
+
+  it("finds nothing to say where quizMatches holds, retired questions included", () => {
+    const s = stored();
+    s.questions.push({
+      question: "Une ancienne question",
+      options: [{ id: "a", text: "x" }],
+      correctOptionId: "a",
+      explanation: null,
+      isActive: false,
+    });
+    expect(quizMatches(s, quiz)).toBe(true);
+    expect(quizChanges(s, quiz)).toEqual([]);
+  });
+
+  it("says what the settings become, and that a switched-off exam comes back", () => {
+    expect(quizChanges({ ...stored(), passThreshold: 70, isActive: false }, quiz)).toEqual([
+      { kind: "changed", label: "Examen", before: "désactivé", after: "actif" },
+      { kind: "changed", label: "Seuil", before: "70 %", after: "75 %" },
+    ]);
+  });
+
+  it("names a new question, a rewritten one, and one the sync switches off", () => {
+    const s = stored();
+    const [first, second] = s.questions;
+    if (!first || !second) throw new Error("no question");
+    first.correctOptionId = "a";
+    second.question = "Une question que le fichier n'a plus";
+    expect(quizChanges(s, quiz)).toEqual([
+      { kind: "modified", label: "Question 1", value: "Que vaut 2 + 2 ? (bonne réponse)" },
+      { kind: "added", label: "Question 2", value: "Que vaut 3 + 3 ?" },
+      {
+        kind: "removed",
+        label: "Question désactivée",
+        value: "Une question que le fichier n'a plus",
+      },
+    ]);
+  });
+
+  it("sees the same pool in another order, which quizMatches refuses too", () => {
+    const s = stored();
+    s.questions.reverse();
+    expect(quizMatches(s, quiz)).toBe(false);
+    expect(quizChanges(s, quiz)).toEqual([
+      { kind: "modified", label: "Ordre", value: "Les questions changent d'ordre." },
+    ]);
   });
 });

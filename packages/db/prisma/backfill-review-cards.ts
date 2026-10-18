@@ -1,13 +1,12 @@
 /**
- * One-off conversion of the lesson-level review queue (review_schedules,
- * SM-2) into review cards (review_cards, Leitner). Run by hand, in
- * production: once the cards are live, and one last time right before the
- * old queue is removed. See docs/DEPLOY.md for when, and the head of
+ * One-off conversion of the retired lesson-level review queue (SM-2, its rows
+ * kept in review_schedules_legacy) into review cards (review_cards, Leitner).
+ * Run by hand, in production, before the release that drops the legacy
+ * table. See docs/DEPLOY.md for when, and the head of
  * src/backfill-review-cards.ts for the rules.
  *
  * Idempotent: a lesson the learner already has a card for is left alone, so a
- * second run straight after writes nothing; a later one converts only the
- * rows added in between. The SM-2 rows are not touched.
+ * second run writes nothing. The SM-2 rows are not touched.
  *
  * Dry-run (default; counts only, nothing written):
  *   pnpm --filter @cyberlearn/db db:backfill-review-cards
@@ -35,6 +34,7 @@ const OUTCOME_LABELS: Record<ConversionOutcome, string> = {
   fromAnswers: "converted from the answers on record",
   fromSchedule: "converted from the SM-2 interval (no answer on record)",
   alreadyConverted: "skipped, the learner has cards for the lesson",
+  notCompleted: "skipped, the lesson is no longer completed (progress reset since)",
   lessonNotFound: "skipped, lesson not read (row added during the run: re-run)",
   notReviewable: "skipped, module review, project or class lesson",
   noQuiz: "skipped, no quiz to ask in the lesson",

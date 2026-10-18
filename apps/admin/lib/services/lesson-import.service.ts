@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 import type { ImportValidationResult, ImportValidationError } from "@cyberlearn/types";
-import { prisma } from "@cyberlearn/db";
+import { lessonFileRepository, prisma } from "@cyberlearn/db";
 import { checkLessonFile } from "./lesson-file-check";
+import {
+  fieldsOfFile,
+  prerequisiteLoop,
+  prerequisiteLoopMessage,
+  previewLessonUpdate,
+} from "./lesson-update.service";
 
 /** Batch awareness for multi-file imports. */
 export interface BatchValidationContext {
@@ -13,7 +19,13 @@ export interface BatchValidationContext {
  * Four-layer validation pipeline for MDX lesson import: the file's own
  * checks (checkLessonFile), then
  *
- * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
+ * Layer 4 - Business rules: a slug another lesson has, prerequisites exist,
+ *           and for a lesson already in the database, none leads back to it
+ *
+ * A refCode already in the database is not a refusal: the file can update
+ * that lesson, and the result carries what it would change (`update`) for the
+ * admin to see before anything is written. The update keeps the lesson's
+ * slug, so only a new lesson needs its slug free.
  *
  * With a batch context, a prerequisite that is missing from the database but
  * declared by a sibling file downgrades to a warning: the batch import orders
@@ -30,30 +42,23 @@ export async function validateMdxContent(
   const warnings = [...file.warnings];
 
   // ── Layer 4: Business validation ─────────────────────────────────────────
-  const [existingRefCode, existingSlug] = await Promise.all([
-    prisma.lesson.findFirst({ where: { refCode: metadata.refCode }, select: { id: true } }),
-    prisma.lesson.findFirst({ where: { slug: metadata.slug }, select: { id: true } }),
+  const [existing, slugOwner] = await Promise.all([
+    lessonFileRepository.findByRefCode(metadata.refCode),
+    lessonFileRepository.findIdBySlug(metadata.slug),
   ]);
 
-  if (existingRefCode) {
-    errors.push({
-      field: "refCode",
-      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id}). Pour la remplacer par son fichier du dépôt : Leçons, « Synchroniser avec le dépôt ».`,
-    });
-  }
-
-  if (existingSlug) {
+  if (existing === null && slugOwner !== null) {
     errors.push({
       field: "slug",
-      message: `Conflit: une leçon avec ce slug existe déjà (ID: ${existingSlug.id})`,
+      message: `Conflit: une leçon avec ce slug existe déjà (ID: ${slugOwner})`,
     });
   }
 
+  const prereqLessons =
+    metadata.prerequisites.length > 0
+      ? await lessonFileRepository.findByRefCodesForLinks(metadata.prerequisites)
+      : [];
   if (metadata.prerequisites.length > 0) {
-    const prereqLessons = await prisma.lesson.findMany({
-      where: { refCode: { in: metadata.prerequisites } },
-      select: { refCode: true },
-    });
     const foundRefCodes = new Set(prereqLessons.map((l) => l.refCode));
     const peerRefCodes = new Set(batch?.peerRefCodes ?? []);
     for (const prereq of metadata.prerequisites) {
@@ -71,7 +76,28 @@ export async function validateMdxContent(
     }
   }
 
+  // A lesson already in the database can be required by others: its new
+  // prerequisites must not lead back to it. A new lesson cannot close a loop
+  // with the database, nothing in it requires a lesson it does not hold.
+  if (existing !== null && errors.length === 0) {
+    const loop = await prerequisiteLoop(
+      existing.id,
+      prereqLessons.map((l) => l.id),
+    );
+    if (loop !== null) {
+      errors.push({ field: "prerequisites", message: prerequisiteLoopMessage(loop) });
+    }
+  }
+
   if (errors.length > 0) return { valid: false, errors, warnings };
+
+  if (existing !== null) {
+    const update = await previewLessonUpdate(existing, {
+      slug: metadata.slug,
+      fields: fieldsOfFile(metadata, body),
+    });
+    return { valid: true, errors: [], warnings, metadata, body, update };
+  }
 
   return { valid: true, errors: [], warnings, metadata, body };
 }

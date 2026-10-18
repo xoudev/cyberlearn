@@ -40,10 +40,16 @@ const RETIRED = [
     destination: challengesTabHref("tournois"),
   },
   {
-    // The old SM-2 queue: a page that only redirected, now the redirect alone.
+    // The old SM-2 queue, retired: the day's recall is a window now.
+    page: "app/(app)/revisions",
+    source: "/revisions",
+    destination: "/dashboard?rappel=1",
+  },
+  {
+    // An older address of the same queue, a page that only redirected.
     page: "app/(app)/review",
     source: "/review",
-    destination: "/revisions",
+    destination: "/dashboard?rappel=1",
   },
 ];
 

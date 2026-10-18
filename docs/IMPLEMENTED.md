@@ -50,8 +50,7 @@
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
 | `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
-| `/revisions` | Ancienne file SM-2, plus reliée, retirée ensuite |
-| `/review` | Pas de page : redirection vers `/revisions` (`next.config.ts`) |
+| `/revisions` · `/review` | Pas de page : redirection vers le rappel du jour, `/dashboard?rappel=1` (`next.config.ts`) ; l'ancienne file SM-2 est retirée |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
 | `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
@@ -92,6 +91,7 @@
 | `/api/mobile/loadout` | Cosmétiques équipés |
 | `/api/mobile/password` | Changement de mot de passe |
 | `/api/mobile/review-cards` | Rappel du jour (GET, POST d'une réponse) ; `?path=&module=` pour réviser un module |
+| `/api/mobile/review` | Ancienne file SM-2, retirée : gardée pour les versions de l'app d'avant les cartes, refuse toute note (409, `{ ok: false, error }`) sans rien noter ni créditer |
 
 ---
 
@@ -127,7 +127,7 @@
 - Quiz optionnel intégré
 - Q&A par leçon (questions, réponses, votes, marquer comme acceptée)
 - Notation 1–5 étoiles avec recalcul des moyennes en temps réel
-- Complétion avec attribution d'XP, évaluation des badges, création du ReviewSchedule SM-2
+- Complétion avec attribution d'XP, évaluation des badges, mise en file des cartes de révision
 - Gestion des prérequis (chaîne de leçons)
 - Un administrateur ouvre une leçon non publiée par son adresse, avec un bandeau et sans progression ni XP ; la leçon vitrine `vitrine-des-composants` rend chaque composant une fois
 
@@ -173,8 +173,8 @@
 - Cron quotidien `review-reminders` : une notification « Ton rappel du jour est prêt », sans nombre, vers `/dashboard?rappel=1`, à qui a une carte due dont la question est encore dans sa leçon (la règle du tirage, `learnersWithRecall`, chaque leçon lue une fois pour tous), garde les deux interrupteurs et n'a pas encore fait le rappel du jour ; une fois par jour au plus
 - Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
 - Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
-- L'ancienne file SM-2 tourne encore à côté, jusqu'à son retrait : `ReviewSchedule` créé à chaque complétion, page `/revisions` (plus reliée depuis la barre latérale ni le tableau de bord) et route `/api/mobile/review` pour les versions de l'app déjà installées, l'app d'aujourd'hui ne la lisant plus (`reviewRepository`, `@cyberlearn/lib/revisions/session`)
-- Conversion de l'ancienne file en cartes : `db:backfill-review-cards`, lancé à la main quand les cartes sont en production, puis une dernière fois juste avant le retrait de la file pour les lignes créées entre-temps (essai par défaut, `--apply` pour écrire, une passe aussitôt après n'écrit rien). Les leçons qui ne donnent pas de carte en fin de leçon n'en donnent pas non plus ; une leçon en brouillon ou archivée au moment de la passe est convertie, ses cartes cachées tant qu'elle n'est pas republiée ; avec les réponses enregistrées, les cartes de la fin de leçon ; sans réponse, la dernière question dans la boîte que l'intervalle SM-2 avait atteinte ; les leçons déjà dues réparties sur cinq jours, les autres à la date de l'ancienne file. Détail et moment dans `docs/DEPLOY.md`
+- L'ancienne file SM-2 est retirée (`sm2.ts`, la page `/revisions`, son service de notation, `reviewRepository`) : une leçon terminée n'y ajoute plus rien, `/revisions` et `/review` ouvrent le rappel du jour. Ses lignes attendent leur conversion dans `review_schedules_legacy`, lue par le script de conversion et par l'export RGPD (section `reviewSchedules`, tant que la plateforme garde ces lignes), sans aucun accès client (RLS, droits révoqués), supprimée dans une version ultérieure une fois la conversion passée en production, avec la lecture de l'export. Pour les versions de l'app d'avant les cartes, qui lisaient la file elles-mêmes : `review_schedules` est une vue vide (`security_invoker`, aucune ligne, relation vers `lessons` gardée), où elles voient une file sans rien à faire, et `/api/mobile/review` refuse toute note sans rien noter ni créditer (migration `20261018120000_retire_review_schedules`). La vue accepte sans rien en garder les écritures du déploiement précédent, qui tourne encore quelques minutes après la migration : une fin de leçon n'échoue pas pendant le déploiement
+- Conversion de l'ancienne file en cartes : `db:backfill-review-cards`, lancé à la main, sur `review_schedules_legacy`, avant la version qui supprime cette table (essai par défaut, `--apply` pour écrire, une deuxième passe n'écrit rien). Une leçon que l'apprenant n'a plus terminée (remise à zéro depuis) ne donne rien ; les leçons qui ne donnent pas de carte en fin de leçon n'en donnent pas non plus ; une leçon en brouillon ou archivée au moment de la passe est convertie, ses cartes cachées tant qu'elle n'est pas republiée ; avec les réponses enregistrées, les cartes de la fin de leçon ; sans réponse, la dernière question dans la boîte que l'intervalle SM-2 avait atteinte ; les leçons déjà dues réparties sur cinq jours, les autres à la date de l'ancienne file. Détail et moment dans `docs/DEPLOY.md`
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
@@ -277,8 +277,8 @@
 | `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview), qui s'ouvre ensuite dans son studio |
 | `/lessons/[id]` | Studio de la leçon : sa fiche dans un rail, l'éditeur et l'aperçu du site côte à côte sur toute la largeur, brouillon enregistré seul, « Publier les changements », versions à restaurer ; dessous, ses parcours et prérequis, et les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, avec un lien vers tous. `/lessons/[id]/edit` y redirige (`next.config.ts`) |
+| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier), par glisser-déposer ; une leçon déjà en base se met à jour après diff et confirmation ; chaque erreur donne sa ligne |
 | `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
-| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |
@@ -566,7 +566,7 @@
   résolution et les tests liraient le dernier build
 
 ### `packages/lib` - Logique métier
-- `xp.ts` - Calcul XP/niveau · `sm2.ts` - SuperMemo-2 · `pseudonymize.ts` - HMAC
+- `xp.ts` - Calcul XP/niveau · `revisions/cards.ts` - cartes de Leitner · `pseudonymize.ts` - HMAC
 - `gamification/` - `badge-evaluator.ts` (les 10 critères, fonction pure),
   `streak-state.ts`, `day.ts`, `week.ts`, `league.ts`, `quest.ts`, `tier.ts`,
   `wrapped.ts`, `wrapped-window.ts` (la fenêtre du 1er décembre au 7 janvier)

@@ -37,8 +37,9 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *                   are the lesson's, and stay with it.
  *
  * Hard-deleted by Prisma cascade: profile, preferences, placement test, lesson
- * and path and challenge progress, hint reveals, badges, review schedule,
- * review cards and sessions, notifications, skip waivers, deletion tokens,
+ * and path and challenge progress, hint reveals, badges, review cards and
+ * sessions, the rows of the retired SM-2 queue still awaiting conversion
+ * (review_schedules_legacy), notifications, skip waivers, deletion tokens,
  * class memberships.
  *
  * Hard-deleted by a statement here: the team's internal notes on their tickets
