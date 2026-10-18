@@ -107,6 +107,21 @@ export function auditWhere(filter: AuditFilter): Prisma.AuditLogWhereInput {
 }
 
 export const auditLogRepository = {
+  /**
+   * Writes one entry, for a gesture whose repository has no transaction of
+   * its own to write it in: the change happened elsewhere (Supabase Auth),
+   * and this is its trace.
+   */
+  async record(entry: {
+    actorId: string;
+    action: string;
+    targetType: string;
+    targetId: string | null;
+    metadata: Prisma.InputJsonObject;
+  }): Promise<void> {
+    await prisma.auditLog.create({ data: entry });
+  },
+
   /** One page of the log under a filter. */
   async list(query: AuditQuery): Promise<ConsoleSlice<AuditRow>> {
     const where = auditWhere(query.filter);

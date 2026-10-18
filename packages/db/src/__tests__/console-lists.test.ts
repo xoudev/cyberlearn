@@ -321,6 +321,21 @@ describe("lessonRepository.listForConsole", () => {
     });
   });
 
+  it("sorts by the learners' average, the lessons nobody rated last either way", async () => {
+    for (const dir of ["asc", "desc"] as const) {
+      mockPrisma.lesson.findMany.mockClear();
+      await lessonRepository.listForConsole({ ...base, sort: { key: "rating", dir } });
+      expect(firstArg(mockPrisma.lesson.findMany)).toMatchObject({
+        orderBy: [
+          { avgRating: { sort: dir, nulls: "last" } },
+          { ratingsCount: "desc" },
+          { title: "asc" },
+          { id: "asc" },
+        ],
+      });
+    }
+  });
+
   it("tells a class lesson by its audience", async () => {
     await lessonRepository.listForConsole({ ...base, origin: "class" });
     expect(firstArg(mockPrisma.lesson.findMany)).toMatchObject({

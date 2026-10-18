@@ -246,6 +246,19 @@ describe("tournaments RLS (integration)", () => {
     const author = await member.from("tournaments").select("createdById").eq("id", running);
     expect(author.error).not.toBeNull();
 
+    // A flag taken back: the player reads when and why, never which admin.
+    const disqualifier = await member
+      .from("tournament_solves")
+      .select("disqualifiedById")
+      .eq("tournamentId", running);
+    expect(disqualifier.error).not.toBeNull();
+    const own = await member
+      .from("tournament_solves")
+      .select("disqualifiedAt,disqualifiedReason")
+      .eq("tournamentId", running);
+    expect(own.error).toBeNull();
+    expect(own.data).toEqual([{ disqualifiedAt: null, disqualifiedReason: null }]);
+
     const forged = await member.from("tournament_solves").insert({
       id: randomUUID(),
       tournamentId: running,

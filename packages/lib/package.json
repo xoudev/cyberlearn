@@ -44,7 +44,8 @@
     "./files/*": "./src/files/*.ts",
     "./story/*": "./src/story/*.ts",
     "./terminal/*": "./src/terminal/*.ts",
-    "./exam/*": "./src/exam/*.ts"
+    "./exam/*": "./src/exam/*.ts",
+    "./cron/*": "./src/cron/*.ts"
   },
   "scripts": {
     "build": "tsc",

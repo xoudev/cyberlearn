@@ -2,8 +2,9 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CATALOGUE_LESSON, prisma, ratingRepository } from "@cyberlearn/db";
-import { Card, EmptyState, GhostLink, PageHeader, Tag } from "../../../_components/admin-ui";
+import { GhostLink, PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
+import { RatingsCard } from "../../../_components/ratings-card";
 import { PATH_CRUMBS } from "../../_components/path-columns";
 import { EditPathClient } from "./_components/EditPathClient";
 
@@ -36,6 +37,8 @@ export default async function EditPathPage({
         estimatedHours: true,
         coverImageUrl: true,
         status: true,
+        avgRating: true,
+        ratingsCount: true,
         lessons: {
           orderBy: { position: "asc" },
           select: {
@@ -112,59 +115,12 @@ export default async function EditPathPage({
         currentLessons={currentLessons}
         availableLessons={availableLessons}
       />
-      <PathRatings ratings={ratings} />
+      <RatingsCard
+        ratings={ratings}
+        subject="ce parcours"
+        avg={path.avgRating}
+        count={path.ratingsCount}
+      />
     </main>
-  );
-}
-
-type PathRatingRow = Awaited<ReturnType<typeof ratingRepository.findPathRatings>>[number];
-
-/**
- * What learners said about this path: the note, and the comment written to
- * the team. Comments are not shown to other learners.
- */
-function PathRatings({ ratings }: { ratings: PathRatingRow[] }): React.ReactElement {
-  const dated = new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  return (
-    <div style={{ marginTop: 24 }}>
-      <Card title={`Avis des apprenants (${String(ratings.length)})`} pad>
-        {ratings.length === 0 ? (
-          <EmptyState title="Aucun avis" text="Personne n'a encore noté ce parcours." />
-        ) : (
-          <div className="a-table-wrap">
-            <table className="a-table">
-              <tbody>
-                {ratings.map((r) => (
-                  <tr key={r.id}>
-                    <td
-                      className="mono"
-                      style={{ color: "var(--a-warning)", whiteSpace: "nowrap" }}
-                    >
-                      {"★".repeat(r.score)}
-                      <span style={{ color: "var(--a-muted)" }}>{"★".repeat(5 - r.score)}</span>
-                    </td>
-                    <td style={{ width: "100%" }}>
-                      {r.feedback ?? (
-                        <span style={{ color: "var(--a-muted)" }}>Sans commentaire</span>
-                      )}
-                    </td>
-                    <td className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
-                      {r.user?.displayName ?? r.user?.username ?? "Compte supprimé"}
-                    </td>
-                    <td className="mono" style={{ color: "var(--a-muted)", whiteSpace: "nowrap" }}>
-                      {dated.format(r.updatedAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
   );
 }

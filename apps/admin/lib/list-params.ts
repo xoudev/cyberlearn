@@ -229,6 +229,7 @@ export const LESSON_SORT_KEYS = [
   "category",
   "difficulty",
   "xp",
+  "rating",
   "status",
 ] as const satisfies readonly ConsoleLessonSort[];
 

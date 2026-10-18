@@ -125,6 +125,21 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M5 5 H11 M5 8 H11 M5 11 H8.5" />
         </svg>
       );
+    case "layers":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 2 L14 5 L8 8 L2 5 Z" />
+          <path d="M2 8 L8 11 L14 8" />
+          <path d="M2 11 L8 14 L14 11" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <circle cx="8" cy="8" r="6" />
+          <path d="M8 4.5 V8 L10.5 9.5" />
+        </svg>
+      );
     case "cog":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -184,21 +199,27 @@ export function AdminSidebar({
     { label: "Certificats", href: "/certificates", icon: "certificate" },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
     { label: "Modération", href: "/moderation", icon: "shield" },
+    // Five read-only lists under one entry: active on any of them.
+    { label: "Référentiels", href: "/reference/cosmetics", match: "/reference", icon: "layers" },
   ];
 
   const sysItems = [
     { label: "Banc d'essai", href: "/lab", icon: "flask" },
     { label: "Audit log", href: "/audit", icon: "log" },
+    { label: "Tâches planifiées", href: "/system/crons", icon: "clock" },
     { label: "Paramètres", href: "/settings", icon: "cog" },
   ];
 
   const renderItem = (item: {
     label: string;
     href: string;
+    /** The prefix that makes the entry current, when it is not the href itself. */
+    match?: string;
     icon: string;
     count?: number | null;
   }): React.ReactElement => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    const prefix = item.match ?? item.href;
+    const isActive = pathname === prefix || pathname.startsWith(prefix + "/");
     const isAlert = item.href === "/tickets" && (item.count ?? 0) > 0;
     return (
       <Link
@@ -251,9 +272,13 @@ export function AdminSidebar({
 
       <div style={{ flex: 1 }} />
 
-      {/* Identity + sign out */}
+      {/* Identity, which opens « Mon compte », and sign out */}
       <div style={{ padding: "16px 14px", borderTop: "1px solid var(--a-border)" }}>
-        <div
+        <Link
+          href="/account"
+          onClick={close}
+          aria-label={`Mon compte : ${handle}`}
+          aria-current={pathname === "/account" ? "page" : undefined}
           style={{
             display: "grid",
             gridTemplateColumns: "30px minmax(0, 1fr) auto",
@@ -261,8 +286,10 @@ export function AdminSidebar({
             alignItems: "center",
             padding: "10px 11px",
             background: "var(--a-surface)",
-            border: "1px solid var(--a-border)",
+            border: `1px solid ${pathname === "/account" ? "var(--a-accent)" : "var(--a-border)"}`,
             marginBottom: 10,
+            color: "inherit",
+            textDecoration: "none",
           }}
         >
           <span
@@ -321,7 +348,7 @@ export function AdminSidebar({
           >
             Admin
           </span>
-        </div>
+        </Link>
 
         <form action={signOut}>
           <button

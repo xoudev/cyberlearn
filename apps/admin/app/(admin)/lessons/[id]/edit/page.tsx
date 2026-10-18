@@ -1,9 +1,10 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { prisma, ratingRepository } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
+import { RatingsCard } from "../../../_components/ratings-card";
 import { LESSON_CRUMBS } from "../../_components/lesson-headers";
 import { EditLessonClient } from "./_components/edit-lesson-client";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
@@ -22,23 +23,28 @@ export default async function EditLessonPage({
   await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      refCode: true,
-      slug: true,
-      title: true,
-      description: true,
-      category: true,
-      difficulty: true,
-      estimatedMinutes: true,
-      xpReward: true,
-      coverImageUrl: true,
-      contentMdx: true,
-      status: true,
-    },
-  });
+  const [lesson, ratings] = await Promise.all([
+    prisma.lesson.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+        coverImageUrl: true,
+        contentMdx: true,
+        status: true,
+        avgRating: true,
+        ratingsCount: true,
+      },
+    }),
+    ratingRepository.findLessonRatings(id),
+  ]);
 
   if (!lesson) notFound();
 
@@ -62,6 +68,12 @@ export default async function EditLessonPage({
         lesson={lesson}
         coverPreview={coverPreview}
         lessonUrlPrefix={learnerLessonUrlPrefix()}
+      />
+      <RatingsCard
+        ratings={ratings}
+        subject="cette leçon"
+        avg={lesson.avgRating}
+        count={lesson.ratingsCount}
       />
     </main>
   );

@@ -53,6 +53,7 @@ export {
   type ConsoleUserQuery,
   type ConsoleUserRow,
   type ConsoleUserSort,
+  type OwnConsoleAccount,
   type ProfileAccess,
   type ProfilePreviewCard,
 } from "./repositories/user.repository.js";
@@ -151,9 +152,44 @@ export {
   type ContributionTally,
   type ProfilePathRow,
 } from "./repositories/profile.repository.js";
-export { tournamentRepository } from "./repositories/tournament.repository.js";
+export {
+  tournamentRepository,
+  consoleSolveWhere,
+  TOURNAMENT_SOLVE_AUDIT_ACTION,
+  type ConsoleSolveQuery,
+  type ConsoleSolveRow,
+  type ConsoleSolveStatus,
+  type SolveDecisionResult,
+} from "./repositories/tournament.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
-export { ratingRepository } from "./repositories/rating.repository.js";
+export { ratingRepository, type ConsoleRatingRow } from "./repositories/rating.repository.js";
+export {
+  referenceRepository,
+  cosmeticReferenceWhere,
+  forumCategoryReferenceWhere,
+  placementReferenceWhere,
+  questReferenceWhere,
+  type CosmeticReferenceQuery,
+  type CosmeticReferenceRow,
+  type ForumCategoryReferenceRow,
+  type PlacementReferenceQuery,
+  type PlacementReferenceRow,
+  type QuestReferenceQuery,
+  type QuestReferenceRow,
+  type ReferenceQuery,
+  type SeasonReferenceQuery,
+  type SeasonReferenceRow,
+} from "./repositories/reference.repository.js";
+export {
+  cronRunRepository,
+  cronRunAction,
+  cronRunFrom,
+  CRON_RUN_TARGET,
+  type CronJobRuns,
+  type CronRunInput,
+  type CronRunSummary,
+  type CronRunView,
+} from "./repositories/cron-run.repository.js";
 export {
   reviewRepository,
   LIVE_REVIEW_FILTER,

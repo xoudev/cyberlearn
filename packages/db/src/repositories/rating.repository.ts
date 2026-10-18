@@ -1,4 +1,22 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+
+/** A rating as the console lists it, for a lesson or a path. */
+const CONSOLE_RATING_ROW = {
+  id: true,
+  score: true,
+  feedback: true,
+  updatedAt: true,
+  user: { select: { displayName: true, username: true } },
+} as const satisfies Prisma.RatingSelect;
+
+export type ConsoleRatingRow = Prisma.RatingGetPayload<{ select: typeof CONSOLE_RATING_ROW }>;
+
+/** The newest first; the id settles two written in the same millisecond. */
+const CONSOLE_RATING_ORDER = [
+  { updatedAt: "desc" },
+  { id: "desc" },
+] as const satisfies Prisma.RatingOrderByWithRelationInput[];
 
 export const ratingRepository = {
   async upsertLessonRating(userId: string, lessonId: string, score: number, feedback?: string) {
@@ -61,18 +79,22 @@ export const ratingRepository = {
   },
 
   /** What learners said about a path, newest first: for the console. */
-  async findPathRatings(pathId: string, take = 50) {
+  async findPathRatings(pathId: string, take = 50): Promise<ConsoleRatingRow[]> {
     return prisma.rating.findMany({
       where: { pathId },
-      orderBy: { updatedAt: "desc" },
+      orderBy: CONSOLE_RATING_ORDER,
       take,
-      select: {
-        id: true,
-        score: true,
-        feedback: true,
-        updatedAt: true,
-        user: { select: { displayName: true, username: true } },
-      },
+      select: CONSOLE_RATING_ROW,
+    });
+  },
+
+  /** What learners said about a lesson, newest first: for the console, as for paths. */
+  async findLessonRatings(lessonId: string, take = 50): Promise<ConsoleRatingRow[]> {
+    return prisma.rating.findMany({
+      where: { lessonId },
+      orderBy: CONSOLE_RATING_ORDER,
+      take,
+      select: CONSOLE_RATING_ROW,
     });
   },
 

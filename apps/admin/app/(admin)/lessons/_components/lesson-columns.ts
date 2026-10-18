@@ -72,6 +72,7 @@ export const LESSON_COLUMNS: readonly GridColumn[] = [
   { label: "Difficulté", sortKey: "difficulty" },
   { label: "XP", align: "right", sortKey: "xp" },
   { label: "Terminées", align: "right" },
+  { label: "Note", align: "right", sortKey: "rating" },
   { label: "Statut", align: "right", sortKey: "status" },
   { label: "Supprimer" },
 ];

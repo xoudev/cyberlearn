@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { trackCronRun } from "@/lib/cron-run";
 import { runInactiveAccounts } from "@/lib/rgpd/inactive-accounts";
 
 // Vercel Cron (see vercel.json), daily: erases the accounts inactive for 24
@@ -17,7 +18,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const summary = await runInactiveAccounts(new Date());
+    const summary = await trackCronRun("inactive-accounts", () => runInactiveAccounts(new Date()));
     logger.info({ scope: "rgpd", ...summary }, "inactive accounts run done");
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {

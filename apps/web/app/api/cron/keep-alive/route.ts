@@ -7,19 +7,38 @@ import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { trackCronRun } from "@/lib/cron-run";
 
-// Vercel Cron: runs every 6 hours (see vercel.json).
-// Keeps Supabase and Upstash warm - Supabase Free pauses after 7 days of inactivity.
+// Called every 6 hours by cron-job.org, not by Vercel: it is not in vercel.json
+// (docs/infra/keep-alive.md). Keeps Supabase and Upstash warm - Supabase Free
+// pauses after 7 days of inactivity.
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // A failed ping is answered, not thrown: the run is recorded as failed all
+  // the same, with the service that did not answer.
+  const results = await trackCronRun("keep-alive", ping, {
+    failure: (r) => {
+      const down = [
+        r.postgres === "error" ? "postgres" : null,
+        r.redis === "error" ? "redis" : null,
+      ].filter((name) => name !== null);
+      return down.length === 0 ? null : `ping failed: ${down.join(", ")}`;
+    },
+  });
+  return NextResponse.json(results);
+}
+
+type PingStatus = "ok" | "error" | "unknown";
+
+async function ping(): Promise<{ timestamp: string; postgres: PingStatus; redis: PingStatus }> {
   const results = {
     timestamp: new Date().toISOString(),
-    postgres: "unknown" as "ok" | "error" | "unknown",
-    redis: "unknown" as "ok" | "error" | "unknown",
+    postgres: "unknown" as PingStatus,
+    redis: "unknown" as PingStatus,
   };
 
   // Ping Postgres (Supabase) - minimal query to keep the DB warm
@@ -47,5 +66,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json(results);
+  return results;
 }
