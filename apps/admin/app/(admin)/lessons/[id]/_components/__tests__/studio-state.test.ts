@@ -95,6 +95,17 @@ describe("studioReducer", () => {
     expect(state).toMatchObject({ fields: synced, published: synced, error: null });
   });
 
+  it("opens on the lesson conflict when the draft's lesson changed since it was started", () => {
+    // A sync wrote the file over the lesson while the draft was open.
+    const state = initialStudioState(PUBLISHED, TYPED, "La leçon publiée a changé.");
+    expect(state).toMatchObject({
+      fields: TYPED,
+      error: "La leçon publiée a changé.",
+      conflict: "lesson",
+    });
+    expect(initialStudioState(PUBLISHED, TYPED)).toMatchObject({ error: null, conflict: null });
+  });
+
   it("replaces the fields with a restored version, and clears what was refused", () => {
     const refused = studioReducer(initialStudioState(PUBLISHED, TYPED), {
       type: "refused",

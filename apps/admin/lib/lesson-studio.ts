@@ -135,7 +135,7 @@ export const STUDIO_MESSAGES = {
   draftConflict:
     "Le brouillon a changé ailleurs (un autre onglet, ou un autre administrateur l'a enregistré, publié ou abandonné). Recharge la page pour reprendre la dernière version.",
   lessonChanged:
-    "La leçon publiée a changé depuis la version d'où part ce brouillon (synchronisation avec le dépôt, ou publication par quelqu'un d'autre). Publier la remplacera par le brouillon.",
+    "La leçon publiée a changé depuis la version d'où part ce brouillon (synchronisation avec le dépôt, import d'un fichier, ou publication par quelqu'un d'autre). Publier la remplacera par le brouillon.",
   nothingToPublish: "Rien à publier : le brouillon reprend la leçon telle qu'elle est en ligne.",
   notFound: "Cette leçon n'existe plus.",
   stale: "La leçon a été modifiée pendant la publication. Recharge la page.",

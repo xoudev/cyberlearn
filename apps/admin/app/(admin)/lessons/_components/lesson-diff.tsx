@@ -13,6 +13,11 @@ import type { LessonDiffHunk, LessonFieldChange, LessonUpdatePreview } from "@cy
  */
 
 const DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" });
+const DATE_TIME = new Intl.DateTimeFormat("fr-FR", {
+  dateStyle: "long",
+  timeStyle: "short",
+  timeZone: "Europe/Paris",
+});
 
 function Hunk({ hunk }: { hunk: LessonDiffHunk }): React.ReactElement {
   return (
@@ -118,15 +123,16 @@ export function FieldChanges({
 
 /**
  * What an update would also replace or leave as it is: edits made in the
- * console, quizzes already answered, a slug the file names differently; and
- * a content too changed for its passages to be shown.
+ * console, a studio draft open on the lesson, quizzes already answered, a
+ * slug the file names differently; and a content too changed for its
+ * passages to be shown.
  */
 export function LessonUpdateNotes({
   update,
 }: {
   update: Pick<
     LessonUpdatePreview,
-    "editedInConsoleAt" | "quizImpacts" | "slugDiffers" | "hunksOmitted"
+    "editedInConsoleAt" | "draftSavedAt" | "quizImpacts" | "slugDiffers" | "hunksOmitted"
   >;
 }): React.ReactElement {
   return (
@@ -142,6 +148,13 @@ export function LessonUpdateNotes({
           Modifiée dans l&apos;éditeur le {DATE.format(update.editedInConsoleAt)}, après son dernier
           import ou sa dernière mise à jour depuis un fichier. Ces modifications seront remplacées :
           vérifie les différences.
+        </p>
+      ) : null}
+      {update.draftSavedAt !== null ? (
+        <p className="a-sync-warn" data-tone="warning">
+          Un brouillon est ouvert sur cette leçon dans le studio (enregistré le{" "}
+          {DATE_TIME.format(update.draftSavedAt)}). La mise à jour le garde tel quel : le studio
+          signalera que la leçon a changé depuis, et sa publication remplacerait ce contenu.
         </p>
       ) : null}
       {update.quizImpacts.length > 0 ? (

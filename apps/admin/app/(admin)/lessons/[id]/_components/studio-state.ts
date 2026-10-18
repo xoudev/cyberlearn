@@ -133,8 +133,23 @@ export type StudioAction =
   | { type: "discarded"; published: StudioFields }
   | { type: "dismiss" };
 
-export function initialStudioState(published: StudioFields, working: StudioFields): StudioState {
-  return { fields: working, published, fieldErrors: {}, error: null, conflict: null };
+/**
+ * `lessonChanged`, when the draft the studio opens on was started from a
+ * lesson that has changed since (a sync, an import, another publish): the
+ * studio opens on the conflict its publish would meet, with that sentence.
+ */
+export function initialStudioState(
+  published: StudioFields,
+  working: StudioFields,
+  lessonChanged: string | null = null,
+): StudioState {
+  return {
+    fields: working,
+    published,
+    fieldErrors: {},
+    error: lessonChanged,
+    conflict: lessonChanged === null ? null : "lesson",
+  };
 }
 
 function isStudioField(key: string): key is StudioField {

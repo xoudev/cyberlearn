@@ -228,6 +228,17 @@ classe n'a ni brouillon ni versions : l'éditeur du professeur enregistre dans
 la leçon, avec le même ⌘S et la même alerte avant de quitter une page
 modifiée.
 
+L'import d'un fichier (« Mettre à jour » sur `/lessons/import`, ou une leçon
+créée) et la synchronisation avec le dépôt (`/lessons/sync`) publient par la
+même fonction que le studio (`lessonVersionRepository.publish`) : chaque
+écriture crée une version, marquée « Import » ou « Synchronisation » dans la
+liste du studio, et une seule ligne du journal d'audit. Une mise à jour est
+refusée si la leçon a changé depuis que ses différences ont été affichées. Un
+brouillon ouvert dans le studio n'est jamais touché : les différences le
+signalent avant de confirmer, et le studio, à sa prochaine ouverture, dit que
+la leçon a changé depuis le début du brouillon ; sa publication demande avant
+de remplacer ce que le fichier a écrit.
+
 L'éditeur s'ouvre en **blocs** : la leçon découpée en titres, en passages de
 Markdown et en composants, chacun sous forme de champs (ton et texte d'un
 encadré, question, options et bonne réponse d'un quiz, fichiers et

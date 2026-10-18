@@ -53,6 +53,10 @@ const STATUS_LABEL: Record<string, string> = {
   ARCHIVED: "archivée",
 };
 
+/** Shown once a lesson that had a studio draft open is updated from its file. */
+const DRAFT_KEPT_WARNING =
+  "Le brouillon ouvert dans le studio est gardé tel quel : le studio signale que la leçon a changé depuis, et sa publication remplacerait ce contenu.";
+
 interface BatchFile {
   name: string;
   content: string;
@@ -340,7 +344,10 @@ export function ImportClient(): React.ReactElement {
                 ...f,
                 imported: {
                   lessonId: res.lessonId,
-                  warnings: f.validation?.warnings ?? [],
+                  warnings: [
+                    ...(f.validation?.warnings ?? []),
+                    ...(res.draftKept ? [DRAFT_KEPT_WARNING] : []),
+                  ],
                   updated: true,
                 },
               }

@@ -19,6 +19,7 @@ import { LessonStudio, type StudioVersion } from "../_components/lesson-studio";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
+import { STUDIO_MESSAGES } from "@/lib/lesson-studio";
 import { suggestLessonRefCode } from "@/lib/next-ref-code";
 import { routeIdOrNotFound } from "@/lib/route-id";
 
@@ -207,6 +208,14 @@ export default async function LessonStudioPage({
           draft === null
             ? lessonBaseOf(lesson)
             : { version: draft.baseVersion, contentHash: draft.baseContentHash }
+        }
+        lessonChanged={
+          // A sync or an import wrote its file over the lesson since the
+          // draft was started, or someone else published: the draft is kept,
+          // and the studio says so before its publish would.
+          draft !== null && draft.baseContentHash !== lessonBaseOf(lesson).contentHash
+            ? STUDIO_MESSAGES.lessonChanged
+            : null
         }
         currentVersion={lesson.version}
         versions={studioVersions}

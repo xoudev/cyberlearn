@@ -324,9 +324,13 @@
   vérification du MDX au brouillon, le recopie dans la leçon, incrémente
   `lessons.version`, garde la version (`lesson_versions`) et l'inscrit au
   journal (`lesson.publish`) : `lessonVersionRepository.publish`, la fonction
-  par laquelle passeront aussi l'import et la synchronisation. Une version se
-  remet dans le brouillon ; un brouillon modifié dans un autre onglet, ou une
-  leçon changée depuis que le studio l'a chargée, est signalé avant d'écrire.
+  par laquelle passent aussi l'import (création et « Mettre à jour », versions
+  « Import », `lesson.import.success` et `lesson.import.update`) et la
+  synchronisation (versions « Synchronisation », `lesson.sync`), une ligne
+  d'audit par écriture. Une version se remet dans le brouillon ; un brouillon
+  modifié dans un autre onglet, ou une leçon changée depuis que le studio l'a
+  chargée (par une publication, un import ou une synchronisation, qui gardent
+  le brouillon tel quel), est signalé avant d'écrire.
   Séparateur déplaçable entre l'éditeur et l'aperçu, aperçu bureau ou mobile
   (390 px), alerte avant de quitter avec des modifications non enregistrées
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED, ligne par ligne ou sur

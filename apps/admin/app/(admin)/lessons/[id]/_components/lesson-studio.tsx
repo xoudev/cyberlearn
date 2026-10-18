@@ -122,6 +122,7 @@ export function LessonStudio({
   published,
   draft,
   base,
+  lessonChanged = null,
   currentVersion,
   versions,
   coverPreviews,
@@ -139,6 +140,12 @@ export function LessonStudio({
    * draft this studio starts keeps it, for the publish to check against.
    */
   base: LessonBase;
+  /**
+   * Set when the draft was started from a lesson that has changed since (a
+   * sync or an import wrote its file over it, someone else published): the
+   * sentence the studio opens on, as its publish would refuse.
+   */
+  lessonChanged?: string | null;
   currentVersion: number;
   versions: readonly StudioVersion[];
   /** Signed previews of the covers the server knows: the published one, the draft's. */
@@ -149,7 +156,7 @@ export function LessonStudio({
 }): React.ReactElement {
   const router = useRouter();
   const [state, dispatch] = useReducer(studioReducer, null, () =>
-    initialStudioState(fieldsOf(published), fieldsOf(draft?.content ?? published)),
+    initialStudioState(fieldsOf(published), fieldsOf(draft?.content ?? published), lessonChanged),
   );
   const { fields, fieldErrors } = state;
 
