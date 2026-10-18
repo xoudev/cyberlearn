@@ -143,4 +143,73 @@ describe("the problems in the lesson editor", () => {
       ]);
     });
   });
+
+  it("keeps what is on show through a save refused before the content check", async () => {
+    const preview = {
+      refresh: vi.fn(
+        (): Promise<MdxPreviewResult> =>
+          Promise.resolve({
+            ok: true,
+            url: "/preview/t",
+            problems: [{ line: 2, column: 1, message: "Une note de rédaction." }],
+          }),
+      ),
+    };
+    const fromPreview = [
+      expect.anything(),
+      "lesson-check",
+      [expect.objectContaining({ startLineNumber: 2, message: "Une note de rédaction." })],
+    ];
+    const { rerender } = render(
+      <MdxEditorPanel
+        value={BROKEN}
+        onChange={() => undefined}
+        preview={preview}
+        problems={[{ line: 3, column: 16, message: "ancien" }]}
+      />,
+    );
+    await waitFor(() => {
+      expect(lastMarkers()).toEqual(fromPreview);
+    });
+    // The title held an em dash: the form refused it, the content went unchecked.
+    rerender(<MdxEditorPanel value={BROKEN} onChange={() => undefined} preview={preview} />);
+    expect(lastMarkers()).toEqual(fromPreview);
+    expect(screen.getByRole("region", { name: "Problèmes du contenu" })).toHaveTextContent(
+      "À CORRIGER · 1",
+    );
+  });
+
+  it("marks the same faults saved again after the preview cleared them", async () => {
+    const preview = {
+      refresh: vi.fn(
+        (): Promise<MdxPreviewResult> =>
+          Promise.resolve({ ok: true, url: "/preview/t", problems: [] }),
+      ),
+    };
+    const fault = { line: 3, column: 16, message: "« True » n'existe pas ici." };
+    const { rerender } = render(
+      <MdxEditorPanel
+        value={BROKEN}
+        onChange={() => undefined}
+        preview={preview}
+        problems={[fault]}
+      />,
+    );
+    await waitFor(() => {
+      expect(lastMarkers()).toEqual([expect.anything(), "lesson-check", []]);
+    });
+    rerender(
+      <MdxEditorPanel
+        value={BROKEN}
+        onChange={() => undefined}
+        preview={preview}
+        problems={[{ ...fault }]}
+      />,
+    );
+    expect(lastMarkers()).toEqual([
+      expect.anything(),
+      "lesson-check",
+      [expect.objectContaining({ startLineNumber: 3, message: fault.message })],
+    ]);
+  });
 });

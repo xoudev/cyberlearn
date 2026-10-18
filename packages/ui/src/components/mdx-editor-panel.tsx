@@ -67,13 +67,6 @@ interface MarkerApi {
   MarkerSeverity: { Error: number };
 }
 
-/** What tells two lists of problems apart: the same problems are the same list. */
-function signatureOf(problems: readonly MdxProblem[] | undefined): string {
-  return (problems ?? [])
-    .map((p) => `${String(p.line)}:${String(p.column)}:${p.message}`)
-    .join("\n");
-}
-
 // ── Dynamic import - Monaco has no SSR support ─────────────────────────────────
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
   ssr: false,
@@ -1000,9 +993,12 @@ export interface MdxEditorPanelProps {
   /** The site's rendering of the draft, when the app provides it (useLessonPreview). */
   preview?: MdxEditorPreview;
   /**
-   * What the last save refused, each at its line and column: marked in the
-   * editor and listed above it. The site's preview, when it answers for a
-   * later draft, replaces them with what it found.
+   * What the last save's content check found, each at its line and column:
+   * marked in the editor and listed above it. A save that ran the check sends
+   * a new array, empty when the content passed; one that stopped before it (a
+   * title the form refused) sends none, and what is on show stays. The site's
+   * preview, when it answers for a later draft, replaces them with what it
+   * found.
    */
   problems?: readonly MdxProblem[] | undefined;
 }
@@ -1021,14 +1017,14 @@ export function MdxEditorPanel({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // The problems on show: the last save's, until the preview answers for a
-  // later draft. Compared by content, so a list rebuilt on every render of
-  // the page does not count as a new one.
+  // later draft. A save is told apart by its array, not by what it holds: the
+  // same faults saved again after the preview cleared them are a new finding.
+  // The array is the action state's, so a render of the page keeps it.
   const [shown, setShown] = useState<readonly MdxProblem[]>(problems ?? []);
-  const [savedSignature, setSavedSignature] = useState(() => signatureOf(problems));
-  const signature = signatureOf(problems);
-  if (signature !== savedSignature) {
-    setSavedSignature(signature);
-    setShown(problems ?? []);
+  const [received, setReceived] = useState(problems);
+  if (problems !== received) {
+    setReceived(problems);
+    if (problems !== undefined) setShown(problems);
   }
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
