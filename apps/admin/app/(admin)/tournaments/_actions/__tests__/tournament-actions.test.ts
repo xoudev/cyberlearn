@@ -4,7 +4,7 @@ const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn<() => Promise<{ id: string; email: undefined; role: "ADMIN" }>>(),
   classCount: vi.fn<(args: unknown) => Promise<number>>(),
   challengeFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  record: vi.fn<(entry: Record<string, unknown>) => Promise<void>>(),
   create: vi.fn<(input: Record<string, unknown>) => Promise<{ id: string }>>(),
   update: vi.fn<(id: string, input: Record<string, unknown>) => Promise<void>>(),
   findForConsole: vi.fn<(id: string) => Promise<unknown>>(),
@@ -23,8 +23,8 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: {
     class: { count: m.classCount },
     challenge: { findMany: m.challengeFindMany },
-    auditLog: { create: m.auditCreate },
   },
+  auditLogRepository: { record: m.record },
   tournamentRepository: {
     create: m.create,
     update: m.update,
@@ -126,7 +126,7 @@ describe("createTournamentAction", () => {
       classIds: [CLASS_A, CLASS_B],
       challenges: [{ challengeId: C1, points: 200 }],
     });
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
+    expect(m.record.mock.calls[0]?.[0]).toMatchObject({
       actorId: "admin-1",
       action: "tournament.create",
       targetType: "Tournament",
@@ -245,7 +245,7 @@ describe("deleting and ending", () => {
     await expect(deleteTournamentAction(T)).rejects.toThrow(
       "NEXT_REDIRECT:/tournaments?saved=deleted",
     );
-    expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({ action: "tournament.delete" });
+    expect(m.record.mock.calls[0]?.[0]).toMatchObject({ action: "tournament.delete" });
   });
 
   it("ends a running tournament, and says when there is none to end", async () => {

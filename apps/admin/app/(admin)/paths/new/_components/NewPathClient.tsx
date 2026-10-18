@@ -21,9 +21,6 @@ interface AvailableLesson {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const BODY_F = "var(--font-sans)";
 
@@ -75,9 +72,9 @@ function slugify(input: string): string {
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
-  background: "#0A0826",
-  border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border-2)",
+  color: "var(--a-fg)",
   fontFamily: MONO,
   fontSize: 13,
   letterSpacing: "0.01em",
@@ -88,10 +85,20 @@ const BASE_INPUT: React.CSSProperties = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// The site's category colours, so a lesson reads the same in both places.
 const CAT_CHIPS: Record<string, { color: string; border: string }> = {
-  CYBERSEC: { color: "#FF6B9D", border: "rgba(255,107,157,0.3)" },
-  NETWORK: { color: "#6E8BFF", border: "rgba(110,139,255,0.35)" },
-  DEV: { color: TURQ, border: `rgba(10,255,212,0.3)` },
+  CYBERSEC: {
+    color: "var(--a-category-cybersec)",
+    border: "color-mix(in srgb, var(--a-category-cybersec) 30%, transparent)",
+  },
+  NETWORK: {
+    color: "var(--a-category-network)",
+    border: "color-mix(in srgb, var(--a-category-network) 30%, transparent)",
+  },
+  DEV: {
+    color: "var(--a-category-dev)",
+    border: "color-mix(in srgb, var(--a-category-dev) 35%, transparent)",
+  },
 };
 const DIFF_DIAMONDS: Record<string, number> = {
   BEGINNER: 1,
@@ -103,9 +110,9 @@ const DIFF_DIAMONDS: Record<string, number> = {
 function diamonds(difficulty: string): React.ReactElement {
   const n = DIFF_DIAMONDS[difficulty] ?? 1;
   return (
-    <span style={{ letterSpacing: "-0.05em", color: "#7F7BA9" }}>
+    <span style={{ letterSpacing: "-0.05em", color: "var(--a-muted)" }}>
       {"◆".repeat(n)}
-      <span style={{ color: "#7F7BA9" }}>{"◇".repeat(4 - n)}</span>
+      <span style={{ color: "var(--a-muted)" }}>{"◇".repeat(4 - n)}</span>
     </span>
   );
 }
@@ -127,14 +134,14 @@ function Label({
         fontSize: 10.5,
         letterSpacing: "0.18em",
         textTransform: "uppercase",
-        color: "#B8B5D1",
+        color: "var(--a-fg-2)",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
       }}
     >
       {children}
-      {req && <span style={{ color: DANGER }}>*</span>}
+      {req && <span style={{ color: "var(--a-danger)" }}>*</span>}
       {hint && (
         <span
           style={{
@@ -142,7 +149,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             marginLeft: "auto",
           }}
         >
@@ -153,10 +160,14 @@ function Label({
   );
 }
 function Help({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>{children}</span>;
+  return (
+    <span style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--a-muted)" }}>{children}</span>
+  );
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
-  return msg ? <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>{msg}</span> : null;
+  return msg ? (
+    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)" }}>{msg}</span>
+  ) : null;
 }
 
 // ── Drag-and-drop lesson row ──────────────────────────────────────────────────
@@ -188,7 +199,10 @@ function LessonRow({
   const isDragging = dragState.dragId === lesson.id;
   const isDropTarget =
     dragState.overId === lesson.id && dragState.dragId !== null && dragState.dragId !== lesson.id;
-  const cat = CAT_CHIPS[lesson.category] ?? { color: "#7F7BA9", border: "rgba(107,104,144,0.35)" };
+  const cat = CAT_CHIPS[lesson.category] ?? {
+    color: "var(--a-muted)",
+    border: "color-mix(in srgb, var(--a-muted) 35%, transparent)",
+  };
 
   return (
     <li
@@ -209,12 +223,20 @@ function LessonRow({
         alignItems: "center",
         gap: 14,
         padding: "12px 16px 12px 8px",
-        borderBottom: `1px solid rgba(42,37,96,0.5)`,
-        background: isDropTarget ? "#0E0A33" : isDragging ? "#0E0A33" : "#0A0826",
-        outline: isDragging ? `1px solid ${TURQ}` : isDropTarget ? `1px dashed ${TURQ}` : "none",
+        borderBottom: "1px solid color-mix(in srgb, var(--a-border-2) 50%, transparent)",
+        background: isDropTarget
+          ? "var(--a-hover)"
+          : isDragging
+            ? "var(--a-hover)"
+            : "var(--a-surface)",
+        outline: isDragging
+          ? "1px solid var(--a-accent)"
+          : isDropTarget
+            ? "1px dashed var(--a-accent)"
+            : "none",
         outlineOffset: -1,
         boxShadow: isDragging
-          ? `0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(10,255,212,0.25)`
+          ? "0 12px 32px color-mix(in srgb, var(--a-bg) 50%, transparent), 0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)"
           : "none",
         position: "relative",
         transition: "background 100ms ease",
@@ -231,8 +253,8 @@ function LessonRow({
             left: 8,
             right: 8,
             height: 2,
-            background: TURQ,
-            boxShadow: `0 0 10px ${TURQ}`,
+            background: "var(--a-accent)",
+            boxShadow: "0 0 10px var(--a-accent)",
           }}
         />
       )}
@@ -244,7 +266,7 @@ function LessonRow({
           placeItems: "center",
           width: 28,
           height: 28,
-          color: isDragging ? TURQ : "#44406B",
+          color: isDragging ? "var(--a-accent)" : "var(--a-faint-2)",
           transition: "color 100ms ease",
         }}
       >
@@ -265,9 +287,9 @@ function LessonRow({
           fontWeight: 700,
           fontSize: 11,
           letterSpacing: "0.04em",
-          color: idx === 0 ? TURQ : "#7F7BA9",
-          background: "#050416",
-          border: `1px solid ${idx === 0 ? "rgba(10,255,212,0.35)" : BORDER}`,
+          color: idx === 0 ? "var(--a-accent)" : "var(--a-muted)",
+          background: "var(--a-surface-2)",
+          border: `1px solid ${idx === 0 ? "color-mix(in srgb, var(--a-accent) 35%, transparent)" : "var(--a-border-2)"}`,
           width: 36,
           height: 28,
           display: "grid",
@@ -284,7 +306,7 @@ function LessonRow({
             fontFamily: BODY_F,
             fontWeight: 600,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--a-fg)",
             margin: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -297,19 +319,19 @@ function LessonRow({
           style={{
             fontFamily: MONO,
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
             flexWrap: "wrap",
           }}
         >
-          <span style={{ color: TURQ }}>{lesson.refCode}</span>
-          <span style={{ color: "#7F7BA9" }}>·</span>
+          <span style={{ color: "var(--a-accent)" }}>{lesson.refCode}</span>
+          <span style={{ color: "var(--a-muted)" }}>·</span>
           {diamonds(lesson.difficulty)}
-          <span style={{ color: "#7F7BA9" }}>·</span>
+          <span style={{ color: "var(--a-muted)" }}>·</span>
           <span>
-            <b style={{ color: "#7F7BA9" }}>{lesson.estimatedMinutes}</b> min
+            <b style={{ color: "var(--a-muted)" }}>{lesson.estimatedMinutes}</b> min
           </span>
         </span>
       </div>
@@ -326,7 +348,7 @@ function LessonRow({
             padding: "3px 8px",
             border: `1px solid ${cat.border}`,
             color: cat.color,
-            background: "rgba(0,0,0,0.25)",
+            background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
           }}
         >
           {lesson.category === "CYBERSEC"
@@ -343,9 +365,9 @@ function LessonRow({
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             padding: "3px 8px",
-            border: `1px solid rgba(10,255,212,0.3)`,
-            color: TURQ,
-            background: "rgba(10,255,212,0.05)",
+            border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
+            color: "var(--a-accent)",
+            background: "color-mix(in srgb, var(--a-accent) 5%, transparent)",
           }}
         >
           +{lesson.xpReward} XP
@@ -365,8 +387,8 @@ function LessonRow({
           width: 30,
           height: 30,
           background: "transparent",
-          border: `1px solid ${BORDER}`,
-          color: "#7F7BA9",
+          border: "1px solid var(--a-border-2)",
+          color: "var(--a-muted)",
           cursor: "pointer",
           transition: "all 150ms ease",
         }}
@@ -418,15 +440,15 @@ function LessonPicker({
         zIndex: 50,
         display: "grid",
         placeItems: "center",
-        background: "rgba(3,2,25,0.85)",
+        background: "color-mix(in srgb, var(--a-bg) 85%, transparent)",
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: "min(640px, 90vw)",
-          background: "#0A0826",
-          border: `1px solid ${BORDER}`,
+          background: "var(--a-surface)",
+          border: "1px solid var(--a-border-2)",
           maxHeight: "70vh",
           display: "flex",
           flexDirection: "column",
@@ -445,8 +467,8 @@ function LessonPicker({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "14px 18px",
-            borderBottom: `1px solid ${BORDER}`,
-            background: "#050416",
+            borderBottom: "1px solid var(--a-border-2)",
+            background: "var(--a-surface-2)",
           }}
         >
           <span
@@ -456,11 +478,11 @@ function LessonPicker({
               fontSize: 11,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#B8B5D1",
+              color: "var(--a-fg-2)",
             }}
           >
-            <span style={{ color: "#7F7BA9" }}>{"// "}</span>AJOUTER DES LEÇONS
-            <span style={{ color: "#7F7BA9", marginLeft: 10, letterSpacing: "0.04em" }}>
+            <span style={{ color: "var(--a-muted)" }}>{"// "}</span>AJOUTER DES LEÇONS
+            <span style={{ color: "var(--a-muted)", marginLeft: 10, letterSpacing: "0.04em" }}>
               {selected.length} dans le parcours
             </span>
           </span>
@@ -470,8 +492,8 @@ function LessonPicker({
             className="adm-btn-ghost"
             style={{
               background: "none",
-              border: `1px solid ${BORDER}`,
-              color: "#B8B5D1",
+              border: "1px solid var(--a-border-2)",
+              color: "var(--a-fg-2)",
               cursor: "pointer",
               fontFamily: MONO,
               fontSize: 11,
@@ -484,7 +506,7 @@ function LessonPicker({
           </button>
         </div>
         {/* search */}
-        <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--a-border-2)" }}>
           <input
             ref={searchRef}
             value={q}
@@ -506,7 +528,7 @@ function LessonPicker({
                 textAlign: "center",
                 fontFamily: MONO,
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
               }}
             >
               Aucune leçon disponible
@@ -514,8 +536,8 @@ function LessonPicker({
           ) : (
             filtered.map((l) => {
               const cat = CAT_CHIPS[l.category] ?? {
-                color: "#7F7BA9",
-                border: "rgba(107,104,144,0.35)",
+                color: "var(--a-muted)",
+                border: "color-mix(in srgb, var(--a-muted) 35%, transparent)",
               };
               return (
                 <button
@@ -532,7 +554,8 @@ function LessonPicker({
                     width: "100%",
                     background: "none",
                     border: 0,
-                    borderBottom: `1px solid rgba(42,37,96,0.5)`,
+                    borderBottom:
+                      "1px solid color-mix(in srgb, var(--a-border-2) 50%, transparent)",
                     padding: "12px 18px",
                     cursor: "pointer",
                     textAlign: "left",
@@ -548,7 +571,7 @@ function LessonPicker({
                         fontFamily: BODY_F,
                         fontWeight: 600,
                         fontSize: 13,
-                        color: "#F5F5FA",
+                        color: "var(--a-fg)",
                         margin: "0 0 3px",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -557,7 +580,7 @@ function LessonPicker({
                     >
                       {l.title}
                     </p>
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#7F7BA9" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-muted)" }}>
                       {l.refCode} · {l.estimatedMinutes} min · +{l.xpReward} XP
                     </span>
                   </div>
@@ -661,13 +684,13 @@ export function NewPathClient({
   return (
     <>
       <style>{`
-        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:rgba(255,255,255,0.18)!important}
-        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
-        .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .pe-row:hover{background:#0E0A33!important}
-        .pe-add:hover{color:${TURQ}!important;background:rgba(10,255,212,0.04)!important;border-top-color:rgba(10,255,212,0.4)!important;border-top-style:solid!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
+        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:color-mix(in srgb, var(--a-fg) 18%, transparent)!important}
+        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent),inset 0 0 0 1px color-mix(in srgb, var(--a-accent) 8%, transparent)!important}
+        .le-prefix:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
+        .le-num:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
+        .pe-row:hover{background:var(--a-hover)!important}
+        .pe-add:hover{color:var(--a-accent)!important;background:color-mix(in srgb, var(--a-accent) 4%, transparent)!important;border-top-color:color-mix(in srgb, var(--a-accent) 40%, transparent)!important;border-top-style:solid!important}
+        .adm-btn-ghost:hover{color:var(--a-fg)!important;border-color:var(--a-muted)!important;background:color-mix(in srgb, var(--a-fg) 3%, transparent)!important}
       `}</style>
 
       {pickerOpen && (
@@ -690,9 +713,9 @@ export function NewPathClient({
           gap: 14,
           marginBottom: 28,
           padding: "12px 16px",
-          background: "rgba(10,8,38,0.5)",
-          border: "1px solid #1F1B47",
-          borderLeft: "3px solid #2A2560",
+          background: "color-mix(in srgb, var(--a-surface) 50%, transparent)",
+          border: "1px solid var(--a-border)",
+          borderLeft: "3px solid var(--a-border-2)",
         }}
       >
         <span
@@ -707,9 +730,9 @@ export function NewPathClient({
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             background: "transparent",
-            border: "1px solid #1F1B47",
+            border: "1px solid var(--a-border)",
             cursor: "not-allowed",
           }}
         >
@@ -729,7 +752,14 @@ export function NewPathClient({
           </svg>
           Gérer le quiz final
         </span>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", letterSpacing: "0.02em" }}>
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 11,
+            color: "var(--a-muted)",
+            letterSpacing: "0.02em",
+          }}
+        >
           {"Enregistre le parcours d'abord pour gérer le quiz final."}
         </span>
       </div>
@@ -738,12 +768,12 @@ export function NewPathClient({
         <div
           style={{
             padding: "13px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.35)",
-            borderLeft: `3px solid ${DANGER}`,
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--a-danger) 35%, transparent)",
+            borderLeft: "3px solid var(--a-danger)",
             fontFamily: MONO,
             fontSize: 11,
-            color: DANGER,
+            color: "var(--a-danger)",
             marginBottom: 24,
           }}
         >
@@ -772,7 +802,7 @@ export function NewPathClient({
             />
             <Help>
               Format :{" "}
-              <b style={{ color: TURQ }}>
+              <b style={{ color: "var(--a-accent)" }}>
                 CL-PATH-{"{NNN}"}-V{"{NN}"}
               </b>{" "}
               · doit être unique
@@ -789,8 +819,8 @@ export function NewPathClient({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border-2)",
                 transition: "all 150ms ease",
               }}
             >
@@ -801,9 +831,9 @@ export function NewPathClient({
                   width: 36,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#7F7BA9",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  color: "var(--a-muted)",
+                  borderRight: "1px solid var(--a-border-2)",
+                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
                 }}
               >
                 /
@@ -824,7 +854,8 @@ export function NewPathClient({
               />
             </div>
             <Help>
-              {SITE_HOST}/parcours/<b style={{ color: TURQ }}>{slug || "votre-slug"}</b>
+              {SITE_HOST}/parcours/
+              <b style={{ color: "var(--a-accent)" }}>{slug || "votre-slug"}</b>
             </Help>
             <FieldErr msg={state.fieldErrors?.slug} />
           </div>
@@ -938,8 +969,8 @@ export function NewPathClient({
               position: "relative",
               display: "flex",
               alignItems: "stretch",
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
+              background: "var(--a-surface)",
+              border: "1px solid var(--a-border-2)",
               transition: "all 150ms ease",
             }}
           >
@@ -961,9 +992,9 @@ export function NewPathClient({
                 fontFamily: MONO,
                 fontSize: 10.5,
                 letterSpacing: "0.18em",
-                color: "#7F7BA9",
-                borderLeft: `1px solid ${BORDER}`,
-                background: "rgba(0,0,0,0.25)",
+                color: "var(--a-muted)",
+                borderLeft: "1px solid var(--a-border-2)",
+                background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
               }}
@@ -973,7 +1004,8 @@ export function NewPathClient({
           </div>
           <Help>
             Calculée auto depuis les leçons :{" "}
-            <b style={{ color: TURQ }}>{(totals.dur / 60).toFixed(1)} h</b> · ajuste pour pauses
+            <b style={{ color: "var(--a-accent)" }}>{(totals.dur / 60).toFixed(1)} h</b> · ajuste
+            pour pauses
           </Help>
         </div>
 
@@ -994,8 +1026,8 @@ export function NewPathClient({
             alignItems: "flex-start",
             gap: 14,
             padding: "16px 18px",
-            background: "#0A0826",
-            border: `1px solid ${BORDER}`,
+            background: "var(--a-surface)",
+            border: "1px solid var(--a-border-2)",
             cursor: "pointer",
           }}
         >
@@ -1003,7 +1035,13 @@ export function NewPathClient({
             name="publishNow"
             type="checkbox"
             value="true"
-            style={{ width: 18, height: 18, accentColor: TURQ, cursor: "pointer", marginTop: 1 }}
+            style={{
+              width: 18,
+              height: 18,
+              accentColor: "var(--a-accent)",
+              cursor: "pointer",
+              marginTop: 1,
+            }}
           />
           <div>
             <div
@@ -1013,7 +1051,7 @@ export function NewPathClient({
                 fontSize: 12,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#F5F5FA",
+                color: "var(--a-fg)",
                 marginBottom: 4,
                 display: "inline-flex",
                 alignItems: "center",
@@ -1027,7 +1065,7 @@ export function NewPathClient({
                   alignItems: "center",
                   gap: 5,
                   fontSize: 10,
-                  color: TURQ,
+                  color: "var(--a-accent)",
                   fontWeight: 700,
                   letterSpacing: "0.12em",
                 }}
@@ -1037,8 +1075,8 @@ export function NewPathClient({
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: TURQ,
-                    boxShadow: `0 0 6px ${TURQ}`,
+                    background: "var(--a-accent)",
+                    boxShadow: "0 0 6px var(--a-accent)",
                     display: "inline-block",
                   }}
                 />
@@ -1049,7 +1087,7 @@ export function NewPathClient({
               style={{
                 fontFamily: BODY_F,
                 fontSize: 12.5,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -1063,7 +1101,7 @@ export function NewPathClient({
         {/* Lessons section */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
-          <div style={{ border: `1px solid ${BORDER}`, background: "#0A0826" }}>
+          <div style={{ border: "1px solid var(--a-border-2)", background: "var(--a-surface)" }}>
             {/* section head */}
             <div
               style={{
@@ -1071,8 +1109,8 @@ export function NewPathClient({
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "14px 18px",
-                borderBottom: `1px solid ${BORDER}`,
-                background: "#050416",
+                borderBottom: "1px solid var(--a-border-2)",
+                background: "var(--a-surface-2)",
               }}
             >
               <h3
@@ -1082,16 +1120,16 @@ export function NewPathClient({
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#B8B5D1",
+                  color: "var(--a-fg-2)",
                   margin: 0,
                 }}
               >
-                <span style={{ color: "#7F7BA9" }}>{"// "}</span>
-                <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
+                <span style={{ color: "var(--a-muted)" }}>{"// "}</span>
+                <b style={{ color: "var(--a-accent)" }}>{lessons.length}</b> leçons · ordre actuel
               </h3>
-              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>
-                <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
-                <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
+              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "var(--a-muted)" }}>
+                <b style={{ color: "var(--a-muted)" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
+                <b style={{ color: "var(--a-muted)" }}>{totals.xp}</b> XP cumulés
               </span>
             </div>
 
@@ -1103,7 +1141,7 @@ export function NewPathClient({
                   textAlign: "center",
                   fontFamily: MONO,
                   fontSize: 11,
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   letterSpacing: "0.06em",
                 }}
               >
@@ -1143,13 +1181,13 @@ export function NewPathClient({
                 padding: 14,
                 background: "transparent",
                 border: 0,
-                borderTop: "1px dashed rgba(255,255,255,0.08)",
+                borderTop: "1px dashed color-mix(in srgb, var(--a-fg) 8%, transparent)",
                 fontFamily: MONO,
                 fontWeight: 700,
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 cursor: "pointer",
                 transition: "all 150ms ease",
               }}
@@ -1183,8 +1221,8 @@ export function NewPathClient({
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(4, 1fr)",
-                background: "#050416",
-                borderTop: `1px solid ${BORDER}`,
+                background: "var(--a-surface-2)",
+                borderTop: "1px solid var(--a-border-2)",
                 fontFamily: MONO,
                 fontSize: 11,
               }}
@@ -1202,7 +1240,7 @@ export function NewPathClient({
                     display: "flex",
                     flexDirection: "column",
                     gap: 3,
-                    borderRight: i < 3 ? `1px solid ${BORDER}` : "none",
+                    borderRight: i < 3 ? "1px solid var(--a-border-2)" : "none",
                   }}
                 >
                   <span
@@ -1210,7 +1248,7 @@ export function NewPathClient({
                       fontSize: 9.5,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
-                      color: "#7F7BA9",
+                      color: "var(--a-muted)",
                     }}
                   >
                     {cell.lbl}
@@ -1219,7 +1257,7 @@ export function NewPathClient({
                     style={{
                       fontWeight: 700,
                       fontSize: 14,
-                      color: cell.brand ? TURQ : "#F5F5FA",
+                      color: cell.brand ? "var(--a-accent)" : "var(--a-fg)",
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -1238,7 +1276,7 @@ export function NewPathClient({
             alignItems: "center",
             gap: 14,
             paddingTop: 24,
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: "1px solid var(--a-border-2)",
             flexWrap: "wrap",
             justifyContent: "flex-end",
           }}
@@ -1254,8 +1292,8 @@ export function NewPathClient({
               textTransform: "uppercase",
               padding: "13px 22px",
               background: "transparent",
-              color: "#7F7BA9",
-              border: `1px solid ${BORDER}`,
+              color: "var(--a-muted)",
+              border: "1px solid var(--a-border-2)",
               transition: "all 150ms ease",
               textDecoration: "none",
               display: "inline-flex",
@@ -1277,12 +1315,11 @@ export function NewPathClient({
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               padding: "13px 22px",
-              background: "linear-gradient(135deg, #2848FF, #0024FF)",
-              color: "#fff",
+              background: "var(--a-blue)",
+              color: "var(--a-fg)",
               border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
-              boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
           >
             <span
@@ -1292,7 +1329,7 @@ export function NewPathClient({
                 left: -3,
                 width: 10,
                 height: 10,
-                border: "1.5px solid #fff",
+                border: "1.5px solid var(--a-fg)",
                 borderRight: 0,
                 borderBottom: 0,
                 opacity: 0.7,
@@ -1307,7 +1344,7 @@ export function NewPathClient({
                 right: -3,
                 width: 10,
                 height: 10,
-                border: "1.5px solid #fff",
+                border: "1.5px solid var(--a-fg)",
                 borderTop: 0,
                 borderLeft: 0,
                 opacity: 0.7,

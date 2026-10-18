@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   requireAdminAction: vi.fn<() => Promise<{ id: string }>>(),
   ticketFindUnique: vi.fn<(args: unknown) => Promise<unknown>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  record: vi.fn<(entry: Record<string, unknown>) => Promise<void>>(),
   lift: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
   addMessage: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   resolveIfOpen: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
@@ -18,8 +18,8 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     contactTicket: { findUnique: m.ticketFindUnique },
-    auditLog: { create: m.auditCreate },
   },
+  auditLogRepository: { record: m.record },
   banRepository: { lift: m.lift },
   ticketRepository: {
     addMessage: m.addMessage,
@@ -77,14 +77,14 @@ function form(fields: Record<string, string>): FormData {
 
 /** The audit actions written, in order. */
 function auditActions(): unknown[] {
-  return m.auditCreate.mock.calls.map(([args]) => args.data.action);
+  return m.record.mock.calls.map(([entry]) => entry.action);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireAdminAction.mockResolvedValue({ id: ADMIN });
   m.ticketFindUnique.mockResolvedValue(appealTicket());
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
   m.lift.mockResolvedValue(true);
   m.addMessage.mockResolvedValue({ ok: true });
   m.resolveIfOpen.mockResolvedValue(true);
@@ -104,7 +104,7 @@ describe("liftAppealedBanAction", () => {
       auditMetadata: { reason: null, ticketId: TICKET, banId: BAN },
     });
     expect(m.resolveIfOpen).toHaveBeenCalledWith({ ticketId: TICKET, actorId: ADMIN });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
     expect(m.revalidatePath).toHaveBeenCalledWith(`/tickets/${TICKET}`);
     expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
   });
@@ -130,7 +130,7 @@ describe("liftAppealedBanAction", () => {
 
     expect(result.ok).toBeUndefined();
     expect(result.error).toMatch(/n'est plus en cours/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
     expect(m.addMessage).not.toHaveBeenCalled();
     expect(m.resolveIfOpen).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
@@ -222,7 +222,7 @@ describe("liftAppealedBanAction", () => {
 
     expect(result.ok).toBe(true);
     expect(result.warning).toMatch(/levé, mais la réponse n'est pas partie/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
   });
 
@@ -243,14 +243,14 @@ describe("liftAppealedBanAction", () => {
     });
     // Resolving would close the conversation the answer still has to go into.
     expect(m.resolveIfOpen).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
     expect(m.loggerError).toHaveBeenCalled();
     expect(m.revalidatePath).toHaveBeenCalledWith(`/users/${LEARNER}`);
   });
 
   it("keeps a written reply as sent when only its journal line fails", async () => {
-    m.auditCreate.mockRejectedValue(new Error("connection reset"));
+    m.record.mockRejectedValue(new Error("connection reset"));
     const result = await liftAppealedBanAction(
       {},
       form({ ticketId: TICKET, reply: "Ton bannissement est levé." }),

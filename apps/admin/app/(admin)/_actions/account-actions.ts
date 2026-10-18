@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auditLogRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { requireAdminAction } from "@/lib/auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -31,8 +32,8 @@ const scopeSchema = z.object({ scope: z.enum(["others", "global"]) });
 
 /** The audit actions, by scope. */
 const SIGN_OUT_ACTION = {
-  others: "admin.account.sessions.others_revoked",
-  global: "admin.account.sessions.all_revoked",
+  others: AUDIT_ACTION.ownAccount.othersSignedOut,
+  global: AUDIT_ACTION.ownAccount.allSignedOut,
 } as const;
 
 export async function signOutMySessionsAction(

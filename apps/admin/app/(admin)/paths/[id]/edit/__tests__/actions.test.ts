@@ -11,10 +11,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => {
   const tx = {
     path: { update: vi.fn() },
-    auditLog: { create: vi.fn() },
   };
   return {
     tx,
+    record: vi.fn(),
     requireAdminAction: vi.fn(),
     findUnique: vi.fn(),
     findFirst: vi.fn(),
@@ -31,6 +31,7 @@ vi.mock("@cyberlearn/lib/logger", () => ({
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
+  auditLogRepository: { record: m.record },
   pathRepository: { replaceLessons: m.replaceLessons },
   prisma: {
     path: { findUnique: m.findUnique, findFirst: m.findFirst },
@@ -92,12 +93,15 @@ describe("updatePathAction", () => {
     // the repository's to write, which keeps their module.
     expect(m.tx).not.toHaveProperty("pathLesson");
     expect(m.tx.path.update).toHaveBeenCalledTimes(1);
-    const [audit] = m.tx.auditLog.create.mock.calls[0] as [{ data: Record<string, unknown> }];
-    expect(audit.data).toMatchObject({
+    // The audit row too, by the same transaction's client.
+    expect(m.record).toHaveBeenCalledOnce();
+    const [audit, db] = m.record.mock.calls[0] as [Record<string, unknown>, unknown];
+    expect(audit).toMatchObject({
       action: "path.update",
       targetId: PATH,
       metadata: { lessonCount: 2 },
     });
+    expect(db).toBe(m.tx);
   });
 
   it("gives the transaction time to write a long path, row after row", async () => {

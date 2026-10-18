@@ -1,4 +1,5 @@
 import type { ProgressStatus } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /**
@@ -19,7 +20,7 @@ export const LESSON_CORRECTIONS = [
 ] as const satisfies readonly LessonCorrection[];
 
 /** The audit action of a lesson's progress corrected from the console. */
-export const LESSON_CORRECTION_ACTION = "admin.user.lesson_progress.correct";
+export const LESSON_CORRECTION_ACTION = AUDIT_ACTION.user.lessonProgressCorrect;
 
 export type LessonCorrectionResult =
   | {

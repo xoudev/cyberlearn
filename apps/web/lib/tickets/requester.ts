@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma, ticketRepository } from "@cyberlearn/db";
+import { prisma, ticketRepository, userRepository } from "@cyberlearn/db";
 import {
   TICKET_MESSAGE_MAX,
   TICKET_MESSAGE_MIN,
@@ -108,11 +108,7 @@ export async function fileAccountTicket(input: {
   ip: string;
   fields: unknown;
 }): Promise<FileTicketResult> {
-  const profile = await prisma.user.findUnique({
-    where: { id: input.user.id },
-    select: { email: true },
-  });
-  const email = profile?.email ?? input.user.email;
+  const email = (await userRepository.findEmailById(input.user.id)) ?? input.user.email;
   if (!email) return { ok: false, error: NO_REPLY_ADDRESS };
 
   // Not an object at all: the request's fields are missing, and fileTicket

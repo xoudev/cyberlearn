@@ -44,6 +44,10 @@ export type {
 } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export {
+  preferencesRepository,
+  type PreferenceChanges,
+} from "./repositories/preferences.repository.js";
+export {
   userRepository,
   consoleUserWhere,
   generatedUsername,
@@ -55,6 +59,7 @@ export {
   type ConsoleProfileField,
   type ConsoleProfileReset,
   type ConsoleProfileUpdate,
+  type ConsoleTarget,
   type ConsoleUserHit,
   type ConsoleUserQuery,
   type ConsoleUserRow,
@@ -79,10 +84,14 @@ export {
 export {
   auditLogRepository,
   auditWhere,
+  type AuditEntry,
   type AuditFilter,
   type AuditQuery,
   type AuditRow,
 } from "./repositories/audit-log.repository.js";
+// The names themselves are read from "@cyberlearn/db/audit-actions", which a
+// test replacing this module with a fake leaves real.
+export type { AuditAction } from "./audit-actions.js";
 export {
   lastPage,
   type ConsolePage,

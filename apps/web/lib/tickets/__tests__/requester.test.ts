@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   create: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ id: string }>>(),
   findFirst: vi.fn<(args: unknown) => Promise<{ id: string } | null>>(),
-  findUser: vi.fn<(args: unknown) => Promise<{ email: string | null } | null>>(),
+  findEmailById: vi.fn<(userId: string) => Promise<string | null>>(),
   addMessage:
     vi.fn<
       (input: unknown) => Promise<{ ok: true } | { ok: false; reason: "NOT_FOUND" | "TERMINAL" }>
@@ -15,9 +15,9 @@ const m = vi.hoisted(() => ({
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     contactTicket: { create: m.create, findFirst: m.findFirst },
-    user: { findUnique: m.findUser },
   },
   ticketRepository: { addMessage: m.addMessage },
+  userRepository: { findEmailById: m.findEmailById },
 }));
 vi.mock("@/lib/rate-limit", () => ({
   checkContactForm: m.checkContactForm,
@@ -95,14 +95,14 @@ describe("fileAccountTicket", () => {
   const user = { id: "user-1", email: "session@example.org" };
 
   it("files as the account, answered at the profile's address, whatever the input says", async () => {
-    m.findUser.mockResolvedValue({ email: "profil@example.org" });
+    m.findEmailById.mockResolvedValue("profil@example.org");
     const result = await fileAccountTicket({
       user,
       ip: "203.0.113.7",
       fields: { ...request, email: "autre@example.org", userId: "user-2" },
     });
     expect(result).toEqual({ ok: true, ticketId: TICKET_ID });
-    expect(m.findUser).toHaveBeenCalledWith({ where: { id: "user-1" }, select: { email: true } });
+    expect(m.findEmailById).toHaveBeenCalledWith("user-1");
     expect(m.create).toHaveBeenCalledWith({
       data: { ...request, email: "profil@example.org", userId: "user-1", status: "OPEN" },
       select: { id: true },
@@ -112,7 +112,7 @@ describe("fileAccountTicket", () => {
   });
 
   it("falls back on the session's address, and refuses without any", async () => {
-    m.findUser.mockResolvedValue({ email: null });
+    m.findEmailById.mockResolvedValue(null);
     await fileAccountTicket({ user, ip: "x", fields: request });
     expect(m.create.mock.calls[0]?.[0].data.email).toBe("session@example.org");
 
@@ -125,7 +125,7 @@ describe("fileAccountTicket", () => {
   });
 
   it("names the missing fields of an input that is not a request", async () => {
-    m.findUser.mockResolvedValue({ email: "profil@example.org" });
+    m.findEmailById.mockResolvedValue("profil@example.org");
     const result = await fileAccountTicket({ user, ip: "x", fields: null });
     expect(result.ok).toBe(false);
     if (result.ok) return;

@@ -1,3 +1,4 @@
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /**
@@ -13,7 +14,7 @@ import { prisma } from "../prisma.js";
 export const PLACEMENT_WAIVER_REASON = "placement_test";
 
 /** The audit action of a placement test reset from the console. */
-export const PLACEMENT_RESET_ACTION = "admin.user.placement.reset";
+export const PLACEMENT_RESET_ACTION = AUDIT_ACTION.user.placementReset;
 
 export type PlacementResetResult =
   | { ok: true; scores: { dev: number; cybersec: number; network: number }; waiversRemoved: number }

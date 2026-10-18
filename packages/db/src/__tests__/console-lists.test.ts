@@ -6,6 +6,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AUDIT_ACTION, CONSOLE_AUDIT_ACTIONS } from "../audit-actions.js";
 import { auditLogRepository, auditWhere } from "../repositories/audit-log.repository.js";
 import { lastPage, readSlice } from "../repositories/console-page.js";
 import { lessonRepository } from "../repositories/lesson.repository.js";
@@ -263,9 +264,20 @@ describe("auditLogRepository", () => {
     });
   });
 
-  it("lists the actions the log holds, once each", async () => {
-    mockPrisma.auditLog.findMany.mockResolvedValue([{ action: "a" }, { action: "b" }]);
-    expect(await auditLogRepository.actionNames()).toEqual(["a", "b"]);
+  it("lists the console's actions and the ones the log holds, once each and sorted", async () => {
+    mockPrisma.auditLog.findMany.mockResolvedValue([
+      { action: "cron.weekly-digest" },
+      { action: AUDIT_ACTION.ticket.reply },
+    ]);
+    const names = await auditLogRepository.actionNames();
+
+    // One the console never writes, held by the log: still offered.
+    expect(names).toContain("cron.weekly-digest");
+    // One the log does not hold yet: offered all the same.
+    expect(names).toContain(AUDIT_ACTION.audit.export);
+    expect(names).toEqual(expect.arrayContaining([...CONSOLE_AUDIT_ACTIONS]));
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual([...names].sort());
     expect(firstArg(mockPrisma.auditLog.findMany)).toMatchObject({ distinct: ["action"] });
   });
 });

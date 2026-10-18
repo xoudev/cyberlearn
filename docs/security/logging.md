@@ -70,6 +70,12 @@ Règles applicables à chaque entrée `auditLog` :
 | `userAgent` | `.slice(0, 500)` - tronqué |
 | `metadata` | Pas d'email, pas de nom, IPs pseudonymisées |
 
+Un geste de la console écrit son entrée par `auditLogRepository.record`, avec
+le client de la transaction qui fait le changement quand il y en a une, et un
+nom d'action pris dans `AUDIT_ACTION` (`@cyberlearn/db/audit-actions`), jamais
+un littéral : le filtre du journal propose ce catalogue, et une faute de frappe
+y ferait disparaître le geste. Un nom déjà écrit en base ne se renomme pas.
+
 ## Sentry / monitoring externe
 
 RÉSOLU par PR 3 (`feat/sentry-init-csp-polish`). Config appliquée :

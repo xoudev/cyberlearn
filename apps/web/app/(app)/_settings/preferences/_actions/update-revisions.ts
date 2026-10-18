@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { preferencesRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
 export interface UpdateRevisionsState {
@@ -34,11 +34,7 @@ export async function updateRevisionsAction(
 
   const spacedRepetition = parsed.data === "true";
 
-  await prisma.userPreferences.upsert({
-    where: { userId: authUser.id },
-    create: { userId: authUser.id, spacedRepetition },
-    update: { spacedRepetition },
-  });
+  await preferencesRepository.save(authUser.id, { spacedRepetition });
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard");

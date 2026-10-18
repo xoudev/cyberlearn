@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   hintCreate: vi.fn<(args: unknown) => Promise<{ id: string }>>(),
   hintUpdate: vi.fn<(args: unknown) => Promise<{ challengeId: string }>>(),
   hintDelete: vi.fn<(args: unknown) => Promise<{ challengeId: string }>>(),
-  auditCreate: vi.fn<(args: { data: Record<string, unknown> }) => Promise<unknown>>(),
+  record: vi.fn<(entry: Record<string, unknown>, db?: unknown) => Promise<void>>(),
   isUsed: vi.fn<(id: string) => Promise<boolean>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   redirect: vi.fn<(url: string) => never>(),
@@ -27,7 +27,6 @@ const client = vi.hoisted(() => {
     },
     challengeHint: { create: m.hintCreate, update: m.hintUpdate, delete: m.hintDelete },
     userChallengeProgress: { count: m.progressCount },
-    auditLog: { create: m.auditCreate },
     $transaction: (work: (tx: unknown) => Promise<unknown>): Promise<unknown> => work(db),
   };
   return db;
@@ -36,6 +35,7 @@ const client = vi.hoisted(() => {
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: client,
+  auditLogRepository: { record: m.record },
   JSON_NULL_IN_DB: "DbNull",
   tournamentRepository: { isUsed: m.isUsed },
 }));
@@ -106,7 +106,7 @@ const STORED = {
 };
 
 function audited(): Record<string, unknown> | undefined {
-  return m.auditCreate.mock.calls[0]?.[0].data;
+  return m.record.mock.calls[0]?.[0];
 }
 
 beforeEach(() => {
@@ -121,7 +121,7 @@ beforeEach(() => {
   m.hintCreate.mockResolvedValue({ id: HINT });
   m.hintUpdate.mockResolvedValue({ challengeId: ID });
   m.hintDelete.mockResolvedValue({ challengeId: ID });
-  m.auditCreate.mockResolvedValue({});
+  m.record.mockResolvedValue(undefined);
   m.redirect.mockImplementation((url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`);
   });
@@ -156,7 +156,7 @@ describe("the challenge itself", () => {
     const result = await updateChallengeAction(ID, {}, form(FIELDS));
     expect(result.error).toMatch(/n'existe plus/u);
     expect(m.challengeUpdate).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 
   it.each([true, false])("logs switching it %s", async (isActive) => {
@@ -186,7 +186,7 @@ describe("the challenge itself", () => {
     m.progressCount.mockResolvedValue(4);
     const result = await deleteChallengeAction(ID);
     expect(result.error).toMatch(/4 progression/u);
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.record).not.toHaveBeenCalled();
   });
 });
 
@@ -196,7 +196,9 @@ describe("its hints", () => {
     await updateHintAction(HINT, "Regarde l'heure.", 20);
     await deleteHintAction(HINT);
 
-    const rows = m.auditCreate.mock.calls.map(([args]) => args.data);
+    const rows = m.record.mock.calls.map(([entry]) => entry);
+    // Each in the transaction that changes the hint, by its client.
+    for (const [, db] of m.record.mock.calls) expect(db).toBe(client);
     expect(rows.map((row) => row.action)).toEqual([
       "challenge.hint.create",
       "challenge.hint.update",

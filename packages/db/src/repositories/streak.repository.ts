@@ -1,8 +1,9 @@
 import { correctStreak, dayKey } from "@cyberlearn/lib";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 
 /** What the audit log calls a streak corrected from the console. */
-export const STREAK_CORRECTION_ACTION = "admin.user.streak.correct";
+export const STREAK_CORRECTION_ACTION = AUDIT_ACTION.user.streakCorrect;
 
 export interface StreakCounters {
   streakDays: number;

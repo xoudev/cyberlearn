@@ -209,6 +209,75 @@ describe("the console chrome", () => {
   });
 });
 
+/**
+ * The components still allowed to write a colour out, and why. A path ending
+ * in "/" covers the folder under it.
+ *
+ * The two white grounds the console needs are not here because they are not
+ * in a component: the QR code's canvas (.a-qr-canvas, a scanner wants dark
+ * modules on a light ground) and the e-mail preview's frame (.a-mail-frame, the
+ * ground a mail client gives a message) are rules of admin-ui.css.
+ */
+const RAW_COLOUR_ALLOWED = [
+  // Rendered when the root layout itself has failed, so before admin-ui.css
+  // and the tokens it names are there to be read.
+  "global-error.tsx",
+  // The lesson studio and the import and sync screens are being rewritten in
+  // their own pull requests (plan items 20a and 20c). Their forms move to the
+  // palette once those land, and this line goes with them.
+  "(admin)/lessons/",
+] as const;
+
+function allowedRawColour(path: string): boolean {
+  const name = where(path);
+  return RAW_COLOUR_ALLOWED.some((allowed) =>
+    allowed.endsWith("/") ? name.startsWith(allowed) : name === allowed,
+  );
+}
+
+describe("the console's pages and forms", () => {
+  // Every component of the console, the chrome above included: the forms had
+  // kept their own BORDER, DANGER and TURQ constants, and the hex of the dark
+  // palette inline, long after the chrome had moved to the tokens.
+  const components = filesUnder(APP, (path) => /\.tsx?$/u.test(path));
+  const checked = components.filter((path) => !allowedRawColour(path));
+
+  it("finds the components under (admin) and (auth)", () => {
+    expect(checked.filter((path) => path.startsWith(ADMIN)).length).toBeGreaterThan(100);
+    expect(checked.filter((path) => path.startsWith(AUTH)).length).toBeGreaterThan(5);
+  });
+
+  it.each(checked.map((path) => [where(path), path]))(
+    "%s names its colours from the palette",
+    (_name, path) => {
+      expect(readFileSync(path, "utf8")).not.toMatch(RAW_COLOUR);
+    },
+  );
+
+  it.each(RAW_COLOUR_ALLOWED.map((allowed) => [allowed]))(
+    "still needs its exception for %s, or the line is dropped",
+    (allowed) => {
+      // An exception outlives its reason silently unless something checks:
+      // once the files it covers name their colours, it has to go.
+      const covered = components.filter(
+        (path) => allowedRawColour(path) && where(path).startsWith(allowed),
+      );
+      expect(covered.length, allowed).toBeGreaterThan(0);
+      expect(
+        covered.some((path) => RAW_COLOUR.test(readFileSync(path, "utf8"))),
+        allowed,
+      ).toBe(true);
+    },
+  );
+
+  it("names a lesson's category with the site's catalogue colours", () => {
+    const palette = consolePalette();
+    for (const category of ["cybersec", "dev", "network"]) {
+      expect(palette.get(`--a-category-${category}`)).toBe(`var(--color-category-${category})`);
+    }
+  });
+});
+
 describe("the sign-in screens", () => {
   const screens = filesUnder(AUTH, (path) => path.endsWith(".tsx"));
 
@@ -234,6 +303,51 @@ describe("the sign-in screens", () => {
     // A scanner wants dark modules on a light ground, whatever the theme.
     const section = css.slice(start, end).replace(/\.a-qr-canvas \{[^}]*\}/u, "");
     expect(section).not.toMatch(RAW_COLOUR);
+  });
+});
+
+/**
+ * The rules of admin-ui.css allowed to write a colour out: the two white
+ * grounds named above RAW_COLOUR_ALLOWED. Nothing else in the stylesheet
+ * does, so a primary button back on #fff, a diff line back on its own pink,
+ * or a third white ground nobody wrote down fails here.
+ */
+const WHITE_GROUNDS = [".a-qr-canvas", ".a-mail-frame"] as const;
+
+describe("the console stylesheet", () => {
+  /** The whole rule for a selector that opens a line, braces included. */
+  function rule(selector: string): string | undefined {
+    // Plain string search: a RegExp built from the selector is what Semgrep
+    // flags (detect-non-literal-regexp), even in a test.
+    const opening = `\n${selector} {`;
+    const start = css.indexOf(opening);
+    if (start === -1) return undefined;
+    const end = css.indexOf("}", start);
+    return end === -1 ? undefined : css.slice(start + 1, end + 1);
+  }
+
+  it.each(WHITE_GROUNDS.map((selector) => [selector]))(
+    "keeps %s on its white ground",
+    (selector) => {
+      expect(rule(selector), selector).toMatch(/background: #ffffff;/u);
+    },
+  );
+
+  it("writes out no other colour", () => {
+    let rest = css;
+    for (const selector of WHITE_GROUNDS) rest = rest.replace(rule(selector) ?? "", "");
+    const written = rest.split("\n").filter((line) => RAW_COLOUR.test(line));
+    expect(written).toEqual([]);
+  });
+
+  it("gives the primary button and the diff lines their colours by name", () => {
+    expect(rule(".a-btn--primary")).toMatch(/\bcolor: var\(--a-fg\);/u);
+    expect(rule('.a-diff-line[data-kind="added"]')).toMatch(
+      /\bcolor: color-mix\(in srgb, var\(--a-accent\) \d+%, var\(--a-fg\)\);/u,
+    );
+    expect(rule('.a-diff-line[data-kind="removed"]')).toMatch(
+      /\bcolor: color-mix\(in srgb, var\(--a-danger\) \d+%, var\(--a-fg\)\);/u,
+    );
   });
 });
 

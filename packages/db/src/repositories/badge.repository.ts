@@ -4,13 +4,14 @@ import {
   type BadgeCriterionFacts,
 } from "@cyberlearn/lib";
 import type { BadgeRarity, Prisma } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { awardBadges } from "../badges/award.js";
 import { prisma } from "../prisma.js";
 import { creditXp } from "../xp/credit.js";
 
 /** What the audit log calls a badge granted, or taken away, from the console. */
-export const BADGE_GRANT_ACTION = "admin.user.badge.grant";
-export const BADGE_REVOKE_ACTION = "admin.user.badge.revoke";
+export const BADGE_GRANT_ACTION = AUDIT_ACTION.user.badgeGrant;
+export const BADGE_REVOKE_ACTION = AUDIT_ACTION.user.badgeRevoke;
 
 export type BadgeGrantResult =
   | { ok: true; badgeName: string; xpCredited: number }

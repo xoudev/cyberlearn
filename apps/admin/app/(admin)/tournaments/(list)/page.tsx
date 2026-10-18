@@ -54,7 +54,7 @@ export default async function AdminTournamentsPage(): Promise<React.ReactElement
             {tournaments.map((t) => {
               const phase = tournamentPhase(t, now);
               return (
-                <li key={t.id} style={{ borderBottom: "1px solid #1F1B47" }}>
+                <li key={t.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                   <Link
                     href={`/tournaments/${t.id}`}
                     style={{
@@ -68,7 +68,7 @@ export default async function AdminTournamentsPage(): Promise<React.ReactElement
                   >
                     <span style={{ display: "grid", gap: 4 }}>
                       <strong>{t.title}</strong>
-                      <span className="mono" style={{ fontSize: 11, color: "#8A86A8" }}>
+                      <span className="mono" style={{ fontSize: 11, color: "var(--a-muted)" }}>
                         Du {tournamentDateLabel(t.startsAt)} au {tournamentDateLabel(t.endsAt)} ·{" "}
                         {TEAM_SCOPE_LABELS[t.teamScope]} · {String(t._count.classes)} classe
                         {t._count.classes > 1 ? "s" : ""} · {String(t._count.challenges)} défi

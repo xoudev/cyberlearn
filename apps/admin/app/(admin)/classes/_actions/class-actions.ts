@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { classRepository, prisma } from "@cyberlearn/db";
+import { auditLogRepository, classRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION, type AuditAction } from "@cyberlearn/db/audit-actions";
 import { parseRosterInput } from "@cyberlearn/lib";
 import type { Prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
@@ -73,7 +74,9 @@ export async function createEstablishmentAction(
       },
       select: { id: true },
     });
-    await audit(admin.id, "class.establishment.create", created.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.establishmentCreate, created.id, {
+      name: parsed.data.name,
+    });
   } catch {
     // The slug is unique across establishments, unlike the two below.
     return { error: "Un établissement porte déjà ce slug." };
@@ -104,7 +107,9 @@ export async function createPromotionAction(
       },
       select: { id: true },
     });
-    await audit(admin.id, "class.promotion.create", created.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.promotionCreate, created.id, {
+      name: parsed.data.name,
+    });
   } catch {
     return { error: "Cet établissement a déjà une promo avec ce slug." };
   }
@@ -127,7 +132,7 @@ export async function createClassAction(
       slug: parsed.data.slug,
       description: parsed.data.description === "" ? null : (parsed.data.description ?? null),
     });
-    await audit(admin.id, "class.create", created.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.create, created.id, { name: parsed.data.name });
   } catch {
     return { error: "Cette promo a déjà une classe avec ce slug." };
   }
@@ -211,7 +216,7 @@ export async function addMembersAction(
   const addedIds = await classRepository.addMembers(parsed.data.classId, userIds);
   const outcome = await inviteAndNotify(parsed.data.classId, unknown, admin.id);
 
-  await audit(admin.id, "class.members.add", parsed.data.classId, {
+  await audit(admin.id, AUDIT_ACTION.class.membersAdd, parsed.data.classId, {
     added: addedIds.length,
     invited: outcome.invited.length,
     renewed: outcome.renewed.length,
@@ -254,7 +259,9 @@ export async function addMembersByIdAction(
   if (!parsed.success) return { ok: false, error: "Sélection invalide." };
 
   const addedIds = await classRepository.addMembers(parsed.data.classId, parsed.data.userIds);
-  await audit(admin.id, "class.members.add", parsed.data.classId, { added: addedIds.length });
+  await audit(admin.id, AUDIT_ACTION.class.membersAdd, parsed.data.classId, {
+    added: addedIds.length,
+  });
   await notifyEnrolledInClass(parsed.data.classId, addedIds);
 
   revalidatePath(`/classes/${parsed.data.classId}`);
@@ -270,7 +277,7 @@ export async function revokeInvitationAction(
   if (!z.guid().safeParse(invitationId).success) return { ok: false };
 
   await classRepository.revokeInvitation(invitationId);
-  await audit(admin.id, "class.invitation.revoke", classId, { invitationId });
+  await audit(admin.id, AUDIT_ACTION.class.invitationRevoke, classId, { invitationId });
   revalidatePath(`/classes/${classId}`);
   return { ok: true };
 }
@@ -284,7 +291,7 @@ export async function removeMemberAction(
   if (!z.guid().safeParse(userId).success) return { ok: false };
 
   await classRepository.removeMember(classId, userId);
-  await audit(admin.id, "class.members.remove", classId, { userId });
+  await audit(admin.id, AUDIT_ACTION.class.membersRemove, classId, { userId });
   revalidatePath(`/classes/${classId}`);
   return { ok: true };
 }
@@ -318,7 +325,7 @@ export async function assignTeacherAction(
     parsed.data.teacherId,
     parsed.data.subject === "" ? null : (parsed.data.subject ?? null),
   );
-  await audit(admin.id, "class.teacher.assign", parsed.data.classId, {
+  await audit(admin.id, AUDIT_ACTION.class.teacherAssign, parsed.data.classId, {
     teacherId: parsed.data.teacherId,
   });
   revalidatePath(`/classes/${parsed.data.classId}`);
@@ -334,7 +341,7 @@ export async function unassignTeacherAction(
   if (!z.guid().safeParse(teacherId).success) return { ok: false };
 
   await classRepository.unassignTeacher(classId, teacherId);
-  await audit(admin.id, "class.teacher.unassign", classId, { teacherId });
+  await audit(admin.id, AUDIT_ACTION.class.teacherUnassign, classId, { teacherId });
   revalidatePath(`/classes/${classId}`);
   return { ok: true };
 }
@@ -348,7 +355,12 @@ export async function setClassArchivedAction(
   if (!z.boolean().safeParse(archived).success) return { ok: false };
 
   await classRepository.setArchived(classId, archived);
-  await audit(admin.id, archived ? "class.archive" : "class.unarchive", classId, {});
+  await audit(
+    admin.id,
+    archived ? AUDIT_ACTION.class.archive : AUDIT_ACTION.class.unarchive,
+    classId,
+    {},
+  );
   revalidatePath("/classes");
   return { ok: true };
 }
@@ -372,7 +384,9 @@ export async function updateEstablishmentAction(
       slug: parsed.data.slug,
       city: parsed.data.city === "" ? null : (parsed.data.city ?? null),
     });
-    await audit(admin.id, "class.establishment.update", parsed.data.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.establishmentUpdate, parsed.data.id, {
+      name: parsed.data.name,
+    });
   } catch {
     return { error: "Un établissement porte déjà ce slug." };
   }
@@ -399,7 +413,9 @@ export async function updatePromotionAction(
       slug: parsed.data.slug,
       startYear: parsed.data.startYear ?? null,
     });
-    await audit(admin.id, "class.promotion.update", parsed.data.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.promotionUpdate, parsed.data.id, {
+      name: parsed.data.name,
+    });
   } catch {
     return { error: "Cet établissement a déjà une promo avec ce slug." };
   }
@@ -422,7 +438,7 @@ export async function updateClassAction(
       slug: parsed.data.slug,
       description: parsed.data.description === "" ? null : (parsed.data.description ?? null),
     });
-    await audit(admin.id, "class.update", parsed.data.id, { name: parsed.data.name });
+    await audit(admin.id, AUDIT_ACTION.class.update, parsed.data.id, { name: parsed.data.name });
   } catch {
     return { error: "Cette promo a déjà une classe avec ce slug." };
   }
@@ -450,7 +466,7 @@ export async function setEstablishmentArchivedAction(
   await classRepository.setEstablishmentArchived(establishmentId, archived);
   await audit(
     admin.id,
-    archived ? "class.establishment.archive" : "class.establishment.unarchive",
+    archived ? AUDIT_ACTION.class.establishmentArchive : AUDIT_ACTION.class.establishmentUnarchive,
     establishmentId,
     {},
   );
@@ -470,7 +486,7 @@ export async function setPromotionArchivedAction(
   await classRepository.setPromotionArchived(promotionId, archived);
   await audit(
     admin.id,
-    archived ? "class.promotion.archive" : "class.promotion.unarchive",
+    archived ? AUDIT_ACTION.class.promotionArchive : AUDIT_ACTION.class.promotionUnarchive,
     promotionId,
     {},
   );
@@ -481,11 +497,9 @@ export async function setPromotionArchivedAction(
 
 async function audit(
   actorId: string,
-  action: string,
+  action: AuditAction,
   targetId: string,
-  metadata: Prisma.InputJsonValue,
+  metadata: Prisma.InputJsonObject,
 ): Promise<void> {
-  await prisma.auditLog.create({
-    data: { actorId, action, targetType: "Class", targetId, metadata },
-  });
+  await auditLogRepository.record({ actorId, action, targetType: "Class", targetId, metadata });
 }

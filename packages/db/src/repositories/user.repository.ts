@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma, UserRole } from "@prisma/client";
+import { AUDIT_ACTION } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { activeBanFilter } from "./ban.repository.js";
 import { classRepository, LIVE_CLASS_FILTER } from "./class.repository.js";
@@ -14,7 +15,18 @@ export type ChangeRoleResult =
   | { ok: false; reason: "NOT_FOUND" | "LAST_ADMIN" };
 
 /** The audit action every role change writes, read back by heldAdminRoleSince. */
-const ROLE_UPDATE_ACTION = "user.role.update";
+const ROLE_UPDATE_ACTION = AUDIT_ACTION.user.roleUpdate;
+
+const CONSOLE_TARGET = {
+  id: true,
+  email: true,
+  displayName: true,
+  username: true,
+  role: true,
+} as const satisfies Prisma.UserSelect;
+
+/** An account as the console's gestures on it read it first (findConsoleTarget). */
+export type ConsoleTarget = Prisma.UserGetPayload<{ select: typeof CONSOLE_TARGET }>;
 
 /** The columns the console's account list sorts by. */
 export type ConsoleUserSort =
@@ -144,9 +156,9 @@ export type ConsoleProfileReset =
 
 /** The audit actions of the console's gestures on a profile and its sessions. */
 export const CONSOLE_PROFILE_ACTION = {
-  update: "admin.user.profile.update",
-  reset: "admin.user.profile.reset",
-  sessionsRevoked: "admin.user.sessions.revoked",
+  update: AUDIT_ACTION.user.profileUpdate,
+  reset: AUDIT_ACTION.user.profileReset,
+  sessionsRevoked: AUDIT_ACTION.user.sessionsRevoked,
 } as const;
 
 /** Tries before a generated handle is given up on: each one is new. */
@@ -452,6 +464,21 @@ export const userRepository = {
   /** Role lookup used before an admin password session is accepted. */
   async findRoleByEmail(email: string) {
     return prisma.user.findUnique({ where: { email }, select: { role: true } });
+  },
+
+  /**
+   * The account a console gesture acts on: the address its notice goes to,
+   * the name it greets, the handle or address the form asks to type back, and
+   * the role the guards check. Null when there is no such account.
+   */
+  async findConsoleTarget(userId: string): Promise<ConsoleTarget | null> {
+    return prisma.user.findUnique({ where: { id: userId }, select: CONSOLE_TARGET });
+  },
+
+  /** The account's address, or null when there is no such account. */
+  async findEmailById(userId: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    return user?.email ?? null;
   },
 
   /** Minimal user data needed for XP + streak computation on lesson completion. */

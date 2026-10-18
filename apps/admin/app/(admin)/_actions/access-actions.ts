@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, userRepository } from "@cyberlearn/db";
+import { auditLogRepository, userRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION, type AuditAction } from "@cyberlearn/db/audit-actions";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { sendMfaResetEmail } from "@cyberlearn/email";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
@@ -52,13 +53,6 @@ const RECOVERY_REDIRECT = "/auth/callback?next=/reset-password";
 /** Where a confirmation link lands, as the sign-up form sends it. */
 const SIGNUP_REDIRECT = "/auth/callback?next=/onboarding";
 
-async function findTarget(userId: string) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, email: true, displayName: true, username: true, role: true },
-  });
-}
-
 /**
  * The account as Supabase Auth has it: its address there is the one mails go
  * to, and its confirmation is what the sign-in checks.
@@ -81,20 +75,12 @@ async function authAccount(
  */
 async function audit(
   actorId: string,
-  action: string,
+  action: AuditAction,
   targetId: string,
   metadata?: Record<string, number | boolean>,
 ): Promise<boolean> {
   try {
-    await prisma.auditLog.create({
-      data: {
-        actorId,
-        action,
-        targetType: "User",
-        targetId,
-        ...(metadata !== undefined ? { metadata } : {}),
-      },
-    });
+    await auditLogRepository.record({ actorId, action, targetType: "User", targetId, metadata });
     return true;
   } catch (error) {
     logger.error({ scope: "admin", action, err: errorMessage(error) }, "audit write failed");
@@ -138,7 +124,7 @@ export async function resetMfaAction(
   const parsed = mfaResetSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Adresse de confirmation invalide." };
 
-  const target = await findTarget(parsed.data.userId);
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
   if (target.email.toLowerCase() !== parsed.data.confirmEmail) {
     return { error: "L'adresse saisie ne correspond pas à ce compte." };
@@ -209,7 +195,7 @@ export async function resetMfaAction(
 
   // Written whatever happened, a half-finished reset included: it changed the
   // account, and the log is where the next person looks to find out how.
-  const logged = await audit(admin.id, "admin.user.mfa_reset", target.id, {
+  const logged = await audit(admin.id, AUDIT_ACTION.user.mfaReset, target.id, {
     factorsFound: found.length,
     factorsRemoved: removed.length,
     complete: removed.length === found.length,
@@ -283,7 +269,7 @@ export async function revokeAllSessionsAction(
     };
   }
 
-  const target = await findTarget(parsed.data.userId);
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
   let revoked: number;
@@ -321,7 +307,7 @@ export async function sendPasswordResetAction(
   const parsed = targetSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Paramètres invalides." };
 
-  const target = await findTarget(parsed.data.userId);
+  const target = await userRepository.findConsoleTarget(parsed.data.userId);
   if (!target) return { error: "Ce compte n'existe plus." };
 
   let sentTo: string;
@@ -341,7 +327,7 @@ export async function sendPasswordResetAction(
     return { error: "L'envoi du lien a échoué." };
   }
 
-  const logged = await audit(admin.id, "admin.user.password_reset_sent", target.id);
+  const logged = await audit(admin.id, AUDIT_ACTION.user.passwordResetSent, target.id);
   return {
     ok: true,
     notice: `Lien de réinitialisation envoyé à ${sentTo}.`,
@@ -365,7 +351,10 @@ async function addressTarget(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   userId: string,
 ): Promise<{ ok: true; email: string; withoutProfile: boolean } | { ok: false; error: string }> {
-  const [profile, account] = await Promise.all([findTarget(userId), authAccount(supabase, userId)]);
+  const [profile, account] = await Promise.all([
+    userRepository.findConsoleTarget(userId),
+    authAccount(supabase, userId),
+  ]);
   if (account === null) {
     return { ok: false, error: profile === null ? "Ce compte n'existe plus." : NO_IDENTITY };
   }
@@ -406,7 +395,7 @@ export async function resendConfirmationAction(
 
   const logged = await audit(
     admin.id,
-    "admin.user.confirmation_resent",
+    AUDIT_ACTION.user.confirmationResent,
     userId,
     withoutProfile ? { pendingSignUp: true } : undefined,
   );
@@ -451,7 +440,7 @@ export async function confirmEmailAction(
 
   const logged = await audit(
     admin.id,
-    "admin.user.email_confirmed",
+    AUDIT_ACTION.user.emailConfirmed,
     userId,
     withoutProfile ? { pendingSignUp: true } : undefined,
   );
