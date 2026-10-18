@@ -36,6 +36,15 @@ Configured manually on https://cron-job.org:
 - **Notifications**: email on failure (3 consecutive)
 - **Timezone**: UTC
 
+## Console
+
+Each run is recorded in the audit log under `cron.keep-alive`: the two
+statuses, and, when a service did not answer, which one ("Postgres ne répond
+pas"). `/system/crons` in the console calls the job late once more than six
+hours and the hour of grace have gone by since its last run. It judges the
+gap rather than the UTC times of `0 */6 * * *`, so a job left on another time
+zone on cron-job.org is not reported late for half of every day.
+
 ## Auth
 
 The endpoint checks `Authorization: Bearer $CRON_SECRET`. Any HTTP client (Vercel Cron,
