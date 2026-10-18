@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { lessonsVisibleTo, prisma, qaRepository } from "@cyberlearn/db";
+import { friendshipRepository, lessonsVisibleTo, prisma, qaRepository } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
 interface QaUser {
@@ -10,13 +10,21 @@ interface QaUser {
   level: number;
 }
 
-/** The name the site's Q&A shows. */
-function author(user: QaUser | null): { id: string; name: string; level: number } | null {
+/**
+ * The name the site's Q&A shows, and whether it is one of the reader's
+ * friends, marked beside it as on the site's lesson page. A Q&A author is
+ * always named, so the mark hides nothing.
+ */
+function author(
+  user: QaUser | null,
+  friends: ReadonlySet<string>,
+): { id: string; name: string; level: number; isFriend: boolean } | null {
   if (!user) return null;
   return {
     id: user.id,
     name: user.displayName ?? user.username ?? "Utilisateur supprimé",
     level: user.level,
+    isFriend: friends.has(user.id),
   };
 }
 
@@ -44,7 +52,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Leçon introuvable." }, { status: 404 });
   }
 
-  const questions = await qaRepository.findQuestionsByLesson(lesson.id);
+  const [questions, friends] = await Promise.all([
+    qaRepository.findQuestionsByLesson(lesson.id),
+    friendshipRepository.friendIds(user.id),
+  ]);
   return NextResponse.json({
     ok: true,
     questions: questions.map((q) => ({
@@ -54,7 +65,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       isResolved: q.isResolved,
       createdAt: q.createdAt.toISOString(),
       mine: q.user?.id === user.id,
-      author: author(q.user),
+      author: author(q.user, friends),
       answerCount: q._count.answers,
       answers: q.answers.map((a) => ({
         id: a.id,
@@ -63,7 +74,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         upvotes: a.upvotes,
         createdAt: a.createdAt.toISOString(),
         mine: a.user?.id === user.id,
-        author: author(a.user),
+        author: author(a.user, friends),
       })),
     })),
   });

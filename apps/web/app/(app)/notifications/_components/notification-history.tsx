@@ -28,9 +28,10 @@ const MARK_ALL_FAILED =
  * Every notification the account still has, newest first, thirty at a time.
  *
  * A client component for what happens on the rows: following one marks it
- * read, as in the panel, "Charger plus" asks for the rows after the last one
- * shown, and "Tout marquer comme lu" clears the unread ones without
- * reloading the list. The filter is a link: the page reads it from the URL.
+ * read and a friend request still waiting is answered from its row, both as
+ * in the panel, "Charger plus" asks for the rows after the last one shown,
+ * and "Tout marquer comme lu" clears the unread ones without reloading the
+ * list. The filter is a link: the page reads it from the URL.
  *
  * What is marked read here, the bell's badge and panel are told, and what
  * the panel marks read, this list follows (lib/notifications/read-sync.ts).
@@ -39,16 +40,22 @@ export function NotificationHistory({
   initialItems,
   initialNext,
   initialUnread,
+  initialWaiting,
   unreadOnly,
 }: {
   initialItems: NotificationItem[];
   initialNext: NotificationCursorJson | null;
   initialUnread: number;
+  /** The senders, among the first rows, whose friend request still waits on the reader. */
+  initialWaiting: readonly string[];
   unreadOnly: boolean;
 }): React.JSX.Element {
   const [items, setItems] = useState(initialItems);
   const [next, setNext] = useState(initialNext);
   const [unread, setUnread] = useState(initialUnread);
+  // The friend requests that can still be answered from their row, as in the
+  // panel: read with each page, the senders of the rows already shown kept.
+  const [waiting, setWaiting] = useState<ReadonlySet<string>>(() => new Set(initialWaiting));
   const [failure, setFailure] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoadingMore, startLoadingMore] = useTransition();
@@ -111,6 +118,7 @@ export function NotificationHistory({
           return [...prev, ...res.notifications.filter((n) => !seen.has(n.id))];
         });
         setNext(res.next);
+        setWaiting((prev) => new Set([...prev, ...res.waitingSenders]));
       } catch {
         setFailure(LOAD_FAILED);
       }
@@ -165,7 +173,13 @@ export function NotificationHistory({
       ) : (
         <div className="card" style={{ padding: 0 }}>
           {items.map((item) => (
-            <NotificationRow key={item.id} item={item} onRead={markRead} onFollow={stay} />
+            <NotificationRow
+              key={item.id}
+              item={item}
+              waiting={waiting}
+              onRead={markRead}
+              onFollow={stay}
+            />
           ))}
         </div>
       )}

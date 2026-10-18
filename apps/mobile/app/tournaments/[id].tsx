@@ -19,6 +19,7 @@ import {
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { PressableScale } from "@/components/anim";
 import { BackButton } from "@/components/buttons";
+import { FriendMark } from "@/components/friends";
 import { CheckIcon, LockIcon } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
@@ -674,6 +675,7 @@ function Players({
                     >
                       {player.name}
                     </Text>
+                    {player.isFriend === true && !player.isMe ? <FriendMark size={11} /> : null}
                     {player.isMe ? (
                       <Text variant="micro" style={{ color: theme.accent }}>
                         Toi

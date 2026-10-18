@@ -8,7 +8,11 @@ import { prisma } from "../prisma.js";
  * this reads and writes rows.
  */
 
-const PLAYER = { select: { id: true, displayName: true, username: true } } as const;
+// The stored avatar comes along so the service can sign it (resolveAvatarSrcMany):
+// an uploaded one is a key in a private bucket, never sent as it is.
+const PLAYER = {
+  select: { id: true, displayName: true, username: true, avatarUrl: true },
+} as const;
 
 const DUEL = {
   id: true,
@@ -90,6 +94,24 @@ export const duelRepository = {
       orderBy: { createdAt: "desc" },
       select: DUEL,
     });
+  },
+
+  /**
+   * Whom the reader has a duel open with, in either direction, and nothing
+   * else: what the friends panel needs to grey "Défier". A duel whose time is
+   * over is left out, as settling it would leave it: it stays PENDING or
+   * ACTIVE in the table until somebody reads it (the service's settle), and a
+   * friend should not stay greyed for a duel that has in fact lapsed. The
+   * (challengerId, status) and (opponentId, status) indexes serve both sides.
+   */
+  async openOpponentsOf(userId: string, now: Date = new Date()): Promise<Set<string>> {
+    const rows = await prisma.duel.findMany({
+      where: { ...playedBy(userId), status: { in: OPEN }, expiresAt: { gt: now } },
+      select: { challengerId: true, opponentId: true },
+    });
+    return new Set(
+      rows.map((row) => (row.challengerId === userId ? row.opponentId : row.challengerId)),
+    );
   },
 
   async create(input: {

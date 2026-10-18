@@ -10,11 +10,19 @@ import {
   notificationHistoryRequestSchema,
   type NotificationCursorJson,
 } from "@/lib/notifications/history";
+import { waitingSendersAmong } from "@/lib/notifications/waiting-senders";
 
 export interface NotificationsResult {
   success: boolean;
   notifications?: NotificationItem[];
   unreadCount?: number;
+  /**
+   * Who, among the senders of the friend requests listed, is still waiting on
+   * the reader's answer: the notifications whose "Accepter" and "Refuser"
+   * still mean something. A request answered from the friends panel or the
+   * profile, or taken back, keeps its notification and loses its buttons.
+   */
+  waitingSenders?: string[];
   error?: string;
 }
 
@@ -24,11 +32,22 @@ export async function getNotificationsAction(): Promise<NotificationsResult> {
     notificationRepository.findByUser(user.id, 20),
     notificationRepository.findUnreadCount(user.id),
   ]);
-  return { success: true, notifications, unreadCount };
+  return {
+    success: true,
+    notifications,
+    unreadCount,
+    waitingSenders: await waitingSendersAmong(user.id, notifications),
+  };
 }
 
 export type NotificationPageResult =
-  | { success: true; notifications: NotificationItem[]; next: NotificationCursorJson | null }
+  | {
+      success: true;
+      notifications: NotificationItem[];
+      next: NotificationCursorJson | null;
+      /** As in the panel: the senders, among these rows, still waiting on an answer. */
+      waitingSenders: string[];
+    }
   | { success: false };
 
 /**
@@ -44,7 +63,12 @@ export async function getNotificationPageAction(input: unknown): Promise<Notific
     take: NOTIFICATION_HISTORY_PAGE,
     unreadOnly: parsed.data.unreadOnly,
   });
-  return { success: true, notifications: page.items, next: cursorToJson(page.next) };
+  return {
+    success: true,
+    notifications: page.items,
+    next: cursorToJson(page.next),
+    waitingSenders: await waitingSendersAmong(user.id, page.items),
+  };
 }
 
 export async function markNotificationReadAction(

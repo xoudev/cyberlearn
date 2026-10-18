@@ -8,6 +8,7 @@ import {
   NOTIFICATION_HISTORY_PAGE,
   unreadOnlyParam,
 } from "@/lib/notifications/history";
+import { waitingSendersAmong } from "@/lib/notifications/waiting-senders";
 import { NOTIFICATIONS_HEAD } from "./_components/notifications-head";
 import { NotificationHistory } from "./_components/notification-history";
 
@@ -36,6 +37,8 @@ export default async function NotificationsPage({
     }),
     notificationRepository.findUnreadCount(user.id),
   ]);
+  // The friend requests among these rows that can still be answered in place.
+  const waitingSenders = await waitingSendersAmong(user.id, page.items);
 
   return (
     <div className="page-container">
@@ -56,6 +59,7 @@ export default async function NotificationsPage({
         initialItems={page.items}
         initialNext={cursorToJson(page.next)}
         initialUnread={unread}
+        initialWaiting={waitingSenders}
         unreadOnly={unreadOnly}
       />
     </div>

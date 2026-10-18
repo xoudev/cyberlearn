@@ -21,12 +21,19 @@ import {
   type DuelResultOutcome,
 } from "@cyberlearn/lib/social/duel";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { Avatar } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { answerDuelApi, fetchDuelApi, respondToDuelApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
-import { deadlineLine, DUEL_REFRESH_MS, outcomeTone, type DuelView } from "@/lib/duels";
+import {
+  deadlineLine,
+  DUEL_REFRESH_MS,
+  duelProfileTarget,
+  outcomeTone,
+  type DuelView,
+} from "@/lib/duels";
 import { pad2 } from "@/lib/exam";
 
 /**
@@ -293,7 +300,11 @@ function Waiting({ title, text }: { title: string; text: string }): React.JSX.El
   );
 }
 
-/** Both players side by side: name, right answers, a square a question, the count. */
+/**
+ * Both players side by side: picture and name (the other's opening their
+ * profile when the server offered one), right answers, a square a question,
+ * the count.
+ */
 function Scoreboard({
   view,
   tone,
@@ -304,12 +315,15 @@ function Scoreboard({
   current: number | null;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  const router = useRouter();
   const idle = idleScoreWord(view.status);
   const count = view.questionCount;
+  const target = duelProfileTarget(view.other);
   return (
     <Card accent={tone} style={{ flexDirection: "row", gap: 12 }}>
       <Side
         name="Toi"
+        avatar={{ src: view.reader.avatarSrc ?? null, name: view.reader.name }}
         handle={view.reader.name}
         score={view.readerScore}
         marks={readerMarks(count, view.readerAnswers, current)}
@@ -321,6 +335,14 @@ function Scoreboard({
       <View style={{ flex: 1 }} accessibilityLiveRegion="polite">
         <Side
           name={view.other.name}
+          avatar={{ src: view.other.avatarSrc ?? null, name: view.other.name }}
+          {...(target !== null
+            ? {
+                onOpenProfile: () => {
+                  router.push({ pathname: "/u/[username]", params: { username: target } });
+                },
+              }
+            : {})}
           handle={view.other.username !== null ? `@${view.other.username}` : null}
           score={view.otherScore}
           marks={otherMarks(count, view.otherScore.answered)}
@@ -348,6 +370,8 @@ const MARK_COLOR: Record<DuelMark, string> = {
  */
 function Side({
   name,
+  avatar,
+  onOpenProfile,
   handle,
   score,
   marks,
@@ -356,6 +380,9 @@ function Side({
   accent,
 }: {
   name: string;
+  avatar: { src: string | null; name: string };
+  /** Opens their profile from their picture and name, when it would open for the reader. */
+  onOpenProfile?: () => void;
   handle: string | null;
   score: { answered: number; correct: number };
   marks: DuelMark[];
@@ -367,14 +394,29 @@ function Side({
   const { theme } = useCosmetics();
   return (
     <View style={{ flex: 1, gap: 4 }}>
-      <Text variant="h3" numberOfLines={1}>
-        {name}
-      </Text>
-      {handle !== null ? (
-        <Text variant="mono" numberOfLines={1} style={{ fontSize: 10.5, color: colors.textMuted }}>
-          {handle}
-        </Text>
-      ) : null}
+      <Pressable
+        onPress={onOpenProfile}
+        disabled={onOpenProfile === undefined}
+        accessibilityRole={onOpenProfile !== undefined ? "link" : undefined}
+        accessibilityLabel={onOpenProfile !== undefined ? `Profil de ${name}` : undefined}
+        style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+      >
+        <Avatar avatarUrl={avatar.src} displayName={avatar.name} size={32} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="h3" numberOfLines={1}>
+            {name}
+          </Text>
+          {handle !== null ? (
+            <Text
+              variant="mono"
+              numberOfLines={1}
+              style={{ fontSize: 10.5, color: colors.textMuted }}
+            >
+              {handle}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
       <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6, marginTop: 4 }}>
         <Text
           style={{

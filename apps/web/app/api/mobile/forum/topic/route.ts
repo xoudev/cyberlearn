@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { POSTS_PER_PAGE, forumRepository, userRepository } from "@cyberlearn/db";
+import {
+  POSTS_PER_PAGE,
+  forumRepository,
+  friendshipRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { createForumTopic, isForumAdmin } from "@/lib/forum/forum-service";
 import { pageParam, toMobilePost, toMobileTopicSummary } from "@/lib/forum/mobile-view";
@@ -29,9 +34,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   const page = pageParam(params.get("page"));
 
-  const [view, isAdmin] = await Promise.all([
+  const [view, isAdmin, friends] = await Promise.all([
     forumRepository.findTopic(category.data, slug.data, user.id, page),
     isForumAdmin(user.id),
+    // For the mark beside an author who is a friend, as on the site.
+    friendshipRepository.friendIds(user.id),
   ]);
   if (!view) {
     return NextResponse.json({ ok: false, error: "Sujet introuvable." }, { status: 404 });
@@ -48,9 +55,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     ok: true,
     // An administrator may take down anybody's post, as on the site.
     viewer: { isAdmin },
-    topic: toMobileTopicSummary(view),
+    topic: toMobileTopicSummary(view, friends),
     posts: view.posts.map((post, i) =>
-      toMobilePost(post, user.id, avatars[i] ?? null, openProfiles),
+      toMobilePost(post, user.id, avatars[i] ?? null, openProfiles, friends),
     ),
     page,
     pages: Math.max(1, Math.ceil(view.postCount / POSTS_PER_PAGE)),

@@ -22,7 +22,7 @@ import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
-import type { FriendLists, PublicProfile } from "@/lib/friends";
+import type { FriendLists, FriendsActivity, FriendshipView, PublicProfile } from "@/lib/friends";
 import { answeredPeriod, leaderboardPath, type LeaderboardPeriod } from "@/lib/leaderboard";
 import { readCompletionReply, type CompletionReply } from "@/lib/lesson-completion";
 import type { QaQuestion } from "@/lib/lesson-qa";
@@ -640,6 +640,12 @@ export interface LeaderboardEntry {
    */
   isFriend?: boolean;
   /**
+   * Where the reader stands with this player, for the row's "Ajouter": only
+   * on a public row that is not the reader's own (the server decides), null
+   * everywhere else, absent from a server older than it (nothing offered).
+   */
+  friendship?: FriendshipView | null;
+  /**
    * The row's picture, ready to draw: a signed URL, a built-in path or a glyph
    * marker, signed by the server as on the site. Null on an anonymised row,
    * absent from a server older than the avatars; both draw the initials. The
@@ -731,9 +737,12 @@ export async function fetchFriendsApi(): Promise<FriendLists> {
   return { incoming: body.incoming, friends: body.friends, outgoing: body.outgoing };
 }
 
-async function friendWrite(path: string, userId: string): Promise<FriendWriteReply> {
+async function friendWrite(
+  path: string,
+  who: { userId: string } | { username: string },
+): Promise<FriendWriteReply> {
   try {
-    const res = await authedFetch(path, { method: "POST", body: JSON.stringify({ userId }) });
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify(who) });
     return (await res.json()) as FriendWriteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
@@ -741,16 +750,42 @@ async function friendWrite(path: string, userId: string): Promise<FriendWriteRep
 }
 
 export function requestFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/request", userId);
+  return friendWrite("/api/mobile/friends/request", { userId });
+}
+
+/**
+ * Asks a player of the public leaderboard by the handle the row shows: its
+ * rows carry no id, and the server finds it only among the players it names.
+ */
+export function requestFriendByHandleApi(username: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/request", { username });
 }
 
 export function acceptFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/accept", userId);
+  return friendWrite("/api/mobile/friends/accept", { userId });
 }
 
 /** Declines, cancels or unfriends: one call, as on the site. */
 export function removeFriendApi(userId: string): Promise<FriendWriteReply> {
-  return friendWrite("/api/mobile/friends/remove", userId);
+  return friendWrite("/api/mobile/friends/remove", { userId });
+}
+
+/**
+ * Refuses a request, and only a request still waiting: a notification's
+ * "Refuser", which must not end a friendship accepted since it arrived.
+ */
+export function declineFriendApi(userId: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/decline", { userId });
+}
+
+/** "Tes amis" on the home tab: the friends' recent moments, as the site's dashboard reads them. */
+export async function fetchFriendsActivityApi(): Promise<FriendsActivity> {
+  const res = await authedFetch("/api/mobile/friends/activity");
+  const body = (await res.json()) as
+    | ({ ok: true } & FriendsActivity)
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { hasFriends: body.hasFriends, items: body.items };
 }
 
 /** Somebody's profile page; null when it does not exist or is closed to the reader. */

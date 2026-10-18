@@ -1001,6 +1001,12 @@ export interface NotificationItem {
   actionUrl: string | null;
   readAt: string | null;
   createdAt: string;
+  /**
+   * What the server wrote beside it, read as unknown JSON: a friend request
+   * names its sender there (`fromUserId`), which lets the notice be
+   * answered in place (answerableSender).
+   */
+  metadata?: unknown;
 }
 
 export function useNotifications(userId: string | undefined) {
@@ -1011,7 +1017,7 @@ export function useNotifications(userId: string | undefined) {
     queryFn: async (): Promise<NotificationItem[]> => {
       const { data, error } = await supabase
         .from("notifications")
-        .select("id,type,title,body,actionUrl,readAt,createdAt")
+        .select("id,type,title,body,actionUrl,readAt,createdAt,metadata")
         .eq("userId", userId as string) // gated by `enabled`
         .order("createdAt", { ascending: false })
         .limit(50);
@@ -1046,7 +1052,9 @@ export function useNotificationHistory(userId: string | undefined) {
       const [from, to] = notificationRange(pageParam);
       const { data, error } = await supabase
         .from("notifications")
-        .select("id,type,title,body,actionUrl,readAt,createdAt")
+        // metadata: a friend request names its sender there, for its notice's
+        // "Accepter" and "Refuser" (answerableSender).
+        .select("id,type,title,body,actionUrl,readAt,createdAt,metadata")
         .eq("userId", userId as string) // gated by `enabled`
         // The id settles two notices of the same instant, so a page boundary
         // never shows one twice or skips one.

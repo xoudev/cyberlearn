@@ -114,6 +114,7 @@
 - Ce qui n'attend pas, seulement quand il y en a : les défis reçus d'un ami, à accepter ou refuser sur place (`listDuelInvitationsFor`, les mêmes cartes que `/duels`), et les tournois en cours, celui qui ferme le premier d'abord, avec la part du temps écoulé et « Entrer » (`runningTournaments` de `@cyberlearn/lib/dashboard/your-move`)
 - Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
+- Tes amis, pour qui en a : leurs derniers moments (leçon du catalogue terminée, badge, certificat, défi résolu, duel gagné), avec leur avatar, le lien de leur profil et « Défier », grisé en « Duel en cours » tant qu'un duel est ouvert ; lus dans les tables existantes (`friendshipRepository.recentFriendActivity`), même service pour l'app (`GET /api/mobile/friends/activity`)
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
 - Barre latérale : le tableau de bord, puis Apprendre (Parcours, Leçons, Révisions, Bloc-notes, Glossaire), S'entraîner (Défis, Duels), Progression (Mon profil, Classement, Casier) et Communauté (Forum, Mes classes pour qui en a une, Aide), et un bloc compte. Groupes, libellés et ordre partagés avec le hub de l'app (`@cyberlearn/lib/navigation/groups`). Seules les invitations aux duels en attente y sont comptées (`duelRepository.countInvitations`) ; « Révisions » ouvre le rappel du jour
 - Registre des routes (`apps/web/lib/routes.ts`) : pour chaque adresse, si elle demande une session, si `robots.txt` l'écarte et son icône dans la barre latérale. Le middleware, `robots.txt` et la barre latérale le lisent ; un test parcourt `app/(app)` et échoue sur une page connectée absente du registre
@@ -197,6 +198,7 @@
 - Ce que l'historique marque lu, la pastille et le panneau le suivent, et
   l'inverse : un événement sur la fenêtre (`lib/notifications/read-sync.ts`),
   la barre du haut ne se rechargeant pas d'une page à l'autre
+- Une demande d'ami encore en attente se reçoit avec « Accepter » et « Refuser » sous son avis (`metadata.fromUserId`), dans le panneau comme sur l'historique `/notifications`, « Refuser » ne retirant qu'une demande encore en attente
 
 #### Contact & Support
 - Formulaire à 8 thèmes (BUG, QUESTION, FEATURE_REQUEST, SECURITY,
@@ -220,6 +222,12 @@
   depuis son onglet ; la marque « Ami » à côté du nom d'un ami (classement,
   ligue, forum, questions-réponses, solutions, classe, tournois), seulement
   sur une ligne qui montre déjà qui elle est
+- Panneau des amis de la barre du haut : les listes entières (plus de limite
+  cachée à soixante amis), « Défier » sur chaque ami, qui ouvre la fenêtre
+  `?duel=<id>` et se grise en « Duel en cours », et « Ouvrir un profil » par
+  son @pseudo ; « Ajouter » sur un camarade de sa classe et sur une ligne
+  publique du classement (par le @pseudo que la ligne montre) ; l'avatar des
+  joueurs et le lien du profil de l'autre sur les cartes de duel
 
 #### Modération et sanctions
 - Filtrage à la publication : un contenu signalé est masqué avant relecture
@@ -285,6 +293,7 @@
 | `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
+| `/announcements` | Envoyer une annonce (notification `ANNOUNCEMENT`) à tous les comptes, à des rôles ou à des classes, et l'historique des envois, lu dans l'audit log |
 | `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période ; les passages des tâches planifiées masqués sauf demande (`?crons=1`, ou un filtre qui les nomme) |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
 | `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
@@ -435,6 +444,22 @@
   RESOLVED ou CLOSED ; effacées avec leur ticket, ou dès l'effacement du
   compte du demandeur (`deleteAccount`) ; audit `ticket.note.add`, sans le
   texte de la note
+
+#### Annonces
+- Titre (200 caractères au plus), message (1 000), lien optionnel vers une
+  page du site (chemin qui commence par une seule « / ») et destinataires :
+  tous les comptes, un ou plusieurs rôles, ou les membres de classes actives ;
+  les comptes bannis sont exclus (`userRepository.countForAudience` et
+  `idsForAudience`, un seul filtre pour les deux)
+- Le nombre de destinataires est compté puis confirmé avant l'envoi ; s'il a
+  changé entre-temps, rien ne part et le nouveau nombre est à confirmer
+- Envoi par lots de 1 000 (`notificationRepository.createMany`) dans une
+  seule transaction, avec la ligne d'audit `announcement.send` (titre,
+  message, lien, audience, nombre de destinataires) ; 5 annonces par heure et
+  par administrateur au plus
+- Historique des envois sur la même page, lu dans l'audit log, sans table à
+  part ; l'annonce arrive dans la cloche du site et dans les notifications de
+  l'app
 
 #### Audit
 - Log de toutes les mutations admin (qui, quoi, quand, sur quelle ressource)

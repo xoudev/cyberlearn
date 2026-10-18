@@ -20,7 +20,15 @@ export interface MobileForumAuthor {
   level: number;
   /** "TEACHER" and "ADMIN" are labelled in the thread, as on the site. */
   role: string;
+  /**
+   * One of the reader's friends, marked beside the name as on the site. A
+   * forum author is always named, so the mark hides nothing.
+   */
+  isFriend: boolean;
 }
+
+/** No friends to mark: what a caller that does not read them passes. */
+const NO_FRIENDS: ReadonlySet<string> = new Set();
 
 export interface MobileForumTopicSummary {
   id: string;
@@ -57,17 +65,25 @@ export interface MobileForumPost {
   authorHandle: string | null;
 }
 
-function toMobileAuthor(author: ForumAuthor | null): MobileForumAuthor | null {
+function toMobileAuthor(
+  author: ForumAuthor | null,
+  friends: ReadonlySet<string>,
+): MobileForumAuthor | null {
   if (!author) return null;
   return {
     id: author.id,
     name: forumAuthorName(author),
     level: author.level,
     role: author.role,
+    isFriend: friends.has(author.id),
   };
 }
 
-export function toMobileTopicSummary(topic: ForumTopicSummary): MobileForumTopicSummary {
+export function toMobileTopicSummary(
+  topic: ForumTopicSummary,
+  /** The reader's friends (friendshipRepository.friendIds), marked beside their names. */
+  friends: ReadonlySet<string> = NO_FRIENDS,
+): MobileForumTopicSummary {
   return {
     id: topic.id,
     slug: topic.slug,
@@ -80,7 +96,7 @@ export function toMobileTopicSummary(topic: ForumTopicSummary): MobileForumTopic
     categorySlug: topic.categorySlug,
     categoryName: topic.categoryName,
     categoryAccent: topic.categoryAccent,
-    author: toMobileAuthor(topic.author),
+    author: toMobileAuthor(topic.author, friends),
     preview: topic.preview,
   };
 }
@@ -109,6 +125,8 @@ export function toMobilePost(
   avatar: string | null,
   /** Whose profile the reader may open (userRepository.profilesOpenTo). */
   openProfiles: ReadonlySet<string>,
+  /** The reader's friends (friendshipRepository.friendIds), marked beside their names. */
+  friends: ReadonlySet<string> = NO_FRIENDS,
 ): MobileForumPost {
   return {
     id: post.id,
@@ -117,7 +135,7 @@ export function toMobilePost(
     editedAt: post.editedAt?.toISOString() ?? null,
     hidden: post.isHidden,
     mine: post.author?.id === viewerId,
-    author: toMobileAuthor(post.author),
+    author: toMobileAuthor(post.author, friends),
     avatar,
     authorHandle: forumAuthorHandle(post.author, openProfiles),
   };

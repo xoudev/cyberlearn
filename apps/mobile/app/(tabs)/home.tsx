@@ -15,6 +15,7 @@ import { ActionChip, GradientButton, IconButton } from "@/components/buttons";
 import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { ModuleRouteRow } from "@/components/module-route";
+import { FriendsActivityCard } from "@/components/friends";
 import { BadgeIcon } from "@/components/media";
 import { RecallCard } from "@/components/recall-card";
 import { Screen } from "@/components/screen";
@@ -27,6 +28,7 @@ import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
 import { fetchDuelsApi, fetchTournamentsApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "@/lib/db";
+import { fetchFriendsActivityApi } from "@/lib/api";
 import { firstName, leadAction, pathsTitle, type HomePath, type LeadProgress } from "@/lib/home";
 import type { ModuleRoute } from "@cyberlearn/lib/dashboard/module-route";
 import {
@@ -44,9 +46,11 @@ import { RECALL_STATE_LABEL, type RecallState } from "@cyberlearn/lib/revisions/
  * The home tab: the site's dashboard, rebuilt around the paths (PR #233). The
  * paths lead; what will not wait follows when there is any (a duel a friend
  * sent, a tournament under way), then a half-finished lesson when there is
- * one, then the day's recall while spaced repetition is on; the reader's own record
- * closes. The sections are numbered as on the site, and the numbering closes
- * up behind a section that has nothing to say
+ * one, then the day's recall while spaced repetition is on; then, for a
+ * reader with friends, what they did lately ("Tes amis", as on the site's
+ * dashboard); the reader's own record closes. The sections are numbered as
+ * on the site, and the numbering closes up behind a section that has nothing
+ * to say
  * (@cyberlearn/lib/dashboard/sections).
  */
 export default function Accueil(): React.JSX.Element {
@@ -79,6 +83,8 @@ export default function Accueil(): React.JSX.Element {
           // What will not wait (HomeBody): pulled again with the rest.
           queryClient.invalidateQueries({ queryKey: ["duels"] }),
           queryClient.invalidateQueries({ queryKey: ["tournaments"] }),
+          // "Tes amis" (HomeBody) too.
+          queryClient.invalidateQueries({ queryKey: ["friends-activity"] }),
         ])
       }
     >
@@ -102,6 +108,14 @@ function HomeBody({
   const weekKey = useMemo(() => isoWeekKey(new Date()), []);
   const { data: quests } = useQuests(userId, weekKey);
   const { data: unread } = useUnreadCount(userId);
+  // "Tes amis": nothing drawn until it arrives, nor for a reader without a
+  // friend, nor when it fails (the rest of the tab does not wait on it).
+  const { data: friendsActivity } = useQuery({
+    queryKey: ["friends-activity", userId],
+    queryFn: fetchFriendsActivityApi,
+    enabled: Boolean(userId),
+  });
+  const hasFriends = friendsActivity?.hasFriends === true;
   const xpAnchor = useTourAnchor("home-xp");
   const streakAnchor = useTourAnchor("home-streak");
   const bellAnchor = useTourAnchor("home-bell");
@@ -130,6 +144,7 @@ function HomeBody({
     hasResume: resume !== null,
     hasRecall: recallState !== null,
     hasPlay: invitations.length > 0 || liveTournaments.length > 0,
+    hasFriends,
   });
   const openRecall = (): void => {
     router.push("/revisions");
@@ -392,8 +407,19 @@ function HomeBody({
         </Rise>
       ) : null}
 
+      {/* Tes amis: their recent moments, for a reader with friends */}
+      {friendsActivity !== undefined && hasFriends ? (
+        <Rise index={4}>
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "friends") ?? "04"} · amis`}
+            title="Tes amis."
+          />
+          <FriendsActivityCard items={friendsActivity.items} />
+        </Rise>
+      ) : null}
+
       {/* 04 · Progression: the reader's own record */}
-      <Rise index={4}>
+      <Rise index={5}>
         <SectionLabel
           eyebrow={`${sectionNumber(sections, "progress") ?? "04"} · progression`}
           title="Où tu en es."

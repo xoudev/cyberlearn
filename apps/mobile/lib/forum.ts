@@ -10,6 +10,12 @@ export interface ForumAuthor {
   name: string;
   level: number;
   role: string;
+  /**
+   * One of the reader's friends, marked beside the name as on the site. A
+   * forum author is always named, so the mark hides nothing. Absent from a
+   * server older than the marks.
+   */
+  isFriend?: boolean;
 }
 
 export interface ForumCategory {

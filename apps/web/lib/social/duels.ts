@@ -5,6 +5,7 @@ import {
   notificationRepository,
   pathsVisibleTo,
   prisma,
+  userRepository,
 } from "@cyberlearn/db";
 import type { MockRef, MockSource } from "@cyberlearn/lib/exam/mock";
 import {
@@ -42,6 +43,17 @@ export interface DuelPlayer {
   id: string;
   name: string;
   username: string | null;
+  /**
+   * Ready for an `<img src>`, a glyph marker, or null: signed here, as an
+   * uploaded picture needs the service_role key, which never leaves the server.
+   */
+  avatarSrc: string | null;
+  /**
+   * Their profile, when the reader would be let into it (profilesOpenTo):
+   * a private profile of somebody who is no longer a friend is a name, not a
+   * link to a 404. Null on the reader's own side, which the card does not link.
+   */
+  profileHref: string | null;
 }
 
 export interface DuelScore {
@@ -104,7 +116,52 @@ function playerOf(user: { id: string; displayName: string; username: string | nu
     id: user.id,
     name: user.displayName || (user.username ?? "Sans nom"),
     username: user.username,
+    avatarSrc: null,
+    profileHref: null,
   };
+}
+
+/** A player's picture and the link to their profile, as the reader may see them. */
+interface PlayerFace {
+  avatarSrc: string | null;
+  profileHref: string | null;
+}
+
+/**
+ * The faces of everyone on the duels read, in two calls whatever their
+ * number: every avatar signed at once, every profile checked at once. The
+ * link is offered only for somebody else whose profile would open for the
+ * reader.
+ */
+async function facesFor(
+  readerId: string,
+  duels: readonly DuelRow[],
+): Promise<Map<string, PlayerFace>> {
+  const people = new Map<string, DuelRow["challenger"]>();
+  for (const duel of duels) {
+    people.set(duel.challenger.id, duel.challenger);
+    people.set(duel.opponent.id, duel.opponent);
+  }
+  const list = [...people.values()];
+  const [avatars, open] = await Promise.all([
+    resolveAvatarSrcMany(list.map((person) => person.avatarUrl)),
+    userRepository.profilesOpenTo(
+      readerId,
+      list.filter((person) => person.id !== readerId).map((person) => person.id),
+    ),
+  ]);
+  return new Map(
+    list.map((person, i) => [
+      person.id,
+      {
+        avatarSrc: avatars[i] ?? null,
+        profileHref:
+          person.id !== readerId && person.username !== null && open.has(person.id)
+            ? `/u/${person.username}`
+            : null,
+      },
+    ]),
+  );
 }
 
 /** The refs stored on a duel, read back defensively: our own JSON. */
@@ -193,10 +250,19 @@ async function settle(duel: DuelRow, now: Date = new Date()): Promise<DuelRow> {
   return { ...duel, status: "FINISHED", finishedAt: now, winnerId };
 }
 
-function summaryOf(duel: DuelRow, readerId: string, rows: DuelAnswerRow[]): DuelSummary {
+function summaryOf(
+  duel: DuelRow,
+  readerId: string,
+  rows: DuelAnswerRow[],
+  faces: ReadonlyMap<string, PlayerFace> = new Map(),
+): DuelSummary {
   const readerIsChallenger = duel.challengerId === readerId;
-  const reader = playerOf(readerIsChallenger ? duel.challenger : duel.opponent);
-  const other = playerOf(readerIsChallenger ? duel.opponent : duel.challenger);
+  const face = (user: DuelRow["challenger"]): DuelPlayer => ({
+    ...playerOf(user),
+    ...faces.get(user.id),
+  });
+  const reader = face(readerIsChallenger ? duel.challenger : duel.opponent);
+  const other = face(readerIsChallenger ? duel.opponent : duel.challenger);
   const count = readRefs(duel.questions).length;
   const mine = tallyFor(reader.id, rows, count);
   const theirs = tallyFor(other.id, rows, count);
@@ -292,11 +358,12 @@ export async function duelSetupFor(userId: string): Promise<DuelSetup> {
 /** The reader's duels, the most recent first, each settled if its time is over. */
 export async function listDuelsFor(userId: string): Promise<DuelSummary[]> {
   const duels = await duelRepository.listFor(userId);
+  const faces = await facesFor(userId, duels);
   const out: DuelSummary[] = [];
   for (const raw of duels) {
     const duel = await settle(raw);
     const rows = duel.status === "PENDING" ? [] : toRows(await duelRepository.listAnswers(duel.id));
-    out.push(summaryOf(duel, userId, rows));
+    out.push(summaryOf(duel, userId, rows, faces));
   }
   return out;
 }
@@ -305,14 +372,17 @@ export async function listDuelsFor(userId: string): Promise<DuelSummary[]> {
  * The invitations waiting on the reader's answer, the one lapsing first
  * first: the dashboard's "Défis reçus". Asked of the database rather than
  * filtered out of listDuelsFor, which reads the answers of twenty duels; a
- * pending duel has none, and one past its time is not asked for.
+ * pending duel has none, and one past its time is not asked for. The faces
+ * are drawn as on the duels' list: the dashboard shows the same card.
  */
 export async function listDuelInvitationsFor(
   userId: string,
   now: Date = new Date(),
 ): Promise<DuelSummary[]> {
   const duels = await duelRepository.listInvitationsFor(userId, now);
-  return duels.map((duel) => summaryOf(duel, userId, []));
+  if (duels.length === 0) return [];
+  const faces = await facesFor(userId, duels);
+  return duels.map((duel) => summaryOf(duel, userId, [], faces));
 }
 
 /**
@@ -428,7 +498,10 @@ export async function duelViewFor(userId: string, rawId: unknown): Promise<DuelV
   const refs = readRefs(duel.questions);
   const playing = duel.status === "ACTIVE" || duel.status === "FINISHED";
   const answers = playing ? await duelRepository.listAnswers(duel.id) : [];
-  const sources = playing ? await sourcesFor(refs) : new Map<string, MockSource>();
+  const [sources, faces] = await Promise.all([
+    playing ? sourcesFor(refs) : Promise.resolve(new Map<string, MockSource>()),
+    facesFor(userId, [duel]),
+  ]);
   const readerAnswers = answers
     .filter((a) => a.userId === userId)
     .map((a): DuelAnswerView => {
@@ -442,7 +515,7 @@ export async function duelViewFor(userId: string, rawId: unknown): Promise<DuelV
       };
     });
   return {
-    ...summaryOf(duel, userId, toRows(answers)),
+    ...summaryOf(duel, userId, toRows(answers), faces),
     questions: playing ? duelQuestions(refs, sources) : [],
     readerAnswers,
   };

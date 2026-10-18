@@ -222,7 +222,11 @@ describe("buildCurrentUserPosition", () => {
 // ─── buildLeaderboard - the friend mark ───────────────────────────────────────
 
 describe("buildLeaderboard - the friend mark", () => {
-  const FRIENDS = new Set(["pub-friend", "anon-friend", "hidden-friend", "no-prefs-friend", "me"]);
+  const FRIENDS = new Map(
+    ["pub-friend", "anon-friend", "hidden-friend", "no-prefs-friend", "me"].map(
+      (id) => [id, "friends"] as const,
+    ),
+  );
 
   it("marks a PUBLIC friend, whose name the row already shows", () => {
     const [entry] = buildLeaderboard(
@@ -273,5 +277,52 @@ describe("buildLeaderboard - the friend mark", () => {
       VIEWER,
     );
     expect(entry?.isFriend).toBe(false);
+  });
+});
+
+// ─── buildLeaderboard - the row's friend button ───────────────────────────────
+
+describe("buildLeaderboard - where the reader stands with a player", () => {
+  const RELATIONS = new Map([
+    ["asked-me", "incoming"],
+    ["i-asked", "outgoing"],
+    ["anon-asked-me", "incoming"],
+    ["pal", "friends"],
+  ] as const);
+
+  it("tells a PUBLIC row where the reader stands, a stranger reading as none", () => {
+    const result = buildLeaderboard(
+      [
+        rawUser("asked-me", LeaderboardVisibility.PUBLIC, 400),
+        rawUser("i-asked", LeaderboardVisibility.PUBLIC, 300),
+        rawUser("pal", LeaderboardVisibility.PUBLIC, 200),
+        rawUser("stranger", LeaderboardVisibility.PUBLIC, 100),
+      ],
+      VIEWER,
+      RELATIONS,
+    );
+    expect(result.map((e) => e.friendship)).toEqual(["incoming", "outgoing", "friends", "none"]);
+    expect(result.map((e) => e.isFriend)).toEqual([false, false, true, false]);
+  });
+
+  it("says nothing on an anonymised row: it would name who asked", () => {
+    const result = buildLeaderboard(
+      [
+        rawUser("anon-asked-me", LeaderboardVisibility.ANONYMOUS, 300),
+        rawUser("no-prefs", null, 200),
+      ],
+      VIEWER,
+      RELATIONS,
+    );
+    expect(result.map((e) => e.friendship)).toEqual([null, null]);
+  });
+
+  it("says nothing on the reader's own row", () => {
+    const [entry] = buildLeaderboard(
+      [rawUser("me", LeaderboardVisibility.PUBLIC, 100)],
+      "me",
+      RELATIONS,
+    );
+    expect(entry?.friendship).toBeNull();
   });
 });
