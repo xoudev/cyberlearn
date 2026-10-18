@@ -1,6 +1,7 @@
 /**
  * Creating a lesson with its paths and prerequisites, and the refCode the form
- * proposes for it. Prisma, the repositories and the MDX check are mocked.
+ * proposes for it, and the checks a lesson passes before it is stored.
+ * Prisma and the repositories are mocked; the MDX check runs for real.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,10 +33,6 @@ vi.mock("@cyberlearn/db", () => ({
     $transaction: m.transaction,
   },
 }));
-vi.mock("@cyberlearn/lib/mdx-check", () => ({
-  checkLessonMdx: vi.fn().mockResolvedValue({ ok: true }),
-  describeLessonMdxProblem: vi.fn(),
-}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
@@ -50,7 +47,13 @@ const WEB = "44444444-4444-4444-8444-444444444444";
 const A = "55555555-5555-4555-8555-555555555555";
 const NEW_LESSON = "99999999-9999-4999-8999-999999999999";
 
-function form(links: { pathIds?: string[]; prerequisiteIds?: string[] } = {}): FormData {
+/** U+2014, built rather than written: the typography check reads this file. */
+const EM_DASH = String.fromCharCode(0x2014);
+
+function form(
+  links: { pathIds?: string[]; prerequisiteIds?: string[] } = {},
+  contentMdx = "## S\n\nUn mot, puis un autre.\n",
+): FormData {
   const data = new FormData();
   const fields: Record<string, string> = {
     refCode: "CL-LSN-02081-V01",
@@ -61,7 +64,7 @@ function form(links: { pathIds?: string[]; prerequisiteIds?: string[] } = {}): F
     difficulty: "BEGINNER",
     estimatedMinutes: "20",
     xpReward: "100",
-    contentMdx: "# Titre\n\nUn paragraphe.",
+    contentMdx,
     coverImageUrl: "",
   };
   for (const [key, value] of Object.entries(fields)) data.set(key, value);
@@ -119,6 +122,72 @@ describe("createLessonAction", () => {
       expect.objectContaining({ where: { id: { in: [LINUX] }, audience: "CATALOGUE" } }),
     );
     expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  // The schema trims the lesson before it is checked; the editor marks the
+  // text as typed, blank lines at the top included.
+  it("marks each problem at its line in the text as typed, and stores nothing", async () => {
+    const state = await createLessonAction(
+      {},
+      form(
+        {},
+        `\n\n  <Quiz id="q" question="?" options={["a", "b"]} correct={True} />\n\n## Suite\n\nUn mot ${EM_DASH} un autre.\n`,
+      ),
+    );
+    expect(state.error).toBe("Le contenu ne s'affiche pas.");
+    expect(state.problems?.map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 3, column: 59 },
+      { line: 7, column: 8 },
+    ]);
+    expect(state.problems?.[0]?.message).toMatch(/^Ne s'afficherait pas : /);
+    expect(state.problems?.[1]?.message).toContain("Tiret cadratin");
+    expect(state.fieldErrors?.contentMdx).toContain("(ligne 3, colonne 59)");
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("says what to correct when the lesson renders but breaks a rule", async () => {
+    const state = await createLessonAction({}, form({}, `\n## S\n\nUn mot ${EM_DASH} un autre.\n`));
+    expect(state.error).toBe("Le contenu est à corriger.");
+    expect(state.problems?.map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 4, column: 8 },
+    ]);
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("refuses an em dash in the title, which is published with the lesson", async () => {
+    const data = form();
+    data.set("title", `Une leçon ${EM_DASH} la suite`);
+    const state = await createLessonAction({}, data);
+    expect(state.fieldErrors?.title).toMatch(/^Le titre contient un tiret cadratin/);
+    // The content went unchecked: the editor keeps what it marks.
+    expect(state.problems).toBeUndefined();
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  it("refuses a lesson too short once trimmed, before the content check", async () => {
+    const state = await createLessonAction({}, form({}, "\n\n  ## S  \n\n"));
+    expect(state.fieldErrors?.contentMdx).toBeDefined();
+    expect(state.problems).toBeUndefined();
+    expect(m.transaction).not.toHaveBeenCalled();
+  });
+
+  // The empty list takes down what an earlier save marked in the editor.
+  it("says the content passed when the save fails after the check", async () => {
+    m.tx.lesson.create.mockRejectedValue(
+      new Error("Unique constraint failed on the fields: (`slug`)"),
+    );
+    const state = await createLessonAction({}, form());
+    expect(state.fieldErrors?.slug).toBe("Déjà utilisé");
+    expect(state.problems).toEqual([]);
+  });
+
+  it("stores the text trimmed", async () => {
+    await expect(
+      createLessonAction({}, form({}, "\n\n## S\n\nUn mot, puis un autre.\n")),
+    ).rejects.toThrow("REDIRECT /lessons");
+    expect(m.tx.lesson.create.mock.lastCall).toMatchObject([
+      { data: { contentMdx: "## S\n\nUn mot, puis un autre." } },
+    ]);
   });
 
   it("refuses the same prerequisite twice", async () => {

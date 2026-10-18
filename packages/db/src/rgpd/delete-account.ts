@@ -37,6 +37,13 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  * and path and challenge progress, hint reveals, badges, review schedule,
  * review cards and sessions, notifications, skip waivers, deletion tokens,
  * class memberships.
+ *
+ * Hard-deleted by a statement here: the team's internal notes on their tickets
+ * (TicketNote). The ticket outlives the account, anonymised, until retention
+ * purges it, and its notes would have gone with it only then - but a note is
+ * what the team wrote about this person ("compte déjà averti deux fois"), not
+ * part of the conversation, and it has no use once there is no account to act
+ * on. The thread stays: it is what was asked and answered.
  */
 
 const CERTIFICATE_BUCKET = "certificates";
@@ -55,6 +62,8 @@ export interface DeletionSummary {
   tournamentSolvesAnonymized: number;
   ratingsAnonymized: number;
   contactTicketsAnonymized: number;
+  /** The team's internal notes on those tickets, deleted rather than kept. */
+  ticketNotesDeleted: number;
   auditLogsAnonymized: number;
   /**
    * Whether auth.users went with public.users.
@@ -173,6 +182,10 @@ export async function deleteAccount(
     await tx.challengeWriteup.updateMany({ where: { userId }, data: { userId: null } });
     await tx.tournamentSolve.updateMany({ where: { userId }, data: { userId: null } });
     await tx.rating.updateMany({ where: { userId }, data: { userId: null } });
+    // Before the tickets lose their userId, which is what finds their notes.
+    const { count: ticketNotesDeleted } = await tx.ticketNote.deleteMany({
+      where: { ticket: { userId } },
+    });
     await tx.contactTicket.updateMany({ where: { userId }, data: { userId: null, email: null } });
 
     // actorId stays a UUID FK (an HMAC does not fit a uuid column);
@@ -205,6 +218,7 @@ export async function deleteAccount(
           tournamentSolvesAnonymized,
           ratingsAnonymized,
           contactTicketsAnonymized,
+          ticketNotesDeleted,
           auditLogsAnonymized,
         },
       },
@@ -220,6 +234,7 @@ export async function deleteAccount(
       tournamentSolvesAnonymized,
       ratingsAnonymized,
       contactTicketsAnonymized,
+      ticketNotesDeleted,
       auditLogsAnonymized,
     };
   });

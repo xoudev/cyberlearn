@@ -1,4 +1,4 @@
-import React from "react";
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 
 /**
  * Block-level tags that stood on their own line in the MDX source. Anything
@@ -40,14 +40,21 @@ const BLOCK_TAGS = new Set([
  * Inline children are therefore concatenated, a newline is emitted only when a
  * block element ends, and `br` is restored to the literal `<br/>` mermaid
  * expects inside a label.
+ *
+ * Shared by the site's Diagram component, which hands the result to mermaid,
+ * and by the save-time check (authoring.ts), which compares it with what the
+ * author wrote: one function, so the check sees what the page draws. Its own
+ * subpath, without the MDX compiler, since the component runs in the browser.
  */
-export function extractDiagramSource(node: React.ReactNode): string {
+export function extractDiagramSource(node: ReactNode): string {
   if (typeof node === "string") return node;
   if (typeof node === "number") return String(node);
   if (node === null || node === undefined || typeof node === "boolean") return "";
-  if (Array.isArray(node)) return node.map(extractDiagramSource).join("");
-  if (React.isValidElement(node)) {
-    const element = node as React.ReactElement<{ children?: React.ReactNode }>;
+  if (Array.isArray(node))
+    return node.map((child: ReactNode) => extractDiagramSource(child)).join("");
+  if (isValidElement(node)) {
+    // SAFETY: an element's props are an object; only children is read.
+    const element = node as ReactElement<{ children?: ReactNode }>;
     if (element.type === "br") return "<br/>";
     const inner = extractDiagramSource(element.props.children);
     return typeof element.type === "string" && BLOCK_TAGS.has(element.type) ? `${inner}\n` : inner;

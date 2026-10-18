@@ -20,6 +20,42 @@ export interface MdNode {
   children?: unknown[];
 }
 
+/** A place in a piece of MDX, line and column both from 1, as the editor numbers them. */
+export interface MdxPlace {
+  line: number;
+  column: number;
+}
+
+/** A problem found in a piece of MDX, in French, at its place in that piece. */
+export interface PlacedProblem extends MdxPlace {
+  message: string;
+}
+
+/** Where an mdast node starts, as unist writes it: line and column both from 1. */
+export function startOfNode(node: MdNode): MdxPlace | null {
+  // SAFETY: unist nodes carry `position` when the parser saw them; each field
+  // is checked before it is used.
+  const start = (node as { position?: { start?: { line?: unknown; column?: unknown } } }).position
+    ?.start;
+  return typeof start?.line === "number" && typeof start.column === "number"
+    ? { line: start.line, column: start.column }
+    : null;
+}
+
+/**
+ * Where an ESTree node of an attribute's braces starts. acorn counts columns
+ * from 0, moved here to 1 like the rest; its lines are already the
+ * document's, micromark-extension-mdx-expression moves them there.
+ */
+export function startOfEsNode(node: EsNode): MdxPlace | null {
+  // SAFETY: the expression is parsed with locations; each field is checked
+  // before it is used.
+  const start = (node.loc as { start?: { line?: unknown; column?: unknown } } | undefined)?.start;
+  return typeof start?.line === "number" && typeof start.column === "number"
+    ? { line: start.line, column: start.column + 1 }
+    : null;
+}
+
 const NOT_A_VALUE = Symbol("not a value");
 
 /** The value an expression spells out, or NOT_A_VALUE when it computes one. */

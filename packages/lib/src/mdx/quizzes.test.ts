@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkLessonMdx, describeLessonMdxProblem } from "./check.js";
-import { extractLessonQuizzes, quizProblem, quizSections } from "./quizzes.js";
+import { extractLessonQuizzes, quizProblem, quizProblems, quizSections } from "./quizzes.js";
 
 /**
  * The answer key, read from the lesson on the server.
@@ -104,8 +104,22 @@ describe("quizProblem, asked before a lesson is saved", () => {
     expect(r.section).toBe("Deux");
     expect(r.kind).toBe("quiz");
     expect(describeLessonMdxProblem(r)).toBe(
-      "La section « Deux » : Deux quiz portent l'identifiant « q-1 ». La réponse d'un élève est enregistrée sous cet identifiant : chaque quiz d'une leçon a le sien. Rien n'a été enregistré.",
+      "La section « Deux », ligne 7, colonne 1 : Deux quiz portent l'identifiant « q-1 ». La réponse d'un élève est enregistrée sous cet identifiant : chaque quiz d'une leçon a le sien. Rien n'a été enregistré.",
     );
+  });
+
+  it("marks every unscorable quiz at its tag", () => {
+    const mdx =
+      'Intro.\n\n- <Quiz question="A" options={["a", "b"]} correct={0} />\n\n<Quiz id="q" question="B" options={["a"]} correct={0} />';
+    expect(quizProblems(mdx).map(({ line, column }) => ({ line, column }))).toEqual([
+      { line: 3, column: 3 },
+      { line: 5, column: 1 },
+    ]);
+  });
+
+  it("counts a quiz's line in the file, frontmatter included", () => {
+    const mdx = '---\ntitle: x\n---\n\n<Quiz question="A" options={["a", "b"]} correct={0} />';
+    expect(quizProblems(mdx)[0]?.line).toBe(5);
   });
 });
 

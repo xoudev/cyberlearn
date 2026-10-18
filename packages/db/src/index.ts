@@ -356,6 +356,8 @@ export {
   isCriticalTicket,
   needsTeam,
   type AddMessageResult,
+  type AddNoteResult,
+  type AssignTicketResult,
   type ConsoleTicketHit,
   type QueueTicket,
 } from "./repositories/ticket.repository.js";

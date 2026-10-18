@@ -32,15 +32,22 @@ export const TICKET_COLUMNS: readonly GridColumn[] = [
   { label: "Sujet", sortable: true },
   { label: "Thème", sortable: true },
   { label: "Utilisateur", sortable: true },
+  { label: "Assigné à", sortable: true },
   { label: "Jira" },
   { label: "Date", sortable: true },
   { label: "Statut", sortable: true },
 ];
 
-/** A ticket's cards: the message beside its status and details, the conversation under them. */
+/**
+ * A ticket's cards: the message beside its status, the team's notes and the
+ * details, the conversation under them. An appeal adds the ban it contests
+ * under the message, which a skeleton cannot know about before the read.
+ */
 export const TICKET_CARDS = {
   message: "Message",
+  appealedBan: "Bannissement contesté",
   status: "Statut",
+  notes: "Notes internes",
   details: "Détails",
   conversation: "Conversation",
 } as const;

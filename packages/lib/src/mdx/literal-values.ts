@@ -1,3 +1,11 @@
+import {
+  type EsNode,
+  type MdNode,
+  type MdxPlace,
+  startOfEsNode,
+  startOfNode,
+} from "./attributes.js";
+
 /**
  * Values between a lesson's braces, never code.
  *
@@ -19,23 +27,19 @@
  * It sits in LESSON_REMARK_PLUGINS, so the page and the check both apply it.
  */
 
-/** Why a piece of MDX was refused, in French, for the person who wrote it. */
+/**
+ * Why a piece of MDX was refused, in French, for the person who wrote it, and
+ * where: the value itself when it can be pointed at (the `True` of a list),
+ * otherwise its attribute or its tag. Relative to the source that was parsed.
+ */
 export class LessonMdxValueError extends Error {
   override name = "LessonMdxValueError";
-}
+  readonly place: MdxPlace | null;
 
-/** The subset of an ESTree node this file reads. */
-interface EsNode {
-  type: string;
-  [key: string]: unknown;
-}
-
-/** The subset of an mdast node this file reads. */
-interface MdNode {
-  type: string;
-  name?: string | null;
-  attributes?: unknown[];
-  children?: unknown[];
+  constructor(message: string, place: MdxPlace | null = null) {
+    super(message);
+    this.place = place;
+  }
 }
 
 /** Names a value may use: they are values themselves, not references. */
@@ -66,6 +70,7 @@ function visit(node: unknown): void {
     // means the plugins were reordered, and then it is refused, not run.
     throw new LessonMdxValueError(
       "Des accolades ne sont acceptées que comme valeur d'un attribut de composant.",
+      startOfNode(node),
     );
   }
 
@@ -80,7 +85,10 @@ function checkElement(element: MdNode): void {
   const name = element.name ?? "";
   // <a.b> reads a property of whatever `a` is; a lesson only uses plain tags.
   if (/[.:]/.test(name)) {
-    throw new LessonMdxValueError(`La balise <${name}> n'est pas acceptée dans une leçon.`);
+    throw new LessonMdxValueError(
+      `La balise <${name}> n'est pas acceptée dans une leçon.`,
+      startOfNode(element),
+    );
   }
 
   for (const attribute of element.attributes ?? []) {
@@ -88,6 +96,7 @@ function checkElement(element: MdNode): void {
     if (attribute.type === "mdxJsxExpressionAttribute") {
       throw new LessonMdxValueError(
         `<${name}> : un attribut s'écrit nom={valeur}. Un bloc {...} seul dans la balise n'est pas accepté.`,
+        startOfNode(attribute) ?? startOfNode(element),
       );
     }
     if (attribute.type !== "mdxJsxAttribute") continue;
@@ -99,7 +108,7 @@ function checkElement(element: MdNode): void {
       value: unknown;
     };
     if (typeof value !== "object" || value === null) continue;
-    checkAttributeValue(name, attributeName, value);
+    checkAttributeValue(name, attributeName, value, startOfNode(attribute) ?? startOfNode(element));
   }
 }
 
@@ -107,6 +116,7 @@ function checkAttributeValue(
   element: string,
   attribute: string,
   value: { value?: unknown; data?: unknown },
+  at: MdxPlace | null,
 ): void {
   const where = `<${element}>, attribut « ${attribute} »`;
   // SAFETY: micromark-extension-mdx-expression attaches the parsed program
@@ -115,15 +125,23 @@ function checkAttributeValue(
   const body = program?.body;
   const statement = Array.isArray(body) && body.length === 1 ? (body[0] as EsNode) : null;
   if (statement?.type !== "ExpressionStatement") {
-    throw new LessonMdxValueError(`${where} : les accolades doivent contenir une valeur.`);
+    throw new LessonMdxValueError(`${where} : les accolades doivent contenir une valeur.`, at);
   }
 
   const problem = problemIn(statement.expression as EsNode);
-  if (problem !== null) throw new LessonMdxValueError(`${where} : ${problem}`);
+  if (problem !== null) {
+    throw new LessonMdxValueError(`${where} : ${problem.text}`, startOfEsNode(problem.node) ?? at);
+  }
+}
+
+/** What makes an expression more than a value, and the node that does. */
+interface ValueProblem {
+  text: string;
+  node: EsNode;
 }
 
 /** What makes an expression more than a value, or null when it is one. */
-function problemIn(node: EsNode): string | null {
+function problemIn(node: EsNode): ValueProblem | null {
   switch (node.type) {
     case "Literal":
       return null;
@@ -131,12 +149,16 @@ function problemIn(node: EsNode): string | null {
     case "TemplateLiteral":
       return (node.expressions as unknown[]).length === 0
         ? null
-        : "un texte entre ` ` ne peut pas contenir ${...}. Écris \\${ si c'est du code à montrer.";
+        : {
+            text: "un texte entre ` ` ne peut pas contenir ${...}. Écris \\${ si c'est du code à montrer.",
+            node,
+          };
 
     case "ArrayExpression":
       for (const item of node.elements as (EsNode | null)[]) {
         if (item === null) continue;
-        const problem = item.type === "SpreadElement" ? spreadProblem() : problemIn(item);
+        const problem =
+          item.type === "SpreadElement" ? { text: spreadProblem(), node: item } : problemIn(item);
         if (problem !== null) return problem;
       }
       return null;
@@ -154,29 +176,37 @@ function problemIn(node: EsNode): string | null {
         (node.operator === "-" || node.operator === "+") &&
         argument.type === "Literal" &&
         typeof argument.value === "number";
-      return signed ? null : notAValue();
+      return signed ? null : { text: notAValue(), node };
     }
 
     case "Identifier": {
       const name = String(node.name);
       if (VALUE_NAMES.has(name)) return null;
-      if (name === "True" || name === "False" || name === "None") return pythonAdvice(name);
-      return `« ${name} » est un nom, pas une valeur. Écris la valeur elle-même, ou "${name}" entre guillemets si c'est du texte.`;
+      if (name === "True" || name === "False" || name === "None") {
+        return { text: pythonAdvice(name), node };
+      }
+      return {
+        text: `« ${name} » est un nom, pas une valeur. Écris la valeur elle-même, ou "${name}" entre guillemets si c'est du texte.`,
+        node,
+      };
     }
 
     default:
-      return notAValue();
+      return { text: notAValue(), node };
   }
 }
 
-function propertyProblem(property: EsNode): string | null {
-  if (property.type !== "Property") return spreadProblem();
+function propertyProblem(property: EsNode): ValueProblem | null {
+  if (property.type !== "Property") return { text: spreadProblem(), node: property };
   if (property.computed === true || property.method === true || property.kind !== "init") {
-    return "une clé d'objet s'écrit clé: valeur.";
+    return { text: "une clé d'objet s'écrit clé: valeur.", node: property };
   }
   if (property.shorthand === true) {
     const key = property.key as EsNode;
-    return `« ${String(key.name)} » seul n'est pas une valeur : écris ${String(key.name)}: suivi de sa valeur.`;
+    return {
+      text: `« ${String(key.name)} » seul n'est pas une valeur : écris ${String(key.name)}: suivi de sa valeur.`,
+      node: property,
+    };
   }
   return problemIn(property.value as EsNode);
 }

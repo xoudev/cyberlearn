@@ -42,6 +42,7 @@ describe("refreshLessonPreviewAction", () => {
       ok: true,
       token: TOKEN,
       url: `https://cyberlearn.fr/preview/${TOKEN}`,
+      problems: [],
     });
     expect(refresh).toHaveBeenCalledWith("admin-1", TOKEN, DRAFT, expect.any(Date));
     expect(issue).not.toHaveBeenCalled();
@@ -53,6 +54,7 @@ describe("refreshLessonPreviewAction", () => {
       ok: true,
       token: FRESH,
       url: `https://cyberlearn.fr/preview/${FRESH}`,
+      problems: [],
     });
     expect(refresh).not.toHaveBeenCalled();
     expect(issue).toHaveBeenCalledWith("admin-1", DRAFT, expect.any(Date));
@@ -72,9 +74,27 @@ describe("refreshLessonPreviewAction", () => {
       contentMdx: '<Quiz id="q" question="?" options={["a", "b"]} correct={True} />',
     });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.length).toBeGreaterThan(0);
+    if (!result.ok) expect(result.error).toContain("(ligne 1, colonne 57)");
+    // The editor marks it under `True`.
+    const [problem, ...rest] = result.problems ?? [];
+    expect(rest).toEqual([]);
+    expect({ line: problem?.line, column: problem?.column }).toEqual({ line: 1, column: 57 });
+    expect(problem?.message).toMatch(/^Ne s'afficherait pas : /);
     expect(refresh).not.toHaveBeenCalled();
     expect(issue).not.toHaveBeenCalled();
+  });
+
+  it("shows a draft that renders but breaks a rule, with the problems to mark", async () => {
+    const result = await refreshLessonPreviewAction({
+      token: TOKEN,
+      contentMdx: `${DRAFT}\nUn mot \u2014 un autre.\n`,
+    });
+    expect(result).toMatchObject({ ok: true, token: TOKEN });
+    const [problem, ...rest] = result.problems ?? [];
+    expect(rest).toEqual([]);
+    expect({ line: problem?.line, column: problem?.column }).toEqual({ line: 7, column: 8 });
+    expect(problem?.message).toContain("Tiret cadratin");
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a token of the wrong shape without touching the database", async () => {
