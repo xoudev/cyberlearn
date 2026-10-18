@@ -277,8 +277,8 @@
 | `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
 | `/lessons/[id]/edit` | Éditer une leçon ; les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, et un lien vers tous |
+| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier), par glisser-déposer ; une leçon déjà en base se met à jour après diff et confirmation ; chaque erreur donne sa ligne |
 | `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
-| `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |

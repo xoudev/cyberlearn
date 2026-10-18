@@ -14,6 +14,7 @@
  */
 
 import type { PrismaClient } from "@prisma/client";
+import { changedValue, type CatalogueChange } from "./changes";
 import type { QuizFile } from "./quiz-files";
 
 export interface QuizSyncResult {
@@ -149,4 +150,65 @@ export function quizMatches(stored: StoredQuiz, quiz: QuizFile): boolean {
       sameOptions(s.options, q.options)
     );
   });
+}
+
+/**
+ * What syncQuiz would change, in words: the settings, then the questions as
+ * it matches them, by their text. Empty when quizMatches holds; the console
+ * lists it before anyone confirms a sync.
+ */
+export function quizChanges(stored: StoredQuiz, quiz: QuizFile): CatalogueChange[] {
+  const changes: CatalogueChange[] = [];
+  if (!stored.isActive) {
+    changes.push({ kind: "changed", label: "Examen", before: "désactivé", after: "actif" });
+  }
+  changes.push(
+    ...changedValue(
+      "Seuil",
+      `${String(stored.passThreshold)} %`,
+      `${String(quiz.passThreshold)} %`,
+    ),
+    ...changedValue("Questions tirées", stored.questionsToDraw, quiz.questionsToDraw),
+  );
+
+  const active = stored.questions.filter((q) => q.isActive);
+  const activeByText = new Map<string, StoredQuiz["questions"][number]>();
+  for (const q of active) if (!activeByText.has(q.question)) activeByText.set(q.question, q);
+  const inactive = new Set(stored.questions.filter((q) => !q.isActive).map((q) => q.question));
+
+  for (const [index, q] of quiz.questions.entries()) {
+    const label = `Question ${String(index + 1)}`;
+    const saved = activeByText.get(q.question);
+    if (!saved) {
+      changes.push({
+        kind: "added",
+        label: inactive.has(q.question) ? `${label} (réactivée)` : label,
+        value: q.question,
+      });
+      continue;
+    }
+    const parts = [
+      ...(sameOptions(saved.options, q.options) ? [] : ["options"]),
+      ...(saved.correctOptionId === q.correctOptionId ? [] : ["bonne réponse"]),
+      ...((saved.explanation ?? "") === (q.explanation ?? "") ? [] : ["explication"]),
+    ];
+    if (parts.length > 0) {
+      changes.push({ kind: "modified", label, value: `${q.question} (${parts.join(", ")})` });
+    }
+  }
+
+  const kept = new Set(quiz.questions.map((q) => q.question));
+  for (const q of active) {
+    if (!kept.has(q.question)) {
+      changes.push({ kind: "removed", label: "Question désactivée", value: q.question });
+    }
+  }
+
+  // The same questions in another order: the pool is read in its order.
+  const order = active.map((q) => q.question).filter((text) => kept.has(text));
+  const wanted = quiz.questions.map((q) => q.question).filter((text) => activeByText.has(text));
+  if (order.join("\n") !== wanted.join("\n")) {
+    changes.push({ kind: "modified", label: "Ordre", value: "Les questions changent d'ordre." });
+  }
+  return changes;
 }

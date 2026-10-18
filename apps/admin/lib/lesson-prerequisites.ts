@@ -10,7 +10,9 @@
  * once prerequisites do gate a lesson. The import and the sync order a batch
  * by its prerequisites and refuse a cycle inside it
  * (orderBatchByPrerequisites); the console's own editor refuses one too,
- * across the whole catalogue rather than one batch.
+ * across the whole catalogue rather than one batch, and so does a file
+ * written over a lesson already in the database (prerequisiteLoop in
+ * lesson-update.service.ts).
  *
  * Pure: the caller reads the links, this walks them.
  */

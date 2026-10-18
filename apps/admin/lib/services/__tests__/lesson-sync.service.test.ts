@@ -7,29 +7,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   findMany: vi.fn(),
   findUnique: vi.fn(),
-  groupBy: vi.fn(),
-  auditFindMany: vi.fn(),
-  updateMany: vi.fn(),
-  prereqDelete: vi.fn(),
-  prereqCreate: vi.fn(),
-  auditCreate: vi.fn(),
+  links: vi.fn(),
+  answers: vi.fn(),
+  edits: vi.fn(),
+  write: vi.fn(),
+  outside: vi.fn(),
+  edges: vi.fn(),
+  refCodes: vi.fn(),
 }));
 
-vi.mock("@cyberlearn/db", () => {
-  const tx = {
-    lesson: { updateMany: m.updateMany },
-    lessonPrerequisite: { deleteMany: m.prereqDelete, createMany: m.prereqCreate },
-    auditLog: { create: m.auditCreate },
-  };
-  return {
-    prisma: {
-      lesson: { findMany: m.findMany, findUnique: m.findUnique },
-      lessonQuizAnswer: { groupBy: m.groupBy },
-      auditLog: { findMany: m.auditFindMany },
-      $transaction: (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
-    },
-  };
-});
+// The repository's own queries and its transaction are tested in
+// packages/db (lesson-file.test.ts): here, what the service asks of it.
+vi.mock("@cyberlearn/db", () => ({
+  lessonFileRepository: {
+    findByRefCodes: m.findMany,
+    findByRefCode: m.findUnique,
+    findByRefCodesForLinks: m.links,
+    quizAnswerCounts: m.answers,
+    consoleEditsSinceFile: m.edits,
+    writeFromFile: m.write,
+    catalogueLessonsOutside: m.outside,
+    refCodesByIds: m.refCodes,
+  },
+  lessonRepository: { findPrerequisiteEdges: m.edges },
+}));
 
 const { applyLessonUpdate, findLessonsDir, lessonHash, lessonSyncOverview, readRepositoryLessons } =
   await import("../lesson-sync.service");
@@ -104,9 +105,13 @@ beforeEach(() => {
   root = mkdtempSync(path.join(tmpdir(), "cl-sync-"));
   dir = path.join(root, "content", "lessons");
   mkdirSync(dir, { recursive: true });
-  m.groupBy.mockResolvedValue([]);
-  m.auditFindMany.mockResolvedValue([]);
-  m.updateMany.mockResolvedValue({ count: 1 });
+  m.answers.mockResolvedValue([]);
+  m.edits.mockResolvedValue(new Map());
+  m.links.mockResolvedValue([]);
+  m.write.mockResolvedValue(true);
+  m.outside.mockResolvedValue([]);
+  m.edges.mockResolvedValue([]);
+  m.refCodes.mockResolvedValue(new Map());
 });
 
 afterEach(() => {
@@ -182,6 +187,26 @@ describe("lessonSyncOverview", () => {
     expect(o.unreadable[0]?.file).toBe("b.mdx");
   });
 
+  it("lists the catalogue lessons no file holds, which the sync leaves alone", async () => {
+    write("a.mdx", file("CL-LSN-001-V01"));
+    // Unreadable, but its lesson has a file all the same.
+    write("b.mdx", "---\nrefCode: CL-LSN-002-V01\nslug: 12\n---\n\nTexte");
+    m.findMany.mockResolvedValue([row("CL-LSN-001-V01")]);
+    m.outside.mockResolvedValue([
+      { id: "id-900", refCode: "CL-LSN-900-V01", title: "Écrite dans la console", status: "DRAFT" },
+    ]);
+    const o = await lessonSyncOverview(dir);
+    expect(m.outside).toHaveBeenCalledWith(["CL-LSN-001-V01", "CL-LSN-002-V01"]);
+    expect(o.onlyInDatabase).toEqual([
+      {
+        lessonId: "id-900",
+        refCode: "CL-LSN-900-V01",
+        title: "Écrite dans la console",
+        status: "DRAFT",
+      },
+    ]);
+  });
+
   it("says which values a category it cannot read may take", async () => {
     // As the console's instrumentation sets it, wording an enum for a form.
     configureZodLocale();
@@ -222,9 +247,7 @@ describe("lessonSyncOverview", () => {
   it("warns about a quiz whose answer changes when learners already answered it", async () => {
     write("python/05.mdx", file("CL-LSN-005-V01", BODY.replace("correct={1}", "correct={0}")));
     m.findMany.mockResolvedValue([row("CL-LSN-005-V01")]);
-    m.groupBy.mockResolvedValue([
-      { lessonId: "id-CL-LSN-005-V01", quizId: "indice", _count: { _all: 3 } },
-    ]);
+    m.answers.mockResolvedValue([{ lessonId: "id-CL-LSN-005-V01", quizId: "indice", answers: 3 }]);
     const [u] = (await lessonSyncOverview(dir)).updates;
     expect(u?.quizImpacts).toEqual([{ quizId: "indice", answers: 3, change: "modified" }]);
   });
@@ -233,16 +256,11 @@ describe("lessonSyncOverview", () => {
     write("python/05.mdx", file("CL-LSN-005-V01", `${BODY}\n\nFin.`));
     m.findMany.mockResolvedValue([row("CL-LSN-005-V01")]);
     const edited = new Date("2026-09-10T08:00:00Z");
-    m.auditFindMany.mockResolvedValue([
-      { targetId: "id-CL-LSN-005-V01", action: "lesson.update", createdAt: edited },
-      { targetId: "id-CL-LSN-005-V01", action: "lesson.import.success", createdAt: new Date(0) },
-    ]);
+    m.edits.mockResolvedValue(new Map([["id-CL-LSN-005-V01", edited]]));
     expect((await lessonSyncOverview(dir)).updates[0]?.editedInConsoleAt).toEqual(edited);
+    expect(m.edits).toHaveBeenCalledWith(["id-CL-LSN-005-V01"]);
 
-    m.auditFindMany.mockResolvedValue([
-      { targetId: "id-CL-LSN-005-V01", action: "lesson.sync", createdAt: new Date() },
-      { targetId: "id-CL-LSN-005-V01", action: "lesson.update", createdAt: edited },
-    ]);
+    m.edits.mockResolvedValue(new Map());
     expect((await lessonSyncOverview(dir)).updates[0]?.editedInConsoleAt).toBeNull();
   });
 
@@ -260,23 +278,35 @@ describe("lessonSyncOverview", () => {
 describe("applyLessonUpdate", () => {
   const edited = BODY.replace("Une liste garde", "Une liste Python garde");
 
-  it("writes the file's content, conditioned on the row not having moved, and logs it", async () => {
+  it("writes the file's content over the row as it was compared, and logs it", async () => {
     write("python/05.mdx", file("CL-LSN-005-V01", edited));
     const r = row("CL-LSN-005-V01");
     m.findUnique.mockResolvedValue(r);
-    m.findMany.mockResolvedValue([]);
 
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
 
     expect(result).toEqual({ ok: true, lessonId: r.id });
-    const [args] = m.updateMany.mock.calls[0] as [{ where: unknown; data: { contentMdx: string } }];
-    expect(args.where).toEqual({ id: r.id, updatedAt: r.updatedAt });
-    expect(args.data.contentMdx).toContain("Une liste Python garde");
-    expect(args.data).not.toHaveProperty("slug");
-    expect(args.data).not.toHaveProperty("status");
-    expect(m.prereqDelete).toHaveBeenCalledWith({ where: { lessonId: r.id } });
-    const [audit] = m.auditCreate.mock.calls[0] as [{ data: { action: string; actorId: string } }];
-    expect(audit.data).toMatchObject({ action: "lesson.sync", actorId: "admin-1" });
+    expect(m.findUnique).toHaveBeenCalledWith("CL-LSN-005-V01");
+    const [args] = m.write.mock.calls[0] as [
+      {
+        lessonId: string;
+        expectedUpdatedAt: Date;
+        fields: { contentMdx: string };
+        prerequisiteIds: string[];
+        audit: { action: string; actorId: string; metadata: Record<string, unknown> };
+      },
+    ];
+    expect(args.lessonId).toBe(r.id);
+    expect(args.expectedUpdatedAt).toBe(r.updatedAt);
+    expect(args.fields.contentMdx).toContain("Une liste Python garde");
+    expect(args.fields).not.toHaveProperty("slug");
+    expect(args.fields).not.toHaveProperty("status");
+    expect(args.prerequisiteIds).toEqual([]);
+    expect(args.audit).toMatchObject({
+      action: "lesson.sync",
+      actorId: "admin-1",
+      metadata: { refCode: "CL-LSN-005-V01", file: "python/05.mdx" },
+    });
   });
 
   it("writes nothing when the lesson changed since it was shown", async () => {
@@ -291,26 +321,27 @@ describe("applyLessonUpdate", () => {
       dir,
     );
     expect(result).toMatchObject({ ok: false, reason: "stale" });
-    expect(m.updateMany).not.toHaveBeenCalled();
+    expect(m.write).not.toHaveBeenCalled();
   });
 
-  it("logs nothing when an edit lands between the check and the write", async () => {
+  it("says so when an edit lands between the check and the write", async () => {
     write("python/05.mdx", file("CL-LSN-005-V01", edited));
     const r = row("CL-LSN-005-V01");
     m.findUnique.mockResolvedValue(r);
-    m.findMany.mockResolvedValue([]);
-    m.updateMany.mockResolvedValue({ count: 0 });
+    m.write.mockResolvedValue(false);
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
-    expect(result).toMatchObject({ ok: false, reason: "stale" });
-    expect(m.auditCreate).not.toHaveBeenCalled();
-    expect(m.prereqDelete).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "stale",
+      message: "La leçon a été modifiée pendant la mise à jour. Recharge la page.",
+    });
   });
 
   it("refuses a file the import would refuse", async () => {
     write("python/05.mdx", file("CL-LSN-005-V01", `${BODY}\n\n<script>alert(1)</script>`));
     const result = await applyLessonUpdate("CL-LSN-005-V01", "0".repeat(64), "admin-1", dir);
     expect(result).toMatchObject({ ok: false, reason: "invalid" });
-    expect(m.updateMany).not.toHaveBeenCalled();
+    expect(m.write).not.toHaveBeenCalled();
   });
 
   it("refuses a prerequisite that is not in the database", async () => {
@@ -323,10 +354,39 @@ describe("applyLessonUpdate", () => {
     );
     const r = row("CL-LSN-005-V01");
     m.findUnique.mockResolvedValue(r);
-    m.findMany.mockResolvedValue([]);
     const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
     expect(result).toMatchObject({ ok: false, reason: "prerequisite" });
-    expect(m.updateMany).not.toHaveBeenCalled();
+    expect(m.links).toHaveBeenCalledWith(["CL-LSN-004-V01"]);
+    expect(m.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses prerequisites that lead back to the lesson, naming the loop", async () => {
+    write(
+      "python/05.mdx",
+      file("CL-LSN-005-V01", edited).replace(
+        "prerequisites: []",
+        'prerequisites: ["CL-LSN-004-V01"]',
+      ),
+    );
+    const r = row("CL-LSN-005-V01");
+    m.findUnique.mockResolvedValue(r);
+    m.links.mockResolvedValue([{ id: "id-CL-LSN-004-V01", refCode: "CL-LSN-004-V01" }]);
+    m.edges.mockResolvedValue([{ lessonId: "id-CL-LSN-004-V01", prerequisiteId: r.id }]);
+    m.refCodes.mockResolvedValue(
+      new Map([
+        [r.id, "CL-LSN-005-V01"],
+        ["id-CL-LSN-004-V01", "CL-LSN-004-V01"],
+      ]),
+    );
+    const result = await applyLessonUpdate("CL-LSN-005-V01", hashOf(r), "admin-1", dir);
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "prerequisite",
+      message: expect.stringContaining(
+        "CL-LSN-005-V01 → CL-LSN-004-V01 → CL-LSN-005-V01",
+      ) as unknown,
+    });
+    expect(m.write).not.toHaveBeenCalled();
   });
 
   it("finds nothing to write for a refCode no file declares, or with no files at all", async () => {
