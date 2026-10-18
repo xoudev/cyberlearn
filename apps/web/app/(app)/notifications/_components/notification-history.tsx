@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import type { NotificationItem } from "@cyberlearn/db";
 import { NotificationRow } from "@/components/notification-panel";
 import type { NotificationCursorJson } from "@/lib/notifications/history";
+import {
+  announceRead,
+  markItemsRead,
+  onReadElsewhere,
+  unreadAfter,
+} from "@/lib/notifications/read-sync";
 import {
   getNotificationPageAction,
   markAllNotificationsReadAction,
@@ -25,6 +31,9 @@ const MARK_ALL_FAILED =
  * read, as in the panel, "Charger plus" asks for the rows after the last one
  * shown, and "Tout marquer comme lu" clears the unread ones without
  * reloading the list. The filter is a link: the page reads it from the URL.
+ *
+ * What is marked read here, the bell's badge and panel are told, and what
+ * the panel marks read, this list follows (lib/notifications/read-sync.ts).
  */
 export function NotificationHistory({
   initialItems,
@@ -43,6 +52,20 @@ export function NotificationHistory({
   const [failure, setFailure] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoadingMore, startLoadingMore] = useTransition();
+  // The rows as last drawn, for news from the panel to be weighed against.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(
+    () =>
+      onReadElsewhere("history", (news) => {
+        setUnread((count) => unreadAfter(count, itemsRef.current, news));
+        setItems((prev) => markItemsRead(prev, news, new Date()));
+      }),
+    [],
+  );
 
   function markRead(id: string): void {
     startTransition(async () => {
@@ -55,6 +78,7 @@ export function NotificationHistory({
       }
       setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
       setUnread((count) => Math.max(0, count - 1));
+      announceRead({ source: "history", ids: [id] });
     });
   }
 
@@ -70,6 +94,7 @@ export function NotificationHistory({
       }
       setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date() })));
       setUnread(0);
+      announceRead({ source: "history", all: true });
     });
   }
 

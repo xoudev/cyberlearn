@@ -9,6 +9,12 @@ import { notificationAge } from "@cyberlearn/lib/social/notification-age";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
+  announceRead,
+  markItemsRead,
+  onReadElsewhere,
+  unreadAfter,
+} from "@/lib/notifications/read-sync";
+import {
   getNotificationsAction,
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -93,8 +99,25 @@ export function NotificationPanel({
   const [isPending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // The rows as last drawn, for news from the history page to be weighed against.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useClickOutside(open, panelRef, buttonRef, setOpen);
+
+  // What the history page (/notifications) marks read, the badge and the rows
+  // follow: the navbar is not reloaded by a move between pages, and the count
+  // it was given would otherwise stay as it was.
+  useEffect(
+    () =>
+      onReadElsewhere("panel", (news) => {
+        setUnread((count) => unreadAfter(count, itemsRef.current, news));
+        setItems((prev) => markItemsRead(prev, news, new Date()));
+      }),
+    [],
+  );
 
   // A row is a link now, so following it is the router's job: a click moves
   // to the page without reloading the site, and one that points at the
@@ -169,6 +192,7 @@ export function NotificationPanel({
       }
       setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
       setUnread((c) => Math.max(0, c - 1));
+      announceRead({ source: "panel", ids: [id] });
     });
   }, []);
 
@@ -184,6 +208,7 @@ export function NotificationPanel({
       }
       setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date() })));
       setUnread(0);
+      announceRead({ source: "panel", all: true });
     });
   }, []);
 
