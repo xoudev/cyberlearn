@@ -75,6 +75,7 @@ const CONSOLE_PROFILE = {
   xpTotal: true,
   streakDays: true,
   longestStreak: true,
+  streakFreezes: true,
   createdAt: true,
   lastActiveAt: true,
   preferences: {
@@ -149,6 +150,17 @@ export function generatedUsername(): string {
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
+
+/** What the console's quick search shows of an account: enough to tell two apart. */
+const CONSOLE_USER_HIT = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  role: true,
+} as const satisfies Prisma.UserSelect;
+
+export type ConsoleUserHit = Prisma.UserGetPayload<{ select: typeof CONSOLE_USER_HIT }>;
 
 /**
  * The order of each sortable column. The id comes last everywhere: rows that
@@ -690,6 +702,22 @@ export const userRepository = {
           select: CONSOLE_USER_ROW,
         }),
     );
+  },
+
+  /**
+   * The few accounts the console's quick search offers for a term: the same
+   * match as the list's search box, the most recently active first, since the
+   * account someone is looking for is usually one that just did something.
+   * An empty term matches nothing rather than everyone.
+   */
+  async searchForConsole(q: string, take: number): Promise<ConsoleUserHit[]> {
+    if (q.trim().replace(/^@/u, "") === "") return [];
+    return prisma.user.findMany({
+      where: consoleUserWhere(q, undefined),
+      orderBy: [{ lastActiveAt: "desc" }, { id: "asc" }],
+      take,
+      select: CONSOLE_USER_HIT,
+    });
   },
 
   /** The figures above the account list, over every account whatever the filter. */

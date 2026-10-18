@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
+import { notifyResult } from "@/lib/notify";
 import {
   createQuestionAction,
   deleteQuestionAction,
@@ -225,7 +226,13 @@ function SettingsForm({
         questionsToDraw,
         isActive,
       });
-      if (!res.ok) setError(res.error ?? "Échec.");
+      // The error stays under the settings it is about; the success, which
+      // used to say nothing, is a toast.
+      const ok = notifyResult(res, {
+        success: quiz ? "Réglages du quiz enregistrés." : "Quiz créé.",
+        error: false,
+      });
+      if (!ok) setError(res.error ?? "Échec.");
       else router.refresh();
     });
   }
@@ -386,7 +393,8 @@ function QuestionRow({
     setError(null);
     start(async () => {
       const res = await deleteQuestionAction({ questionId: question.id, pathId: path.id });
-      if (!res.ok) setError(res.error ?? "Échec.");
+      const ok = notifyResult(res, { success: "Question supprimée.", error: false });
+      if (!ok) setError(res.error ?? "Échec.");
       else router.refresh();
     });
   }
@@ -507,7 +515,11 @@ function QuestionForm({
       const res = question
         ? await updateQuestionAction({ questionId: question.id, pathId: path.id, ...payload })
         : await createQuestionAction({ quizId, pathId: path.id, ...payload });
-      if (!res.ok) {
+      const ok = notifyResult(res, {
+        success: question ? "Question mise à jour." : "Question ajoutée.",
+        error: false,
+      });
+      if (!ok) {
         setError(res.error ?? "Échec.");
         return;
       }

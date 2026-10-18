@@ -1,7 +1,9 @@
 /**
- * Release notes, shown on the site's /changelog and the app's Nouveautés.
- * Newest entry first. Add a new object at the top of CHANGELOG for each
- * release; the "new" dot (the site's sidebar, the app's profile hub) and the
+ * Release notes, shown in the site's Nouveautés drawer (opened over the
+ * current page by the navbar button, `?news=1`; /changelog redirects there)
+ * and on the app's Nouveautés screen. Newest entry first. Add a new object at
+ * the top of CHANGELOG for each release; the "new" mark (the dot on the site's
+ * navbar button, the "nouveau" label in the app's profile hub) and the
  * per-device "seen" state key off CHANGELOG[0].version, so bumping the version
  * is all that's needed to surface a fresh entry, on both.
  */
@@ -29,6 +31,136 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 };
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "3.5",
+    date: "2026-10-17",
+    title: "Leçons recentrées, profil public complet et une semaine de correctifs",
+    changes: [
+      {
+        type: "improved",
+        text: "Refonte de la page d'une leçon : une seule colonne centrée, un en-tête compact (durée, XP, difficulté, statut) et une barre d'outils qui reste en haut de l'écran. Elle donne ta section et ta progression, passe à la section précédente ou suivante, ouvre le plan dans un tiroir (avec l'auteur et le glossaire) et tes notes, et propose un mode focus qui replie la barre latérale. Sur un écran d'au moins 1440 px, les notes s'ouvrent à côté du texte.",
+      },
+      {
+        type: "fixed",
+        text: "Les schémas des leçons s'affichent de nouveau depuis le 11 octobre. Depuis le 6, un changement dans les couleurs du site les empêchait de se dessiner, et chacun des 240 schémas montrait son code à la place. Si un schéma ne peut pas se dessiner, la leçon le donne maintenant en texte, une flèche par ligne, avec sa légende ; c'est aussi ainsi que l'app les montre, au lieu d'une simple mention « Exercice interactif ». La même panne faisait planter les leçons qui ont un éditeur de code (bac à sable, défi Python) : elles s'ouvrent de nouveau depuis le 12 octobre.",
+      },
+      {
+        type: "improved",
+        text: "Les ateliers des leçons tiennent dans leur cadre, sur un téléphone aussi, et gardent leur propre style au lieu de prendre celui du texte. Chacun prend la largeur qu'il lui faut : l'éditeur hexadécimal et la trame décortiquée affichent 16, 8 ou 4 octets par ligne selon la place, l'atelier PHP et l'OSINT sur photo placent leurs panneaux côte à côte quand l'écran le permet, et les terminaux et les éditeurs grandissent avec la largeur. Leurs libellés ne descendent plus sous 12 px.",
+      },
+      {
+        type: "improved",
+        text: "Les nouveautés s'ouvrent dans un tiroir, et un nouveau sujet du forum, une demande d'aide, le défi lancé à un ami et la présentation de l'examen blanc dans une fenêtre, par-dessus la page où tu es : tu ne la quittes plus, et Précédent les referme. « Défier un ami » montre chacun de tes amis en carte, avec son avatar, son pseudo et son niveau, et un ami déjà en duel mène à ce duel. Dans l'app aussi, chaque ami à défier a son avatar, son pseudo et son niveau.",
+      },
+      {
+        type: "improved",
+        text: "Tes badges, avec ceux qu'il te reste à gagner, et tes certificats deviennent des onglets de ton profil. L'onglet Tournois de la page Défis est ouvert à tous : si tu n'es dans aucune classe, il t'explique qu'un tournoi réunit des classes. Les anciennes adresses mènent aux onglets ; l'app garde ses écrans.",
+      },
+      {
+        type: "improved",
+        text: "Les classements « Cette semaine » et « Ce mois » comptent enfin l'XP gagnée depuis lundi ou depuis le 1er, et non plus depuis toujours. Le nombre de joueurs classés et ta place portent sur tout le classement, un joueur au profil public mène à son profil avec son avatar, et la marque « Ami » signale tes amis, là comme sur le forum, les questions-réponses, les solutions, ta classe et les tournois. Dans l'app, les trois périodes et les avatars sur le classement, et la marque « Ami » sur le classement et la ligue.",
+      },
+      {
+        type: "improved",
+        text: "Ton profil public se complète : tes chiffres comptés en entier, et non plus arrêtés à 10 leçons ou 30 défis, ton année d'activité, tes trois badges les plus rares, tes parcours en cours et terminés, ton bilan de duels, tes contributions et une chronologie ; entre amis, le face-à-face de vos duels. Un visiteur connecté le lit dans l'interface du site, comme le catalogue public et le glossaire, un lien partagé s'affiche avec son propre aperçu, et ton profil mène enfin à ta page publique (« Voir mon profil public », « Copier le lien »). Dans l'app aussi, aux couleurs de son propriétaire.",
+      },
+      {
+        type: "fixed",
+        text: "Une leçon se termine par « Terminer », au bout de sa dernière section : le bouton du bas qui la validait dès la première section a disparu. « Leçon suivante » dit pourquoi elle est encore fermée, un exercice réussi le reste quand tu reviens en arrière, et une note qui n'a pas pu s'enregistrer le dit, avec « Réessayer », au lieu d'afficher « Sauvegardé auto ».",
+      },
+      {
+        type: "fixed",
+        text: "Sur les parcours, « Continuer » ouvre ta prochaine mission, depuis la page du parcours comme depuis sa carte du catalogue, puis l'examen final une fois les missions faites. Après un examen échoué, un compte à rebours dit quand tu pourras le repasser. Une leçon encore en brouillon ne compte plus parmi les missions, où elle fermait l'examen et le certificat. Ailleurs, les boutons qui ne faisaient rien ont été retirés.",
+      },
+      {
+        type: "fixed",
+        text: "Les colonnes latérales restent visibles en défilant, même plus hautes que l'écran : elles défilent jusqu'à leur dernière ligne, puis restent en place. La colonne d'un parcours, les indices d'un défi, le tableau d'un tournoi et les scores de l'examen blanc suivent ainsi la page.",
+      },
+      {
+        type: "fixed",
+        text: "Le catalogue des leçons se filtre vraiment par niveau et par statut, ses compteurs suivent les filtres, et la touche « / » place le curseur dans la recherche. Dans l'app, l'onglet Leçons gagne un filtre de statut.",
+      },
+      {
+        type: "fixed",
+        text: "La note d'un parcours tient dans sa colonne, sans cadre dans un cadre, et sa moyenne s'écrit partout comme dans l'app : « 5,0 · 1 avis ».",
+      },
+      {
+        type: "fixed",
+        text: "Un certificat n'a plus qu'un numéro, « CL-AAAA-XXXXXXXX », le même sur le PDF, sur la page de vérification et sur ton profil, et le PDF imprime l'adresse de vérification en entier. La page publique montre le nom tel qu'il a été imprimé à l'émission, et un certificat révoqué y est signalé avec sa date et son motif, comme sur ton profil et dans l'app.",
+      },
+      {
+        type: "fixed",
+        text: "Le code de double authentification se valide au sixième chiffre sur chaque écran qui le demande, activation comprise, et la désactiver demande une confirmation et un code frais. Une adresse pas encore confirmée se distingue d'un mauvais mot de passe, avec un bouton pour renvoyer l'e-mail de confirmation. Sur le site comme dans l'app.",
+      },
+      {
+        type: "fixed",
+        text: "Premiers pas : « Retour » rouvre, remplie, l'étape de ton identifiant, chaque étape permet de se déconnecter, et les leçons dont le test de positionnement t'a dispensé s'ouvrent enfin. Ta première mission tient compte des domaines choisis à l'inscription. À la connexion, l'adresse saisie reste après une erreur, un lien de réinitialisation expiré l'explique et en propose un autre, et ton avatar n'est plus remplacé par ta photo GitHub.",
+      },
+      {
+        type: "fixed",
+        text: "Les notifications mènent où elles promettent, et disent leur âge en heures, en jours ou en semaines plutôt qu'en milliers de minutes. Les réglages n'affichent plus d'interrupteur qui ne fait rien. Retirer un ami ou un message du forum demande confirmation, et le nom de l'auteur d'un message mène à son profil quand il t'est ouvert. Dans l'app aussi.",
+      },
+      {
+        type: "fixed",
+        text: "Les erreurs de saisie s'affichent en français, sur le site comme dans l'app, là où certaines sortaient en anglais.",
+      },
+      {
+        type: "fixed",
+        text: "Dans l'app, les liens d'une leçon s'ouvrent dans le navigateur, une notification touchée dans la barre du téléphone ouvre son écran, une leçon encore fermée renvoie à son parcours, et tous les quiz d'une leçon sont posés : quelques-uns, écrits autrement, manquaient. Les modules enregistrés pour lire hors ligne appartiennent à ton compte : ils sont oubliés à la déconnexion.",
+      },
+    ],
+  },
+  {
+    version: "3.4",
+    date: "2026-10-10",
+    title: "Duels, tournois et examen blanc",
+    changes: [
+      {
+        type: "new",
+        text: "Des duels de quiz entre amis : tu défies un ami sur un parcours auquel vous avez accès tous les deux, et vous répondez aux cinq mêmes questions, tirées des quiz de ses leçons, en voyant le score de l'autre avancer en direct. Ton ami a la journée pour accepter ; le plus de bonnes réponses gagne, et à égalité celui qui a fini le premier. Dans l'app aussi.",
+      },
+      {
+        type: "new",
+        text: "Des tournois CTF entre classes ou entre écoles, dans l'onglet Tournois de la page Défis : pendant le tournoi, chaque flag rapporte ses points à ton équipe (ta classe, ou ton école) la première fois qu'un de ses membres le trouve, chaque joueur garde son propre score, et le tableau des équipes et des joueurs se met à jour en direct. Les élèves des classes inscrites sont prévenus par une notification. Dans l'app aussi.",
+      },
+      {
+        type: "new",
+        text: "Un examen blanc sur chaque parcours, pour s'entraîner avant l'examen final : trois questions par module, tirées des quiz de ses leçons, une minute et demie par question, et la copie rendue d'elle-même à la fin du temps. Le résultat se lit module par module (acquis, à consolider, à revoir), avec la correction de chaque question. Ni XP ni certificat, et autant d'essais que tu veux. Dans l'app aussi.",
+      },
+      {
+        type: "new",
+        text: "Les solutions des défis : une fois un défi résolu, tu peux publier la tienne (en Markdown, comme sur le forum) et lire celles des autres qui l'ont réussi. Tant que tu ne l'as pas résolu, tu n'en vois que le nombre. Dans l'app aussi.",
+      },
+      {
+        type: "new",
+        text: "Dans l'app, « Lire hors ligne », sous chaque module d'un parcours, enregistre ses leçons sur le téléphone pour les lire sans réseau ; la progression, les quiz et les notes attendent le réseau. L'écran « Hors ligne », depuis le profil, liste les modules enregistrés et la place qu'ils prennent.",
+      },
+      {
+        type: "improved",
+        text: "La machine Linux des leçons peut embarquer un vrai bash, git, sqlite3, nasm, gcc, gdb et python3. Le projet assembleur assemble et lie pour de vrai avec nasm, et le projet C compile avec gcc, écrit dans une vraie base SQLite et diagnostique un vrai plantage avec gdb.",
+      },
+      {
+        type: "improved",
+        text: "Les écrans de chargement ont la forme de la page qui arrive, sur chaque page : mêmes colonnes, mêmes cartes, des barres à la taille du texte qu'elles remplacent, sans couleur ni coin arrondi.",
+      },
+      {
+        type: "fixed",
+        text: "La fiche de révision d'un module se télécharge : elle répondait par une erreur.",
+      },
+      {
+        type: "fixed",
+        text: "La machine Linux tient dans son cadre, aux couleurs du site, et les encadrés des leçons ont retrouvé leur bordure.",
+      },
+      {
+        type: "fixed",
+        text: "Ouvrir la notification d'un duel ou d'un tournoi sans être connecté y ramène une fois connecté, au lieu du tableau de bord.",
+      },
+      {
+        type: "fixed",
+        text: "Dans l'app, l'écran d'un défi montre son adresse de connexion et sa pièce jointe, comme le site.",
+      },
+    ],
+  },
   {
     version: "3.3",
     date: "2026-10-06",

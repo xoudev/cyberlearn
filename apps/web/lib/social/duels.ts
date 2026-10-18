@@ -302,6 +302,20 @@ export async function listDuelsFor(userId: string): Promise<DuelSummary[]> {
 }
 
 /**
+ * The invitations waiting on the reader's answer, the one lapsing first
+ * first: the dashboard's "Défis reçus". Asked of the database rather than
+ * filtered out of listDuelsFor, which reads the answers of twenty duels; a
+ * pending duel has none, and one past its time is not asked for.
+ */
+export async function listDuelInvitationsFor(
+  userId: string,
+  now: Date = new Date(),
+): Promise<DuelSummary[]> {
+  const duels = await duelRepository.listInvitationsFor(userId, now);
+  return duels.map((duel) => summaryOf(duel, userId, []));
+}
+
+/**
  * The reader's record over every duel they played, not only the twenty the
  * list shows: each of their duels whose time is over is settled first (a duel
  * nobody opened again is still PENDING or ACTIVE in the table, and settles

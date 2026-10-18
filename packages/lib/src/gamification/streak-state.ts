@@ -146,6 +146,67 @@ export function applyDayBoundary(
   return { state: { ...state, currentStreak: 0 }, event: "broken" };
 }
 
+export interface StreakCorrectionTarget {
+  currentStreak: number;
+  /**
+   * The record. Left as it is when absent, and raised to the corrected streak
+   * either way: a record is never below the streak it records.
+   */
+  longestStreak?: number;
+  /** Left as it is when absent. Clamped to 0..MAX_FREEZES. */
+  freezes?: number;
+}
+
+export interface StreakCorrection {
+  state: StreakState;
+  /**
+   * True when the last active day moved to today. A corrected streak on an
+   * account whose last activity is older than yesterday would otherwise be
+   * broken again by the next night's check, before the learner could extend it.
+   */
+  movedToToday: boolean;
+}
+
+/**
+ * Sets a streak by hand, from the console: a streak lost to a bug, or one
+ * that should never have been counted.
+ *
+ * The record follows a streak set above it, never one set below: the record
+ * is what the learner reached, and a correction of the streak downwards does
+ * not undo it. A record that should never have been reached either (a streak
+ * a bug inflated) is lowered by naming it, `longestStreak`, and goes no lower
+ * than the corrected streak.
+ *
+ * The last active day is kept while the streak is still alive (activity today
+ * or yesterday): moving it to today would swallow the learner's next
+ * increment, as registerActivity counts one per day. Otherwise, for a streak
+ * above zero, it moves to today, so the next activity, today or tomorrow,
+ * extends the corrected streak rather than starting over. A streak set to zero
+ * leaves it where it is.
+ */
+export function correctStreak(
+  state: StreakState,
+  target: StreakCorrectionTarget,
+  now: Date,
+  tz: string = STREAK_TIMEZONE,
+): StreakCorrection {
+  const today = dayKey(now, tz);
+  const currentStreak = Math.max(0, Math.trunc(target.currentStreak));
+  const freezes = Math.min(MAX_FREEZES, Math.max(0, Math.trunc(target.freezes ?? state.freezes)));
+  const record = Math.max(0, Math.trunc(target.longestStreak ?? state.longestStreak));
+  const alive = state.lastActiveDay !== null && daysBetween(state.lastActiveDay, today) <= 1;
+  const movedToToday = currentStreak > 0 && !alive;
+  return {
+    state: {
+      currentStreak,
+      longestStreak: Math.max(record, currentStreak),
+      lastActiveDay: movedToToday ? today : state.lastActiveDay,
+      freezes,
+    },
+    movedToToday,
+  };
+}
+
 /** The next streak milestone strictly greater than `streak`, or null past the top. */
 export function nextMilestone(streak: number): number | null {
   for (const m of STREAK_MILESTONES) {

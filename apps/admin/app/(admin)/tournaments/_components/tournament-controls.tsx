@@ -2,13 +2,18 @@
 
 // "use client" justified: a confirmation before an action that cannot be undone.
 
-import React, { useState, useTransition } from "react";
+import React, { useTransition } from "react";
 import type { TournamentPhase } from "@cyberlearn/lib/challenges/tournament";
+import { notifyResult } from "@/lib/notify";
 import { deleteTournamentAction, endTournamentNowAction } from "../_actions/tournament-actions";
 
 /**
  * What a tournament allows by its phase: deleting one that has not started,
  * ending one that runs. A finished tournament is a record and stays.
+ *
+ * What came of it is said in a toast. A deletion that works leaves the page
+ * for the list, which says it (see lib/saved-notice.ts), so only its refusal
+ * is said from here.
  */
 export function TournamentControls({
   tournamentId,
@@ -18,15 +23,17 @@ export function TournamentControls({
   phase: TournamentPhase;
 }): React.ReactElement | null {
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   if (phase === "FINISHED") return null;
 
-  const run = (question: string, act: () => Promise<{ error?: string }>): void => {
+  const run = (
+    question: string,
+    act: () => Promise<{ error?: string }>,
+    success?: string,
+  ): void => {
     if (!window.confirm(question)) return;
     startTransition(async () => {
-      setError(null);
       const result = await act();
-      if (result.error !== undefined) setError(result.error);
+      notifyResult(result, { success, error: "L'action sur le tournoi a échoué." });
     });
   };
 
@@ -51,15 +58,16 @@ export function TournamentControls({
           className="a-btn a-btn--danger"
           disabled={pending}
           onClick={() => {
-            run("Terminer le tournoi maintenant ? Les scores s'arrêtent là.", () =>
-              endTournamentNowAction(tournamentId),
+            run(
+              "Terminer le tournoi maintenant ? Les scores s'arrêtent là.",
+              () => endTournamentNowAction(tournamentId),
+              "Tournoi terminé : les scores sont arrêtés.",
             );
           }}
         >
           Terminer maintenant
         </button>
       )}
-      {error !== null ? <p className="a-form-error">{error}</p> : null}
     </div>
   );
 }

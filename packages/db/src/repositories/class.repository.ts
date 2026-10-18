@@ -19,8 +19,8 @@ import { prisma } from "../prisma.js";
  * findMembersVisibleTo read only the class's own flag, so it still served the
  * roster of a class whose whole intake had been put away.
  *
- * Exported because the web sidebar counts the same thing from its own query:
- * the door and the room behind it have to be deciding on the same rule.
+ * Exported for the few pages and console actions that still ask Prisma for a
+ * class themselves; the sidebar's count is hasLiveClass, here.
  */
 export const LIVE_CLASS_FILTER = {
   archivedAt: null,
@@ -633,6 +633,27 @@ export const classRepository = {
       prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
     ]);
     return teaches > 0 || user?.role === "ADMIN";
+  },
+
+  /**
+   * Whether this account teaches a live class or is in one: what opens the
+   * classes page, and puts "Mes classes" in the site's sidebar.
+   *
+   * The entry follows the classes, not the role: a student put in a class had
+   * nowhere to see their classmates except their own profile, while the page
+   * listing them existed and was closed to them. Archived classes are left out
+   * for the reason the pages leave them out: a count that did not would put
+   * back the door with an empty room behind it. Same LIVE_CLASS_FILTER as
+   * findForTeacher and findForMember, so the door and the room agree.
+   */
+  async hasLiveClass(userId: string): Promise<boolean> {
+    const count = await prisma.class.count({
+      where: {
+        ...LIVE_CLASS_FILTER,
+        OR: [{ teachers: { some: { teacherId: userId } } }, { members: { some: { userId } } }],
+      },
+    });
+    return count > 0;
   },
 
   /**
