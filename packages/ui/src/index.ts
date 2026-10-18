@@ -31,6 +31,11 @@ export {
   useOtpAutoSubmit,
   type OtpCodeInputProps,
 } from "./components/otp-code-input.js";
+export {
+  MultiSelect,
+  type MultiSelectOption,
+  type MultiSelectProps,
+} from "./components/multi-select.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { SideDrawer, type SideDrawerProps } from "./components/side-drawer.js";
 export {

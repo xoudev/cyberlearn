@@ -283,7 +283,10 @@ export const leaderboardRepository = {
       where: { userId: { in: users.map((u) => u.id) }, createdAt: { gte: since } },
       _sum: { amount: true },
     });
-    const earned = new Map(sums.map((row) => [row.userId, row._sum.amount ?? 0]));
+    // XP taken back from the console is a negative line, counted in the period
+    // it was taken back in, which can then add up below zero. The board says
+    // 0 for that period, as the public one leaves the player off it.
+    const earned = new Map(sums.map((row) => [row.userId, Math.max(0, row._sum.amount ?? 0)]));
     const ranked = users
       .map((user) => ({ ...user, xpTotal: earned.get(user.id) ?? 0 }))
       .sort((a, b) => b.xpTotal - a.xpTotal || byIdAscending(a.id, b.id));

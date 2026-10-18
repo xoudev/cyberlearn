@@ -71,4 +71,28 @@ describe("planSections", () => {
       sectionNumber(planSections({ hasResume: false, hasRecall: false }), "friends"),
     ).toBeNull();
   });
+
+  it("puts what will not wait, a duel received or a tournament under way, under the parcours", () => {
+    expect(planSections({ hasResume: true, hasRecall: true, hasPlay: true })).toEqual([
+      { key: "paths", number: "01" },
+      { key: "play", number: "02" },
+      { key: "resume", number: "03" },
+      { key: "recall", number: "04" },
+      { key: "progress", number: "05" },
+    ]);
+    expect(sectionNumber(planSections({ hasResume: false, hasRecall: false }), "play")).toBeNull();
+  });
+
+  it("keeps the duels under the parcours and the friends before the record, on a full page", () => {
+    expect(
+      planSections({ hasResume: true, hasRecall: true, hasPlay: true, hasFriends: true }),
+    ).toEqual([
+      { key: "paths", number: "01" },
+      { key: "play", number: "02" },
+      { key: "resume", number: "03" },
+      { key: "recall", number: "04" },
+      { key: "friends", number: "05" },
+      { key: "progress", number: "06" },
+    ]);
+  });
 });

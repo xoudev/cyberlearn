@@ -63,7 +63,7 @@ export function moveActive(
 }
 
 /** Accents folded and case dropped, so "ré" finds "Réseau". */
-function fold(text: string): string {
+export function fold(text: string): string {
   return text
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")

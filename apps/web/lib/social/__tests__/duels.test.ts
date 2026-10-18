@@ -17,6 +17,7 @@ const m = vi.hoisted(() => ({
   listOverdueFor: vi.fn<(userId: string, now: Date) => Promise<unknown[]>>(),
   recordFor: vi.fn<(userId: string, now: Date) => Promise<unknown>>(),
   listOpenFor: vi.fn<(userId: string) => Promise<unknown[]>>(),
+  listInvitationsFor: vi.fn<(userId: string, now: Date) => Promise<unknown[]>>(),
   listFriends: vi.fn<(userId: string) => Promise<unknown[]>>(),
   pathFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
@@ -43,6 +44,7 @@ vi.mock("@cyberlearn/db", () => ({
     listOverdueFor: m.listOverdueFor,
     recordFor: m.recordFor,
     listOpenFor: m.listOpenFor,
+    listInvitationsFor: m.listInvitationsFor,
   },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
@@ -55,6 +57,7 @@ const {
   duelRecordFor,
   duelSetupFor,
   duelViewFor,
+  listDuelInvitationsFor,
   listDuelsFor,
   respondToDuel,
 } = await import("../duels");
@@ -320,6 +323,33 @@ describe("listDuelsFor", () => {
     const [only] = await listDuelsFor(ME);
     expect(only?.other.profileHref).toBeNull();
     expect(only?.other.name).toBe("Alex");
+  });
+});
+
+describe("listDuelInvitationsFor", () => {
+  it("lists the invitations waiting on the reader, from their seat, without reading answers", async () => {
+    const now = new Date("2026-10-17T12:00:00Z");
+    m.listInvitationsFor.mockResolvedValue([
+      duelRow({
+        status: "PENDING",
+        challengerId: FRIEND,
+        opponentId: ME,
+        acceptedAt: null,
+        challenger: { id: FRIEND, displayName: "Alex", username: "alex" },
+        opponent: { id: ME, displayName: "Moi", username: "moi" },
+      }),
+    ]);
+    const list = await listDuelInvitationsFor(ME, now);
+    expect(m.listInvitationsFor).toHaveBeenCalledWith(ME, now);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({
+      status: "PENDING",
+      readerIsChallenger: false,
+      other: { name: "Alex" },
+      pathTitle: "Linux",
+      questionCount: 5,
+    });
+    expect(m.listAnswers).not.toHaveBeenCalled();
   });
 });
 

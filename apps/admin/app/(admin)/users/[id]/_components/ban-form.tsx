@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
@@ -45,6 +46,19 @@ export function BanForm({
     liftBanAction,
     {},
   );
+
+  // Each success swaps this card for the other one, and that swap was its only
+  // sign. A toast says it; the errors stay under the form that sent them. A
+  // ban whose e-mail did not leave says so in the card instead, which stays.
+  // The ids keep an effect run twice from showing it twice.
+  useEffect(() => {
+    if (banState.ok === true && banState.emailFailed !== true) {
+      toast.success("Compte banni.", { id: "ban-issued" });
+    }
+  }, [banState]);
+  useEffect(() => {
+    if (liftState.ok === true) toast.success("Bannissement levé.", { id: "ban-lifted" });
+  }, [liftState]);
 
   return (
     <Card title={active ? "Bannissement en cours" : "Bannissement"} pad>

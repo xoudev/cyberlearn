@@ -12,6 +12,7 @@ import type { ChallengeFormState } from "../../../_actions/challenge-admin-actio
 import type { ChallengeOption } from "../../../new/_components/new-challenge-form";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
+import { notifyResult } from "@/lib/notify";
 
 interface ChallengeData {
   id: string;
@@ -120,7 +121,12 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
     startToggle(async () => {
       setOptimisticActive(next);
       const res = await setChallengeActiveAction(challenge.id, next);
-      if (!res.error) setConfirmedActive(next);
+      // Same answer as the toggle in the list: a refusal used to be swallowed.
+      const ok = notifyResult(res, {
+        success: next ? "Challenge activé." : "Challenge désactivé.",
+        error: "Le challenge n'a pas pu être modifié.",
+      });
+      if (ok) setConfirmedActive(next);
     });
   }
 

@@ -50,7 +50,8 @@
 | `/paths` · `/paths/[slug]` | Catalogue des parcours et progression |
 | `/paths/[slug]/exam` | Examen final à tirage aléatoire et temps limité |
 | `/challenges` · `/challenges/[slug]` | Défis (sandbox Python, indices, flag) ; deux onglets, le catalogue et les tournois (`?tab=tournois`), ouverts à tous |
-| `/revisions` · `/review` | Ancienne file SM-2, plus reliée, retirée ensuite |
+| `/revisions` | Ancienne file SM-2, plus reliée, retirée ensuite |
+| `/review` | Pas de page : redirection vers `/revisions` (`next.config.ts`) |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
@@ -109,11 +110,13 @@
 #### Dashboard
 - En-tête : la date, le prénom, la série et « Ton rappel du jour t'attend » tant qu'il est à faire, le niveau en anneau avec l'XP et le rang
 - La mission : la leçon en cours, sinon la prochaine du parcours en tête (classement `featured-paths`, à partir du niveau, du test de placement et des derniers domaines travaillés), avec le module en cours dessiné leçon par leçon (`module-route`)
+- Ce qui n'attend pas, seulement quand il y en a : les défis reçus d'un ami, à accepter ou refuser sur place (`listDuelInvitationsFor`, les mêmes cartes que `/duels`), et les tournois en cours, celui qui ferme le premier d'abord, avec la part du temps écoulé et « Entrer » (`runningTournaments` de `@cyberlearn/lib/dashboard/your-move`)
 - Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
 - Tes amis, pour qui en a : leurs derniers moments (leçon du catalogue terminée, badge, certificat, défi résolu, duel gagné), avec leur avatar, le lien de leur profil et « Défier », grisé en « Duel en cours » tant qu'un duel est ouvert ; lus dans les tables existantes (`friendshipRepository.recentFriendActivity`), même service pour l'app (`GET /api/mobile/friends/activity`)
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
-- Barre latérale en trois groupes (Apprendre, Progression, Communauté) et un bloc compte ; rien n'y est compté, « Révisions » ouvre le rappel du jour
+- Barre latérale : le tableau de bord, puis Apprendre (Parcours, Leçons, Révisions, Bloc-notes, Glossaire), S'entraîner (Défis, Duels), Progression (Mon profil, Classement, Casier) et Communauté (Forum, Mes classes pour qui en a une, Aide), et un bloc compte. Groupes, libellés et ordre partagés avec le hub de l'app (`@cyberlearn/lib/navigation/groups`). Seules les invitations aux duels en attente y sont comptées (`duelRepository.countInvitations`) ; « Révisions » ouvre le rappel du jour
+- Registre des routes (`apps/web/lib/routes.ts`) : pour chaque adresse, si elle demande une session, si `robots.txt` l'écarte et son icône dans la barre latérale. Le middleware, `robots.txt` et la barre latérale le lisent ; un test parcourt `app/(app)` et échoue sur une page connectée absente du registre
 
 #### Leçons
 - Contenu rendu en MDX (remark-gfm, rehype-highlight, rehype-sanitize)
@@ -170,6 +173,7 @@
 - Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
 - Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
 - L'ancienne file SM-2 tourne encore à côté, jusqu'à son retrait : `ReviewSchedule` créé à chaque complétion, page `/revisions` (plus reliée depuis la barre latérale ni le tableau de bord) et route `/api/mobile/review` pour les versions de l'app déjà installées, l'app d'aujourd'hui ne la lisant plus (`reviewRepository`, `@cyberlearn/lib/revisions/session`)
+- Conversion de l'ancienne file en cartes : `db:backfill-review-cards`, lancé à la main quand les cartes sont en production, puis une dernière fois juste avant le retrait de la file pour les lignes créées entre-temps (essai par défaut, `--apply` pour écrire, une passe aussitôt après n'écrit rien). Les leçons qui ne donnent pas de carte en fin de leçon n'en donnent pas non plus ; une leçon en brouillon ou archivée au moment de la passe est convertie, ses cartes cachées tant qu'elle n'est pas republiée ; avec les réponses enregistrées, les cartes de la fin de leçon ; sans réponse, la dernière question dans la boîte que l'intervalle SM-2 avait atteinte ; les leçons déjà dues réparties sur cinq jours, les autres à la date de l'ancienne file. Détail et moment dans `docs/DEPLOY.md`
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
@@ -272,7 +276,7 @@
 | `/mfa` · `/mfa/setup` | Défi et enrôlement TOTP, obligatoires ici |
 | `/users` | Liste des comptes, 25 par page, lue par la base sous les filtres de l'adresse (`?q=&role=&sort=&page=`) |
 | `/users/pending` | Inscriptions en attente : comptes Supabase Auth à l'adresse jamais confirmée, sans profil (renvoyer le mail, confirmer l'adresse) |
-| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), double authentification, remise à zéro complète, suppression |
+| `/users/[id]` | Un compte, lu par les dépôts : connexion, profil, progression (positionnement, parcours et examens, dernières leçons), attestations révoquées comprises, bannissements, tickets, modération, dernières lignes du journal d'audit, préférences, classes. Gestes confirmés et inscrits au journal : déconnecter toutes les sessions, modifier ou remettre à zéro le nom, le pseudo, la bio et l'avatar (photo effacée du stockage), remettre à zéro le test de positionnement (l'apprenant est notifié), lever le délai d'un examen, corriger une leçon (remise à zéro, ou terminée sans XP), ajouter ou retirer de l'XP, corriger la série, attribuer ou retirer un badge (avec un motif ; registre d'XP en lecture), double authentification, remise à zéro complète, suppression |
 | `/certificates` | Certificats émis, 25 par page, lus par la base sous les filtres de l'adresse (`?q=&path=&status=&sort=&page=`) ; révoquer avec un motif, rétablir |
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
@@ -350,6 +354,24 @@
   (`quiz_attempts.cooldownWaivedAt`) ou clore sans délai une tentative jamais
   rendue dont le temps est écoulé, remettre une leçon à zéro ou la marquer
   terminée sans XP
+- Corrections d'XP, de série et de badges, avec un motif inscrit dans l'audit
+  log et une confirmation qui nomme le compte : ajouter ou retirer de l'XP
+  (une ligne `ADJUSTMENT` du registre `xp_ledger`, total jamais sous zéro,
+  niveau recalculé sans notification, saison et classements de la semaine et
+  du mois suivent), fixer la série, son record et les gels en réserve (le
+  record suit une série mise au-dessus et ne descend que si on le change,
+  jamais sous la série ; une série rendue après une interruption compte le
+  jour même comme actif), attribuer un badge (ses XP et la notification d'un
+  badge obtenu) ou le retirer, en reprenant au choix les XP qu'il a rapportés
+  (jamais sous zéro, l'avis dit ce qui a vraiment été repris). Le retrait est
+  refusé tant que le compte remplit encore le critère du badge, sans lui et
+  sans les XP repris : rien ne marque un badge comme retiré, et la collection
+  ou la leçon suivante le rendrait, XP compris. On corrige d'abord ce qui le
+  remplit, le critère, ou on désactive le badge.
+  Les vingt dernières lignes du registre d'XP se lisent sur la fiche. Le
+  crédit d'XP (`creditXp`), la saison (`recordSeasonXp`) et l'attribution de
+  badges (`awardBadges`) vivent dans `@cyberlearn/db/gamification`, partagés
+  par le site et la console
 - Bannissement avec motif, échéance, levée et appel
 - Remise à zéro d'une progression, sans toucher au compte
 - Suppression complète du compte et de ce qu'il possède, avec e-mail à la clé
@@ -414,6 +436,9 @@
   gate CI fail-closed (aucune table exposée, >= 56 policies)
 - Seeds séparés : `db:seed`, `db:seed-paths`, `db:seed-quizzes`,
   `db:seed-cosmetics`, `db:seed-season`
+- Scripts lancés à la main, en essai par défaut (`--apply` pour écrire) :
+  `db:backfill-badge-xp`, `db:backfill-daily-streaks`,
+  `db:backfill-review-cards` (voir `docs/DEPLOY.md`)
 - Les sources ne sont jamais compilées à côté d'elles-mêmes (`noEmit` +
   garde `.gitignore`) : un `.js` émis passerait devant son `.ts` à la
   résolution et les tests liraient le dernier build
@@ -469,7 +494,7 @@
 | `ProgressStatus` | NOT_STARTED, IN_PROGRESS, COMPLETED |
 | `BadgeRarity` | COMMON, RARE, EPIC, LEGENDARY |
 | `BadgeCriterionType` | LESSON_COMPLETED, PATH_COMPLETED, XP_THRESHOLD, STREAK_DAYS, CATEGORY_MASTERY, PERFECT_QUIZ, LESSON_SPECIFIC, LEVEL, BADGE_EARNED, CUSTOM |
-| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW |
+| `XpSource` | LESSON, BADGE, QUEST, CHALLENGE, REVIEW, EXERCISE, ADJUSTMENT |
 | `QuestType` | LESSON_COMPLETED, PERFECT_QUIZ, STREAK_DAYS, FORUM_POST, WEEKLY_BONUS |
 | `SeasonStatus` | ACTIVE, CLOSING, CLOSED |
 | `LeagueDivision` | BRONZE, ARGENT, OR, PLATINE, DIAMANT |

@@ -125,6 +125,41 @@ export const LAST_TICKET_MESSAGE = {
   select: { fromStaff: true, createdAt: true },
 } satisfies Prisma.ContactTicket$messagesArgs;
 
+/** What the console's quick search shows of a ticket. */
+const CONSOLE_TICKET_HIT = {
+  id: true,
+  subject: true,
+  status: true,
+  email: true,
+  user: { select: { username: true, displayName: true } },
+} as const satisfies Prisma.ContactTicketSelect;
+
+export type ConsoleTicketHit = Prisma.ContactTicketGetPayload<{
+  select: typeof CONSOLE_TICKET_HIT;
+}>;
+
+/**
+ * The tickets a console search matches: the subject, or the requester by the
+ * address on the ticket or by their account's address, handle or name. A
+ * leading @ is dropped, as in the account search, so "@amelie" finds the
+ * handle the list prints that way.
+ */
+export function consoleTicketWhere(q: string): Prisma.ContactTicketWhereInput {
+  const term = q.trim().replace(/^@/u, "");
+  const contains = { contains: term, mode: "insensitive" } as const;
+  return {
+    OR: [
+      { subject: contains },
+      { email: contains },
+      {
+        user: {
+          is: { OR: [{ email: contains }, { username: contains }, { displayName: contains }] },
+        },
+      },
+    ],
+  };
+}
+
 async function countAwaitingReply(): Promise<number> {
   // In memory over the tickets in progress, a handful at a time: "the last
   // message is the requester's" is not a filter Prisma can say.
@@ -155,6 +190,23 @@ export const ticketRepository = {
       countAwaitingReply(),
     ]);
     return open + awaiting;
+  },
+
+  /**
+   * The few tickets the console's quick search offers for a term. The ones
+   * still open come first - the status enum is declared in the order a ticket
+   * goes through - then the most recently touched. The console reads every
+   * ticket, so nothing here is scoped to a viewer. An empty term matches
+   * nothing.
+   */
+  async searchForConsole(q: string, take: number): Promise<ConsoleTicketHit[]> {
+    if (q.trim().replace(/^@/u, "") === "") return [];
+    return prisma.contactTicket.findMany({
+      where: consoleTicketWhere(q),
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }, { id: "asc" }],
+      take,
+      select: CONSOLE_TICKET_HIT,
+    });
   },
 
   /** Someone's own tickets, most recently touched first. */

@@ -17,7 +17,7 @@
  * decision worth testing on its own.
  */
 
-export type DashboardSectionKey = "paths" | "resume" | "recall" | "friends" | "progress";
+export type DashboardSectionKey = "paths" | "play" | "resume" | "recall" | "friends" | "progress";
 
 export interface DashboardSection {
   key: DashboardSectionKey;
@@ -35,6 +35,11 @@ export interface DashboardSectionInput {
    */
   hasRecall: boolean;
   /**
+   * A duel invitation waiting on the reader, or a tournament under way
+   * (your-move.ts): what will not wait long, right under the parcours.
+   */
+  hasPlay?: boolean;
+  /**
    * Whether the reader has a friend. "Tes amis" is their recent activity,
    * and with nobody to follow it would be an empty box; with friends who
    * have been quiet it still offers a duel. Absent reads as no friend.
@@ -43,14 +48,16 @@ export interface DashboardSectionInput {
 }
 
 /**
- * The order, once and for all. Parcours first is the whole point. The
- * friends come after what is the reader's to do and before their own record,
- * where the site's dashboard draws them.
+ * The order, once and for all. Parcours first is the whole point. What will
+ * not wait comes right under them. The friends come after what is the
+ * reader's to do and before their own record, where the site's dashboard
+ * draws them.
  */
-const ORDER: DashboardSectionKey[] = ["paths", "resume", "recall", "friends", "progress"];
+const ORDER: DashboardSectionKey[] = ["paths", "play", "resume", "recall", "friends", "progress"];
 
 export function planSections(input: DashboardSectionInput): DashboardSection[] {
   const shown = ORDER.filter((key) => {
+    if (key === "play") return input.hasPlay === true;
     if (key === "resume") return input.hasResume;
     if (key === "recall") return input.hasRecall;
     if (key === "friends") return input.hasFriends === true;

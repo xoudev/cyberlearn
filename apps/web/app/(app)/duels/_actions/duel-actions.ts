@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireRequestUser } from "@/lib/auth";
 import {
   answerDuel,
@@ -33,9 +34,16 @@ export async function createDuelAction(input: unknown): Promise<DuelCreateResult
   return createDuel(user.id, input);
 }
 
+/**
+ * Accepting or declining takes an invitation off the count next to « Duels » in
+ * the sidebar, which the shared layout renders: a soft navigation to the duel
+ * does not render that layout again, so it is refreshed here.
+ */
 export async function respondToDuelAction(duelId: unknown, accept: unknown): Promise<DuelResult> {
   const user = await requireRequestUser();
-  return respondToDuel(user.id, duelId, accept);
+  const result = await respondToDuel(user.id, duelId, accept);
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function answerDuelAction(input: unknown): Promise<DuelAnswerResult> {

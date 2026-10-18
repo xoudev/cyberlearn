@@ -3,6 +3,7 @@
 import React, { useActionState } from "react";
 import { keepFormInput } from "@/lib/form-input";
 import { reinstatementQuestion, revocationQuestion } from "@/lib/certificate-notice";
+import { notifyResult } from "@/lib/notify";
 import {
   reinstateCertificateAction,
   revokeCertificateAction,
@@ -124,12 +125,22 @@ export function CertificateActionsMenu({
   );
 }
 
-/** Sends each form to its own action; both report into the one outcome above. */
-function runCertificateAction(
+/**
+ * Sends each form to its own action; both report into the one outcome above.
+ * A refusal is said there, on the row. A success used to say nothing: the row
+ * simply came back redrawn in its new state, so it is said in a toast.
+ */
+async function runCertificateAction(
   prev: CertificateActionState,
   formData: FormData,
 ): Promise<CertificateActionState> {
-  return formData.get("intent") === "reinstate"
-    ? reinstateCertificateAction(prev, formData)
-    : revokeCertificateAction(prev, formData);
+  const reinstate = formData.get("intent") === "reinstate";
+  const result = reinstate
+    ? await reinstateCertificateAction(prev, formData)
+    : await revokeCertificateAction(prev, formData);
+  notifyResult(result, {
+    success: reinstate ? "Certificat rétabli." : "Certificat révoqué.",
+    error: false,
+  });
+  return result;
 }

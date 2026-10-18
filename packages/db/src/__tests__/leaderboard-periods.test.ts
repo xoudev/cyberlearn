@@ -78,6 +78,8 @@ describe("findTopUsersSince", () => {
           },
         },
       },
+      // Corrections are negative lines: a period whose XP was all taken back
+      // adds up to 0 or less, and leaves the player off the board.
       having: { amount: { _sum: { gt: 0 } } },
       orderBy: [{ _sum: { amount: "desc" } }, { userId: "asc" }],
     });
@@ -221,6 +223,19 @@ describe("findFriendsBoard over a period", () => {
     ]);
     expect(board.entries.map((e) => e.isFriend)).toEqual([false, true, true]);
     expect(board.listedForFriends).toBe(false);
+  });
+
+  it("counts XP taken back in the period, down to 0 and never below", async () => {
+    // ANON earned 40 this week, then a correction took 100 back: -60 in all.
+    mockPrisma.xpLedger.groupBy.mockResolvedValue([sum(ME, 80), sum(ANON, -60), sum(PUB, 30)]);
+
+    const board = await leaderboardRepository.findFriendsBoard(ME, WEEK);
+
+    expect(board.entries.map((e) => [e.rank, e.xpTotal, e.isCurrentUser])).toEqual([
+      [1, 80, true],
+      [2, 30, false],
+      [3, 0, false],
+    ]);
   });
 
   it("keeps the all-time board without reading the ledger", async () => {

@@ -55,7 +55,9 @@ beforeEach(() => {
 describe("deleteBadgeAction", () => {
   it("deletes, logs, and goes back to the list", async () => {
     m.findUnique.mockResolvedValue({ name: "Pionnier", _count: { userBadges: 0 } });
-    await expect(deleteBadgeAction(form(ID))).rejects.toThrow("NEXT_REDIRECT:/badges");
+    await expect(deleteBadgeAction(form(ID))).rejects.toThrow(
+      "NEXT_REDIRECT:/badges?saved=deleted",
+    );
     expect(m.remove).toHaveBeenCalledWith({ where: { id: ID } });
     expect(m.auditCreate.mock.calls[0]?.[0].data).toMatchObject({
       action: "badge.delete",
@@ -66,6 +68,8 @@ describe("deleteBadgeAction", () => {
   it("goes back to the list when the badge is already gone", async () => {
     m.findUnique.mockResolvedValue(null);
     await expect(deleteBadgeAction(form(ID))).rejects.toThrow("NEXT_REDIRECT:/badges");
+    // Nothing was deleted here, so the list has nothing to say about it.
+    expect(m.redirect).toHaveBeenCalledWith("/badges");
     expect(m.remove).not.toHaveBeenCalled();
   });
 
