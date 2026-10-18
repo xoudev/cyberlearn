@@ -5,6 +5,7 @@ import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
+import { ReportContentChip } from "@/components/content-report";
 import { ForumTag, HeldNotice, MessageInput, Pager } from "@/components/forum";
 import { FriendMark } from "@/components/friends";
 import { Avatar } from "@/components/media";
@@ -29,7 +30,7 @@ import { useSession } from "@/lib/session";
 /**
  * One thread: the site's /forum/<section>/<thread>. Its posts a page at a time,
  * the reader's own to edit or take down, an administrator's right to take any
- * down, and the reply box, unless the thread is closed.
+ * down, the others' to report, and the reply box, unless the thread is closed.
  */
 export default function ForumThreadScreen(): React.JSX.Element {
   const { category, topic, held } = useLocalSearchParams<{
@@ -170,6 +171,8 @@ function PostCard({
   const [confirmRemove, setConfirmRemove] = useState(false);
   const role = post.author ? roleLabel(post.author.role) : null;
   const name = post.author?.name ?? "Compte supprimé";
+  // Somebody else's message, up: the team can be told about it, as on the site.
+  const canReport = !post.mine && !post.hidden;
   // The name opens the author's profile where the site links it: only when
   // the reader would be let in, so a tap never lands on a closed page. A
   // server older than the field sends nothing, which reads as no link.
@@ -287,8 +290,9 @@ function PostCard({
         <NoteMarkdown markdown={post.content} dimmed={post.hidden} />
       )}
 
-      {!editing && (canEditPost(post) || canRemovePost(post, viewerIsAdmin)) ? (
-        <View style={{ flexDirection: "row", gap: 8 }}>
+      {!editing && (canEditPost(post) || canRemovePost(post, viewerIsAdmin) || canReport) ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {canReport ? <ReportContentChip surface="FORUM_POST" contentId={post.id} /> : null}
           {canEditPost(post) ? (
             <ActionChip
               label="Modifier"

@@ -16,7 +16,7 @@ export default function ModerationLoading(): React.ReactElement {
         crumbs={MODERATION_HEADER.crumbs}
         title={MODERATION_HEADER.title}
         description={MODERATION_HEADER.description}
-        actions={<ActionsSkeleton widths={[220]} />}
+        actions={<ActionsSkeleton widths={[160, 200, 160]} />}
       />
       <KpiGridSkeleton labels={MODERATION_KPI_LABELS} />
       <Card title={<LineSkeleton width={100} height={10} />} pad>

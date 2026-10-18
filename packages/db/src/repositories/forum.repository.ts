@@ -439,8 +439,15 @@ export const forumRepository = {
       select: { id: true },
     });
 
+    // Who took it down decides whether the console may put it back: an
+    // administrator's hand on someone else's message is the moderation's, an
+    // author's withdrawal of their own is final.
+    const byModeration = post.authorId !== actor.id;
     await prisma.$transaction(async (tx) => {
-      await tx.forumPost.update({ where: { id: post.id }, data: { isHidden: true } });
+      await tx.forumPost.update({
+        where: { id: post.id },
+        data: { isHidden: true, hiddenByModeration: byModeration },
+      });
       if (first?.id === post.id) {
         await tx.forumTopic.update({ where: { id: post.topicId }, data: { isHidden: true } });
       } else {

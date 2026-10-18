@@ -10,6 +10,7 @@ describe("surfaceNoun", () => {
     expect(surfaceNoun("forum.topic")).toBe("ton sujet");
     expect(surfaceNoun("forum.post")).toBe("ton message");
     expect(surfaceNoun("note.share")).toBe("ta note");
+    expect(surfaceNoun("class.resource")).toBe("ta ressource");
   });
 
   it("falls back to something true rather than to the key", () => {
@@ -25,8 +26,8 @@ describe("moderationNotice", () => {
     const notice = moderationNotice({ stage: "held", surface: "forum.topic" });
 
     expect(notice.title).toBe("Ton sujet est en attente de validation");
-    expect(notice.body).toContain("Personne d'autre ne la voit");
-    expect(notice.body).toContain("un modérateur va la relire");
+    expect(notice.body).toContain("Personne d'autre ne le voit");
+    expect(notice.body).toContain("un modérateur va le relire");
     // Not a verdict: nothing here says the message broke a rule.
     expect(notice.body).not.toContain("enfreint");
   });
@@ -46,6 +47,20 @@ describe("moderationNotice", () => {
     // No sanction mentioned when none was applied - inventing one would be a
     // second punishment nobody decided on.
     expect(notice.body).not.toContain("sanction");
+  });
+
+  it("agrees with the noun, masculine or feminine", () => {
+    // "Ton message a été supprimée" reads as a template, not as a person.
+    const message = moderationNotice({ stage: "removed", surface: "forum.post" });
+    expect(message.title).toBe("Ton message a été supprimé");
+    expect(message.body).toContain("confirmé qu'il enfreint");
+    expect(message.body).toContain("Il a été supprimé.");
+
+    const restored = moderationNotice({ stage: "restored", surface: "forum.post" });
+    expect(restored.body).toContain("Il est revenu à sa place");
+
+    const answer = moderationNotice({ stage: "restored", surface: "lesson.answer" });
+    expect(answer.body).toContain("Elle est revenue à sa place");
   });
 
   it("names the sanction when there is one", () => {
@@ -75,9 +90,21 @@ describe("moderationNotice", () => {
     expect(new Set(notices.map((n) => n.body)).size).toBe(1);
   });
 
+  it("says a moderator took it out of sight, without a verdict or a promise", () => {
+    // The console hides what somebody reported: it can come back, so nothing
+    // claims a rule was broken, and the record page (the screen's decisions)
+    // will not list it, so nothing points there.
+    const notice = moderationNotice({ stage: "hidden", surface: "lesson.question" });
+
+    expect(notice.title).toBe("Ta question n'est plus visible");
+    expect(notice.body).toContain("masqué ta question");
+    expect(notice.body).not.toContain("enfreint");
+    expect(notice.body).not.toContain("historique");
+  });
+
   it("never names the rule that fired, at any stage", () => {
     // Naming it turns the filter into a puzzle people retry until they beat.
-    for (const stage of ["held", "restored", "removed"] as const) {
+    for (const stage of ["held", "hidden", "restored", "removed"] as const) {
       const notice = moderationNotice({ stage, surface: "forum.post" });
       expect(`${notice.title} ${notice.body}`.toLowerCase()).not.toMatch(
         /règle |mot-clé|lexique|score/u,

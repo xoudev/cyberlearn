@@ -7,6 +7,11 @@ import {
 } from "@cyberlearn/lib";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import {
+  closeReportsOfRemoved,
+  recountForumReplies,
+  type RemovedRow,
+} from "./content-moderation.repository.js";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
@@ -113,8 +118,13 @@ export type ScreenSurface =
 interface SurfaceHandler {
   /** Put it back in front of readers. The screen was wrong. */
   restore: (id: string) => Promise<void>;
-  /** Destroy it. The screen was right, and a reviewer agreed. */
-  destroy: (id: string) => Promise<void>;
+  /**
+   * Destroy it. The screen was right, and a reviewer agreed. The open
+   * reports about every row it takes are closed in the same transaction, in
+   * the reviewer's name: a report outliving its content is counted in the
+   * console and read as something its author removed.
+   */
+  destroy: (id: string, reviewerId: string) => Promise<void>;
 }
 
 const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
@@ -122,18 +132,37 @@ const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
     restore: async (id) => {
       await prisma.lessonQuestion.updateMany({ where: { id }, data: { isHidden: false } });
     },
-    destroy: async (id) => {
-      // Its answers go with it, by the cascade on the foreign key: a thread of
-      // replies to a question that no longer exists is not a thread.
-      await prisma.lessonQuestion.deleteMany({ where: { id } });
+    destroy: async (id, reviewerId) => {
+      await prisma.$transaction(async (tx) => {
+        const answers = await tx.lessonAnswer.findMany({
+          where: { questionId: id },
+          select: { id: true },
+        });
+        // Its answers go with it, by the cascade on the foreign key: a thread of
+        // replies to a question that no longer exists is not a thread.
+        const { count } = await tx.lessonQuestion.deleteMany({ where: { id } });
+        if (count === 0) return;
+        await closeReportsOfRemoved(
+          tx,
+          [
+            { surface: "LESSON_QUESTION", id },
+            ...answers.map((a): RemovedRow => ({ surface: "LESSON_ANSWER", id: a.id })),
+          ],
+          reviewerId,
+        );
+      });
     },
   },
   [MODERATION_SURFACE.lessonAnswer]: {
     restore: async (id) => {
       await prisma.lessonAnswer.updateMany({ where: { id }, data: { isHidden: false } });
     },
-    destroy: async (id) => {
-      await prisma.lessonAnswer.deleteMany({ where: { id } });
+    destroy: async (id, reviewerId) => {
+      await prisma.$transaction(async (tx) => {
+        const { count } = await tx.lessonAnswer.deleteMany({ where: { id } });
+        if (count === 0) return;
+        await closeReportsOfRemoved(tx, [{ surface: "LESSON_ANSWER", id }], reviewerId);
+      });
     },
   },
   [MODERATION_SURFACE.forumTopic]: {
@@ -145,24 +174,52 @@ const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
         prisma.forumPost.updateMany({ where: { topicId: id }, data: { isHidden: false } }),
       ]);
     },
-    destroy: async (id) => {
-      await prisma.forumTopic.deleteMany({ where: { id } });
+    destroy: async (id, reviewerId) => {
+      await prisma.$transaction(async (tx) => {
+        const posts = await tx.forumPost.findMany({ where: { topicId: id }, select: { id: true } });
+        // Its messages go with it, by the cascade on the foreign key.
+        const { count } = await tx.forumTopic.deleteMany({ where: { id } });
+        if (count === 0) return;
+        await closeReportsOfRemoved(
+          tx,
+          posts.map((p): RemovedRow => ({ surface: "FORUM_POST", id: p.id })),
+          reviewerId,
+        );
+      });
     },
   },
   [MODERATION_SURFACE.forumPost]: {
+    // The thread's reply count follows: a held reply never counted, and one
+    // brought back has to, or the section's list says less than the thread.
     restore: async (id) => {
-      await prisma.forumPost.updateMany({ where: { id }, data: { isHidden: false } });
+      await prisma.$transaction(async (tx) => {
+        const post = await tx.forumPost.findUnique({ where: { id }, select: { topicId: true } });
+        if (post === null) return;
+        await tx.forumPost.updateMany({ where: { id }, data: { isHidden: false } });
+        await recountForumReplies(tx, post.topicId);
+      });
     },
-    destroy: async (id) => {
-      await prisma.forumPost.deleteMany({ where: { id } });
+    destroy: async (id, reviewerId) => {
+      await prisma.$transaction(async (tx) => {
+        const post = await tx.forumPost.findUnique({ where: { id }, select: { topicId: true } });
+        if (post === null) return;
+        const { count } = await tx.forumPost.deleteMany({ where: { id } });
+        if (count === 0) return;
+        await recountForumReplies(tx, post.topicId);
+        await closeReportsOfRemoved(tx, [{ surface: "FORUM_POST", id }], reviewerId);
+      });
     },
   },
   [MODERATION_SURFACE.challengeWriteup]: {
     restore: async (id) => {
       await prisma.challengeWriteup.updateMany({ where: { id }, data: { isHidden: false } });
     },
-    destroy: async (id) => {
-      await prisma.challengeWriteup.deleteMany({ where: { id } });
+    destroy: async (id, reviewerId) => {
+      await prisma.$transaction(async (tx) => {
+        const { count } = await tx.challengeWriteup.deleteMany({ where: { id } });
+        if (count === 0) return;
+        await closeReportsOfRemoved(tx, [{ surface: "CHALLENGE_WRITEUP", id }], reviewerId);
+      });
     },
   },
 };
@@ -437,7 +494,7 @@ export const moderationRepository = {
     }
 
     if (outcome === "OVERTURNED") await handler.restore(event.contentId);
-    else await handler.destroy(event.contentId);
+    else await handler.destroy(event.contentId, reviewedById);
 
     return { claimed: true, contentTouched: true, ...subject };
   },

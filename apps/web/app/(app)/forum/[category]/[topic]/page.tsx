@@ -122,6 +122,7 @@ export default async function ForumTopicPage({
             isFriend={authorIsFriend(post.author, friends)}
             canEdit={post.author?.id === user.id}
             canRemove={post.author?.id === user.id || isAdmin}
+            canReport={post.author?.id !== user.id && !post.isHidden}
           />
         );
       })}
