@@ -21,6 +21,7 @@ const m = vi.hoisted(() => ({
   listFriends: vi.fn<(userId: string) => Promise<unknown[]>>(),
   pathFindMany: vi.fn<(args: unknown) => Promise<unknown[]>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, ids: readonly string[]) => Promise<Set<string>>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -31,6 +32,7 @@ vi.mock("@cyberlearn/db", () => ({
   },
   friendshipRepository: { between: m.between, listFriends: m.listFriends },
   notificationRepository: { create: m.notify },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
   duelRepository: {
     findById: m.findById,
     findOpenBetween: m.findOpenBetween,
@@ -105,8 +107,8 @@ function duelRow(overrides: Record<string, unknown> = {}): Record<string, unknow
     finishedAt: null,
     expiresAt: new Date(Date.now() + 3_600_000),
     winnerId: null,
-    challenger: { id: ME, displayName: "Moi", username: "moi" },
-    opponent: { id: FRIEND, displayName: "Alex", username: "alex" },
+    challenger: { id: ME, displayName: "Moi", username: "moi", avatarUrl: null },
+    opponent: { id: FRIEND, displayName: "Alex", username: "alex", avatarUrl: "__upload:alex.png" },
     path: { title: "Linux", slug: "linux" },
     ...overrides,
   };
@@ -124,6 +126,10 @@ beforeEach(() => {
   m.lessonFindMany.mockResolvedValue([{ id: "l1", contentMdx: quizzes("l1", 8) }]);
   m.listAnswers.mockResolvedValue([]);
   m.recordAnswer.mockResolvedValue(true);
+  m.resolveAvatarSrcMany.mockImplementation((values) =>
+    Promise.resolve(values.map((v) => (v === null ? null : `https://signed/${v}`))),
+  );
+  m.profilesOpenTo.mockImplementation((_viewer, ids) => Promise.resolve(new Set(ids)));
 });
 
 describe("createDuel", () => {
@@ -293,6 +299,31 @@ describe("listDuelsFor", () => {
       questionCount: 5,
     });
   });
+
+  it("draws every player's picture, signed once, and links the other's profile when it opens", async () => {
+    m.listFor.mockResolvedValue([
+      duelRow({ status: "DECLINED" }),
+      duelRow({ id: "two", status: "DECLINED" }),
+    ]);
+    const [first] = await listDuelsFor(ME);
+    expect(m.resolveAvatarSrcMany).toHaveBeenCalledTimes(1);
+    expect(m.resolveAvatarSrcMany).toHaveBeenCalledWith([null, "__upload:alex.png"]);
+    // The reader's own side is never a link; only the others are asked about.
+    expect(m.profilesOpenTo).toHaveBeenCalledWith(ME, [FRIEND]);
+    expect(first?.other).toMatchObject({
+      avatarSrc: "https://signed/__upload:alex.png",
+      profileHref: "/u/alex",
+    });
+    expect(first?.reader).toMatchObject({ avatarSrc: null, profileHref: null });
+  });
+
+  it("names a player whose profile is closed to the reader without a link", async () => {
+    m.listFor.mockResolvedValue([duelRow({ status: "DECLINED" })]);
+    m.profilesOpenTo.mockResolvedValue(new Set());
+    const [only] = await listDuelsFor(ME);
+    expect(only?.other.profileHref).toBeNull();
+    expect(only?.other.name).toBe("Alex");
+  });
 });
 
 describe("listDuelInvitationsFor", () => {
@@ -319,6 +350,37 @@ describe("listDuelInvitationsFor", () => {
       questionCount: 5,
     });
     expect(m.listAnswers).not.toHaveBeenCalled();
+  });
+
+  it("draws the challenger's picture and profile link, as the duels' list does", async () => {
+    m.listInvitationsFor.mockResolvedValue([
+      duelRow({
+        status: "PENDING",
+        challengerId: FRIEND,
+        opponentId: ME,
+        acceptedAt: null,
+        challenger: {
+          id: FRIEND,
+          displayName: "Alex",
+          username: "alex",
+          avatarUrl: "__upload:alex.png",
+        },
+        opponent: { id: ME, displayName: "Moi", username: "moi", avatarUrl: null },
+      }),
+    ]);
+    const [only] = await listDuelInvitationsFor(ME);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith(ME, [FRIEND]);
+    expect(only?.other).toMatchObject({
+      avatarSrc: "https://signed/__upload:alex.png",
+      profileHref: "/u/alex",
+    });
+  });
+
+  it("asks for no picture when no invitation waits", async () => {
+    m.listInvitationsFor.mockResolvedValue([]);
+    expect(await listDuelInvitationsFor(ME)).toEqual([]);
+    expect(m.resolveAvatarSrcMany).not.toHaveBeenCalled();
+    expect(m.profilesOpenTo).not.toHaveBeenCalled();
   });
 });
 

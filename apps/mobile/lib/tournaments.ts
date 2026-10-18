@@ -46,6 +46,12 @@ export interface TournamentPlayerRow {
   points: number;
   solved: number;
   isMe: boolean;
+  /**
+   * One of the reader's friends, on a row that shows their name (the server
+   * decides; never on an "Anonyme" row). Absent from a server older than the
+   * marks.
+   */
+  isFriend?: boolean;
 }
 
 export interface TournamentChallengeRow {

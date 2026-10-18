@@ -48,12 +48,15 @@ export function ActionChip({
   tone = "accent",
   icon,
   disabled = false,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
   tone?: "accent" | "neutral" | "danger";
   icon?: React.ReactNode;
   disabled?: boolean;
+  /** What a screen reader says when the word alone does not say whom it is for. */
+  accessibilityLabel?: string;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
   const color =
@@ -63,7 +66,8 @@ export function ActionChip({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled }}
       hitSlop={6}
       style={({ pressed }) => ({
         flexDirection: "row",

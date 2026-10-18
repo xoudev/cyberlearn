@@ -11,16 +11,18 @@ import {
 } from "@cyberlearn/lib/social/duel";
 import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
-import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelSummary } from "@/lib/social/duels";
 import { ChallengeButton } from "./challenge-button";
+import { DuelAvatar, DuelName } from "./duel-face";
 import { dayOf, plural, whenOf } from "./duel-words";
 import { InvitationCard } from "./invitation-card";
 import "./duels.css";
 
 /**
  * One of the reader's duels: the path and its outcome in a word, both
- * players face to face with their scores, the small print, and the way in.
+ * players face to face with their pictures and scores (the other's name
+ * opens their profile when it would open for the reader), the small print,
+ * and the way in.
  */
 function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
   const outcome = outcomeOf(duel);
@@ -38,9 +40,7 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
       </div>
       <div className="dl-card__vs">
         <div className="dl-card__side">
-          <span className="dl-mono dl-mono--sm" data-me="true" aria-hidden="true">
-            {initialsOf(duel.reader.name)}
-          </span>
+          <DuelAvatar player={duel.reader} size="sm" me />
           <span className="dl-card__name">Toi</span>
         </div>
         {wasPlayed(outcome) ? (
@@ -58,12 +58,9 @@ function DuelCard({ duel }: { duel: DuelSummary }): React.ReactElement {
           </p>
         )}
         <div className="dl-card__side dl-card__side--other">
-          <span className="dl-mono dl-mono--sm" aria-hidden="true">
-            {initialsOf(duel.other.name)}
-          </span>
-          <span className="dl-card__name" title={duel.other.name}>
-            {duel.other.name}
-          </span>
+          <DuelAvatar player={duel.other} size="sm" />
+          {/* Its own link, beside the card's way in rather than inside it. */}
+          <DuelName player={duel.other} className="dl-card__name" title={duel.other.name} />
         </div>
       </div>
       <p className="dl-card__meta">{duelSmallPrint(duel, { when: whenOf, day: dayOf })}</p>

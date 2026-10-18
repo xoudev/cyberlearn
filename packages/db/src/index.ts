@@ -20,6 +20,8 @@ export {
 export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
 export {
   friendshipRepository,
+  type FriendActivityRow,
+  type FriendActor,
   type FriendEdge,
   type FriendPerson,
   type RequestResult,

@@ -22,6 +22,27 @@ export interface DuelPlayer {
   id: string;
   name: string;
   username: string | null;
+  /**
+   * Their picture, ready to draw (signed by the server, as on the site).
+   * Absent from a server older than it: the initials are drawn.
+   */
+  avatarSrc?: string | null;
+  /**
+   * Their profile on the site, when it would open for the reader; null on
+   * the reader's own side and for a private profile closed to them, absent
+   * from a server older than it (no link).
+   */
+  profileHref?: string | null;
+}
+
+/**
+ * The handle a duel player's name opens in the app's profile screen, or null
+ * when the server offered no profile (closed to the reader, the reader's own
+ * side, or a server from before the links).
+ */
+export function duelProfileTarget(player: DuelPlayer): string | null {
+  if (player.profileHref == null || player.username === null) return null;
+  return player.username;
 }
 
 export interface DuelScore {

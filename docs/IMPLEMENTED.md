@@ -113,6 +113,7 @@
 - Ce qui n'attend pas, seulement quand il y en a : les défis reçus d'un ami, à accepter ou refuser sur place (`listDuelInvitationsFor`, les mêmes cartes que `/duels`), et les tournois en cours, celui qui ferme le premier d'abord, avec la part du temps écoulé et « Entrer » (`runningTournaments` de `@cyberlearn/lib/dashboard/your-move`)
 - Le rappel du jour : à faire, fait aujourd'hui ou rien aujourd'hui, sans nombre, et le bouton qui l'ouvre
 - La semaine : quêtes à cocher et à réclamer, série du lundi au dimanche, gels en réserve
+- Tes amis, pour qui en a : leurs derniers moments (leçon du catalogue terminée, badge, certificat, défi résolu, duel gagné), avec leur avatar, le lien de leur profil et « Défier », grisé en « Duel en cours » tant qu'un duel est ouvert ; lus dans les tables existantes (`friendshipRepository.recentFriendActivity`), même service pour l'app (`GET /api/mobile/friends/activity`)
 - Où tu en es : les quatre chiffres (`dashboard/stats`) et les trois derniers badges
 - Barre latérale : le tableau de bord, puis Apprendre (Parcours, Leçons, Révisions, Bloc-notes, Glossaire), S'entraîner (Défis, Duels), Progression (Mon profil, Classement, Casier) et Communauté (Forum, Mes classes pour qui en a une, Aide), et un bloc compte. Groupes, libellés et ordre partagés avec le hub de l'app (`@cyberlearn/lib/navigation/groups`). Seules les invitations aux duels en attente y sont comptées (`duelRepository.countInvitations`) ; « Révisions » ouvre le rappel du jour
 - Registre des routes (`apps/web/lib/routes.ts`) : pour chaque adresse, si elle demande une session, si `robots.txt` l'écarte et son icône dans la barre latérale. Le middleware, `robots.txt` et la barre latérale le lisent ; un test parcourt `app/(app)` et échoue sur une page connectée absente du registre
@@ -189,6 +190,7 @@
   TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED
 - Badge de comptage non-lu dans la navbar
 - Marquer une ou toutes les notifications comme lues
+- Une demande d'ami encore en attente se reçoit avec « Accepter » et « Refuser » sous son avis (`metadata.fromUserId`), « Refuser » ne retirant qu'une demande encore en attente
 
 #### Contact & Support
 - Formulaire à 8 thèmes (BUG, QUESTION, FEATURE_REQUEST, SECURITY,
@@ -212,6 +214,12 @@
   depuis son onglet ; la marque « Ami » à côté du nom d'un ami (classement,
   ligue, forum, questions-réponses, solutions, classe, tournois), seulement
   sur une ligne qui montre déjà qui elle est
+- Panneau des amis de la barre du haut : les listes entières (plus de limite
+  cachée à soixante amis), « Défier » sur chaque ami, qui ouvre la fenêtre
+  `?duel=<id>` et se grise en « Duel en cours », et « Ouvrir un profil » par
+  son @pseudo ; « Ajouter » sur un camarade de sa classe et sur une ligne
+  publique du classement (par le @pseudo que la ligne montre) ; l'avatar des
+  joueurs et le lien du profil de l'autre sur les cartes de duel
 
 #### Modération et sanctions
 - Filtrage à la publication : un contenu signalé est masqué avant relecture

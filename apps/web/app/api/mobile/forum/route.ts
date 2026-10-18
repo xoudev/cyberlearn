@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { forumRepository } from "@cyberlearn/db";
+import { forumRepository, friendshipRepository } from "@cyberlearn/db";
 import { toMobileCategory, toMobileTopicSummary } from "@/lib/forum/mobile-view";
 import { userFromBearer } from "../_lib/auth";
 
@@ -15,13 +15,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
   }
 
-  const [categories, recent] = await Promise.all([
+  const [categories, recent, friends] = await Promise.all([
     forumRepository.listCategories(user.id),
     forumRepository.listRecentTopics(user.id),
+    // For the mark beside an author who is a friend, as on the site.
+    friendshipRepository.friendIds(user.id),
   ]);
   return NextResponse.json({
     ok: true,
     categories: categories.map(toMobileCategory),
-    recent: recent.map(toMobileTopicSummary),
+    recent: recent.map((topic) => toMobileTopicSummary(topic, friends)),
   });
 }

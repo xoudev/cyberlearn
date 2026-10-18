@@ -88,6 +88,34 @@
   height: 56px;
   font-size: 17px;
 }
+/* The picture, glyph or initials inside the box (duel-face.tsx). */
+.dl-mono {
+  overflow: hidden;
+}
+.dl-mono__face {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+img.dl-mono__face {
+  object-fit: cover;
+}
+
+/* The other player's name, when it opens their profile. */
+.dl-name-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-default);
+  text-underline-offset: 3px;
+}
+.dl-name-link:hover {
+  text-decoration-color: currentColor;
+}
+.dl-name-link:focus-visible {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 2px;
+}
 
 /* The outcome in a word. */
 .dl-badge {

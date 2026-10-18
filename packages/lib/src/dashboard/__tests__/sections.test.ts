@@ -48,6 +48,30 @@ describe("planSections", () => {
     ).toBeNull();
   });
 
+  it("puts the friends after the day's recall and before the reader's own record", () => {
+    expect(
+      planSections({ hasResume: true, hasRecall: true, hasFriends: true }).map((s) => s.key),
+    ).toEqual(["paths", "resume", "recall", "friends", "progress"]);
+    expect(
+      sectionNumber(
+        planSections({ hasResume: false, hasRecall: false, hasFriends: true }),
+        "friends",
+      ),
+    ).toBe("02");
+  });
+
+  it("leaves the friends out for a reader who has none, or a caller that does not say", () => {
+    expect(
+      sectionNumber(
+        planSections({ hasResume: false, hasRecall: false, hasFriends: false }),
+        "friends",
+      ),
+    ).toBeNull();
+    expect(
+      sectionNumber(planSections({ hasResume: false, hasRecall: false }), "friends"),
+    ).toBeNull();
+  });
+
   it("puts what will not wait, a duel received or a tournament under way, under the parcours", () => {
     expect(planSections({ hasResume: true, hasRecall: true, hasPlay: true })).toEqual([
       { key: "paths", number: "01" },
@@ -57,5 +81,18 @@ describe("planSections", () => {
       { key: "progress", number: "05" },
     ]);
     expect(sectionNumber(planSections({ hasResume: false, hasRecall: false }), "play")).toBeNull();
+  });
+
+  it("keeps the duels under the parcours and the friends before the record, on a full page", () => {
+    expect(
+      planSections({ hasResume: true, hasRecall: true, hasPlay: true, hasFriends: true }),
+    ).toEqual([
+      { key: "paths", number: "01" },
+      { key: "play", number: "02" },
+      { key: "resume", number: "03" },
+      { key: "recall", number: "04" },
+      { key: "friends", number: "05" },
+      { key: "progress", number: "06" },
+    ]);
   });
 });

@@ -6,6 +6,11 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
 import { notificationAge } from "@cyberlearn/lib/social/notification-age";
+import {
+  friendRequestSender,
+  REQUEST_ANSWERED_LABEL,
+  REQUEST_GONE_LABEL,
+} from "@cyberlearn/lib/social/friendship";
 import { FriendsGlyph } from "@/components/friend-mark";
 import { PanelButton, useClickOutside } from "@/components/panel-trigger";
 import {
@@ -13,6 +18,11 @@ import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
+import {
+  acceptFriendRequestAction,
+  declineFriendRequestAction,
+  type FriendActionResult,
+} from "@/app/(app)/_actions/friend-actions";
 
 // Keyed on the enum rather than on string: a new NotificationType now fails to
 // compile until it has an icon, instead of reaching the panel with a blank
@@ -85,6 +95,10 @@ export function NotificationPanel({
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(initialUnreadCount);
   const [items, setItems] = useState<NotificationItem[]>([]);
+  // The senders whose request still waits on the reader: the friend requests
+  // whose notification can still be answered in place. Read with the list
+  // (getNotificationsAction checks each one against the table).
+  const [waiting, setWaiting] = useState<ReadonlySet<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   // What went wrong, said in the panel. An error thrown inside a transition
   // goes to the nearest error boundary, which for the navbar is the site's
@@ -114,6 +128,7 @@ export function NotificationPanel({
         const res = await getNotificationsAction();
         if (res.success && res.notifications) {
           setItems(res.notifications);
+          setWaiting(new Set(res.waitingSenders ?? []));
           setUnread(res.unreadCount ?? 0);
           setLoaded(true);
           return;
@@ -144,6 +159,9 @@ export function NotificationPanel({
           if (open) {
             const incoming = payload.new as NotificationItem;
             setItems((prev) => [incoming, ...prev]);
+            // A request that has just arrived is waiting by definition.
+            const sender = friendRequestSender(incoming);
+            if (sender !== null) setWaiting((prev) => new Set([...prev, sender]));
           } else {
             // Force reload next time panel opens
             setLoaded(false);
@@ -364,6 +382,7 @@ export function NotificationPanel({
                 <NotificationRow
                   key={item.id}
                   item={item}
+                  waiting={waiting}
                   onRead={handleMarkRead}
                   onFollow={close}
                 />
@@ -371,6 +390,88 @@ export function NotificationPanel({
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Accepter" and "Refuser" under a friend request's notice, beside its link
+ * rather than inside it: a control inside a link is two controls in one.
+ * Refusing removes only a request still waiting (declineFriendRequestAction),
+ * never a friendship accepted elsewhere since the notice arrived. Once
+ * answered, the notice says how, and is read.
+ */
+function FriendRequestAnswer({
+  senderId,
+  onAnswered,
+}: {
+  senderId: string;
+  onAnswered: () => void;
+}): React.JSX.Element {
+  const [pending, start] = useTransition();
+  const [said, setSaid] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const answer = (accept: boolean): void => {
+    setError(null);
+    start(async () => {
+      let result: FriendActionResult;
+      try {
+        result = accept
+          ? await acceptFriendRequestAction(senderId)
+          : await declineFriendRequestAction(senderId);
+      } catch {
+        setError("Impossible pour l'instant. Réessaie dans un moment.");
+        return;
+      }
+      if (result.ok) {
+        setSaid(REQUEST_ANSWERED_LABEL[accept ? "accepted" : "declined"]);
+        onAnswered();
+      } else if (result.error === undefined || result.error === REQUEST_GONE_LABEL) {
+        // Answered from the friends panel or the profile, or taken back:
+        // nothing left to answer, so the buttons go.
+        setSaid(REQUEST_GONE_LABEL);
+        onAnswered();
+      } else {
+        setError(result.error);
+      }
+    });
+  };
+
+  if (said !== null) {
+    return (
+      <p className="notif-answer notif-answer--said" role="status">
+        {said}
+      </p>
+    );
+  }
+  return (
+    <div className="notif-answer" role="group" aria-label="Répondre à la demande d'ami">
+      <button
+        type="button"
+        className="btn btn--accent btn--sm"
+        disabled={pending}
+        onClick={() => {
+          answer(true);
+        }}
+      >
+        Accepter
+      </button>
+      <button
+        type="button"
+        className="btn btn--ghost btn--sm"
+        disabled={pending}
+        onClick={() => {
+          answer(false);
+        }}
+      >
+        Refuser
+      </button>
+      {error !== null && (
+        <span className="notif-answer-error" role="alert">
+          {error}
+        </span>
       )}
     </div>
   );
@@ -390,6 +491,37 @@ function isRouteHandler(href: string): boolean {
  * Enter, and following it reloaded the whole site.
  */
 function NotificationRow({
+  item,
+  waiting,
+  onRead,
+  onFollow,
+}: {
+  item: NotificationItem;
+  /** The senders whose request still waits on the reader. */
+  waiting: ReadonlySet<string>;
+  onRead: (id: string) => void;
+  onFollow: () => void;
+}): React.JSX.Element {
+  // A friend request still waiting is answered from the notice itself: its
+  // row and the two buttons under it, side by side in one item.
+  const sender = friendRequestSender(item);
+  const row = <NoticeRow item={item} onRead={onRead} onFollow={onFollow} />;
+  if (sender === null || !waiting.has(sender)) return row;
+  return (
+    <div className="notif-item">
+      {row}
+      <FriendRequestAnswer
+        senderId={sender}
+        onAnswered={() => {
+          if (!item.readAt) onRead(item.id);
+        }}
+      />
+    </div>
+  );
+}
+
+/** The notice itself: a link, a button, or text, as described above. */
+function NoticeRow({
   item,
   onRead,
   onFollow,

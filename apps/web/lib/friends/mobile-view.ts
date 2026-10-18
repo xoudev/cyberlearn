@@ -18,6 +18,8 @@ export interface MobileFriend {
   since: string;
   /** Whether the name may open their profile: false on a private one the reader is shut out of. */
   profileOpen: boolean;
+  /** A duel still open with this friend: the app greys its "Défier" until it is over. */
+  duelOpen: boolean;
 }
 
 export interface MobileFriendLists {
@@ -44,6 +46,7 @@ function toMobileFriend(entry: FriendEntry): MobileFriend {
     avatar: entry.avatarSrc,
     since: entry.createdAt.toISOString(),
     profileOpen: entry.profileOpen,
+    duelOpen: entry.duelOpen,
   };
 }
 

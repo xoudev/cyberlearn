@@ -1,11 +1,15 @@
 import { z } from "zod";
 import {
+  duelRepository,
   friendshipRepository,
+  leaderboardRepository,
   notificationRepository,
   prisma,
   userRepository,
   type FriendEdge,
 } from "@cyberlearn/db";
+import { REQUEST_GONE_LABEL } from "@cyberlearn/lib/social/friendship";
+import { usernameSchema } from "@cyberlearn/types";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 
 import { checkNotifyingWrite } from "@/lib/rate-limit";
@@ -50,6 +54,12 @@ export interface FriendEntry extends FriendEdge {
    * name to show, not a link to a 404.
    */
   profileOpen: boolean;
+  /**
+   * A duel still open between the reader and this friend, for the panel's
+   * "Défier", greyed until it is over. False on a request: a duel is between
+   * friends only.
+   */
+  duelOpen: boolean;
 }
 
 export interface FriendLists {
@@ -92,16 +102,23 @@ async function subjectOf(
   return { name, href: `/u/${person.username}` };
 }
 
-/** The three lists. Read on open rather than on every page load. */
+/**
+ * The three lists, whole. Read on open rather than on every page load.
+ *
+ * They used to stop at sixty friends and thirty requests each way without
+ * saying so: the sixty-first friend could not be found, and the count on the
+ * menu could announce requests the panel did not show. The panel scrolls.
+ */
 export async function listFriendsFor(userId: string): Promise<FriendLists> {
-  const [incoming, friends, outgoing] = await Promise.all([
-    friendshipRepository.listIncoming(userId, 30),
-    friendshipRepository.listFriends(userId, 60),
-    friendshipRepository.listOutgoing(userId, 30),
+  const [incoming, friends, outgoing, inDuel] = await Promise.all([
+    friendshipRepository.listIncoming(userId),
+    friendshipRepository.listFriends(userId),
+    friendshipRepository.listOutgoing(userId),
+    duelRepository.openOpponentsOf(userId),
   ]);
 
   // All three lists in one round-trip, rather than three or - worse - one per
-  // row. The lists can hold a hundred and twenty people.
+  // row.
   const all = [...incoming, ...friends, ...outgoing];
   const [resolved, open] = await Promise.all([
     resolveAvatarSrcMany(all.map((e) => e.person.avatarUrl)),
@@ -114,6 +131,7 @@ export async function listFriendsFor(userId: string): Promise<FriendLists> {
     ...edge,
     avatarSrc: resolved[i] ?? null,
     profileOpen: open.has(edge.person.id),
+    duelOpen: edge.status === "ACCEPTED" && inDuel.has(edge.person.id),
   }));
 
   return {
@@ -167,10 +185,33 @@ export async function requestFriendship(
       title: "Demande d'ami",
       body: `${asker.name} souhaite t'ajouter.`,
       ...(asker.href !== null ? { actionUrl: asker.href } : {}),
+      // Who asked, so the notification can answer it in place (Accepter,
+      // Refuser) on the site and in the app: friendRequestSender reads it.
+      metadata: { fromUserId: userId },
     });
   }
 
   return { ok: true, becameFriends: result.status === "ACCEPTED" };
+}
+
+/**
+ * Asks somebody named by their handle, from a row of the public leaderboard:
+ * its rows carry no id (leaderboard.visibility.ts), only the handle of a
+ * PUBLIC player. The id is found on the server among the players that board
+ * names, so a handle it does not show - anonymous, hidden, unknown - is
+ * refused like an id that is not one, and nobody is reached through it.
+ */
+export async function requestFriendshipByHandle(
+  userId: string,
+  username: unknown,
+): Promise<FriendActionResult> {
+  const handle = usernameSchema.safeParse(
+    typeof username === "string" ? username.trim().replace(/^@/, "").toLowerCase() : username,
+  );
+  if (!handle.success) return { ok: false, error: NOT_FOUND };
+  const targetId = await leaderboardRepository.findPublicPlayerId(handle.data);
+  if (targetId === null) return { ok: false, error: NOT_FOUND };
+  return requestFriendship(userId, targetId);
 }
 
 export async function acceptFriendship(
@@ -183,7 +224,7 @@ export async function acceptFriendship(
   const accepted = await friendshipRepository.accept(userId, other.data);
   // Not an error worth showing loudly: they cancelled, or it was already
   // accepted elsewhere. Either way the list is about to show the truth.
-  if (!accepted) return { ok: false, error: "Cette demande n'est plus en attente." };
+  if (!accepted) return { ok: false, error: REQUEST_GONE_LABEL };
 
   const accepter = await subjectOf(userId, true);
   await notificationRepository.create({
@@ -195,6 +236,22 @@ export async function acceptFriendship(
   });
 
   return { ok: true };
+}
+
+/**
+ * Refuses a request and nothing else, for the notification's "Refuser": a
+ * request accepted elsewhere since the notification arrived is a friendship,
+ * which this leaves alone (friendshipRepository.decline) rather than end it.
+ * Nobody is told, as for every refusal.
+ */
+export async function declineFriendship(
+  userId: string,
+  otherId: unknown,
+): Promise<FriendActionResult> {
+  const other = idSchema.safeParse(otherId);
+  if (!other.success) return { ok: false, error: NOT_FOUND };
+  const declined = await friendshipRepository.decline(userId, other.data);
+  return declined ? { ok: true } : { ok: false, error: REQUEST_GONE_LABEL };
 }
 
 /**
