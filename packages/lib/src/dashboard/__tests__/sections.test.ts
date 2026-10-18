@@ -47,4 +47,28 @@ describe("planSections", () => {
       sectionNumber(planSections({ hasResume: false, hasRecall: false }), "resume"),
     ).toBeNull();
   });
+
+  it("puts the friends after the day's recall and before the reader's own record", () => {
+    expect(
+      planSections({ hasResume: true, hasRecall: true, hasFriends: true }).map((s) => s.key),
+    ).toEqual(["paths", "resume", "recall", "friends", "progress"]);
+    expect(
+      sectionNumber(
+        planSections({ hasResume: false, hasRecall: false, hasFriends: true }),
+        "friends",
+      ),
+    ).toBe("02");
+  });
+
+  it("leaves the friends out for a reader who has none, or a caller that does not say", () => {
+    expect(
+      sectionNumber(
+        planSections({ hasResume: false, hasRecall: false, hasFriends: false }),
+        "friends",
+      ),
+    ).toBeNull();
+    expect(
+      sectionNumber(planSections({ hasResume: false, hasRecall: false }), "friends"),
+    ).toBeNull();
+  });
 });

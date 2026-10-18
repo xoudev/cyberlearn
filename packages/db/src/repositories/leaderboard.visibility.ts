@@ -25,6 +25,7 @@
 // UI keys rows by rank.
 
 import { LeaderboardVisibility } from "@prisma/client";
+import type { FriendshipView } from "@cyberlearn/lib/social/friendship";
 
 /** Raw user row as fetched for leaderboard computation, before anonymization. */
 export interface RawLeaderboardUser {
@@ -69,6 +70,14 @@ export interface LeaderboardEntry {
    * on an anonymised row, nor on the reader's own.
    */
   isFriend: boolean;
+  /**
+   * Where the reader stands with this player, for the row's "Ajouter": only
+   * on a PUBLIC row that is not the reader's own, null everywhere else. On an
+   * anonymised row it would say which stranger already asked the reader, or
+   * which one they asked - the very person the row hides. Optional: a board
+   * built without it (the friends board, an older caller) offers nothing.
+   */
+  friendship?: FriendshipView | null;
 }
 
 /** The signed-in user's own standing. Always their real data - it is their own. */
@@ -109,8 +118,10 @@ export function resolveVisibility(
 export function buildLeaderboard(
   rawUsers: RawLeaderboardUser[],
   currentUserId: string,
-  // The reader's accepted friends, from friendshipRepository.friendIds.
-  friendIds: ReadonlySet<string> = new Set(),
+  // The reader's relations with the people listed, from
+  // friendshipRepository.viewsOf: friends, requests sent and received. A
+  // person missing from it is a stranger.
+  relations: ReadonlyMap<string, FriendshipView> = new Map(),
 ): LeaderboardEntry[] {
   const entries: LeaderboardEntry[] = [];
   for (const user of rawUsers) {
@@ -121,6 +132,8 @@ export function buildLeaderboard(
     // The current user always sees their own identity; everyone else is
     // anonymized unless they are PUBLIC.
     const reveal = isCurrentUser || isPublic;
+    // Read only for a row that shows who it is, and never for the reader's own.
+    const relation = isPublic && !isCurrentUser ? (relations.get(user.id) ?? "none") : null;
     entries.push({
       rank: entries.length + 1,
       isCurrentUser,
@@ -133,7 +146,8 @@ export function buildLeaderboard(
       // A profile link is only offered for genuinely PUBLIC + public-profile
       // users - never for the current user's own anonymized row.
       hasPublicProfile: isPublic && (user.preferences?.publicProfile ?? false),
-      isFriend: isPublic && !isCurrentUser && friendIds.has(user.id),
+      isFriend: relation === "friends",
+      friendship: relation,
     });
   }
   return entries;

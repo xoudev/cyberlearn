@@ -12,9 +12,9 @@ import { leaderboardRepository } from "../repositories/leaderboard.repository.js
 const { mockPrisma, mockFriends } = vi.hoisted(() => ({
   mockPrisma: {
     xpLedger: { groupBy: vi.fn() },
-    user: { findMany: vi.fn(), count: vi.fn() },
+    user: { findMany: vi.fn(), count: vi.fn(), findFirst: vi.fn() },
   },
-  mockFriends: { friendIds: vi.fn(), listFriends: vi.fn() },
+  mockFriends: { viewsOf: vi.fn(), listFriends: vi.fn() },
 }));
 
 vi.mock("../prisma.js", () => ({ prisma: mockPrisma }));
@@ -51,7 +51,7 @@ function sum(userId: string, amount: number) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockFriends.friendIds.mockResolvedValue(new Set<string>());
+  mockFriends.viewsOf.mockResolvedValue(new Map<string, string>());
   mockFriends.listFriends.mockResolvedValue([]);
 });
 
@@ -130,14 +130,20 @@ describe("findTopUsersSince", () => {
   });
 
   it("strips an anonymous player and marks only a public friend", async () => {
-    mockFriends.friendIds.mockResolvedValue(new Set([PUB, ANON]));
+    mockFriends.viewsOf.mockResolvedValue(
+      new Map([
+        [PUB, "friends"],
+        [ANON, "friends"],
+      ]),
+    );
     mockPrisma.xpLedger.groupBy.mockResolvedValue([sum(PUB, 300), sum(ANON, 200)]);
     mockPrisma.user.findMany.mockResolvedValue([person(PUB, "PUBLIC"), person(ANON, "ANONYMOUS")]);
 
     const board = await leaderboardRepository.findTopUsersSince(WEEK, 100, ME);
     const [pub, anon] = board.entries;
 
-    expect(mockFriends.friendIds).toHaveBeenCalledWith(ME);
+    // The relations are read for the rows sent, and for nobody else.
+    expect(mockFriends.viewsOf).toHaveBeenCalledWith(ME, [PUB, ANON]);
     expect(pub?.username).toBe(`user${PUB.slice(0, 4)}`);
     expect(pub?.isFriend).toBe(true);
     expect(anon?.displayName).toBeNull();
@@ -221,5 +227,26 @@ describe("findFriendsBoard over a period", () => {
     const board = await leaderboardRepository.findFriendsBoard(ME);
     expect(mockPrisma.xpLedger.groupBy).not.toHaveBeenCalled();
     expect(board.entries.map((e) => e.xpTotal)).toEqual([9000, 5000, 100]);
+  });
+});
+
+describe("findPublicPlayerId", () => {
+  it("finds a handle only among the players the public board names", async () => {
+    mockPrisma.user.findFirst.mockResolvedValue({ id: PUB });
+    expect(await leaderboardRepository.findPublicPlayerId("alex")).toBe(PUB);
+
+    const [query] = mockPrisma.user.findFirst.mock.calls[0] as [{ where: { AND: unknown[] } }];
+    expect(query.where.AND).toEqual(
+      expect.arrayContaining([
+        { username: "alex" },
+        { preferences: { is: { leaderboardVisibility: "PUBLIC" } } },
+        expect.objectContaining({ role: "STUDENT", xpTotal: { gt: 0 } }),
+      ]),
+    );
+  });
+
+  it("finds nobody behind a handle the board does not show", async () => {
+    mockPrisma.user.findFirst.mockResolvedValue(null);
+    expect(await leaderboardRepository.findPublicPlayerId("anonyme")).toBeNull();
   });
 });

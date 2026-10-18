@@ -17,7 +17,7 @@
  * decision worth testing on its own.
  */
 
-export type DashboardSectionKey = "paths" | "resume" | "recall" | "progress";
+export type DashboardSectionKey = "paths" | "resume" | "recall" | "friends" | "progress";
 
 export interface DashboardSection {
   key: DashboardSectionKey;
@@ -34,15 +34,26 @@ export interface DashboardSectionInput {
    * next; it never counts what waits, so it takes no number.
    */
   hasRecall: boolean;
+  /**
+   * Whether the reader has a friend. "Tes amis" is their recent activity,
+   * and with nobody to follow it would be an empty box; with friends who
+   * have been quiet it still offers a duel. Absent reads as no friend.
+   */
+  hasFriends?: boolean;
 }
 
-/** The order, once and for all. Parcours first is the whole point. */
-const ORDER: DashboardSectionKey[] = ["paths", "resume", "recall", "progress"];
+/**
+ * The order, once and for all. Parcours first is the whole point. The
+ * friends come after what is the reader's to do and before their own record,
+ * where the site's dashboard draws them.
+ */
+const ORDER: DashboardSectionKey[] = ["paths", "resume", "recall", "friends", "progress"];
 
 export function planSections(input: DashboardSectionInput): DashboardSection[] {
   const shown = ORDER.filter((key) => {
     if (key === "resume") return input.hasResume;
     if (key === "recall") return input.hasRecall;
+    if (key === "friends") return input.hasFriends === true;
     // The parcours and the progress band always have something to say: one
     // offers what to do next, the other is the reader's own record.
     return true;
