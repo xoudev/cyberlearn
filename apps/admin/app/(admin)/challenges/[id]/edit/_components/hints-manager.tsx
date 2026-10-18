@@ -4,6 +4,7 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { notifyResult } from "@/lib/notify";
 import {
   createHintAction,
   updateHintAction,
@@ -71,10 +72,12 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
     setOpError(undefined);
   }
 
+  // The errors stay in the banner above the hints, beside the fields they are
+  // about; a success, which used to say nothing, is a toast.
   function handleSave(hintId: string): void {
     startSave(async () => {
       const result = await updateHintAction(hintId, editContent, editXpCost);
-      if (result.error !== undefined) {
+      if (!notifyResult(result, { success: "Indice enregistré.", error: false })) {
         setOpError(result.error);
         return;
       }
@@ -86,7 +89,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
   function handleDelete(hintId: string): void {
     startDelete(async () => {
       const result = await deleteHintAction(hintId);
-      if (result.error !== undefined) {
+      if (!notifyResult(result, { success: "Indice supprimé.", error: false })) {
         setOpError(result.error);
         return;
       }
@@ -106,7 +109,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         newXpCost,
         newOrderIndex,
       );
-      if (result.error !== undefined) {
+      if (!notifyResult(result, { success: "Indice ajouté.", error: false })) {
         setOpError(result.error);
         return;
       }

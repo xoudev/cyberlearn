@@ -7,6 +7,7 @@ import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { readPathLessonIds } from "./lesson-ids";
 
 const createPathSchema = z.object({
@@ -100,7 +101,7 @@ export async function createPathAction(
     return { error: "Erreur lors de la création." };
   }
 
-  redirect("/paths");
+  redirect(withSavedNotice("/paths", "created"));
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { readPathLessonIds } from "../../_actions/lesson-ids";
 
 const updatePathSchema = z.object({
@@ -133,5 +134,5 @@ export async function updatePathAction(
     return { error: "Erreur lors de la mise à jour." };
   }
 
-  redirect("/paths");
+  redirect(withSavedNotice("/paths"));
 }

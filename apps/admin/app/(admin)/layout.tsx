@@ -1,10 +1,12 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
 import { prisma, ticketRepository } from "@cyberlearn/db";
+import { Toaster } from "@/components/ui/sonner";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
+import { SavedNoticeToast } from "./_components/saved-notice-toast";
 
 // No metadata here: the title and its "%s · Admin" template are the root
 // layout's. Declared again on this segment, the default went through the
@@ -53,6 +55,14 @@ export default async function AdminLayout({
     <div className="admin-console" style={{ background: "var(--a-bg)", minHeight: "100vh" }}>
       <AdminShellClient>
         <AdminTopbar initials={initials} handle={handle} />
+        {/* Mounted with the chrome rather than with any page, so a toast raised
+            just before a navigation is still there once the next page is. */}
+        <Toaster />
+        {/* useSearchParams wants a boundary of its own: without one, the whole
+            console would wait on the address to render. */}
+        <Suspense fallback={null}>
+          <SavedNoticeToast />
+        </Suspense>
         <AdminSidebar
           initials={initials}
           handle={handle}

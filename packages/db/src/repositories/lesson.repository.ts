@@ -159,6 +159,28 @@ const CONSOLE_LESSON_ROW = {
 
 export type ConsoleLessonRow = Prisma.LessonGetPayload<{ select: typeof CONSOLE_LESSON_ROW }>;
 
+/** What the console's quick search shows of a lesson. */
+const CONSOLE_LESSON_HIT = {
+  id: true,
+  refCode: true,
+  title: true,
+  status: true,
+  audience: true,
+} as const satisfies Prisma.LessonSelect;
+
+export type ConsoleLessonHit = Prisma.LessonGetPayload<{ select: typeof CONSOLE_LESSON_HIT }>;
+
+/** A console search over a lesson's title, refCode or slug. */
+function consoleLessonTextWhere(q: string): Prisma.LessonWhereInput {
+  return {
+    OR: [
+      { title: { contains: q, mode: "insensitive" } },
+      { refCode: { contains: q, mode: "insensitive" } },
+      { slug: { contains: q, mode: "insensitive" } },
+    ],
+  };
+}
+
 function folderWhere(folder: ConsoleLessonFolder): Prisma.LessonWhereInput {
   return folder === "archives"
     ? { status: "ARCHIVED" }
@@ -189,15 +211,7 @@ async function consoleLessonWhere(query: ConsoleLessonQuery): Promise<Prisma.Les
   if (query.category !== undefined) terms.push({ category: query.category });
   if (query.difficulty !== undefined) terms.push({ difficulty: query.difficulty });
   const q = query.q.trim();
-  if (q !== "") {
-    terms.push({
-      OR: [
-        { title: { contains: q, mode: "insensitive" } },
-        { refCode: { contains: q, mode: "insensitive" } },
-        { slug: { contains: q, mode: "insensitive" } },
-      ],
-    });
-  }
+  if (q !== "") terms.push(consoleLessonTextWhere(q));
   if (query.origin === "class") {
     terms.push({ audience: "CLASS" });
   } else if (query.origin !== undefined) {
@@ -261,6 +275,24 @@ export const lessonRepository = {
           select: CONSOLE_LESSON_ROW,
         }),
     );
+  },
+
+  /**
+   * The few lessons the console's quick search offers for a term, whatever
+   * their status: a lesson somebody is looking for by name is as likely to be
+   * a draft or in the archives as on the site, and the result says which.
+   * Drafts first, the archives last, then by title. An empty term matches
+   * nothing.
+   */
+  async searchForConsole(q: string, take: number): Promise<ConsoleLessonHit[]> {
+    const term = q.trim();
+    if (term === "") return [];
+    return prisma.lesson.findMany({
+      where: consoleLessonTextWhere(term),
+      orderBy: [{ status: "asc" }, { title: "asc" }, { id: "asc" }],
+      take,
+      select: CONSOLE_LESSON_HIT,
+    });
   },
 
   /** How many lessons each status holds, every audience included. */

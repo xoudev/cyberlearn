@@ -130,7 +130,7 @@ beforeEach(() => {
 describe("the challenge itself", () => {
   it("logs a creation, without the flag", async () => {
     await expect(createChallengeAction({}, form(FIELDS))).rejects.toThrow(
-      `NEXT_REDIRECT:/challenges/${ID}/edit`,
+      `NEXT_REDIRECT:/challenges/${ID}/edit?saved=created`,
     );
     expect(audited()).toMatchObject({
       actorId: "admin-1",
@@ -170,7 +170,9 @@ describe("the challenge itself", () => {
 
   it("logs a deletion with what the challenge was called", async () => {
     m.challengeFindUnique.mockResolvedValue({ refCode: "CL-CHL-001", title: "Le journal" });
-    await expect(deleteChallengeAction(ID)).rejects.toThrow("NEXT_REDIRECT:/challenges");
+    await expect(deleteChallengeAction(ID)).rejects.toThrow(
+      "NEXT_REDIRECT:/challenges?saved=deleted",
+    );
     expect(m.challengeDelete).toHaveBeenCalledWith({ where: { id: ID } });
     expect(audited()).toMatchObject({
       action: "challenge.delete",
