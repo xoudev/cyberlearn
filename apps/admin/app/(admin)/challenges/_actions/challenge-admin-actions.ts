@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma, JSON_NULL_IN_DB, tournamentRepository } from "@cyberlearn/db";
 import { changedFields } from "@/lib/audit-diff";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { type ChallengeMachine, parseChallengeMachine } from "@cyberlearn/types";
 
 // ── Shared form state ──────────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ export async function createChallengeAction(
   }
 
   revalidatePath("/challenges");
-  redirect(`/challenges/${createdId}/edit`);
+  redirect(withSavedNotice(`/challenges/${createdId}/edit`, "created"));
 }
 
 // ── Update ─────────────────────────────────────────────────────────────────────
@@ -318,7 +319,7 @@ export async function deleteChallengeAction(id: string): Promise<{ error?: strin
     });
   });
   revalidatePath("/challenges");
-  redirect("/challenges");
+  redirect(withSavedNotice("/challenges", "deleted"));
 }
 
 // ── Hint CRUD ─────────────────────────────────────────────────────────────────

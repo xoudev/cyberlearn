@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 
 // ── Per-type criterion data builders ──────────────────────────────────────────
 
@@ -169,7 +170,7 @@ export async function createBadgeAction(
     return { error: "Erreur lors de la création." };
   }
 
-  redirect("/badges");
+  redirect(withSavedNotice("/badges", "created"));
 }
 
 // ── Update ─────────────────────────────────────────────────────────────────────
@@ -239,7 +240,7 @@ export async function updateBadgeAction(
     return { error: "Erreur lors de la mise à jour." };
   }
 
-  redirect("/badges");
+  redirect(withSavedNotice("/badges"));
 }
 
 // ── Toggle active ──────────────────────────────────────────────────────────────
@@ -312,7 +313,7 @@ export async function deleteBadgeAction(formData: FormData): Promise<void> {
   revalidatePath("/badges");
   // Back to the list: the edit page re-rendered by the revalidation found no
   // badge, called notFound(), and left the administrator on Next's own 404.
-  redirect("/badges");
+  redirect(withSavedNotice("/badges", "deleted"));
 }
 
 // Re-export type alias for backward compat

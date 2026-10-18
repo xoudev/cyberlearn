@@ -1,6 +1,6 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { PROTECTED_ROUTE_PREFIXES } from "@/lib/protected-routes";
+import { isProtectedRoute } from "@/lib/routes";
 import { REQUEST_ID_HEADER, requestIdFor } from "@/lib/request-id";
 
 // ─── Security headers (ADR-002) ────────────────────────────────────────────
@@ -190,11 +190,9 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
-export function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_ROUTE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
+// Which routes need a session is the route registry's (lib/routes.ts), the
+// list robots.txt and the sidebar read too.
+export { isProtectedRoute };
 
 function isOnboardingRoute(pathname: string): boolean {
   return pathname.startsWith("/onboarding");

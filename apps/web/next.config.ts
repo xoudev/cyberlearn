@@ -139,6 +139,10 @@ const nextConfig: NextConfig = {
       { source: "/badges", destination: "/profile?tab=badges", permanent: false },
       { source: "/certificates", destination: "/profile?tab=certificats", permanent: false },
       { source: "/tournaments", destination: "/challenges?tab=tournois", permanent: false },
+      // The old SM-2 queue's address. Its page was only a redirect to the
+      // revisions, kept for bookmarks; the redirect lives here now, with the
+      // others, and the page and its skeleton are gone.
+      { source: "/review", destination: "/revisions", permanent: false },
     ]);
   },
   rewrites() {

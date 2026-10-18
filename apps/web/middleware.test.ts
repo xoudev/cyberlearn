@@ -83,8 +83,9 @@ describe("protected route classification", () => {
     expect(isProtectedRoute(path)).toBe(true);
   });
 
-  // /settings and /changelog have no page: next.config redirects them before
-  // the middleware, to the dashboard with their window open.
+  // /settings, /changelog, /badges, /certificates and /review have no page:
+  // next.config redirects them before the middleware, to a window over the
+  // dashboard, a tab of the profile or the revisions. The glossary is public.
   it.each([
     "/catalogue",
     "/contact",
@@ -92,6 +93,10 @@ describe("protected route classification", () => {
     "/u/introuvable",
     "/settings",
     "/changelog",
+    "/badges",
+    "/certificates",
+    "/review",
+    "/glossaire",
   ])("lets Next render public and unknown route %s", (path) => {
     expect(isProtectedRoute(path)).toBe(false);
   });

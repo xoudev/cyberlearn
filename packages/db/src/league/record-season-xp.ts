@@ -1,4 +1,4 @@
-import type { Prisma } from "@cyberlearn/db";
+import type { Prisma } from "@prisma/client";
 import { pickPod } from "@cyberlearn/lib";
 
 /**
@@ -9,19 +9,28 @@ import { pickPod } from "@cyberlearn/lib";
  * season, auto-joins them: their division carries over from the previous season
  * (Bronze for newcomers), placed in the first pod with room. Subsequent credits
  * just increment seasonXp (one cheap update).
+ *
+ * A negative amount is XP taken back from the console. It comes off the
+ * season's figure without taking it below zero, and never makes anybody join
+ * a season: a correction is not taking part.
  */
 export async function recordSeasonXp(
   tx: Prisma.TransactionClient,
   userId: string,
   amount: number,
 ): Promise<void> {
-  if (amount <= 0) return;
+  if (amount === 0) return;
 
   const season = await tx.season.findFirst({
     where: { status: "ACTIVE" },
     select: { id: true, index: true },
   });
   if (!season) return;
+
+  if (amount < 0) {
+    await takeBackSeasonXp(tx, userId, season.id, -amount);
+    return;
+  }
 
   // Common path: already a member of this season -> just increment.
   const incremented = await tx.leagueMembership.updateMany({
@@ -51,5 +60,27 @@ export async function recordSeasonXp(
     where: { userId_seasonId: { userId, seasonId: season.id } },
     create: { userId, seasonId: season.id, division, pod, seasonXp: amount },
     update: { seasonXp: { increment: amount } },
+  });
+}
+
+/**
+ * Lowers seasonXp by `taken`, stopping at zero. Two guarded statements rather
+ * than a read then a write: each one re-checks its condition on the locked
+ * row, so a credit landing in between is never overwritten.
+ */
+async function takeBackSeasonXp(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  seasonId: string,
+  taken: number,
+): Promise<void> {
+  const lowered = await tx.leagueMembership.updateMany({
+    where: { userId, seasonId, seasonXp: { gte: taken } },
+    data: { seasonXp: { decrement: taken } },
+  });
+  if (lowered.count > 0) return;
+  await tx.leagueMembership.updateMany({
+    where: { userId, seasonId, seasonXp: { lt: taken } },
+    data: { seasonXp: 0 },
   });
 }

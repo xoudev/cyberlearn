@@ -109,8 +109,10 @@ export function assembleWrapped(inputs: WrappedInputs): WrappedPayload {
     const year = yearKey(entry.createdAt);
     xpByYear.set(year, (xpByYear.get(year) ?? 0) + entry.amount);
   }
-  const thisYearXp = xpByYear.get(periodKey) ?? 0;
-  const lastYearXp = xpByYear.get(shiftYear(periodKey, -1)) ?? 0;
+  // XP taken back from the console is a negative line, in the year it was
+  // taken back: a year that adds up below zero reads 0, as on the boards.
+  const thisYearXp = Math.max(0, xpByYear.get(periodKey) ?? 0);
+  const lastYearXp = Math.max(0, xpByYear.get(shiftYear(periodKey, -1)) ?? 0);
   const deltaPct =
     lastYearXp > 0 ? Math.round(((thisYearXp - lastYearXp) / lastYearXp) * 100) : null;
 

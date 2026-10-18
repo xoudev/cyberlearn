@@ -7,6 +7,7 @@ import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { pathRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { withSavedNotice } from "@/lib/saved-notice";
 import { readPathLessonIds } from "./lesson-ids";
 
 const createPathSchema = z.object({
@@ -66,13 +67,13 @@ export async function createPathAction(
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
         status: publishNow ? "PUBLISHED" : "DRAFT",
         publishedAt: publishNow ? new Date() : null,
+        // 1-based, as the sync writes them; a new path has no module yet.
         ...(orderedLessonIds.length > 0
           ? {
               lessons: {
-                create: orderedLessonIds.map((lessonId, position) => ({
+                create: orderedLessonIds.map((lessonId, index) => ({
                   lessonId,
-                  position,
-                  isRequired: true,
+                  position: index + 1,
                 })),
               },
             }
@@ -100,7 +101,7 @@ export async function createPathAction(
     return { error: "Erreur lors de la création." };
   }
 
-  redirect("/paths");
+  redirect(withSavedNotice("/paths", "created"));
 }
 
 // ── Update status ─────────────────────────────────────────────────────────────

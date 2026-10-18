@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useOptimistic, useTransition } from "react";
+import { notifyResult } from "@/lib/notify";
 import { setChallengeActiveAction } from "../_actions/challenge-admin-actions";
 
 export function ActiveToggle({
@@ -19,9 +20,13 @@ export function ActiveToggle({
     startTransition(async () => {
       setOptimisticActive(next);
       const res = await setChallengeActiveAction(challengeId, next);
-      if (!res.error) {
-        setConfirmed(next);
-      }
+      // A refusal used to be swallowed: the optimistic state went back with
+      // no word, and the click looked like it had not registered.
+      const ok = notifyResult(res, {
+        success: next ? "Challenge activé." : "Challenge désactivé.",
+        error: "Le challenge n'a pas pu être modifié.",
+      });
+      if (ok) setConfirmed(next);
     });
   }
 

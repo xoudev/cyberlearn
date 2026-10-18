@@ -2,17 +2,18 @@
  * The release notes, as data.
  *
  * Nothing here checks the prose - that is the point of writing it by hand.
- * What it checks is the handful of facts the page and the sidebar dot depend
- * on, all of which are easy to break while adding an entry and none of which
- * fail loudly: an entry appended at the bottom, a version reused, a date going
- * backwards, or the "new" dot left pointing at the previous release.
+ * What it checks is the handful of facts the Nouveautés drawer and the dot on
+ * the navbar button depend on, all of which are easy to break while adding an
+ * entry and none of which fail loudly: an entry appended at the bottom, a
+ * version reused, a date going backwards, or the "new" dot left pointing at
+ * the previous release.
  */
 
 import { describe, expect, it } from "vitest";
 import { CHANGE_META, CHANGELOG, LATEST_VERSION } from "../entries";
 
 describe("the changelog", () => {
-  it("puts the newest entry first, which is what the page and the dot read", () => {
+  it("puts the newest entry first, which is what the drawer and the navbar dot read", () => {
     const dates = CHANGELOG.map((entry) => entry.date);
     expect([...dates].sort().reverse()).toEqual(dates);
   });
@@ -61,7 +62,7 @@ describe("the changelog", () => {
     }
   });
 
-  it("uses only the three kinds the page knows how to colour", () => {
+  it("uses only the three kinds the drawer and the app know how to colour", () => {
     for (const entry of CHANGELOG) {
       for (const change of entry.changes) {
         expect(CHANGE_META[change.type]).toBeDefined();
@@ -79,7 +80,7 @@ describe("the unseen mark and the dates", () => {
     expect(hasUnseenChangelog(LATEST_VERSION)).toBe(false);
   });
 
-  it("writes a date the way the page shows it", async () => {
+  it("writes a date the way the drawer and the app show it", async () => {
     const { formatChangelogDate } = await import("../entries");
     expect(formatChangelogDate("2026-09-19")).toBe("19 septembre 2026");
   });
