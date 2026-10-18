@@ -1,4 +1,9 @@
-import type { BadgeRarity } from "@prisma/client";
+import {
+  buildBadgeCriterionStats,
+  isBadgeUnlocked,
+  type BadgeCriterionFacts,
+} from "@cyberlearn/lib";
+import type { BadgeRarity, Prisma } from "@prisma/client";
 import { awardBadges } from "../badges/award.js";
 import { prisma } from "../prisma.js";
 import { creditXp } from "../xp/credit.js";
@@ -12,8 +17,20 @@ export type BadgeGrantResult =
   | { ok: false; reason: "NO_BADGE" | "INACTIVE" | "ALREADY_EARNED" };
 
 export type BadgeRevokeResult =
-  | { ok: true; badgeName: string; xpTakenBack: number }
-  | { ok: false; reason: "NOT_EARNED" };
+  | {
+      ok: true;
+      badgeName: string;
+      /** XP the badge paid when awarded, as stamped on its row; 0 when never paid. */
+      xpCredited: number;
+      /** XP that actually came off: less than xpCredited when the total ran out. */
+      xpTakenBack: number;
+    }
+  /**
+   * STILL_EARNED: the account still meets the badge's criterion. Taken away,
+   * the badge would come straight back, XP and all, at the next sweep of the
+   * collection or the next lesson completed.
+   */
+  | { ok: false; reason: "NOT_EARNED" | "STILL_EARNED" };
 
 /** A badge an account holds, as its page in the console lists it. */
 export interface HeldBadge {
@@ -30,6 +47,78 @@ function creditedXpOf(context: unknown): number {
   if (typeof context !== "object" || context === null || !("xpCredited" in context)) return 0;
   const { xpCredited } = context;
   return typeof xpCredited === "number" && xpCredited > 0 ? xpCredited : 0;
+}
+
+/** Reads the criterion facts through the given client: the app's, or a transaction's. */
+async function readCriterionFacts(
+  db: Prisma.TransactionClient,
+  userId: string,
+): Promise<BadgeCriterionFacts> {
+  const [
+    completedLessons,
+    completedPaths,
+    totalCertificates,
+    perfectQuizCount,
+    placementScores,
+    earnedBadges,
+  ] = await Promise.all([
+    db.userLessonProgress.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { lessonId: true, lesson: { select: { category: true } } },
+    }),
+    db.userPathProgress.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { pathId: true },
+    }),
+    db.certificate.count({ where: { userId } }),
+    db.quizAttempt.count({ where: { userId, score: 100 } }),
+    db.userPlacementResult.findUnique({
+      where: { userId },
+      select: { devScore: true, cybersecScore: true, networkScore: true },
+    }),
+    db.userBadge.findMany({
+      where: { userId },
+      select: { badge: { select: { refCode: true } } },
+    }),
+  ]);
+  return {
+    completedLessons: completedLessons.map((r) => ({
+      lessonId: r.lessonId,
+      category: r.lesson.category,
+    })),
+    completedPathIds: completedPaths.map((r) => r.pathId),
+    totalCertificates,
+    perfectQuizCount,
+    earnedBadgeRefCodes: earnedBadges.map((r) => r.badge.refCode),
+    placementScores,
+  };
+}
+
+/**
+ * Whether a badge's criterion would still be met once it is taken away: the
+ * account without the badge, and without the XP the revocation takes back.
+ * Evaluated by isBadgeUnlocked, the rule the collection's sweep and the
+ * lesson flow award by, so a yes here is a badge that would come back.
+ */
+async function criterionMetWithout(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  badge: { id: string; refCode: string; criterionType: string; criterionData: unknown },
+  xpTakenBack: number,
+): Promise<boolean> {
+  const [user, facts] = await Promise.all([
+    tx.user.findUnique({ where: { id: userId }, select: { xpTotal: true, streakDays: true } }),
+    readCriterionFacts(tx, userId),
+  ]);
+  if (!user) return false;
+  const stats = buildBadgeCriterionStats(
+    {
+      ...facts,
+      earnedBadgeRefCodes: facts.earnedBadgeRefCodes.filter((code) => code !== badge.refCode),
+    },
+    { xpTotal: Math.max(0, user.xpTotal - xpTakenBack), streakDays: user.streakDays },
+  );
+  return isBadgeUnlocked({ ...badge, isActive: true }, stats);
 }
 
 export const badgeRepository = {
@@ -89,52 +178,8 @@ export const badgeRepository = {
    * Feed into buildBadgeCriterionStats (@cyberlearn/lib); callers apply any
    * not-yet-persisted trigger delta (e.g. the lesson being completed now).
    */
-  async findCriterionFacts(userId: string): Promise<{
-    completedLessons: { lessonId: string; category: string }[];
-    completedPathIds: string[];
-    totalCertificates: number;
-    perfectQuizCount: number;
-    earnedBadgeRefCodes: string[];
-    placementScores: { devScore: number; cybersecScore: number; networkScore: number } | null;
-  }> {
-    const [
-      completedLessons,
-      completedPaths,
-      totalCertificates,
-      perfectQuizCount,
-      placementScores,
-      earnedBadges,
-    ] = await Promise.all([
-      prisma.userLessonProgress.findMany({
-        where: { userId, status: "COMPLETED" },
-        select: { lessonId: true, lesson: { select: { category: true } } },
-      }),
-      prisma.userPathProgress.findMany({
-        where: { userId, status: "COMPLETED" },
-        select: { pathId: true },
-      }),
-      prisma.certificate.count({ where: { userId } }),
-      prisma.quizAttempt.count({ where: { userId, score: 100 } }),
-      prisma.userPlacementResult.findUnique({
-        where: { userId },
-        select: { devScore: true, cybersecScore: true, networkScore: true },
-      }),
-      prisma.userBadge.findMany({
-        where: { userId },
-        select: { badge: { select: { refCode: true } } },
-      }),
-    ]);
-    return {
-      completedLessons: completedLessons.map((r) => ({
-        lessonId: r.lessonId,
-        category: r.lesson.category,
-      })),
-      completedPathIds: completedPaths.map((r) => r.pathId),
-      totalCertificates,
-      perfectQuizCount,
-      earnedBadgeRefCodes: earnedBadges.map((r) => r.badge.refCode),
-      placementScores,
-    };
+  async findCriterionFacts(userId: string): Promise<BadgeCriterionFacts> {
+    return readCriterionFacts(prisma, userId);
   },
 
   /**
@@ -193,8 +238,17 @@ export const badgeRepository = {
    * comes back off the total as a correction (source ADJUSTMENT): the amount
    * stamped on the row when it was awarded, so a badge whose reward changed
    * since takes back what it gave. A legacy row with no stamp was never paid,
-   * and nothing is taken for it. The notification it sent stays: it was true
-   * when it was sent.
+   * and nothing is taken for it. Taking back stops at zero, as every
+   * correction does: the result gives both what the badge paid and what
+   * actually came off. The notification it sent stays: it was true when it
+   * was sent.
+   *
+   * Refused while the account still meets the badge's criterion, the badge
+   * and the XP taken back set aside: nothing marks a badge as revoked, so the
+   * collection's sweep, or the next lesson completed, would award it again
+   * and pay it again. What fills the criterion is corrected first (the XP,
+   * the streak), or the criterion itself, or the badge is deactivated: an
+   * inactive badge is awarded by nothing, and is always revocable.
    */
   async revoke(
     userId: string,
@@ -204,16 +258,40 @@ export const badgeRepository = {
     return prisma.$transaction(async (tx): Promise<BadgeRevokeResult> => {
       const held = await tx.userBadge.findUnique({
         where: { userId_badgeId: { userId, badgeId } },
-        select: { context: true, badge: { select: { name: true } } },
+        select: {
+          context: true,
+          badge: {
+            select: {
+              name: true,
+              refCode: true,
+              isActive: true,
+              criterionType: true,
+              criterionData: true,
+            },
+          },
+        },
       });
       if (!held) return { ok: false, reason: "NOT_EARNED" };
+
+      const credited = creditedXpOf(held.context);
+      const { badge } = held;
+      if (
+        badge.isActive &&
+        (await criterionMetWithout(
+          tx,
+          userId,
+          { id: badgeId, ...badge },
+          options.takeBackXp ? credited : 0,
+        ))
+      ) {
+        return { ok: false, reason: "STILL_EARNED" };
+      }
 
       // Removed by a guarded delete rather than by id: of two revocations at
       // once, one removes the row and the other finds nothing to take back.
       const removed = await tx.userBadge.deleteMany({ where: { userId, badgeId } });
       if (removed.count === 0) return { ok: false, reason: "NOT_EARNED" };
 
-      const credited = creditedXpOf(held.context);
       let xpTakenBack = 0;
       if (options.takeBackXp && credited > 0) {
         const credit = await creditXp(tx, userId, -credited, "ADJUSTMENT", {
@@ -230,14 +308,15 @@ export const badgeRepository = {
           targetId: userId,
           metadata: {
             badgeId,
-            badgeName: held.badge.name,
+            badgeName: badge.name,
+            xpCredited: credited,
             xpTakenBack,
             reason: options.reason,
           },
         },
       });
 
-      return { ok: true, badgeName: held.badge.name, xpTakenBack };
+      return { ok: true, badgeName: badge.name, xpCredited: credited, xpTakenBack };
     });
   },
 };

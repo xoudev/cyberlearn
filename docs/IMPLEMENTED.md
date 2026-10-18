@@ -346,10 +346,16 @@
   log et une confirmation qui nomme le compte : ajouter ou retirer de l'XP
   (une ligne `ADJUSTMENT` du registre `xp_ledger`, total jamais sous zéro,
   niveau recalculé sans notification, saison et classements de la semaine et
-  du mois suivent), fixer la série et les gels en réserve (le record suit une
-  série mise au-dessus ; une série rendue après une interruption compte le
+  du mois suivent), fixer la série, son record et les gels en réserve (le
+  record suit une série mise au-dessus et ne descend que si on le change,
+  jamais sous la série ; une série rendue après une interruption compte le
   jour même comme actif), attribuer un badge (ses XP et la notification d'un
-  badge obtenu) ou le retirer, en reprenant au choix les XP qu'il a rapportés.
+  badge obtenu) ou le retirer, en reprenant au choix les XP qu'il a rapportés
+  (jamais sous zéro, l'avis dit ce qui a vraiment été repris). Le retrait est
+  refusé tant que le compte remplit encore le critère du badge, sans lui et
+  sans les XP repris : rien ne marque un badge comme retiré, et la collection
+  ou la leçon suivante le rendrait, XP compris. On corrige d'abord ce qui le
+  remplit, le critère, ou on désactive le badge.
   Les vingt dernières lignes du registre d'XP se lisent sur la fiche. Le
   crédit d'XP (`creditXp`), la saison (`recordSeasonXp`) et l'attribution de
   badges (`awardBadges`) vivent dans `@cyberlearn/db/gamification`, partagés

@@ -140,16 +140,18 @@ export function XpAdjustForm({
   );
 }
 
-/** The streak and the freezes in reserve, set by hand. */
+/** The streak, its record and the freezes in reserve, set by hand. */
 export function StreakCorrectionForm({
   userId,
   handle,
   streakDays,
+  longestStreak,
   streakFreezes,
 }: {
   userId: string;
   handle: string;
   streakDays: number;
+  longestStreak: number;
   streakFreezes: number;
 }): React.ReactElement {
   const [state, action, pending] = useActionState<GamificationActionState, FormData>(
@@ -168,8 +170,10 @@ export function StreakCorrectionForm({
         onSubmit={(event) => {
           const data = new FormData(event.currentTarget);
           const days = Number(data.get("streakDays"));
+          // The record the correction leaves: never under the streak.
+          const record = Math.max(days, Number(data.get("longestStreak")));
           const freezes = Number(data.get("streakFreezes"));
-          const question = `Mettre la série de ${handle} à ${String(days)} jour${days > 1 ? "s" : ""}, avec ${String(freezes)} gel${freezes > 1 ? "s" : ""} en réserve ?`;
+          const question = `Mettre la série de ${handle} à ${String(days)} jour${days > 1 ? "s" : ""}, record ${String(record)}, avec ${String(freezes)} gel${freezes > 1 ? "s" : ""} en réserve ?`;
           if (!window.confirm(question)) event.preventDefault();
         }}
         className="a-form"
@@ -190,8 +194,28 @@ export function StreakCorrectionForm({
             className="a-input"
           />
           <span className="a-field-hint">
-            Le record suit une série mise au-dessus. Une série rendue après une interruption compte
-            aujourd&apos;hui comme jour actif. Les badges et quêtes de série ne sont pas réévalués.
+            Une série rendue après une interruption compte aujourd&apos;hui comme jour actif. Les
+            badges et quêtes de série ne sont pas réévalués.
+          </span>
+        </label>
+
+        <label className="a-field">
+          <span className="a-label">Record, en jours</span>
+          <input
+            name="longestStreak"
+            type="number"
+            required
+            min={0}
+            max={MAX_STREAK_DAYS}
+            step={1}
+            inputMode="numeric"
+            defaultValue={longestStreak}
+            className="a-input"
+          />
+          <span className="a-field-hint">
+            Suit une série mise au-dessus. Ne descend que si tu le changes, jamais sous la série :
+            pour une série gonflée par une erreur, puisqu&apos;il s&apos;affiche sur le profil
+            public et dans le Wrapped.
           </span>
         </label>
 
@@ -322,7 +346,7 @@ export function BadgeRevokeForm({
             data.get("takeBackXp") === "on" && badge.xpCredited > 0
               ? ` Les ${badge.xpCredited.toLocaleString("fr-FR")} XP qu'il a rapportés sont repris.`
               : " Les XP qu'il a rapportés restent acquis.";
-          const question = `Retirer « ${badge.name} » à ${handle} ?${xp}`;
+          const question = `Retirer « ${badge.name} » à ${handle} ?${xp} Refusé si son critère est encore rempli : il reviendrait tout seul.`;
           if (!window.confirm(question)) event.preventDefault();
         }}
         className="a-form"
@@ -342,6 +366,11 @@ export function BadgeRevokeForm({
               hint: `a rapporté ${badge.xpCredited.toLocaleString("fr-FR")} XP`,
             }))}
           />
+          <span className="a-field-hint">
+            Rien ne marque un badge comme retiré : tant que le compte remplit son critère, le badge
+            revient à la prochaine visite de ses badges, XP compris, et le retrait est refusé.
+            Corrige d&apos;abord ce qui le remplit, ou le critère, ou désactive le badge.
+          </span>
         </label>
         <label style={CHOICE_ROW}>
           <input type="checkbox" name="takeBackXp" />

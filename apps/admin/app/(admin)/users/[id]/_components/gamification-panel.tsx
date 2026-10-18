@@ -84,6 +84,7 @@ export function GamificationPanel({
               userId={userId}
               handle={handle}
               streakDays={standing.streakDays}
+              longestStreak={standing.longestStreak}
               streakFreezes={standing.streakFreezes}
             />
           </div>

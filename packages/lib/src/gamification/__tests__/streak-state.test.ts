@@ -223,6 +223,21 @@ describe("correctStreak", () => {
     expect(correctStreak(s, { currentStreak: 50 }, NOW).state.longestStreak).toBe(50);
   });
 
+  it("lowers the record only when told, never below the corrected streak", () => {
+    const s = state({ currentStreak: 400, longestStreak: 400, lastActiveDay: "2026-04-28" });
+    expect(correctStreak(s, { currentStreak: 5, longestStreak: 12 }, NOW).state).toMatchObject({
+      currentStreak: 5,
+      longestStreak: 12,
+    });
+    // A record under the streak it records is raised to it.
+    expect(correctStreak(s, { currentStreak: 5, longestStreak: 2 }, NOW).state.longestStreak).toBe(
+      5,
+    );
+    expect(
+      correctStreak(s, { currentStreak: 30, longestStreak: 12 }, NOW).state.longestStreak,
+    ).toBe(30);
+  });
+
   it("leaves the last day alone when the streak is set to zero", () => {
     const s = state({ currentStreak: 9, longestStreak: 9, lastActiveDay: "2026-04-10" });
     const r = correctStreak(s, { currentStreak: 0 }, NOW);

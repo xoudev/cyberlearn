@@ -29,11 +29,14 @@ interface FakeUser {
 
 interface FakeBadge {
   id: string;
+  refCode: string;
   name: string;
   description: string;
   rarity: string;
   xpReward: number;
   isActive: boolean;
+  criterionType: string;
+  criterionData: Record<string, unknown>;
 }
 
 const { db } = vi.hoisted(() => ({
@@ -41,6 +44,8 @@ const { db } = vi.hoisted(() => ({
     user: null as FakeUser | null,
     badges: [] as FakeBadge[],
     held: new Map<string, { context: Record<string, unknown> }>(),
+    /** The lessons the account completed: what a LESSON_COMPLETED criterion counts. */
+    completedLessons: [] as { lessonId: string; category: string }[],
     ledger: [] as { amount: number; source: string }[],
     notifications: [] as { type: string }[],
     audit: [] as { action: string; targetId: string; metadata: Record<string, unknown> }[],
@@ -140,15 +145,36 @@ const tx = {
         const { badgeId } = where.userId_badgeId;
         const row = db.held.get(badgeId);
         const badge = db.badges.find((entry) => entry.id === badgeId);
-        return Promise.resolve(
-          row && badge ? { context: row.context, badge: { name: badge.name } } : null,
-        );
+        return Promise.resolve(row && badge ? { context: row.context, badge } : null);
       },
+    ),
+    findMany: vi.fn(() =>
+      Promise.resolve(
+        db.badges
+          .filter((badge) => db.held.has(badge.id))
+          .map((badge) => ({ badge: { refCode: badge.refCode } })),
+      ),
     ),
     deleteMany: vi.fn(({ where }: { where: { badgeId: string } }) =>
       Promise.resolve({ count: db.held.delete(where.badgeId) ? 1 : 0 }),
     ),
   },
+  // The rest of what a badge criterion is evaluated against: nothing, but the
+  // lessons the test sets.
+  userLessonProgress: {
+    findMany: vi.fn(() =>
+      Promise.resolve(
+        db.completedLessons.map((lesson) => ({
+          lessonId: lesson.lessonId,
+          lesson: { category: lesson.category },
+        })),
+      ),
+    ),
+  },
+  userPathProgress: { findMany: vi.fn(() => Promise.resolve([])) },
+  certificate: { count: vi.fn(() => Promise.resolve(0)) },
+  quizAttempt: { count: vi.fn(() => Promise.resolve(0)) },
+  userPlacementResult: { findUnique: vi.fn(() => Promise.resolve(null)) },
 };
 
 // Hoisted above the imports: `tx` is only read when a transaction runs, by
@@ -180,14 +206,19 @@ beforeEach(() => {
   db.badges = [
     {
       id: BADGE,
+      refCode: "first-step",
       name: "Premier pas",
       description: "Une première leçon terminée",
       rarity: "COMMON",
       xpReward: 50,
       isActive: true,
+      // No lesson completed in the fixture: the criterion is not met.
+      criterionType: "LESSON_COMPLETED",
+      criterionData: { count: 1 },
     },
   ];
   db.held.clear();
+  db.completedLessons = [];
   db.ledger = [];
   db.notifications = [];
   db.audit = [];
@@ -317,7 +348,12 @@ describe("badgeRepository.grant and .revoke", () => {
       takeBackXp: true,
     });
 
-    expect(result).toEqual({ ok: true, badgeName: "Premier pas", xpTakenBack: 50 });
+    expect(result).toEqual({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 50,
+      xpTakenBack: 50,
+    });
     expect(db.held.has(BADGE)).toBe(false);
     expect(db.user?.xpTotal).toBe(320);
     expect(db.ledger).toEqual([
@@ -335,7 +371,12 @@ describe("badgeRepository.grant and .revoke", () => {
       takeBackXp: false,
     });
 
-    expect(result).toEqual({ ok: true, badgeName: "Premier pas", xpTakenBack: 0 });
+    expect(result).toEqual({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 50,
+      xpTakenBack: 0,
+    });
     expect(db.user?.xpTotal).toBe(370);
   });
 
@@ -347,7 +388,12 @@ describe("badgeRepository.grant and .revoke", () => {
       takeBackXp: true,
     });
 
-    expect(result).toEqual({ ok: true, badgeName: "Premier pas", xpTakenBack: 0 });
+    expect(result).toEqual({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 0,
+      xpTakenBack: 0,
+    });
     expect(db.ledger).toEqual([]);
   });
 
@@ -373,6 +419,85 @@ describe("badgeRepository.grant and .revoke", () => {
       BADGE_REVOKE_ACTION,
       BADGE_GRANT_ACTION,
     ]);
+  });
+
+  it("says what a capped take-back actually took, next to what the badge paid", async () => {
+    await badgeRepository.grant(USER, BADGE, { actorId: ADMIN, reason: "Oubli" });
+    await adjustXp({ userId: USER, delta: -350, reason: "Triche", actorId: ADMIN });
+
+    const result = await badgeRepository.revoke(USER, BADGE, {
+      actorId: ADMIN,
+      reason: "Attribué par erreur",
+      takeBackXp: true,
+    });
+
+    // 370 - 350 = 20 left: the badge paid 50, only 20 can come off.
+    expect(result).toEqual({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 50,
+      xpTakenBack: 20,
+    });
+    expect(db.user?.xpTotal).toBe(0);
+    expect(db.audit.at(-1)?.metadata).toMatchObject({ xpCredited: 50, xpTakenBack: 20 });
+  });
+
+  it("refuses to revoke a badge whose criterion is still met: it would come back", async () => {
+    db.completedLessons = [{ lessonId: "l1", category: "DEV" }];
+    await badgeRepository.grant(USER, BADGE, { actorId: ADMIN, reason: "Oubli" });
+
+    const result = await badgeRepository.revoke(USER, BADGE, {
+      actorId: ADMIN,
+      reason: "Attribué par erreur : critère mal réglé",
+      takeBackXp: true,
+    });
+
+    expect(result).toEqual({ ok: false, reason: "STILL_EARNED" });
+    expect(db.held.has(BADGE)).toBe(true);
+    expect(db.user?.xpTotal).toBe(370);
+    expect(db.ledger).toEqual([{ amount: 50, source: "BADGE" }]);
+    expect(db.audit.map((row) => row.action)).toEqual([BADGE_GRANT_ACTION]);
+  });
+
+  it("judges an XP criterion on the total the revocation leaves", async () => {
+    const [badge] = db.badges;
+    if (badge) {
+      badge.criterionType = "XP_THRESHOLD";
+      badge.criterionData = { threshold: 350 };
+    }
+    // 320 + 50 = 370: past the threshold with the badge's own XP, not without.
+    await badgeRepository.grant(USER, BADGE, { actorId: ADMIN, reason: "Oubli" });
+
+    const keepingXp = await badgeRepository.revoke(USER, BADGE, {
+      actorId: ADMIN,
+      reason: "Erreur",
+      takeBackXp: false,
+    });
+    expect(keepingXp).toEqual({ ok: false, reason: "STILL_EARNED" });
+
+    const takingXp = await badgeRepository.revoke(USER, BADGE, {
+      actorId: ADMIN,
+      reason: "Erreur",
+      takeBackXp: true,
+    });
+    expect(takingXp).toMatchObject({ ok: true, xpTakenBack: 50 });
+    expect(db.user?.xpTotal).toBe(320);
+  });
+
+  it("revokes an inactive badge even when its criterion is met: nothing awards it", async () => {
+    db.completedLessons = [{ lessonId: "l1", category: "DEV" }];
+    await badgeRepository.grant(USER, BADGE, { actorId: ADMIN, reason: "Oubli" });
+    const [badge] = db.badges;
+    if (badge) badge.isActive = false;
+
+    const result = await badgeRepository.revoke(USER, BADGE, {
+      actorId: ADMIN,
+      reason: "Badge retiré du catalogue",
+      takeBackXp: false,
+    });
+
+    expect(result).toMatchObject({ ok: true, badgeName: "Premier pas" });
+    expect(db.held.has(BADGE)).toBe(false);
   });
 
   it("refuses to revoke a badge the account does not hold", async () => {
@@ -433,6 +558,36 @@ describe("streakRepository.correct", () => {
       longestStreak: 12,
       streakFreezes: 2,
       lastActiveAt: NOW,
+    });
+  });
+
+  it("lowers the record only when it is named, and audits it", async () => {
+    if (db.user) {
+      db.user.streakDays = 400;
+      db.user.longestStreak = 400;
+    }
+    const lowered = await streakRepository.correct(
+      USER,
+      { streakDays: 5 },
+      { actorId: ADMIN, reason: "Série gonflée par un bug", now: NOW },
+    );
+    // Named nowhere, the record stays what it was.
+    expect(lowered).toMatchObject({ ok: true, after: { streakDays: 5, longestStreak: 400 } });
+
+    const record = await streakRepository.correct(
+      USER,
+      { streakDays: 5, longestStreak: 9 },
+      { actorId: ADMIN, reason: "Record gonflé par le même bug", now: NOW },
+    );
+    expect(record).toMatchObject({
+      ok: true,
+      before: { streakDays: 5, longestStreak: 400 },
+      after: { streakDays: 5, longestStreak: 9 },
+    });
+    expect(db.user).toMatchObject({ streakDays: 5, longestStreak: 9 });
+    expect(db.audit.at(-1)?.metadata).toMatchObject({
+      before: { longestStreak: 400 },
+      after: { longestStreak: 9 },
     });
   });
 

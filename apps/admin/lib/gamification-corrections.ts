@@ -49,6 +49,11 @@ export function signedXp(amount: number): string {
   return `${sign}${number.format(Math.abs(amount))} XP`;
 }
 
+/** "1 200 XP", unsigned. */
+function plainXp(amount: number): string {
+  return `${number.format(amount)} XP`;
+}
+
 function plural(count: number, one: string, many: string): string {
   return `${number.format(count)} ${count > 1 ? many : one}`;
 }
@@ -121,12 +126,34 @@ export function badgeGrantOutcome(result: BadgeGrantResult): Outcome {
 }
 
 export function badgeRevokeOutcome(result: BadgeRevokeResult, takeBackXp: boolean): Outcome {
-  if (!result.ok) return { ok: false, error: "Ce compte n'a pas, ou plus, ce badge." };
-  const xp =
-    result.xpTakenBack > 0
-      ? ` ${signedXp(-result.xpTakenBack)} : les XP qu'il avait rapportés sont repris.`
-      : takeBackXp
-        ? " Il n'avait rapporté aucun XP à reprendre."
-        : " Les XP qu'il avait rapportés restent acquis.";
-  return { ok: true, notice: `Badge « ${result.badgeName} » retiré.${xp}` };
+  if (!result.ok) {
+    const error = {
+      NOT_EARNED: "Ce compte n'a pas, ou plus, ce badge.",
+      STILL_EARNED:
+        "Ce compte remplit encore le critère de ce badge : retiré, il reviendrait tout seul, XP compris, à la prochaine visite de ses badges ou à la prochaine leçon terminée. Corrige d'abord ce qui le remplit (XP, série), ou le critère du badge, ou désactive le badge.",
+    }[result.reason];
+    return { ok: false, error };
+  }
+  const { badgeName, xpCredited, xpTakenBack } = result;
+  return {
+    ok: true,
+    notice: `Badge « ${badgeName} » retiré.${revokedXp(xpCredited, xpTakenBack, takeBackXp)}`,
+  };
+}
+
+/** What became of the XP a revoked badge paid: kept, taken back, or partly. */
+function revokedXp(credited: number, takenBack: number, takeBackXp: boolean): string {
+  if (credited === 0) {
+    return takeBackXp
+      ? " Il n'avait rapporté aucun XP à reprendre."
+      : " Il n'avait rapporté aucun XP.";
+  }
+  if (!takeBackXp) return ` Les ${plainXp(credited)} qu'il avait rapportés restent acquis.`;
+  if (takenBack === credited) {
+    return ` ${signedXp(-takenBack)} : les XP qu'il avait rapportés sont repris.`;
+  }
+  if (takenBack === 0) {
+    return ` Aucun XP repris sur les ${plainXp(credited)} qu'il avait rapportés : le total était déjà à zéro.`;
+  }
+  return ` ${signedXp(-takenBack)} seulement, sur les ${plainXp(credited)} qu'il avait rapportés : le total est à zéro.`;
 }

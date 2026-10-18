@@ -118,7 +118,13 @@ describe("adjustXpAction", () => {
 });
 
 describe("correctStreakAction", () => {
-  const valid = { userId: TARGET, streakDays: "12", streakFreezes: "1", reason: "Panne du 11" };
+  const valid = {
+    userId: TARGET,
+    streakDays: "12",
+    longestStreak: "10",
+    streakFreezes: "1",
+    reason: "Panne du 11",
+  };
 
   it("sets the streak and the freezes as the administrator", async () => {
     m.correctStreak.mockResolvedValue({
@@ -131,11 +137,31 @@ describe("correctStreakAction", () => {
 
     expect(m.correctStreak).toHaveBeenCalledWith(
       TARGET,
-      { streakDays: 12, streakFreezes: 1 },
+      { streakDays: 12, longestStreak: 10, streakFreezes: 1 },
       { actorId: ADMIN, reason: "Panne du 11" },
     );
     expect(result.ok).toBe(true);
     expect(result.notice).toMatch(/^Série corrigée : 0 → 12 jours, record 10 → 12\./u);
+  });
+
+  it("hands the record over, for a record a bug inflated", async () => {
+    m.correctStreak.mockResolvedValue({
+      ok: true,
+      before: { streakDays: 400, longestStreak: 400, streakFreezes: 1 },
+      after: { streakDays: 5, longestStreak: 5, streakFreezes: 1 },
+      movedToToday: false,
+    });
+    const result = await correctStreakAction(
+      {},
+      form({ ...valid, streakDays: "5", longestStreak: "5" }),
+    );
+
+    expect(m.correctStreak).toHaveBeenCalledWith(
+      TARGET,
+      { streakDays: 5, longestStreak: 5, streakFreezes: 1 },
+      expect.anything(),
+    );
+    expect(result.notice).toBe("Série corrigée : 400 → 5 jours, record 400 → 5.");
   });
 
   it.each([
@@ -143,6 +169,8 @@ describe("correctStreakAction", () => {
     [{ streakDays: "3651" }, "Au plus 3650 jours."],
     [{ streakFreezes: "3" }, "Au plus 2 gels en réserve."],
     [{ streakDays: "abc" }, "Indique un nombre de jours."],
+    [{ longestStreak: "-1" }, "Un record ne descend pas sous 0."],
+    [{ longestStreak: "3651" }, "Un record de 3650 jours au plus."],
   ])("refuses %o", async (override, message) => {
     const result = await correctStreakAction({}, form({ ...valid, ...override }));
     expect(result.error).toBe(message);
@@ -173,7 +201,12 @@ describe("grantBadgeAction and revokeBadgeAction", () => {
   });
 
   it("takes the XP back only when the box is ticked", async () => {
-    m.revoke.mockResolvedValue({ ok: true, badgeName: "Premier pas", xpTakenBack: 50 });
+    m.revoke.mockResolvedValue({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 50,
+      xpTakenBack: 50,
+    });
 
     await revokeBadgeAction({}, form({ ...valid, takeBackXp: "on" }));
     expect(m.revoke).toHaveBeenLastCalledWith(TARGET, BADGE, {
@@ -182,7 +215,12 @@ describe("grantBadgeAction and revokeBadgeAction", () => {
       takeBackXp: true,
     });
 
-    m.revoke.mockResolvedValue({ ok: true, badgeName: "Premier pas", xpTakenBack: 0 });
+    m.revoke.mockResolvedValue({
+      ok: true,
+      badgeName: "Premier pas",
+      xpCredited: 50,
+      xpTakenBack: 0,
+    });
     const kept = await revokeBadgeAction({}, form(valid));
     expect(m.revoke).toHaveBeenLastCalledWith(
       TARGET,
@@ -196,6 +234,14 @@ describe("grantBadgeAction and revokeBadgeAction", () => {
     m.revoke.mockResolvedValue({ ok: false, reason: "NOT_EARNED" });
     const result = await revokeBadgeAction({}, form(valid));
     expect(result).toEqual({ error: "Ce compte n'a pas, ou plus, ce badge." });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("passes on a revocation refused because the badge would come back", async () => {
+    m.revoke.mockResolvedValue({ ok: false, reason: "STILL_EARNED" });
+    const result = await revokeBadgeAction({}, form({ ...valid, takeBackXp: "on" }));
+    expect(result.ok).toBeUndefined();
+    expect(result.error).toMatch(/^Ce compte remplit encore le critère de ce badge/u);
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

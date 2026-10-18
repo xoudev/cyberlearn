@@ -103,6 +103,11 @@ const streakSchema = target.extend({
     .int("Un nombre entier de jours.")
     .min(0, "Une série ne descend pas sous 0.")
     .max(MAX_STREAK_DAYS, `Au plus ${String(MAX_STREAK_DAYS)} jours.`),
+  longestStreak: z.coerce
+    .number("Indique un record, en jours.")
+    .int("Un nombre entier de jours pour le record.")
+    .min(0, "Un record ne descend pas sous 0.")
+    .max(MAX_STREAK_DAYS, `Un record de ${String(MAX_STREAK_DAYS)} jours au plus.`),
   streakFreezes: z.coerce
     .number("Indique un nombre de gels.")
     .int("Un nombre entier de gels.")
@@ -111,9 +116,10 @@ const streakSchema = target.extend({
 });
 
 /**
- * Sets the streak, and the freezes in reserve. The record follows a streak
- * set above it; a streak brought back after a gap counts today as active, so
- * that tonight's check does not break it again.
+ * Sets the streak, its record and the freezes in reserve. The record follows
+ * a streak set above it, and is lowered only by changing it, never under the
+ * streak; a streak brought back after a gap counts today as active, so that
+ * tonight's check does not break it again.
  */
 export async function correctStreakAction(
   _prev: GamificationActionState,
@@ -122,12 +128,12 @@ export async function correctStreakAction(
   const admin = await requireAdminAction();
   const parsed = streakSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: firstIssue(parsed.error) };
-  const { userId, streakDays, streakFreezes } = parsed.data;
+  const { userId, streakDays, longestStreak, streakFreezes } = parsed.data;
 
   try {
     const result = await streakRepository.correct(
       userId,
-      { streakDays, streakFreezes },
+      { streakDays, longestStreak, streakFreezes },
       { actorId: admin.id, reason: parsed.data.reason },
     );
     return answer(userId, streakCorrectionOutcome(result));

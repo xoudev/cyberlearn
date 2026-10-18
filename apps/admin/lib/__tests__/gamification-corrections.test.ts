@@ -129,21 +129,56 @@ describe("badge outcomes", () => {
   });
 
   it("says whether a revoked badge took its XP back", () => {
-    const taken = badgeRevokeOutcome({ ok: true, badgeName: "Premier pas", xpTakenBack: 50 }, true);
-    expect(taken).toEqual({
+    const revoked = { ok: true, badgeName: "Premier pas", xpCredited: 50 } as const;
+
+    expect(badgeRevokeOutcome({ ...revoked, xpTakenBack: 50 }, true)).toEqual({
       ok: true,
       notice: "Badge « Premier pas » retiré. −50 XP : les XP qu'il avait rapportés sont repris.",
     });
+    expect(badgeRevokeOutcome({ ...revoked, xpTakenBack: 0 }, false)).toEqual({
+      ok: true,
+      notice: "Badge « Premier pas » retiré. Les 50 XP qu'il avait rapportés restent acquis.",
+    });
+  });
 
-    const kept = badgeRevokeOutcome({ ok: true, badgeName: "Premier pas", xpTakenBack: 0 }, false);
-    expect(kept.ok && kept.notice).toContain("restent acquis");
+  it("says when the total ran out before the badge's XP did", () => {
+    const revoked = { ok: true, badgeName: "Premier pas", xpCredited: 50 } as const;
 
-    const unpaid = badgeRevokeOutcome({ ok: true, badgeName: "Ancien", xpTakenBack: 0 }, true);
-    expect(unpaid.ok && unpaid.notice).toContain("aucun XP à reprendre");
+    expect(badgeRevokeOutcome({ ...revoked, xpTakenBack: 20 }, true)).toEqual({
+      ok: true,
+      notice:
+        "Badge « Premier pas » retiré. −20 XP seulement, sur les 50 XP qu'il avait rapportés : le total est à zéro.",
+    });
+    expect(badgeRevokeOutcome({ ...revoked, xpTakenBack: 0 }, true)).toEqual({
+      ok: true,
+      notice:
+        "Badge « Premier pas » retiré. Aucun XP repris sur les 50 XP qu'il avait rapportés : le total était déjà à zéro.",
+    });
+  });
 
+  it("tells a badge that never paid from one whose XP could not be taken", () => {
+    const unpaid = { ok: true, badgeName: "Ancien", xpCredited: 0, xpTakenBack: 0 } as const;
+
+    expect(badgeRevokeOutcome(unpaid, true)).toEqual({
+      ok: true,
+      notice: "Badge « Ancien » retiré. Il n'avait rapporté aucun XP à reprendre.",
+    });
+    expect(badgeRevokeOutcome(unpaid, false)).toEqual({
+      ok: true,
+      notice: "Badge « Ancien » retiré. Il n'avait rapporté aucun XP.",
+    });
+  });
+
+  it("explains a revocation refused", () => {
     expect(badgeRevokeOutcome({ ok: false, reason: "NOT_EARNED" }, true)).toEqual({
       ok: false,
       error: "Ce compte n'a pas, ou plus, ce badge.",
     });
+    const stillEarned = badgeRevokeOutcome({ ok: false, reason: "STILL_EARNED" }, true);
+    expect(stillEarned.ok).toBe(false);
+    if (!stillEarned.ok) {
+      expect(stillEarned.error).toMatch(/^Ce compte remplit encore le critère de ce badge/u);
+      expect(stillEarned.error).toContain("il reviendrait tout seul, XP compris");
+    }
   });
 });

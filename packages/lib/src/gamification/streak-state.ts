@@ -148,6 +148,11 @@ export function applyDayBoundary(
 
 export interface StreakCorrectionTarget {
   currentStreak: number;
+  /**
+   * The record. Left as it is when absent, and raised to the corrected streak
+   * either way: a record is never below the streak it records.
+   */
+  longestStreak?: number;
   /** Left as it is when absent. Clamped to 0..MAX_FREEZES. */
   freezes?: number;
 }
@@ -167,7 +172,10 @@ export interface StreakCorrection {
  * that should never have been counted.
  *
  * The record follows a streak set above it, never one set below: the record
- * is what the learner reached, and a correction downwards does not undo it.
+ * is what the learner reached, and a correction of the streak downwards does
+ * not undo it. A record that should never have been reached either (a streak
+ * a bug inflated) is lowered by naming it, `longestStreak`, and goes no lower
+ * than the corrected streak.
  *
  * The last active day is kept while the streak is still alive (activity today
  * or yesterday): moving it to today would swallow the learner's next
@@ -185,12 +193,13 @@ export function correctStreak(
   const today = dayKey(now, tz);
   const currentStreak = Math.max(0, Math.trunc(target.currentStreak));
   const freezes = Math.min(MAX_FREEZES, Math.max(0, Math.trunc(target.freezes ?? state.freezes)));
+  const record = Math.max(0, Math.trunc(target.longestStreak ?? state.longestStreak));
   const alive = state.lastActiveDay !== null && daysBetween(state.lastActiveDay, today) <= 1;
   const movedToToday = currentStreak > 0 && !alive;
   return {
     state: {
       currentStreak,
-      longestStreak: Math.max(state.longestStreak, currentStreak),
+      longestStreak: Math.max(record, currentStreak),
       lastActiveDay: movedToToday ? today : state.lastActiveDay,
       freezes,
     },

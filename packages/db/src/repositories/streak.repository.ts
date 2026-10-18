@@ -68,9 +68,9 @@ export const streakRepository = {
   },
 
   /**
-   * Sets a streak by hand from the console, with its audit row in the same
-   * transaction. The rules (the record, the last active day) are
-   * correctStreak's, in @cyberlearn/lib.
+   * Sets a streak by hand from the console, and the record when named, with
+   * its audit row in the same transaction. The rules (the record, the last
+   * active day) are correctStreak's, in @cyberlearn/lib.
    *
    * When the last active day has to move to today, lastActiveAt takes the
    * current time. That column is also what the inactivity notice reads: an
@@ -83,7 +83,7 @@ export const streakRepository = {
    */
   async correct(
     userId: string,
-    target: { streakDays: number; streakFreezes?: number },
+    target: { streakDays: number; longestStreak?: number; streakFreezes?: number },
     options: { actorId: string; reason: string; now?: Date },
   ): Promise<StreakCorrectionResult> {
     const now = options.now ?? new Date();
@@ -103,6 +103,7 @@ export const streakRepository = {
         },
         {
           currentStreak: target.streakDays,
+          ...(target.longestStreak !== undefined ? { longestStreak: target.longestStreak } : {}),
           ...(target.streakFreezes !== undefined ? { freezes: target.streakFreezes } : {}),
         },
         now,
