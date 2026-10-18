@@ -11,14 +11,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const { mockRequireRequestUser, mockPrisma, mockRevalidatePath } = vi.hoisted(() => ({
+const { mockRequireRequestUser, mockSave, mockRevalidatePath } = vi.hoisted(() => ({
   mockRequireRequestUser: vi.fn(),
-  mockPrisma: { userPreferences: { upsert: vi.fn() } },
+  mockSave: vi.fn(),
   mockRevalidatePath: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireRequestUser: mockRequireRequestUser }));
-vi.mock("@cyberlearn/db", () => ({ prisma: mockPrisma }));
+vi.mock("@cyberlearn/db", () => ({ preferencesRepository: { save: mockSave } }));
 vi.mock("next/cache", () => ({ revalidatePath: mockRevalidatePath }));
 
 // ── Import after mocks (real Zod schema from @cyberlearn/types runs) ──────────
@@ -39,7 +39,7 @@ function makeFormData(fields: Record<string, string>): FormData {
 
 beforeEach(() => {
   mockRequireRequestUser.mockResolvedValue(MOCK_USER);
-  mockPrisma.userPreferences.upsert.mockResolvedValue({});
+  mockSave.mockResolvedValue(undefined);
   mockRevalidatePath.mockReturnValue(undefined);
 });
 
@@ -61,7 +61,7 @@ describe("updatePrivacyAction - rejects invalid input", () => {
     );
     expect(result.error).toBeDefined();
     expect(result.success).toBeUndefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 
   it("rejects an empty leaderboardVisibility", async () => {
@@ -74,7 +74,7 @@ describe("updatePrivacyAction - rejects invalid input", () => {
       }),
     );
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 
   it("rejects a malformed publicProfile (not 'true'/'false')", async () => {
@@ -87,7 +87,7 @@ describe("updatePrivacyAction - rejects invalid input", () => {
       }),
     );
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 });
 
@@ -100,12 +100,12 @@ describe("updatePrivacyAction - rejects a missing field", () => {
       makeFormData({ leaderboardVisibility: "PUBLIC", publicProfile: "true" }),
     );
     expect(result.error).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 });
 
 describe("updatePrivacyAction - happy path", () => {
-  it("persists the whole state via upsert", async () => {
+  it("persists the whole state", async () => {
     const result = await updatePrivacyAction(
       {},
       makeFormData({
@@ -115,22 +115,13 @@ describe("updatePrivacyAction - happy path", () => {
       }),
     );
     expect(result.success).toBe(true);
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledOnce();
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: MOCK_USER.id },
-      create: {
-        userId: MOCK_USER.id,
-        leaderboardVisibility: "HIDDEN",
-        publicProfile: false,
-        // Masked on the public board and named to five friends is a coherent
-        // pair, not a contradiction: they are two audiences.
-        friendsLeaderboard: true,
-      },
-      update: {
-        leaderboardVisibility: "HIDDEN",
-        publicProfile: false,
-        friendsLeaderboard: true,
-      },
+    expect(mockSave).toHaveBeenCalledOnce();
+    expect(mockSave).toHaveBeenCalledWith(MOCK_USER.id, {
+      leaderboardVisibility: "HIDDEN",
+      publicProfile: false,
+      // Masked on the public board and named to five friends is a coherent
+      // pair, not a contradiction: they are two audiences.
+      friendsLeaderboard: true,
     });
   });
 
@@ -156,19 +147,13 @@ describe("setFriendsLeaderboardAction - the switch on the friends tab", () => {
     expect(result).toEqual({ success: true });
     // No visibility, no public profile: a value read when the page loaded
     // must not overwrite one changed since.
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: MOCK_USER.id },
-      create: { userId: MOCK_USER.id, friendsLeaderboard: true },
-      update: { friendsLeaderboard: true },
-    });
+    expect(mockSave).toHaveBeenCalledWith(MOCK_USER.id, { friendsLeaderboard: true });
     expect(mockRevalidatePath).toHaveBeenCalledWith("/leaderboard");
   });
 
   it("turns it off the same way", async () => {
     await setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "false" }));
-    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { friendsLeaderboard: false } }),
-    );
+    expect(mockSave).toHaveBeenCalledWith(MOCK_USER.id, { friendsLeaderboard: false });
   });
 
   it("refuses a missing or malformed flag and writes nothing", async () => {
@@ -176,7 +161,7 @@ describe("setFriendsLeaderboardAction - the switch on the friends tab", () => {
     expect(
       (await setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "oui" }))).error,
     ).toBeDefined();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 
   it("is auth-first", async () => {
@@ -184,6 +169,6 @@ describe("setFriendsLeaderboardAction - the switch on the friends tab", () => {
     await expect(
       setFriendsLeaderboardAction({}, makeFormData({ friendsLeaderboard: "true" })),
     ).rejects.toThrow();
-    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
   });
 });
