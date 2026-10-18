@@ -119,6 +119,11 @@ describe("challengeMatches", () => {
     xpReward: file.xpReward,
     maxAttempts: file.maxAttempts,
     orderIndex: file.orderIndex,
+    timeLimitMin: 0,
+    flag: null,
+    starterCode: null,
+    attachmentUrl: null,
+    resourceUrl: null,
     machine: { files: { "flag.txt": "{{FLAG}}" } },
     prerequisiteRefCode: null,
     hints: [{ content: "Regarde flag.txt.", xpCost: 10 }],
@@ -161,5 +166,36 @@ describe("challengeMatches", () => {
       { kind: "changed", label: "Indice 1 (coût)", before: "5 XP", after: "10 XP" },
       { kind: "removed", label: "Indice 2", value: "Un indice en trop." },
     ]);
+  });
+
+  it("lists what the console set and the sync empties, the flag without its value", () => {
+    const edited: StoredChallenge = {
+      ...stored,
+      timeLimitMin: 30,
+      flag: "CL{secret-console}",
+      starterCode: "print('hello')",
+      attachmentUrl: "https://example.test/dump.pcap",
+      resourceUrl: "nc ctf.example.test 1337",
+    };
+    expect(challengeMatches(edited, file)).toBe(false);
+    const changes = challengeChanges(edited, file);
+    expect(changes).toEqual([
+      { kind: "changed", label: "Durée limite", before: "30 min", after: "aucune" },
+      {
+        kind: "removed",
+        label: "Flag",
+        value: "Flag fixe saisi dans la console (non affiché) : chaque joueur reçoit le sien.",
+      },
+      { kind: "removed", label: "Code de départ", value: "Texte retiré." },
+      { kind: "removed", label: "Pièce jointe", value: "https://example.test/dump.pcap" },
+      { kind: "removed", label: "Ressource", value: "nc ctf.example.test 1337" },
+    ]);
+    expect(JSON.stringify(changes)).not.toContain("secret-console");
+  });
+
+  it("takes a field the editor saved blank for an empty one", () => {
+    const blank: StoredChallenge = { ...stored, flag: "", attachmentUrl: "", resourceUrl: "" };
+    expect(challengeMatches(blank, file)).toBe(true);
+    expect(challengeChanges(blank, file)).toEqual([]);
   });
 });

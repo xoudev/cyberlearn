@@ -124,6 +124,13 @@ export interface StoredChallenge {
   xpReward: number;
   maxAttempts: number;
   orderIndex: number;
+  /** Set in the console's challenge editor; a sync puts 0 back. */
+  timeLimitMin: number;
+  /** The console's fields a sync empties: a challenge of the repository has none of them. */
+  flag: string | null;
+  starterCode: string | null;
+  attachmentUrl: string | null;
+  resourceUrl: string | null;
   machine: unknown;
   prerequisiteRefCode: string | null;
   hints: { content: string; xpCost: number }[];
@@ -140,6 +147,11 @@ function storedTitle(machine: unknown): unknown {
   return typeof machine === "object" && machine !== null && "title" in machine
     ? machine.title
     : undefined;
+}
+
+/** A console field with something in it: the editor can save a blank one as "". */
+function filled(value: string | null): value is string {
+  return value !== null && value !== "";
 }
 
 /** Whether the database already holds what the file says. */
@@ -162,6 +174,11 @@ export function challengeMatches(stored: StoredChallenge, file: ChallengeFile): 
     stored.xpReward === file.xpReward &&
     stored.maxAttempts === file.maxAttempts &&
     stored.orderIndex === file.orderIndex &&
+    stored.timeLimitMin === 0 &&
+    !filled(stored.flag) &&
+    !filled(stored.starterCode) &&
+    !filled(stored.attachmentUrl) &&
+    !filled(stored.resourceUrl) &&
     stored.prerequisiteRefCode === (file.prerequisite ?? null) &&
     stored.hints.length === file.hints.length &&
     file.hints.every((hint, i) => {
@@ -173,9 +190,10 @@ export function challengeMatches(stored: StoredChallenge, file: ChallengeFile): 
 
 /**
  * What syncChallenge would change, in words: each field the file rewrites,
- * the machine's files, and the hints, matched by their place as the sync
- * matches them. Empty when challengeMatches holds; the console lists it
- * before anyone confirms a sync.
+ * those set in the console that the sync empties (a time limit, a flag, a
+ * starter code, an attachment, a resource), the machine's files, and the
+ * hints, matched by their place as the sync matches them. Empty when
+ * challengeMatches holds; the console lists it before anyone confirms a sync.
  */
 export function challengeChanges(stored: StoredChallenge, file: ChallengeFile): CatalogueChange[] {
   const title = storedTitle(stored.machine);
@@ -200,6 +218,27 @@ export function challengeChanges(stored: StoredChallenge, file: ChallengeFile): 
   }
   if (stored.instructions !== file.instructions) {
     changes.push({ kind: "modified", label: "Énoncé", value: "Texte réécrit." });
+  }
+
+  // Fields of the console's editor a challenge of the repository does not
+  // have: the sync empties them. The flag is named, never shown.
+  const minutes = (n: number): string => (n === 0 ? "aucune" : `${String(n)} min`);
+  changes.push(...changedValue("Durée limite", minutes(stored.timeLimitMin), minutes(0)));
+  if (filled(stored.flag)) {
+    changes.push({
+      kind: "removed",
+      label: "Flag",
+      value: "Flag fixe saisi dans la console (non affiché) : chaque joueur reçoit le sien.",
+    });
+  }
+  if (filled(stored.starterCode)) {
+    changes.push({ kind: "removed", label: "Code de départ", value: "Texte retiré." });
+  }
+  if (filled(stored.attachmentUrl)) {
+    changes.push({ kind: "removed", label: "Pièce jointe", value: stored.attachmentUrl });
+  }
+  if (filled(stored.resourceUrl)) {
+    changes.push({ kind: "removed", label: "Ressource", value: stored.resourceUrl });
   }
 
   const files = storedFiles(stored.machine) ?? {};
