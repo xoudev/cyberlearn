@@ -85,16 +85,19 @@ describe("/api/mobile/tournaments", () => {
     m.tournamentChallengeFor.mockResolvedValue({
       tournament: { id: "t1" },
       challenge: { id: "c1", onMachine: true },
-      solved: false,
+      solved: true,
+      disqualified: { reason: "Flag partagé" },
       machine: { files: [{ path: "/flag", content: "CL{...}" }] },
     });
     const res = await play.GET(new NextRequest(`${BASE}/play?id=t1&slug=journal`));
+    // The disqualification and its reason go to the app, which says them as the site does.
     expect(await res.json()).toEqual({
       ok: true,
       challenge: {
         tournament: { id: "t1" },
         challenge: { id: "c1", onMachine: true },
-        solved: false,
+        solved: true,
+        disqualified: { reason: "Flag partagé" },
       },
     });
     expect(m.tournamentChallengeFor).toHaveBeenCalledWith("u1", "t1", "journal");

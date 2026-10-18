@@ -29,6 +29,10 @@ vi.mock("@cyberlearn/db", () => ({
 vi.mock("@cyberlearn/lib/logger", () => ({
   errorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
 }));
+// The run's record is lib/cron-run's own test; here the job runs as it is.
+vi.mock("@/lib/cron-run", () => ({
+  trackCronRun: (_job: string, run: () => Promise<unknown>) => run(),
+}));
 vi.mock("@/lib/revisions/daily-recall", () => ({ learnersWithRecall: m.learnersWithRecall }));
 vi.mock("@/lib/request-logger", () => ({
   requestLogger: () => Promise.resolve({ error: m.logError }),
@@ -57,7 +61,7 @@ describe("GET /api/cron/review-reminders", () => {
   it("reads the readers to remind off the review cards", async () => {
     m.findReminders.mockResolvedValue([]);
     const res = await GET(request());
-    expect(await res.json()).toEqual({ ok: true, sent: 0 });
+    expect(await res.json()).toEqual({ ok: true, sent: 0, failed: 0, skipped: 0 });
     expect(m.findReminders).toHaveBeenCalledWith(expect.any(Date));
   });
 

@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
+import { WITHOUT_CRON_RUNS } from "./cron-run.repository.js";
 
 /**
  * The audit log as the console reads it: a page under filters, the names of
@@ -22,6 +23,8 @@ export interface AuditFilter {
   from?: Date | undefined;
   /** Up to this instant, excluded. */
   until?: Date | undefined;
+  /** Leaves out the scheduled jobs' runs (cron-run.repository.ts), which nobody did. */
+  hideCronRuns?: boolean | undefined;
 }
 
 export interface AuditQuery extends ConsolePage {
@@ -94,6 +97,8 @@ export function auditWhere(filter: AuditFilter): Prisma.AuditLogWhereInput {
 
   if (filter.action !== undefined && filter.action !== "") terms.push({ action: filter.action });
 
+  if (filter.hideCronRuns === true) terms.push(WITHOUT_CRON_RUNS);
+
   if (filter.from !== undefined || filter.until !== undefined) {
     terms.push({
       createdAt: {
@@ -107,6 +112,21 @@ export function auditWhere(filter: AuditFilter): Prisma.AuditLogWhereInput {
 }
 
 export const auditLogRepository = {
+  /**
+   * Writes one entry, for a gesture whose repository has no transaction of
+   * its own to write it in: the change happened elsewhere (Supabase Auth),
+   * and this is its trace.
+   */
+  async record(entry: {
+    actorId: string;
+    action: string;
+    targetType: string;
+    targetId: string | null;
+    metadata: Prisma.InputJsonObject;
+  }): Promise<void> {
+    await prisma.auditLog.create({ data: entry });
+  },
+
   /** One page of the log under a filter. */
   async list(query: AuditQuery): Promise<ConsoleSlice<AuditRow>> {
     const where = auditWhere(query.filter);

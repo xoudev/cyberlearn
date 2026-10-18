@@ -4,6 +4,7 @@ import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
+import { trackCronRun } from "@/lib/cron-run";
 
 // Vercel Cron (see vercel.json), daily: deletes the records the privacy policy
 // says are kept no longer (packages/db/src/rgpd/retention.ts). Idempotent: a
@@ -17,7 +18,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const summary = await purgeExpiredRecords(new Date());
+    const summary = await trackCronRun("retention", () => purgeExpiredRecords(new Date()));
     const log = await requestLogger();
     log.info({ scope: "retention", ...summary }, "retention purge done");
     return NextResponse.json({ ok: true, ...summary });

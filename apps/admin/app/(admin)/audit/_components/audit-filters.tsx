@@ -8,14 +8,15 @@ import { gridHref } from "@/lib/grid-href";
 import { AUDIT_FILTER_LABELS } from "./columns";
 
 /**
- * The audit log's filters: who, on what, which action, between which days.
+ * The audit log's filters: who, on what, which action, between which days,
+ * and whether the scheduled jobs' runs, hidden by default, are shown too.
  *
  * A GET form, so the filter is the URL: it can be linked to (an account's
  * page opens its own trail this way) and the export reads the same one. With
  * scripts, the submit goes through the router and leaves out the empty fields.
  */
 
-const FIELDS = ["actor", "target", "action", "from", "to"] as const;
+const FIELDS = ["actor", "target", "action", "from", "to", "crons"] as const;
 
 export function AuditFilters({
   params,
@@ -105,6 +106,13 @@ export function AuditFilters({
           className="a-input a-input--sm"
           defaultValue={params.to ?? ""}
         />
+      </label>
+      <label className="a-filter">
+        {AUDIT_FILTER_LABELS.crons}
+        <span className="a-filter-check">
+          <input type="checkbox" name="crons" value="1" defaultChecked={params.crons === "1"} />
+          Afficher leurs passages
+        </span>
       </label>
       {params.sort !== undefined && <input type="hidden" name="sort" value={params.sort} />}
       <div className="a-filter-actions">

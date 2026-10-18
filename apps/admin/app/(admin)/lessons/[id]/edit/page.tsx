@@ -1,9 +1,10 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { prisma, ratingRepository } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../../_components/admin-ui";
 import { CONTENT_STATUS } from "../../../_components/content-status";
+import { RatingsCard } from "../../../_components/ratings-card";
 import { LESSON_CRUMBS } from "../../_components/lesson-headers";
 import { EditLessonClient } from "./_components/edit-lesson-client";
 import { LessonPlacement, type LessonMembership } from "./_components/lesson-placement";
@@ -16,6 +17,9 @@ import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Éditer la leçon" };
 
+/** The ratings the lesson's page lists under its form; the rest are on its ratings page. */
+const LATEST_RATINGS = 10;
+
 export default async function EditLessonPage({
   params,
 }: {
@@ -24,36 +28,44 @@ export default async function EditLessonPage({
   await requireAdminPage();
   const id = routeIdOrNotFound((await params).id);
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      refCode: true,
-      slug: true,
-      title: true,
-      description: true,
-      category: true,
-      difficulty: true,
-      estimatedMinutes: true,
-      xpReward: true,
-      coverImageUrl: true,
-      contentMdx: true,
-      status: true,
-      audience: true,
-      pathLessons: {
-        select: {
-          position: true,
-          module: { select: { title: true } },
-          path: { select: { id: true, refCode: true, title: true, status: true, audience: true } },
+  const [lesson, ratings] = await Promise.all([
+    prisma.lesson.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+        coverImageUrl: true,
+        contentMdx: true,
+        status: true,
+        avgRating: true,
+        ratingsCount: true,
+        audience: true,
+        pathLessons: {
+          select: {
+            position: true,
+            module: { select: { title: true } },
+            path: {
+              select: { id: true, refCode: true, title: true, status: true, audience: true },
+            },
+          },
         },
+        prerequisites: { select: { prerequisiteId: true } },
       },
-      prerequisites: { select: { prerequisiteId: true } },
-    },
-  });
+    }),
+    // The latest only: the card links to the page that holds every one.
+    ratingRepository.findLessonRatings(id, LATEST_RATINGS),
+  ]);
 
   if (!lesson) notFound();
 
-  const { pathLessons, prerequisites, audience, ...form } = lesson;
+  const { pathLessons, prerequisites, audience, avgRating, ratingsCount, ...form } = lesson;
   const pathIds = pathLessons.map((link) => link.path.id);
   const prerequisiteIds = prerequisites.map((p) => p.prerequisiteId);
 
@@ -163,6 +175,13 @@ export default async function EditLessonPage({
                 position: suggestion.from.position,
               }
         }
+      />
+      <RatingsCard
+        ratings={ratings}
+        subject="cette leçon"
+        avg={avgRating}
+        count={ratingsCount}
+        allHref={`/lessons/${lesson.id}/ratings`}
       />
     </main>
   );

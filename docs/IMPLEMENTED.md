@@ -54,6 +54,7 @@
 | `/review` | Pas de page : redirection vers `/revisions` (`next.config.ts`) |
 | `?rappel=1` · `?rappel=module-<n>-<parcours>` | Pas de page : le rappel du jour, ou la révision d'un module, dans une fenêtre sur la page en cours |
 | `/notes` | Bloc-notes, dossiers et partages reçus |
+| `/notifications` | Historique complet des notifications, du plus récent au plus ancien, 30 par page avec « Charger plus » ; toutes ou les non lues (`?unread=1`), « Tout marquer comme lu » |
 | `/badges` · `/certificates` | Pas de page : redirection vers les onglets Badges et Certificats du profil (`/profile?tab=badges`, `/profile?tab=certificats`) |
 | `/leaderboard` | Classement global, et entre amis sur option ; depuis toujours, ce mois ou cette semaine (`?period=`), l'onglet dans l'adresse (`?board=`) |
 | `/locker` | Casier des cosmétiques débloqués |
@@ -190,7 +191,14 @@
   TOURNAMENT_ANNOUNCED, CERTIFICATE_REVOKED
 - Badge de comptage non-lu dans la navbar
 - Marquer une ou toutes les notifications comme lues
-- Une demande d'ami encore en attente se reçoit avec « Accepter » et « Refuser » sous son avis (`metadata.fromUserId`), « Refuser » ne retirant qu'une demande encore en attente
+- Le panneau de la barre du haut montre les 20 dernières ; « Tout voir » mène à
+  l'historique `/notifications`, paginé par curseur (date puis identifiant) pour
+  qu'une notification arrivée entre deux pages ne décale rien. L'app pagine sa
+  boîte de 50 en 50 avec « Charger plus »
+- Ce que l'historique marque lu, la pastille et le panneau le suivent, et
+  l'inverse : un événement sur la fenêtre (`lib/notifications/read-sync.ts`),
+  la barre du haut ne se rechargeant pas d'une page à l'autre
+- Une demande d'ami encore en attente se reçoit avec « Accepter » et « Refuser » sous son avis (`metadata.fromUserId`), dans le panneau comme sur l'historique `/notifications`, « Refuser » ne retirant qu'une demande encore en attente
 
 #### Contact & Support
 - Formulaire à 8 thèmes (BUG, QUESTION, FEATURE_REQUEST, SECURITY,
@@ -266,16 +274,17 @@
 | `/` | Redirige vers `/dashboard` |
 | `/login` | Connexion admin |
 | `/dashboard` | Stats globales, recherche, et issues Sentry non résolues |
-| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), sélection et changement de statut groupé |
+| `/lessons` · `/lessons/archives` | Leçons en cours et archivées : recherche, filtres, tri et page dans l'adresse (`?q=&category=&difficulty=&status=&origin=&sort=&page=`), colonne Note (moyenne · nombre d'avis, triable, les leçons sans avis en dernier), sélection et changement de statut groupé |
 | `/lessons/new` | Créer une leçon (éditeur MDX + preview) |
-| `/lessons/[id]/edit` | Éditer une leçon |
+| `/lessons/[id]/edit` | Éditer une leçon ; les 10 derniers avis des apprenants (note et commentaire), comme sur un parcours, et un lien vers tous |
+| `/lessons/[id]/ratings` | Tous les avis d'une leçon, 25 par page (`?q=&score=&page=`) : note, commentaire, apprenant, date ; la note moyenne et le nombre d'avis en tête |
 | `/lessons/import` | Import MDX en masse (frontmatter YAML + corps, 30 fichiers max, 500 Ko par fichier) |
 | `/challenges` | Liste des challenges |
 | `/challenges/new` | Créer un challenge |
 | `/challenges/[id]/edit` | Éditer un challenge + gestion des hints |
 | `/paths` | Liste des parcours |
 | `/paths/new` | Créer un parcours |
-| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) |
+| `/paths/[id]/edit` | Éditer un parcours (sélection et réordonnancement des leçons) ; avis des apprenants |
 | `/paths/[id]/quiz` | Composer l'examen final d'un parcours |
 | `/badges` | Liste des badges |
 | `/badges/new` | Créer un badge (10 types de critères) |
@@ -288,13 +297,17 @@
 | `/classes` · `/classes/new` · `/classes/[id]` | Classes, création, composition |
 | `/classes/structure` | Établissements et promotions |
 | `/tournaments` · `/tournaments/new` · `/tournaments/[id]` | Tournois CTF : période, classes, défis et leurs points ; classement, arrêt, suppression avant le début |
+| `/tournaments/[id]/flags` | Flags trouvés d'un tournoi, 25 par page (`?q=&status=&page=`) : joueur, défi, classe, heure. Disqualifier avec un motif (5 à 300 caractères), rétablir ; chaque geste est inscrit au journal |
 | `/moderation` | File de relecture des contenus signalés |
 | `/moderation/content` | Contenus publiés par type (messages du forum, questions, réponses, solutions, ressources de classe), 25 par page, lus par la base sous les filtres de l'adresse (`?surface=&state=&q=&page=`) ; masquer, réafficher, supprimer, l'auteur lié à sa fiche |
 | `/moderation/reports` | Signalements ouverts groupés par contenu, les plus signalés d'abord, 20 contenus par page groupés et paginés par la base (`?page=`) ; masquer, supprimer, classer sans suite, ou le renvoi à la file du filtre pour un contenu qu'elle tient encore |
 | `/tickets` · `/tickets/[id]` | Demandes et fil de conversation ; le compte du demandeur, l'administrateur assigné, les notes internes et, pour un appel, le bannissement contesté avec « Lever » |
 | `/announcements` | Envoyer une annonce (notification `ANNOUNCEMENT`) à tous les comptes, à des rôles ou à des classes, et l'historique des envois, lu dans l'audit log |
-| `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période |
+| `/audit` | Journal d'audit (qui a fait quoi, quand), 50 par page, filtré par acteur, cible, action et période ; les passages des tâches planifiées masqués sauf demande (`?crons=1`, ou un filtre qui les nomme) |
 | `/audit/export` | Le journal sous le filtre de la page, en CSV (50 000 lignes au plus) |
+| `/system/crons` | Tâches planifiées : planning, dernier passage (durée, bilan), dernière erreur, prochain passage attendu, retard signalé |
+| `/reference/cosmetics` · `/reference/quests` · `/reference/seasons` · `/reference/forum-categories` · `/reference/placement` | Référentiels en consultation seule, 25 par page avec recherche et filtres : cosmétiques, quêtes, saisons de ligue, sections du forum, questions du test de positionnement. Un bandeau cite le fichier qui écrit les lignes (seed, migration ou tâche planifiée) |
+| `/account` | Mon compte : identité, double authentification, méthodes et dernière connexion, mes actions (le journal filtré sur soi), fermer ses autres sessions ou toutes ; le mot de passe se change sur le site |
 | `/settings` | Configuration de l'application |
 
 ---
@@ -487,6 +500,34 @@
 - Export CSV du filtre courant (séparateur point-virgule, UTF-8 avec BOM,
   cellules prises pour des formules neutralisées), 50 000 lignes au plus :
   au-delà, la page demande un filtre plus étroit ; l'export est lui-même tracé
+
+#### Tâches planifiées
+- Les six routes `apps/web/app/api/cron/*` consignent chaque passage dans le
+  journal d'audit (`actorId` nul, action `cron.<nom>`, cible `Cron`) : réussite,
+  durée, bilan, cause d'un échec. L'écriture n'échoue jamais la tâche
+- La liste `CRON_JOBS` (`packages/lib/src/cron/jobs.ts`) donne chemin, planning
+  et libellé ; un test la compare à `apps/web/vercel.json`. `keep-alive` est
+  appelée par cron-job.org, hors de `vercel.json`
+- Une tâche qui isole ses échecs un par un (écritures de séries, rappels,
+  effacements et avis de comptes inactifs) est consignée en échec dès qu'une
+  ligne n'a pas pu passer, avec leur nombre ; keep-alive nomme le service qui
+  ne répond pas
+- `/system/crons` dit pour chacune : en ordre, en échec, en retard (passage dû
+  depuis plus d'une heure et absent), jamais vue ; le bilan du dernier passage
+  en français. keep-alive est jugée sur l'intervalle depuis son dernier
+  passage (6 h et l'heure de grâce), pas sur les heures UTC de son planning :
+  cron-job.org garde un fuseau par tâche
+- Ces passages restent hors du fil « Activité récente » du tableau de bord, et
+  hors de `/audit` tant qu'on ne les demande pas : ils chasseraient les gestes
+  des administrateurs
+
+#### Tournois
+- Un flag disqualifié garde sa ligne (`disqualifiedAt`, `disqualifiedById`,
+  `disqualifiedReason`) : il ne compte plus dans aucun classement, sur le site
+  comme dans l'app, et ne peut pas être soumis de nouveau. Rétablissable.
+  La page du défi le dit au joueur, motif compris, sur le site comme dans
+  l'app ; un nouvel envoi est refusé avec le motif. L'export RGPD du joueur
+  reprend la date et le motif, pas l'auteur
 
 ---
 

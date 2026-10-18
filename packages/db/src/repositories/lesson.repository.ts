@@ -123,7 +123,7 @@ export type ConsoleLessonFolder = "active" | "archives";
 /** Which catalogue a lesson comes from: a teacher's class, the first one (CL-LSN-NNN), the new one. */
 export type ConsoleLessonOrigin = "new" | "first" | "class";
 
-export type ConsoleLessonSort = "title" | "category" | "difficulty" | "xp" | "status";
+export type ConsoleLessonSort = "title" | "category" | "difficulty" | "xp" | "rating" | "status";
 
 export interface ConsoleLessonQuery extends ConsolePage {
   folder: ConsoleLessonFolder;
@@ -149,6 +149,8 @@ const CONSOLE_LESSON_ROW = {
   audience: true,
   xpReward: true,
   estimatedMinutes: true,
+  avgRating: true,
+  ratingsCount: true,
   _count: {
     select: {
       progress: { where: { status: "COMPLETED" } },
@@ -240,6 +242,16 @@ function consoleLessonOrder(
       return [{ difficulty: sort.dir }, { title: "asc" }, tieBreak];
     case "xp":
       return [{ xpReward: sort.dir }, { title: "asc" }, tieBreak];
+    case "rating":
+      // A lesson nobody rated has no average: it goes last whichever way the
+      // column sorts, rather than reading as the worst or the best. Between
+      // two equal averages, the one more people gave comes first.
+      return [
+        { avgRating: { sort: sort.dir, nulls: "last" } },
+        { ratingsCount: "desc" },
+        { title: "asc" },
+        tieBreak,
+      ];
     case "status":
       return [{ status: sort.dir }, { createdAt: "desc" }, tieBreak];
   }
@@ -538,6 +550,17 @@ export const lessonRepository = {
     ]);
 
     return { paths, completedLessonIds: completed.map((c) => c.lessonId), waivedLessonIds };
+  },
+
+  /**
+   * A lesson as the console's page of its ratings heads it: its title, and
+   * the average and count kept on the row over every rating.
+   */
+  async findRatingTotals(lessonId: string) {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, title: true, avgRating: true, ratingsCount: true },
+    });
   },
 
   /**

@@ -7,8 +7,14 @@ const m = vi.hoisted(() => ({
   listVisibleTo: vi.fn<(userId: string, isAdmin: boolean) => Promise<unknown[]>>(),
   findChallenge: vi.fn<(tournamentId: string, slug: string) => Promise<unknown>>(),
   findChallengeForFlag: vi.fn<(tournamentId: string, challengeId: string) => Promise<unknown>>(),
-  hasSolved:
-    vi.fn<(tournamentId: string, challengeId: string, userId: string) => Promise<boolean>>(),
+  findOwnSolve:
+    vi.fn<
+      (
+        tournamentId: string,
+        challengeId: string,
+        userId: string,
+      ) => Promise<{ disqualifiedAt: Date | null; disqualifiedReason: string | null } | null>
+    >(),
   recordSolve: vi.fn<(input: Record<string, unknown>) => Promise<boolean>>(),
   findRoleById: vi.fn<(userId: string) => Promise<{ role: string } | null>>(),
   findForMember: vi.fn<(userId: string) => Promise<unknown[]>>(),
@@ -33,7 +39,7 @@ vi.mock("@cyberlearn/db", () => ({
     listVisibleTo: m.listVisibleTo,
     findChallenge: m.findChallenge,
     findChallengeForFlag: m.findChallengeForFlag,
-    hasSolved: m.hasSolved,
+    findOwnSolve: m.findOwnSolve,
     recordSolve: m.recordSolve,
   },
   userRepository: { findRoleById: m.findRoleById },
@@ -171,7 +177,7 @@ beforeEach(() => {
   m.friendIds.mockResolvedValue(new Set());
   m.checkFlagSubmission.mockResolvedValue({ success: true });
   m.expectedFlag.mockReturnValue({ ok: true, flag: "CL{bon-flag}" });
-  m.hasSolved.mockResolvedValue(false);
+  m.findOwnSolve.mockResolvedValue(null);
   m.recordSolve.mockResolvedValue(true);
   m.findChallengeForFlag.mockResolvedValue({
     points: 300,
@@ -324,16 +330,29 @@ describe("submitTournamentFlag", () => {
   });
 
   it("says a flag found twice was found already", async () => {
-    m.hasSolved.mockResolvedValue(true);
+    m.findOwnSolve.mockResolvedValue({ disqualifiedAt: null, disqualifiedReason: null });
     expect(await submitTournamentFlag(ME, input, DURING)).toEqual({
       ok: true,
       correct: true,
       points: 0,
       already: true,
     });
-    m.hasSolved.mockResolvedValue(false);
+    m.findOwnSolve.mockResolvedValue(null);
     m.recordSolve.mockResolvedValue(false);
     expect(await submitTournamentFlag(ME, input, DURING)).toMatchObject({ already: true });
+  });
+
+  it("says a flag the console took back was disqualified, and why, without scoring it", async () => {
+    m.findOwnSolve.mockResolvedValue({
+      disqualifiedAt: DURING,
+      disqualifiedReason: "Flag partagé entre équipes",
+    });
+    expect(await submitTournamentFlag(ME, input, DURING)).toEqual({
+      ok: false,
+      error:
+        "Ton flag pour ce défi a été disqualifié (Flag partagé entre équipes) : il ne compte plus.",
+    });
+    expect(m.recordSolve).not.toHaveBeenCalled();
   });
 
   it("takes no flag before the start, after the end, or from outside the classes", async () => {
@@ -396,12 +415,32 @@ describe("tournamentChallengeFor", () => {
 
   it("opens a challenge to its players while it runs", async () => {
     m.findChallenge.mockResolvedValue(entry);
-    m.hasSolved.mockResolvedValue(true);
+    m.findOwnSolve.mockResolvedValue({ disqualifiedAt: null, disqualifiedReason: null });
     const page = await tournamentChallengeFor(ME, T, "journal", DURING);
     expect(page?.tournament).toMatchObject({ canPlay: true, myTeam: "SIO1-A", phase: "RUNNING" });
     expect(page?.challenge).toMatchObject({ points: 100, onMachine: true, title: "Le journal" });
     expect(page?.solved).toBe(true);
+    expect(page?.disqualified).toBeNull();
     expect(page?.machine).toEqual({ files: [] });
+  });
+
+  it("says a flag the console took back is disqualified, with its reason", async () => {
+    m.findChallenge.mockResolvedValue(entry);
+    m.findOwnSolve.mockResolvedValue({
+      disqualifiedAt: DURING,
+      disqualifiedReason: "Flag partagé entre équipes",
+    });
+    const page = await tournamentChallengeFor(ME, T, "journal", DURING);
+    // Still given, so the form stays closed; no longer counted, and the page says why.
+    expect(page?.solved).toBe(true);
+    expect(page?.disqualified).toEqual({ reason: "Flag partagé entre équipes" });
+  });
+
+  it("is neither found nor disqualified before the player gave the flag", async () => {
+    m.findChallenge.mockResolvedValue(entry);
+    const page = await tournamentChallengeFor(ME, T, "journal", DURING);
+    expect(page?.solved).toBe(false);
+    expect(page?.disqualified).toBeNull();
   });
 
   it("is not found for a slug outside the tournament", async () => {

@@ -1,6 +1,7 @@
 import { Prisma, type TournamentTeamScope } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { LIVE_CLASS_FILTER } from "./class.repository.js";
+import { readSlice, type ConsolePage, type ConsoleSlice } from "./console-page.js";
 
 /**
  * CTF tournaments between classes: the tournament rows, the classes and the
@@ -40,6 +41,76 @@ const PLAYED_CHALLENGE = {
 /** Where a learner, or a teacher, stands in a tournament's classes. */
 function inTournament(tournamentId: string) {
   return { tournaments: { some: { tournamentId } } };
+}
+
+/**
+ * A flag that still counts. A disqualified one keeps its row, so that the
+ * player cannot score it again, but no scoreboard and no count reads it.
+ */
+const COUNTED_SOLVE = { disqualifiedAt: null } as const satisfies Prisma.TournamentSolveWhereInput;
+
+/** The audit actions of the console's two gestures on a flag. */
+export const TOURNAMENT_SOLVE_AUDIT_ACTION = {
+  disqualify: "tournament.solve.disqualify",
+  requalify: "tournament.solve.requalify",
+} as const;
+
+/** A flag's state in the console's list. */
+export type ConsoleSolveStatus = "valid" | "disqualified";
+
+export interface ConsoleSolveQuery extends ConsolePage {
+  tournamentId: string;
+  /** Part of a player's name, @pseudo or address, or of a challenge's title; empty for none. */
+  q: string;
+  status: ConsoleSolveStatus | undefined;
+}
+
+const CONSOLE_SOLVE_ROW = {
+  id: true,
+  points: true,
+  solvedAt: true,
+  disqualifiedAt: true,
+  disqualifiedReason: true,
+  userId: true,
+  user: { select: { username: true, displayName: true } },
+  challenge: { select: { title: true } },
+  class: { select: { name: true } },
+  disqualifiedBy: { select: { username: true, displayName: true } },
+} as const satisfies Prisma.TournamentSolveSelect;
+
+export type ConsoleSolveRow = Prisma.TournamentSolveGetPayload<{
+  select: typeof CONSOLE_SOLVE_ROW;
+}>;
+
+/** A player's own flag, as their challenge page and a new submission read it. */
+export interface OwnSolve {
+  /** Set once the console took it back: it stays recorded, and counts for nobody. */
+  disqualifiedAt: Date | null;
+  disqualifiedReason: string | null;
+}
+
+/** Why the console's gesture on a flag wrote nothing. */
+export type SolveDecisionResult =
+  | { ok: true }
+  | { ok: false; reason: "NOT_FOUND" | "ALREADY_DISQUALIFIED" | "NOT_DISQUALIFIED" };
+
+/** The flags a console search matches: each filter its own term of an AND. */
+export function consoleSolveWhere(query: ConsoleSolveQuery): Prisma.TournamentSolveWhereInput {
+  const terms: Prisma.TournamentSolveWhereInput[] = [{ tournamentId: query.tournamentId }];
+  if (query.status === "valid") terms.push(COUNTED_SOLVE);
+  if (query.status === "disqualified") terms.push({ disqualifiedAt: { not: null } });
+  const q = query.q.trim().replace(/^@/u, "");
+  if (q !== "") {
+    terms.push({
+      OR: [
+        { user: { is: { username: { contains: q, mode: "insensitive" } } } },
+        { user: { is: { displayName: { contains: q, mode: "insensitive" } } } },
+        { user: { is: { email: { contains: q, mode: "insensitive" } } } },
+        { challenge: { title: { contains: q, mode: "insensitive" } } },
+      ],
+    });
+  }
+  return { AND: terms };
 }
 
 export const tournamentRepository = {
@@ -126,10 +197,14 @@ export const tournamentRepository = {
     return { isMember: memberships > 0, liveMemberships, teaches: teaches > 0 };
   },
 
-  /** Every flag found in the tournament, the first first, with who found it. */
+  /**
+   * Every flag found in the tournament that still counts, the first first,
+   * with who found it. The site and the app build their scoreboards on it, so
+   * a flag the console disqualified leaves both at once.
+   */
   async listSolves(tournamentId: string) {
     return prisma.tournamentSolve.findMany({
-      where: { tournamentId },
+      where: { tournamentId, ...COUNTED_SOLVE },
       orderBy: [{ solvedAt: "asc" }, { id: "asc" }],
       select: {
         challengeId: true,
@@ -167,12 +242,21 @@ export const tournamentRepository = {
     });
   },
 
-  /** Whether this player already found this flag here. */
-  async hasSolved(tournamentId: string, challengeId: string, userId: string): Promise<boolean> {
-    const count = await prisma.tournamentSolve.count({
+  /**
+   * This player's flag for this challenge here, or null before they found it.
+   * A disqualified one is returned too, with its reason: the console took it
+   * back, submitting it again must not score it again, and the player's page
+   * says why it no longer counts.
+   */
+  async findOwnSolve(
+    tournamentId: string,
+    challengeId: string,
+    userId: string,
+  ): Promise<OwnSolve | null> {
+    return prisma.tournamentSolve.findFirst({
       where: { tournamentId, challengeId, userId },
+      select: { disqualifiedAt: true, disqualifiedReason: true },
     });
-    return count > 0;
   },
 
   /** Records a flag found; false when this player had already found it. */
@@ -205,7 +289,7 @@ export const tournamentRepository = {
         startsAt: true,
         endsAt: true,
         teamScope: true,
-        _count: { select: { classes: true, challenges: true, solves: true } },
+        _count: { select: { classes: true, challenges: true, solves: { where: COUNTED_SOLVE } } },
       },
     });
   },
@@ -226,8 +310,127 @@ export const tournamentRepository = {
           orderBy: [{ orderIndex: "asc" }, { challengeId: "asc" }],
           select: { challengeId: true, points: true },
         },
-        _count: { select: { solves: true } },
+        _count: { select: { solves: { where: COUNTED_SOLVE } } },
       },
+    });
+  },
+
+  /**
+   * One page of a tournament's flags for the console, the latest first, the
+   * disqualified ones included: the list is where they are taken back and
+   * put back.
+   */
+  async listSolvesForConsole(query: ConsoleSolveQuery): Promise<ConsoleSlice<ConsoleSolveRow>> {
+    const where = consoleSolveWhere(query);
+    return readSlice(
+      query,
+      () => prisma.tournamentSolve.count({ where }),
+      ({ skip, take }) =>
+        prisma.tournamentSolve.findMany({
+          where,
+          // The id settles flags found in the same millisecond, so a row never
+          // shows on two pages.
+          orderBy: [{ solvedAt: "desc" }, { id: "desc" }],
+          skip,
+          take,
+          select: CONSOLE_SOLVE_ROW,
+        }),
+    );
+  },
+
+  /** How many flags of the tournament the console disqualified. */
+  async countDisqualified(tournamentId: string): Promise<number> {
+    return prisma.tournamentSolve.count({
+      where: { tournamentId, disqualifiedAt: { not: null } },
+    });
+  },
+
+  /**
+   * Takes a flag back: it stays recorded, scores for nobody, and the gesture
+   * is written to the audit log in the same transaction. Written only on a
+   * flag that still counts, in the statement itself, so a second click, or a
+   * second administrator on the same row, changes nothing and says so.
+   */
+  async disqualifySolve(input: {
+    tournamentId: string;
+    solveId: string;
+    actorId: string;
+    reason: string;
+    now: Date;
+  }): Promise<SolveDecisionResult> {
+    return prisma.$transaction(async (tx): Promise<SolveDecisionResult> => {
+      const written = await tx.tournamentSolve.updateMany({
+        where: { id: input.solveId, tournamentId: input.tournamentId, ...COUNTED_SOLVE },
+        data: {
+          disqualifiedAt: input.now,
+          disqualifiedById: input.actorId,
+          disqualifiedReason: input.reason,
+        },
+      });
+      const solve = await tx.tournamentSolve.findFirst({
+        where: { id: input.solveId, tournamentId: input.tournamentId },
+        select: { challengeId: true, userId: true, classId: true, points: true },
+      });
+      if (solve === null) return { ok: false, reason: "NOT_FOUND" };
+      if (written.count === 0) return { ok: false, reason: "ALREADY_DISQUALIFIED" };
+      await tx.auditLog.create({
+        data: {
+          actorId: input.actorId,
+          action: TOURNAMENT_SOLVE_AUDIT_ACTION.disqualify,
+          targetType: "TournamentSolve",
+          targetId: input.solveId,
+          metadata: { tournamentId: input.tournamentId, ...solve, reason: input.reason },
+        },
+      });
+      return { ok: true };
+    });
+  },
+
+  /**
+   * Puts a disqualified flag back, for a disqualification made in error: it
+   * counts again, at the time it was found. Traced, with the reason it clears.
+   */
+  async requalifySolve(input: {
+    tournamentId: string;
+    solveId: string;
+    actorId: string;
+  }): Promise<SolveDecisionResult> {
+    return prisma.$transaction(async (tx): Promise<SolveDecisionResult> => {
+      const before = await tx.tournamentSolve.findFirst({
+        where: { id: input.solveId, tournamentId: input.tournamentId },
+        select: {
+          challengeId: true,
+          userId: true,
+          classId: true,
+          points: true,
+          disqualifiedReason: true,
+        },
+      });
+      if (before === null) return { ok: false, reason: "NOT_FOUND" };
+      const written = await tx.tournamentSolve.updateMany({
+        where: {
+          id: input.solveId,
+          tournamentId: input.tournamentId,
+          disqualifiedAt: { not: null },
+        },
+        data: { disqualifiedAt: null, disqualifiedById: null, disqualifiedReason: null },
+      });
+      if (written.count === 0) return { ok: false, reason: "NOT_DISQUALIFIED" };
+      const { disqualifiedReason, ...solve } = before;
+      await tx.auditLog.create({
+        data: {
+          actorId: input.actorId,
+          action: TOURNAMENT_SOLVE_AUDIT_ACTION.requalify,
+          targetType: "TournamentSolve",
+          targetId: input.solveId,
+          metadata: {
+            tournamentId: input.tournamentId,
+            ...solve,
+            clearedReason: disqualifiedReason,
+          },
+        },
+      });
+      return { ok: true };
     });
   },
 

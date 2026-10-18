@@ -82,6 +82,8 @@ export const APP_ROUTES: readonly AppRoute[] = [
   signedIn("/support", "support"),
   // Reached from the top bar while the year's review is open.
   signedIn("/wrapped"),
+  // The bell's history, opened from its panel in the top bar.
+  signedIn("/notifications"),
   // Under (auth), with its own layout: the steps before the app opens.
   signedIn("/onboarding"),
 

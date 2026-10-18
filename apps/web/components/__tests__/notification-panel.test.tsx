@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NotificationItem } from "@cyberlearn/db";
 
@@ -51,6 +51,7 @@ vi.mock("next/link", () => ({
 }));
 
 const { NotificationPanel } = await import("../notification-panel");
+const { announceRead, onReadElsewhere } = await import("@/lib/notifications/read-sync");
 
 /**
  * The bell's rows: a notice that leads somewhere is a link the keyboard
@@ -217,6 +218,47 @@ describe("NotificationPanel rows", () => {
     expect(screen.queryByRole("button", { name: /Déjà lue/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /Déjà lue/ })).toBeNull();
     expect(screen.getByText("Déjà lue")).toBeTruthy();
+  });
+});
+
+describe("NotificationPanel and the history page", () => {
+  it("takes off the badge what the history page marked read", () => {
+    render(<NotificationPanel initialUnreadCount={3} userId="me" />);
+    act(() => {
+      announceRead({ source: "history", ids: ["11111111-1111-4111-8111-111111111111"] });
+    });
+    expect(screen.getByRole("button", { name: "2 notifications non lues" })).toBeTruthy();
+    act(() => {
+      announceRead({ source: "history", all: true });
+    });
+    expect(screen.getByRole("button", { name: "Notifications" })).toBeTruthy();
+  });
+
+  it("reads in its open list the rows the history page marked read", async () => {
+    await openPanel();
+    act(() => {
+      announceRead({ source: "history", ids: ["22222222-2222-4222-8222-222222222222"] });
+    });
+    // Read, with nowhere to go: no longer a button that marks it read.
+    expect(screen.queryByRole("button", { name: /Maintenance ce soir/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "1 notifications non lues" })).toBeTruthy();
+  });
+
+  it("tells the history page what it marked read", async () => {
+    const history = vi.fn();
+    const stop = onReadElsewhere("history", history);
+    try {
+      await openPanel();
+      fireEvent.click(screen.getByRole("button", { name: /Maintenance ce soir/ }));
+      await vi.waitFor(() => {
+        expect(history).toHaveBeenCalledWith({
+          source: "panel",
+          ids: ["22222222-2222-4222-8222-222222222222"],
+        });
+      });
+    } finally {
+      stop();
+    }
   });
 });
 
