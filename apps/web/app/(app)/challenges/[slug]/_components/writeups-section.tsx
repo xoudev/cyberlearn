@@ -56,7 +56,11 @@ export function WriteupsSection({
             initial={
               board.own === null
                 ? null
-                : { content: board.own.content, isHidden: board.own.isHidden }
+                : {
+                    content: board.own.content,
+                    isHidden: board.own.isHidden,
+                    hiddenByModeration: board.own.hiddenByModeration,
+                  }
             }
           />
           {board.others.length === 0 ? (

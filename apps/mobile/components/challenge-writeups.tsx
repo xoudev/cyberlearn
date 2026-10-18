@@ -92,6 +92,8 @@ function OwnEditor({
   own: OwnWriteup | null;
 }): React.JSX.Element {
   const queryClient = useQueryClient();
+  // Hidden by a moderator: not to be published again, only removed.
+  const moderated = own?.hiddenByModeration === true;
   const [content, setContent] = useState(own?.content ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "held" | "error"; text: string } | null>(
@@ -160,9 +162,18 @@ function OwnEditor({
   return (
     <Card style={{ gap: 8 }}>
       <Text variant="micro" style={{ color: colors.textMuted }}>
-        {own !== null ? "TA SOLUTION (PUBLIÉE)" : "TA SOLUTION"}
+        {moderated
+          ? "TA SOLUTION (MASQUÉE)"
+          : own !== null
+            ? "TA SOLUTION (PUBLIÉE)"
+            : "TA SOLUTION"}
       </Text>
-      {own?.isHidden === true && message === null ? (
+      {moderated && message === null ? (
+        <Text variant="bodySm" style={{ color: colors.danger }}>
+          Ta solution a été masquée par la modération : personne d&apos;autre ne la voit, et tu ne
+          peux pas la republier. Tu peux la retirer.
+        </Text>
+      ) : own?.isHidden === true && message === null ? (
         <Text variant="bodySm" style={{ color: colors.warning }}>
           Ta solution attend une relecture : personne d&apos;autre ne la voit encore.
         </Text>
@@ -178,7 +189,7 @@ function OwnEditor({
         placeholder="Explique ta démarche : par où tu as commencé, ce qui a coincé, la commande ou le code qui a marché."
         placeholderTextColor={colors.textDisabled}
         accessibilityLabel="Ta solution"
-        editable={!busy}
+        editable={!busy && !moderated}
         style={{
           minHeight: 140,
           padding: 12,
@@ -199,7 +210,7 @@ function OwnEditor({
       <GradientButton
         label={own !== null ? "Mettre à jour" : "Publier ma solution"}
         loading={busy}
-        disabled={content.trim() === ""}
+        disabled={moderated || content.trim() === ""}
         onPress={() => void publish()}
       />
       {own !== null ? (

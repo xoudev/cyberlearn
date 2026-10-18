@@ -190,6 +190,12 @@ export interface WriteupView {
 export interface OwnWriteup {
   content: string;
   isHidden: boolean;
+  /**
+   * Hidden by a moderator rather than waiting for one: publishing again does
+   * not bring it back, only removing it is left. Absent from a server older
+   * than the field, which reads as false.
+   */
+  hiddenByModeration?: boolean;
   updatedAt: string;
 }
 
