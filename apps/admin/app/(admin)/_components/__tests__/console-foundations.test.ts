@@ -315,8 +315,13 @@ const WHITE_GROUNDS = [".a-qr-canvas", ".a-mail-frame"] as const;
 describe("the console stylesheet", () => {
   /** The whole rule for a selector that opens a line, braces included. */
   function rule(selector: string): string | undefined {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-    return new RegExp(`^${escaped} \\{[^}]*\\}`, "mu").exec(css)?.[0];
+    // Plain string search: a RegExp built from the selector is what Semgrep
+    // flags (detect-non-literal-regexp), even in a test.
+    const opening = `\n${selector} {`;
+    const start = css.indexOf(opening);
+    if (start === -1) return undefined;
+    const end = css.indexOf("}", start);
+    return end === -1 ? undefined : css.slice(start + 1, end + 1);
   }
 
   it.each(WHITE_GROUNDS.map((selector) => [selector]))(
