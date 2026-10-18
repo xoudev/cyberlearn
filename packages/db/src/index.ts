@@ -213,19 +213,17 @@ export {
   type CronRunView,
 } from "./repositories/cron-run.repository.js";
 export {
-  reviewRepository,
-  LIVE_REVIEW_FILTER,
-  type ReviewQueueRow,
-  type ReviewSessionView,
-  type ReviewReminder,
-} from "./repositories/review.repository.js";
-export {
   reviewCardRepository,
+  LIVE_REVIEW_FILTER,
   type DueCardRow,
   type DueQuestionRow,
   type ReviewLessonRow,
   type ReviewSessionRow,
 } from "./repositories/review-card.repository.js";
+export {
+  reviewScheduleLegacyRepository,
+  type LegacyReviewScheduleExportRow,
+} from "./repositories/review-schedule-legacy.repository.js";
 export {
   lessonQuizRepository,
   type RecordedQuizAnswer,
@@ -378,7 +376,6 @@ export type {
   NoteFolder,
   Certificate,
   Notification,
-  ReviewSchedule,
   ReviewCard,
   ReviewSession,
   ContactTicket,

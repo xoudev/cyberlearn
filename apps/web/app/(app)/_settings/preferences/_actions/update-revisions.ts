@@ -13,15 +13,14 @@ export interface UpdateRevisionsState {
 /**
  * Turns spaced repetition on or off for this account.
  *
- * Existing schedules are deliberately left in place. Turning the feature back
- * on should resume the queue where it stopped, and a switch that silently
+ * Existing review cards are deliberately left in place. Turning the feature
+ * back on should resume the queue where it stopped, and a switch that silently
  * destroys months of scheduling is a switch nobody dares touch. What stops is
  * the feeding, the surfaces and the reminders.
  *
  * Several server-rendered surfaces read this preference - the sidebar, the
- * dashboard, the revisions page - so they are all revalidated rather than left
- * to expire. A switch whose effect shows up on the next hard refresh reads as
- * broken.
+ * dashboard - so they are all revalidated rather than left to expire. A
+ * switch whose effect shows up on the next hard refresh reads as broken.
  */
 export async function updateRevisionsAction(
   _prev: UpdateRevisionsState,
@@ -38,7 +37,6 @@ export async function updateRevisionsAction(
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard");
-  revalidatePath("/revisions");
 
   return { success: true };
 }

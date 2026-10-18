@@ -13,10 +13,10 @@ import { checkDuelAnswer } from "../social/duel.js";
  * Review cards: one lesson quiz question asked again, in Leitner boxes, a few
  * a day.
  *
- * The lesson-level queue (session.ts, SM-2) asks a learner to say how well
- * they remember a whole lesson, on their own word, and every lesson finished
- * comes back five times or more. A card is one question, answered and checked
- * on the server, and only the questions that need it come back:
+ * The lesson-level queue they replaced (SM-2, retired) asked a learner to say
+ * how well they remembered a whole lesson, on their own word, and every lesson
+ * finished came back five times or more. A card is one question, answered and
+ * checked on the server, and only the questions that need it come back:
  *
  * - Completing a lesson enqueues every question answered wrong there, due the
  *   next day, and the last one answered right, due a week later

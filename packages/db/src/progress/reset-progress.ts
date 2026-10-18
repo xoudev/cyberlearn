@@ -19,8 +19,7 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *   the counters on the row itself - XP, level, both streaks, freezes
  *   lesson, path, challenge and quest progress, and skip waivers
  *   badges, quiz attempts, hint reveals
- *   the review schedule and the review cards with their sessions, so
- *   revision starts over
+ *   the review cards with their sessions, so revision starts over
  *   the activity calendar the streak is drawn from
  *   the XP ledger and every league membership, so seasons start over
  *   cosmetics owned and equipped - they are unlocked by level, and a locker
@@ -38,6 +37,10 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *   notifications, tickets, forum posts, notes, ratings, questions and answers
  *   - somebody else is reading those
  *   friendships, class memberships, moderation events, bans, audit logs
+ *   the rows of the retired SM-2 queue (review_schedules_legacy), which no
+ *   surface reads (the GDPR export lists them) and which go in a later
+ *   release: db:backfill-review-cards converts only the lessons still
+ *   completed, so the lessons cleared here give no card back
  *
  * All database work is one interactive transaction. Object storage is not
  * transactional, so the certificate PDFs are removed after it commits and a
@@ -55,7 +58,6 @@ export interface ResetProgressSummary {
   pathsCleared: number;
   badgesCleared: number;
   certificatesCleared: number;
-  reviewSchedulesCleared: number;
   reviewCardsCleared: number;
   activityDaysCleared: number;
   cosmeticsCleared: number;
@@ -112,17 +114,10 @@ export async function resetProgress(
 
     // Path progress first: it holds the foreign key to a certificate, and the
     // certificate rows go next.
-    const [
-      pathsCleared,
-      badgesCleared,
-      lessonsCleared,
-      reviewSchedulesCleared,
-      reviewCardsCleared,
-    ] = await Promise.all([
+    const [pathsCleared, badgesCleared, lessonsCleared, reviewCardsCleared] = await Promise.all([
       tx.userPathProgress.deleteMany({ where: { userId } }),
       tx.userBadge.deleteMany({ where: { userId } }),
       tx.userLessonProgress.deleteMany({ where: { userId } }),
-      tx.reviewSchedule.deleteMany({ where: { userId } }),
       tx.reviewCard.deleteMany({ where: { userId } }),
     ]);
 
@@ -190,7 +185,6 @@ export async function resetProgress(
       pathsCleared: pathsCleared.count,
       badgesCleared: badgesCleared.count,
       certificatesCleared: certificatesCleared.count,
-      reviewSchedulesCleared: reviewSchedulesCleared.count,
       reviewCardsCleared: reviewCardsCleared.count,
       activityDaysCleared: activityDaysCleared.count,
       cosmeticsCleared: cosmeticsCleared.count,

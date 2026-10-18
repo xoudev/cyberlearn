@@ -62,8 +62,6 @@ describe("the surfaces that have to obey it", () => {
     "components/app-sidebar.tsx",
     // The section on the dashboard.
     "app/(app)/dashboard/page.tsx",
-    // The page itself.
-    "app/(app)/revisions/page.tsx",
     // The day's recall, its window and the app's route.
     "lib/revisions/daily-recall.ts",
   ];

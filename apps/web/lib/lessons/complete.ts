@@ -117,9 +117,9 @@ export async function completeLessonForUser(
   const now = new Date();
 
   // The review cards this completion enqueues, from the same answers as the
-  // score: the questions missed, and one answered right. Behind the same
-  // switch as the lesson-level queue below, and not for a module review, a
-  // project or a class lesson (isReviewableLesson says why).
+  // score: the questions missed, and one answered right. Behind the revisions
+  // switch, and not for a module review, a project or a class lesson
+  // (isReviewableLesson says why).
   const reviewCards =
     wantsRevisions && isReviewableLesson(lesson)
       ? cardsForCompletion(
@@ -245,28 +245,14 @@ export async function completeLessonForUser(
       });
     }
 
-    // Schedule first review for tomorrow - SM-2 starts here.
+    // The questions to ask again, in the same transaction, so they are
+    // enqueued once, with the completion that claimed it.
     //
     // Skipped entirely when the reader has turned revisions off: a queue that
     // keeps filling behind a switch that says it is off is the switch lying.
-    // Their existing schedules are left alone, so turning it back on resumes
+    // Their existing cards are left alone, so turning it back on resumes
     // where it stopped rather than starting from nothing.
     if (firstCompletion && wantsRevisions) {
-      await tx.reviewSchedule.upsert({
-        where: { userId_lessonId: { userId, lessonId } },
-        create: {
-          userId,
-          lessonId,
-          nextReviewAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-          easeFactor: 2.5,
-          intervalDays: 1,
-          repetitions: 0,
-        },
-        update: {},
-      });
-      // Alongside the lesson-level queue until the cards replace it. In the
-      // same transaction, so they are enqueued once, with the completion
-      // that claimed it.
       await reviewCardRepository.enqueueForLesson(userId, lessonId, reviewCards, tx);
     }
 

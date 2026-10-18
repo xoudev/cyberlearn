@@ -12,7 +12,6 @@ import {
   type ReviewDrawRef,
 } from "@cyberlearn/lib/revisions/cards";
 import { prisma } from "../prisma.js";
-import { LIVE_REVIEW_FILTER } from "./review.repository.js";
 
 /**
  * Review cards and the day's review sessions: one lesson quiz question asked
@@ -28,6 +27,12 @@ import { LIVE_REVIEW_FILTER } from "./review.repository.js";
 
 /** The global client or a transaction's: both have the models. */
 type Db = Prisma.TransactionClient;
+
+/**
+ * Only a lesson still published comes back to review: an archived lesson's
+ * cards wait, hidden, for it to be published again.
+ */
+export const LIVE_REVIEW_FILTER = { lesson: { status: "PUBLISHED" } } as const;
 
 /** How many due cards a draw looks at: the most overdue, enough for six from three lessons and more. */
 const DUE_WINDOW = 200;

@@ -56,6 +56,7 @@ function schedule(lessonId: string, overrides: Partial<ScheduleRow> = {}): Sched
     nextReviewAt: new Date("2026-10-10T09:00:00.000Z"),
     intervalDays: 1,
     repetitions: 0,
+    lessonCompleted: true,
     ...overrides,
   };
 }
@@ -256,6 +257,17 @@ describe("planUserConversion", () => {
     expect(plan).toEqual({ lessonId: "l1", outcome: "alreadyConverted", cards: [] });
   });
 
+  it("gives no card for a lesson the learner no longer has completed", () => {
+    const [plan] = planUserConversion(
+      [schedule("l1", { lessonCompleted: false })],
+      lessonMap(lessonRow({ id: "l1" })),
+      new Map([["l1", [{ quizId: "q-1", correct: false }]]]),
+      new Set(),
+      NOW,
+    );
+    expect(plan).toEqual({ lessonId: "l1", outcome: "notCompleted", cards: [] });
+  });
+
   it("gives no card for a lesson not reviewable, without quiz or not read", () => {
     const plan = planUserConversion(
       [schedule("bilan"), schedule("empty"), schedule("missing")],
@@ -366,15 +378,22 @@ interface FakeAnswer {
   correct: boolean;
 }
 
+interface FakeProgress {
+  userId: string;
+  lessonId: string;
+  status: "IN_PROGRESS" | "COMPLETED";
+}
+
 interface FakeStore {
   lessons: ConversionLessonRow[];
   schedules: FakeSchedule[];
   cards: FakeCard[];
   answers: FakeAnswer[];
+  progress: FakeProgress[];
 }
 
 interface UserFilter {
-  where?: { userId?: { in?: string[] } };
+  where?: { userId?: { in?: string[] }; status?: string };
 }
 
 function inBatch(args: UserFilter): (row: { userId: string }) => boolean {
@@ -385,7 +404,7 @@ function inBatch(args: UserFilter): (row: { userId: string }) => boolean {
 function makeFakeDb(store: FakeStore): PrismaClient {
   const db = {
     lesson: { findMany: () => Promise.resolve(store.lessons.map((row) => ({ ...row }))) },
-    reviewSchedule: {
+    reviewScheduleLegacy: {
       findMany: (args: UserFilter & { distinct?: string[] }) => {
         if (args.distinct !== undefined) {
           const ids = [...new Set(store.schedules.map((row) => row.userId))].sort();
@@ -423,6 +442,15 @@ function makeFakeDb(store: FakeStore): PrismaClient {
       findMany: (args: UserFilter) =>
         Promise.resolve(store.answers.filter(inBatch(args)).map((row) => ({ ...row }))),
     },
+    userLessonProgress: {
+      findMany: (args: UserFilter) =>
+        Promise.resolve(
+          store.progress
+            .filter(inBatch(args))
+            .filter((row) => args.where?.status === undefined || row.status === args.where.status)
+            .map(({ userId, lessonId }) => ({ userId, lessonId })),
+        ),
+    },
   };
   // SAFETY: the fake implements exactly the Prisma subset backfillReviewCards uses.
   return db as unknown as PrismaClient;
@@ -459,6 +487,14 @@ function fakeStore(): FakeStore {
       { userId: USER_A, lessonId: "l1", quizId: "q-1", correct: false },
       { userId: USER_A, lessonId: "l1", quizId: "q-2", correct: true },
     ],
+    // Every lesson with a row is still completed.
+    progress: [
+      { userId: USER_A, lessonId: "l1", status: "COMPLETED" },
+      { userId: USER_A, lessonId: "l2", status: "COMPLETED" },
+      { userId: USER_A, lessonId: "l4", status: "COMPLETED" },
+      { userId: USER_B, lessonId: "l1", status: "COMPLETED" },
+      { userId: USER_B, lessonId: "l3", status: "COMPLETED" },
+    ],
   };
 }
 
@@ -481,6 +517,7 @@ describe("backfillReviewCards", () => {
         fromAnswers: 1,
         fromSchedule: 2,
         alreadyConverted: 1,
+        notCompleted: 0,
         lessonNotFound: 0,
         notReviewable: 1,
         noQuiz: 0,
@@ -559,30 +596,35 @@ describe("backfillReviewCards", () => {
     expect(store.cards).toHaveLength(5);
   });
 
-  it("on a later run, converts only the rows added since", async () => {
+  it("gives nothing back for a lesson whose progress was reset since the row was written", async () => {
+    // The console reset USER_A's l1, and USER_B reset their whole account:
+    // the progress went, the rows of the retired queue stayed.
     const store = fakeStore();
-    const client = makeFakeDb(store);
-    await backfillReviewCards({ apply: true, now: NOW, client });
+    store.progress = store.progress.filter(
+      (row) => row.userId !== USER_B && !(row.userId === USER_A && row.lessonId === "l1"),
+    );
+    const report = await backfillReviewCards({ apply: true, now: NOW, client: makeFakeDb(store) });
 
-    // A completion from an app build that sends no answer: a row, no card.
-    store.schedules.push({
-      userId: USER_B,
-      ...schedule("l4", { nextReviewAt: new Date("2026-10-20T09:00:00.000Z") }),
-    });
-    const later = await backfillReviewCards({
-      apply: true,
-      now: new Date("2026-10-19T08:00:00.000Z"),
-      client,
-    });
-    expect(later.cardsCreated).toBe(1);
-    expect(later.perUser).toEqual([{ userId: USER_B, lessons: 1, cards: 1 }]);
+    expect(report.outcomes).toMatchObject({ notCompleted: 2, alreadyConverted: 1 });
+    expect(report.perUser).toEqual([{ userId: USER_A, lessons: 1, cards: 1 }]);
+    expect(store.cards.filter((card) => card.lessonId === "l1")).toEqual([]);
     expect(store.cards).toContainEqual({
-      userId: USER_B,
+      userId: USER_A,
       lessonId: "l4",
       quizId: "q-3",
       box: CARD_FIRST_BOX,
-      dueAt: day("2026-10-20"),
+      dueAt: day("2026-10-17"),
       everCorrect: false,
     });
+  });
+
+  it("counts a lesson only started as not completed", async () => {
+    const store = fakeStore();
+    store.progress = store.progress.map((row) =>
+      row.lessonId === "l4" ? { ...row, status: "IN_PROGRESS" } : row,
+    );
+    const report = await backfillReviewCards({ apply: false, now: NOW, client: makeFakeDb(store) });
+    expect(report.outcomes.notCompleted).toBe(1);
+    expect(report.unpublishedLessons).toBe(0);
   });
 });
