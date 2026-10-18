@@ -1953,11 +1953,12 @@ model LessonPreview {
 // lessons.contentMdx and so only ever see what was published.
 //
 // baseVersion and baseContentHash say what the draft was started from: the
-// lesson's version, and a fingerprint of its published fields. A publish whose
-// lesson no longer matches that fingerprint (a sync, another administrator's
-// publish) would replace changes the draft never saw, and asks first. A
-// status change moves the lesson's updatedAt without touching its content,
-// which is why the fingerprint is of the content.
+// lesson's version, and a fingerprint of its published fields, as the studio
+// loaded them and its first save sends them (not as they are by then). A
+// publish whose lesson no longer matches that fingerprint (a sync, another
+// administrator's publish) would replace changes the draft never saw, and
+// asks first. A status change moves the lesson's updatedAt without touching
+// its content, which is why the fingerprint is of the content.
 model LessonDraft {
   lessonId         String     @id @db.Uuid
   refCode          String

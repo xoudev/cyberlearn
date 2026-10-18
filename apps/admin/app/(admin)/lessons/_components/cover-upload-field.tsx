@@ -42,17 +42,18 @@ export function CoverUploadField({
 }: {
   initialMarker: string | null;
   initialPreview: string | null;
-  /** Each new marker, "" once the cover is removed. */
-  onChange?: (marker: string) => void;
+  /** Each new marker, "" once the cover is removed, with the preview it shows for it. */
+  onChange?: (marker: string, preview: string | null) => void;
   /** Never removes the cover it replaces from the bucket. */
   keepPrevious?: boolean;
 }): React.ReactElement {
   const [marker, setMarkerState] = useState(initialMarker ?? "");
-  const setMarker = (next: string): void => {
+  const [preview, setPreviewState] = useState<string | null>(initialPreview);
+  const setCover = (next: string, nextPreview: string | null): void => {
     setMarkerState(next);
-    onChange?.(next);
+    setPreviewState(nextPreview);
+    onChange?.(next, nextPreview);
   };
-  const [preview, setPreview] = useState<string | null>(initialPreview);
   const [urlValue, setUrlValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, startTask] = useTransition();
@@ -65,8 +66,7 @@ export function CoverUploadField({
     error?: string;
   }): void {
     if (res.ok && res.marker) {
-      setMarker(res.marker);
-      setPreview(res.previewUrl ?? null);
+      setCover(res.marker, res.previewUrl ?? null);
       setUrlValue("");
     } else {
       setError(res.error ?? "Échec.");
@@ -99,8 +99,7 @@ export function CoverUploadField({
   }
 
   function handleRemove(): void {
-    setMarker("");
-    setPreview(null);
+    setCover("", null);
     setUrlValue("");
     setError(null);
   }

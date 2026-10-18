@@ -1,5 +1,6 @@
 import type { LessonContent, LessonVersionSource } from "@cyberlearn/db";
 import type { AutosaveStatus } from "@cyberlearn/ui/lesson-studio";
+import { LESSON_DRAFT_LIMITS } from "@/lib/lesson-limits";
 
 /**
  * What the lesson studio holds, and every way it changes.
@@ -62,12 +63,13 @@ export function fieldsOf(content: LessonContent): StudioFields {
 
 /**
  * A number field as the draft stores it. Cleared, or not a whole number yet,
- * it is saved as 0: the draft keeps going, and the publish says the field is
- * wrong.
+ * it is saved as 0, and past what its column holds, as that: the draft keeps
+ * going, and the publish says the field is wrong.
  */
 export function wholeNumber(typed: string): number {
   const value = Number(typed.trim());
-  return Number.isInteger(value) && value >= 0 ? value : 0;
+  if (!Number.isInteger(value) || value < 0) return 0;
+  return Math.min(value, LESSON_DRAFT_LIMITS.numberMax);
 }
 
 export function draftContentOf(fields: StudioFields): StudioDraftContent {
@@ -127,7 +129,8 @@ export type StudioAction =
       conflict?: "draft" | "lesson" | undefined;
     }
   | { type: "published"; published: StudioFields; replaceFields: boolean }
-  | { type: "discarded" }
+  /** The draft is gone: back to the lesson as it is now, which may not be what the page loaded. */
+  | { type: "discarded"; published: StudioFields }
   | { type: "dismiss" };
 
 export function initialStudioState(published: StudioFields, working: StudioFields): StudioState {
@@ -135,7 +138,7 @@ export function initialStudioState(published: StudioFields, working: StudioField
 }
 
 function isStudioField(key: string): key is StudioField {
-  return (FIELD_KEYS as readonly string[]).includes(key);
+  return FIELD_KEYS.some((field) => field === key);
 }
 
 /** The errors of a refusal that name a field the studio shows. */
@@ -184,7 +187,14 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         conflict: null,
       };
     case "discarded":
-      return { ...state, fields: state.published, fieldErrors: {}, error: null, conflict: null };
+      return {
+        ...state,
+        published: action.published,
+        fields: action.published,
+        fieldErrors: {},
+        error: null,
+        conflict: null,
+      };
     case "dismiss":
       return { ...state, error: null, conflict: null };
   }

@@ -326,7 +326,7 @@
   journal (`lesson.publish`) : `lessonVersionRepository.publish`, la fonction
   par laquelle passeront aussi l'import et la synchronisation. Une version se
   remet dans le brouillon ; un brouillon modifié dans un autre onglet, ou une
-  leçon changée depuis le début du brouillon, est signalé avant d'écrire.
+  leçon changée depuis que le studio l'a chargée, est signalé avant d'écrire.
   Séparateur déplaçable entre l'éditeur et l'aperçu, aperçu bureau ou mobile
   (390 px), alerte avant de quitter avec des modifications non enregistrées
 - Gestion du statut : DRAFT → PUBLISHED → ARCHIVED, ligne par ligne ou sur

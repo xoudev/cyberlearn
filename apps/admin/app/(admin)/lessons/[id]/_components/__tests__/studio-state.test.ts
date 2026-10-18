@@ -86,9 +86,13 @@ describe("studioReducer", () => {
     expect(kept.published).toBe(now);
   });
 
-  it("goes back to the published lesson on a discard", () => {
-    const state = studioReducer(initialStudioState(PUBLISHED, TYPED), { type: "discarded" });
-    expect(state.fields).toBe(PUBLISHED);
+  it("goes back to the lesson as it is now on a discard, not as the page loaded it", () => {
+    const synced = { ...PUBLISHED, title: "Les ports, synchronisés" };
+    const state = studioReducer(initialStudioState(PUBLISHED, TYPED), {
+      type: "discarded",
+      published: synced,
+    });
+    expect(state).toMatchObject({ fields: synced, published: synced, error: null });
   });
 
   it("replaces the fields with a restored version, and clears what was refused", () => {
@@ -111,6 +115,15 @@ describe("the draft's content", () => {
     });
     expect(wholeNumber("12.5")).toBe(0);
     expect(wholeNumber(" 20 ")).toBe(20);
+  });
+
+  it("keeps a number past the publish's bound, for the publish to refuse by name", () => {
+    expect(draftContentOf({ ...TYPED, estimatedMinutes: "700", xpReward: "20000" })).toMatchObject({
+      estimatedMinutes: 700,
+      xpReward: 20_000,
+    });
+    // Past what the column holds, it is saved as the most it holds.
+    expect(wholeNumber("1e12")).toBe(2_147_483_647);
   });
 
   it("is the same lesson whatever the way a number was typed", () => {

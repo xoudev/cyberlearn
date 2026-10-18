@@ -14,13 +14,21 @@ const m = vi.hoisted(() => ({
   draftDiscard: vi.fn(),
   draftPublish: vi.fn(),
   versionFind: vi.fn(),
+  versionCurrent: vi.fn(),
   lessonFindFirst: vi.fn(),
   auditCreate: vi.fn(),
+  resolveCover: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+vi.mock("@/lib/lesson-cover/storage", () => ({ resolveLessonCoverSrc: m.resolveCover }));
 vi.mock("@cyberlearn/db", () => ({
+  // A stand-in fingerprint: what is checked is which lesson it is taken of.
+  lessonBaseOf: ({ version, title }: { version: number; title: string }) => ({
+    version,
+    contentHash: `hash-of:${title}`,
+  }),
   // The content fields alone, as the real one keeps them.
   lessonContentOf: ({
     refCode,
@@ -51,7 +59,7 @@ vi.mock("@cyberlearn/db", () => ({
     discard: m.draftDiscard,
     publish: m.draftPublish,
   },
-  lessonVersionRepository: { find: m.versionFind },
+  lessonVersionRepository: { find: m.versionFind, current: m.versionCurrent },
   prisma: {
     lesson: { findFirst: m.lessonFindFirst },
     auditLog: { create: m.auditCreate },
@@ -68,6 +76,8 @@ const {
 const LESSON = "11111111-1111-4111-8111-111111111111";
 const VERSION = "33333333-3333-4333-8333-333333333333";
 const SAVED_AT = new Date("2026-10-18T12:00:00.000Z");
+/** The lesson as the studio loaded it. */
+const BASE = { version: 1, contentHash: "a".repeat(64) };
 /** Built, not typed: the typography check keeps the character itself out of the sources. */
 const EM_DASH = String.fromCharCode(0x2014);
 
@@ -103,6 +113,10 @@ beforeEach(() => {
   m.draftPublish.mockResolvedValue({ ok: true, version: 2, content: CONTENT, updatedAt: SAVED_AT });
   m.lessonFindFirst.mockResolvedValue(null);
   m.auditCreate.mockResolvedValue({});
+  m.versionCurrent.mockResolvedValue({ ...CONTENT, version: 2 });
+  m.resolveCover.mockImplementation((marker: string) =>
+    Promise.resolve(`https://signed.example/${marker}`),
+  );
 });
 
 describe("saveLessonDraftAction", () => {
@@ -111,24 +125,63 @@ describe("saveLessonDraftAction", () => {
     const result = await saveLessonDraftAction({
       lessonId: LESSON,
       expectedUpdatedAt: null,
+      base: BASE,
       content: half,
     });
     expect(result).toEqual({ ok: true, savedAt: SAVED_AT.toISOString(), problems: [] });
     expect(m.draftSave).toHaveBeenCalledExactlyOnceWith(LESSON, half, {
       actorId: "admin-1",
       expectedUpdatedAt: null,
+      base: BASE,
     });
+  });
+
+  it("saves numbers past what a publish takes: the publish refuses them by name", async () => {
+    const over = { ...CONTENT, estimatedMinutes: 700, xpReward: 20_000 };
+    const result = await saveLessonDraftAction({
+      lessonId: LESSON,
+      expectedUpdatedAt: null,
+      base: BASE,
+      content: over,
+    });
+    expect(result.ok).toBe(true);
+    expect(m.draftSave.mock.calls[0]?.[1]).toEqual(over);
+  });
+
+  it("names the field a refused save is about", async () => {
+    const result = await saveLessonDraftAction({
+      lessonId: LESSON,
+      expectedUpdatedAt: null,
+      base: BASE,
+      content: { ...CONTENT, refCode: "X".repeat(65) },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain("« Ref code »");
+    expect(m.draftSave).not.toHaveBeenCalled();
+  });
+
+  it("refuses a save that does not say which lesson the fields started from", async () => {
+    const result = await saveLessonDraftAction({
+      lessonId: LESSON,
+      expectedUpdatedAt: null,
+      base: { version: 1, contentHash: "not-a-hash" },
+      content: CONTENT,
+    });
+    expect(result.ok).toBe(false);
+    expect(m.draftSave).not.toHaveBeenCalled();
   });
 
   it("writes over the draft the studio last saw, and only that one", async () => {
     await saveLessonDraftAction({
       lessonId: LESSON,
       expectedUpdatedAt: SAVED_AT.toISOString(),
+      base: BASE,
       content: CONTENT,
     });
     expect(m.draftSave.mock.calls[0]?.[2]).toEqual({
       actorId: "admin-1",
       expectedUpdatedAt: SAVED_AT,
+      base: BASE,
     });
   });
 
@@ -136,6 +189,7 @@ describe("saveLessonDraftAction", () => {
     const result = await saveLessonDraftAction({
       lessonId: LESSON,
       expectedUpdatedAt: null,
+      base: BASE,
       content: { ...CONTENT, contentMdx: `## Ports\n\nUn port ${EM_DASH} un numéro.\n` },
     });
     expect(result.ok).toBe(true);
@@ -149,6 +203,7 @@ describe("saveLessonDraftAction", () => {
     const result = await saveLessonDraftAction({
       lessonId: LESSON,
       expectedUpdatedAt: SAVED_AT.toISOString(),
+      base: BASE,
       content: CONTENT,
     });
     expect(result).toMatchObject({ ok: false, conflict: true });
@@ -159,6 +214,7 @@ describe("saveLessonDraftAction", () => {
     const result = await saveLessonDraftAction({
       lessonId: LESSON,
       expectedUpdatedAt: null,
+      base: BASE,
       content: { ...CONTENT, category: "COOKING" },
     });
     expect(result.ok).toBe(false);
@@ -168,7 +224,12 @@ describe("saveLessonDraftAction", () => {
   it("checks the caller is an admin before anything else", async () => {
     m.requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
     await expect(
-      saveLessonDraftAction({ lessonId: LESSON, expectedUpdatedAt: null, content: CONTENT }),
+      saveLessonDraftAction({
+        lessonId: LESSON,
+        expectedUpdatedAt: null,
+        base: BASE,
+        content: CONTENT,
+      }),
     ).rejects.toThrow("NEXT_REDIRECT");
     expect(m.draftSave).not.toHaveBeenCalled();
   });
@@ -179,7 +240,13 @@ describe("publishLessonChangesAction", () => {
 
   it("publishes the draft the studio saw, trimmed as the lesson stores it", async () => {
     const result = await publishLessonChangesAction(input);
-    expect(result).toEqual({ ok: true, version: 2, content: CONTENT });
+    // The lesson as published is what the studio's next draft starts from.
+    expect(result).toEqual({
+      ok: true,
+      version: 2,
+      content: CONTENT,
+      base: { version: 2, contentHash: `hash-of:${CONTENT.title}` },
+    });
     expect(m.draftPublish).toHaveBeenCalledExactlyOnceWith(
       LESSON,
       { ...CONTENT, contentMdx: CONTENT.contentMdx.trim() },
@@ -239,11 +306,14 @@ describe("publishLessonChangesAction", () => {
   });
 
   it("hands back the lesson when the draft held what it already does", async () => {
-    m.draftPublish.mockResolvedValue({ ok: false, reason: "unchanged" });
+    m.draftPublish.mockResolvedValue({ ok: false, reason: "unchanged", version: 3 });
     const result = await publishLessonChangesAction(input);
     expect(result).toMatchObject({
       ok: false,
-      discarded: { content: { ...CONTENT, contentMdx: CONTENT.contentMdx.trim() } },
+      discarded: {
+        content: { ...CONTENT, contentMdx: CONTENT.contentMdx.trim() },
+        base: { version: 3, contentHash: `hash-of:${CONTENT.title}` },
+      },
     });
   });
 
@@ -258,7 +328,7 @@ describe("publishLessonChangesAction", () => {
 
 describe("discardLessonDraftAction", () => {
   it("drops the draft and writes down who did", async () => {
-    expect(await discardLessonDraftAction({ lessonId: LESSON })).toEqual({ ok: true });
+    expect(await discardLessonDraftAction({ lessonId: LESSON })).toMatchObject({ ok: true });
     expect(m.draftDiscard).toHaveBeenCalledExactlyOnceWith(LESSON);
     expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
       data: { actorId: "admin-1", action: "lesson.draft.discard", targetId: LESSON },
@@ -270,15 +340,41 @@ describe("discardLessonDraftAction", () => {
     await discardLessonDraftAction({ lessonId: LESSON });
     expect(m.auditCreate).not.toHaveBeenCalled();
   });
+
+  it("hands back the lesson as it is now, for the studio to go back to", async () => {
+    // A sync changed the lesson, and its cover, since the page loaded.
+    const synced = { ...CONTENT, title: "Les ports, synchronisés", coverImageUrl: "__cover:new" };
+    m.versionCurrent.mockResolvedValue({ ...synced, version: 4 });
+    expect(await discardLessonDraftAction({ lessonId: LESSON })).toEqual({
+      ok: true,
+      content: synced,
+      base: { version: 4, contentHash: `hash-of:${synced.title}` },
+      coverPreview: "https://signed.example/__cover:new",
+    });
+    expect(m.versionCurrent).toHaveBeenCalledWith(LESSON);
+  });
+
+  it("says so when the lesson is gone", async () => {
+    m.versionCurrent.mockResolvedValue(null);
+    expect(await discardLessonDraftAction({ lessonId: LESSON })).toMatchObject({ ok: false });
+  });
 });
 
 describe("restoreLessonVersionAction", () => {
   it("hands a version's content to the studio, and writes nothing", async () => {
     m.versionFind.mockResolvedValue({ ...CONTENT, version: 1 });
     const result = await restoreLessonVersionAction({ lessonId: LESSON, versionId: VERSION });
-    expect(result).toEqual({ ok: true, version: 1, content: CONTENT });
+    expect(result).toEqual({ ok: true, version: 1, content: CONTENT, coverPreview: null });
     expect(m.versionFind).toHaveBeenCalledWith(LESSON, VERSION);
     expect(m.draftSave).not.toHaveBeenCalled();
+    expect(m.resolveCover).not.toHaveBeenCalled();
+  });
+
+  it("signs a preview of the version's cover, which the page signed none for", async () => {
+    m.versionFind.mockResolvedValue({ ...CONTENT, coverImageUrl: "__cover:old", version: 1 });
+    expect(
+      await restoreLessonVersionAction({ lessonId: LESSON, versionId: VERSION }),
+    ).toMatchObject({ ok: true, coverPreview: "https://signed.example/__cover:old" });
   });
 
   it("says so for a version that is not this lesson's", async () => {

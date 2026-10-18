@@ -21,6 +21,17 @@ export const LESSON_LIMITS = {
 } as const;
 
 /**
+ * What the lesson studio's draft takes beyond those: a draft holds anything
+ * its columns can, so that a value the publish will refuse (700 minutes) is
+ * saved like any other keystroke, and refused at the publish, by name.
+ */
+export const LESSON_DRAFT_LIMITS = {
+  refCodeMax: 64,
+  /** An Int column's largest value: a number past it is saved as this. */
+  numberMax: 2_147_483_647,
+} as const;
+
+/**
  * What a slug may contain, as the source of a `pattern` attribute.
  *
  * The browser compiles a `pattern` with the `v` flag, where a bare `-` inside

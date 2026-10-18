@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useReducer, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { LessonContent, LessonVersionSource } from "@cyberlearn/db";
+import type { LessonBase, LessonContent, LessonVersionSource } from "@cyberlearn/db";
 import type { LessonEditorProblem } from "@cyberlearn/lib/mdx-check";
 import { Select } from "@cyberlearn/ui";
 import {
@@ -33,9 +33,15 @@ import {
   VERSION_SOURCE_LABEL,
   type StudioDraftContent,
   type StudioField,
+  type StudioFields,
 } from "./studio-state";
 import { notifyResult } from "@/lib/notify";
-import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/lesson-limits";
+import {
+  LESSON_DRAFT_LIMITS,
+  LESSON_LIMITS,
+  LESSON_SLUG_HINT,
+  LESSON_SLUG_PATTERN,
+} from "@/lib/lesson-limits";
 
 /**
  * The lesson studio: the lesson's fields down a rail, the editor and the
@@ -115,6 +121,7 @@ export function LessonStudio({
   status,
   published,
   draft,
+  base,
   currentVersion,
   versions,
   coverPreviews,
@@ -127,6 +134,11 @@ export function LessonStudio({
   published: LessonContent;
   /** The draft the page opened on, if one was saved. */
   draft: StudioDraft | null;
+  /**
+   * The lesson the fields start from (the draft's base, or `published`): a
+   * draft this studio starts keeps it, for the publish to check against.
+   */
+  base: LessonBase;
   currentVersion: number;
   versions: readonly StudioVersion[];
   /** Signed previews of the covers the server knows: the published one, the draft's. */
@@ -145,22 +157,32 @@ export function LessonStudio({
   // publish are conditional on it (lessonDraftRepository). Null while there
   // is no draft: the next save starts one.
   const stamp = useRef<string | null>(draft?.savedAt ?? null);
+  // The lesson the fields started from, which a draft this studio starts
+  // keeps: what the page loaded, then what each publish or discard left. Not
+  // the page's prop: a refresh brings the lesson as it is now, while the
+  // fields stay what they were.
+  const baseRef = useRef<LessonBase>(base);
   const [hasDraft, setHasDraft] = useState(draft !== null);
   const [problems, setProblems] = useState<readonly LessonEditorProblem[] | undefined>(undefined);
   const [editingRefCode, setEditingRefCode] = useState(false);
-  // Remounts the cover field when the fields are replaced from outside it.
+  // Remounts the cover field when its cover is replaced from outside it.
   const [coverEpoch, setCoverEpoch] = useState(0);
+  // Previews of covers the page signed none for: uploaded here, or those of a
+  // restored version or of the lesson a discard went back to.
+  const [knownPreviews, setKnownPreviews] = useState<Readonly<Record<string, string>>>({});
   const [lessonStatus, setLessonStatus] = useState<ContentStatus>(status);
   const latestFields = useRef(fields);
   latestFields.current = fields;
 
   const preview = useLessonPreview(refreshLessonPreviewAction);
+  const [busy, startTask] = useTransition();
 
   const save = useCallback(
     async (content: StudioDraftContent): Promise<AutosaveResult> => {
       const result = await saveLessonDraftAction({
         lessonId,
         expectedUpdatedAt: stamp.current,
+        base: baseRef.current,
         content,
       });
       if (!result.ok) {
@@ -181,16 +203,22 @@ export function LessonStudio({
     value: draftContent,
     save,
     savedAt: draft === null ? null : new Date(draft.savedAt),
+    // A save sent during a publish or a discard would carry the stamp from
+    // before it and land after it: refused, or refusing the publish. What is
+    // typed meanwhile is saved once it is over.
+    paused: busy,
   });
 
-  const [busy, startTask] = useTransition();
-
   const saveNow = useCallback(() => {
+    if (busy) {
+      toast.info("Un instant : le brouillon s'enregistrera dès la fin de l'opération en cours.");
+      return;
+    }
     const wasDirty = autosave.dirty;
     void autosave.flush().then((ok) => {
       if (ok) toast.success(wasDirty ? "Brouillon enregistré." : "Le brouillon est déjà à jour.");
     });
-  }, [autosave]);
+  }, [autosave, busy]);
   useSaveShortcut(saveNow);
   useUnsavedChangesGuard(autosave.dirty, LEAVE_WARNING);
 
@@ -198,14 +226,23 @@ export function LessonStudio({
     dispatch({ type: "edit", field, value });
   };
 
+  /** The cover field keeps its own state: it starts again only when its cover changes. */
+  const replaceCover = (next: StudioFields, coverPreview?: string | null): void => {
+    if (next.coverImageUrl !== "" && typeof coverPreview === "string") {
+      setKnownPreviews((known) => ({ ...known, [next.coverImageUrl]: coverPreview }));
+    }
+    if (next.coverImageUrl !== latestFields.current.coverImageUrl) setCoverEpoch((n) => n + 1);
+  };
+
   /** The fields as the lesson now holds them, after a publish or a draft found unchanged. */
-  const settle = (content: LessonContent, sent: typeof fields): void => {
+  const settle = (content: LessonContent, nextBase: LessonBase, sent: StudioFields): void => {
     const now = fieldsOf(content);
     // Typed during the publish: kept, and saved into a new draft after the pause.
     const untouched = sameContent(latestFields.current, sent);
+    if (untouched) replaceCover(now);
     dispatch({ type: "published", published: now, replaceFields: untouched });
-    if (untouched) setCoverEpoch((n) => n + 1);
     stamp.current = null;
+    baseRef.current = nextBase;
     setHasDraft(false);
     setProblems([]);
     autosave.markSaved(draftContentOf(now), null);
@@ -234,13 +271,13 @@ export function LessonStudio({
         force,
       });
       if (result.ok) {
-        settle(result.content, sent);
+        settle(result.content, result.base, sent);
         toast.success(`Version ${String(result.version)} publiée.`);
         router.refresh();
         return;
       }
       if (result.discarded !== undefined) {
-        settle(result.discarded.content, sent);
+        settle(result.discarded.content, result.discarded.base, sent);
         toast.info(result.error);
         router.refresh();
         return;
@@ -267,13 +304,17 @@ export function LessonStudio({
     startTask(async () => {
       await autosave.cancel();
       const result = await discardLessonDraftAction({ lessonId });
-      if (!notifyResult(result, { success: "Brouillon abandonné." })) return;
-      dispatch({ type: "discarded" });
-      setCoverEpoch((n) => n + 1);
+      if (!notifyResult(result, { success: "Brouillon abandonné." }) || !result.ok) return;
+      // The lesson as it is now, which a sync may have changed since the
+      // page loaded: the fields go back to it, and the next draft starts there.
+      const now = fieldsOf(result.content);
+      replaceCover(now, result.coverPreview);
+      dispatch({ type: "discarded", published: now });
       stamp.current = null;
+      baseRef.current = result.base;
       setHasDraft(false);
       setProblems([]);
-      autosave.markSaved(draftContentOf(state.published), null);
+      autosave.markSaved(draftContentOf(now), null);
       router.refresh();
     });
   };
@@ -293,8 +334,9 @@ export function LessonStudio({
         notifyResult(result);
         return;
       }
-      dispatch({ type: "replace", fields: fieldsOf(result.content) });
-      setCoverEpoch((n) => n + 1);
+      const restored = fieldsOf(result.content);
+      replaceCover(restored, result.coverPreview);
+      dispatch({ type: "replace", fields: restored });
       toast.success(
         `Version ${String(result.version)} remise dans le brouillon : publie les changements pour la remettre en ligne.`,
       );
@@ -429,6 +471,7 @@ export function LessonStudio({
                 aria-label="Ref code"
                 className="a-input"
                 value={fields.refCode}
+                maxLength={LESSON_DRAFT_LIMITS.refCodeMax}
                 placeholder="CL-LSN-01001-V01"
                 onChange={(event) => {
                   edit("refCode", event.target.value);
@@ -598,9 +641,14 @@ export function LessonStudio({
             <CoverUploadField
               key={coverEpoch}
               initialMarker={fields.coverImageUrl === "" ? null : fields.coverImageUrl}
-              initialPreview={coverPreviews[fields.coverImageUrl] ?? null}
+              initialPreview={
+                coverPreviews[fields.coverImageUrl] ?? knownPreviews[fields.coverImageUrl] ?? null
+              }
               keepPrevious
-              onChange={(marker) => {
+              onChange={(marker, coverPreview) => {
+                if (marker !== "" && coverPreview !== null) {
+                  setKnownPreviews((known) => ({ ...known, [marker]: coverPreview }));
+                }
                 edit("coverImageUrl", marker);
               }}
             />

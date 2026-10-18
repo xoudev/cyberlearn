@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
   lessonVersionRepository,
   prisma,
+  type LessonBase,
   type LessonContent,
 } from "@cyberlearn/db";
 import { checkLessonForSave } from "@cyberlearn/lib/mdx-authoring";
@@ -17,7 +19,10 @@ import {
   type LessonEditorProblem,
 } from "@cyberlearn/lib/mdx-check";
 import { requireAdminAction } from "@/lib/auth";
+import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 import {
+  draftSaveError,
+  lessonBaseSchema,
   lessonDraftContentSchema,
   lessonPublishSchema,
   publishFieldErrors,
@@ -40,6 +45,11 @@ const saveInput = z.object({
   lessonId: z.guid(),
   /** The draft's updatedAt as the studio last saw it; null when it saw none. */
   expectedUpdatedAt: ISO_STAMP.nullable(),
+  /**
+   * The lesson the studio's fields started from: kept by the save that starts
+   * a draft, for the publish to check the lesson against (lessonDraftRepository).
+   */
+  base: lessonBaseSchema,
   content: lessonDraftContentSchema,
 });
 
@@ -55,15 +65,13 @@ export type SaveLessonDraftResult =
 export async function saveLessonDraftAction(input: unknown): Promise<SaveLessonDraftResult> {
   const admin = await requireAdminAction();
   const parsed = saveInput.safeParse(input);
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0]?.message ?? "contenu invalide";
-    return { ok: false, error: `Brouillon non enregistré : ${issue}` };
-  }
-  const { lessonId, expectedUpdatedAt, content } = parsed.data;
+  if (!parsed.success) return { ok: false, error: draftSaveError(parsed.error) };
+  const { lessonId, expectedUpdatedAt, base, content } = parsed.data;
 
   const saved = await lessonDraftRepository.save(lessonId, content, {
     actorId: admin.id,
     expectedUpdatedAt: expectedUpdatedAt === null ? null : new Date(expectedUpdatedAt),
+    base,
   });
   if (!saved.ok) {
     return {
@@ -88,7 +96,8 @@ const publishInput = z.object({
 });
 
 export type PublishLessonChangesResult =
-  | { ok: true; version: number; content: LessonContent }
+  /** `base` is the lesson now, which the studio's next draft starts from. */
+  | { ok: true; version: number; content: LessonContent; base: LessonBase }
   | {
       ok: false;
       error: string;
@@ -100,7 +109,7 @@ export type PublishLessonChangesResult =
        * The draft held what the lesson already does, and is gone: `content` is
        * that lesson, for the studio to show as published.
        */
-      discarded?: { content: LessonContent };
+      discarded?: { content: LessonContent; base: LessonBase };
     };
 
 export async function publishLessonChangesAction(
@@ -193,7 +202,7 @@ export async function publishLessonChangesAction(
         return {
           ok: false,
           error: STUDIO_MESSAGES.nothingToPublish,
-          discarded: { content },
+          discarded: { content, base: lessonBaseOf({ ...content, version: published.version }) },
           problems: [],
         };
       case "taken":
@@ -219,14 +228,38 @@ export async function publishLessonChangesAction(
 
   revalidatePath("/lessons");
   revalidatePath(`/lessons/${lessonId}`);
-  return { ok: true, version: published.version, content: published.content };
+  return {
+    ok: true,
+    version: published.version,
+    content: published.content,
+    base: lessonBaseOf({ ...published.content, version: published.version }),
+  };
+}
+
+/**
+ * A signed preview of a cover the studio is about to show, which the page
+ * signed none for (a past version's, one a sync set). Null for no cover.
+ */
+async function coverPreviewOf(content: LessonContent): Promise<string | null> {
+  return content.coverImageUrl === null ? null : resolveLessonCoverSrc(content.coverImageUrl);
 }
 
 const lessonInput = z.object({ lessonId: z.guid() });
 
-export async function discardLessonDraftAction(
-  input: unknown,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export type DiscardLessonDraftResult =
+  | {
+      ok: true;
+      /**
+       * The lesson as it is now, not as the page loaded it: the studio goes
+       * back to it, and its next draft starts from it.
+       */
+      content: LessonContent;
+      base: LessonBase;
+      coverPreview: string | null;
+    }
+  | { ok: false; error: string };
+
+export async function discardLessonDraftAction(input: unknown): Promise<DiscardLessonDraftResult> {
   const admin = await requireAdminAction();
   const parsed = lessonInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Leçon invalide." };
@@ -245,13 +278,22 @@ export async function discardLessonDraftAction(
     });
   }
   revalidatePath(`/lessons/${lessonId}`);
-  return { ok: true };
+
+  const lesson = await lessonVersionRepository.current(lessonId);
+  if (lesson === null) return { ok: false, error: STUDIO_MESSAGES.notFound };
+  const content = lessonContentOf(lesson);
+  return {
+    ok: true,
+    content,
+    base: lessonBaseOf(lesson),
+    coverPreview: await coverPreviewOf(content),
+  };
 }
 
 const restoreInput = z.object({ lessonId: z.guid(), versionId: z.guid() });
 
 export type RestoreLessonVersionResult =
-  | { ok: true; version: number; content: LessonContent }
+  | { ok: true; version: number; content: LessonContent; coverPreview: string | null }
   | { ok: false; error: string };
 
 /** A version's content, for the studio to put in the draft: nothing is written here. */
@@ -264,5 +306,11 @@ export async function restoreLessonVersionAction(
 
   const found = await lessonVersionRepository.find(parsed.data.lessonId, parsed.data.versionId);
   if (found === null) return { ok: false, error: "Cette version n'existe plus." };
-  return { ok: true, version: found.version, content: lessonContentOf(found) };
+  const content = lessonContentOf(found);
+  return {
+    ok: true,
+    version: found.version,
+    content,
+    coverPreview: await coverPreviewOf(content),
+  };
 }

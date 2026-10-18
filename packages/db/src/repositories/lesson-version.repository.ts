@@ -17,6 +17,12 @@ import { prisma } from "../prisma.js";
  * write keeps no version. A teacher's class lesson keeps no history: its
  * editor saves into the lesson, as before.
  *
+ * An import that creates a lesson has nothing to change: it creates the row
+ * in its transaction, then calls publish() with `created`, which records what
+ * the new lesson holds as its first version, from that source, with its audit
+ * row. Called with `changes` instead, it would find the content unchanged and
+ * record nothing.
+ *
  * The first publish of a lesson that has no version yet keeps what the lesson
  * held before as its current version (a BASELINE), so the state every lesson
  * was in before the studio can be restored like any other.
@@ -94,29 +100,69 @@ export function sameLessonContent(a: LessonContent, b: LessonContent): boolean {
   return CONTENT_KEYS.every((key) => a[key] === b[key]);
 }
 
-export interface PublishLessonInput {
+/**
+ * The state of a lesson an editor's fields start from: its version, and the
+ * fingerprint of its content. A draft keeps the one its editor loaded, which
+ * is what a publish checks the lesson against.
+ */
+export interface LessonBase {
+  version: number;
+  contentHash: string;
+}
+
+export function lessonBaseOf(lesson: LessonContent & { version: number }): LessonBase {
+  return { version: lesson.version, contentHash: lessonContentHash(lesson) };
+}
+
+interface PublishLessonCommon {
   lessonId: string;
-  /** What changes. A field left out keeps the lesson's value. */
-  changes: Partial<LessonContent>;
   source: Exclude<LessonVersionSource, "BASELINE">;
   /** Who published: null for a job with no one behind it. */
   actorId: string | null;
   /** The audit row written with it, in the same transaction; the version is added to its metadata. */
   audit: { action: string; metadata?: Prisma.InputJsonObject };
-  /**
-   * The lesson's updatedAt as the caller read it, when what it publishes was
-   * decided from that state (the sync's diff): nothing is written if it moved.
-   */
-  expectedUpdatedAt?: Date;
   now?: Date;
 }
+
+export type PublishLessonInput = PublishLessonCommon &
+  (
+    | {
+        /** What changes. A field left out keeps the lesson's value. */
+        changes: Partial<LessonContent>;
+        /**
+         * The lesson's updatedAt as the caller read it, when what it publishes
+         * was decided from that state (the sync's diff): nothing is written if
+         * it moved.
+         */
+        expectedUpdatedAt?: Date;
+        created?: never;
+      }
+    | {
+        /**
+         * The caller has just created the lesson, in the transaction it
+         * passes: nothing is written to it, and what it holds is recorded as
+         * its first version. A lesson that has that version recorded already
+         * is not a new one: the unique (lessonId, version) refuses it, and
+         * the caller's transaction with it.
+         */
+        created: true;
+        changes?: never;
+        expectedUpdatedAt?: never;
+      }
+  );
 
 export type PublishLessonResult =
   | { ok: true; version: number; content: LessonContent; updatedAt: Date }
   | {
       ok: false;
-      /** No lesson; the lesson moved since the caller read it; nothing would change. */
-      reason: "not_found" | "stale" | "unchanged";
+      /** No lesson; the lesson moved since the caller read it. */
+      reason: "not_found" | "stale";
+    }
+  | {
+      ok: false;
+      /** Nothing would change: the lesson already holds it, at `version`. */
+      reason: "unchanged";
+      version: number;
     };
 
 async function publishIn(
@@ -129,6 +175,31 @@ async function publishIn(
     select: { ...LESSON_CONTENT_SELECT, version: true, updatedAt: true, publishedAt: true },
   });
   if (!before) return { ok: false, reason: "not_found" };
+  const previous = lessonContentOf(before);
+
+  if (input.created === true) {
+    await tx.lessonVersion.create({
+      data: {
+        lessonId: input.lessonId,
+        version: before.version,
+        source: input.source,
+        ...previous,
+        publishedById: input.actorId,
+        publishedAt: now,
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: input.actorId,
+        action: input.audit.action,
+        targetType: "Lesson",
+        targetId: input.lessonId,
+        metadata: { ...input.audit.metadata, version: before.version },
+      },
+    });
+    return { ok: true, version: before.version, content: previous, updatedAt: before.updatedAt };
+  }
+
   if (
     input.expectedUpdatedAt !== undefined &&
     before.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()
@@ -136,9 +207,10 @@ async function publishIn(
     return { ok: false, reason: "stale" };
   }
 
-  const previous = lessonContentOf(before);
   const content: LessonContent = { ...previous, ...input.changes };
-  if (sameLessonContent(previous, content)) return { ok: false, reason: "unchanged" };
+  if (sameLessonContent(previous, content)) {
+    return { ok: false, reason: "unchanged", version: before.version };
+  }
   const version = before.version + 1;
 
   // Conditional on what was read, in the same statement: a publish, a sync or
@@ -202,9 +274,10 @@ export const LESSON_VERSIONS_LISTED = 30;
 
 export const lessonVersionRepository = {
   /**
-   * Publishes changes to a lesson: see the module's comment. Runs in the
-   * caller's transaction when given one (an import creating the lesson first),
-   * in its own otherwise.
+   * Publishes changes to a lesson, or records one the caller has just created
+   * (`created`): see the module's comment. Runs in the caller's transaction
+   * when given one, in its own otherwise. `created` needs the caller's: the
+   * one that created the lesson.
    */
   async publish(
     input: PublishLessonInput,
@@ -228,6 +301,14 @@ export const lessonVersionRepository = {
         publishedAt: true,
         publishedBy: { select: { displayName: true, username: true } },
       },
+    });
+  },
+
+  /** The lesson's content as it stands, with its version: what an editor starts from. */
+  async current(lessonId: string): Promise<(LessonContent & { version: number }) | null> {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { ...LESSON_CONTENT_SELECT, version: true },
     });
   },
 

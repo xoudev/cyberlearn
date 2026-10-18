@@ -1,6 +1,7 @@
 import { prisma } from "../prisma.js";
 import {
   LESSON_CONTENT_SELECT,
+  type LessonBase,
   type LessonContent,
   lessonContentHash,
   lessonVersionRepository,
@@ -22,6 +23,7 @@ import {
 
 export interface LessonDraftRow extends LessonContent {
   baseVersion: number;
+  baseContentHash: string;
   updatedAt: Date;
   updatedBy: { displayName: string; username: string | null } | null;
 }
@@ -43,8 +45,8 @@ export type PublishLessonDraftResult =
       ok: false;
       /**
        * The draft moved since the editor saw it; or the lesson's content
-       * changed since the draft was started (a sync, another publish), which
-       * publishing would replace unseen.
+       * changed since the editor loaded what the draft was started from (a
+       * sync, another publish), which publishing would replace unseen.
        */
       reason: "draft_changed" | "lesson_changed";
     }
@@ -80,6 +82,7 @@ export const lessonDraftRepository = {
       select: {
         ...LESSON_CONTENT_SELECT,
         baseVersion: true,
+        baseContentHash: true,
         updatedAt: true,
         updatedBy: { select: { displayName: true, username: true } },
       },
@@ -88,13 +91,25 @@ export const lessonDraftRepository = {
 
   /**
    * Saves what the editor holds. `expectedUpdatedAt` is the draft's updatedAt
-   * as the editor last saw it, null when it saw none: the first save starts
-   * the draft from the lesson as it is now, and remembers that state.
+   * as the editor last saw it, null when it saw none: that save starts the
+   * draft.
+   *
+   * `base` is the lesson as the editor's fields started from it (lessonBaseOf
+   * the lesson the page loaded, or the one a publish or a discard left), and
+   * a new draft keeps it. Not the lesson as it is at the first save: a sync
+   * landing between the page load and the first keystroke would then become
+   * the draft's base, and the publish would write the older fields over it
+   * without a word.
    */
   async save(
     lessonId: string,
     content: LessonContent,
-    options: { actorId: string; expectedUpdatedAt: Date | null; now?: Date },
+    options: {
+      actorId: string;
+      expectedUpdatedAt: Date | null;
+      base: LessonBase;
+      now?: Date;
+    },
   ): Promise<SaveLessonDraftResult> {
     const now = options.now ?? new Date();
     if (options.expectedUpdatedAt !== null) {
@@ -107,7 +122,7 @@ export const lessonDraftRepository = {
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { ...LESSON_CONTENT_SELECT, version: true },
+      select: { id: true },
     });
     if (!lesson) return { ok: false, reason: "not_found" };
     try {
@@ -115,8 +130,8 @@ export const lessonDraftRepository = {
         data: {
           lessonId,
           ...content,
-          baseVersion: lesson.version,
-          baseContentHash: lessonContentHash(lesson),
+          baseVersion: options.base.version,
+          baseContentHash: options.base.contentHash,
           updatedById: options.actorId,
           createdAt: now,
           updatedAt: now,

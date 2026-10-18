@@ -17,7 +17,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { prisma } from "../prisma.js";
 import { lessonDraftRepository } from "../repositories/lesson-draft.repository.js";
-import type { LessonContent } from "../repositories/lesson-version.repository.js";
+import {
+  lessonBaseOf,
+  lessonContentOf,
+  lessonVersionRepository,
+  type LessonContent,
+} from "../repositories/lesson-version.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 const EMAIL = `lesson-drafts-${suffix}@test.cyberlearn.internal`;
@@ -111,9 +116,11 @@ describe("lesson drafts and versions (integration)", () => {
 
   it("refuses a save over a draft the editor did not see", async () => {
     if (!configured) return;
+    const base = lessonBaseOf({ ...PUBLISHED, version: 1 });
     const first = await lessonDraftRepository.save(lessonId, DRAFTED, {
       actorId: adminId,
       expectedUpdatedAt: null,
+      base,
     });
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -122,12 +129,14 @@ describe("lesson drafts and versions (integration)", () => {
     const late = await lessonDraftRepository.save(lessonId, PUBLISHED, {
       actorId: adminId,
       expectedUpdatedAt: null,
+      base,
     });
     expect(late).toEqual({ ok: false, reason: "conflict" });
     // One that saw an older draft.
     const stale = await lessonDraftRepository.save(lessonId, PUBLISHED, {
       actorId: adminId,
       expectedUpdatedAt: new Date(first.updatedAt.getTime() - 1000),
+      base,
     });
     expect(stale).toEqual({ ok: false, reason: "conflict" });
 
@@ -191,6 +200,7 @@ describe("lesson drafts and versions (integration)", () => {
     const saved = await lessonDraftRepository.save(lessonId, again, {
       actorId: adminId,
       expectedUpdatedAt: null,
+      base: lessonBaseOf({ ...DRAFTED, version: 2 }),
     });
     expect(saved.ok).toBe(true);
     if (!saved.ok) return;
@@ -212,6 +222,86 @@ describe("lesson drafts and versions (integration)", () => {
       force: true,
     });
     expect(forced).toMatchObject({ ok: true, version: 3 });
+  });
+
+  it("asks too when the lesson changed between the page load and the first save", async () => {
+    if (!configured) return;
+    // The studio loads the lesson, with no draft.
+    const loaded = await lessonVersionRepository.current(lessonId);
+    if (loaded === null) throw new Error("lesson gone");
+    // A sync rewrites the lesson before the first keystroke.
+    await prisma.lesson.update({
+      where: { id: lessonId },
+      data: { title: "Retitrée par la synchronisation" },
+    });
+    // The first save carries the fields as the studio loaded them, plus the edit.
+    const edited: LessonContent = {
+      ...lessonContentOf(loaded),
+      contentMdx: `${loaded.contentMdx}\n\nAjout.`,
+    };
+    const saved = await lessonDraftRepository.save(lessonId, edited, {
+      actorId: adminId,
+      expectedUpdatedAt: null,
+      base: lessonBaseOf(loaded),
+    });
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) return;
+
+    const refused = await lessonDraftRepository.publish(lessonId, edited, {
+      actorId: adminId,
+      expectedUpdatedAt: saved.updatedAt,
+    });
+    expect(refused).toEqual({ ok: false, reason: "lesson_changed" });
+    const lesson = await prisma.lesson.findUniqueOrThrow({ where: { id: lessonId } });
+    expect(lesson.title).toBe("Retitrée par la synchronisation");
+    await lessonDraftRepository.discard(lessonId);
+  });
+
+  it("records a lesson created in the caller's transaction as its first version", async () => {
+    if (!configured) return;
+    const fresh: LessonContent = {
+      ...PUBLISHED,
+      refCode: `DRF-${suffix}-V02`,
+      slug: `importee-${suffix}`,
+      title: "Une leçon importée",
+    };
+    const result = await prisma.$transaction(async (tx) => {
+      const lesson = await tx.lesson.create({ data: fresh, select: { id: true } });
+      return lessonVersionRepository.publish(
+        {
+          lessonId: lesson.id,
+          created: true,
+          source: "IMPORT",
+          actorId: adminId,
+          audit: { action: "lesson.import", metadata: { file: "importee.mdx" } },
+        },
+        tx,
+      );
+    });
+    expect(result).toMatchObject({ ok: true, version: 1, content: fresh });
+    if (!result.ok) return;
+    const created = await prisma.lesson.findFirstOrThrow({
+      where: { slug: fresh.slug },
+      select: { id: true, version: true },
+    });
+    try {
+      expect(created.version).toBe(1);
+      const versions = await prisma.lessonVersion.findMany({
+        where: { lessonId: created.id },
+        select: { version: true, source: true, title: true, publishedById: true },
+      });
+      expect(versions).toEqual([
+        { version: 1, source: "IMPORT", title: fresh.title, publishedById: adminId },
+      ]);
+      expect(
+        await prisma.auditLog.count({
+          where: { targetId: created.id, action: "lesson.import" },
+        }),
+      ).toBe(1);
+    } finally {
+      await prisma.auditLog.deleteMany({ where: { targetId: created.id } });
+      await prisma.lesson.delete({ where: { id: created.id } });
+    }
   });
 
   it("goes with its lesson, and keeps the history when its author's account goes", async () => {

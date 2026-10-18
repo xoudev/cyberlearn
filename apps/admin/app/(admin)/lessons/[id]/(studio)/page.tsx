@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   LESSON_CONTENT_SELECT,
+  lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
   lessonVersionRepository,
@@ -199,6 +200,13 @@ export default async function LessonStudioPage({
           draft === null
             ? null
             : { content: lessonContentOf(draft), savedAt: draft.updatedAt.toISOString() }
+        }
+        base={
+          // What the fields start from: the draft's own base when it opens on
+          // one, the lesson as read here otherwise.
+          draft === null
+            ? lessonBaseOf(lesson)
+            : { version: draft.baseVersion, contentHash: draft.baseContentHash }
         }
         currentVersion={lesson.version}
         versions={studioVersions}

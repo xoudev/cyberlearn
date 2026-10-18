@@ -8,6 +8,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  lessonBaseOf,
   lessonContentHash,
   lessonVersionRepository,
   type LessonContent,
@@ -156,9 +157,9 @@ describe("lessonVersionRepository.publish", () => {
     expect(tx.lesson.updateMany).not.toHaveBeenCalled();
   });
 
-  it("makes no version out of changes that change nothing", async () => {
+  it("makes no version out of changes that change nothing, and says which one it holds", async () => {
     const result = await lessonVersionRepository.publish({ ...input, changes: PUBLISHED });
-    expect(result).toEqual({ ok: false, reason: "unchanged" });
+    expect(result).toEqual({ ok: false, reason: "unchanged", version: 1 });
     expect(tx.lesson.updateMany).not.toHaveBeenCalled();
     expect(tx.lessonVersion.create).not.toHaveBeenCalled();
   });
@@ -185,14 +186,77 @@ describe("lessonVersionRepository.publish", () => {
   });
 });
 
+describe("lessonVersionRepository.publish, for a lesson an import has just created", () => {
+  // What the import is to do: create the row in its transaction, then call
+  // publish with `created` in that same transaction.
+  const created = {
+    lessonId: LESSON,
+    created: true as const,
+    source: "IMPORT" as const,
+    actorId: ADMIN,
+    audit: { action: "lesson.import", metadata: { file: "les-ports.mdx" } },
+    now: NOW,
+  };
+
+  it("records what the new lesson holds as its first version, from the import", async () => {
+    const result = await lessonVersionRepository.publish(created, tx as never);
+
+    expect(result).toEqual({ ok: true, version: 1, content: PUBLISHED, updatedAt: READ_AT });
+    expect(tx.lessonVersion.create).toHaveBeenCalledExactlyOnceWith({
+      data: {
+        lessonId: LESSON,
+        version: 1,
+        source: "IMPORT",
+        ...PUBLISHED,
+        publishedById: ADMIN,
+        publishedAt: NOW,
+      },
+    });
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing to the lesson and keeps no baseline: there was nothing before", async () => {
+    await lessonVersionRepository.publish(created, tx as never);
+    expect(tx.lesson.updateMany).not.toHaveBeenCalled();
+    expect(tx.lessonVersion.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("writes the import's audit row with the version it recorded", async () => {
+    await lessonVersionRepository.publish(created, tx as never);
+    expect(tx.auditLog.create).toHaveBeenCalledExactlyOnceWith({
+      data: {
+        actorId: ADMIN,
+        action: "lesson.import",
+        targetType: "Lesson",
+        targetId: LESSON,
+        metadata: { file: "les-ports.mdx", version: 1 },
+      },
+    });
+  });
+
+  it("says so when the lesson is not there", async () => {
+    tx.lesson.findUnique.mockResolvedValue(null);
+    expect(await lessonVersionRepository.publish(created, tx as never)).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    expect(tx.lessonVersion.create).not.toHaveBeenCalled();
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+});
+
 describe("lessonDraftRepository.save", () => {
-  it("starts the draft from the lesson as it is, and remembers that state", async () => {
-    mockPrisma.lesson.findUnique.mockResolvedValue({ ...PUBLISHED, version: 3 });
+  /** The lesson as the studio loaded it, at version 3. */
+  const BASE = lessonBaseOf({ ...PUBLISHED, version: 3 });
+
+  it("starts the draft from the lesson the editor loaded, and remembers that state", async () => {
+    mockPrisma.lesson.findUnique.mockResolvedValue({ id: LESSON });
     mockPrisma.lessonDraft.create.mockResolvedValue({});
 
     const result = await lessonDraftRepository.save(LESSON, EDITED, {
       actorId: ADMIN,
       expectedUpdatedAt: null,
+      base: BASE,
       now: NOW,
     });
 
@@ -211,11 +275,12 @@ describe("lessonDraftRepository.save", () => {
   });
 
   it("refuses a first save when another tab started the draft already", async () => {
-    mockPrisma.lesson.findUnique.mockResolvedValue({ ...PUBLISHED, version: 1 });
+    mockPrisma.lesson.findUnique.mockResolvedValue({ id: LESSON });
     mockPrisma.lessonDraft.create.mockRejectedValue({ code: "P2002" });
     const result = await lessonDraftRepository.save(LESSON, EDITED, {
       actorId: ADMIN,
       expectedUpdatedAt: null,
+      base: BASE,
     });
     expect(result).toEqual({ ok: false, reason: "conflict" });
   });
@@ -225,6 +290,7 @@ describe("lessonDraftRepository.save", () => {
     const result = await lessonDraftRepository.save(LESSON, EDITED, {
       actorId: ADMIN,
       expectedUpdatedAt: READ_AT,
+      base: BASE,
       now: NOW,
     });
     expect(result).toEqual({ ok: true, updatedAt: NOW });
@@ -240,6 +306,7 @@ describe("lessonDraftRepository.save", () => {
     const result = await lessonDraftRepository.save(LESSON, EDITED, {
       actorId: ADMIN,
       expectedUpdatedAt: READ_AT,
+      base: BASE,
     });
     expect(result).toEqual({ ok: false, reason: "conflict" });
   });
@@ -249,6 +316,7 @@ describe("lessonDraftRepository.save", () => {
     const result = await lessonDraftRepository.save(LESSON, EDITED, {
       actorId: ADMIN,
       expectedUpdatedAt: null,
+      base: BASE,
     });
     expect(result).toEqual({ ok: false, reason: "not_found" });
     expect(mockPrisma.lessonDraft.create).not.toHaveBeenCalled();
@@ -333,8 +401,37 @@ describe("lessonDraftRepository.publish", () => {
       actorId: ADMIN,
       expectedUpdatedAt: DRAFT_AT,
     });
-    expect(result).toEqual({ ok: false, reason: "unchanged" });
+    expect(result).toEqual({ ok: false, reason: "unchanged", version: 1 });
     expect(tx.lessonDraft.delete).toHaveBeenCalledOnce();
+  });
+
+  it("catches a lesson that changed between the page load and the first save", async () => {
+    // The studio loaded PUBLISHED; a sync rewrote the lesson before the first
+    // keystroke; the first save starts the draft from what the studio loaded.
+    const SYNCED: LessonContent = { ...PUBLISHED, title: "Les ports, synchronisés" };
+    mockPrisma.lesson.findUnique.mockResolvedValue({ id: LESSON });
+    mockPrisma.lessonDraft.create.mockResolvedValue({});
+    await lessonDraftRepository.save(LESSON, EDITED, {
+      actorId: ADMIN,
+      expectedUpdatedAt: null,
+      base: lessonBaseOf({ ...PUBLISHED, version: 1 }),
+      now: DRAFT_AT,
+    });
+    const [createArg] = mockPrisma.lessonDraft.create.mock.calls[0] ?? [];
+    const stored = (createArg as { data: { baseContentHash: string } }).data;
+    expect(stored.baseContentHash).toBe(lessonContentHash(PUBLISHED));
+
+    tx.lessonDraft.findUnique.mockResolvedValue({
+      updatedAt: DRAFT_AT,
+      baseContentHash: stored.baseContentHash,
+    });
+    tx.lesson.findUnique.mockResolvedValue(lessonRow(SYNCED));
+    const result = await lessonDraftRepository.publish(LESSON, EDITED, {
+      actorId: ADMIN,
+      expectedUpdatedAt: DRAFT_AT,
+    });
+    expect(result).toEqual({ ok: false, reason: "lesson_changed" });
+    expect(tx.lesson.updateMany).not.toHaveBeenCalled();
   });
 
   it("names the field a unique violation is about", async () => {
