@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CronJobRuns, CronRunView } from "@cyberlearn/db";
 import { CRON_JOBS, type CronJob } from "@cyberlearn/lib/cron/jobs";
-import { cronRows, cronTally, describeSchedule, formatDuration } from "../cron-status";
+import { cronRows, cronTally, describeSchedule, formatDuration, summaryText } from "../cron-status";
 
 /**
  * The crons page as data: a schedule in words, where each job stands from
@@ -86,6 +86,16 @@ describe("cronRows", () => {
     expect(row).toMatchObject({ health: "never", lastRun: null });
   });
 
+  it("judges keep-alive by the gap since its last run, its caller's clock being its own", () => {
+    const keepAlive = CRON_JOBS.find((job) => job.name === "keep-alive");
+    if (keepAlive === undefined) throw new Error("keep-alive is not listed");
+    // Called at 04:00 UTC by a caller on Paris time: six hours have not gone by.
+    const runs = new Map<string, CronJobRuns>([
+      ["keep-alive", { lastRun: run("2026-10-17T04:00:10Z", true), lastFailure: null }],
+    ]);
+    expect(cronRows([keepAlive], runs, NOW)[0]?.health).toBe("ok");
+  });
+
   it("judges nothing on a schedule it cannot read, and expects no next run", () => {
     const weekly: CronJob = { ...RETENTION, schedule: "0 0 * * 1" };
     const runs = new Map<string, CronJobRuns>([
@@ -109,6 +119,53 @@ describe("cronTally", () => {
       never: CRON_JOBS.length - 1,
       unknown: 0,
     });
+  });
+});
+
+describe("summaryText", () => {
+  it("says each job's report in the console's words", () => {
+    expect(summaryText("streak-reset", { scanned: 12, frozen: 0, broken: 1, failed: 0 })).toBe(
+      "séries examinées : 12 · gels consommés : 0 · séries cassées : 1 · écritures en échec : 0",
+    );
+    expect(summaryText("review-reminders", { sent: 1204, failed: 0, skipped: 3 })).toBe(
+      "rappels envoyés : 1 204 · rappels non envoyés : 0 · déjà prévenus aujourd'hui : 3",
+    );
+    expect(summaryText("season-rollover", { seasonsFinalized: 1 })).toBe("saisons closes : 1");
+    expect(
+      summaryText("retention", {
+        auditLogs: 4,
+        resolvedTickets: 0,
+        openTickets: 0,
+        lessonPreviews: 2,
+      }),
+    ).toBe(
+      "entrées d'audit purgées : 4 · tickets résolus purgés : 0 · tickets ouverts purgés : 0 · aperçus de leçon purgés : 2",
+    );
+    expect(
+      summaryText("inactive-accounts", {
+        erased: 1,
+        erasureFailures: 0,
+        warned: 2,
+        noticeFailures: 0,
+      }),
+    ).toBe(
+      "comptes effacés : 1 · effacements en échec : 0 · comptes prévenus : 2 · avis non envoyés : 0",
+    );
+  });
+
+  it("says keep-alive's statuses in words", () => {
+    expect(summaryText("keep-alive", { postgres: "ok", redis: "unknown" })).toBe(
+      "Postgres : répond · Redis : non configuré",
+    );
+    expect(summaryText("keep-alive", { postgres: "error", redis: "ok" })).toBe(
+      "Postgres : ne répond pas · Redis : répond",
+    );
+  });
+
+  it("prints a key it has no words for as it is, rather than hiding it", () => {
+    expect(summaryText("retention", { newCount: 3, done: true, none: null })).toBe(
+      "newCount : 3 · done : oui · none : -",
+    );
   });
 });
 

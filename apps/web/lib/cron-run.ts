@@ -51,9 +51,27 @@ async function record(
 export interface TrackOptions<T> {
   /**
    * Why a run that returned did not do its job, or null when it did. For a
-   * job that reports its own trouble rather than throwing (keep-alive).
+   * job that reports its own trouble rather than throwing: a ping that went
+   * unanswered, writes that failed one by one inside a batch that went on.
+   * Said in French: the console prints it as it is.
    */
   failure?: (result: T) => string | null;
+  /** What of the result the run keeps, when not all of it says something; all of it by default. */
+  summary?: (result: T) => unknown;
+}
+
+/**
+ * The failures a run counted, as its cause: "2 écritures en échec", several
+ * kinds joined. Null when every count is zero, so a batch whose rows all went
+ * through is recorded as a success.
+ */
+export function failureCounts(
+  counts: readonly (readonly [count: number, one: string, many: string])[],
+): string | null {
+  const parts = counts
+    .filter(([count]) => count > 0)
+    .map(([count, one, many]) => `${String(count)} ${count > 1 ? many : one}`);
+  return parts.length === 0 ? null : parts.join(", ");
 }
 
 /**
@@ -83,7 +101,7 @@ export async function trackCronRun<T>(
   await record(job, {
     ok: failure === null,
     durationMs: Date.now() - started,
-    summary: flatSummary(result),
+    summary: flatSummary(options.summary === undefined ? result : options.summary(result)),
     error: failure,
   });
   return result;

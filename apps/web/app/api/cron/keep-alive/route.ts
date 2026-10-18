@@ -8,6 +8,7 @@ import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
 import { trackCronRun } from "@/lib/cron-run";
+import { keepAliveFailure, type PingResults } from "@/lib/keep-alive";
 
 // Called every 6 hours by cron-job.org, not by Vercel: it is not in vercel.json
 // (docs/infra/keep-alive.md). Keeps Supabase and Upstash warm - Supabase Free
@@ -19,26 +20,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // A failed ping is answered, not thrown: the run is recorded as failed all
-  // the same, with the service that did not answer.
+  // the same, with the service that did not answer. The answer keeps its
+  // timestamp; the record has its own date, and keeps the two statuses.
   const results = await trackCronRun("keep-alive", ping, {
-    failure: (r) => {
-      const down = [
-        r.postgres === "error" ? "postgres" : null,
-        r.redis === "error" ? "redis" : null,
-      ].filter((name) => name !== null);
-      return down.length === 0 ? null : `ping failed: ${down.join(", ")}`;
-    },
+    failure: keepAliveFailure,
+    summary: ({ postgres, redis }) => ({ postgres, redis }),
   });
   return NextResponse.json(results);
 }
 
-type PingStatus = "ok" | "error" | "unknown";
-
-async function ping(): Promise<{ timestamp: string; postgres: PingStatus; redis: PingStatus }> {
-  const results = {
+async function ping(): Promise<PingResults & { timestamp: string }> {
+  const results: PingResults & { timestamp: string } = {
     timestamp: new Date().toISOString(),
-    postgres: "unknown" as PingStatus,
-    redis: "unknown" as PingStatus,
+    postgres: "unknown",
+    redis: "unknown",
   };
 
   // Ping Postgres (Supabase) - minimal query to keep the DB warm

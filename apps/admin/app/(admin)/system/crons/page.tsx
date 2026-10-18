@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { cronRunRepository, type CronRunSummary } from "@cyberlearn/db";
+import { cronRunRepository } from "@cyberlearn/db";
 import { CRON_JOBS } from "@cyberlearn/lib/cron/jobs";
 import { Card, KpiCard, PageHeader, Tag } from "../../_components/admin-ui";
 import { relativeDay } from "../../users/_components/dates";
@@ -10,7 +10,7 @@ import {
   CRON_KPI_LABELS,
   CRONS_HEADER,
 } from "../_components/crons-head";
-import { cronRows, cronTally, formatDuration } from "@/lib/cron-status";
+import { cronRows, cronTally, formatDuration, summaryText } from "@/lib/cron-status";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -24,13 +24,6 @@ const instant = new Intl.DateTimeFormat("fr-FR", {
   hour: "2-digit",
   minute: "2-digit",
 });
-
-/** What a run reported, as "sent 3 · failed 0". */
-function summaryText(summary: CronRunSummary): string {
-  return Object.entries(summary)
-    .map(([key, value]) => `${key} ${String(value)}`)
-    .join(" · ");
-}
 
 /**
  * Where each scheduled job stands: its last run, read from the audit log
@@ -116,7 +109,7 @@ export default async function SystemCronsPage(): Promise<React.ReactElement> {
                               ? formatDuration(row.lastRun.durationMs)
                               : "durée inconnue"}
                             {Object.keys(row.lastRun.summary).length > 0
-                              ? ` · ${summaryText(row.lastRun.summary)}`
+                              ? ` · ${summaryText(row.job.name, row.lastRun.summary)}`
                               : ""}
                           </span>
                           {!row.lastRun.ok && (

@@ -20,7 +20,7 @@ vi.mock("@cyberlearn/lib/logger", () => ({
   logger: { error: m.logError },
 }));
 
-const { CRON_ERROR_MAX, flatSummary, trackCronRun } = await import("../cron-run");
+const { CRON_ERROR_MAX, failureCounts, flatSummary, trackCronRun } = await import("../cron-run");
 
 const WEB = join(__dirname, "..", "..");
 
@@ -67,12 +67,32 @@ describe("trackCronRun", () => {
 
   it("records as failed a run that returned and says it did not do its job", async () => {
     await trackCronRun("keep-alive", () => Promise.resolve({ postgres: "error" }), {
-      failure: (r) => (r.postgres === "error" ? "ping failed: postgres" : null),
+      failure: (r) => (r.postgres === "error" ? "Postgres ne répond pas" : null),
     });
     expect(m.record.mock.calls[0]?.[1]).toMatchObject({
       ok: false,
       summary: { postgres: "error" },
-      error: "ping failed: postgres",
+      error: "Postgres ne répond pas",
+    });
+  });
+
+  it("records only the part of the result it is told to keep, and hands back all of it", async () => {
+    const result = await trackCronRun(
+      "keep-alive",
+      () => Promise.resolve({ timestamp: "2026-10-18T06:00:00.000Z", postgres: "ok" }),
+      { summary: ({ postgres }) => ({ postgres }) },
+    );
+    expect(result).toEqual({ timestamp: "2026-10-18T06:00:00.000Z", postgres: "ok" });
+    expect(m.record.mock.calls[0]?.[1]).toMatchObject({ ok: true, summary: { postgres: "ok" } });
+  });
+
+  it("records as failed a batch that went on past rows it could not write", async () => {
+    await trackCronRun("streak-reset", () => Promise.resolve({ scanned: 9, failed: 2 }), {
+      failure: (r) => failureCounts([[r.failed, "écriture en échec", "écritures en échec"]]),
+    });
+    expect(m.record.mock.calls[0]?.[1]).toMatchObject({
+      ok: false,
+      error: "2 écritures en échec",
     });
   });
 
@@ -90,6 +110,26 @@ describe("trackCronRun", () => {
       n: 1,
     });
     expect(m.logError).toHaveBeenCalled();
+  });
+});
+
+describe("failureCounts", () => {
+  it("is null when nothing failed", () => {
+    expect(failureCounts([[0, "écriture en échec", "écritures en échec"]])).toBeNull();
+    expect(failureCounts([])).toBeNull();
+  });
+
+  it("says each kind that failed, in the singular or the plural", () => {
+    expect(failureCounts([[1, "rappel non envoyé", "rappels non envoyés"]])).toBe(
+      "1 rappel non envoyé",
+    );
+    expect(
+      failureCounts([
+        [2, "effacement en échec", "effacements en échec"],
+        [0, "avis non envoyé", "avis non envoyés"],
+        [3, "avis non envoyé", "avis non envoyés"],
+      ]),
+    ).toBe("2 effacements en échec, 3 avis non envoyés");
   });
 });
 

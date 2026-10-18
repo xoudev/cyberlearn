@@ -4,6 +4,7 @@ import {
   CRON_JOBS,
   cronHealth,
   cronJob,
+  longestGapMs,
   nextRunAfter,
   parseDailySchedule,
   previousRunAtOrBefore,
@@ -74,6 +75,22 @@ describe("nextRunAfter and previousRunAtOrBefore", () => {
   });
 });
 
+describe("longestGapMs", () => {
+  const HOUR = 3_600_000;
+
+  it("is the step of an even schedule, and a day for a daily one", () => {
+    const sixHourly = parseDailySchedule("0 */6 * * *");
+    const daily = parseDailySchedule("30 3 * * *");
+    expect(sixHourly === null ? null : longestGapMs(sixHourly)).toBe(6 * HOUR);
+    expect(daily === null ? null : longestGapMs(daily)).toBe(24 * HOUR);
+  });
+
+  it("counts the wait across midnight on an uneven one", () => {
+    const twice = parseDailySchedule("0 1,8 * * *");
+    expect(twice === null ? null : longestGapMs(twice)).toBe(17 * HOUR);
+  });
+});
+
 describe("cronHealth", () => {
   const daily = parseDailySchedule("30 3 * * *");
 
@@ -88,6 +105,18 @@ describe("cronHealth", () => {
     const withinGrace = new Date(at("2026-10-17T03:30:00Z").getTime() + CRON_GRACE_MS - 1);
     expect(cronHealth(daily, yesterday, withinGrace)).toBe("ok");
     expect(cronHealth(daily, yesterday, at("2026-10-17T05:00:00Z"))).toBe("late");
+  });
+
+  it("judges a job called from outside by the gap since its last run, whatever its caller's clock", () => {
+    const sixHourly = parseDailySchedule("0 */6 * * *");
+    // A caller on Paris time, in summer: 04:00 UTC rather than 00:00 or 06:00.
+    const parisRun = { at: at("2026-10-17T04:00:10Z"), ok: true };
+    expect(cronHealth(sixHourly, parisRun, at("2026-10-17T07:30:00Z"), "external")).toBe("ok");
+    expect(cronHealth(sixHourly, parisRun, at("2026-10-17T10:59:00Z"), "external")).toBe("ok");
+    // Six hours and the grace gone by without a run.
+    expect(cronHealth(sixHourly, parisRun, at("2026-10-17T11:01:00Z"), "external")).toBe("late");
+    // The same run judged on the UTC times would have been late at 07:30.
+    expect(cronHealth(sixHourly, parisRun, at("2026-10-17T07:30:00Z"))).toBe("late");
   });
 
   it("reports a failure before lateness, and says when it has no record", () => {

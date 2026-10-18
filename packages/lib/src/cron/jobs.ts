@@ -19,7 +19,11 @@ export interface CronJob {
   /** The route's folder under apps/web/app/api/cron, and the name its runs are recorded under. */
   name: string;
   path: string;
-  /** Five fields, in UTC, as vercel.json writes them. */
+  /**
+   * Five fields, in UTC, as vercel.json writes them. For a job called from
+   * outside, the rhythm it is meant to keep: its caller's clock is its own,
+   * so its lateness is judged by the gap since its last run (cronHealth).
+   */
   schedule: string;
   /** What the console calls it. */
   label: string;
@@ -150,6 +154,17 @@ export function nextRunAfter(schedule: DailySchedule, from: Date): Date {
   return new Date(t + DAY);
 }
 
+/** The longest wait between two firings of the schedule, the one across midnight included. */
+export function longestGapMs(schedule: DailySchedule): number {
+  const firings = firingsOn(schedule, 0);
+  let longest = 0;
+  firings.forEach((firing, i) => {
+    const next = firings[i + 1] ?? (firings[0] ?? firing) + DAY;
+    longest = Math.max(longest, next - firing);
+  });
+  return longest;
+}
+
 /** The last firing at or before `at`. */
 export function previousRunAtOrBefore(schedule: DailySchedule, at: Date): Date {
   const t = at.getTime();
@@ -187,15 +202,26 @@ export type CronHealth =
 /**
  * Where a job stands, from its last recorded run. A failure is reported as
  * such even when the job is also late: the cause is the more useful of the two.
+ *
+ * A Vercel job is late when a firing of its schedule, in UTC, passed its
+ * grace with no run since. A job called from outside is judged by the gap
+ * since its last run instead: cron-job.org keeps a time zone per job, and a
+ * caller on Paris time would fire two hours off the UTC times and be called
+ * late for half of every day.
  */
 export function cronHealth(
   schedule: DailySchedule | null,
   lastRun: { at: Date; ok: boolean } | null,
   now: Date,
+  source: CronSource = "vercel",
 ): CronHealth {
   if (lastRun === null) return "never";
   if (!lastRun.ok) return "failed";
   if (schedule === null) return "unknown";
+  if (source === "external") {
+    const waited = now.getTime() - lastRun.at.getTime();
+    return waited > longestGapMs(schedule) + CRON_GRACE_MS ? "late" : "ok";
+  }
   const due = previousRunAtOrBefore(schedule, new Date(now.getTime() - CRON_GRACE_MS));
   return lastRun.at.getTime() < due.getTime() ? "late" : "ok";
 }

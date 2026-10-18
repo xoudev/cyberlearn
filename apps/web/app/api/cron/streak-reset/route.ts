@@ -5,7 +5,7 @@ import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
-import { trackCronRun } from "@/lib/cron-run";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
 
 // Vercel Cron: runs daily (see vercel.json crons config).
 // For each user with a live streak who did not act yesterday, either consume a
@@ -17,7 +17,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const summary = await trackCronRun("streak-reset", () => resetStreaks(new Date()));
+  // A write that failed leaves the others to go through, and the run failed all the same.
+  const summary = await trackCronRun("streak-reset", () => resetStreaks(new Date()), {
+    failure: (r) => failureCounts([[r.failed, "écriture en échec", "écritures en échec"]]),
+  });
   return NextResponse.json({ ok: true, ...summary });
 }
 

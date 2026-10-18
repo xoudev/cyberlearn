@@ -1,4 +1,4 @@
-import type { CronJobRuns, CronRunView } from "@cyberlearn/db";
+import type { CronJobRuns, CronRunSummary, CronRunView } from "@cyberlearn/db";
 import {
   cronHealth,
   nextRunAfter,
@@ -69,7 +69,7 @@ export function cronRows(
     return {
       job,
       scheduleText: describeSchedule(job.schedule),
-      health: cronHealth(schedule, recorded.lastRun, now),
+      health: cronHealth(schedule, recorded.lastRun, now, job.source),
       lastRun: recorded.lastRun,
       lastFailure,
       nextRun: schedule === null ? null : nextRunAfter(schedule, now),
@@ -82,6 +82,62 @@ export function cronTally(rows: readonly CronRow[]): Record<CronHealth, number> 
   const tally: Record<CronHealth, number> = { ok: 0, failed: 0, late: 0, never: 0, unknown: 0 };
   for (const row of rows) tally[row.health] += 1;
   return tally;
+}
+
+/**
+ * What each job's report holds, in the console's words: the keys its route
+ * returns (apps/web/app/api/cron/<job>), and for keep-alive the words of the
+ * statuses it reports.
+ */
+const SUMMARY_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  "streak-reset": {
+    scanned: "séries examinées",
+    frozen: "gels consommés",
+    broken: "séries cassées",
+    failed: "écritures en échec",
+  },
+  "season-rollover": { seasonsFinalized: "saisons closes" },
+  retention: {
+    auditLogs: "entrées d'audit purgées",
+    resolvedTickets: "tickets résolus purgés",
+    openTickets: "tickets ouverts purgés",
+    lessonPreviews: "aperçus de leçon purgés",
+  },
+  "inactive-accounts": {
+    erased: "comptes effacés",
+    erasureFailures: "effacements en échec",
+    warned: "comptes prévenus",
+    noticeFailures: "avis non envoyés",
+  },
+  "review-reminders": {
+    sent: "rappels envoyés",
+    failed: "rappels non envoyés",
+    skipped: "déjà prévenus aujourd'hui",
+  },
+  "keep-alive": { postgres: "Postgres", redis: "Redis" },
+};
+
+const SUMMARY_VALUES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  "keep-alive": { ok: "répond", error: "ne répond pas", unknown: "non configuré" },
+};
+
+function summaryValue(job: string, value: string | number | boolean | null): string {
+  if (value === null) return "-";
+  if (typeof value === "boolean") return value ? "oui" : "non";
+  if (typeof value === "number") return value.toLocaleString("fr-FR");
+  return SUMMARY_VALUES[job]?.[value] ?? value;
+}
+
+/**
+ * What a run reported, as "séries examinées : 12 · séries cassées : 1". A key
+ * this table does not know yet is printed as it is rather than hidden: the
+ * page says what the run recorded, even before it has the words for it.
+ */
+export function summaryText(job: string, summary: CronRunSummary): string {
+  const labels = SUMMARY_LABELS[job] ?? {};
+  return Object.entries(summary)
+    .map(([key, value]) => `${labels[key] ?? key} : ${summaryValue(job, value)}`)
+    .join(" · ");
 }
 
 /** "812 ms", "4,2 s", "1 min 05 s". */

@@ -5,7 +5,7 @@ import { errorMessage } from "@cyberlearn/lib/logger";
 import { requestLogger } from "@/lib/request-logger";
 
 import { isAuthorizedCron } from "@/lib/cron-auth";
-import { trackCronRun } from "@/lib/cron-run";
+import { failureCounts, trackCronRun } from "@/lib/cron-run";
 import { learnersWithRecall } from "@/lib/revisions/daily-recall";
 
 /** Reading the lessons of the cards due, once each, takes a while. */
@@ -23,7 +23,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const summary = await trackCronRun("review-reminders", () => sendReminders(new Date()));
+  // A reminder that could not be written leaves the others to go out, and the run failed all the same.
+  const summary = await trackCronRun("review-reminders", () => sendReminders(new Date()), {
+    failure: (r) => failureCounts([[r.failed, "rappel non envoyé", "rappels non envoyés"]]),
+  });
   return NextResponse.json({ ok: true, ...summary });
 }
 
