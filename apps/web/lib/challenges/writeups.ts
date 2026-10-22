@@ -5,6 +5,7 @@ import {
   friendshipRepository,
   moderationRepository,
   prisma,
+  userRepository,
   writeupRepository,
 } from "@cyberlearn/db";
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
@@ -24,6 +25,11 @@ import { checkQaSubmission } from "@/lib/rate-limit";
 
 export interface WriteupAuthor {
   name: string;
+  /**
+   * The handle the name opens a profile with: null when the author has none,
+   * or when the reader would not be let into their profile (a closed one,
+   * unless they are friends), as in the forum. A link to it is a 404.
+   */
   username: string | null;
   /** One of the reader's friends: a write-up is always signed, so the mark hides nothing. */
   isFriend: boolean;
@@ -79,11 +85,13 @@ async function findActive(id: string): Promise<{ slug: string } | null> {
 function authorOf(
   user: { id: string; displayName: string; username: string | null } | null,
   friends: ReadonlySet<string>,
+  open: ReadonlySet<string>,
 ): WriteupAuthor | null {
   if (user === null) return null;
   return {
     name: user.displayName || (user.username ?? "Sans nom"),
-    username: user.username,
+    // The name stays whatever the profile; only its link depends on the reader.
+    username: open.has(user.id) ? user.username : null,
     isFriend: friends.has(user.id),
   };
 }
@@ -109,6 +117,12 @@ export async function writeupBoardFor(
     writeupRepository.listOthers(id.data, userId),
     friendshipRepository.friendIds(userId),
   ]);
+  // Whose profile would open for this reader, in one call for all the authors:
+  // the name of somebody who closed theirs is not a link.
+  const open = await userRepository.profilesOpenTo(
+    userId,
+    others.flatMap((w) => (w.user === null ? [] : [w.user.id])),
+  );
   return {
     solved: true,
     count,
@@ -124,7 +138,7 @@ export async function writeupBoardFor(
     others: others.map((w) => ({
       id: w.id,
       content: w.content,
-      author: authorOf(w.user, friends),
+      author: authorOf(w.user, friends, open),
       updatedAt: w.updatedAt.toISOString(),
     })),
   };

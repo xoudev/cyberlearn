@@ -17,6 +17,7 @@ const m = vi.hoisted(() => ({
   announceModeration: vi.fn<(input: unknown) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, userIds: readonly string[]) => Promise<Set<string>>>(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -25,6 +26,7 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { challenge: { findFirst: m.findChallenge } },
   moderationRepository: { screen: m.screen, attachContent: m.attachContent },
   friendshipRepository: { friendIds: m.friendIds },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
   writeupRepository: {
     hasSolved: m.hasSolved,
     countVisible: m.countVisible,
@@ -56,6 +58,7 @@ beforeEach(() => {
   m.screen.mockResolvedValue({ flagged: false, throttled: false, eventId: null });
   m.upsert.mockResolvedValue({ id: "w-1" });
   m.friendIds.mockResolvedValue(new Set());
+  m.profilesOpenTo.mockResolvedValue(new Set());
 });
 
 describe("writeupBoardFor", () => {
@@ -74,6 +77,7 @@ describe("writeupBoardFor", () => {
       hiddenByModeration: false,
       updatedAt: at,
     });
+    m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
     m.listOthers.mockResolvedValue([
       {
         id: "w-2",
@@ -128,6 +132,38 @@ describe("writeupBoardFor", () => {
     expect(m.friendIds).toHaveBeenCalledWith("u1");
     // The ids never leave the server.
     expect(JSON.stringify(board)).not.toContain("u2");
+  });
+
+  it("names an author whose profile is closed to the reader without a handle to follow", async () => {
+    // A link to a closed profile is a 404 ("Cette page est introuvable").
+    const at = new Date("2026-10-01T10:00:00Z");
+    m.findOwn.mockResolvedValue(null);
+    m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
+    m.listOthers.mockResolvedValue([
+      {
+        id: "w-2",
+        content: "Avec awk.",
+        updatedAt: at,
+        user: { id: "u2", displayName: "Alex", username: "alex" },
+      },
+      {
+        id: "w-4",
+        content: "Avec sed.",
+        updatedAt: at,
+        user: { id: "u3", displayName: "Sam", username: "sam" },
+      },
+    ]);
+
+    const board = await writeupBoardFor("u1", CHALLENGE);
+
+    expect(board?.solved && board.others.map((w) => w.author)).toEqual([
+      { name: "Alex", username: "alex", isFriend: false },
+      // The name stays: the solution is signed whatever the profile.
+      { name: "Sam", username: null, isFriend: false },
+    ]);
+    // One call for every author, asked for the reader.
+    expect(m.profilesOpenTo).toHaveBeenCalledTimes(1);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith("u1", ["u2", "u3"]);
   });
 
   it("is null for a challenge that is not there", async () => {
