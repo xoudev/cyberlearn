@@ -252,6 +252,50 @@ describe("resetMfaAction", () => {
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result).toMatchObject({ ok: true, emailFailed: true });
   });
+
+  describe("an activation that was started and never finished", () => {
+    beforeEach(() => {
+      m.listFactors.mockResolvedValue({
+        data: { factors: [{ id: "f-9", factor_type: "totp", status: "unverified" }] },
+        error: null,
+      });
+    });
+
+    it("is not reset: nothing is removed, nothing is logged, and nobody is told", async () => {
+      // The owner never had a second factor. Telling them it was reset, and
+      // that "your authenticator no longer serves CyberLearn", would be false,
+      // and so would the alert that follows it.
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result.ok).toBeUndefined();
+      expect(result.error).toMatch(/pas de double authentification active/u);
+      expect(result.error).toMatch(/Rien n'a été retiré/u);
+      expect(m.deleteFactor).not.toHaveBeenCalled();
+      expect(m.record).not.toHaveBeenCalled();
+      expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+      expect(m.revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it("is removed along with a finished factor, which is what the reset is for", async () => {
+      m.listFactors.mockResolvedValue({
+        data: {
+          factors: [
+            { id: "f-9", factor_type: "totp", status: "unverified" },
+            { id: "f-1", factor_type: "totp", status: "verified" },
+          ],
+        },
+        error: null,
+      });
+
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result).toMatchObject({ ok: true });
+      expect(m.deleteFactor).toHaveBeenCalledTimes(2);
+      expect(m.sendMfaResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionsClosed: true }),
+      );
+    });
+  });
 });
 
 describe("revokeAllSessionsAction", () => {

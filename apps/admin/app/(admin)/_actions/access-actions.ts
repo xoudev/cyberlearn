@@ -172,6 +172,16 @@ export async function resetMfaAction(
     return { error: "Les facteurs de ce compte n'ont pas pu être lus. Rien n'a été retiré." };
   }
   if (found.length === 0) return { error: "Ce compte n'a pas de double authentification." };
+  // An enrolment started and never finished asks for no code at sign-in, so
+  // nobody is stuck behind it: the next activation clears it (the site's panel
+  // unenrols the unverified factors first). Resetting it would tell the owner
+  // their second factor was removed, and the alert mail would be false.
+  if (!found.some((factor) => factor.verified)) {
+    return {
+      error:
+        "Ce compte n'a pas de double authentification active : une activation commencée puis abandonnée ne bloque personne, et la prochaine activation la remplace. Rien n'a été retiré, aucun e-mail n'est parti.",
+    };
+  }
 
   // One at a time, so that a failure halfway is reported for what it is: some
   // factors gone, some not. Retrying picks up where it stopped.
