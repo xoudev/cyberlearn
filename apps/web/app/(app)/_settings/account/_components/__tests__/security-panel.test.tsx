@@ -60,6 +60,17 @@ describe("the security panel", () => {
     expect(m.unenroll).not.toHaveBeenCalled();
   });
 
+  it("announces what is wrong with a code by itself", async () => {
+    render(<SecurityPanel canDisableMfa />);
+    fireEvent.click(await screen.findByRole("button", { name: "Désactiver le MFA" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmer la désactivation" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Entre le code à six chiffres affiché par ton application.");
+  });
+
   it("says nothing of the procedure to an administrator without a factor", async () => {
     m.listFactors.mockResolvedValue({ data: { totp: [] }, error: null });
     render(<SecurityPanel canDisableMfa={false} />);

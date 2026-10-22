@@ -1475,9 +1475,15 @@
   color: var(--a-accent);
 }
 
-/* The way out of a sign-in step: quieter than its submit button. */
+/* The way out of a sign-in step: quieter than its submit button, and as easy to
+   hit as any other control. The text is 10px, which left a target about 13px
+   high at the edge of the numeric keypad; the minimum height makes the target
+   without changing the look. */
 .a-auth-cancel {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   border: 0;
   background: transparent;
   padding: 0;

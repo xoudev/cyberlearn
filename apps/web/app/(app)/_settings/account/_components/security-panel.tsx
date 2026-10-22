@@ -24,6 +24,13 @@ interface Enrollment {
   secret: string;
 }
 
+// The two messages that say something went right. Every other message of the
+// panel says something failed, and is announced as an alert: the code leaves on
+// its sixth digit with no click, so a refusal that is only drawn is never
+// heard by somebody using a screen reader.
+const ENABLED_MESSAGE = "Double authentification activée.";
+const DISABLED_MESSAGE = "Double authentification désactivée.";
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   height: 46,
@@ -192,7 +199,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
     });
     setEnrollment(null);
     setCode("");
-    setMessage("Double authentification activée.");
+    setMessage(ENABLED_MESSAGE);
     router.refresh();
   }
 
@@ -262,7 +269,7 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
     }
 
     setFactorsState({ status: "ready", factors: [] });
-    setMessage("Double authentification désactivée.");
+    setMessage(DISABLED_MESSAGE);
     router.refresh();
   }
 
@@ -522,7 +529,14 @@ export function SecurityPanel({ canDisableMfa }: { canDisableMfa: boolean }): Re
           ) : null}
 
           {message ? (
-            <p style={{ margin: 0, color: S.fg2, fontFamily: MONO, fontSize: 11 }}>{message}</p>
+            <p
+              role={
+                message === ENABLED_MESSAGE || message === DISABLED_MESSAGE ? "status" : "alert"
+              }
+              style={{ margin: 0, color: S.fg2, fontFamily: MONO, fontSize: 11 }}
+            >
+              {message}
+            </p>
           ) : null}
         </div>
       </SettingsCard>
