@@ -222,10 +222,6 @@ const RAW_COLOUR_ALLOWED = [
   // Rendered when the root layout itself has failed, so before admin-ui.css
   // and the tokens it names are there to be read.
   "global-error.tsx",
-  // The lesson studio and the import and sync screens are being rewritten in
-  // their own pull requests (plan items 20a and 20c). Their forms move to the
-  // palette once those land, and this line goes with them.
-  "(admin)/lessons/",
 ] as const;
 
 function allowedRawColour(path: string): boolean {
@@ -245,6 +241,15 @@ describe("the console's pages and forms", () => {
   it("finds the components under (admin) and (auth)", () => {
     expect(checked.filter((path) => path.startsWith(ADMIN)).length).toBeGreaterThan(100);
     expect(checked.filter((path) => path.startsWith(AUTH)).length).toBeGreaterThan(5);
+    // The lesson pages were the last folder let off, until the studio and the
+    // import screen moved to the palette too.
+    expect(checked.map(where)).toEqual(
+      expect.arrayContaining([
+        "(admin)/lessons/new/_components/new-lesson-form.tsx",
+        "(admin)/lessons/import/_components/import-client.tsx",
+        "(admin)/lessons/_components/cover-upload-field.tsx",
+      ]),
+    );
   });
 
   it.each(checked.map((path) => [where(path), path]))(
