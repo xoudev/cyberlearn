@@ -224,7 +224,14 @@ export const ticketRepository = {
     });
   },
 
-  /** Someone's own tickets, most recently touched first. */
+  /**
+   * Someone's own tickets, most recently touched first.
+   *
+   * `_count.messages` is the team's replies alone: the list says "N réponses"
+   * on the site and in the app, and the requester's own follow-ups are not
+   * answers. Counting every turn made a clarification of their own read as
+   * the team having written back.
+   */
   async findForUser(userId: string) {
     return prisma.contactTicket.findMany({
       where: { userId },
@@ -236,7 +243,7 @@ export const ticketRepository = {
         status: true,
         createdAt: true,
         updatedAt: true,
-        _count: { select: { messages: true } },
+        _count: { select: { messages: { where: { fromStaff: true } } } },
       },
     });
   },

@@ -356,6 +356,41 @@ describe("tickets (integration, real DB)", () => {
     });
   });
 
+  describe("what the requester's list counts as replies", () => {
+    it("counts the team's replies and leaves the requester's own follow-ups out", async () => {
+      if (!configured) return;
+      const own = await makeTicket(`Compte des réponses ${suffix}`, "OPEN");
+      try {
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Une précision de ma part.",
+        });
+        const before = await ticketRepository.findForUser(requester);
+        // Only the requester has written: nobody has answered.
+        expect(before.find((t) => t.id === own)?._count.messages).toBe(0);
+
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: staff,
+          fromStaff: true,
+          body: "Bien reçu.",
+        });
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Merci.",
+        });
+        const after = await ticketRepository.findForUser(requester);
+        expect(after.find((t) => t.id === own)?._count.messages).toBe(1);
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: own } });
+      }
+    });
+  });
+
   describe("a ban appeal's standing, for the person who filed it", () => {
     async function makeAppeal(status: "OPEN" | "RESOLVED"): Promise<string> {
       const ticket = await prisma.contactTicket.create({
