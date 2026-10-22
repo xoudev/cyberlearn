@@ -642,7 +642,7 @@ function PeriodSwitch({
               onPress={() => onChange(chip.id)}
               style={{
                 flex: 1,
-                minHeight: 36,
+                minHeight: 44,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,

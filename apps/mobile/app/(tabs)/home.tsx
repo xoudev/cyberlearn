@@ -11,7 +11,7 @@ import React, { useMemo } from "react";
 import { View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
-import { ActionChip, GradientButton, IconButton } from "@/components/buttons";
+import { ActionChip, GradientButton, IconButton, TEXT_LINK_TARGET } from "@/components/buttons";
 import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { ModuleRouteRow } from "@/components/module-route";
@@ -250,7 +250,13 @@ function HomeBody({
           <PressableScale
             onPress={openRecall}
             accessibilityLabel="Ton rappel du jour t'attend"
-            style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
+            style={{
+              ...TEXT_LINK_TARGET,
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+            }}
           >
             <Text variant="body">
               <Text style={{ color: theme.accent, fontFamily: `${fonts.sans}_700Bold` }}>
