@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as LessonImport from "@/lib/services/lesson-import.service";
 import type * as LessonUpdate from "@/lib/services/lesson-update.service";
 
 const m = vi.hoisted(() => ({
@@ -13,6 +15,7 @@ const m = vi.hoisted(() => ({
   importCount: vi.fn(),
   auditRecord: vi.fn(),
   apply: vi.fn(),
+  validate: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
@@ -29,6 +32,11 @@ vi.mock("@cyberlearn/db", () => ({
     createFromFile: m.create,
   },
 }));
+// The real validation runs unless a test makes one file fail it.
+vi.mock("@/lib/services/lesson-import.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof LessonImport>()),
+  validateMdxContent: m.validate,
+}));
 vi.mock("@/lib/services/lesson-update.service", async (importOriginal) => ({
   ...(await importOriginal<typeof LessonUpdate>()),
   applyLessonContentUpdate: m.apply,
@@ -39,6 +47,10 @@ import {
   updateLessonFromImportAction,
   validateImportBatchAction,
 } from "../actions";
+
+const { validateMdxContent } = await vi.importActual<typeof LessonImport>(
+  "@/lib/services/lesson-import.service",
+);
 
 function mdx(refCode: string, slug: string, prereqs: string[] = []): string {
   return `---
@@ -80,6 +92,7 @@ beforeEach(() => {
   );
   m.importCount.mockResolvedValue(0);
   m.auditRecord.mockResolvedValue(undefined);
+  m.validate.mockImplementation(validateMdxContent);
 });
 
 describe("validateImportBatchAction", () => {
@@ -190,6 +203,56 @@ describe("importLessonBatchAction", () => {
     });
     // The success row is the publish's own: none is written beside it.
     expect(m.auditRecord).not.toHaveBeenCalled();
+  });
+
+  it("logs a file that fails its validation as rejected, with its fingerprint and first error", async () => {
+    const content = mdx("CL-LSN-001-V01", "lecon-a");
+    m.validate.mockResolvedValueOnce({ valid: false, errors: [{ message: "x" }], warnings: [] });
+
+    const res = await importLessonBatchAction([{ name: "a.mdx", content }]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [{ name: "a.mdx", status: "validation_error" }],
+    });
+    expect(m.create).not.toHaveBeenCalled();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rejected",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {
+        contentHash: createHash("sha256").update(content).digest("hex"),
+        errorCount: 1,
+        firstError: "x",
+      },
+    });
+  });
+
+  it("stops mid-batch when the budget runs out between two files, and logs that it did", async () => {
+    // The batch's own check, then one per file: the second file finds none left.
+    m.importCount.mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(250);
+
+    const res = await importLessonBatchAction([
+      { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
+      { name: "b.mdx", content: mdx("CL-LSN-002-V01", "lecon-b") },
+    ]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [
+        { name: "a.mdx", status: "success" },
+        { name: "b.mdx", status: "skipped" },
+      ],
+    });
+    expect(m.create).toHaveBeenCalledOnce();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {},
+    });
   });
 
   it("counts updates in the hourly budget, with imports", async () => {
