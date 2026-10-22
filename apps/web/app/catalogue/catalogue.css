@@ -107,7 +107,7 @@
 
 .public-catalogue__pills button,
 .public-catalogue__filters input {
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid var(--border);
   color: var(--fg-secondary);
   background: rgba(10, 8, 38, 0.7);

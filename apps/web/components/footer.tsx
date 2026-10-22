@@ -3,6 +3,12 @@ import Link from "next/link";
 import { newRequestHref } from "@/app/(app)/support/_components/new-request-query";
 
 /**
+ * A footer link: as tall as a finger (44px), whatever the 12px text says. They
+ * were bare text, 16px high, with the next row of links a few pixels away.
+ */
+const LINK = "inline-flex min-h-11 items-center transition-colors hover:text-foreground";
+
+/**
  * Minimal footer shown at the bottom of authenticated app pages, and of the
  * legal pages around the site.
  *
@@ -14,34 +20,31 @@ import { newRequestHref } from "@/app/(app)/support/_components/new-request-quer
 export function Footer({ signedIn = false }: { signedIn?: boolean }): React.JSX.Element {
   return (
     <footer
-      className="border-t px-6 py-4"
+      className="border-t px-6 py-1"
       style={{
         borderColor: "var(--color-border-subtle)",
         color: "var(--color-text-muted)",
       }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span>© {new Date().getFullYear()} Cyber Learn</span>
-        <nav aria-label="Liens de pied de page" className="flex flex-wrap gap-x-4 gap-y-2">
-          <Link href="/download" className="transition-colors hover:text-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs">
+        <span className="py-2">© {new Date().getFullYear()} Cyber Learn</span>
+        <nav aria-label="Liens de pied de page" className="flex flex-wrap gap-x-4">
+          <Link href="/download" className={LINK}>
             Application mobile
           </Link>
-          <Link
-            href={signedIn ? newRequestHref() : "/contact"}
-            className="transition-colors hover:text-foreground"
-          >
+          <Link href={signedIn ? newRequestHref() : "/contact"} className={LINK}>
             Contact
           </Link>
-          <Link href="/verify" className="transition-colors hover:text-foreground">
+          <Link href="/verify" className={LINK}>
             Vérifier un certificat
           </Link>
-          <Link href="/legal/terms" className="transition-colors hover:text-foreground">
+          <Link href="/legal/terms" className={LINK}>
             CGU
           </Link>
-          <Link href="/privacy" className="transition-colors hover:text-foreground">
+          <Link href="/privacy" className={LINK}>
             Confidentialité
           </Link>
-          <Link href="/legal" className="transition-colors hover:text-foreground">
+          <Link href="/legal" className={LINK}>
             Mentions légales
           </Link>
         </nav>

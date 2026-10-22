@@ -40,6 +40,7 @@ export function PublicNavbar(): React.JSX.Element {
           style={{ objectFit: "contain" }}
         />
         <span
+          className="landing-nav-wordmark"
           style={{
             fontFamily: "var(--font-sans)",
             fontWeight: 700,
@@ -71,7 +72,7 @@ export function PublicNavbar(): React.JSX.Element {
           className="landing-nav-signin mono-label mono-label--md card card--ghost"
           style={{
             alignItems: "center",
-            padding: "11px 20px",
+            padding: "12px var(--nav-signin-x, 20px)",
             fontWeight: 700,
             color: "var(--color-text-secondary)",
             textDecoration: "none",
