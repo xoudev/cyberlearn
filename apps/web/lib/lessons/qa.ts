@@ -10,6 +10,7 @@ import {
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { TOO_MANY_MESSAGES } from "@/lib/rate-limit-copy";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
 /**
@@ -54,13 +55,11 @@ const answerSchema = z.object({
 
 export type QaResult = { ok: true; heldForReview?: true } | { ok: false; error: string };
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
-
 export async function postLessonQuestion(userId: string, input: unknown): Promise<QaResult> {
   // Shared with the forum on purpose: somebody flooding the site does not care
   // which surface they use.
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = questionSchema.safeParse(input);
   if (!parsed.success) {
@@ -119,7 +118,7 @@ export async function postLessonQuestion(userId: string, input: unknown): Promis
 
 export async function postLessonAnswer(userId: string, input: unknown): Promise<QaResult> {
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = answerSchema.safeParse(input);
   if (!parsed.success) {

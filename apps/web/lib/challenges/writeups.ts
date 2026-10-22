@@ -11,6 +11,7 @@ import {
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { TOO_MANY_MESSAGES } from "@/lib/rate-limit-copy";
 
 /**
  * Write-ups: after solving a challenge, a learner publishes their solution,
@@ -73,7 +74,6 @@ const publishSchema = z.object({
     .max(10000, "10 000 caractères au plus pour une solution."),
 });
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
 const NOT_FOUND = "Défi introuvable.";
 const HIDDEN_BY_MODERATION =
   "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.";
@@ -153,7 +153,7 @@ export async function writeupBoardFor(
  */
 export async function publishWriteup(userId: string, input: unknown): Promise<WriteupResult> {
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = publishSchema.safeParse(input);
   if (!parsed.success) {

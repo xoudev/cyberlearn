@@ -105,7 +105,11 @@ describe("postLessonQuestion", () => {
 
   it("refuses over the rate limit, and over the flag budget writes nothing", async () => {
     m.checkQaSubmission.mockResolvedValue({ success: false });
-    expect((await postLessonQuestion("user-1", input)).ok).toBe(false);
+    // In the register of the rest of the site, at the moment the person is stopped.
+    expect(await postLessonQuestion("user-1", input)).toEqual({
+      ok: false,
+      error: "Trop de messages. Réessaie dans une minute.",
+    });
     m.checkQaSubmission.mockResolvedValue({ success: true });
     m.screen.mockResolvedValue({ flagged: true, throttled: true, eventId: "e" });
     expect(await postLessonQuestion("user-1", input)).toEqual({

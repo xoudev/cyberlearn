@@ -257,9 +257,10 @@ describe("publishWriteup", () => {
       error: "Défi introuvable.",
     });
     m.checkQaSubmission.mockResolvedValue({ success: false });
-    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toMatchObject(
-      { ok: false },
-    );
+    expect(await publishWriteup("u1", { challengeId: CHALLENGE, content: SOLUTION })).toEqual({
+      ok: false,
+      error: "Trop de messages. Réessaie dans une minute.",
+    });
     expect(m.upsert).not.toHaveBeenCalled();
   });
 });
