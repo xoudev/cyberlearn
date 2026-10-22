@@ -69,6 +69,12 @@ export function FriendMark({ size = 13 }: { size?: number }): React.JSX.Element 
 }
 
 /**
+ * The least width a friend's avatar and name keep before the chips wrap under
+ * them: the 42 px avatar, its gap and about eighty pixels of name.
+ */
+const FRIEND_IDENTITY_BASIS = 136;
+
+/**
  * One person in a friends list, with what the site's panel offers on the
  * same row: accept or refuse a request, take one back, end a friendship, or
  * challenge a friend ("Défier" opens the duels screen with them picked, and
@@ -122,13 +128,33 @@ export function FriendRow({
 
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      {/* The chips go under the name when the name would be left with less than
+          FRIEND_IDENTITY_BASIS (a 375 px screen, "Duel en cours" and "Retirer"),
+          instead of squeezing it to a few letters. */}
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          columnGap: 12,
+          rowGap: 6,
+        }}
+      >
         <Pressable
           onPress={openProfile}
           disabled={openProfile === undefined}
           accessibilityRole={openProfile ? "link" : undefined}
           accessibilityLabel={openProfile ? `Profil de ${friend.name}` : friend.name}
-          style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minHeight: 44 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            flexGrow: 1,
+            flexShrink: 1,
+            flexBasis: FRIEND_IDENTITY_BASIS,
+            minHeight: 44,
+          }}
         >
           <Avatar avatarUrl={friend.avatar} displayName={friend.name} size={42} />
           <View style={{ flex: 1, gap: 2 }}>

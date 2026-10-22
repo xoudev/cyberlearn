@@ -525,7 +525,7 @@ function GlobalRow({
           gap: 10,
           paddingLeft: 14,
           paddingRight: handle !== null ? 0 : 14,
-          paddingVertical: 11,
+          paddingVertical: 9,
         }}
       >
         <Text
@@ -540,34 +540,39 @@ function GlobalRow({
           displayName={rowAvatarName(entry)}
           size={30}
         />
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", minWidth: 0 }}>
-          <Text
-            variant="h3"
-            numberOfLines={1}
-            style={{
-              flexShrink: 1,
-              fontSize: 13.5,
-              color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
-            }}
-          >
-            {entry.isCurrentUser ? `› ${name}` : name}
+        {/* The name takes the width that is left, with the level and the XP
+            under it: beside the name, and with "Ajouter" after them, they
+            left it about ten pixels on a 375 px screen. */}
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", minWidth: 0 }}>
+            <Text
+              variant="h3"
+              numberOfLines={1}
+              style={{
+                flexShrink: 1,
+                fontSize: 13.5,
+                color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
+              }}
+            >
+              {entry.isCurrentUser ? `› ${name}` : name}
+            </Text>
+            {markFriends && showsFriendMark(entry) ? <FriendMark /> : null}
+          </View>
+          <Text variant="micro" numberOfLines={1} style={{ color: colors.textMuted }}>
+            {`NV.${String(entry.level)} · `}
+            <Text
+              style={{
+                fontFamily: `${fonts.mono}_700Bold`,
+                fontSize: 11.5,
+                letterSpacing: 0,
+                textTransform: "none",
+                color: colors.textSecondary,
+              }}
+            >
+              {entry.xpTotal} XP
+            </Text>
           </Text>
-          {markFriends && showsFriendMark(entry) ? <FriendMark /> : null}
         </View>
-        <Text variant="micro" style={{ color: colors.textMuted }}>
-          NV.{entry.level}
-        </Text>
-        <Text
-          style={{
-            fontFamily: `${fonts.mono}_700Bold`,
-            fontSize: 12.5,
-            color: colors.textSecondary,
-            width: 84,
-            textAlign: "right",
-          }}
-        >
-          {entry.xpTotal} XP
-        </Text>
       </ProfileLink>
       {handle !== null && entry.friendship != null ? (
         <AddFriendChip username={handle} name={name} view={entry.friendship} />
