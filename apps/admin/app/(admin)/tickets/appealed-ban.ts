@@ -1,5 +1,6 @@
 import { banState, banTimeLeft, type BanState } from "@cyberlearn/lib";
 import type { Tone } from "../_components/admin-ui";
+import { STATUS_META } from "./ticket-meta";
 
 /** How the console names each state of a contested ban, and its colour. */
 export const BAN_STATE_META: Record<BanState, { label: string; tone: Tone }> = {
@@ -87,4 +88,30 @@ export function describeAppealedBan(
           }
         : null,
   };
+}
+
+/** What an account's page says about the appeal filed against its ban in force. */
+export interface BanAppealView {
+  /** Already in French, and ending on what the link does. */
+  label: string;
+  tone: Tone;
+}
+
+/**
+ * The appeal of a ban, from where its ticket stands.
+ *
+ * The link from the ban to its ticket is written once and never undone: an
+ * appeal refused is answered and its ticket closed, and the ban stays in force
+ * with the same link. A tag that said "ouvert" for as long as the link existed
+ * told whoever opened the account later that a request was waiting on an
+ * answer when the conversation was over.
+ *
+ * `ticket` is null when the account's tickets do not hold it, which says only
+ * that an appeal was filed.
+ */
+export function describeBanAppeal(ticket: { status: string; open: boolean } | null): BanAppealView {
+  if (ticket === null) return { label: "Un appel a été déposé · lire", tone: "neutral" };
+  if (ticket.open) return { label: "Un appel est ouvert · lire", tone: "warning" };
+  const status = (STATUS_META[ticket.status]?.label ?? ticket.status).toLowerCase();
+  return { label: `Appel traité (${status}) · lire`, tone: "neutral" };
 }

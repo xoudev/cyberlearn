@@ -9,6 +9,7 @@ import {
   badgeRepository,
   banRepository,
   certificateRepository,
+  isTicketOpen,
   lessonProgressRepository,
   moderationRepository,
   noteReportRepository,
@@ -40,6 +41,7 @@ import { ProgressPanel } from "./_components/progress-panel";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 import { SignInActions } from "./_components/sign-in-actions";
 import { TicketsPanel } from "./_components/tickets-panel";
+import { describeBanAppeal } from "../../tickets/appealed-ban";
 import { USER_CARDS, USER_CRUMBS, USER_DETAIL_KPI_LABELS } from "../_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -140,13 +142,28 @@ export default async function AdminUserPage({
   const stamp = (date: Date): string =>
     consoleDateFormat({ dateStyle: "short", timeStyle: "short" }).format(date);
 
+  // The appeal's ticket is among the account's own: it was opened by the person
+  // the ban is on. Its status says whether the appeal still waits for an answer.
+  const appealTicketId = active?.appealTicketId ?? null;
+  const appealTicket =
+    appealTicketId === null ? undefined : tickets.find((ticket) => ticket.id === appealTicketId);
   const activeBan = active
     ? {
         reason: active.reason,
         endsLabel: banTimeLeft(active.expiresAt),
         issuedOn: stamp(active.createdAt),
         issuedBy: active.issuedBy?.displayName ?? null,
-        appealTicketId: active.appealTicketId,
+        appeal:
+          appealTicketId === null
+            ? null
+            : {
+                ticketId: appealTicketId,
+                ...describeBanAppeal(
+                  appealTicket === undefined
+                    ? null
+                    : { status: appealTicket.status, open: isTicketOpen(appealTicket.status) },
+                ),
+              },
       }
     : null;
 
