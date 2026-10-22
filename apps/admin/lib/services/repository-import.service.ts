@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import matter from "gray-matter";
-import { prisma } from "@cyberlearn/db";
+import { auditLogRepository, prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import {
   catalogueFromManifest,
   changedValue,
@@ -438,19 +439,17 @@ export async function syncPathFromRepository(
   }
 
   const result = await syncPath(prisma, catalogueFromManifest(loaded.manifest));
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "path.sync",
-      targetType: "path",
-      targetId: result.pathId,
-      metadata: {
-        refCode,
-        file: loaded.file,
-        created: result.created,
-        attached: result.attached,
-        missing: result.missing,
-      },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.path.sync,
+    targetType: "path",
+    targetId: result.pathId,
+    metadata: {
+      refCode,
+      file: loaded.file,
+      created: result.created,
+      attached: result.attached,
+      missing: result.missing,
     },
   });
   return {
@@ -598,21 +597,19 @@ export async function syncQuizFromRepository(
   }
 
   const result = await syncQuiz(prisma, path.id, loaded.quiz);
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "quiz.sync",
-      targetType: "quiz",
-      targetId: result.quizId,
-      metadata: {
-        slug,
-        file: loaded.file,
-        created: result.created,
-        questions: result.questions,
-        retired: result.retired,
-        questionsToDraw: loaded.quiz.questionsToDraw,
-        passThreshold: loaded.quiz.passThreshold,
-      },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.quiz.sync,
+    targetType: "quiz",
+    targetId: result.quizId,
+    metadata: {
+      slug,
+      file: loaded.file,
+      created: result.created,
+      questions: result.questions,
+      retired: result.retired,
+      questionsToDraw: loaded.quiz.questionsToDraw,
+      passThreshold: loaded.quiz.passThreshold,
     },
   });
   return { ok: true, created: result.created, questions: result.questions };
@@ -765,14 +762,12 @@ export async function syncChallengeFromRepository(
     }
     throw error;
   }
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action: "challenge.sync",
-      targetType: "challenge",
-      targetId: result.challengeId,
-      metadata: { refCode, file: loaded.file, created: result.created, hints: result.hints },
-    },
+  await auditLogRepository.record({
+    actorId,
+    action: AUDIT_ACTION.challenge.sync,
+    targetType: "challenge",
+    targetId: result.challengeId,
+    metadata: { refCode, file: loaded.file, created: result.created, hints: result.hints },
   });
   return { ok: true, created: result.created };
 }
@@ -836,19 +831,21 @@ export async function publishCatalogueDrafts(
   if (drafts.lessons.length === 0 && drafts.paths.length === 0) return { lessons: 0, paths: 0 };
 
   const publishedAt = new Date();
-  const [lessons, paths] = await prisma.$transaction([
-    prisma.lesson.updateMany({
+  // The audit row is written by the transaction's client, so it lands with
+  // the publication or not at all.
+  return prisma.$transaction(async (tx) => {
+    const lessons = await tx.lesson.updateMany({
       where: { id: { in: drafts.lessons.map((l) => l.id) }, status: "DRAFT" },
       data: { status: "PUBLISHED", publishedAt },
-    }),
-    prisma.path.updateMany({
+    });
+    const paths = await tx.path.updateMany({
       where: { id: { in: drafts.paths.map((p) => p.id) }, status: "DRAFT" },
       data: { status: "PUBLISHED", publishedAt },
-    }),
-    prisma.auditLog.create({
-      data: {
+    });
+    await auditLogRepository.record(
+      {
         actorId,
-        action: "catalogue.publish",
+        action: AUDIT_ACTION.catalogue.publish,
         targetType: "catalogue",
         targetId: null,
         metadata: {
@@ -856,7 +853,8 @@ export async function publishCatalogueDrafts(
           paths: drafts.paths.map((p) => p.refCode),
         },
       },
-    }),
-  ]);
-  return { lessons: lessons.count, paths: paths.count };
+      tx,
+    );
+    return { lessons: lessons.count, paths: paths.count };
+  });
 }

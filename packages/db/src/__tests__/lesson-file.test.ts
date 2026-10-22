@@ -29,7 +29,7 @@ const { tx, mockPrisma } = vi.hoisted(() => {
       lesson: { findMany: vi.fn(), findUnique: vi.fn() },
       lessonQuizAnswer: { groupBy: vi.fn() },
       lessonDraft: { findMany: vi.fn() },
-      auditLog: { findMany: vi.fn() },
+      auditLog: { findMany: vi.fn(), count: vi.fn() },
     },
   };
 });
@@ -400,6 +400,23 @@ describe("catalogueLessonsOutside", () => {
       where: { audience: "CATALOGUE", refCode: { notIn: ["CL-LSN-001-V01"] } },
       orderBy: { refCode: "asc" },
       select: { id: true, refCode: true, title: true, status: true },
+    });
+  });
+});
+
+describe("countImportsSince", () => {
+  it("counts the lessons an administrator wrote from a file since then, and nothing else", async () => {
+    mockPrisma.auditLog.count.mockResolvedValue(7);
+    const since = new Date("2026-10-22T09:00:00Z");
+    expect(await lessonFileRepository.countImportsSince("admin-1", since)).toBe(7);
+    // A refused or rejected upload writes its own row: counting those would
+    // let the lockout extend itself.
+    expect(mockPrisma.auditLog.count).toHaveBeenCalledExactlyOnceWith({
+      where: {
+        actorId: "admin-1",
+        action: { in: ["lesson.import.success", "lesson.import.update"] },
+        createdAt: { gte: since },
+      },
     });
   });
 });

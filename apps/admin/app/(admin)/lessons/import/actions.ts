@@ -4,7 +4,8 @@ import crypto from "node:crypto";
 import matter from "gray-matter";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/auth";
-import { prisma, type Prisma } from "@cyberlearn/db";
+import { auditLogRepository, lessonFileRepository, type Prisma } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import type { ImportValidationError, ImportValidationResult } from "@cyberlearn/types";
 import {
   validateMdxContent,
@@ -61,13 +62,7 @@ async function importsRemaining(adminId: string): Promise<number> {
   // its file: counting refusals or rejections would let a failing batch (or
   // the refusal write itself) burn the hourly budget and self-extend the
   // lockout.
-  const count = await prisma.auditLog.count({
-    where: {
-      actorId: adminId,
-      action: { in: ["lesson.import.success", "lesson.import.update"] },
-      createdAt: { gte: since },
-    },
-  });
+  const count = await lessonFileRepository.countImportsSince(adminId, since);
   return Math.max(0, RATE_MAX - count);
 }
 
@@ -151,21 +146,19 @@ function intraBatchDuplicateErrors(
   return errors;
 }
 
+/** A refused or rejected upload: nothing was written but this row. */
 async function writeAuditLog(
   actorId: string,
-  action: string,
-  targetId: string | undefined,
+  action: typeof AUDIT_ACTION.lesson.importRateLimited | typeof AUDIT_ACTION.lesson.importRejected,
   // Prisma's JSON input type: what the column takes, checked where it is built.
   metadata: Prisma.InputJsonObject,
 ): Promise<void> {
-  await prisma.auditLog.create({
-    data: {
-      actorId,
-      action,
-      targetType: "lesson",
-      targetId: targetId ?? null,
-      metadata: metadata,
-    },
+  await auditLogRepository.record({
+    actorId,
+    action,
+    targetType: "lesson",
+    targetId: null,
+    metadata,
   });
 }
 
@@ -189,7 +182,7 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
   // Rate limiting
   const allowed = (await importsRemaining(admin.id)) > 0;
   if (!allowed) {
-    await writeAuditLog(admin.id, "lesson.import.rate_limited", undefined, {});
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, {});
     return { status: "rate_limited" };
   }
 
@@ -198,7 +191,7 @@ async function importLessonAction(fileContent: string): Promise<ImportActionResu
   const contentHash = crypto.createHash("sha256").update(fileContent).digest("hex");
 
   if (!validationResult.valid || !validationResult.metadata || !validationResult.body) {
-    await writeAuditLog(admin.id, "lesson.import.rejected", undefined, {
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRejected, {
       contentHash,
       errorCount: validationResult.errors.length,
       firstError: validationResult.errors[0]?.message ?? "unknown",
@@ -328,7 +321,7 @@ export async function importLessonBatchAction(files: BatchFileInput[]): Promise<
 
   const remaining = await importsRemaining(admin.id);
   if (parsed.data.length > remaining) {
-    await writeAuditLog(admin.id, "lesson.import.rate_limited", undefined, {
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, {
       requested: parsed.data.length,
       remaining,
     });
@@ -463,7 +456,7 @@ export async function updateLessonFromImportAction(input: {
   }
 
   if ((await importsRemaining(admin.id)) <= 0) {
-    await writeAuditLog(admin.id, "lesson.import.rate_limited", undefined, { update: true });
+    await writeAuditLog(admin.id, AUDIT_ACTION.lesson.importRateLimited, { update: true });
     return { status: "rate_limited" };
   }
 

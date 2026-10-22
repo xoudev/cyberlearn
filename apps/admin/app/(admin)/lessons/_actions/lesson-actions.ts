@@ -3,8 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { lessonRepository, pathRepository, prisma } from "@cyberlearn/db";
-import type { ContentStatus } from "@cyberlearn/db";
+import { auditLogRepository, lessonRepository, pathRepository } from "@cyberlearn/db";
+import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { withSavedNotice } from "@/lib/saved-notice";
@@ -107,18 +107,8 @@ export async function createLessonAction(
   // prerequisites: a class's would promise the lesson to people who cannot
   // open it, or close it to everyone outside that class.
   const [paths, prerequisites] = await Promise.all([
-    pathIds.length === 0
-      ? Promise.resolve([])
-      : prisma.path.findMany({
-          where: { id: { in: pathIds }, audience: "CATALOGUE" },
-          select: { id: true, refCode: true },
-        }),
-    prerequisiteIds.length === 0
-      ? Promise.resolve([])
-      : prisma.lesson.findMany({
-          where: { id: { in: prerequisiteIds }, audience: "CATALOGUE" },
-          select: { id: true },
-        }),
+    pathRepository.findCatalogueRefCodes(pathIds),
+    lessonRepository.findCatalogueIds(prerequisiteIds),
   ]);
   if (paths.length !== pathIds.length) {
     const error = "Un des parcours choisis n'existe plus.";
@@ -132,37 +122,18 @@ export async function createLessonAction(
 
   let createdId: string;
   try {
-    createdId = await prisma.$transaction(async (tx) => {
-      const lesson = await tx.lesson.create({
-        data: {
-          ...data,
-          contentMdx: contentMdx.text,
-          coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-          authorId: admin.id,
-          status: publishNow ? "PUBLISHED" : "DRAFT",
-          publishedAt: publishNow ? new Date() : null,
-        },
-      });
-
-      // In the order chosen: each path takes the lesson at its end.
-      for (const pathId of pathIds) await pathRepository.attachLesson(pathId, lesson.id, tx);
-      await lessonRepository.replacePrerequisites(lesson.id, prerequisiteIds, tx);
-
-      await tx.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "lesson.create",
-          targetType: "Lesson",
-          targetId: lesson.id,
-          metadata: {
-            title: lesson.title,
-            status: lesson.status,
-            paths: pathIds.map((pathId) => pathRefCode.get(pathId) ?? pathId),
-            prerequisites: prerequisiteIds.length,
-          },
-        },
-      });
-      return lesson.id;
+    // The lesson, its paths, its prerequisites and its `lesson.create` row,
+    // in one transaction.
+    createdId = await lessonRepository.createFromConsole({
+      fields: {
+        ...data,
+        contentMdx: contentMdx.text,
+        coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+      },
+      publish: publishNow === true,
+      actorId: admin.id,
+      paths: pathIds.map((id) => ({ id, refCode: pathRefCode.get(id) ?? id })),
+      prerequisiteIds,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
@@ -201,27 +172,15 @@ export async function getNextRefCodeAction(
   await requireAdminAction();
 
   const path = z.guid().safeParse(pathId);
-  const [lessons, firstPath] = await Promise.all([
-    prisma.lesson.findMany({
-      where: { refCode: { startsWith: "CL-LSN-" } },
-      select: { refCode: true },
-    }),
-    path.success
-      ? prisma.path.findUnique({
-          where: { id: path.data },
-          select: { refCode: true, lessons: { select: { lesson: { select: { refCode: true } } } } },
-        })
-      : Promise.resolve(null),
+  const [taken, firstPath] = await Promise.all([
+    lessonRepository.findLessonRefCodes(),
+    path.success ? pathRepository.findLessonRefCodes(path.data) : Promise.resolve(null),
   ]);
-  const taken = lessons.map((lesson) => lesson.refCode);
   // Appended at the end: every lesson of the path comes before it.
   const fromPath = firstPath
     ? lessonRefCodeFor(
         firstPath.refCode,
-        nextPathLessonNumber(
-          firstPath.refCode,
-          firstPath.lessons.map((link) => link.lesson.refCode),
-        ),
+        nextPathLessonNumber(firstPath.refCode, firstPath.lessonRefCodes),
         taken,
       )
     : null;
@@ -241,28 +200,17 @@ export async function updateLessonStatusAction(
 
   const [admin, lesson] = await Promise.all([
     requireAdminAction(),
-    prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { id: true, status: true },
-    }),
+    lessonRepository.findStatus(lessonId),
   ]);
   if (!lesson) return { error: "Leçon introuvable." };
 
-  const updateData: { status: ContentStatus; publishedAt?: Date } = { status };
-  if (status === "PUBLISHED") updateData.publishedAt = new Date();
-
-  await prisma.$transaction([
-    prisma.lesson.update({ where: { id: lessonId }, data: updateData }),
-    prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.status",
-        targetType: "Lesson",
-        targetId: lessonId,
-        metadata: { from: lesson.status, to: status },
-      },
-    }),
-  ]);
+  // The status and its `lesson.status` row, in one transaction.
+  await lessonRepository.changeStatus({
+    lessonId,
+    from: lesson.status,
+    to: status,
+    actorId: admin.id,
+  });
 
   revalidatePath("/lessons");
   revalidatePath("/lessons/archives");
@@ -294,28 +242,15 @@ export async function bulkUpdateLessonStatusAction(
 
   const admin = await requireAdminAction();
 
-  const updateData: { status: ContentStatus; publishedAt?: Date } = { status: parsed.data.status };
-  if (parsed.data.status === "PUBLISHED") updateData.publishedAt = new Date();
-
-  const [result] = await prisma.$transaction([
-    prisma.lesson.updateMany({
-      where: { id: { in: parsed.data.lessonIds } },
-      data: updateData,
-    }),
-    prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.status.bulk",
-        targetType: "Lesson",
-        targetId: parsed.data.lessonIds[0] ?? null,
-        metadata: { to: parsed.data.status, count: parsed.data.lessonIds.length },
-      },
-    }),
-  ]);
+  const count = await lessonRepository.changeStatuses({
+    lessonIds: parsed.data.lessonIds,
+    to: parsed.data.status,
+    actorId: admin.id,
+  });
 
   revalidatePath("/lessons");
   revalidatePath("/lessons/archives");
-  return { count: result.count };
+  return { count };
 }
 
 // ── Delete ──────────────────────────────────────────────────────────────────────
@@ -340,35 +275,25 @@ export async function deleteLessonAction(
 
   const { lessonId } = parsed.data;
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      _count: { select: { pathLessons: true } },
-    },
-  });
+  const lesson = await lessonRepository.findForDeletion(lessonId);
 
   if (!lesson) return { error: "Leçon introuvable." };
   if (lesson.status === "PUBLISHED") {
     return { error: "Impossible de supprimer une leçon publiée. Archivez-la d'abord." };
   }
-  if (lesson._count.pathLessons > 0) {
+  if (lesson.pathCount > 0) {
     return { error: "Suppression bloquée : cette leçon appartient à un ou plusieurs parcours." };
   }
 
   try {
-    await prisma.lesson.delete({ where: { id: lessonId } });
+    await lessonRepository.delete(lessonId);
 
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.delete",
-        targetType: "Lesson",
-        targetId: lessonId,
-        metadata: { title: lesson.title, status: lesson.status },
-      },
+    await auditLogRepository.record({
+      actorId: admin.id,
+      action: AUDIT_ACTION.lesson.delete,
+      targetType: "Lesson",
+      targetId: lessonId,
+      metadata: { title: lesson.title, status: lesson.status },
     });
   } catch {
     return { error: "Une erreur est survenue lors de la suppression." };

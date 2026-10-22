@@ -7,8 +7,8 @@ import {
   lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
+  lessonRepository,
   lessonVersionRepository,
-  prisma,
   type LessonBase,
   type LessonContent,
 } from "@cyberlearn/db";
@@ -155,17 +155,11 @@ export async function publishLessonChangesAction(
   // From here the content passed: a refusal says so with an empty list, which
   // takes down what the editor marked.
 
-  const [refCodeOwner, slugOwner] = await Promise.all([
-    prisma.lesson.findFirst({
-      where: { refCode: fields.refCode, NOT: { id: lessonId } },
-      select: { id: true },
-    }),
-    prisma.lesson.findFirst({
-      where: { slug: fields.slug, NOT: { id: lessonId } },
-      select: { id: true },
-    }),
-  ]);
-  if (refCodeOwner) {
+  const taken = await lessonRepository.findTaken(
+    { refCode: fields.refCode, slug: fields.slug },
+    lessonId,
+  );
+  if (taken.refCode) {
     return {
       ok: false,
       error: STUDIO_MESSAGES.refCodeTaken,
@@ -173,7 +167,7 @@ export async function publishLessonChangesAction(
       problems: [],
     };
   }
-  if (slugOwner) {
+  if (taken.slug) {
     return {
       ok: false,
       error: STUDIO_MESSAGES.slugTaken,

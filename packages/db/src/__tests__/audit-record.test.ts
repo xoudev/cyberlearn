@@ -99,6 +99,9 @@ describe("AUDIT_ACTION", () => {
     expect(AUDIT_ACTION.ticket.statusUpdate).toBe("ticket.status.update");
     expect(AUDIT_ACTION.audit.export).toBe("admin.audit.export");
     expect(AUDIT_ACTION.announcement.send).toBe("announcement.send");
+    // The import page wrote these two itself before they joined the catalogue.
+    expect(AUDIT_ACTION.lesson.importRateLimited).toBe("lesson.import.rate_limited");
+    expect(AUDIT_ACTION.lesson.importRejected).toBe("lesson.import.rejected");
   });
 });
 

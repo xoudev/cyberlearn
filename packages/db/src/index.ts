@@ -41,6 +41,13 @@ export type {
   ConsoleLessonQuery,
   ConsoleLessonRow,
   ConsoleLessonSort,
+  ConsoleLessonCreate,
+  ConsoleLessonPathsChange,
+  ConsoleLessonPrerequisitesChange,
+  LessonCataloguePaths,
+  LessonDeletionCheck,
+  LessonPrerequisites,
+  LessonRef,
 } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export {

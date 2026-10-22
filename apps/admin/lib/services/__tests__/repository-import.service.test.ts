@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   pathFindMany: vi.fn(),
   lessonUpdateMany: vi.fn(),
   pathUpdateMany: vi.fn(),
-  auditCreate: vi.fn(),
+  auditRecord: vi.fn(),
   validateMdxContent: vi.fn(),
   importValidatedLesson: vi.fn(),
   syncPath: vi.fn(),
@@ -18,13 +18,19 @@ const m = vi.hoisted(() => ({
   pathFindUnique: vi.fn(),
 }));
 
+/** The transaction's client: the publication and its audit row are written through it. */
+const tx = {
+  lesson: { updateMany: m.lessonUpdateMany },
+  path: { updateMany: m.pathUpdateMany },
+};
+
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
-    lesson: { findMany: m.lessonFindMany, updateMany: m.lessonUpdateMany },
-    path: { findMany: m.pathFindMany, findUnique: m.pathFindUnique, updateMany: m.pathUpdateMany },
-    auditLog: { create: m.auditCreate },
-    $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
+    lesson: { findMany: m.lessonFindMany },
+    path: { findMany: m.pathFindMany, findUnique: m.pathFindUnique },
+    $transaction: (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
   },
+  auditLogRepository: { record: m.auditRecord },
 }));
 
 vi.mock("@cyberlearn/db/catalogue", async (importOriginal) => ({
@@ -60,7 +66,7 @@ function write(rel: string, content: string): void {
 beforeEach(() => {
   vi.clearAllMocks();
   root = mkdtempSync(path.join(tmpdir(), "cl-repo-import-"));
-  m.auditCreate.mockResolvedValue({});
+  m.auditRecord.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -118,7 +124,7 @@ describe("importLessonFromRepository", () => {
       ],
     });
     expect(m.importValidatedLesson).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("says when a missing prerequisite is a file the import refuses, and why", async () => {
@@ -204,7 +210,7 @@ describe("importLessonFromRepository", () => {
         file: "f1/01008-le-bit.mdx",
       },
     );
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("never creates a second lesson for a refCode the database got since the page was drawn", async () => {
@@ -224,7 +230,7 @@ describe("importLessonFromRepository", () => {
     );
     expect(result).toMatchObject({ ok: false, reason: "conflict" });
     expect(m.importValidatedLesson).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 
   it("reports a lesson another tab has just imported instead of failing", async () => {
@@ -245,7 +251,7 @@ describe("importLessonFromRepository", () => {
       path.join(root, "lessons"),
     );
     expect(result).toMatchObject({ ok: false, reason: "conflict" });
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 });
 
@@ -489,8 +495,11 @@ describe("syncPathFromRepository", () => {
         ],
       }),
     );
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: { actorId: "admin-1", action: "path.sync", targetType: "path", targetId: "path-1" },
+    expect(m.auditRecord.mock.calls[0]?.[0]).toMatchObject({
+      actorId: "admin-1",
+      action: "path.sync",
+      targetType: "path",
+      targetId: "path-1",
     });
   });
 });
@@ -595,14 +604,12 @@ describe("syncQuizFromRepository", () => {
       "p-1",
       expect.objectContaining({ passThreshold: 75, questionsToDraw: 1 }),
     );
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
-        actorId: "admin-1",
-        action: "quiz.sync",
-        targetType: "quiz",
-        targetId: "q-1",
-        metadata: { slug: "reseaux", retired: 2 },
-      },
+    expect(m.auditRecord.mock.calls[0]?.[0]).toMatchObject({
+      actorId: "admin-1",
+      action: "quiz.sync",
+      targetType: "quiz",
+      targetId: "q-1",
+      metadata: { slug: "reseaux", retired: 2 },
     });
   });
 });
@@ -656,13 +663,17 @@ describe("catalogue publication", () => {
       where: { id: { in: ["p-1"] }, status: "DRAFT" },
       data: { status: "PUBLISHED" },
     });
-    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
-      data: {
+    // In the publication's transaction, so the row lands with it or not at all.
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith(
+      {
         actorId: "admin-1",
         action: "catalogue.publish",
+        targetType: "catalogue",
+        targetId: null,
         metadata: { lessons: ["CL-LSN-03001-V01"], paths: ["CL-PATH-103-V01"] },
       },
-    });
+      tx,
+    );
   });
 
   it("writes nothing when there is nothing to publish", async () => {
@@ -674,6 +685,6 @@ describe("catalogue publication", () => {
       paths: 0,
     });
     expect(m.lessonUpdateMany).not.toHaveBeenCalled();
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
   });
 });
