@@ -418,6 +418,18 @@ export const userRepository = {
    * that is still empty and nothing more. It used to be written at every
    * sign-in, over whatever the learner had picked at sign-up or uploaded since:
    * their choice lasted until the next time they signed in.
+   *
+   * A sign-in moves lastActiveAt, the clock of the inactivity notice, unless a
+   * streak is running. The same column is the streak's last active day (the
+   * lesson, the daily recall and the challenges read it as such), and a
+   * sign-in is not an activity of the streak. Written at the sign-in, it made
+   * the day count before anything was done: the lesson finished afterwards
+   * found the day already taken and left the streak where it was, and the
+   * nightly check kept alive a streak nobody had worked on. A running streak
+   * is recent by construction (the nightly check breaks one that has gone two
+   * days without activity), so the notice, which waits for two years, loses
+   * nothing by it. A streak that is broken, or that never started, leaves the
+   * column to the sign-in as it always did.
    */
   async upsertFromAuth(input: {
     id: string;
@@ -425,15 +437,25 @@ export const userRepository = {
     displayName: string;
     avatarUrl: string | null;
   }) {
-    const { avatarUrl: storedAvatar, ...profile } = await prisma.user.upsert({
+    const {
+      avatarUrl: storedAvatar,
+      streakDays,
+      ...profile
+    } = await prisma.user.upsert({
       where: { id: input.id },
       create: input,
-      update: {
-        email: input.email,
-        lastActiveAt: new Date(),
-      },
-      select: { username: true, role: true, avatarUrl: true },
+      update: { email: input.email },
+      select: { username: true, role: true, avatarUrl: true, streakDays: true },
     });
+
+    // Guarded in the statement: a lesson that starts a streak between the read
+    // above and this write wins, and the day stays the lesson's.
+    if (streakDays === 0) {
+      await prisma.user.updateMany({
+        where: { id: input.id, streakDays: 0 },
+        data: { lastActiveAt: new Date() },
+      });
+    }
 
     // Only when there is something to fill, which is rare once a profile
     // exists, and guarded in the statement so a choice made in between stands.
