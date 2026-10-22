@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   auditLogRepository,
   banRepository,
+  notificationRepository,
   prisma,
   ticketRepository,
   type AddNoteResult,
@@ -12,6 +13,8 @@ import {
 } from "@cyberlearn/db";
 import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import { sendTicketReplyEmail } from "@cyberlearn/email";
+import { isBanAppeal, ticketReplyEmailWanted } from "@cyberlearn/lib/tickets/appeal";
+import type { TicketThemeKey } from "@cyberlearn/lib/tickets/tickets";
 import { env } from "@/lib/env";
 import { STATUS_META } from "../tickets/ticket-meta";
 import { requireAdminAction } from "@/lib/auth";
@@ -75,7 +78,9 @@ const replySchema = z.object({
 /** What a reply's e-mail needs to know about the ticket and the person behind it. */
 const REPLY_RECIPIENT = {
   id: true,
+  userId: true,
   subject: true,
+  theme: true,
   email: true,
   user: {
     select: {
@@ -88,7 +93,10 @@ const REPLY_RECIPIENT = {
 
 interface ReplyRecipient {
   id: string;
+  /** Null for a guest's ticket: there is no account to notify. */
+  userId: string | null;
   subject: string;
+  theme: TicketThemeKey;
   email: string | null;
   user: {
     email: string;
@@ -99,6 +107,11 @@ interface ReplyRecipient {
 
 /**
  * Tells the requester the team answered, with the answer in the mail.
+ *
+ * It honours emailNotifications, except on a ban appeal: that reply is the
+ * decision on the account, its author can open neither the bell nor the
+ * ticket's page while the ban stands, so the mail is the one place it
+ * arrives (ticketReplyEmailWanted).
  *
  * Best effort, and it never throws: the reply is written and on their page
  * whatever happens here, and neither an address that bounces nor a status
@@ -111,7 +124,10 @@ async function emailReply(ticket: ReplyRecipient, reply: string): Promise<void> 
   // The account's address when there is an account, the one typed on the form
   // when the ticket came from a guest.
   const to = ticket.user?.email ?? ticket.email;
-  const wantsEmail = ticket.user?.preferences?.emailNotifications !== false;
+  const wantsEmail = ticketReplyEmailWanted({
+    theme: ticket.theme,
+    emailNotifications: ticket.user?.preferences?.emailNotifications ?? null,
+  });
   if (to === null || !wantsEmail) return;
 
   try {
@@ -137,18 +153,45 @@ async function emailReply(ticket: ReplyRecipient, reply: string): Promise<void> 
 }
 
 /**
+ * Tells a signed-in requester, in the bell, that the team answered.
+ *
+ * Whatever they chose for e-mail: the bell is the in-app half of "your
+ * request was answered", and the reply used to appear in it nowhere, so
+ * somebody who had cut e-mail found out only by going back to the ticket.
+ * Best effort like the mail, for the same reason: the reply is written.
+ */
+async function notifyReply(ticket: ReplyRecipient): Promise<void> {
+  if (ticket.userId === null) return;
+  try {
+    await notificationRepository.create({
+      userId: ticket.userId,
+      type: "TICKET_UPDATE",
+      title: isBanAppeal(ticket.theme)
+        ? "L'équipe a répondu à ton appel"
+        : "L'équipe a répondu à ta demande",
+      body: ticket.subject,
+      actionUrl: `/support/${ticket.id}`,
+    });
+  } catch (error) {
+    logger.error({ scope: "tickets", err: errorMessage(error) }, "reply notification failed");
+  }
+}
+
+/**
  * The team answering a ticket.
  *
- * Two things leave here, and only one of them may fail the action. The reply
+ * Three things leave here, and only one of them may fail the action. The reply
  * itself is written in a transaction with the ticket's status, so an answered
- * ticket is never left reading as untouched. The e-mail that tells the
- * requester is best effort: an address that bounces must not roll back a reply
- * the console already showed as sent.
+ * ticket is never left reading as untouched. The bell and the e-mail that tell
+ * the requester are best effort: an address that bounces must not roll back a
+ * reply the console already showed as sent.
  *
- * It honours emailNotifications like every other e-mail the platform sends -
- * with one difference worth naming: a ticket is a conversation the person
- * started, so the reply also lands on their own page whether or not they take
- * e-mail. Nobody is left without the answer.
+ * The e-mail honours emailNotifications like every other e-mail the platform
+ * sends - with two differences worth naming. A ticket is a conversation the
+ * person started, so the reply also lands on their own page and in their bell
+ * whether or not they take e-mail. And a ban appeal's reply is mailed whatever
+ * they chose, because its author reaches neither the page nor the bell while
+ * the ban stands.
  */
 export async function replyToTicketAction(
   ticketId: string,
@@ -192,6 +235,7 @@ export async function replyToTicketAction(
     metadata: {},
   });
 
+  await notifyReply(ticket);
   await emailReply(ticket, input.data.body);
 
   revalidatePath("/tickets");
@@ -342,7 +386,10 @@ export async function liftAppealedBanAction(
     }
   }
 
-  if (replied) await emailReply(ticket, reply);
+  if (replied) {
+    await notifyReply(ticket);
+    await emailReply(ticket, reply);
+  }
 
   revalidatePath("/tickets");
   revalidatePath(`/tickets/${ticketId}`);

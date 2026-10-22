@@ -17,6 +17,7 @@ export type InAppRoute =
   | { pathname: "/u/[username]"; params: { username: string } }
   | { pathname: "/duels/[id]"; params: { id: string } }
   | { pathname: "/tournaments/[id]"; params: { id: string } }
+  | { pathname: "/support/[id]"; params: { id: string } }
   // A sub-tab of the profile: the certificates and the badges both live there.
   | { pathname: "/profile"; params: { tab: ProfileSubParam } }
   | {
@@ -90,6 +91,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // A tournament announced to the reader's class opens the tournament.
   const tournament = /^\/tournaments\/([0-9a-f-]{36})$/u.exec(path)?.[1];
   if (tournament) return { pathname: "/tournaments/[id]", params: { id: tournament } };
+  // The team's answer to a help request opens the request and its thread.
+  const ticket = /^\/support\/([0-9a-f-]{36})$/u.exec(path)?.[1];
+  if (ticket) return { pathname: "/support/[id]", params: { id: ticket } };
   // Older certificate notices pointed at the site's PDF route, which no
   // screen here can open: they land on the list, with the new ones.
   if (/^\/api\/certificates\/[^/]+\/download$/u.test(path)) return certificates();

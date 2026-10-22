@@ -95,6 +95,14 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/tournaments/pas-un-id")).toBeNull();
   });
 
+  it("opens a help request the team answered on its thread", () => {
+    expect(inAppRouteFor("/support/55555555-5555-4555-8555-555555555555")).toEqual({
+      pathname: "/support/[id]",
+      params: { id: "55555555-5555-4555-8555-555555555555" },
+    });
+    expect(inAppRouteFor("/support/pas-un-id")).toBeNull();
+  });
+
   it("opens the profile a friend request or an acceptance points at", () => {
     expect(inAppRouteFor("/u/alex-b")).toEqual({
       pathname: "/u/[username]",
