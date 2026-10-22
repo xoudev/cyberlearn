@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SETTINGS_SECTIONS, type SettingsSectionKey } from "./sections";
 import { EASE, MONO, S } from "./tokens";
 
@@ -17,6 +17,21 @@ export function SettingsNav({
   onSelect: (key: SettingsSectionKey) => void;
 }): React.JSX.Element {
   const [hovered, setHovered] = useState<SettingsSectionKey | null>(null);
+
+  // On a narrow screen the sections are one row that scrolls sideways
+  // (.settings-drawer-nav), and the drawer opened on a far section from an
+  // address (?settings=account) showed the row from its start with the open
+  // section off-screen at 714-813px. The current one is brought into view when
+  // the drawer opens and whenever the section changes; "nearest" scrolls only
+  // as far as it takes, and the row itself when the sections are a column.
+  const currentButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const button = currentButton.current;
+    // jsdom has no scrollIntoView.
+    if (button !== null && typeof button.scrollIntoView === "function") {
+      button.scrollIntoView({ inline: "nearest", block: "nearest" });
+    }
+  }, [current]);
 
   // No inline direction: the stylesheet's (.settings-nav) lays the sections
   // in a row on a narrow screen.
@@ -88,6 +103,7 @@ export function SettingsNav({
         return (
           <button
             key={s.key}
+            ref={active ? currentButton : undefined}
             type="button"
             aria-current={active ? "true" : undefined}
             onClick={() => {
