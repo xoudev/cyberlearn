@@ -39,4 +39,23 @@ describe("TwoMachineLab", () => {
     expect(screen.getByTestId("terminal-attacker")).toBeDefined();
     expect(screen.getByTestId("terminal-target")).toBeDefined();
   });
+
+  it("draws the reset as a button of the site, not as a line of text", () => {
+    render(<TwoMachineLab id="blueteam-13-two-machine-lab" />);
+
+    const reset = screen.getByRole("button", { name: "Réinitialiser les deux machines" });
+    expect(reset.classList.contains("btn")).toBe(true);
+    expect(reset.classList.contains("btn--ghost")).toBe(true);
+    expect(reset.classList.contains("btn--sm")).toBe(true);
+  });
+
+  it("places the machines by the lesson block's width, not by the screen's", () => {
+    render(<TwoMachineLab id="blueteam-13-two-machine-lab" />);
+
+    const machines = screen.getByTestId("terminal-attacker").parentElement;
+    expect(machines?.className).toBe("two-machine-lab__machines");
+    // A screen breakpoint (xl:) would put them side by side at 1280px even in
+    // a block of 530px, with the notes opened.
+    expect(machines?.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
+  });
 });
