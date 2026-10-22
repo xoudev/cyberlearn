@@ -3,6 +3,12 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { type NavigationAction, usePreventRemove } from "expo-router/react-navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
+import {
+  clearDraft,
+  loadDraft,
+  restoreExamAnswers,
+  saveDraft,
+} from "@cyberlearn/lib/exam/answers-draft";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
@@ -12,6 +18,7 @@ import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, SectionLabel, StatCell, Text, XPBar } from "@/components/ui";
 import { startExamApi, submitExamApi } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
+import { examDraftStorage } from "@/lib/exam-draft";
 import {
   correctNeeded,
   deadlineOf,
@@ -128,18 +135,27 @@ function ExamFlow({
     setError(null);
     const reply = await startExamApi(path.id);
     const receivedAt = Date.now();
-    setBusy(false);
     if (!reply.ok) {
+      setBusy(false);
       setError(reply.error);
       // The refusal may come from a state this screen had not seen yet: an
       // attempt that ran out while away, the wait after it.
       onStatusStale();
       return;
     }
+    // An attempt taken up again (the app was closed, the phone restarted) gets
+    // back the answers it had, as the site's does after a reload. Only the
+    // ones that belong to it: the server refuses a copy with an answer it
+    // does not know.
+    const kept = restoreExamAnswers(
+      await loadDraft(examDraftStorage, "exam", reply.attemptId),
+      reply.questions,
+    );
+    setBusy(false);
     const deadlineMs = deadlineOf(reply.secondsLeft, receivedAt);
     submittingRef.current = false;
     autoSentRef.current = false;
-    setAnswers({});
+    setAnswers(kept);
     setIndex(0);
     setRemaining(secondsUntil(deadlineMs, receivedAt));
     setPhase({
@@ -163,6 +179,8 @@ function ExamFlow({
       setError(reply.error);
       return;
     }
+    // The copy is in: no draft of it is kept.
+    void clearDraft(examDraftStorage, "exam", taking.attemptId);
     setPhase({
       kind: "results",
       questions: taking.questions,
@@ -203,7 +221,16 @@ function ExamFlow({
     }
   }, [step.kind, phase.kind, begin]);
 
-  // Leaving mid-exam loses the answers (they are only sent at the end): ask.
+  // The answers are kept on the phone as they are given, so that leaving the
+  // exam, or the app being closed, takes the attempt up again with them
+  // instead of with a blank copy (the site keeps them the same way across a
+  // reload). Dropped once the copy is in.
+  useEffect(() => {
+    if (taking === null || Object.keys(answers).length === 0) return;
+    void saveDraft(examDraftStorage, "exam", taking.attemptId, answers);
+  }, [taking, answers]);
+
+  // Leaving mid-exam does not stop the clock: ask.
   usePreventRemove(taking !== null && remaining > 0 && !busy, ({ data }) => {
     setLeaveAction(data.action);
   });
@@ -272,9 +299,9 @@ function ExamFlow({
         >
           <Text variant="h2">Quitter l&apos;examen ?</Text>
           <Text variant="body">
-            Le chrono continue sans toi. Tes réponses ne partent qu&apos;à la remise de la copie :
-            en revenant avant 00:00, tu reprends la tentative sans elles. Passé ce délai, elle
-            compte comme échouée.
+            Le chrono continue sans toi. Tes réponses ne partent qu&apos;à la remise de la copie,
+            mais elles sont gardées sur ce téléphone : en revenant avant 00:00, tu reprends la
+            tentative avec elles. Passé ce délai, elle compte comme échouée.
           </Text>
           <GradientButton
             label="Continuer l'examen"

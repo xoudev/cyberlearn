@@ -27,11 +27,19 @@ import {
   type MockResult,
   type MockReviewItem,
 } from "@cyberlearn/lib/exam/mock";
+import {
+  clearDraft,
+  loadDraft,
+  restoreMockAnswers,
+  saveDraft,
+} from "@cyberlearn/lib/exam/answers-draft";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
 import { addressWith } from "@/hooks/use-query-dialog";
+import { browserDraftStorage } from "@/lib/exam/answers-draft-storage";
 import type { MockOverview } from "@/lib/exam/mock-exam";
+import { SUBMIT_FAILED } from "@/lib/exam/network-messages";
 import { startMockExamAction, submitMockExamAction } from "../_actions/mock-exam-actions";
 import { MOCK_GO, mockWindowHref } from "./mock-address";
 import {
@@ -695,13 +703,21 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
       setError("Impossible de lancer l'examen pour l'instant. Réessaie dans un moment.");
       return;
     }
-    setBusy(false);
     if (!started.ok) {
+      setBusy(false);
       setError(started.error);
       return;
     }
+    // A paper taken up again after a reload gets back the answers it had.
+    // Only the ones that belong to it: the server refuses a copy with an
+    // answer to a question it does not have.
+    const kept = restoreMockAnswers(
+      await loadDraft(browserDraftStorage, "mock", started.attemptId),
+      started.questions,
+    );
+    setBusy(false);
     leaveGo();
-    setAnswers({});
+    setAnswers(kept);
     submitting.current = false;
     autoSent.current = false;
     // From the moment it starts: the clock otherwise opens on the time the
@@ -737,14 +753,37 @@ export function MockExamFlow({ overview }: { overview: MockOverview }): React.Re
     submitting.current = true;
     setBusy(true);
     setError(null);
-    const handed = await submitMockExamAction(stage.attemptId, answers);
+    let handed: Awaited<ReturnType<typeof submitMockExamAction>>;
+    try {
+      handed = await submitMockExamAction(stage.attemptId, answers);
+    } catch {
+      // The call itself failed (the network, a deploy): the copy is not in,
+      // and the answers are all still here, and on this device. The paper used
+      // to stay on a disabled button for good, the clock running, and a reload
+      // brought the attempt back with a blank copy: the buttons are back, to
+      // try again by hand.
+      submitting.current = false;
+      setBusy(false);
+      setError(SUBMIT_FAILED);
+      return;
+    }
     setBusy(false);
     if (!handed.ok) {
       submitting.current = false;
       setError(handed.error);
       return;
     }
+    // The copy is in: no draft of it is kept.
+    void clearDraft(browserDraftStorage, "mock", stage.attemptId);
     setStage({ kind: "result", result: handed.result, late: handed.late });
+  }, [stage, answers]);
+
+  // The answers are kept on this device as they are given, so that a reload of
+  // the page takes the attempt up again with them instead of with a blank
+  // copy. Dropped once the copy is in.
+  useEffect(() => {
+    if (stage.kind !== "running" || Object.keys(answers).length === 0) return;
+    void saveDraft(browserDraftStorage, "mock", stage.attemptId, answers);
   }, [stage, answers]);
 
   // The clock: a tick a second while running, and the attempt handed in at zero.
