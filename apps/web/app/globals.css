@@ -1177,8 +1177,11 @@ article.lesson-content > p {
 }
 
 /* Glossary words (rehypeGlossary, @cyberlearn/lib/glossary): dotted, so they
-   do not read as links, with the definition shown on hover and on focus. No
-   script: a tap focuses the word, which shows it too. */
+   do not read as links, with the definition shown on hover and on focus. A tap
+   focuses the word, which shows it too. Showing is this sheet's alone; a small
+   script (glossary-tip-fit.tsx) only moves a definition sideways, with
+   --glossary-shift, when it would be cut at the edge of the page: it starts at
+   its word and spreads to the right, and <main> clips what leaves it. */
 .glossary-term {
   position: relative;
   text-decoration: underline dotted rgba(10, 255, 212, 0.6);
@@ -1193,7 +1196,7 @@ article.lesson-content > p {
   display: none;
   position: absolute;
   z-index: 30;
-  left: 0;
+  left: var(--glossary-shift, 0px);
   top: calc(100% + 6px);
   width: max-content;
   max-width: min(320px, 80vw);
