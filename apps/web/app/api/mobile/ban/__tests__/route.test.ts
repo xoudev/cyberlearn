@@ -21,13 +21,15 @@ vi.mock("../../_lib/auth", () => ({
     throw new Error("the ban routes must not use userFromBearer");
   },
 }));
+const currentAppeal = vi.fn<(userId: string) => Promise<unknown>>();
 vi.mock("@/lib/moderation/ban-appeal", () => ({
   acknowledgeBan: (u: string) => acknowledgeBan(u),
   appealBan: (i: Parameters<typeof appealBan>[0]) => appealBan(i),
+  currentAppeal: (u: string) => currentAppeal(u),
 }));
 
 const { POST: ACKNOWLEDGE } = await import("../acknowledge/route");
-const { POST: APPEAL } = await import("../appeal/route");
+const { POST: APPEAL, GET: GET_APPEAL } = await import("../appeal/route");
 
 function post(path: string, body: string, headers: Record<string, string> = {}): NextRequest {
   return new NextRequest(`https://cyberlearn.fr/api/mobile/ban${path}`, {
@@ -41,6 +43,7 @@ beforeEach(() => {
   identityFromBearer.mockReset();
   acknowledgeBan.mockReset();
   appealBan.mockReset();
+  currentAppeal.mockReset();
 });
 
 describe("POST /api/mobile/ban/acknowledge", () => {
@@ -103,5 +106,44 @@ describe("POST /api/mobile/ban/appeal", () => {
       ok: false,
       error: "Un appel est déjà ouvert pour cette décision.",
     });
+  });
+});
+
+describe("GET /api/mobile/ban/appeal", () => {
+  function get(): NextRequest {
+    return new NextRequest("https://cyberlearn.fr/api/mobile/ban/appeal");
+  }
+
+  it("refuses a caller with no valid token", async () => {
+    identityFromBearer.mockResolvedValue(null);
+    expect((await GET_APPEAL(get())).status).toBe(401);
+    expect(currentAppeal).not.toHaveBeenCalled();
+  });
+
+  it("gives the token's own appeal, whatever else the request names", async () => {
+    identityFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    const view = {
+      stage: "DECIDED",
+      title: "Appel examiné",
+      text: "L'équipe de modération a examiné ton appel : le bannissement est maintenu.",
+      reply: { body: "Le bannissement est maintenu.", createdAt: "2026-10-20T09:30:00.000Z" },
+    };
+    currentAppeal.mockResolvedValue(view);
+
+    const res = await GET_APPEAL(
+      new NextRequest("https://cyberlearn.fr/api/mobile/ban/appeal?userId=someone-else"),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, appeal: view });
+    expect(currentAppeal).toHaveBeenCalledWith("user-1");
+  });
+
+  it("says there is none rather than failing when no appeal was filed", async () => {
+    identityFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    currentAppeal.mockResolvedValue(null);
+    const res = await GET_APPEAL(get());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, appeal: null });
   });
 });

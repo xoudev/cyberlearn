@@ -278,6 +278,33 @@ export const ticketRepository = {
   },
 
   /**
+   * Where a ban appeal stands, for the person who filed it: the ticket's
+   * status and the team's last written answer, nothing else.
+   *
+   * The appeal's author is shut out of every page that shows a ticket - the
+   * ban gate sends them to /banned - so this is what /banned and the app's
+   * banned screen read to say what became of it. Scoped to the viewer and to
+   * the appeal theme, like findForRequester: knowing an id is not enough.
+   * Null for a ticket that is not theirs, not an appeal, or no longer there.
+   */
+  async findAppealFor(ticketId: string, viewerId: string) {
+    const ticket = await prisma.contactTicket.findFirst({
+      where: { id: ticketId, userId: viewerId, theme: "BAN_APPEAL" },
+      select: {
+        status: true,
+        messages: {
+          where: { fromStaff: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { body: true, createdAt: true },
+        },
+      },
+    });
+    if (ticket === null) return null;
+    return { status: ticket.status, reply: ticket.messages[0] ?? null };
+  },
+
+  /**
    * The same ticket for the console, which reads every one of them: the
    * account behind it, who has it in hand, and the ban it contests when it is
    * an appeal. The team's notes are read apart, by listNotes.

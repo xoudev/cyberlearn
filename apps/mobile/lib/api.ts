@@ -10,6 +10,7 @@ import type {
 } from "@/lib/tournaments";
 import type { MockQuestion, MockResult } from "@cyberlearn/lib/exam/mock";
 import type { ContentReportSurfaceKey } from "@cyberlearn/lib/moderation/report-reasons";
+import type { AppealView } from "@cyberlearn/lib/tickets/appeal";
 import type { MockOverview } from "@/lib/mock-exam";
 import type {
   ChallengeDetail,
@@ -153,6 +154,20 @@ export async function appealBanApi(message: string): Promise<{ ok: boolean; erro
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
+}
+
+/**
+ * Where the appeal stands and what the team answered: the site's /banned, whose
+ * ticket page the ban gate closes to the appeal's own author. Null when no
+ * appeal was filed.
+ */
+export async function fetchBanAppealApi(): Promise<AppealView | null> {
+  const res = await authedFetch("/api/mobile/ban/appeal");
+  const body = (await res.json()) as
+    | { ok: true; appeal: AppealView | null }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.appeal;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { banRepository, prisma } from "@cyberlearn/db";
+import { banRepository, prisma, ticketRepository } from "@cyberlearn/db";
+import { appealView, type AppealView } from "@cyberlearn/lib/tickets/appeal";
 import { checkContactForm } from "@/lib/rate-limit";
 
 /**
@@ -25,6 +26,42 @@ export async function acknowledgeBan(userId: string): Promise<{ ok: boolean }> {
 
   await banRepository.acknowledge(ban.id, userId);
   return { ok: true };
+}
+
+/**
+ * Where the appeal against the ban in force stands, or null when there is none
+ * to show: no appeal filed, or the ticket is gone (retention purges old ones).
+ *
+ * An appeal's author is shut out of the pages that show a ticket - the ban
+ * gate sends them to /banned - so the team's answer is read here, from the
+ * ticket's status and its last staff message, rather than left to an e-mail
+ * alone. Scoped to the account asking.
+ */
+export async function appealStanding(input: {
+  userId: string;
+  /** The ban's `appealTicketId`. */
+  appealTicketId: string | null;
+}): Promise<AppealView | null> {
+  if (input.appealTicketId === null) return null;
+  const appeal = await ticketRepository.findAppealFor(input.appealTicketId, input.userId);
+  if (appeal === null) return null;
+  return appealView({
+    status: appeal.status,
+    reply:
+      appeal.reply === null
+        ? null
+        : { body: appeal.reply.body, createdAt: appeal.reply.createdAt.toISOString() },
+  });
+}
+
+/**
+ * The same for the app, which does not hold the ban row: it reads the ban in
+ * force first. Null for an account with no ban, which has nothing to appeal.
+ */
+export async function currentAppeal(userId: string): Promise<AppealView | null> {
+  const ban = await banRepository.findActive(userId);
+  if (!ban) return null;
+  return appealStanding({ userId, appealTicketId: ban.appealTicketId });
 }
 
 const appealSchema = z.object({

@@ -9,13 +9,24 @@ import { ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
 import { acknowledgeBanApi, appealBanApi, SITE_URL } from "@/lib/api";
 import { APPEAL_MAX_LENGTH, appealProblem, banDurationLabel } from "@/lib/ban";
+import { appealView } from "@cyberlearn/lib/tickets/appeal";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { useActiveBan } from "@/lib/use-active-ban";
+import { useBanAppeal } from "@/lib/use-ban-appeal";
+
+/** The day of the team's answer. */
+const REPLY_DAY = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 /**
  * Where a banned account lands, and the only screen it can open: the site's
- * /banned. The reason, when it was decided, how long is left, and the appeal.
+ * /banned. The reason, when it was decided, how long is left, and the appeal,
+ * with the team's answer once there is one: the appeal's ticket is closed to
+ * its author while the ban stands, so this screen is where the answer is read.
  * The root layout sends people here while a ban is in force and back home once
  * it ends or is lifted.
  */
@@ -30,6 +41,7 @@ export default function Banned(): React.JSX.Element {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const { data: standing } = useBanAppeal(userId, sent || ban?.appealed === true);
 
   // The whole screen is the notice: having shown it counts as seen, which the
   // site records when its notice is closed.
@@ -74,7 +86,11 @@ export default function Banned(): React.JSX.Element {
     setSent(true);
     setAppealOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["ban", userId] });
+    void queryClient.invalidateQueries({ queryKey: ["ban-appeal", userId] });
   };
+
+  // An appeal sent a moment ago has no ticket read yet: it is just received.
+  const view = standing ?? appealView({ status: "OPEN", reply: null });
 
   return (
     <Screen>
@@ -105,14 +121,35 @@ export default function Banned(): React.JSX.Element {
         </Card>
 
         {appealed ? (
-          <Card style={{ gap: 6 }}>
-            <Text variant="micro" style={{ color: colors.success }}>
-              Appel transmis
+          <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
+            {/* An appeal examined and refused is not a success to be shown in green. */}
+            <Text
+              variant="micro"
+              style={{ color: view.stage === "DECIDED" ? colors.textMuted : colors.success }}
+            >
+              {view.title}
             </Text>
             <Text variant="bodySm" style={{ color: colors.textSecondary }}>
-              Ton appel a été transmis à l&apos;équipe de modération. La réponse arrivera par e-mail
-              : elle contient la décision, pas seulement un avis de passage.
+              {view.text}
             </Text>
+            {view.reply !== null ? (
+              <View
+                style={{
+                  gap: 4,
+                  marginTop: 6,
+                  paddingLeft: 10,
+                  borderLeftWidth: 2,
+                  borderLeftColor: colors.borderDefault,
+                }}
+              >
+                <Text variant="micro">
+                  Réponse de l&apos;équipe · {REPLY_DAY.format(new Date(view.reply.createdAt))}
+                </Text>
+                <Text variant="body" style={{ color: colors.textPrimary }}>
+                  {view.reply.body}
+                </Text>
+              </View>
+            ) : null}
           </Card>
         ) : appealOpen ? (
           <View style={{ gap: 10 }}>
