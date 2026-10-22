@@ -11,6 +11,8 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { QueryDialogHost } from "@/components/query-dialog-host";
 import { SettingsDrawerProvider } from "@/app/(app)/_settings/_components/SettingsDrawer";
+import { brandTypeface } from "@/components/brand-typeface";
+import "./app-chrome.css";
 
 async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmeticAttrs>> {
   try {
@@ -61,7 +63,7 @@ export async function AppShell({
     // hands its request to.
     <CosmeticsProvider initial={cosmetics}>
       <SettingsDrawerProvider>
-        <SidebarProvider defaultOpen={defaultOpen}>
+        <SidebarProvider defaultOpen={defaultOpen} className={`app-frame ${brandTypeface}`}>
           {/* First stop of the Tab key: without it, the content sat behind the
             sixteen links of the sidebar and the navbar, every page. */}
           <a href="#contenu" className="skip-link">
@@ -88,7 +90,7 @@ export async function AppShell({
                 <div
                   style={{
                     height: NAVBAR_HEIGHT,
-                    background: "rgba(3,2,25,0.85)",
+                    background: "var(--color-bg-base)",
                     borderBottom: "1px solid var(--color-border-default)",
                     flexShrink: 0,
                   }}

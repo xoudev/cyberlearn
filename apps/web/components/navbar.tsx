@@ -14,6 +14,13 @@ import { GlobalSearch } from "./global-search";
 import { NewsButton } from "./news-button";
 import { NotificationPanel } from "./notification-panel";
 import { WrappedChip } from "./wrapped-chip";
+import { NavigationLocation } from "./navigation-location";
+import { BastionLogo } from "./bastion-logo";
+
+const headerStyle: React.CSSProperties & { "--chrome-panel-top": string } = {
+  height: NAVBAR_HEIGHT,
+  "--chrome-panel-top": `${String(NAVBAR_HEIGHT + 8)}px`,
+};
 
 export async function Navbar(): Promise<React.ReactElement> {
   let displayName = "";
@@ -52,33 +59,27 @@ export async function Navbar(): Promise<React.ReactElement> {
   const wrapped = wrappedWindow(new Date());
 
   return (
-    <header
-      className="shrink-0 navbar-header"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        height: NAVBAR_HEIGHT,
-        background: "rgba(3,2,25,0.85)",
-        backdropFilter: "blur(24px) saturate(140%)",
-        WebkitBackdropFilter: "blur(24px) saturate(140%)",
-        borderBottom: "1px solid var(--color-border-default)",
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-      }}
-    >
+    <header className="shrink-0 navbar-header" style={headerStyle}>
       {/* ── Sidebar trigger (hamburger). The wordmark is the sidebar's: written
           here too, the name of the site stood twice on the same screen. ── */}
-      <SidebarTrigger style={{ width: 26, height: 26, flexShrink: 0 }} />
+      <SidebarTrigger style={{ width: 44, height: 44, flexShrink: 0 }} />
+      <Link
+        className="chrome-mobile-brand"
+        href="/dashboard"
+        aria-label="CyberLearn, tableau de bord"
+      >
+        <BastionLogo size={25} />
+      </Link>
+      <NavigationLocation />
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
       <GlobalSearch />
 
       {/* ── Mobile spacer: push actions to the right ────────────────────── */}
-      <div className="flex-1 md:hidden" />
+      <div className="chrome-mobile-spacer" />
 
       {/* ── Actions ─────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+      <div className="chrome-actions">
         {/* Wrapped turns up here in December and is gone again in January. */}
         {userId && wrapped.open && <WrappedChip periodKey={wrapped.periodKey} />}
         {/* The release notes: news, announced where the other news arrives. */}
@@ -104,6 +105,7 @@ export async function Navbar(): Promise<React.ReactElement> {
         {/* The avatar, a link to the profile. The level is no longer written
             here: the sidebar's account block already says it on every page. */}
         <Link href="/profile" className="navbar-me" title="Mon profil" aria-label="Mon profil">
+          <span className="chrome-profile-name">{displayName || "Mon profil"}</span>
           {/* The equipped hexagon glow and frame are a filter on the frame, as
               in the sidebar: AvatarView draws, this span frames. */}
           <span

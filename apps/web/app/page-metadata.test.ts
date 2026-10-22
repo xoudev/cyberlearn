@@ -19,6 +19,8 @@ import sitemap from "./sitemap";
 vi.mock("next/font/google", () => ({
   Plus_Jakarta_Sans: () => ({ variable: "font-sans" }),
   JetBrains_Mono: () => ({ variable: "font-mono" }),
+  Barlow_Condensed: () => ({ variable: "font-display" }),
+  Space_Grotesk: () => ({ variable: "font-interface" }),
 }));
 vi.mock("@/components/splash-screen", () => ({ SplashScreen: () => null }));
 vi.mock("@/components/cookie-banner", () => ({ CookieBanner: () => null }));

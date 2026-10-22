@@ -1,6 +1,5 @@
 "use client";
 
-import { BORDER, MUTED } from "@cyberlearn/ui";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchGroup, SearchKind, SearchResult } from "@/lib/search/results";
@@ -167,11 +166,7 @@ export function GlobalSearch(): React.ReactElement {
   let index = -1;
 
   return (
-    <div
-      ref={boxRef}
-      className="hidden md:block"
-      style={{ flex: 1, maxWidth: 480, margin: "0 auto", position: "relative" }}
-    >
+    <div ref={boxRef} className="chrome-search hidden md:block">
       <svg
         width="14"
         height="14"
@@ -180,9 +175,9 @@ export function GlobalSearch(): React.ReactElement {
         style={{
           position: "absolute",
           left: 12,
-          top: 17,
+          top: 20,
           transform: "translateY(-50%)",
-          color: MUTED,
+          color: "var(--color-text-secondary)",
           pointerEvents: "none",
         }}
         aria-hidden="true"
@@ -207,13 +202,13 @@ export function GlobalSearch(): React.ReactElement {
         className="navbar-search-input"
         style={{
           width: "100%",
-          height: 34,
+          height: 40,
           padding: "0 60px 0 36px",
-          background: "rgba(5,4,26,0.8)",
-          border: `1px solid ${BORDER}`,
-          borderRadius: 2,
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-border-default)",
+          borderRadius: 0,
           color: "var(--color-text-primary)",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 12,
           outline: "none",
         }}
@@ -232,14 +227,14 @@ export function GlobalSearch(): React.ReactElement {
         style={{
           position: "absolute",
           right: 8,
-          top: 17,
+          top: 20,
           transform: "translateY(-50%)",
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: MUTED,
-          border: `1px solid ${BORDER}`,
+          color: "var(--color-text-secondary)",
+          border: "1px solid var(--color-border-default)",
           padding: "1px 5px",
-          borderRadius: 2,
+          borderRadius: 0,
           pointerEvents: "none",
           opacity: term.length > 0 ? 0 : 1,
           transition: "opacity 140ms ease",
@@ -319,7 +314,9 @@ function SearchRow({
   onHover: () => void;
   onPick: () => void;
 }): React.ReactElement {
-  const color = result.category ? (CAT_COLORS[result.category] ?? "var(--cosmetic-accent)") : MUTED;
+  const color = result.category
+    ? (CAT_COLORS[result.category] ?? "var(--cosmetic-accent)")
+    : "var(--color-text-secondary)";
   return (
     <button
       type="button"

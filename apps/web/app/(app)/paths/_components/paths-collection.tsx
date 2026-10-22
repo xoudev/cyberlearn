@@ -1,5 +1,7 @@
 "use client";
 
+// Client: local domain/type/search filters and the path guide update in place.
+
 import { type PillItem, Pills } from "@/components/pills";
 import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -21,7 +23,6 @@ import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/fi
 import "./paths-catalog-v2.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Brackets } from "@/app/_components/corner-brackets";
-import { Crumb } from "@/components/crumb";
 import { EmptyState } from "@/components/empty-state";
 import { ProgressBar } from "@/components/progress-bar";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
@@ -86,7 +87,7 @@ const TRACK_DEFAULT = { label: "Compétence", short: "Compétence" };
 type Filter = DomainFilter;
 // The track row is a different axis from the domain row, so it gets its own
 // neutral accent rather than borrowing a domain colour.
-const TRACK_COLOR = "#b388ff";
+const TRACK_COLOR = "#aaa79f";
 const TRACK_PILLS: PillItem<TrackFilter>[] = [
   { key: "all", label: "Tous", color: TRACK_COLOR },
   { key: "SKILL", label: "Compétence", color: TRACK_COLOR },
@@ -484,7 +485,7 @@ function PathsEmpty({
   return (
     <EmptyState
       title="Aucun parcours trouvé"
-      message={`// 0 résultat pour le filtre « ${filterLabel} »`}
+      message={`Aucun résultat pour « ${filterLabel} ». Essaie un autre domaine ou une autre recherche.`}
       glyph={
         <svg
           width="48"
@@ -546,64 +547,56 @@ export function PathsCollection({
   ];
 
   return (
-    <div className="pc2-root">
+    <div className="pc2-root learning-catalogue">
       <div className="pc2">
-        {/* breadcrumb */}
-        <Crumb segments={["parcours"]} />
-
-        {/* header */}
-        <header className="pc2-head">
+        <header className="catalogue-heading">
           <div>
-            <h1 className="pc2-title gradient-title">
-              <em>{paths.length}</em> parcours disponibles
+            <p className="catalogue-heading__index">Apprendre / Parcours</p>
+            <h1>
+              Un cap.
+              <br />
+              <em>Des compétences.</em>
             </h1>
-            <p className="pc2-sub">
-              {
-                "Chaque parcours mène d'une compétence brute à un certificat vérifiable. Tu progresses mission par mission."
-              }
+            <p className="catalogue-heading__description">
+              Choisis un domaine. Avance mission par mission, des premières notions à la pratique.
             </p>
-            <PathGuideDialog catalogue={guide.catalogue} saved={guide.saved} />
           </div>
-          <div className="pc2-telemetry">
-            <div className="pc2-telemetry__row">
+          <aside className="catalogue-summary" aria-label="Ton catalogue de parcours">
+            <div className="catalogue-summary__count">
+              <strong>{String(paths.length).padStart(2, "0")}</strong>
+              <span>{paths.length > 1 ? "parcours disponibles" : "parcours disponible"}</span>
+            </div>
+            <div className="catalogue-summary__stats">
               <span>
-                <b className="ip">{inProgCount}</b> en cours
+                <b>{inProgCount}</b> en cours
               </span>
-              <span className="pc2-telemetry__sep" />
               <span>
-                <b className="cp">{doneCount}</b> certifié
+                <b>{doneCount}</b> terminés
               </span>
-              <span className="pc2-telemetry__sep" />
               <span>
                 <b>{idleCount}</b> à découvrir
               </span>
             </div>
-            <div className="pc2-telemetry__rule" />
-            <div className="pc2-telemetry__row">
-              <span>
-                <b>{totalHours}</b> H de contenu
-              </span>
-              <span className="pc2-telemetry__sep" />
-              <span>
-                <b>{fmtXp(totalXp)}</b> XP total
-              </span>
-            </div>
-          </div>
+            <p className="catalogue-summary__note">
+              {totalHours} h de contenu · {fmtXp(totalXp)} XP au total
+            </p>
+            <PathGuideDialog catalogue={guide.catalogue} saved={guide.saved} />
+          </aside>
         </header>
 
         {/* filters */}
-        <div className="pc2-filters">
-          <span className="pc2-filters__label">› DOMAINE</span>
+        <div className="pc2-filters catalogue-tools">
+          <span className="pc2-filters__label">Domaine</span>
           <div className="pc2-filters__group">
             <Pills label="Domaine" items={PILLS} value={filter} onChange={setFilter} />
           </div>
           <span className="pc2-filters__sep" />
-          <span className="pc2-filters__label">› TYPE</span>
+          <span className="pc2-filters__label">Objectif</span>
           <div className="pc2-filters__group">
             <Pills label="Type" items={TRACK_PILLS} value={trackFilter} onChange={setTrackFilter} />
           </div>
           <span className="pc2-filters__sep" />
-          <label className="pc2-search">
+          <label className="pc2-search catalogue-search">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
               <path
@@ -616,7 +609,7 @@ export function PathsCollection({
             <input
               ref={searchRef}
               type="text"
-              placeholder="/ chercher un parcours..."
+              placeholder="Chercher un parcours…"
               aria-label="Chercher un parcours"
               aria-keyshortcuts="/"
               value={search}
@@ -643,7 +636,7 @@ export function PathsCollection({
           <>
             <SectionLabel
               tag="Reprendre"
-              count={`// ${String(inprog.length)} parcours actif${inprog.length > 1 ? "s" : ""}`}
+              count={`${String(inprog.length)} parcours actif${inprog.length > 1 ? "s" : ""}`}
             />
             <HeroPath path={hero} />
           </>
@@ -651,7 +644,7 @@ export function PathsCollection({
 
         {secondary.length > 0 && (
           <>
-            <SectionLabel tag="Progression" count="// secondaires · certifiés" />
+            <SectionLabel tag="Ta progression" count="En cours et terminés" />
             <div className="pc2-duo">
               {secondary.map(({ p, type }) =>
                 type === "active" ? (
@@ -666,7 +659,7 @@ export function PathsCollection({
 
         {idle.length > 0 && (
           <>
-            <SectionLabel tag="À découvrir" count={`// ${String(idle.length)} parcours`} />
+            <SectionLabel tag="À découvrir" count={`${String(idle.length)} parcours`} />
             <div className="pc2-discover">
               {idle.map((p) => (
                 <PathCatalogCard key={p.id} path={p} />

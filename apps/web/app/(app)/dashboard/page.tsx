@@ -28,6 +28,8 @@ import { savedLearningAnswers } from "@/lib/paths/suggestions";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
+import "./dashboard.css";
+import { brandTypeface } from "@/components/brand-typeface";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -275,16 +277,19 @@ async function DashboardContent(): Promise<React.ReactElement> {
   });
 
   return (
-    <div className="page-container">
+    <div className={`learning-dashboard ${brandTypeface}`}>
       {/* The welcome's button opens what the mission card offers, not a list. */}
       <WelcomeModal cta={mission.cta} />
-      <div className="dash">
+      <div className="dash learning-dashboard-inner">
         {/* ── Hero: the greeting, and the level ───────────────────────────── */}
         <section className="dash-hero">
           <div>
-            <div className="dash-hero-date">{dateLabel}</div>
+            <div className="dash-hero-date">
+              <span>Ton espace d&apos;apprentissage</span>
+              <span>{dateLabel}</span>
+            </div>
             <h1>
-              Bonjour, <em>{firstName}</em>.
+              À toi de jouer, <em>{firstName}.</em>
             </h1>
             <p className="dash-hero-sub">
               {heroNotes.map((note, i) => (
@@ -306,29 +311,28 @@ async function DashboardContent(): Promise<React.ReactElement> {
           />
         </section>
 
-        {/* ── The mission ─────────────────────────────────────────────────── */}
         <MissionCard {...mission} />
 
-        {/* ── What is due, and the week ────────────────────────────────────── */}
-        <div className={`dash-cols${wantsRevisions ? "" : " dash-cols--single"}`}>
-          {wantsRevisions && <ReviewsDue rows={dueReviews} dueTotal={dueTotal} now={now} />}
+        <div className="learning-grid">
+          <div className="learning-primary">
+            {/* ── This week: Quests & Streak calendar ─────────────────────── */}
+            <section id="learning-week" className="dash-sec" aria-labelledby="dash-week-title">
+              <div className="dash-sec-head">
+                <h2 id="dash-week-title">Cette semaine</h2>
+                <span className="dash-sec-count">Encore {fmtWeekReset(msUntilWeekReset(now))}</span>
+              </div>
+              <div className="dash-week">
+                <QuestsPanel userId={authUser.id} />
+                <StreakCard userId={authUser.id} />
+              </div>
+            </section>
+          </div>
 
-          <section className="dash-sec" aria-labelledby="dash-week-title">
-            <div className="dash-sec-head">
-              <h2 id="dash-week-title">Cette semaine</h2>
-              <span className="dash-sec-count">
-                reset dans {fmtWeekReset(msUntilWeekReset(now))}
-              </span>
-            </div>
-            <div className="dash-week">
-              <QuestsPanel userId={authUser.id} />
-              <StreakCard userId={authUser.id} />
-            </div>
-          </section>
+          <aside className="learning-aside" aria-label="Révisions et progression">
+            {wantsRevisions && <ReviewsDue rows={dueReviews} dueTotal={dueTotal} now={now} />}
+            <Standing stats={stats} badges={badgeRows} badgeTotal={badgeTotal} />
+          </aside>
         </div>
-
-        {/* ── Where the reader stands ──────────────────────────────────────── */}
-        <Standing stats={stats} badges={badgeRows} badgeTotal={badgeTotal} />
       </div>
     </div>
   );

@@ -21,17 +21,8 @@ export const metadata: Metadata = {
 // The stats strip is informative, not real-time: regenerate at most hourly.
 export const revalidate = 3600;
 
-// Shown when the database is unreachable, notably during CI builds where the
-// prerender runs against a placeholder DATABASE_URL. The first successful
-// revalidation replaces these with live counters.
-const FALLBACK_STATS: LandingStats = {
-  domains: 3,
-  publishedLessons: 142,
-  publishedPaths: 12,
-};
-
 export default async function HomePage(): Promise<React.ReactElement> {
-  let stats = FALLBACK_STATS;
+  let stats: LandingStats | null = null;
   let featuredPaths: FeaturedPath[] = [];
   try {
     [stats, featuredPaths] = await Promise.all([
@@ -39,8 +30,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
       statsRepository.findFeaturedPaths(3),
     ]);
   } catch {
-    // Keep the landing up even if the database is down: fall back to the
-    // static counters rather than failing the whole page.
+    // Keep the page available without presenting invented catalogue counters.
   }
   return <LandingClient stats={stats} featuredPaths={featuredPaths} />;
 }

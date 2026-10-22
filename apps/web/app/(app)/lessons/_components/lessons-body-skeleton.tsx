@@ -1,96 +1,49 @@
 import React from "react";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 
-/**
- * The lessons catalogue below its breadcrumb while it loads, drawn on the
- * page's own classes: the header grid and its counts, the filter bar (domain
- * pills, the two selects, the search), then the grid of lesson cards, each
- * with its cover image. Shared by `loading.tsx`, which adds the breadcrumb,
- * and the page's `<Suspense>` fallback, which sits under the real one.
- */
-
-/** One catalogue `LessonCard`: tags, the 16/9 cover, title, two lines, footer. */
-function LessonCardSkeleton(): React.ReactElement {
-  return (
-    <div className="card" style={{ height: "100%" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 16px 10px",
-        }}
-      >
-        <Skeleton w={70} h={18} />
-        <Skeleton w={104} h={18} />
-      </div>
-      <Skeleton style={{ aspectRatio: "16 / 9", margin: "0 16px" }} />
-      <div style={{ padding: "16px 16px 18px" }}>
-        <Skeleton w="82%" h={16} style={{ marginBottom: 12 }} />
-        <SkeletonText lines={2} lastWidth="58%" lineHeight={11} gap={9} />
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 16px",
-          borderTop: "1px solid var(--color-border-subtle)",
-        }}
-      >
-        <Skeleton w={64} h={11} />
-        <Skeleton w={48} h={11} />
-        <Skeleton w={84} h={11} />
-      </div>
-    </div>
-  );
-}
-
+/** Same structure and cover height as the server-rendered catalogue. */
 export function LessonsBodySkeleton(): React.ReactElement {
   return (
-    // A loading root of its own: it is also the page's Suspense fallback.
     <div aria-busy="true" aria-label="Chargement des leçons" style={{ display: "contents" }}>
-      <div className="catalog-header-grid" aria-hidden="true">
+      <div className="catalogue-heading" aria-hidden="true">
         <div>
-          {/* The h1: clamp(42px, 5vw, 68px), "N missions" over "disponibles". */}
-          <Skeleton w="72%" h="clamp(36px, 4.3vw, 58px)" style={{ marginBottom: 7 }} />
-          <Skeleton w="62%" h="clamp(36px, 4.3vw, 58px)" style={{ marginBottom: 14 }} />
-          <SkeletonText
-            lines={2}
-            lastWidth="60%"
-            lineHeight={15}
-            gap={10}
-            style={{ maxWidth: 520 }}
-          />
+          <Skeleton w={130} h={12} style={{ marginBottom: 22 }} />
+          <Skeleton w="65%" h={72} style={{ marginBottom: 8 }} />
+          <Skeleton w="85%" h={72} style={{ marginBottom: 24 }} />
+          <SkeletonText lines={2} lastWidth="65%" lineHeight={15} gap={10} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 18 }}>
-            <Skeleton w={72} h={10} />
-            <Skeleton w={84} h={10} />
-            <Skeleton w={100} h={10} />
-          </div>
-          <div style={{ display: "flex", gap: 18 }}>
-            <Skeleton w={216} h={10} />
-            <Skeleton w={90} h={10} />
-          </div>
+        <div className="catalogue-summary">
+          <Skeleton w={100} h={72} />
+          <Skeleton w="85%" h={14} style={{ marginBlock: 24 }} />
+          <SkeletonText lines={2} lastWidth="75%" lineHeight={12} gap={8} />
         </div>
       </div>
-
-      <div className="filter-bar" aria-hidden="true">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <Skeleton w={76} h={10} style={{ marginRight: 6 }} />
-          {[113, 138, 99, 123].map((w) => (
-            <Skeleton key={w} w={w} h={34} />
+      <div className="catalogue-tools" aria-hidden="true">
+        <div className="lessons-catalogue__domains">
+          {[80, 82, 100, 90].map((w) => (
+            <Skeleton key={w} w={w} h={44} />
           ))}
         </div>
-        <Skeleton w={160} h={34} />
-        <Skeleton w={130} h={34} />
-        <Skeleton w={220} h={34} />
+        <div className="lessons-catalogue__refine">
+          {[0, 1, 2].map((n) => (
+            <Skeleton key={n} w="100%" h={46} />
+          ))}
+        </div>
       </div>
-
-      <div className="lessons-catalog-grid" aria-hidden="true">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <LessonCardSkeleton key={i} />
+      <div className="catalogue-results" aria-hidden="true">
+        <Skeleton w={180} h={30} />
+      </div>
+      <div className="lessons-catalogue__grid" aria-hidden="true">
+        {[0, 1, 2, 3, 4, 5].map((n) => (
+          <div className="catalogue-lesson" key={n}>
+            <Skeleton w="100%" h={144} />
+            <div className="catalogue-lesson__body">
+              <Skeleton w="55%" h={12} style={{ marginBottom: 24 }} />
+              <Skeleton w="80%" h={32} style={{ marginBottom: 16 }} />
+              <SkeletonText lines={3} lastWidth="65%" lineHeight={13} gap={9} />
+              <Skeleton w="100%" h={44} style={{ marginTop: 24 }} />
+            </div>
+          </div>
         ))}
       </div>
     </div>

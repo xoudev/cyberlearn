@@ -221,7 +221,7 @@ export function NotificationPanel({
       {/* Panel */}
       {open && (
         <div
-          className="card"
+          className="card chrome-notifications"
           ref={panelRef}
           style={{
             position: "absolute",
@@ -250,7 +250,7 @@ export function NotificationPanel({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span
-                className="mono-label"
+                className="mono-label chrome-panel-title"
                 style={{
                   color: "var(--color-text-muted)",
                   display: "flex",
@@ -348,6 +348,7 @@ export function NotificationPanel({
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               <p
+                className="chrome-panel-empty"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,

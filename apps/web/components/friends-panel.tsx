@@ -269,7 +269,7 @@ export function FriendsPanel({
 
           {empty && (
             <p className="fp-note">
-              {"// personne pour l'instant : ouvre le profil de quelqu'un pour l'ajouter"}
+              Pas encore d&apos;amis. Ouvre le profil de quelqu&apos;un pour l&apos;ajouter.
             </p>
           )}
 

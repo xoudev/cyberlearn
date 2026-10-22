@@ -68,24 +68,59 @@ export function ReviewsDue({
           <ul className="dash-rev-list">
             {rows.map((row) => {
               const due = dueLabel(row.nextReviewAt, now);
+              const color = CAT_COLORS[row.lesson.category] ?? "var(--color-rarity-rare)";
               return (
                 <li key={row.id}>
                   <Link href={`/lessons/${row.lesson.slug}`} className="dash-rev">
-                    <i
-                      className="dash-rev-dot"
-                      style={{
-                        background: CAT_COLORS[row.lesson.category] ?? "var(--color-rarity-rare)",
-                      }}
-                      aria-hidden="true"
-                    />
+                    <span className="dash-rev-icon" style={{ color }} aria-hidden="true">
+                      {row.lesson.category === "CYBERSEC" ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3Z" />
+                        </svg>
+                      ) : row.lesson.category === "DEV" ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m8 9-4 3 4 3M16 9l4 3-4 3M13.5 6l-3 12" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M3.6 9h16.8M3.6 15h16.8M12 3a14.5 14.5 0 0 0 0 18M12 3a14.5 14.5 0 0 1 0 18" />
+                        </svg>
+                      )}
+                    </span>
                     <span className="dash-rev-title">
                       {row.lesson.title}
                       <small>{categoryMeta(row.lesson.category).label}</small>
                     </span>
-                    <span className={`dash-rev-due${due.late ? " dash-rev-due--late" : ""}`}>
-                      {due.text}
+                    <span className="dash-rev-right">
+                      <span className={`dash-rev-due${due.late ? " dash-rev-due--late" : ""}`}>
+                        {due.text}
+                      </span>
+                      <span className="dash-rev-min dash-num">
+                        {row.lesson.estimatedMinutes} min
+                      </span>
                     </span>
-                    <span className="dash-rev-min dash-num">{row.lesson.estimatedMinutes} min</span>
                   </Link>
                 </li>
               );
