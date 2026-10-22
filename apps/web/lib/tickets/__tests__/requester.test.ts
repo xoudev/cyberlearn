@@ -1,8 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
-  create: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ id: string }>>(),
-  findFirst: vi.fn<(args: unknown) => Promise<{ id: string } | null>>(),
+  create:
+    vi.fn<
+      (input: {
+        subject: string;
+        theme: string;
+        message: string;
+        email: string;
+        userId: string | null;
+      }) => Promise<{ id: string }>
+    >(),
+  findOwnedId: vi.fn<(ticketId: string, userId: string) => Promise<string | null>>(),
   findEmailById: vi.fn<(userId: string) => Promise<string | null>>(),
   addMessage:
     vi.fn<
@@ -13,10 +22,7 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  prisma: {
-    contactTicket: { create: m.create, findFirst: m.findFirst },
-  },
-  ticketRepository: { addMessage: m.addMessage },
+  ticketRepository: { create: m.create, findOwnedId: m.findOwnedId, addMessage: m.addMessage },
   userRepository: { findEmailById: m.findEmailById },
 }));
 vi.mock("@/lib/rate-limit", () => ({
@@ -49,16 +55,13 @@ describe("fileTicket", () => {
       ok: true,
       ticketId: TICKET_ID,
     });
-    expect(m.create).toHaveBeenCalledWith({
-      data: { ...FIELDS, userId: "user-1", status: "OPEN" },
-      select: { id: true },
-    });
+    expect(m.create).toHaveBeenCalledWith({ ...FIELDS, userId: "user-1" });
     expect(m.checkContactForm).toHaveBeenCalledWith("203.0.113.7");
   });
 
   it("files a guest's request with no account", async () => {
     await fileTicket({ userId: null, ip: "x", fields: FIELDS });
-    expect(m.create.mock.calls[0]?.[0].data.userId).toBeNull();
+    expect(m.create.mock.calls[0]?.[0].userId).toBeNull();
   });
 
   it("names each field that is wrong, before counting against the limit", async () => {
@@ -104,8 +107,9 @@ describe("fileAccountTicket", () => {
     expect(result).toEqual({ ok: true, ticketId: TICKET_ID });
     expect(m.findEmailById).toHaveBeenCalledWith("user-1");
     expect(m.create).toHaveBeenCalledWith({
-      data: { ...request, email: "profil@example.org", userId: "user-1", status: "OPEN" },
-      select: { id: true },
+      ...request,
+      email: "profil@example.org",
+      userId: "user-1",
     });
     // The contact form's budget, spent by whoever is asking.
     expect(m.checkContactForm).toHaveBeenCalledWith("203.0.113.7");
@@ -114,7 +118,7 @@ describe("fileAccountTicket", () => {
   it("falls back on the session's address, and refuses without any", async () => {
     m.findEmailById.mockResolvedValue(null);
     await fileAccountTicket({ user, ip: "x", fields: request });
-    expect(m.create.mock.calls[0]?.[0].data.email).toBe("session@example.org");
+    expect(m.create.mock.calls[0]?.[0].email).toBe("session@example.org");
 
     m.create.mockClear();
     expect(await fileAccountTicket({ user: { id: "user-1" }, ip: "x", fields: request })).toEqual({
@@ -143,24 +147,21 @@ describe("replyAsRequester", () => {
       error: "Écris un message avant d'envoyer.",
     });
     expect((await replyAsRequester("user-1", { ...input, ticketId: "abc" })).ok).toBe(false);
-    expect(m.findFirst).not.toHaveBeenCalled();
+    expect(m.findOwnedId).not.toHaveBeenCalled();
   });
 
   it("only writes on the reader's own ticket", async () => {
-    m.findFirst.mockResolvedValue(null);
+    m.findOwnedId.mockResolvedValue(null);
     expect(await replyAsRequester("user-1", input)).toEqual({
       ok: false,
       error: "Ticket introuvable.",
     });
-    expect(m.findFirst).toHaveBeenCalledWith({
-      where: { id: TICKET_ID, userId: "user-1" },
-      select: { id: true },
-    });
+    expect(m.findOwnedId).toHaveBeenCalledWith(TICKET_ID, "user-1");
     expect(m.addMessage).not.toHaveBeenCalled();
   });
 
   it("adds the reply as the requester, never as the team", async () => {
-    m.findFirst.mockResolvedValue({ id: TICKET_ID });
+    m.findOwnedId.mockResolvedValue(TICKET_ID);
     m.addMessage.mockResolvedValue({ ok: true });
     expect(await replyAsRequester("user-1", input)).toEqual({ ok: true });
     expect(m.addMessage).toHaveBeenCalledWith({
@@ -172,7 +173,7 @@ describe("replyAsRequester", () => {
   });
 
   it("says a finished request is finished, as the repository decides", async () => {
-    m.findFirst.mockResolvedValue({ id: TICKET_ID });
+    m.findOwnedId.mockResolvedValue(TICKET_ID);
     m.addMessage.mockResolvedValue({ ok: false, reason: "TERMINAL" });
     expect(await replyAsRequester("user-1", input)).toEqual({
       ok: false,

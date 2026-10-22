@@ -224,6 +224,46 @@ export const ticketRepository = {
     });
   },
 
+  /**
+   * Files a request: a new ticket, open. The contact form for a guest
+   * (`userId` null), the "Nouvelle demande" window and the app's support
+   * screen for an account, all through the service that validates and limits
+   * them (apps/web/lib/tickets/requester.ts). The caller has checked the
+   * fields; this writes them, and nothing else a requester could send.
+   */
+  async create(input: {
+    subject: string;
+    theme: TicketTheme;
+    message: string;
+    email: string;
+    userId: string | null;
+  }): Promise<{ id: string }> {
+    return prisma.contactTicket.create({
+      data: {
+        subject: input.subject,
+        theme: input.theme,
+        message: input.message,
+        email: input.email,
+        userId: input.userId,
+        status: "OPEN" satisfies TicketStatus,
+      },
+      select: { id: true },
+    });
+  },
+
+  /**
+   * The id of a ticket this account opened, null for one somebody else did or
+   * that is not there: the ownership check on its own, before any write to
+   * the conversation (addMessage knows about statuses, not about who may write).
+   */
+  async findOwnedId(ticketId: string, userId: string): Promise<string | null> {
+    const ticket = await prisma.contactTicket.findFirst({
+      where: { id: ticketId, userId },
+      select: { id: true },
+    });
+    return ticket?.id ?? null;
+  },
+
   /** Someone's own tickets, most recently touched first. */
   async findForUser(userId: string) {
     return prisma.contactTicket.findMany({
