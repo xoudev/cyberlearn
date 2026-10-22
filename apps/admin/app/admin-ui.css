@@ -515,6 +515,18 @@
   padding: 0 12px;
   font-size: 9.5px;
 }
+/* A button whose label is a sentence (the deletion of an account), which wraps
+   instead of pushing its form wider than the card: a button keeps its label on
+   one line, and "Supprimer ce compte et toutes ses données" is 348px of it,
+   in a card that ends at 332 on a 375px screen. Only the buttons that ask for
+   it wrap; the others stay on one line. */
+.a-btn--wrap {
+  white-space: normal;
+  max-width: 100%;
+  padding-block: 8px;
+  line-height: 1.5;
+  text-align: center;
+}
 
 /* ─── Cards & KPI ──────────────────────────────────────────── */
 
