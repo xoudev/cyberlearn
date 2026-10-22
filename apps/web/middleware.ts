@@ -1,4 +1,5 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { isProtectedRoute } from "@/lib/routes";
 import { REQUEST_ID_HEADER, requestIdFor } from "@/lib/request-id";
@@ -194,6 +195,27 @@ function isPublicRoute(pathname: string): boolean {
 // list robots.txt and the sidebar read too.
 export { isProtectedRoute };
 
+/**
+ * The pages a session that still owes its second-factor code may open: the
+ * support form and the legal texts, none of which hold anything of the account.
+ *
+ * Everything else goes to /mfa until the code is typed. But the code screen is
+ * where somebody who lost the phone ends up, and the only way out for them is
+ * to write to the team: with the gate in front of /contact, the link on that
+ * screen, and the one in the mail that follows a reset, both brought them back
+ * to the code. The form is open to visitors anyway; a session that has not
+ * proved who it is files as one (contact-actions.ts).
+ */
+export function isOpenToPendingMfa(pathname: string): boolean {
+  return (
+    pathname === "/contact" ||
+    pathname.startsWith("/contact/") ||
+    pathname === "/legal" ||
+    pathname.startsWith("/legal/") ||
+    pathname === "/privacy"
+  );
+}
+
 function isOnboardingRoute(pathname: string): boolean {
   return pathname.startsWith("/onboarding");
 }
@@ -237,6 +259,32 @@ async function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
+}
+
+/**
+ * What the auth server says of the session the cookie carries:
+ *  - "live": it knows the session;
+ *  - "gone": it answered that the session does not exist (deleted by "Déconnecter
+ *    toutes les sessions", by a global sign-out, by the removal of the second
+ *    factor, or with the account);
+ *  - "unreachable": no answer, or one that says nothing of the session (a 5xx).
+ *
+ * getSession() cannot tell: it reads the cookie, which stays valid for the
+ * hour its token lasts. getUser() asks over the network. On "gone", auth-js
+ * has dropped the session from the client's storage and @supabase/ssr has
+ * turned that into cookie removals through `setAll`, which has finished by the
+ * time this resolves (the sign-out event is awaited): the response built there
+ * carries them, so the next request starts signed out.
+ */
+type SessionCheck = "live" | "gone" | "unreachable";
+
+async function checkSessionOnServer(
+  getUser: () => PromiseLike<{ data: { user: unknown }; error: unknown }>,
+): Promise<SessionCheck> {
+  const result = await withTimeout(getUser(), "getUser");
+  if (result === null) return "unreachable";
+  if (result.data.user !== null) return "live";
+  return isAuthSessionMissingError(result.error) ? "gone" : "unreachable";
 }
 
 /**
@@ -352,9 +400,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     cookies: cookieMethods,
   });
 
+  // One question to the auth server per request, however many branches below
+  // need the answer.
+  let serverCheck: Promise<SessionCheck> | null = null;
+  const sessionOnServer = (): Promise<SessionCheck> => {
+    serverCheck ??= checkSessionOnServer(() => supabase.auth.getUser());
+    return serverCheck;
+  };
+
   // getSession() reads the JWT from cookies and refreshes it when it has
-  // expired, which is a network call - hence the cap. Server components use
-  // getUser() for security.
+  // expired, which is a network call - hence the cap. It does not ask the
+  // server whether the session still exists: server components use getUser()
+  // for security, and so do the two decisions below that must not trust the
+  // cookie (sessionOnServer).
   const sessionResult = await withTimeout(supabase.auth.getSession(), "getSession");
   const user = sessionResult?.data.session?.user ?? null;
 
@@ -373,18 +431,29 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
   } else {
     const isMfaRoute = pathname.startsWith("/mfa");
-    if (!isMfaRoute && !pathname.startsWith("/auth/")) {
+    if (!isMfaRoute && !pathname.startsWith("/auth/") && !isOpenToPendingMfa(pathname)) {
       const assurance = await withTimeout(
         supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
         "getAuthenticatorAssuranceLevel",
       );
-      // Unreachable auth is treated like a failed check: send the user to the
-      // MFA gate rather than letting them through unverified.
-      if (
-        assurance === null ||
-        assurance.error ||
-        (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
-      ) {
+      let mustTypeCode: boolean;
+      if (assurance === null || assurance.error) {
+        // Unreachable auth is treated like a failed check: send the user to the
+        // MFA gate rather than letting them through unverified.
+        mustTypeCode = true;
+      } else if (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2") {
+        // The cookie says a code is owed, and a cookie outlives its session. The
+        // person at the code screen whose factor the team just removed (which
+        // ends every session of the account), or whose sessions were all
+        // closed, was sent from /mfa to /login by the page, which asks the
+        // server, and from /login back to /mfa by this gate, which did not:
+        // the same redirect loop as below. A session the server does not know
+        // owes nothing; it falls through, and its cookie is dropped.
+        mustTypeCode = (await sessionOnServer()) !== "gone";
+      } else {
+        mustTypeCode = false;
+      }
+      if (mustTypeCode) {
         const mfaUrl = new URL("/mfa", request.url);
         mfaUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
         const redirectResponse = NextResponse.redirect(mfaUrl);
@@ -426,12 +495,24 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // shown right after the test, and the console can reset somebody's test,
     // whose notice links to it: an account that already has a result is sent
     // to the dashboard by the test's own pages, which read the database.
+    //
+    // The cookie is not enough to say "signed in" here. getSession() above only
+    // reads it, so a session deleted on the server (the console's "Déconnecter
+    // toutes les sessions", a global sign-out from another browser) went on
+    // looking alive for the hour its token lasts. The (app) layout, which does
+    // ask the server, then sent the same person back to /login, and this branch
+    // sent them to /dashboard again: ERR_TOO_MANY_REDIRECTS, on every sign-in
+    // page, until the token expired. So the server is asked before anybody is
+    // sent away from a page they have a reason to see, and a session it does not
+    // know falls through to the page itself - with the cookie dropped by
+    // `response` (setAll), so the next request starts signed out.
     if (
       isOnboardingComplete &&
       (isLanding ||
         ["/login", "/register", "/forgot-password"].includes(pathname) ||
         isOnboardingRoute(pathname)) &&
-      !isPlacementTestRoute(pathname)
+      !isPlacementTestRoute(pathname) &&
+      (await sessionOnServer()) === "live"
     ) {
       const dashboardUrl = new URL("/dashboard", request.url);
       const redirectResponse = NextResponse.redirect(dashboardUrl);

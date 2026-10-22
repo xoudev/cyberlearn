@@ -1,26 +1,70 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { AuthRetryableFetchError, AuthSessionMissingError } from "@supabase/supabase-js";
+import { NextRequest, type NextResponse } from "next/server";
 import { consoleOrigin, isProtectedRoute, middleware } from "./middleware";
 
 /**
- * The session the mocked Supabase client hands the middleware. Set per test:
- * null is a visitor, an object is somebody signed in, and app_metadata decides
- * whether their onboarding is finished - the same flag the real callback sets.
+ * What the mocked Supabase client hands the middleware. Set per test.
+ *
+ * `session` is what the cookie says: null is a visitor, an object is somebody
+ * signed in, and app_metadata decides whether their onboarding is finished -
+ * the same flag the real callback sets.
+ *
+ * `serverKnowsSession` is what the auth server says. getSession() never asks it
+ * (it reads the cookie), getUser() always does: when the sessions were deleted
+ * on the server - the console's "Déconnecter toutes les sessions", a global
+ * sign-out from another browser - the cookie stays valid until its token
+ * expires, and only getUser() notices.
  */
 const auth = vi.hoisted(() => ({
   session: null as null | { user: { app_metadata: Record<string, unknown> } },
+  serverKnowsSession: true,
+  /** The auth host does not answer: getUser() rejects. */
+  serverDown: false,
+  /** The auth host answers with a 5xx, which says nothing of the session. */
+  serverFails: false,
+  getUserCalls: 0,
+  /** The assurance level of the cookie's session. */
+  assurance: { currentLevel: "aal1", nextLevel: "aal1" },
 }));
 
+/** The cookie auth-js drops when the server no longer knows the session. */
+const SESSION_COOKIE = "sb-test-auth-token";
+
+interface CookiesToSet {
+  name: string;
+  value: string;
+  options: Record<string, unknown>;
+}
+
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({
+  createServerClient: (
+    _url: string,
+    _key: string,
+    options: { cookies: { setAll: (cookies: CookiesToSet[]) => void | Promise<void> } },
+  ) => ({
     auth: {
       getSession: () => Promise.resolve({ data: { session: auth.session } }),
+      getUser: async () => {
+        auth.getUserCalls += 1;
+        if (auth.serverDown) throw new Error("auth host unreachable");
+        // auth-js returns a 5xx as an error; it does not throw it.
+        if (auth.serverFails) {
+          return { data: { user: null }, error: new AuthRetryableFetchError("Bad Gateway", 502) };
+        }
+        if (auth.session !== null && auth.serverKnowsSession) {
+          return { data: { user: auth.session.user }, error: null };
+        }
+        // What auth-js does on "session_not_found": it removes the session from
+        // its storage, and @supabase/ssr turns that into cookie removals.
+        await options.cookies.setAll([
+          { name: SESSION_COOKIE, value: "", options: { maxAge: 0, path: "/" } },
+        ]);
+        return { data: { user: null }, error: new AuthSessionMissingError() };
+      },
       mfa: {
         getAuthenticatorAssuranceLevel: () =>
-          Promise.resolve({
-            data: { currentLevel: "aal1", nextLevel: "aal1" },
-            error: null,
-          }),
+          Promise.resolve({ data: auth.assurance, error: null }),
       },
     },
   }),
@@ -29,6 +73,11 @@ vi.mock("@supabase/ssr", () => ({
 afterEach(() => {
   vi.unstubAllEnvs();
   auth.session = null;
+  auth.serverKnowsSession = true;
+  auth.serverDown = false;
+  auth.serverFails = false;
+  auth.getUserCalls = 0;
+  auth.assurance = { currentLevel: "aal1", nextLevel: "aal1" };
 });
 
 describe("OAuth Site URL fallback", () => {
@@ -188,6 +237,261 @@ describe("the landing page is for people who are not signed in", () => {
     const response = await middleware(new NextRequest("https://cyberlearn.fr/?code=test-code"));
 
     expect(location(response)).toBe("/auth/callback");
+  });
+});
+
+describe("a session the auth server no longer knows", () => {
+  // The bug: "Déconnecter toutes les sessions" in the console, or a global
+  // sign-out from another browser, deletes the rows of auth.sessions. The cookie
+  // of the other browsers stays valid until its token expires (an hour), and
+  // getSession() - which only reads the cookie - kept calling them signed in.
+  // The middleware sent them from /login to /dashboard, the (app) layout, which
+  // asks the server, sent them back to /login, and the browser gave up with
+  // ERR_TOO_MANY_REDIRECTS. These tests follow redirects the way a browser does.
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+    auth.session = { user: { app_metadata: { onboarding_complete: true } } };
+    auth.serverKnowsSession = false;
+  });
+
+  /**
+   * Opens `path` and follows the redirects, up to a browser's limit of twenty.
+   * A page of the (app) group that the middleware lets through does what its
+   * layout does (requireRequestUser), and /mfa does what its page does: it asks
+   * the server who is there, and sends nobody to /login.
+   */
+  async function browse(path: string): Promise<{ visited: string[]; last: NextResponse }> {
+    const visited: string[] = [];
+    let url = new URL(path, "https://cyberlearn.fr");
+    for (let hop = 0; hop < 20; hop += 1) {
+      visited.push(`${url.pathname}${url.search}`);
+      const response = await middleware(new NextRequest(url));
+      const location = response.headers.get("location");
+      if (location !== null) {
+        url = new URL(location);
+        continue;
+      }
+      const asksTheServer = isProtectedRoute(url.pathname) || url.pathname.startsWith("/mfa");
+      if (asksTheServer && !auth.serverKnowsSession) {
+        url = new URL("/login", url);
+        continue;
+      }
+      return { visited, last: response };
+    }
+    throw new Error(`ERR_TOO_MANY_REDIRECTS: ${visited.join(" -> ")}`);
+  }
+
+  it("ends on the sign-in page instead of looping between /login and /dashboard", async () => {
+    const { visited, last } = await browse("/dashboard");
+
+    expect(visited).toEqual(["/dashboard", "/login"]);
+    expect(last.headers.get("location")).toBeNull();
+  });
+
+  it.each(["/login", "/register", "/forgot-password", "/", "/onboarding", "/onboarding/goals"])(
+    "serves %s instead of sending the account to a dashboard it cannot open",
+    async (path) => {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+
+      expect(response.headers.get("location"), path).toBeNull();
+    },
+  );
+
+  it("drops the session cookie, so the next request starts signed out", async () => {
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/login"));
+
+    const cleared = response.cookies.get(SESSION_COOKIE);
+    expect(cleared?.value).toBe("");
+    expect(response.headers.get("set-cookie")).toMatch(/Max-Age=0/i);
+  });
+
+  it("still carries the security headers once the cookie is dropped", async () => {
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/login"));
+
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(response.headers.get("x-request-id")).not.toBeNull();
+  });
+
+  it("sends a session that is still known on its way, as before", async () => {
+    auth.serverKnowsSession = true;
+
+    for (const path of ["/", "/login", "/register", "/forgot-password", "/onboarding"]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      expect(new URL(response.headers.get("location") ?? "").pathname, path).toBe("/dashboard");
+    }
+  });
+
+  it("asks the server only when it is about to redirect, not on every page", async () => {
+    auth.serverKnowsSession = true;
+
+    for (const path of [
+      "/dashboard",
+      "/lessons/python",
+      "/catalogue",
+      "/contact",
+      "/legal/terms",
+    ]) {
+      await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+    }
+    // A visitor has no session to check either.
+    auth.session = null;
+    await middleware(new NextRequest("https://cyberlearn.fr/login"));
+
+    expect(auth.getUserCalls).toBe(0);
+  });
+
+  it("serves the sign-in page when the auth host does not answer, rather than looping", async () => {
+    // An outage is no reason to send somebody round in circles: /dashboard would
+    // fail to verify them too. The call is bounded and its failure is logged.
+    auth.serverDown = true;
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      const { visited } = await browse("/login");
+      expect(visited).toEqual(["/login"]);
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  it("serves the sign-in page when the auth host answers with an error, and keeps the cookie", async () => {
+    // A 5xx says nothing of the session: it is not "gone", so nothing is dropped.
+    auth.serverFails = true;
+
+    const { visited, last } = await browse("/login");
+
+    expect(visited).toEqual(["/login"]);
+    expect(last.cookies.get(SESSION_COOKIE)).toBeUndefined();
+  });
+
+  it("keeps the placement test open, without asking the server", async () => {
+    const response = await middleware(
+      new NextRequest("https://cyberlearn.fr/onboarding/placement-test"),
+    );
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(auth.getUserCalls).toBe(0);
+  });
+
+  it("asks the server once, however many decisions need the answer", async () => {
+    await middleware(new NextRequest("https://cyberlearn.fr/login"));
+
+    expect(auth.getUserCalls).toBe(1);
+  });
+
+  describe("when that session was waiting for its second-factor code", () => {
+    // The lost-phone case itself: the person sits on the code screen, the team
+    // removes the factor - which ends every session of the account - and the
+    // page they reload asks the server, finds nobody, and sends them to /login,
+    // where the gate used to read "a code is owed" off the cookie and send them
+    // straight back to /mfa.
+    beforeEach(() => {
+      auth.assurance = { currentLevel: "aal1", nextLevel: "aal2" };
+    });
+
+    it("ends on the sign-in page instead of looping between /mfa and /login", async () => {
+      const { visited, last } = await browse("/mfa");
+
+      expect(visited).toEqual(["/mfa", "/login"]);
+      expect(last.headers.get("location")).toBeNull();
+      expect(last.cookies.get(SESSION_COOKIE)?.value).toBe("");
+    });
+
+    it("does not send a protected page to a code that nobody can type", async () => {
+      const { visited } = await browse("/dashboard");
+
+      expect(visited).toEqual(["/dashboard", "/login"]);
+    });
+
+    it("still asks for the code of a session the server knows", async () => {
+      auth.serverKnowsSession = true;
+
+      const response = await middleware(new NextRequest("https://cyberlearn.fr/dashboard"));
+
+      expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/mfa");
+      expect(auth.getUserCalls).toBe(1);
+    });
+
+    it("still asks for the code when the auth host cannot be asked", async () => {
+      // Fail closed, as before: a session that cannot be verified is not let in.
+      auth.serverDown = true;
+      const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+      try {
+        const response = await middleware(new NextRequest("https://cyberlearn.fr/dashboard"));
+        expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/mfa");
+      } finally {
+        logged.mockRestore();
+      }
+    });
+
+    it("still asks for the code when the auth host answers with an error", async () => {
+      auth.serverFails = true;
+
+      const response = await middleware(new NextRequest("https://cyberlearn.fr/lessons/python"));
+
+      expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/mfa");
+    });
+  });
+});
+
+describe("a session that still owes its second-factor code", () => {
+  // A learner who lost the phone sits on /mfa. The only way out is to write to
+  // the team, and the form used to be behind the very gate that sent them
+  // there: the link led back to the code.
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-key");
+    auth.session = { user: { app_metadata: { onboarding_complete: true } } };
+    auth.assurance = { currentLevel: "aal1", nextLevel: "aal2" };
+  });
+
+  it.each([
+    "/contact",
+    "/contact?theme=SECURITY&subject=Double%20authentification",
+    "/legal",
+    "/legal/terms",
+    "/privacy",
+  ])("can still open %s", async (path) => {
+    const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it.each([
+    "/dashboard",
+    "/lessons/python",
+    "/profile",
+    "/catalogue",
+    "/api/me/export",
+    "/contactez",
+  ])("is still sent to the code from %s", async (path) => {
+    const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.pathname, path).toBe("/mfa");
+    expect(location.searchParams.get("next"), path).toBe(path);
+  });
+
+  it("is sent to the code from the pages that lead into the app, the sign-in ones included", async () => {
+    for (const path of ["/", "/login"]) {
+      const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
+      expect(new URL(response.headers.get("location") ?? "").pathname, path).toBe("/mfa");
+    }
+  });
+
+  it("is not asked for a code when the account has no second factor", async () => {
+    auth.assurance = { currentLevel: "aal1", nextLevel: "aal1" };
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/dashboard"));
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("lets the contact form through once the code was typed too", async () => {
+    auth.assurance = { currentLevel: "aal2", nextLevel: "aal2" };
+    const response = await middleware(new NextRequest("https://cyberlearn.fr/contact"));
+    expect(response.headers.get("location")).toBeNull();
   });
 });
 
