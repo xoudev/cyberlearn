@@ -18,6 +18,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
@@ -25,6 +26,7 @@ import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
 import { useReducedMotionPreference } from "@/lib/accessibility";
+import { bindFocusToAppState } from "@/lib/app-focus";
 import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice, onDeviceNotificationTapped } from "@/lib/device-notifications";
 import { tapRoute } from "@/lib/notification-links";
@@ -49,11 +51,14 @@ const queryClient = new QueryClient({
       retry: 1,
       staleTime: 120_000,
       gcTime: 10 * 60_000,
+      // Off by default: a query that wants it asks (the day's recall does), now
+      // that the app's coming back to the front is what "focus" means.
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },
   },
 });
+bindFocusToAppState(AppState);
 
 /** Mirrors fresh inbox items to the device notification tray (60s polling). */
 function NotificationMirror(): null {
