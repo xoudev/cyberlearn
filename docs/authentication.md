@@ -49,10 +49,38 @@ portal, and the native mobile application.
 - Only the recovery mail shows its code: the app takes a code on its
   "Mot de passe oublié" screen and nowhere else (`showsCode` in
   `packages/email/src/templates/magic-link.tsx`).
+- The site's middleware reads the session from the cookie (`getSession`), which
+  costs no round trip, so it cannot tell that the server deleted the session:
+  the console's **Déconnecter toutes les sessions**, **Fermer mes autres
+  sessions** and the sidebar's **Se déconnecter** (a global sign-out) all do,
+  and the cookies of the other browsers stay valid until their token expires,
+  an hour at most. Before it sends a signed-in account away from `/`,
+  `/login`, `/register`, `/forgot-password` or the onboarding steps, and before
+  it sends a session that owes its second-factor code to `/mfa`, it asks the
+  auth server (`getUser`, capped like the other auth calls, once per request).
+  A session the server answers is gone falls through to the page and its cookie
+  is dropped; without that check `/login` sent the account to `/dashboard`, the
+  layout sent it back, and the browser stopped on `ERR_TOO_MANY_REDIRECTS` (for
+  a session waiting for its code, the same loop ran between `/mfa` and
+  `/login`, which is where a learner who lost the phone sits when the team
+  removes the factor). An auth server that cannot be reached, or answers with a
+  5xx, proves nothing about the session: the code is still asked for, and
+  nobody is sent into the app. The app does not have this failure: it
+  refreshes its session on launch and signs out locally when the refresh token
+  is refused (`lib/session.tsx`).
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
   and mobile route gates require AAL2 before mounting protected application UI.
   `/mfa` sends a session with no verified factor (`nextLevel !== "aal2"`) on to
   its destination rather than showing a code it cannot satisfy.
+- Somebody without the phone has one way out of the code screen besides
+  signing out: the team removes the factor from the console. The site's
+  challenge and the app's therefore say so and link to the contact form on the
+  security theme (`@cyberlearn/lib/auth/mfa-recourse`; the app opens it in the
+  in-app browser). The middleware keeps `/contact`, `/legal` and `/privacy`
+  outside the second-factor gate, otherwise that link led straight back to the
+  code. A session that still owes its code files its request as a visitor
+  (`apps/web/app/contact/_actions/contact-actions.ts`): the ticket is not
+  attached to the account, since password alone does not prove who is asking.
 - Every screen that asks for a TOTP code (site challenge and enrolment, console
   challenge and enrolment, app challenge and enrolment) sends it on the sixth
   digit, once: a refused code is not sent again on its own, and Enter or the
@@ -146,7 +174,7 @@ and written to the audit log:
 
 | Gesture | What it does | Audit action |
 | --- | --- | --- |
-| Reset the second factor | Deletes every TOTP factor (`auth.admin.mfa.deleteFactor`), which also signs the account out everywhere when a factor was verified. The administrator types the account's address to confirm. Refused on oneself, on any `ADMIN`, and on an account that was one in the last 30 days (break-glass above). The learner receives the `mfa-reset` mail, which carries no code and no sign-in link and says what to do if they asked for nothing | `admin.user.mfa_reset` (factors found, removed, complete) |
+| Reset the second factor | Deletes every TOTP factor (`auth.admin.mfa.deleteFactor`), which also signs the account out everywhere. Offered only when a factor is verified: an activation started and never finished asks for no code, so the card does not appear and the action removes nothing, writes no audit row and sends no mail (the next activation replaces it). The administrator types the account's address to confirm. Refused on oneself, on any `ADMIN`, and on an account that was one in the last 30 days (break-glass above). The learner receives the `mfa-reset` mail, which carries no code and no sign-in link and says what to do if they asked for nothing | `admin.user.mfa_reset` (factors found, removed, complete) |
 | Send a password reset link | The same recovery mail as **Forgot password** (`resetPasswordForEmail`, redirect to `/auth/callback?next=/reset-password`). The link goes to the mailbox only: the console never sees it, which is why it does not use `generateLink` | `admin.user.password_reset_sent` |
 | Resend the confirmation mail | Only for an address not yet confirmed (`auth.resend({ type: "signup" })`) | `admin.user.confirmation_resent` |
 | Confirm the address | Marks it confirmed without the mail (`email_confirm: true`), after a browser confirmation: for a mail that never arrives | `admin.user.email_confirmed` |
