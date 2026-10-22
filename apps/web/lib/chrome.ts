@@ -17,6 +17,19 @@ export const NAVBAR_HEIGHT = 56;
 const CHROME_GAP = 12;
 
 /**
+ * On a phone the navbar's panels (the friends, the notifications) span the
+ * window instead of hanging from the button: this far from its left and right
+ * edges, and this far below the bar.
+ */
+export const NAVBAR_PANEL_INSET = 8;
+
+/**
+ * Where a navbar panel starts on a phone, from the top of the window: below
+ * the bar. globals.css (.fp-panel, .notif-panel) carries a copy of it.
+ */
+export const NAVBAR_PANEL_TOP = NAVBAR_HEIGHT + NAVBAR_PANEL_INSET;
+
+/**
  * How far down a toast starts.
  *
  * Toasts sit at the top centre: a message about what just happened belongs

@@ -263,20 +263,7 @@ export function NotificationPanel({
 
       {/* Panel */}
       {open && (
-        <div
-          className="card"
-          ref={panelRef}
-          style={{
-            position: "absolute",
-            top: "calc(100% + 10px)",
-            right: 0,
-            width: 360,
-            maxHeight: 480,
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--color-border-default)",
-            overflowY: "auto",
-            zIndex: 1000,
-          }}
-        >
+        <div className="card notif-panel" ref={panelRef}>
           {/* Header */}
           <div
             style={{
