@@ -77,7 +77,8 @@ export default async function AccountDeleteConfirmPage({
             margin: "0 0 10px",
           }}
         >
-          Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.
+          Ton profil, ta progression, tes badges et tes notes seront effacés. Tes certificats
+          restent vérifiables publiquement, mais ne portent plus ton nom.
           <b style={{ color: "var(--color-text-primary)" }}> Cette action est irréversible.</b>
         </p>
         <p
