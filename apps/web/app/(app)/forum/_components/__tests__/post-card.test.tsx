@@ -39,6 +39,7 @@ const POST: ForumPostView = {
   createdAt: new Date("2026-10-01T10:00:00.000Z"),
   editedAt: null,
   isHidden: false,
+  removal: null,
   author: {
     id: "22222222-2222-4222-8222-222222222222",
     username: "sam",
@@ -113,6 +114,52 @@ describe("PostCard", () => {
       expect(screen.getByRole("button", { name: "Retirer" }).hasAttribute("aria-disabled")).toBe(
         false,
       );
+    });
+  });
+
+  describe("a message of the reader's own that is out of the thread", () => {
+    function renderOut(removal: ForumPostView["removal"]): void {
+      render(
+        <PostCard
+          post={{ ...POST, isHidden: true, removal }}
+          avatarSrc={null}
+          profileHref={null}
+          canEdit
+          canRemove
+          path={PATH}
+          hidden
+        />,
+      );
+    }
+
+    it("says « retiré » of a message its author took down", () => {
+      renderOut("WITHDRAWN");
+      expect(screen.getByText(/· retiré/)).toBeTruthy();
+    });
+
+    it("says a message the screen holds is waiting for a moderator, not removed", () => {
+      // It was posted a moment ago and carries the form's "en attente de
+      // validation": it is not gone, and must not read as if it were.
+      renderOut("HELD");
+      expect(screen.getByText(/· en attente de validation/)).toBeTruthy();
+      expect(screen.queryByText(/retiré/)).toBeNull();
+    });
+
+    it("says a message a moderator hid was hidden by the moderation, not by the author", () => {
+      renderOut("MODERATED");
+      expect(screen.getByText(/· masqué par la modération/)).toBeTruthy();
+      expect(screen.queryByText(/retiré/)).toBeNull();
+    });
+
+    it("keeps « retiré » for a hidden message whose reason is not known", () => {
+      renderOut(null);
+      expect(screen.getByText(/· retiré/)).toBeTruthy();
+    });
+
+    it("offers no tools on any of them: the message is out of the thread", () => {
+      renderOut("HELD");
+      expect(screen.queryByRole("button", { name: "Modifier" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Retirer" })).toBeNull();
     });
   });
 

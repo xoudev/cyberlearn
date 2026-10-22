@@ -63,6 +63,7 @@ describe("toMobilePost", () => {
     createdAt: new Date("2026-09-24T09:30:00.000Z"),
     editedAt: null,
     isHidden: false,
+    removal: null,
     author: AUTHOR,
   };
 
@@ -79,6 +80,16 @@ describe("toMobilePost", () => {
     expect(
       toMobilePost({ ...post, author: null }, "user-1", null, new Set(["user-2"])).authorHandle,
     ).toBeNull();
+  });
+
+  it("tells the app why one of the reader's own posts is out of the thread", () => {
+    // Withdrawn, held for a moderator, hidden by one: three different things,
+    // all `hidden`, and the app says which.
+    for (const removal of ["WITHDRAWN", "HELD", "MODERATED"] as const) {
+      const out = toMobilePost({ ...post, isHidden: true, removal }, "user-2", null, NONE_OPEN);
+      expect(out).toMatchObject({ hidden: true, removal });
+    }
+    expect(toMobilePost(post, "user-2", null, NONE_OPEN).removal).toBeNull();
   });
 
   it("carries the signed avatar it was given, and the edit date", () => {

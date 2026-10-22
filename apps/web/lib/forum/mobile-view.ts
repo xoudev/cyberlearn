@@ -4,6 +4,7 @@ import type {
   ForumPostView,
   ForumTopicSummary,
 } from "@cyberlearn/db";
+import type { RemovalKind } from "@cyberlearn/lib/moderation/removal";
 import { forumAuthorHandle, forumAuthorName } from "@/lib/forum/author-name";
 
 /**
@@ -53,6 +54,12 @@ export interface MobileForumPost {
   editedAt: string | null;
   /** Taken down; only ever sent to its own author. */
   hidden: boolean;
+  /**
+   * Why it is hidden, for its author: withdrawn by them, held by the screen
+   * for a moderator, or hidden by one. Null when it is up. Absent from a
+   * server older than this field, which the app reads as withdrawn.
+   */
+  removal: RemovalKind | null;
   /** Written by the reader: theirs to edit or take down. */
   mine: boolean;
   author: MobileForumAuthor | null;
@@ -134,6 +141,7 @@ export function toMobilePost(
     createdAt: post.createdAt.toISOString(),
     editedAt: post.editedAt?.toISOString() ?? null,
     hidden: post.isHidden,
+    removal: post.removal,
     mine: post.author?.id === viewerId,
     author: toMobileAuthor(post.author, friends),
     avatar,

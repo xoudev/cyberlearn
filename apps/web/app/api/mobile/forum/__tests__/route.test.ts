@@ -197,6 +197,7 @@ describe("GET /api/mobile/forum/topic", () => {
         createdAt: new Date("2026-09-20T08:00:00.000Z"),
         editedAt: null,
         isHidden: false,
+        removal: null,
         author: AUTHOR,
       },
       {
@@ -205,6 +206,7 @@ describe("GET /api/mobile/forum/topic", () => {
         createdAt: new Date("2026-09-21T08:00:00.000Z"),
         editedAt: null,
         isHidden: true,
+        removal: "HELD",
         author: { ...AUTHOR, id: "user-1", avatarUrl: "__glyph:skull" },
       },
     ],
