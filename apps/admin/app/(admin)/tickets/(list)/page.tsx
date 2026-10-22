@@ -22,6 +22,7 @@ import {
 } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
+import { consoleDateFormat } from "@/lib/console-time";
 
 export const metadata: Metadata = { title: "Tickets" };
 
@@ -29,7 +30,7 @@ export const metadata: Metadata = { title: "Tickets" };
 const AWAITING = "AWAITING";
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+  return consoleDateFormat({
     day: "2-digit",
     month: "short",
     hour: "2-digit",

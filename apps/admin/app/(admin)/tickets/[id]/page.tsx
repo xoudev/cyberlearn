@@ -14,12 +14,13 @@ import { describeAppealedBan } from "../appealed-ban";
 import { adminName, STATUS_META, THEME_META } from "../ticket-meta";
 
 import { requireAdminPage } from "@/lib/auth";
+import { consoleDateFormat } from "@/lib/console-time";
 import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Ticket" };
 
 function formatDateTime(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
+  return consoleDateFormat({
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -99,9 +100,10 @@ export default async function AdminTicketPage({
   const contactEmail = ticket.email ?? ticket.user?.email ?? null;
   const open = isTicketOpen(ticket.status);
 
-  // Formatted here: the server owns the locale, and a Date crossing to a client
+  // Formatted here: the server owns the locale and the zone (Paris, as the
+  // account's page and the audit log read it), and a Date crossing to a client
   // component renders differently on the two sides of the boundary.
-  const stamp = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const stamp = consoleDateFormat({ dateStyle: "long", timeStyle: "short" });
   const format = (date: Date): string => stamp.format(date);
 
   // An assignee demoted since keeps their place in the list, named as such,

@@ -22,6 +22,7 @@ import {
 import { banTimeLeft } from "@cyberlearn/lib";
 import { isUploadedAvatar } from "@cyberlearn/types";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
+import { consoleDateFormat } from "@/lib/console-time";
 import { RECENT_LEDGER_ROWS } from "@/lib/gamification-corrections";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
@@ -47,7 +48,7 @@ export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(d);
+  return consoleDateFormat({ dateStyle: "long", timeStyle: "short" }).format(d);
 }
 
 /** How Supabase names a sign-in method, and how support says it. */
@@ -137,11 +138,7 @@ export default async function AdminUserPage({
   ]);
 
   const stamp = (date: Date): string =>
-    new Intl.DateTimeFormat("fr-FR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "Europe/Paris",
-    }).format(date);
+    consoleDateFormat({ dateStyle: "short", timeStyle: "short" }).format(date);
 
   const activeBan = active
     ? {

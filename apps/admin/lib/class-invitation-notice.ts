@@ -1,5 +1,6 @@
 import { classRepository, prisma } from "@cyberlearn/db";
 import { sendClassInvitationEmail } from "@cyberlearn/email";
+import { consoleDateFormat } from "@/lib/console-time";
 import { env } from "@/lib/env";
 import { learnerUrl } from "./learner-url";
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
@@ -52,7 +53,7 @@ export async function inviteAndNotify(
   });
   if (!klass) return { invited: created, renewed, mailFailed: created };
 
-  const expiryLabel = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(expiresAt);
+  const expiryLabel = consoleDateFormat({ dateStyle: "long" }).format(expiresAt);
   const signUpUrl = learnerUrl("/register");
   const mailFailed: string[] = [];
 

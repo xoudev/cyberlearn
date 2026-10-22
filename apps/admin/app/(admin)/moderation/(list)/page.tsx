@@ -15,6 +15,7 @@ import { ReviewOutcomes } from "../_components/review-outcomes";
 import { SURFACE_LABEL } from "../surface-labels";
 
 import { requireAdminPage } from "@/lib/auth";
+import { consoleDateFormat } from "@/lib/console-time";
 
 export const metadata: Metadata = { title: "Modération" };
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ function readFindings(value: unknown): Finding[] {
 }
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(d);
+  return consoleDateFormat({ dateStyle: "short", timeStyle: "short" }).format(d);
 }
 
 /**
