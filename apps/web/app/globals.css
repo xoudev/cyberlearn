@@ -3713,6 +3713,74 @@ a.dash-friend-name:hover {
     padding: 44px 32px 120px;
   }
 }
+/* The panel of the onboarding screens drawn by hand (identity, avatar, the
+   placement test): the same square padding as OnboardingShell's panel, which
+   leaves 237px of a 375px phone to the content when it keeps the desktop's. */
+.onboarding-card {
+  padding: 26px 18px 22px;
+}
+@media (min-width: 640px) {
+  .onboarding-card {
+    padding: 32px 36px 28px;
+  }
+}
+/* The figures of the placement test (questions, duration, XP...): four columns
+   where they fit, two by two below, as their labels cannot be broken and four
+   of them ask for 320px or more. Their borders are drawn here, as they depend
+   on the number of columns. */
+.onboarding-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.onboarding-stats > * {
+  padding: 16px 14px;
+  min-width: 0;
+}
+.onboarding-stats > :nth-child(odd) {
+  border-right: 1px solid var(--color-border-default);
+}
+.onboarding-stats > :nth-child(n + 3) {
+  border-top: 1px solid var(--color-border-default);
+}
+@media (min-width: 640px) {
+  .onboarding-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .onboarding-stats > * {
+    border-right: 1px solid var(--color-border-default);
+  }
+  .onboarding-stats > :nth-child(n + 3) {
+    border-top: 0;
+  }
+  .onboarding-stats > :last-child {
+    border-right: 0;
+  }
+}
+/* The buttons that close an onboarding screen: side by side while they fit,
+   one under the other below that. */
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.onboarding-actions > .btn {
+  flex: 1 1 auto;
+}
+/* A button's label is on one line (.btn is nowrap), and "Passer → Accéder au
+   dashboard" or "Accéder au tableau de bord →" is wider than a phone's panel:
+   below 640px the label breaks, and the button grows with it. */
+@media (max-width: 639px) {
+  .onboarding-card .btn,
+  .onboarding-actions > .btn {
+    height: auto;
+    min-height: 50px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
 /* The top bar of the onboarding pages drawn by hand: below 768px it has no
    room for the step's labels and "Se déconnecter" together, and the button
    was pushed off the right edge. The labels are decoration; the way out is
@@ -3723,6 +3791,14 @@ a.dash-friend-name:hover {
   }
   .onboarding-bar__signout {
     margin-left: auto;
+    position: relative;
+  }
+  /* The button is 32px tall in a 44px bar and stays so; its target reaches
+     the edges of the bar (44px), past its own border. */
+  .onboarding-bar__signout::after {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
   }
 }
 

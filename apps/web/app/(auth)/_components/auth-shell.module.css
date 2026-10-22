@@ -338,6 +338,27 @@
   padding-left: calc(14px + 0.38em);
 }
 
+/* The text links and the "Afficher" button are one line of 9 to 10px text,
+   about 14px tall. "Renvoyer l'e-mail de confirmation" is the only way out
+   for an address that was never confirmed. On a phone, and on anything
+   touched, the text keeps its size and the target is 44px high. */
+@media (max-width: 900px), (pointer: coarse) {
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .reveal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 8px;
+    right: 4px;
+  }
+}
+
 @media (max-width: 900px) {
   .page {
     grid-template-columns: 1fr;

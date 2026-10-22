@@ -155,15 +155,14 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
       <div
+        className="onboarding-content"
         style={{
           position: "relative",
           zIndex: 1,
           minHeight: "100vh",
-          paddingTop: 44,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "44px 32px 120px",
         }}
       >
         {/* Progress header */}

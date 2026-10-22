@@ -153,15 +153,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
       </header>
 
       <div
+        className="onboarding-content"
         style={{
           position: "relative",
           zIndex: 1,
           minHeight: "100vh",
-          paddingTop: 44,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "44px 32px 120px",
         }}
       >
         {/* Progress */}
@@ -267,12 +266,11 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
         {/* Panel */}
         <div
-          className="card"
+          className="card onboarding-card"
           style={{
             position: "relative",
             width: "100%",
             maxWidth: 640,
-            padding: "32px 36px 28px",
           }}
         >
           <div
@@ -396,28 +394,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             </p>
 
             {/* Stats grid */}
-            <div
-              className="card"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 0,
-                marginBottom: 22,
-              }}
-            >
+            <div className="card onboarding-stats" style={{ marginBottom: 22 }}>
               {[
                 { label: "Questions", value: String(questionCount), unit: "", accent: false },
                 { label: "Durée", value: String(estimatedMinutes), unit: "min", accent: false },
                 { label: "XP planifié", value: "0", unit: "XP", accent: false },
                 { label: "Score public", value: "NON", unit: "", accent: true },
-              ].map(({ label, value, unit, accent }, i) => (
-                <div
-                  key={label}
-                  style={{
-                    padding: "16px 14px",
-                    borderRight: i < 3 ? "1px solid var(--color-border-default)" : "none",
-                  }}
-                >
+              ].map(({ label, value, unit, accent }) => (
+                <div key={label}>
                   <span
                     className="mono-label mono-label--xs"
                     style={{
@@ -481,9 +465,16 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Link className="btn btn--lg btn--block" href="/onboarding/placement-test/questions">
-                Commencer le test <span style={{ fontSize: 16 }}>→</span>
-              </Link>
+              {/* No active question, nothing to start: the questions page would
+                  send the reader straight back here. */}
+              {questionCount > 0 && (
+                <Link
+                  className="btn btn--lg btn--block"
+                  href="/onboarding/placement-test/questions"
+                >
+                  Commencer le test <span style={{ fontSize: 16 }}>→</span>
+                </Link>
+              )}
 
               <form action={skipOnboarding}>
                 <button className="btn btn--ghost btn--lg btn--block" type="submit">
