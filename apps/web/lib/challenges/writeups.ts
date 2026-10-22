@@ -73,7 +73,7 @@ const publishSchema = z.object({
     .max(10000, "10 000 caractères au plus pour une solution."),
 });
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
+const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 const NOT_FOUND = "Défi introuvable.";
 const HIDDEN_BY_MODERATION =
   "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.";

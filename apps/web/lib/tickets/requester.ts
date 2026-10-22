@@ -71,7 +71,7 @@ export async function fileTicket(input: {
   if (!limit.success) {
     return {
       ok: false,
-      error: `Trop de demandes. Réessayez dans ${String(limit.retryAfterSeconds)} secondes.`,
+      error: `Trop de demandes. Réessaie dans ${String(limit.retryAfterSeconds)} secondes.`,
     };
   }
 

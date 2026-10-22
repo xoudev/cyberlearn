@@ -54,7 +54,7 @@ const answerSchema = z.object({
 
 export type QaResult = { ok: true; heldForReview?: true } | { ok: false; error: string };
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
+const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 
 export async function postLessonQuestion(userId: string, input: unknown): Promise<QaResult> {
   // Shared with the forum on purpose: somebody flooding the site does not care
