@@ -236,6 +236,92 @@ describe("FriendsPanel challenges", () => {
   });
 });
 
+describe("FriendsPanel request count", () => {
+  const KIM = "33333333-3333-4333-8333-333333333333";
+
+  it("follows the count the server sends after a request was answered elsewhere", () => {
+    // Accepted or refused from a notification: the layout refreshes, and the
+    // badge on the button has to go with it.
+    const { rerender } = render(<FriendsPanel initialRequestCount={1} />);
+    expect(screen.getByRole("button", { name: "1 demandes d'ami en attente" })).toBeTruthy();
+
+    rerender(<FriendsPanel initialRequestCount={0} />);
+    expect(screen.getByRole("button", { name: "Amis" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /en attente/ })).toBeNull();
+  });
+
+  it("reads the lists again when the count changes under a panel that already loaded them", async () => {
+    const { rerender } = render(<FriendsPanel initialRequestCount={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    await screen.findByText("Sam");
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(1);
+
+    // The request was answered from the notification: the server's lists
+    // no longer hold it, and "Accepter" on the stale row would say "déjà traitée".
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [],
+      friends: [entry(ALEX, "Alex", "ACCEPTED"), entry(SAM, "Sam", "ACCEPTED")],
+      outgoing: [],
+    });
+    rerender(<FriendsPanel initialRequestCount={0} />);
+
+    await vi.waitFor(() => {
+      expect(m.getFriendsAction).toHaveBeenCalledTimes(2);
+    });
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
+    });
+    expect(screen.queryByText("Demandes reçues · 1")).toBeNull();
+  });
+
+  it("does not read the lists again for a count the panel lowered itself", async () => {
+    const { rerender } = render(<FriendsPanel initialRequestCount={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "1 demandes d'ami en attente" }));
+    await screen.findByText("Sam");
+
+    fireEvent.click(within(rowOf("Sam")).getByRole("button", { name: "Accepter" }));
+    expect(m.acceptFriendRequestAction).toHaveBeenCalledWith(SAM);
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Amis" })).toBeTruthy();
+    });
+
+    // The layout's refresh reaches the panel with the same number it holds.
+    rerender(<FriendsPanel initialRequestCount={0} />);
+    expect(m.getFriendsAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Sam")).toBeTruthy();
+  });
+
+  it("lowers the count once when the refresh arrives before the panel has settled", async () => {
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [entry(SAM, "Sam", "PENDING"), entry(KIM, "Kim", "PENDING")],
+      friends: [entry(ALEX, "Alex", "ACCEPTED")],
+      outgoing: [],
+    });
+    const { rerender } = render(<FriendsPanel initialRequestCount={2} />);
+    fireEvent.click(screen.getByRole("button", { name: "2 demandes d'ami en attente" }));
+    await screen.findByText("Kim");
+
+    // Sam's request is answered here; the server's new count (1) is the first
+    // thing to reach the panel, and the lists it reads next hold Kim alone.
+    m.getFriendsAction.mockResolvedValue({
+      incoming: [entry(KIM, "Kim", "PENDING")],
+      friends: [entry(ALEX, "Alex", "ACCEPTED"), entry(SAM, "Sam", "ACCEPTED")],
+      outgoing: [],
+    });
+    rerender(<FriendsPanel initialRequestCount={1} />);
+    await vi.waitFor(() => {
+      expect(m.getFriendsAction).toHaveBeenCalledTimes(2);
+    });
+    await screen.findByText("1 en attente");
+
+    // Kim is then answered in the panel: nobody is left waiting, not -1.
+    fireEvent.click(within(rowOf("Kim")).getByRole("button", { name: "Accepter" }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Amis" })).toBeTruthy();
+    });
+  });
+});
+
 describe("FriendsPanel search", () => {
   it("opens the profile behind a typed handle, and closes", async () => {
     await openPanel();

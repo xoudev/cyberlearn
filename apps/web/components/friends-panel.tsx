@@ -264,6 +264,24 @@ export function FriendsPanel({
   const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // The count comes from the server, which re-reads it on every refresh of the
+  // layout; the state above is only its first value. Answering a request from
+  // a notification refreshed the layout without this panel hearing of it: the
+  // badge stayed up for the whole visit, and a list already loaded still held
+  // the request, whose "Accepter" then answered "déjà traitée".
+  //
+  // A new count the panel did not cause itself - its own answers have already
+  // lowered `waiting` by the time the refresh arrives - means the lists it
+  // holds are out of date: they are read again, at once if it is open.
+  const [seenCount, setSeenCount] = useState(initialRequestCount);
+  if (initialRequestCount !== seenCount) {
+    setSeenCount(initialRequestCount);
+    if (initialRequestCount !== waiting) {
+      setWaiting(initialRequestCount);
+      setLoaded(false);
+    }
+  }
+
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -300,26 +318,36 @@ export function FriendsPanel({
    * the server until it reopens, so the lists are corrected here rather than
    * re-fetched behind a spinner.
    */
-  const settle = useCallback((personId: string, outcome: RowOutcome, wasWaiting: boolean) => {
-    setLists((prev) => {
-      const moved = prev.incoming.find((edge) => edge.person.id === personId);
-      return {
-        incoming: prev.incoming.filter((edge) => edge.person.id !== personId),
-        outgoing: prev.outgoing.filter((edge) => edge.person.id !== personId),
-        friends:
-          outcome === "accepted" && moved
-            ? [moved, ...prev.friends]
-            : prev.friends.filter((edge) => edge.person.id !== personId),
-      };
-    });
-    // Outside the updater on purpose: React may run an updater twice, and a
-    // counter decremented from inside one would go down twice.
-    //
-    // Both answers clear a waiting request - accepting and refusing alike -
-    // which is why this follows the list the row was in rather than what was
-    // done to it. Unfriending somebody is not one fewer person waiting.
-    if (wasWaiting) setWaiting((count) => Math.max(0, count - 1));
-  }, []);
+  const incoming = lists.incoming;
+  const settle = useCallback(
+    (personId: string, outcome: RowOutcome, wasWaiting: boolean) => {
+      setLists((prev) => {
+        const moved = prev.incoming.find((edge) => edge.person.id === personId);
+        return {
+          incoming: prev.incoming.filter((edge) => edge.person.id !== personId),
+          outgoing: prev.outgoing.filter((edge) => edge.person.id !== personId),
+          friends:
+            outcome === "accepted" && moved
+              ? [moved, ...prev.friends]
+              : prev.friends.filter((edge) => edge.person.id !== personId),
+        };
+      });
+      // Outside the updater on purpose: React may run an updater twice.
+      //
+      // Both answers clear a waiting request - accepting and refusing alike -
+      // which is why this follows the list the row was in rather than what was
+      // done to it. Unfriending somebody is not one fewer person waiting.
+      //
+      // The count is what is left in the list, not the last count minus one:
+      // the layout's refresh, which carries the new count down from the
+      // server, can reach this panel before or after this call, and each of
+      // them lowering a number would take it down twice.
+      if (wasWaiting) {
+        setWaiting(incoming.filter((edge) => edge.person.id !== personId).length);
+      }
+    },
+    [incoming],
+  );
 
   const close = useCallback(() => {
     setOpen(false);
