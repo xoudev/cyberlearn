@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stubMatchMedia } from "@/test/match-media";
@@ -94,6 +96,20 @@ describe("where the reader is", () => {
     const bar = document.querySelector<HTMLElement>(".lesson-toolbar");
     expect(bar?.style.top).toBe(`${String(NAVBAR_HEIGHT)}px`);
     expect(bar?.style.height).toBe(`${String(LESSON_TOOLBAR_HEIGHT)}px`);
+  });
+
+  it("gives a touch screen 44px buttons, which the bar holds as it is", () => {
+    const css = readFileSync(path.resolve(__dirname, "../../../../../globals.css"), "utf8");
+    const rule =
+      /@media \(pointer: coarse\) \{\s*\.lesson-toolbar \.btn \{\s*height: (\d+)px;\s*min-width: (\d+)px;/.exec(
+        css,
+      );
+    expect(rule).not.toBeNull();
+    const [height, minWidth] = [Number(rule?.[1]), Number(rule?.[2])];
+    expect(height).toBeGreaterThanOrEqual(44);
+    expect(minWidth).toBeGreaterThanOrEqual(44);
+    // Inside the bar, its borders included: the page's offsets stay as they are.
+    expect(height).toBeLessThanOrEqual(LESSON_TOOLBAR_HEIGHT - 2);
   });
 });
 
