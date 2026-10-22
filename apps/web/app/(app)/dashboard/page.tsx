@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { LevelRing } from "./_components/level-ring";
 import { MissionCard, type MissionCardProps } from "./_components/mission-card";
@@ -35,6 +36,10 @@ import { listTournamentsFor } from "@/lib/tournaments/tournaments";
 import { StreakCard } from "@/components/streak-card";
 import { QuestsPanel } from "@/components/quests-panel";
 import { categoryMeta } from "@cyberlearn/lib/content/vocabulary";
+
+// The tab said the site's generic title: the dashboard was the one page of the
+// signed-in site that named nothing.
+export const metadata: Metadata = { title: "Tableau de bord" };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
