@@ -81,6 +81,7 @@ export {
   PLACEMENT_WAIVER_REASON,
   type PlacementResetResult,
 } from "./repositories/placement.repository.js";
+export { dashboardRepository } from "./repositories/dashboard.repository.js";
 export {
   lessonProgressRepository,
   LESSON_CORRECTIONS,

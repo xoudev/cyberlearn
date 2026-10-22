@@ -503,6 +503,49 @@ export const userRepository = {
     return user?.email ?? null;
   },
 
+  /**
+   * What the sign-up steps read of the account: the handle (null until step 1
+   * is done), the name shown, the bio and the avatar. Null when there is no
+   * such account.
+   */
+  async findOnboardingProfile(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, displayName: true, bio: true, avatarUrl: true },
+    });
+  },
+
+  /** The id of the account that holds this handle, or null when it is free. */
+  async findIdByUsername(username: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+    return user?.id ?? null;
+  },
+
+  /**
+   * Step 1 of the sign-up: the handle, the name shown and the bio, with the
+   * preferences row every account needs from then on, in one transaction.
+   * Throws the unique-constraint error (P2002) when somebody took the handle
+   * since it was checked; the caller says so.
+   */
+  async saveOnboardingProfile(
+    userId: string,
+    profile: { username: string; displayName: string; bio: string | null },
+  ): Promise<void> {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: profile }),
+      prisma.userPreferences.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      }),
+    ]);
+  },
+
+  /** Step 2 of the sign-up: the avatar the account picked. */
+  async setAvatarUrl(userId: string, avatarUrl: string): Promise<void> {
+    await prisma.user.update({ where: { id: userId }, data: { avatarUrl } });
+  },
+
   /** Minimal user data needed for XP + streak computation on lesson completion. */
   async findForGamification(userId: string) {
     return prisma.user.findUnique({

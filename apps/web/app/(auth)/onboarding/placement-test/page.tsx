@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import { placementRepository, userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { skipOnboarding } from "../_actions/finalize-onboarding";
@@ -15,18 +15,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
   if (!user) redirect("/login");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { username: true },
-  });
+  const dbUser = await userRepository.findOnboardingProfile(user.id);
 
   if (!dbUser?.username) redirect("/onboarding");
 
   // If already submitted, finalize and go to dashboard
-  const existing = await prisma.userPlacementResult.findUnique({ where: { userId: user.id } });
-  if (existing) redirect("/dashboard");
+  if (await placementRepository.hasResult(user.id)) redirect("/dashboard");
 
-  const questionCount = await prisma.placementQuestion.count({ where: { isActive: true } });
+  const questionCount = await placementRepository.countActiveQuestions();
   const estimatedMinutes = Math.ceil(questionCount * 0.75);
 
   return (
