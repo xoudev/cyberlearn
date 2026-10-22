@@ -17,6 +17,7 @@ import {
 } from "@cyberlearn/lib/tickets/tickets";
 import type { QueryDialogProps } from "@/hooks/use-query-dialog";
 import { fileRequestAction, type FileTicketResult } from "../_actions/request-actions";
+import { newRequestPrefill } from "./new-request-query";
 
 type FieldErrors = Extract<FileTicketResult, { ok: false }>["fieldErrors"];
 
@@ -35,17 +36,24 @@ type FieldErrors = Extract<FileTicketResult, { ok: false }>["fieldErrors"];
  * while nothing has been written: what was, the close button or "Annuler"
  * throws away on purpose.
  */
-export default function NewRequestDialog({ onClose }: QueryDialogProps): React.JSX.Element {
+export default function NewRequestDialog({ value, onClose }: QueryDialogProps): React.JSX.Element {
   const formId = useId();
-  const [theme, setTheme] = useState("");
-  const [subject, setSubject] = useState("");
+  // What a link wrote in advance (an error screen's incident, the Android
+  // app's "Être prévenu"), the same as the public form does from its address.
+  const [prefill] = useState(() => newRequestPrefill(value));
+  const [theme, setTheme] = useState<string>(prefill?.theme ?? "");
+  const [subject, setSubject] = useState(prefill?.subject ?? "");
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>(undefined);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const written = theme !== "" || subject.trim() !== "" || message.trim() !== "";
+  // Beyond what the link wrote: that was not the reader's to lose.
+  const written =
+    theme !== (prefill?.theme ?? "") ||
+    subject.trim() !== (prefill?.subject ?? "") ||
+    message.trim() !== "";
 
   const submit = (e: React.SyntheticEvent): void => {
     e.preventDefault();

@@ -3,10 +3,14 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { newRequestHref } from "./support/_components/new-request-query";
 
 // Scoped error boundary for the authenticated app. A render failure in one route
 // (e.g. malformed lesson MDX) degrades to this card with a retry, instead of
-// blanking the whole route. The incident is still reported to Sentry.
+// blanking the whole route. The incident is still reported to Sentry. The
+// reader here is signed in, so "Signaler le problème" opens the request window
+// (answered at the account's address) with the incident already written,
+// rather than the visitors' contact page.
 export default function AppError({
   error,
   reset,
@@ -104,7 +108,7 @@ export default function AppError({
           </Link>
           <Link
             className="mono-label mono-label--md card card--ghost"
-            href={`/contact${error.digest ? `?ref=${error.digest}` : ""}`}
+            href={newRequestHref(error.digest ? { incident: error.digest } : undefined)}
             style={{
               padding: "8px 20px",
               fontWeight: 600,
