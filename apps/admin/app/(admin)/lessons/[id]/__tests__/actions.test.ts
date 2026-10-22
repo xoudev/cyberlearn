@@ -15,7 +15,7 @@ const m = vi.hoisted(() => ({
   draftPublish: vi.fn(),
   versionFind: vi.fn(),
   versionCurrent: vi.fn(),
-  lessonFindFirst: vi.fn(),
+  findTaken: vi.fn(),
   auditRecord: vi.fn(),
   resolveCover: vi.fn(),
 }));
@@ -61,9 +61,7 @@ vi.mock("@cyberlearn/db", () => ({
   },
   lessonVersionRepository: { find: m.versionFind, current: m.versionCurrent },
   auditLogRepository: { record: m.auditRecord },
-  prisma: {
-    lesson: { findFirst: m.lessonFindFirst },
-  },
+  lessonRepository: { findTaken: m.findTaken },
 }));
 
 const {
@@ -111,7 +109,7 @@ beforeEach(() => {
   m.draftSave.mockResolvedValue({ ok: true, updatedAt: SAVED_AT });
   m.draftDiscard.mockResolvedValue(true);
   m.draftPublish.mockResolvedValue({ ok: true, version: 2, content: CONTENT, updatedAt: SAVED_AT });
-  m.lessonFindFirst.mockResolvedValue(null);
+  m.findTaken.mockResolvedValue({ refCode: false, slug: false });
   m.auditRecord.mockResolvedValue(undefined);
   m.versionCurrent.mockResolvedValue({ ...CONTENT, version: 2 });
   m.resolveCover.mockImplementation((marker: string) =>
@@ -288,9 +286,21 @@ describe("publishLessonChangesAction", () => {
   });
 
   it("refuses a refCode another lesson holds", async () => {
-    m.lessonFindFirst.mockResolvedValueOnce({ id: "other" });
+    m.findTaken.mockResolvedValueOnce({ refCode: true, slug: false });
     const result = await publishLessonChangesAction(input);
     expect(result).toMatchObject({ ok: false, fieldErrors: { refCode: "Déjà utilisé" } });
+    // Another lesson's: the one being published keeps its own.
+    expect(m.findTaken).toHaveBeenCalledWith(
+      { refCode: CONTENT.refCode, slug: CONTENT.slug },
+      LESSON,
+    );
+    expect(m.draftPublish).not.toHaveBeenCalled();
+  });
+
+  it("refuses a slug another lesson holds", async () => {
+    m.findTaken.mockResolvedValueOnce({ refCode: false, slug: true });
+    const result = await publishLessonChangesAction(input);
+    expect(result).toMatchObject({ ok: false, fieldErrors: { slug: "Déjà utilisé" } });
     expect(m.draftPublish).not.toHaveBeenCalled();
   });
 

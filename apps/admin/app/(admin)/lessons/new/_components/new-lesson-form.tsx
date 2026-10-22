@@ -16,9 +16,6 @@ import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/less
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const BODY_F = "var(--font-sans)";
 
@@ -56,9 +53,9 @@ echo "hello"
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
-  background: "#0A0826",
-  border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border-2)",
+  color: "var(--a-fg)",
   fontFamily: MONO,
   fontSize: 13,
   letterSpacing: "0.01em",
@@ -84,14 +81,14 @@ function Label({
         fontSize: 10.5,
         letterSpacing: "0.18em",
         textTransform: "uppercase",
-        color: "#B8B5D1",
+        color: "var(--a-fg-2)",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
       }}
     >
       {children}
-      {req && <span style={{ color: DANGER, fontWeight: 700 }}>*</span>}
+      {req && <span style={{ color: "var(--a-danger)", fontWeight: 700 }}>*</span>}
       {hint && (
         <span
           style={{
@@ -99,7 +96,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             marginLeft: "auto",
           }}
         >
@@ -112,7 +109,9 @@ function Label({
 
 function Help({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#7F7BA9" }}>
+    <span
+      style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "var(--a-muted)" }}
+    >
       {children}
     </span>
   );
@@ -120,7 +119,9 @@ function Help({ children }: { children: React.ReactNode }) {
 
 function FieldErr({ msg }: { msg?: string | undefined }) {
   return msg ? (
-    <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER, marginTop: 2 }}>{msg}</span>
+    <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)", marginTop: 2 }}>
+      {msg}
+    </span>
   ) : null;
 }
 
@@ -183,11 +184,11 @@ export function NewLessonForm({
   return (
     <>
       <style>{`
-        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:rgba(255,255,255,0.18)!important}
-        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
-        .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
+        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:color-mix(in srgb, var(--a-fg) 18%, transparent)!important}
+        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent),inset 0 0 0 1px color-mix(in srgb, var(--a-accent) 8%, transparent)!important}
+        .le-prefix:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
+        .le-num:focus-within{border-color:var(--a-accent)!important;background:var(--a-hover)!important;box-shadow:0 0 0 1px color-mix(in srgb, var(--a-accent) 25%, transparent)!important}
+        .adm-btn-ghost:hover{color:var(--a-fg)!important;border-color:var(--a-muted)!important;background:color-mix(in srgb, var(--a-fg) 3%, transparent)!important}
       `}</style>
 
       {/* Global error */}
@@ -195,12 +196,12 @@ export function NewLessonForm({
         <div
           style={{
             padding: "13px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.35)",
-            borderLeft: `3px solid ${DANGER}`,
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--a-danger) 35%, transparent)",
+            borderLeft: "3px solid var(--a-danger)",
             fontFamily: MONO,
             fontSize: 11,
-            color: DANGER,
+            color: "var(--a-danger)",
             marginBottom: 24,
           }}
         >
@@ -287,7 +288,7 @@ export function NewLessonForm({
                 }}
               >
                 <input type="hidden" name="refCode" value={refCode} />
-                <span style={{ color: refCode === "" ? "#7F7BA9" : undefined }}>
+                <span style={{ color: refCode === "" ? "var(--a-muted)" : undefined }}>
                   {refCode === "" ? "Calcul…" : refCode}
                 </span>
                 <button
@@ -318,8 +319,8 @@ export function NewLessonForm({
                 </>
               ) : firstPath !== undefined ? (
                 <>
-                  Tiré du parcours <b style={{ color: TURQ }}>{firstPath.title}</b> et du rang que
-                  la leçon y prendra, bilans de module non comptés.
+                  Tiré du parcours <b style={{ color: "var(--a-accent)" }}>{firstPath.title}</b> et
+                  du rang que la leçon y prendra, bilans de module non comptés.
                 </>
               ) : (
                 <>Le prochain code libre du catalogue, faute de parcours.</>
@@ -327,7 +328,7 @@ export function NewLessonForm({
             </Help>
             <Help>
               Format :{" "}
-              <b style={{ color: TURQ }}>
+              <b style={{ color: "var(--a-accent)" }}>
                 CL-LSN-{"{NNN}"}-V{"{NN}"} ou CL-LSN-{"{PPNNN}"}-V{"{NN}"}
               </b>{" "}
               · doit être unique
@@ -344,8 +345,8 @@ export function NewLessonForm({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border-2)",
                 transition: "all 150ms ease",
               }}
             >
@@ -356,9 +357,9 @@ export function NewLessonForm({
                   width: 36,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#7F7BA9",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  color: "var(--a-muted)",
+                  borderRight: "1px solid var(--a-border-2)",
+                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
                 }}
               >
                 /
@@ -378,7 +379,7 @@ export function NewLessonForm({
             </div>
             <Help>
               {lessonUrlPrefix.replace(/^https?:\/\//u, "")}
-              <b style={{ color: TURQ }}>votre-slug</b>
+              <b style={{ color: "var(--a-accent)" }}>votre-slug</b>
             </Help>
             <FieldErr msg={state.fieldErrors?.slug} />
           </div>
@@ -475,8 +476,8 @@ export function NewLessonForm({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border-2)",
                 transition: "all 150ms ease",
               }}
             >
@@ -498,9 +499,9 @@ export function NewLessonForm({
                   fontFamily: MONO,
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
-                  color: "#7F7BA9",
-                  borderLeft: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  color: "var(--a-muted)",
+                  borderLeft: "1px solid var(--a-border-2)",
+                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
                   textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
@@ -509,7 +510,7 @@ export function NewLessonForm({
               </span>
             </div>
             <Help>
-              Médiane catalogue · <b style={{ color: TURQ }}>15 min</b>
+              Médiane catalogue · <b style={{ color: "var(--a-accent)" }}>15 min</b>
             </Help>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -520,8 +521,8 @@ export function NewLessonForm({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border-2)",
                 transition: "all 150ms ease",
               }}
             >
@@ -544,9 +545,9 @@ export function NewLessonForm({
                   fontFamily: MONO,
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
-                  color: "#7F7BA9",
-                  borderLeft: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
+                  color: "var(--a-muted)",
+                  borderLeft: "1px solid var(--a-border-2)",
+                  background: "color-mix(in srgb, var(--a-bg) 25%, transparent)",
                   textTransform: "uppercase",
                   whiteSpace: "nowrap",
                 }}
@@ -555,7 +556,7 @@ export function NewLessonForm({
               </span>
             </div>
             <Help>
-              Recommandé · <b style={{ color: TURQ }}>100–200 XP</b> pour intermédiaire
+              Recommandé · <b style={{ color: "var(--a-accent)" }}>100–200 XP</b> pour intermédiaire
             </Help>
           </div>
         </div>
@@ -587,8 +588,8 @@ export function NewLessonForm({
             alignItems: "flex-start",
             gap: 14,
             padding: "16px 18px",
-            background: "#0A0826",
-            border: `1px solid ${BORDER}`,
+            background: "var(--a-surface)",
+            border: "1px solid var(--a-border-2)",
             cursor: "pointer",
             transition: "border-color 150ms ease",
           }}
@@ -597,7 +598,13 @@ export function NewLessonForm({
             name="publishNow"
             type="checkbox"
             value="true"
-            style={{ width: 18, height: 18, accentColor: TURQ, cursor: "pointer", marginTop: 1 }}
+            style={{
+              width: 18,
+              height: 18,
+              accentColor: "var(--a-accent)",
+              cursor: "pointer",
+              marginTop: 1,
+            }}
           />
           <div>
             <div
@@ -607,7 +614,7 @@ export function NewLessonForm({
                 fontSize: 12,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#F5F5FA",
+                color: "var(--a-fg)",
                 marginBottom: 4,
               }}
             >
@@ -619,7 +626,7 @@ export function NewLessonForm({
                   gap: 5,
                   fontWeight: 700,
                   fontSize: 10,
-                  color: TURQ,
+                  color: "var(--a-accent)",
                   marginLeft: 8,
                   letterSpacing: "0.12em",
                 }}
@@ -629,8 +636,8 @@ export function NewLessonForm({
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: TURQ,
-                    boxShadow: `0 0 6px ${TURQ}`,
+                    background: "var(--a-accent)",
+                    boxShadow: "0 0 6px var(--a-accent)",
                     display: "inline-block",
                   }}
                 />
@@ -641,7 +648,7 @@ export function NewLessonForm({
               style={{
                 fontFamily: BODY_F,
                 fontSize: 12.5,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -659,7 +666,7 @@ export function NewLessonForm({
             alignItems: "center",
             gap: 14,
             paddingTop: 24,
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: "1px solid var(--a-border-2)",
             flexWrap: "wrap",
             justifyContent: "flex-end",
           }}
@@ -675,8 +682,8 @@ export function NewLessonForm({
               textTransform: "uppercase",
               padding: "13px 22px",
               background: "transparent",
-              color: "#7F7BA9",
-              border: `1px solid ${BORDER}`,
+              color: "var(--a-muted)",
+              border: "1px solid var(--a-border-2)",
               transition: "all 150ms ease",
               textDecoration: "none",
               display: "inline-flex",
@@ -699,12 +706,11 @@ export function NewLessonForm({
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               padding: "13px 22px",
-              background: "linear-gradient(135deg, #2848FF, #0024FF)",
-              color: "#fff",
+              background: "var(--a-blue)",
+              color: "var(--a-fg)",
               border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
-              boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
           >
             <span
@@ -714,7 +720,7 @@ export function NewLessonForm({
                 left: -3,
                 width: 10,
                 height: 10,
-                border: "1.5px solid #fff",
+                border: "1.5px solid var(--a-fg)",
                 borderRight: 0,
                 borderBottom: 0,
                 opacity: 0.7,
@@ -729,7 +735,7 @@ export function NewLessonForm({
                 right: -3,
                 width: 10,
                 height: 10,
-                border: "1.5px solid #fff",
+                border: "1.5px solid var(--a-fg)",
                 borderTop: 0,
                 borderLeft: 0,
                 opacity: 0.7,

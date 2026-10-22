@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as LessonImport from "@/lib/services/lesson-import.service";
 import type * as LessonUpdate from "@/lib/services/lesson-update.service";
 
 const m = vi.hoisted(() => ({
@@ -10,17 +12,17 @@ const m = vi.hoisted(() => ({
   edits: vi.fn(),
   drafts: vi.fn(),
   create: vi.fn(),
-  auditCount: vi.fn(),
-  auditCreate: vi.fn(),
+  importCount: vi.fn(),
+  auditRecord: vi.fn(),
   apply: vi.fn(),
+  validate: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("@cyberlearn/db", () => ({
-  prisma: {
-    auditLog: { count: m.auditCount, create: m.auditCreate },
-  },
+  auditLogRepository: { record: m.auditRecord },
   lessonFileRepository: {
+    countImportsSince: m.importCount,
     findByRefCode: m.findByRefCode,
     findIdBySlug: m.findIdBySlug,
     findByRefCodesForLinks: m.findMany,
@@ -29,6 +31,11 @@ vi.mock("@cyberlearn/db", () => ({
     openDrafts: m.drafts,
     createFromFile: m.create,
   },
+}));
+// The real validation runs unless a test makes one file fail it.
+vi.mock("@/lib/services/lesson-import.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof LessonImport>()),
+  validateMdxContent: m.validate,
 }));
 vi.mock("@/lib/services/lesson-update.service", async (importOriginal) => ({
   ...(await importOriginal<typeof LessonUpdate>()),
@@ -40,6 +47,10 @@ import {
   updateLessonFromImportAction,
   validateImportBatchAction,
 } from "../actions";
+
+const { validateMdxContent } = await vi.importActual<typeof LessonImport>(
+  "@/lib/services/lesson-import.service",
+);
 
 function mdx(refCode: string, slug: string, prereqs: string[] = []): string {
   return `---
@@ -61,6 +72,7 @@ Un contenu de test parfaitement ordinaire en Markdown.
 }
 
 const HASH = "a".repeat(64);
+const HOUR = 60 * 60 * 1000;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,8 +90,9 @@ beforeEach(() => {
       version: 1,
     }),
   );
-  m.auditCount.mockResolvedValue(0);
-  m.auditCreate.mockResolvedValue({});
+  m.importCount.mockResolvedValue(0);
+  m.auditRecord.mockResolvedValue(undefined);
+  m.validate.mockImplementation(validateMdxContent);
 });
 
 describe("validateImportBatchAction", () => {
@@ -189,20 +202,78 @@ describe("importLessonBatchAction", () => {
       },
     });
     // The success row is the publish's own: none is written beside it.
-    expect(m.auditCreate).not.toHaveBeenCalled();
+    expect(m.auditRecord).not.toHaveBeenCalled();
+  });
+
+  it("logs a file that fails its validation as rejected, with its fingerprint and first error", async () => {
+    const content = mdx("CL-LSN-001-V01", "lecon-a");
+    m.validate.mockResolvedValueOnce({ valid: false, errors: [{ message: "x" }], warnings: [] });
+
+    const res = await importLessonBatchAction([{ name: "a.mdx", content }]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [{ name: "a.mdx", status: "validation_error" }],
+    });
+    expect(m.create).not.toHaveBeenCalled();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rejected",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {
+        contentHash: createHash("sha256").update(content).digest("hex"),
+        errorCount: 1,
+        firstError: "x",
+      },
+    });
+  });
+
+  it("stops mid-batch when the budget runs out between two files, and logs that it did", async () => {
+    // The batch's own check, then one per file: the second file finds none left.
+    m.importCount.mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(250);
+
+    const res = await importLessonBatchAction([
+      { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
+      { name: "b.mdx", content: mdx("CL-LSN-002-V01", "lecon-b") },
+    ]);
+
+    expect(res).toMatchObject({
+      status: "done",
+      outcomes: [
+        { name: "a.mdx", status: "success" },
+        { name: "b.mdx", status: "skipped" },
+      ],
+    });
+    expect(m.create).toHaveBeenCalledOnce();
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: {},
+    });
   });
 
   it("counts updates in the hourly budget, with imports", async () => {
-    m.auditCount.mockResolvedValue(250);
+    m.importCount.mockResolvedValue(250);
+    const before = Date.now();
     const res = await importLessonBatchAction([
       { name: "a.mdx", content: mdx("CL-LSN-001-V01", "lecon-a") },
     ]);
+    const after = Date.now();
     expect(res).toEqual({ status: "rate_limited", remaining: 0 });
-    expect(m.auditCount).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        actorId: "admin-1",
-        action: { in: ["lesson.import.success", "lesson.import.update"] },
-      }) as unknown,
+    // Over the last hour: which rows count is lessonFileRepository.countImportsSince's.
+    const [actorId, since] = m.importCount.mock.calls[0] as [string, Date];
+    expect(actorId).toBe("admin-1");
+    expect(since.getTime()).toBeGreaterThanOrEqual(before - HOUR);
+    expect(since.getTime()).toBeLessThanOrEqual(after - HOUR);
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: { requested: 1, remaining: 0 },
     });
   });
 });
@@ -250,14 +321,15 @@ describe("updateLessonFromImportAction", () => {
   });
 
   it("stops at the hourly budget, and logs that it did", async () => {
-    m.auditCount.mockResolvedValue(250);
+    m.importCount.mockResolvedValue(250);
     expect(await updateLessonFromImportAction(input)).toEqual({ status: "rate_limited" });
     expect(m.apply).not.toHaveBeenCalled();
-    expect(m.auditCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        action: "lesson.import.rate_limited",
-        actorId: "admin-1",
-      }) as unknown,
+    expect(m.auditRecord).toHaveBeenCalledExactlyOnceWith({
+      actorId: "admin-1",
+      action: "lesson.import.rate_limited",
+      targetType: "lesson",
+      targetId: null,
+      metadata: { update: true },
     });
   });
 });

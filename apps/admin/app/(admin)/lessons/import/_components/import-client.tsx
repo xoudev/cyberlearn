@@ -481,11 +481,11 @@ export function ImportClient(): React.ReactElement {
           <div
             style={{
               padding: "12px 14px",
-              background: "rgba(10,255,212,0.06)",
-              border: "1px solid rgba(10,255,212,0.3)",
+              background: "color-mix(in srgb, var(--a-accent) 6%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#0AFFD4",
+              color: "var(--a-accent)",
             }}
           >
             ✓ {batchSummary}
@@ -494,16 +494,21 @@ export function ImportClient(): React.ReactElement {
 
         {/* File list */}
         {files.length > 0 && (
-          <div style={{ border: "1px solid #1F1B47", background: "rgba(5,4,26,0.6)" }}>
+          <div
+            style={{
+              border: "1px solid var(--a-border)",
+              background: "color-mix(in srgb, var(--a-surface-2) 60%, transparent)",
+            }}
+          >
             <div
               style={{
                 padding: "8px 12px",
-                borderBottom: "1px solid #1A1640",
+                borderBottom: "1px solid var(--a-border)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
               }}
             >
               Lot · {files.length} fichier{files.length > 1 ? "s" : ""}
@@ -566,8 +571,8 @@ export function ImportClient(): React.ReactElement {
           <div
             style={{
               padding: "14px 16px",
-              background: "rgba(10,255,212,0.06)",
-              border: "1px solid rgba(10,255,212,0.3)",
+              background: "color-mix(in srgb, var(--a-accent) 6%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
             }}
           >
             <div
@@ -575,7 +580,7 @@ export function ImportClient(): React.ReactElement {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.14em",
-                color: "#0AFFD4",
+                color: "var(--a-accent)",
                 marginBottom: 6,
               }}
             >
@@ -605,9 +610,9 @@ export function ImportClient(): React.ReactElement {
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#0AFFD4",
+                color: "var(--a-accent)",
                 background: "none",
-                border: "1px solid rgba(10,255,212,0.3)",
+                border: "1px solid color-mix(in srgb, var(--a-accent) 30%, transparent)",
                 padding: "6px 12px",
                 cursor: "pointer",
               }}
@@ -631,8 +636,8 @@ export function ImportClient(): React.ReactElement {
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               background: "transparent",
-              border: "1px solid #2A2560",
-              color: files.length > importedCount ? "#B8B5D1" : "#44406B",
+              border: "1px solid var(--a-border-2)",
+              color: files.length > importedCount ? "var(--a-fg-2)" : "var(--a-faint-2)",
               cursor: files.length > importedCount ? "pointer" : "not-allowed",
             }}
           >
@@ -652,9 +657,9 @@ export function ImportClient(): React.ReactElement {
               fontSize: 11,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              background: validCount > 0 ? "#0024FF" : "transparent",
-              border: `1px solid ${validCount > 0 ? "#0024FF" : "#2A2560"}`,
-              color: validCount > 0 ? "#fff" : "#44406B",
+              background: validCount > 0 ? "var(--a-blue)" : "transparent",
+              border: `1px solid ${validCount > 0 ? "var(--a-blue)" : "var(--a-border-2)"}`,
+              color: validCount > 0 ? "var(--a-fg)" : "var(--a-faint-2)",
               cursor: validCount > 0 ? "pointer" : "not-allowed",
               transition: "all 150ms ease",
             }}
@@ -674,14 +679,14 @@ export function ImportClient(): React.ReactElement {
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
-          background: "rgba(5,4,26,0.6)",
-          border: "1px solid #1F1B47",
+          background: "color-mix(in srgb, var(--a-surface-2) 60%, transparent)",
+          border: "1px solid var(--a-border)",
         }}
       >
         <div
           style={{
             padding: "10px 16px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -694,12 +699,12 @@ export function ImportClient(): React.ReactElement {
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
             }}
           >
             {showDiff ? "DIFFÉRENCES AVEC LA BASE" : "ÉDITEUR MDX"}
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#7F7BA9" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--a-muted)" }}>
             {current?.name ?? "aucun fichier"}
             {current?.imported ? " · écrite (lecture seule)" : ""}
           </span>
@@ -738,7 +743,7 @@ export function ImportClient(): React.ReactElement {
                   letterSpacing: "0.1em",
                   color: "var(--a-info)",
                   background: "none",
-                  border: "1px solid #2A2560",
+                  border: "1px solid var(--a-border-2)",
                   padding: "3px 8px",
                   cursor: "pointer",
                 }}
@@ -756,7 +761,7 @@ export function ImportClient(): React.ReactElement {
                   letterSpacing: "0.1em",
                   color: "var(--a-info)",
                   background: "none",
-                  border: "1px solid #2A2560",
+                  border: "1px solid var(--a-border-2)",
                   padding: "3px 8px",
                   cursor: "pointer",
                 }}
@@ -797,7 +802,7 @@ export function ImportClient(): React.ReactElement {
               padding: "16px",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#B8B5D1",
+              color: "var(--a-fg-2)",
               lineHeight: 1.7,
             }}
           />
@@ -805,10 +810,10 @@ export function ImportClient(): React.ReactElement {
         <div
           style={{
             padding: "8px 16px",
-            borderTop: "1px solid #1F1B47",
+            borderTop: "1px solid var(--a-border)",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             display: "flex",
             gap: 16,
           }}
@@ -824,19 +829,19 @@ export function ImportClient(): React.ReactElement {
         style={{
           display: "flex",
           flexDirection: "column",
-          background: "rgba(5,4,26,0.4)",
-          border: "1px solid #1F1B47",
+          background: "color-mix(in srgb, var(--a-surface-2) 40%, transparent)",
+          border: "1px solid var(--a-border)",
           overflow: "hidden",
         }}
       >
-        <div style={{ padding: "10px 16px", borderBottom: "1px solid #1F1B47" }}>
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--a-border)" }}>
           <span
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
             }}
           >
             APERÇU MÉTADONNÉES
@@ -850,7 +855,7 @@ export function ImportClient(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 paddingTop: 20,
               }}
             >
@@ -880,16 +885,16 @@ function FileRow({
 }) {
   const update = updateOf(file);
   const status = file.imported
-    ? { color: "#0AFFD4", label: file.imported.updated ? "mise à jour" : "importée" }
+    ? { color: "var(--a-accent)", label: file.imported.updated ? "mise à jour" : "importée" }
     : file.validation === null
-      ? { color: "#7F7BA9", label: "à valider" }
+      ? { color: "var(--a-muted)", label: "à valider" }
       : update
         ? isUnchanged(update)
-          ? { color: "#7F7BA9", label: "identique" }
+          ? { color: "var(--a-muted)", label: "identique" }
           : { color: "var(--a-warning)", label: "à mettre à jour" }
         : file.validation.valid
           ? {
-              color: "#0AFFD4",
+              color: "var(--a-accent)",
               label:
                 file.validation.warnings.length > 0
                   ? `valide · ${String(file.validation.warnings.length)} ⚠`
@@ -906,7 +911,7 @@ function FileRow({
         display: "flex",
         alignItems: "center",
         gap: 4,
-        borderBottom: "1px solid rgba(26,22,64,0.7)",
+        borderBottom: "1px solid color-mix(in srgb, var(--a-border) 70%, transparent)",
         background: active ? "color-mix(in srgb, var(--a-info) 7%, transparent)" : "transparent",
       }}
     >
@@ -940,7 +945,7 @@ function FileRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10.5,
-            color: active ? "#F5F5FA" : "#B8B5D1",
+            color: active ? "var(--a-fg)" : "var(--a-fg-2)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -968,7 +973,7 @@ function FileRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#0AFFD4",
+            color: "var(--a-accent)",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -987,7 +992,7 @@ function FileRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -1033,7 +1038,7 @@ function ValidationPanel({
     ? "var(--a-danger)"
     : update && !isUnchanged(update)
       ? "var(--a-warning)"
-      : "#0AFFD4";
+      : "var(--a-accent)";
   const label = !result.valid
     ? `${String(result.errors.length)} ERREUR${result.errors.length > 1 ? "S" : ""}`
     : update
@@ -1044,7 +1049,7 @@ function ValidationPanel({
   return (
     <div
       style={{
-        background: "rgba(5,4,26,0.6)",
+        background: "color-mix(in srgb, var(--a-surface-2) 60%, transparent)",
         border: `1px solid color-mix(in srgb, ${tone} 30%, transparent)`,
       }}
     >
@@ -1052,7 +1057,7 @@ function ValidationPanel({
       <div
         style={{
           padding: "10px 14px",
-          borderBottom: "1px solid #1A1640",
+          borderBottom: "1px solid var(--a-border)",
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -1110,7 +1115,7 @@ function ValidationPanel({
 
       {/* Warnings */}
       {result.warnings.length > 0 && (
-        <div style={{ padding: "8px 0", borderTop: "1px solid #1A1640" }}>
+        <div style={{ padding: "8px 0", borderTop: "1px solid var(--a-border)" }}>
           {result.warnings.map((w, i) => (
             <div
               key={i}
@@ -1170,7 +1175,7 @@ function ErrorItem({
             ) : null}
           </span>
         )}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#B8B5D1" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--a-fg-2)" }}>
           {error.message}
         </span>
       </div>
@@ -1299,7 +1304,7 @@ function MetadataPreview({
           fontSize: 9,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          color: "#0AFFD4",
+          color: "var(--a-accent)",
           marginBottom: 4,
         }}
       >
@@ -1311,7 +1316,7 @@ function MetadataPreview({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               marginBottom: 2,
             }}
           >
@@ -1321,9 +1326,9 @@ function MetadataPreview({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#B8B5D1",
-              background: "#05041A",
-              border: "1px solid #1F1B47",
+              color: "var(--a-fg-2)",
+              background: "var(--a-surface-2)",
+              border: "1px solid var(--a-border)",
               padding: "5px 10px",
               wordBreak: "break-word",
             }}

@@ -238,6 +238,40 @@ export const pathRepository = {
     return total.length > 0 && completed >= total.length;
   },
 
+  // ── Console reads ───────────────────────────────────────────────────────────
+
+  /**
+   * The catalogue paths among these ids, with the refCode the audit names
+   * them by. A teacher's class path is left out: a catalogue lesson put in it
+   * would be promised to people who cannot open it.
+   */
+  async findCatalogueRefCodes(ids: readonly string[]): Promise<{ id: string; refCode: string }[]> {
+    if (ids.length === 0) return [];
+    return prisma.path.findMany({
+      where: { id: { in: [...ids] }, audience: "CATALOGUE" },
+      select: { id: true, refCode: true },
+    });
+  },
+
+  /**
+   * A path's refCode and those of every lesson it holds, recaps and drafts
+   * included: the refCode the console proposes for a lesson added at its end
+   * is drawn from them (nextPathLessonNumber).
+   */
+  async findLessonRefCodes(
+    pathId: string,
+  ): Promise<{ refCode: string; lessonRefCodes: string[] } | null> {
+    const path = await prisma.path.findUnique({
+      where: { id: pathId },
+      select: { refCode: true, lessons: { select: { lesson: { select: { refCode: true } } } } },
+    });
+    if (!path) return null;
+    return {
+      refCode: path.refCode,
+      lessonRefCodes: path.lessons.map((link) => link.lesson.refCode),
+    };
+  },
+
   // ── Console writes ──────────────────────────────────────────────────────────
   //
   // They run inside the caller's transaction, which also writes the path or

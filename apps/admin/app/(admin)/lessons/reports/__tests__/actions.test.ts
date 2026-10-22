@@ -4,10 +4,10 @@ const requireAdminAction = vi.fn();
 vi.mock("@/lib/auth", () => ({ requireAdminAction }));
 
 const resolveQuiz = vi.fn();
-const auditCreate = vi.fn();
+const auditRecord = vi.fn();
 vi.mock("@cyberlearn/db", () => ({
   quizReportRepository: { resolveQuiz },
-  prisma: { auditLog: { create: auditCreate } },
+  auditLogRepository: { record: auditRecord },
 }));
 
 const revalidatePath = vi.fn();
@@ -41,10 +41,10 @@ describe("resolveQuizReportsAction", () => {
   it("closes the question's open reports and logs it", async () => {
     await resolveQuizReportsAction(form({ lessonId: LESSON, quizId: "q-1" }));
     expect(resolveQuiz).toHaveBeenCalledWith(LESSON, "q-1");
-    const [args] = auditCreate.mock.calls[0] as [{ data: Record<string, unknown> }];
-    expect(args.data).toMatchObject({
+    expect(auditRecord).toHaveBeenCalledExactlyOnceWith({
       actorId: "admin-1",
       action: "quiz.report.resolve",
+      targetType: "lesson",
       targetId: LESSON,
       metadata: { quizId: "q-1", count: 3 },
     });
@@ -54,6 +54,6 @@ describe("resolveQuizReportsAction", () => {
   it("does nothing with a lesson id that is not one", async () => {
     await resolveQuizReportsAction(form({ lessonId: "x", quizId: "q-1" }));
     expect(resolveQuiz).not.toHaveBeenCalled();
-    expect(auditCreate).not.toHaveBeenCalled();
+    expect(auditRecord).not.toHaveBeenCalled();
   });
 });

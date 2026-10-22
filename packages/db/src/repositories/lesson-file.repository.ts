@@ -205,6 +205,22 @@ export const lessonFileRepository = {
   },
 
   /**
+   * How many lessons an administrator wrote from a file since `since`: each
+   * one created, or updated, from a file. The import page's hourly budget is
+   * drawn on these alone, so a refused or rejected upload, which writes its
+   * own row, never extends the lockout it ran into.
+   */
+  async countImportsSince(actorId: string, since: Date): Promise<number> {
+    return prisma.auditLog.count({
+      where: {
+        actorId,
+        action: { in: [AUDIT_ACTION.lesson.importSuccess, AUDIT_ACTION.lesson.importUpdate] },
+        createdAt: { gte: since },
+      },
+    });
+  },
+
+  /**
    * When each of these lessons was last edited in the console, for those
    * edited since they last came from a file: an update from a file would
    * replace that edit. A lesson whose newest entry is a file's has none.

@@ -98,6 +98,10 @@ export const AUDIT_ACTION = {
     importSuccess: "lesson.import.success",
     /** A file uploaded on the import page, written over the lesson that holds its refCode. */
     importUpdate: "lesson.import.update",
+    /** An upload refused at the import page's hourly budget: nothing was written. */
+    importRateLimited: "lesson.import.rate_limited",
+    /** A file uploaded on the import page that failed its checks: nothing was written. */
+    importRejected: "lesson.import.rejected",
     /** A lesson updated from its file in the repository. */
     sync: "lesson.sync",
   },

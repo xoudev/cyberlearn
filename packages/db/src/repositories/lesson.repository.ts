@@ -1,7 +1,18 @@
 import { prisma } from "../prisma.js";
-import type { Category, ContentStatus, Difficulty, Prisma, ProgressStatus } from "@prisma/client";
+import type {
+  Category,
+  ContentAudience,
+  ContentStatus,
+  Difficulty,
+  Prisma,
+  ProgressStatus,
+} from "@prisma/client";
 import { isFirstCatalogueLesson } from "@cyberlearn/types";
+import { AUDIT_ACTION } from "../audit-actions.js";
+import { auditLogRepository } from "./audit-log.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
+import type { LessonContent } from "./lesson-version.repository.js";
+import { pathRepository } from "./path.repository.js";
 
 /**
  * What the open catalogue is, in one place.
@@ -171,6 +182,92 @@ const CONSOLE_LESSON_HIT = {
 } as const satisfies Prisma.LessonSelect;
 
 export type ConsoleLessonHit = Prisma.LessonGetPayload<{ select: typeof CONSOLE_LESSON_HIT }>;
+
+/**
+ * A lesson with the catalogue paths that hold it, for its page in the
+ * console. A teacher's class path is not the console's to edit from there,
+ * so it is not read.
+ */
+const LESSON_CATALOGUE_PATHS = {
+  id: true,
+  refCode: true,
+  audience: true,
+  pathLessons: {
+    where: { path: { audience: "CATALOGUE" } },
+    select: { pathId: true, path: { select: { refCode: true } } },
+  },
+} as const satisfies Prisma.LessonSelect;
+
+export type LessonCataloguePaths = Prisma.LessonGetPayload<{
+  select: typeof LESSON_CATALOGUE_PATHS;
+}>;
+
+/** A lesson with the refCodes of the lessons it requires, for its page in the console. */
+const LESSON_PREREQUISITES = {
+  id: true,
+  refCode: true,
+  audience: true,
+  prerequisites: { select: { prerequisite: { select: { refCode: true } } } },
+} as const satisfies Prisma.LessonSelect;
+
+export type LessonPrerequisites = Prisma.LessonGetPayload<{
+  select: typeof LESSON_PREREQUISITES;
+}>;
+
+/** A lesson and its refCode, as the console's audit rows name it. */
+export interface LessonRef {
+  id: string;
+  refCode: string;
+}
+
+/** What the console checks before it deletes a lesson. */
+export interface LessonDeletionCheck {
+  id: string;
+  title: string;
+  status: ContentStatus;
+  /** How many paths, catalogue or class, hold it. */
+  pathCount: number;
+}
+
+/** A lesson the console's form creates. */
+export interface ConsoleLessonCreate {
+  /** Everything the lesson holds, the slug and the cover included. */
+  fields: LessonContent;
+  /** PUBLISHED, stamped now, rather than DRAFT. */
+  publish: boolean;
+  /** The administrator creating it: its author, and the actor of its audit row. */
+  actorId: string;
+  /** The catalogue paths it joins, in the order chosen: each takes it at its end. */
+  paths: readonly LessonRef[];
+  /** The lessons it requires, every one already checked to be a catalogue lesson. */
+  prerequisiteIds: readonly string[];
+}
+
+/** A lesson moved in and out of catalogue paths from its page in the console. */
+export interface ConsoleLessonPathsChange {
+  lesson: LessonRef;
+  /** The paths it joins, in the order chosen: each takes it at its end. */
+  added: readonly LessonRef[];
+  /** The paths it leaves: each closes the gap. */
+  removed: readonly LessonRef[];
+  actorId: string;
+}
+
+/** A lesson's prerequisites replaced from its page in the console. */
+export interface ConsoleLessonPrerequisitesChange {
+  lesson: LessonRef;
+  /** The refCodes it requires today, for the audit row. */
+  before: readonly string[];
+  /** What it requires from now on, in the order chosen. */
+  prerequisites: readonly LessonRef[];
+  actorId: string;
+  /**
+   * The loop these prerequisites would close, as a chain of lesson ids, or
+   * null. Given the catalogue's links as the transaction reads them, before
+   * anything is written.
+   */
+  findCycle: (edges: { lessonId: string; prerequisiteId: string }[]) => string[] | null;
+}
 
 /** A console search over a lesson's title, refCode or slug. */
 function consoleLessonTextWhere(q: string): Prisma.LessonWhereInput {
@@ -642,6 +739,258 @@ export const lessonRepository = {
     await db.lessonPrerequisite.createMany({
       data: prerequisiteIds.map((prerequisiteId) => ({ lessonId, prerequisiteId })),
       skipDuplicates: true,
+    });
+  },
+
+  // ── Console ─────────────────────────────────────────────────────────────────
+  //
+  // What the console's lesson pages read and write. Every write lands with its
+  // audit row, in the same transaction when the console wrote one before.
+
+  /**
+   * Every refCode of the CL-LSN- series, whatever the lesson's audience or
+   * status: the code the console proposes has to be free of all of them.
+   */
+  async findLessonRefCodes(): Promise<string[]> {
+    const rows = await prisma.lesson.findMany({
+      where: { refCode: { startsWith: "CL-LSN-" } },
+      select: { refCode: true },
+    });
+    return rows.map((row) => row.refCode);
+  },
+
+  /** The catalogue lessons among these ids: the only ones a catalogue lesson may require. */
+  async findCatalogueIds(ids: readonly string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const rows = await prisma.lesson.findMany({
+      where: { id: { in: [...ids] }, audience: "CATALOGUE" },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  /** The lessons among these ids, with their audience, chosen as prerequisites. */
+  async findPrerequisiteChoices(
+    ids: readonly string[],
+  ): Promise<{ id: string; refCode: string; audience: ContentAudience }[]> {
+    if (ids.length === 0) return [];
+    return prisma.lesson.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true, refCode: true, audience: true },
+    });
+  },
+
+  /** Which of this refCode and this slug a lesson other than `lessonId` already holds. */
+  async findTaken(
+    fields: { refCode: string; slug: string },
+    lessonId: string,
+  ): Promise<{ refCode: boolean; slug: boolean }> {
+    const [refCodeOwner, slugOwner] = await Promise.all([
+      prisma.lesson.findFirst({
+        where: { refCode: fields.refCode, NOT: { id: lessonId } },
+        select: { id: true },
+      }),
+      prisma.lesson.findFirst({
+        where: { slug: fields.slug, NOT: { id: lessonId } },
+        select: { id: true },
+      }),
+    ]);
+    return { refCode: refCodeOwner !== null, slug: slugOwner !== null };
+  },
+
+  async findCataloguePaths(lessonId: string): Promise<LessonCataloguePaths | null> {
+    return prisma.lesson.findUnique({ where: { id: lessonId }, select: LESSON_CATALOGUE_PATHS });
+  },
+
+  async findPrerequisites(lessonId: string): Promise<LessonPrerequisites | null> {
+    return prisma.lesson.findUnique({ where: { id: lessonId }, select: LESSON_PREREQUISITES });
+  },
+
+  async findStatus(lessonId: string): Promise<{ id: string; status: ContentStatus } | null> {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, status: true },
+    });
+  },
+
+  async findForDeletion(lessonId: string): Promise<LessonDeletionCheck | null> {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, title: true, status: true, _count: { select: { pathLessons: true } } },
+    });
+    if (!lesson) return null;
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      status: lesson.status,
+      pathCount: lesson._count.pathLessons,
+    };
+  },
+
+  /**
+   * Creates a lesson from the console's form, with its paths, its
+   * prerequisites and its `lesson.create` row, in one transaction. A refCode
+   * or a slug already taken throws the unique violation, and nothing is
+   * written.
+   */
+  async createFromConsole(create: ConsoleLessonCreate): Promise<string> {
+    return prisma.$transaction(async (tx) => {
+      const lesson = await tx.lesson.create({
+        data: {
+          ...create.fields,
+          authorId: create.actorId,
+          status: create.publish ? "PUBLISHED" : "DRAFT",
+          publishedAt: create.publish ? new Date() : null,
+        },
+      });
+
+      // In the order chosen: each path takes the lesson at its end.
+      for (const path of create.paths) await pathRepository.attachLesson(path.id, lesson.id, tx);
+      await this.replacePrerequisites(lesson.id, create.prerequisiteIds, tx);
+
+      await auditLogRepository.record(
+        {
+          actorId: create.actorId,
+          action: AUDIT_ACTION.lesson.create,
+          targetType: "Lesson",
+          targetId: lesson.id,
+          metadata: {
+            title: lesson.title,
+            status: lesson.status,
+            paths: create.paths.map((path) => path.refCode),
+            prerequisites: create.prerequisiteIds.length,
+          },
+        },
+        tx,
+      );
+      return lesson.id;
+    });
+  },
+
+  /**
+   * Sets one lesson's status, publishedAt stamped on a publish, with its
+   * `lesson.status` row in the same transaction.
+   */
+  async changeStatus(change: {
+    lessonId: string;
+    from: ContentStatus;
+    to: ContentStatus;
+    actorId: string;
+  }): Promise<void> {
+    const data: { status: ContentStatus; publishedAt?: Date } = { status: change.to };
+    if (change.to === "PUBLISHED") data.publishedAt = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.lesson.update({ where: { id: change.lessonId }, data });
+      await auditLogRepository.record(
+        {
+          actorId: change.actorId,
+          action: AUDIT_ACTION.lesson.status,
+          targetType: "Lesson",
+          targetId: change.lessonId,
+          metadata: { from: change.from, to: change.to },
+        },
+        tx,
+      );
+    });
+  },
+
+  /**
+   * One status for many lessons, from the list's selection, with one
+   * `lesson.status.bulk` row naming the first of them and how many were
+   * asked. Returns how many rows changed.
+   */
+  async changeStatuses(change: {
+    lessonIds: readonly string[];
+    to: ContentStatus;
+    actorId: string;
+  }): Promise<number> {
+    const data: { status: ContentStatus; publishedAt?: Date } = { status: change.to };
+    if (change.to === "PUBLISHED") data.publishedAt = new Date();
+    return prisma.$transaction(async (tx) => {
+      const { count } = await tx.lesson.updateMany({
+        where: { id: { in: [...change.lessonIds] } },
+        data,
+      });
+      await auditLogRepository.record(
+        {
+          actorId: change.actorId,
+          action: AUDIT_ACTION.lesson.statusBulk,
+          targetType: "Lesson",
+          targetId: change.lessonIds[0] ?? null,
+          metadata: { to: change.to, count: change.lessonIds.length },
+        },
+        tx,
+      );
+      return count;
+    });
+  },
+
+  /**
+   * Deletes a lesson. What hangs off it goes with it; the console refuses a
+   * published lesson, or one a path holds, before it gets here.
+   */
+  async delete(lessonId: string): Promise<void> {
+    await prisma.lesson.delete({ where: { id: lessonId } });
+  },
+
+  /**
+   * Moves a lesson in and out of catalogue paths, with its `lesson.paths`
+   * row, in one transaction: the paths it leaves close the gap, those it
+   * joins take it at their end (pathRepository.detachLesson, attachLesson).
+   */
+  async changePaths(change: ConsoleLessonPathsChange): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      for (const path of change.removed) {
+        await pathRepository.detachLesson(path.id, change.lesson.id, tx);
+      }
+      for (const path of change.added) {
+        await pathRepository.attachLesson(path.id, change.lesson.id, tx);
+      }
+      await auditLogRepository.record(
+        {
+          actorId: change.actorId,
+          action: AUDIT_ACTION.lesson.paths,
+          targetType: "Lesson",
+          targetId: change.lesson.id,
+          metadata: {
+            refCode: change.lesson.refCode,
+            added: change.added.map((path) => path.refCode),
+            removed: change.removed.map((path) => path.refCode),
+          },
+        },
+        tx,
+      );
+    });
+  },
+
+  /**
+   * Gives a lesson exactly these prerequisites, with its
+   * `lesson.prerequisites` row (refCodes before and after, sorted), unless
+   * they would close a loop: the check reads the links inside the transaction
+   * that replaces them, and a loop is returned with nothing written. Null once
+   * they are saved.
+   */
+  async changePrerequisites(change: ConsoleLessonPrerequisitesChange): Promise<string[] | null> {
+    const ids = change.prerequisites.map((lesson) => lesson.id);
+    return prisma.$transaction(async (tx) => {
+      const cycle = change.findCycle(await this.findPrerequisiteEdges(tx));
+      if (cycle) return cycle;
+      await this.replacePrerequisites(change.lesson.id, ids, tx);
+      await auditLogRepository.record(
+        {
+          actorId: change.actorId,
+          action: AUDIT_ACTION.lesson.prerequisites,
+          targetType: "Lesson",
+          targetId: change.lesson.id,
+          metadata: {
+            refCode: change.lesson.refCode,
+            before: [...change.before].sort(),
+            after: change.prerequisites.map((lesson) => lesson.refCode).sort(),
+          },
+        },
+        tx,
+      );
+      return null;
     });
   },
 };

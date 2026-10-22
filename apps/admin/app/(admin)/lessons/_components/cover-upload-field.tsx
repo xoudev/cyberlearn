@@ -4,10 +4,6 @@ import React, { useRef, useState, useTransition } from "react";
 import { COVER_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { importLessonCoverFromUrlAction, uploadLessonCoverAction } from "../_actions/cover-actions";
 
-// ── Design tokens (match the lesson form) ───────────────────────────────────────
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 
 const btnBase: React.CSSProperties = {
@@ -17,9 +13,9 @@ const btnBase: React.CSSProperties = {
   letterSpacing: "0.14em",
   textTransform: "uppercase",
   padding: "10px 16px",
-  border: `1px solid ${BORDER}`,
-  background: "#0A0826",
-  color: "#F5F5FA",
+  border: "1px solid var(--a-border-2)",
+  background: "var(--a-surface)",
+  color: "var(--a-fg)",
   whiteSpace: "nowrap",
   transition: "all 150ms ease",
 };
@@ -122,8 +118,8 @@ export function CoverUploadField({
           width: 176,
           aspectRatio: "16 / 9",
           flexShrink: 0,
-          border: `1px solid ${BORDER}`,
-          background: "#05041A",
+          border: "1px solid var(--a-border-2)",
+          background: "var(--a-surface-2)",
           overflow: "hidden",
           display: "grid",
           placeItems: "center",
@@ -143,7 +139,7 @@ export function CoverUploadField({
               fontFamily: MONO,
               fontSize: 10,
               letterSpacing: "0.16em",
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               textTransform: "uppercase",
             }}
           >
@@ -175,9 +171,9 @@ export function CoverUploadField({
             style={{
               flex: 1,
               minWidth: 160,
-              background: "#0A0826",
-              border: `1px solid ${BORDER}`,
-              color: "#F5F5FA",
+              background: "var(--a-surface)",
+              border: "1px solid var(--a-border-2)",
+              color: "var(--a-fg)",
               fontFamily: MONO,
               fontSize: 12,
               padding: "9px 12px",
@@ -191,7 +187,7 @@ export function CoverUploadField({
             onClick={handleImportUrl}
             style={{
               ...btnBase,
-              borderColor: TURQ,
+              borderColor: "var(--a-accent)",
               cursor: busy || urlValue.trim() === "" ? "not-allowed" : "pointer",
               opacity: busy || urlValue.trim() === "" ? 0.6 : 1,
             }}
@@ -203,7 +199,12 @@ export function CoverUploadField({
         {/* Option 2: upload a file */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span
-            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: "#7F7BA9" }}
+            style={{
+              fontFamily: MONO,
+              fontSize: 10,
+              letterSpacing: "0.16em",
+              color: "var(--a-muted)",
+            }}
           >
             OU
           </span>
@@ -227,8 +228,8 @@ export function CoverUploadField({
               style={{
                 ...btnBase,
                 background: "transparent",
-                color: DANGER,
-                borderColor: "rgba(255,77,109,0.4)",
+                color: "var(--a-danger)",
+                borderColor: "color-mix(in srgb, var(--a-danger) 40%, transparent)",
                 cursor: busy ? "not-allowed" : "pointer",
               }}
             >
@@ -238,12 +239,17 @@ export function CoverUploadField({
         </div>
 
         <span
-          style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#7F7BA9" }}
+          style={{
+            fontFamily: MONO,
+            fontSize: 10.5,
+            letterSpacing: "0.04em",
+            color: "var(--a-muted)",
+          }}
         >
           JPEG, PNG ou WebP · 4 Mo max · 1280×720 recommandé · le lien est ré-hébergé
         </span>
         {error !== null && (
-          <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>{error}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--a-danger)" }}>{error}</span>
         )}
       </div>
     </div>

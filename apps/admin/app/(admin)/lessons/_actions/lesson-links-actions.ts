@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { lessonRepository, pathRepository, prisma } from "@cyberlearn/db";
+import { lessonFileRepository, lessonRepository, pathRepository } from "@cyberlearn/db";
 import { errorMessage, logger } from "@cyberlearn/lib/logger";
 import { requireAdminAction } from "@/lib/auth";
 import { findPrerequisiteCycle } from "@/lib/lesson-prerequisites";
@@ -47,18 +47,7 @@ export async function setLessonPathsAction(
   const ids = lessonPathIdsSchema.safeParse(pathIds);
   if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Parcours invalides." };
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: id.data },
-    select: {
-      id: true,
-      refCode: true,
-      audience: true,
-      pathLessons: {
-        where: { path: { audience: "CATALOGUE" } },
-        select: { pathId: true, path: { select: { refCode: true } } },
-      },
-    },
-  });
+  const lesson = await lessonRepository.findCataloguePaths(id.data);
   if (!lesson) return { error: "Leçon introuvable." };
   if (lesson.audience !== "CATALOGUE") {
     return { error: "Une leçon de classe n'entre pas dans un parcours du catalogue." };
@@ -70,13 +59,7 @@ export async function setLessonPathsAction(
   const removed = lesson.pathLessons.filter((link) => !wanted.has(link.pathId));
   if (added.length === 0 && removed.length === 0) return { ok: true };
 
-  const addedPaths =
-    added.length === 0
-      ? []
-      : await prisma.path.findMany({
-          where: { id: { in: added }, audience: "CATALOGUE" },
-          select: { id: true, refCode: true },
-        });
+  const addedPaths = await pathRepository.findCatalogueRefCodes(added);
   if (addedPaths.length !== added.length) {
     return {
       error: "Un des parcours choisis n'existe plus ou n'est pas un parcours du catalogue.",
@@ -85,22 +68,12 @@ export async function setLessonPathsAction(
   const refCodeOf = new Map(addedPaths.map((path) => [path.id, path.refCode]));
 
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const link of removed) await pathRepository.detachLesson(link.pathId, lesson.id, tx);
-      for (const pathId of added) await pathRepository.attachLesson(pathId, lesson.id, tx);
-      await tx.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "lesson.paths",
-          targetType: "Lesson",
-          targetId: lesson.id,
-          metadata: {
-            refCode: lesson.refCode,
-            added: added.map((pathId) => refCodeOf.get(pathId) ?? pathId),
-            removed: removed.map((link) => link.path.refCode),
-          },
-        },
-      });
+    // The links and their `lesson.paths` row, in one transaction.
+    await lessonRepository.changePaths({
+      lesson: { id: lesson.id, refCode: lesson.refCode },
+      added: added.map((pathId) => ({ id: pathId, refCode: refCodeOf.get(pathId) ?? pathId })),
+      removed: removed.map((link) => ({ id: link.pathId, refCode: link.path.refCode })),
+      actorId: admin.id,
     });
   } catch (error) {
     logger.error({ scope: "admin", err: errorMessage(error) }, "lesson paths update failed");
@@ -140,21 +113,8 @@ export async function setLessonPrerequisitesAction(
   }
 
   const [lesson, chosen] = await Promise.all([
-    prisma.lesson.findUnique({
-      where: { id: id.data },
-      select: {
-        id: true,
-        refCode: true,
-        audience: true,
-        prerequisites: { select: { prerequisite: { select: { refCode: true } } } },
-      },
-    }),
-    ids.data.length === 0
-      ? Promise.resolve([])
-      : prisma.lesson.findMany({
-          where: { id: { in: ids.data } },
-          select: { id: true, refCode: true, audience: true },
-        }),
+    lessonRepository.findPrerequisites(id.data),
+    lessonRepository.findPrerequisiteChoices(ids.data),
   ]);
   if (!lesson) return { error: "Leçon introuvable." };
   if (chosen.length !== ids.data.length) return { error: "Une des leçons choisies n'existe plus." };
@@ -167,28 +127,14 @@ export async function setLessonPrerequisitesAction(
 
   let cycle: string[] | null;
   try {
-    cycle = await prisma.$transaction(async (tx) => {
-      const found = findPrerequisiteCycle(
-        lesson.id,
-        ids.data,
-        await lessonRepository.findPrerequisiteEdges(tx),
-      );
-      if (found) return found;
-      await lessonRepository.replacePrerequisites(lesson.id, ids.data, tx);
-      await tx.auditLog.create({
-        data: {
-          actorId: admin.id,
-          action: "lesson.prerequisites",
-          targetType: "Lesson",
-          targetId: lesson.id,
-          metadata: {
-            refCode: lesson.refCode,
-            before: lesson.prerequisites.map((p) => p.prerequisite.refCode).sort(),
-            after: ids.data.map((pid) => refCodeOf.get(pid) ?? pid).sort(),
-          },
-        },
-      });
-      return null;
+    // The check, the links and their `lesson.prerequisites` row, in one
+    // transaction.
+    cycle = await lessonRepository.changePrerequisites({
+      lesson: { id: lesson.id, refCode: lesson.refCode },
+      before: lesson.prerequisites.map((p) => p.prerequisite.refCode),
+      prerequisites: ids.data.map((pid) => ({ id: pid, refCode: refCodeOf.get(pid) ?? pid })),
+      actorId: admin.id,
+      findCycle: (edges) => findPrerequisiteCycle(lesson.id, ids.data, edges),
     });
   } catch (error) {
     logger.error(
@@ -199,11 +145,7 @@ export async function setLessonPrerequisitesAction(
   }
 
   if (cycle) {
-    const named = await prisma.lesson.findMany({
-      where: { id: { in: cycle } },
-      select: { id: true, refCode: true },
-    });
-    const codeOf = new Map(named.map((l) => [l.id, l.refCode]));
+    const codeOf = await lessonFileRepository.refCodesByIds(cycle);
     return {
       error: `Ces prérequis forment une boucle : ${cycle.map((cid) => codeOf.get(cid) ?? cid).join(" → ")}. Aucune de ces leçons ne pourrait s'ouvrir.`,
     };
