@@ -17,6 +17,7 @@ const m = vi.hoisted(() => ({
   announceModeration: vi.fn<(input: unknown) => Promise<void>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   friendIds: vi.fn<(userId: string) => Promise<Set<string>>>(),
+  profilesOpenTo: vi.fn<(viewerId: string, userIds: readonly string[]) => Promise<Set<string>>>(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
@@ -25,6 +26,7 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { challenge: { findFirst: m.findChallenge } },
   moderationRepository: { screen: m.screen, attachContent: m.attachContent },
   friendshipRepository: { friendIds: m.friendIds },
+  userRepository: { profilesOpenTo: m.profilesOpenTo },
   writeupRepository: {
     hasSolved: m.hasSolved,
     countVisible: m.countVisible,
@@ -56,6 +58,8 @@ beforeEach(() => {
   m.screen.mockResolvedValue({ flagged: false, throttled: false, eventId: null });
   m.upsert.mockResolvedValue({ id: "w-1" });
   m.friendIds.mockResolvedValue(new Set());
+  // Every profile is open unless a test closes it.
+  m.profilesOpenTo.mockImplementation((_viewer, ids) => Promise.resolve(new Set(ids)));
 });
 
 describe("writeupBoardFor", () => {
@@ -128,6 +132,36 @@ describe("writeupBoardFor", () => {
     expect(m.friendIds).toHaveBeenCalledWith("u1");
     // The ids never leave the server.
     expect(JSON.stringify(board)).not.toContain("u2");
+  });
+
+  it("links an author's name only when the reader may open that profile", async () => {
+    const at = new Date("2026-10-01T10:00:00Z");
+    m.findOwn.mockResolvedValue(null);
+    m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
+    m.listOthers.mockResolvedValue([
+      {
+        id: "w-2",
+        content: "Avec awk.",
+        updatedAt: at,
+        user: { id: "u2", displayName: "Alex", username: "alex" },
+      },
+      {
+        id: "w-4",
+        content: "Avec sed.",
+        updatedAt: at,
+        user: { id: "u3", displayName: "Sam", username: "sam" },
+      },
+      { id: "w-3", content: "Avec cut.", updatedAt: at, user: null },
+    ]);
+    const board = await writeupBoardFor("u1", CHALLENGE);
+    // The name stays; the handle a closed profile would 404 on does not travel.
+    expect(board?.solved && board.others.map((w) => w.author)).toEqual([
+      { name: "Alex", username: "alex", isFriend: false },
+      { name: "Sam", username: null, isFriend: false },
+      null,
+    ]);
+    expect(m.profilesOpenTo).toHaveBeenCalledTimes(1);
+    expect(m.profilesOpenTo).toHaveBeenCalledWith("u1", ["u2", "u3"]);
   });
 
   it("is null for a challenge that is not there", async () => {

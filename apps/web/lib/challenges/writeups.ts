@@ -5,6 +5,7 @@ import {
   friendshipRepository,
   moderationRepository,
   prisma,
+  userRepository,
   writeupRepository,
 } from "@cyberlearn/db";
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
@@ -24,6 +25,11 @@ import { checkQaSubmission } from "@/lib/rate-limit";
 
 export interface WriteupAuthor {
   name: string;
+  /**
+   * The handle to link to: set only when the reader would be let into that
+   * profile (userRepository.profilesOpenTo). A link that lands on a 404 is
+   * worse than a name that is not a link, so a closed profile has none.
+   */
   username: string | null;
   /** One of the reader's friends: a write-up is always signed, so the mark hides nothing. */
   isFriend: boolean;
@@ -67,7 +73,7 @@ const publishSchema = z.object({
     .max(10000, "10 000 caractères au plus pour une solution."),
 });
 
-const TOO_FAST = "Trop de messages. Réessayez dans une minute.";
+const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 const NOT_FOUND = "Défi introuvable.";
 const HIDDEN_BY_MODERATION =
   "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.";
@@ -79,11 +85,12 @@ async function findActive(id: string): Promise<{ slug: string } | null> {
 function authorOf(
   user: { id: string; displayName: string; username: string | null } | null,
   friends: ReadonlySet<string>,
+  openProfiles: ReadonlySet<string>,
 ): WriteupAuthor | null {
   if (user === null) return null;
   return {
     name: user.displayName || (user.username ?? "Sans nom"),
-    username: user.username,
+    username: openProfiles.has(user.id) ? user.username : null,
     isFriend: friends.has(user.id),
   };
 }
@@ -109,6 +116,11 @@ export async function writeupBoardFor(
     writeupRepository.listOthers(id.data, userId),
     friendshipRepository.friendIds(userId),
   ]);
+  // Whose name may be a link: a private profile answers a stranger with a 404.
+  const openProfiles = await userRepository.profilesOpenTo(
+    userId,
+    others.flatMap((w) => (w.user === null ? [] : [w.user.id])),
+  );
   return {
     solved: true,
     count,
@@ -124,7 +136,7 @@ export async function writeupBoardFor(
     others: others.map((w) => ({
       id: w.id,
       content: w.content,
-      author: authorOf(w.user, friends),
+      author: authorOf(w.user, friends, openProfiles),
       updatedAt: w.updatedAt.toISOString(),
     })),
   };

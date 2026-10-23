@@ -39,3 +39,32 @@ describe("the account's own screens", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * The same register in the refusals a visitor or a learner reads in the middle
+ * of a form: "Trop de demandes. Réessayez dans 540 secondes." sat in the contact
+ * form among labels that said "Choisis un thème", and the description of
+ * /verify, which search engines show, said "Vérifiez" above a page that says
+ * "Entre le numéro". The formal imperative has no "vous" to find, so it is
+ * listed by the verbs these messages use.
+ */
+const MESSAGE_ROOTS = [
+  "app/contact",
+  "app/verify",
+  "lib/tickets",
+  "lib/challenges",
+  "lib/lessons/qa.ts",
+];
+const FORMAL_IMPERATIVE = /\b(?:r[ée]essayez|v[ée]rifiez|essayez|contactez|patientez)\b/iu;
+
+describe("the refusals and descriptions around the forms", () => {
+  it("say tu, like the rest of the site", () => {
+    const offenders = MESSAGE_ROOTS.flatMap((root) => sources(path.join(WEB, root)))
+      .filter((file) => {
+        const text = readFileSync(file, "utf8");
+        return FORMAL.test(text) || FORMAL_IMPERATIVE.test(text);
+      })
+      .map((file) => path.relative(WEB, file).replaceAll("\\", "/"));
+    expect(offenders).toEqual([]);
+  });
+});

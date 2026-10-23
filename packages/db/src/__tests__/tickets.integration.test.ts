@@ -92,6 +92,37 @@ describe("tickets (integration, real DB)", () => {
       expect(await ticketRepository.findForRequester(ticketId, stranger)).toBeNull();
     });
 
+    it("names a ticket as the account's own only to the account that opened it", async () => {
+      if (!configured) return;
+      expect(await ticketRepository.findOwnedId(ticketId, requester)).toBe(ticketId);
+      expect(await ticketRepository.findOwnedId(ticketId, stranger)).toBeNull();
+    });
+
+    it("files a request open, for the account, and a guest's with none", async () => {
+      if (!configured) return;
+      const request = {
+        subject: `Vidéo muette ${suffix}`,
+        theme: "BUG",
+        message: "La vidéo de la leçon 3 n'a pas de son sur mon téléphone.",
+        email: `demandeur-${suffix}@t.internal`,
+      } as const;
+      const own = await ticketRepository.create({ ...request, userId: requester });
+      const guest = await ticketRepository.create({ ...request, userId: null });
+      try {
+        const rows = await prisma.contactTicket.findMany({
+          where: { id: { in: [own.id, guest.id] } },
+          select: { id: true, status: true, userId: true },
+        });
+        expect(rows.find((r) => r.id === own.id)).toMatchObject({
+          status: "OPEN",
+          userId: requester,
+        });
+        expect(rows.find((r) => r.id === guest.id)).toMatchObject({ status: "OPEN", userId: null });
+      } finally {
+        await prisma.contactTicket.deleteMany({ where: { id: { in: [own.id, guest.id] } } });
+      }
+    });
+
     it("lists somebody's own tickets and nobody else's", async () => {
       if (!configured) return;
       const mine = await ticketRepository.findForUser(requester);

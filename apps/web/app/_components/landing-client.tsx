@@ -956,7 +956,7 @@ export function LandingClient({
                 cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
               </span>
             </Link>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 28px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0 28px" }}>
               {(
                 [
                   { label: "Application", href: "/download" },

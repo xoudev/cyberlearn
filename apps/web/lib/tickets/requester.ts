@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma, ticketRepository, userRepository } from "@cyberlearn/db";
+import { ticketRepository, userRepository } from "@cyberlearn/db";
 import {
   TICKET_MESSAGE_MAX,
   TICKET_MESSAGE_MIN,
@@ -71,15 +71,11 @@ export async function fileTicket(input: {
   if (!limit.success) {
     return {
       ok: false,
-      error: `Trop de demandes. Réessayez dans ${String(limit.retryAfterSeconds)} secondes.`,
+      error: `Trop de demandes. Réessaie dans ${String(limit.retryAfterSeconds)} secondes.`,
     };
   }
 
-  const { subject, theme, message, email } = parsed.data;
-  const ticket = await prisma.contactTicket.create({
-    data: { subject, theme, message, email, userId: input.userId, status: "OPEN" },
-    select: { id: true },
-  });
+  const ticket = await ticketRepository.create({ ...parsed.data, userId: input.userId });
   return { ok: true, ticketId: ticket.id };
 }
 
@@ -158,14 +154,11 @@ export async function replyAsRequester(
 
   // Ownership first, and on its own: the repository gate knows about statuses,
   // not about who is allowed to write here.
-  const ticket = await prisma.contactTicket.findFirst({
-    where: { id: parsed.data.ticketId, userId },
-    select: { id: true },
-  });
-  if (!ticket) return { ok: false, error: "Ticket introuvable." };
+  const ticketId = await ticketRepository.findOwnedId(parsed.data.ticketId, userId);
+  if (ticketId === null) return { ok: false, error: "Ticket introuvable." };
 
   const result = await ticketRepository.addMessage({
-    ticketId: ticket.id,
+    ticketId,
     authorId: userId,
     fromStaff: false,
     body: parsed.data.body,
