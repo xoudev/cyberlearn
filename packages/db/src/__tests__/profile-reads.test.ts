@@ -72,6 +72,8 @@ describe("findPublicProfile's counts", () => {
       paths: 3,
     });
     expect(profile).not.toHaveProperty("_count");
+    // The mock records the call's argument as unknown; the shape is the
+    // findPublicProfile query asserted just below.
     const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
       include: Record<string, unknown>;
     };
@@ -87,6 +89,34 @@ describe("findPublicProfile's counts", () => {
         pathProgress: { where: { status: "COMPLETED" } },
       },
     });
+  });
+});
+
+describe("findProfile's counts", () => {
+  it("counts the completed lessons that its twenty-row list only samples", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(ownerRow(true));
+
+    const profile = await userRepository.findProfile(OWNER);
+
+    // The row says 48 completed; the list holds at most twenty.
+    expect(profile?.counts).toEqual({ lessons: 48 });
+    expect(profile).not.toHaveProperty("_count");
+    // The mock records the call's argument as unknown; the shape is the
+    // findProfile query asserted just below.
+    const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
+      include: { lessonProgress: { where: unknown; take: number }; _count: unknown };
+    };
+    expect(query.include.lessonProgress.take).toBe(20);
+    expect(query.include._count).toEqual({
+      select: { lessonProgress: { where: { status: "COMPLETED" } } },
+    });
+    // The same filter as the list and as the public profile's count.
+    expect(query.include.lessonProgress.where).toEqual({ status: "COMPLETED" });
+  });
+
+  it("returns null for a user that does not exist", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    expect(await userRepository.findProfile(OWNER)).toBeNull();
   });
 });
 

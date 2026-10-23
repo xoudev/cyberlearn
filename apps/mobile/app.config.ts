@@ -55,8 +55,8 @@ const config: ExpoConfig = {
     // (appVersionSource "remote", bumped by the production profile): a copy
     // here was ignored by every build and only drifted.
     eas: { projectId: "24922f83-b503-41fc-9e97-f271f2974062" },
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    supabaseUrl: String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? ""),
+    supabaseAnonKey: String(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? ""),
   },
 };
 

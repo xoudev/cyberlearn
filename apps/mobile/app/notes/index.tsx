@@ -48,7 +48,7 @@ const FOLDER_COLORS = ["#0AFFD4", "#6E8BFF", "#FF4757", "#FFB020", "#B983FF", "#
 
 function excerpt(content: string): string {
   const flat = content
-    .replace(/[#*`>\-]/g, "")
+    .replace(/[#*`>-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
   return flat.length > 90 ? `${flat.slice(0, 90)}…` : flat || "Note vide";

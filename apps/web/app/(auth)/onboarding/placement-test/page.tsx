@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@cyberlearn/db";
+import { placementRepository, userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { skipOnboarding } from "../_actions/finalize-onboarding";
@@ -15,18 +15,19 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
   if (!user) redirect("/login");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { username: true },
-  });
+  const dbUser = await userRepository.findOnboardingProfile(user.id);
 
   if (!dbUser?.username) redirect("/onboarding");
 
-  // If already submitted, finalize and go to dashboard
-  const existing = await prisma.userPlacementResult.findUnique({ where: { userId: user.id } });
-  if (existing) redirect("/dashboard");
+  // The test is taken once. With the sign-up finished there is nothing left
+  // here. A result without the flag is a submission that stopped between its
+  // two steps (it stores the result, then ends the sign-up): the dashboard
+  // would send that account back to step 2, so the page stays, with the one
+  // button that ends the sign-up.
+  const taken = await placementRepository.hasResult(user.id);
+  if (taken && user.app_metadata.onboarding_complete === true) redirect("/dashboard");
 
-  const questionCount = await prisma.placementQuestion.count({ where: { isActive: true } });
+  const questionCount = await placementRepository.countActiveQuestions();
   const estimatedMinutes = Math.ceil(questionCount * 0.75);
 
   return (
@@ -153,15 +154,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
       </header>
 
       <div
+        className="onboarding-content"
         style={{
           position: "relative",
           zIndex: 1,
           minHeight: "100vh",
-          paddingTop: 44,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "44px 32px 120px",
         }}
       >
         {/* Progress */}
@@ -267,12 +267,11 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
         {/* Panel */}
         <div
-          className="card"
+          className="card onboarding-card"
           style={{
             position: "relative",
             width: "100%",
             maxWidth: 640,
-            padding: "32px 36px 28px",
           }}
         >
           <div
@@ -396,28 +395,14 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             </p>
 
             {/* Stats grid */}
-            <div
-              className="card"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 0,
-                marginBottom: 22,
-              }}
-            >
+            <div className="card onboarding-stats" style={{ marginBottom: 22 }}>
               {[
                 { label: "Questions", value: String(questionCount), unit: "", accent: false },
                 { label: "Durée", value: String(estimatedMinutes), unit: "min", accent: false },
                 { label: "XP planifié", value: "0", unit: "XP", accent: false },
                 { label: "Score public", value: "NON", unit: "", accent: true },
-              ].map(({ label, value, unit, accent }, i) => (
-                <div
-                  key={label}
-                  style={{
-                    padding: "16px 14px",
-                    borderRight: i < 3 ? "1px solid var(--color-border-default)" : "none",
-                  }}
-                >
+              ].map(({ label, value, unit, accent }) => (
+                <div key={label}>
                   <span
                     className="mono-label mono-label--xs"
                     style={{
@@ -481,9 +466,30 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Link className="btn btn--lg btn--block" href="/onboarding/placement-test/questions">
-                Commencer le test <span style={{ fontSize: 16 }}>→</span>
-              </Link>
+              {taken && (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Ton test est déjà enregistré : il ne reste qu&apos;à terminer l&apos;inscription.
+                </p>
+              )}
+
+              {/* Nothing to start with no active question or a test already
+                  taken: the questions page would send the reader straight back
+                  here. */}
+              {questionCount > 0 && !taken && (
+                <Link
+                  className="btn btn--lg btn--block"
+                  href="/onboarding/placement-test/questions"
+                >
+                  Commencer le test <span style={{ fontSize: 16 }}>→</span>
+                </Link>
+              )}
 
               <form action={skipOnboarding}>
                 <button className="btn btn--ghost btn--lg btn--block" type="submit">

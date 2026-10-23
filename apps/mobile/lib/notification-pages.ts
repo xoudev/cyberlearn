@@ -47,3 +47,23 @@ export function flattenNotificationPages<T extends { id: string }>(
   }
   return out;
 }
+
+/**
+ * How many notices are unread, for the inbox's heading and its "Tout marquer
+ * lu": the count of every row the server holds, the number the home tab's
+ * bell announces, and not only the ones among the pages loaded so far. After
+ * an absence, or fifty notices read one by one, the unread ones sit on pages
+ * not yet loaded, and a count of what is on screen would say none while the
+ * bell says twelve.
+ *
+ * The server's count is read apart and arrives late or not at all: until it
+ * has, and below what the list itself shows unread (a notice that arrived
+ * since the count was read), the loaded pages' own count stands in.
+ */
+export function unreadTotal(
+  serverCount: number | undefined,
+  loaded: readonly { readAt: string | null }[],
+): number {
+  const onScreen = loaded.filter((notice) => notice.readAt === null).length;
+  return Math.max(serverCount ?? 0, onScreen);
+}

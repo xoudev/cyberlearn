@@ -186,4 +186,31 @@ export const banRepository = {
       },
     });
   },
+
+  /**
+   * Every ban the account has had, oldest first, lifted ones included, for its
+   * GDPR export (rgpd/build-export.ts): why (the reason the person was shown),
+   * from when to when, whether the notice was seen and an appeal filed.
+   *
+   * Not who issued or lifted it, nor why it was lifted: both are the team's,
+   * written in the console and shown to nobody else, like a ticket's internal
+   * notes. The appeal ticket's id is read only to say there was one; the
+   * ticket itself is in the export's contact tickets. Not cut: a ban is a
+   * decision an administrator takes, and the record of every one is what the
+   * account is owed.
+   */
+  async exportFor(userId: string) {
+    return prisma.userBan.findMany({
+      where: { userId },
+      select: {
+        reason: true,
+        createdAt: true,
+        expiresAt: true,
+        liftedAt: true,
+        acknowledgedAt: true,
+        appealTicketId: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
 };

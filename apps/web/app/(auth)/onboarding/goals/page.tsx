@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { readGuideQuery, savedLearningAnswers, suggestionsFor } from "@/lib/paths/suggestions";
 import { GuideQuestions } from "@/app/_components/path-guide/guide-questions";
@@ -34,10 +34,7 @@ export default async function OnboardingGoalsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { username: true },
-  });
+  const dbUser = await userRepository.findOnboardingProfile(user.id);
   if (!dbUser?.username) redirect("/onboarding");
 
   const view = readGuideQuery(await searchParams, await savedLearningAnswers(user.id));

@@ -4,6 +4,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
+import type { TournamentFlagResult } from "@/lib/tournaments/tournaments";
 import { submitTournamentFlagAction } from "../../../_actions/tournament-actions";
 import { IconCheck, IconFlag } from "../../../_components/parts";
 
@@ -30,8 +31,17 @@ export function TournamentFlagForm({
 
   const submit = (event: React.SyntheticEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and takes the challenge page with it. It is said under
+    // the field instead, and the flag typed stays for another try.
     startTransition(async () => {
-      const result = await submitTournamentFlagAction({ tournamentId, challengeId, flag });
+      let result: TournamentFlagResult;
+      try {
+        result = await submitTournamentFlagAction({ tournamentId, challengeId, flag });
+      } catch {
+        setMessage({ ok: false, text: "Flag non envoyé, réessaie." });
+        return;
+      }
       if (!result.ok) {
         setMessage({ ok: false, text: result.error });
         return;

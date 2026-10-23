@@ -46,7 +46,7 @@ export function assuranceView(
   assessment: AssuranceAssessment | null,
 ): AssuranceView {
   if (!session) return { pending: false, stale: false, mfaRequired: false };
-  if (!assessment || assessment.userId !== session.userId) {
+  if (assessment?.userId !== session.userId) {
     return { pending: true, stale: false, mfaRequired: true };
   }
   return {
