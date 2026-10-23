@@ -518,8 +518,8 @@ function IntroView({
             body={`Soit ${String(needed)} bonnes réponses sur ${String(questionCount)} pour valider et débloquer le certificat.`}
           />
           <Rule
-            title="Réponses envoyées à la fin"
-            body="Rien ne part avant la remise de la copie : si tu quittes l'examen en cours, tu le reprends sans tes réponses."
+            title="Réponses gardées sur le téléphone"
+            body="Elles ne partent qu'à la remise de la copie, mais elles restent sur ce téléphone : si tu quittes l'examen avant 00:00, tu reprends la tentative avec elles."
           />
           <Rule
             title="Une seule tentative"

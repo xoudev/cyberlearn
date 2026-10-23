@@ -450,8 +450,8 @@ function IntroView({
           {handedIn ? <Note tone={colors.success}>{HANDED_IN_NOTE}</Note> : null}
           {overview.ready && overview.running !== null ? (
             <Note tone={colors.warning}>
-              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
-              sont pas gardées.
+              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant
+              sont gardées sur ce téléphone, tu les retrouves en reprenant.
             </Note>
           ) : null}
           {overview.ready ? null : (

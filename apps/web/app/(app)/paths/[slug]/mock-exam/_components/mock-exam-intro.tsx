@@ -89,8 +89,8 @@ export function MockExamIntro({ overview }: { overview: MockOverview }): React.R
         {overview.ready && overview.running !== null ? (
           <p className="mkx-live">
             <span className="mkx-live__dot" aria-hidden="true" />
-            Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
-            sont pas gardées.
+            Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant sont
+            gardées sur cet appareil, tu les retrouves en reprenant.
           </p>
         ) : null}
         {overview.ready ? null : (
