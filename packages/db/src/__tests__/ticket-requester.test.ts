@@ -13,6 +13,7 @@ const { mockPrisma } = vi.hoisted(() => ({
     contactTicket: {
       create: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ id: string }>>(),
       findFirst: vi.fn<(args: unknown) => Promise<{ id: string } | null>>(),
+      deleteMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
     },
   },
 }));
@@ -58,6 +59,19 @@ describe("ticketRepository.create", () => {
     expect(written()["userId"]).toBeNull();
   });
 
+  it("files a ban appeal from an account with no address", async () => {
+    mockPrisma.contactTicket.create.mockResolvedValue({ id: TICKET });
+    await ticketRepository.create({
+      ...request,
+      theme: "BAN_APPEAL",
+      email: null,
+      userId: REQUESTER,
+    });
+    expect(written()["theme"]).toBe("BAN_APPEAL");
+    expect(written()["email"]).toBeNull();
+    expect(written()["status"]).toBe("OPEN");
+  });
+
   it("writes nothing the caller did not name, whatever it is handed", async () => {
     mockPrisma.contactTicket.create.mockResolvedValue({ id: TICKET });
     // Status, assignee and the console's own columns are not the requester's.
@@ -88,5 +102,18 @@ describe("ticketRepository.findOwnedId", () => {
   it("is null for a ticket somebody else opened, or that is not there", async () => {
     mockPrisma.contactTicket.findFirst.mockResolvedValue(null);
     expect(await ticketRepository.findOwnedId(TICKET, REQUESTER)).toBeNull();
+  });
+});
+
+describe("ticketRepository.deleteById", () => {
+  it("drops the ticket by its id, and nothing else", async () => {
+    mockPrisma.contactTicket.deleteMany.mockResolvedValue({ count: 1 });
+    await ticketRepository.deleteById(TICKET);
+    expect(mockPrisma.contactTicket.deleteMany).toHaveBeenCalledWith({ where: { id: TICKET } });
+  });
+
+  it("does not fail when the ticket is already gone", async () => {
+    mockPrisma.contactTicket.deleteMany.mockResolvedValue({ count: 0 });
+    await expect(ticketRepository.deleteById(TICKET)).resolves.toBeUndefined();
   });
 });

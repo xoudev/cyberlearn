@@ -228,14 +228,16 @@ export const ticketRepository = {
    * Files a request: a new ticket, open. The contact form for a guest
    * (`userId` null), the "Nouvelle demande" window and the app's support
    * screen for an account, all through the service that validates and limits
-   * them (apps/web/lib/tickets/requester.ts). The caller has checked the
+   * them (apps/web/lib/tickets/requester.ts), and a banned account's appeal
+   * (apps/web/lib/moderation/ban-appeal.ts). The caller has checked the
    * fields; this writes them, and nothing else a requester could send.
+   * `email` is null only for an appeal from an account that has no address.
    */
   async create(input: {
     subject: string;
     theme: TicketTheme;
     message: string;
-    email: string;
+    email: string | null;
     userId: string | null;
   }): Promise<{ id: string }> {
     return prisma.contactTicket.create({
@@ -249,6 +251,16 @@ export const ticketRepository = {
       },
       select: { id: true },
     });
+  },
+
+  /**
+   * Drops a ticket nobody has answered yet: the filing that lost a race (two
+   * appeals sent at once, the second would duplicate an open conversation).
+   * Only ever called on the ticket the caller has just created, so it carries
+   * no message and no reader.
+   */
+  async deleteById(ticketId: string): Promise<void> {
+    await prisma.contactTicket.deleteMany({ where: { id: ticketId } });
   },
 
   /**
