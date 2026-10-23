@@ -52,6 +52,15 @@ describe("the Ajouter button's touch target", () => {
     expect(-horizontal).toBeLessThan(8);
   });
 
+  it("is not cut by the class list's one-line name", () => {
+    // `overflow: hidden` clips what a pseudo-element would catch too: the
+    // button sits in a box of its own beside the clipped name.
+    const name = required(cssBlock(SHEET, ".cls-person__name"), ".cls-person__name rule");
+    expect(cssValue(name, "overflow")).toBe("hidden");
+    const who = required(cssBlock(SHEET, ".cls-person__who"), ".cls-person__who rule");
+    expect(cssValue(who, "overflow")).toBeUndefined();
+  });
+
   it("is not there for a mouse", () => {
     const base = required(cssBlock(SHEET, ".add-friend-btn"), ".add-friend-btn rule");
     expect(cssBlock(SHEET, ".add-friend-btn::before")).toBeUndefined();

@@ -4799,6 +4799,18 @@ a:hover > .lesson-author-card {
 .cls-person__name a:hover {
   color: var(--color-brand-turquoise);
 }
+/* The name and, beside it, "Ajouter" (components/add-friend-chip.tsx). The name
+   alone is clipped to one line with an ellipsis; the button is outside that
+   clip, which would otherwise cut the touch area it grows on a phone. */
+.cls-person__who {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.cls-person__who > .add-friend-sent,
+.cls-person__who > .add-friend-mark {
+  flex: none;
+}
 .cls-person__meta {
   font-family: var(--font-mono);
   font-size: 10.5px;
