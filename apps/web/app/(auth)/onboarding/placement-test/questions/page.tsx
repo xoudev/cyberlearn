@@ -17,7 +17,12 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
   // The questions without their answers or explanations: the same service as
   // the app's, so neither sends the browser what gives the answer away.
   const test = await placementTestFor(user.id);
-  if (test.status !== "open") redirect("/dashboard");
+  // Taken, or empty (no active question): nothing to take, and the dashboard
+  // is not open yet when the account has not finished signing up (the
+  // middleware sends it back to step 2). A page cannot finish the sign-up, as
+  // that rewrites the session cookies, which only an action can; the intro can,
+  // with its "Passer", and it sends on to the dashboard an account that is done.
+  if (test.status !== "open") redirect("/onboarding/placement-test");
   const { questions, estimatedMinutes } = test;
 
   return (
@@ -143,15 +148,14 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
       </header>
 
       <div
+        className="onboarding-content"
         style={{
           position: "relative",
           zIndex: 1,
           minHeight: "100vh",
-          paddingTop: 44,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "44px 32px 120px",
         }}
       >
         {/* Progress header */}

@@ -144,12 +144,11 @@ export function OnboardingForm({
 
   return (
     <div
-      className="card"
+      className="card onboarding-card"
       style={{
         position: "relative",
         width: "100%",
         maxWidth: 640,
-        padding: "32px 36px 28px",
       }}
     >
       <div
@@ -260,20 +259,6 @@ export function OnboardingForm({
               defaultValue={state.values?.username ?? initialUsername}
               style={INPUT_STYLE}
             />
-            <span
-              className="mono-label"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "0 14px",
-                borderLeft: "1px solid var(--color-border-subtle)",
-                fontWeight: 600,
-                color: "var(--color-text-muted)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ◌ En attente
-            </span>
           </Field>
 
           {/* Display name */}
