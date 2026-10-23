@@ -17,7 +17,6 @@ export default tseslint.config(
       "prisma/seed-local-accounts.ts",
       "prisma/backfill-badge-xp.ts",
       "prisma/backfill-daily-streaks.ts",
-      "prisma/backfill-review-cards.ts",
     ],
   },
   ...baseConfig,

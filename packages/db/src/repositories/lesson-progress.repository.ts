@@ -74,9 +74,7 @@ export const lessonProgressRepository = {
    * "reset" puts the lesson back to never opened: its progress, its quiz
    * answers (each is answered once, so they would stay locked) and the review
    * cards they produced. The XP it paid stays paid, and finishing it again
-   * pays again, as for any first completion. A row of the retired SM-2 queue
-   * stays where it is: db:backfill-review-cards converts only the lessons
-   * still completed.
+   * pays again, as for any first completion.
    *
    * "complete" marks it finished without paying anything, as a waiver opens a
    * lesson without crediting it: no XP, no streak, no badge. The path it

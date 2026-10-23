@@ -30,7 +30,6 @@ const { mockPrisma } = vi.hoisted(() => {
       challengeHintReveal: read(),
       userBadge: read(),
       certificate: read(),
-      reviewScheduleLegacy: read(),
       rating: read(),
       lessonQuestion: read(),
       lessonAnswer: read(),
@@ -160,16 +159,6 @@ function seed(): void {
       revokedAt: null,
       revokedReason: null,
       path: { title: "Réseau" },
-    },
-  ]);
-  mockPrisma.reviewScheduleLegacy.findMany.mockResolvedValue([
-    {
-      easeFactor: 2.5,
-      intervalDays: 6,
-      repetitions: 2,
-      nextReviewAt: d("2026-02-09T00:00:00.000Z"),
-      lastReviewedAt: d("2026-02-03T00:00:00.000Z"),
-      lesson: { title: "Le modèle OSI", slug: "modele-osi" },
     },
   ]);
   mockPrisma.rating.findMany.mockResolvedValue([
@@ -539,7 +528,7 @@ function seed(): void {
 const EXPECTED = {
   exportMetadata: {
     exportedAt: "2026-10-18T12:00:00.000Z",
-    version: "1.1",
+    version: "1.2",
     format: "json",
     rgpdContext: "Article 20 RGPD - Droit à la portabilité",
     rights: "https://cyberlearn.fr/privacy#section-7",
@@ -676,17 +665,6 @@ const EXPECTED = {
       verifyUrl: "https://cyberlearn.fr/verify/CL-2026-ABCD",
       revokedAt: null,
       revokedReason: null,
-    },
-  ],
-  reviewSchedules: [
-    {
-      lessonTitle: "Le modèle OSI",
-      lessonSlug: "modele-osi",
-      easeFactor: 2.5,
-      intervalDays: 6,
-      repetitions: 2,
-      nextReviewAt: "2026-02-09T00:00:00.000Z",
-      lastReviewedAt: "2026-02-03T00:00:00.000Z",
     },
   ],
   reviewCards: [
@@ -1022,7 +1000,6 @@ describe("buildExportPayload", () => {
       "hintsRevealed",
       "badges",
       "certificates",
-      "reviewSchedules",
       "reviewCards",
       "reviewSessions",
       "ratings",

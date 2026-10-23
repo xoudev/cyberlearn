@@ -62,8 +62,6 @@ model User {
   badges            UserBadge[]
   certificates      Certificate[]
   notifications     Notification[]
-  /// The retired SM-2 queue's rows, kept for db:backfill-review-cards (and the GDPR export).
-  reviewSchedulesLegacy ReviewScheduleLegacy[]
   reviewCards       ReviewCard[]
   reviewSessions    ReviewSession[]
   contactTickets    ContactTicket[]
@@ -537,8 +535,6 @@ model Lesson {
   exerciseCompletions ExerciseCompletion[]
   quizAnswers      LessonQuizAnswer[]
   quizReports      QuizReport[]
-  /// The retired SM-2 queue's rows, kept for db:backfill-review-cards (and the GDPR export).
-  reviewSchedulesLegacy ReviewScheduleLegacy[]
   reviewCards      ReviewCard[]
   ratings          Rating[]
   questions        LessonQuestion[]
@@ -1690,34 +1686,6 @@ model Notification {
   @@index([userId, readAt])
   @@index([scheduledFor, sentAt])
   @@map("notifications")
-}
-
-/// The retired lesson-level review queue (SM-2), one row per learner and
-/// lesson, kept only until db:backfill-review-cards has turned its rows into
-/// review cards in production (docs/DEPLOY.md). Nothing writes it any more.
-/// The backfill script reads it, and so does the GDPR export, which lists a
-/// learner's rows while the platform holds them (reviewScheduleLegacyRepository);
-/// no client role reaches it (migration 20261018120000_retire_review_schedules).
-/// Dropped in a later release, with that read.
-///
-/// Its old name is an empty view now, for the app builds that still read the
-/// queue through the Data API.
-model ReviewScheduleLegacy {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @db.Uuid
-  lessonId       String   @db.Uuid
-  easeFactor     Float    @default(2.5)
-  intervalDays   Int      @default(1)
-  repetitions    Int      @default(0)
-  nextReviewAt   DateTime
-  lastReviewedAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([nextReviewAt])
-  @@map("review_schedules_legacy")
 }
 
 /// One lesson quiz question a learner is asked again: a card in a Leitner box.

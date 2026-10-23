@@ -795,9 +795,8 @@ describe("the repositories' reads for the GDPR export", () => {
   });
 
   it("covers every read the export makes through these repositories", () => {
-    // The 44 reads of build-export.ts: these 41, the two of
-    // reviewCardRepository.exportFor below, and the retired SM-2 queue's
-    // (review-schedule-legacy.test.ts).
+    // The 43 reads of build-export.ts: these 41, and the two of
+    // reviewCardRepository.exportFor below.
     expect(new Set(CASES.map((c) => c.prisma)).size).toBe(41);
   });
 

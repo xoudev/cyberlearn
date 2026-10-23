@@ -200,16 +200,6 @@ describe("RLS policies (integration)", () => {
     });
     if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
 
-    // A row of User B's in the retired SM-2 queue, awaiting conversion, due
-    // in a week: the server's alone now.
-    const { error: rsErr } = await adminClient.from("review_schedules_legacy").insert({
-      id: randomUUID(),
-      userId: userBId,
-      lessonId: publishedLessonId,
-      nextReviewAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
-    });
-    if (rsErr) throw new Error(`Failed to insert review_schedules_legacy: ${rsErr.message}`);
-
     // User B's report on a quiz, with a comment written for the team.
     const { error: qrErr } = await adminClient.from("quiz_reports").insert({
       id: randomUUID(),
@@ -592,22 +582,13 @@ describe("RLS policies (integration)", () => {
     // The app builds installed before the review cards read the queue
     // themselves, through the Data API, with these columns (lib/revisions.ts
     // in those builds, the first of them without easeFactor). The name is an
-    // empty view now (20261018120000_retire_review_schedules): they must get
-    // an empty queue, not an error screen.
+    // empty view now (20261018120000_retire_review_schedules), and the table
+    // behind the old queue is gone (20261023120000_drop_review_schedules_legacy):
+    // they must get an empty queue, not an error screen.
     const OLD_APP_COLUMNS = [
       "id,nextReviewAt,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
       "id,nextReviewAt,easeFactor,lesson:lessons(id,slug,title,category,difficulty,xpReward)",
     ];
-
-    async function bLegacyDate(): Promise<string | undefined> {
-      const { data } = await adminClient
-        .from("review_schedules_legacy")
-        .select("nextReviewAt")
-        .eq("userId", userBId)
-        .eq("lessonId", publishedLessonId);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- the untyped Supabase client returns any rows; the cast types them, and dropping it trips no-unsafe-return.
-      return (data as { nextReviewAt: string }[] | null)?.[0]?.nextReviewAt;
-    }
 
     it.each(OLD_APP_COLUMNS)("an installed app reads an empty queue: %s", async (columns) => {
       if (!configured) return;
@@ -639,26 +620,14 @@ describe("RLS policies (integration)", () => {
       expect(error).not.toBeNull();
     });
 
-    it("the rows awaiting conversion are the server's alone", async () => {
+    it("the old queue's table is gone, for the server as for a client", async () => {
       if (!configured) return;
-      expect(await bLegacyDate()).toBeDefined();
       const clientB = await signInAs(TEST_USER_B_EMAIL);
-      const { data } = await clientB
-        .from("review_schedules_legacy")
-        .select("lessonId")
-        .eq("userId", userBId);
-      expect(data ?? []).toEqual([]);
-    });
-
-    it("a client cannot move a row awaiting conversion", async () => {
-      if (!configured) return;
-      const before = await bLegacyDate();
-      const clientB = await signInAs(TEST_USER_B_EMAIL);
-      await clientB
-        .from("review_schedules_legacy")
-        .update({ nextReviewAt: new Date(Date.now() - 86_400_000).toISOString() })
-        .eq("userId", userBId);
-      expect(await bLegacyDate()).toBe(before);
+      for (const client of [adminClient, clientB]) {
+        const { data, error } = await client.from("review_schedules_legacy").select("id");
+        expect(error).not.toBeNull();
+        expect(data).toBeNull();
+      }
     });
   });
 

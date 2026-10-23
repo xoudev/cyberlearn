@@ -1,18 +1,21 @@
 /**
- * The retired SM-2 queue on the real database, once migration
- * 20261018120000_retire_review_schedules has run.
+ * The retired SM-2 queue on the real database, once migrations
+ * 20261018120000_retire_review_schedules and
+ * 20261023120000_drop_review_schedules_legacy have run.
  *
- * That migration lands minutes before the code that stops writing the queue:
- * .github/workflows/migrate.yml races the Vercel build. Meanwhile the previous
- * deployment still upserts a schedule at every first completion of a lesson,
- * into review_schedules, a view now. Were the view to refuse it, the whole
- * completion would roll back. These replay the statements that code sends
- * (what Prisma generated for its upsert, its grade and its reset) and check
- * they run and change nothing, and that the rows awaiting conversion stay
- * where db:backfill-review-cards reads them, and in the learner's GDPR export.
+ * Its table, review_schedules_legacy, is dropped. What stays is the name the
+ * installed app builds read through the Data API: review_schedules, an empty
+ * view built on review_cards. These check that the view outlived the table,
+ * that it does not depend on it, and that it still takes and drops the writes
+ * of a deployment that predates the cards: .github/workflows/migrate.yml
+ * races the Vercel build, so a migration lands minutes before the code that
+ * no longer writes the queue. That deployment still upserts a schedule at
+ * every first completion of a lesson, and were the view to refuse it, the
+ * whole completion would roll back. The statements replayed are what Prisma
+ * generated for its upsert, its grade and its reset.
  *
  * What the clients get (an empty queue for the installed apps, nothing of the
- * legacy table) is in rls.integration.test.ts.
+ * dropped table) is in rls.integration.test.ts.
  *
  * Skips gracefully when DATABASE_URL is absent, like the other integration
  * specs. Rows are namespaced by a run suffix and removed in afterAll.
@@ -21,11 +24,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
-import { reviewScheduleLegacyRepository } from "../repositories/review-schedule-legacy.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 const learner = randomUUID();
-const legacyRow = randomUUID();
 let lessonId = "";
 let configured = false;
 
@@ -38,12 +39,8 @@ async function queueRows(): Promise<number> {
   return rows[0]?.n ?? -1;
 }
 
-async function legacyRows(): Promise<string[]> {
-  const rows = await prisma.reviewScheduleLegacy.findMany({
-    where: { userId: learner },
-    select: { id: true },
-  });
-  return rows.map((row) => row.id);
+async function cardRows(): Promise<number> {
+  return prisma.reviewCard.count({ where: { userId: learner } });
 }
 
 describe("the retired SM-2 queue (integration, real DB)", () => {
@@ -69,32 +66,42 @@ describe("the retired SM-2 queue (integration, real DB)", () => {
       select: { id: true },
     });
     lessonId = lesson.id;
-    // A row written before the queue was retired, due yesterday, awaiting
-    // its conversion into cards.
-    await prisma.reviewScheduleLegacy.create({
-      data: {
-        id: legacyRow,
-        userId: learner,
-        lessonId,
-        intervalDays: 6,
-        repetitions: 2,
-        nextReviewAt: new Date(now.getTime() - 86_400_000),
-      },
-    });
     configured = true;
   });
 
   afterAll(async () => {
     if (!configured) return;
-    // The legacy row goes with its account (cascade).
     await prisma.user.deleteMany({ where: { id: learner } });
     await prisma.lesson.deleteMany({ where: { id: lessonId } });
   });
 
-  it("shows nothing through the old name, not even the rows awaiting conversion", async () => {
+  it("has dropped the legacy table, and kept the old name as a view", async () => {
+    if (!configured) return;
+    const rows = await prisma.$queryRaw<{ legacy: string | null; kind: string | null }[]>`
+      SELECT
+        to_regclass('public.review_schedules_legacy')::text AS legacy,
+        (SELECT c.relkind::text FROM pg_class c
+           WHERE c.oid = to_regclass('public.review_schedules')) AS kind`;
+    expect(rows).toEqual([{ legacy: null, kind: "v" }]);
+  });
+
+  it("builds the view on the review cards, not on a table that can go", async () => {
+    if (!configured) return;
+    // The relations the view's rewrite rule reads: review_cards only.
+    const tables = await prisma.$queryRaw<{ name: string }[]>`
+      SELECT DISTINCT d.refobjid::regclass::text AS name
+      FROM pg_depend d
+      JOIN pg_rewrite r ON r.oid = d.objid AND d.classid = 'pg_rewrite'::regclass
+      WHERE r.ev_class = 'public.review_schedules'::regclass
+        AND d.refclassid = 'pg_class'::regclass
+        AND d.refobjid <> 'public.review_schedules'::regclass
+      ORDER BY 1`;
+    expect(tables.map((row) => row.name.replace(/^public\./u, ""))).toEqual(["review_cards"]);
+  });
+
+  it("shows an empty queue through the old name", async () => {
     if (!configured) return;
     expect(await queueRows()).toBe(0);
-    expect(await legacyRows()).toEqual([legacyRow]);
   });
 
   it("takes the previous deployment's upsert at a completion, and keeps nothing of it", async () => {
@@ -108,7 +115,8 @@ describe("the retired SM-2 queue (integration, real DB)", () => {
     // The row it was given comes back, as Prisma expects of an insert.
     expect(returned).toEqual([{ id }]);
     expect(await queueRows()).toBe(0);
-    expect(await legacyRows()).toEqual([legacyRow]);
+    // And nothing was written behind the view: no card appeared either.
+    expect(await cardRows()).toBe(0);
   });
 
   it("lets the previous deployment's grade and reset run, and they change nothing", async () => {
@@ -121,20 +129,6 @@ describe("the retired SM-2 queue (integration, real DB)", () => {
     const cleared = await prisma.$executeRaw`
       DELETE FROM "public"."review_schedules" WHERE "userId" = ${learner}::uuid`;
     expect([graded, cleared]).toEqual([0, 0]);
-    expect(await legacyRows()).toEqual([legacyRow]);
-  });
-
-  it("lists the rows awaiting conversion in the learner's GDPR export, and nobody else's", async () => {
-    if (!configured) return;
-    const rows = await reviewScheduleLegacyRepository.listForExport(learner);
-    expect(rows).toEqual([
-      expect.objectContaining({
-        lessonTitle: "Une leçon",
-        lessonSlug: `rs-lesson-${suffix}`,
-        intervalDays: 6,
-        repetitions: 2,
-      }),
-    ]);
-    expect(await reviewScheduleLegacyRepository.listForExport(randomUUID())).toEqual([]);
+    expect(await cardRows()).toBe(0);
   });
 });

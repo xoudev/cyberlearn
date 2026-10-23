@@ -236,10 +236,6 @@ export {
   type ReviewSessionRow,
 } from "./repositories/review-card.repository.js";
 export {
-  reviewScheduleLegacyRepository,
-  type LegacyReviewScheduleExportRow,
-} from "./repositories/review-schedule-legacy.repository.js";
-export {
   lessonQuizRepository,
   type RecordedQuizAnswer,
 } from "./repositories/lesson-quiz.repository.js";

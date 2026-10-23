@@ -38,7 +38,6 @@
     "db:seed-local-accounts": "tsx --env-file-if-exists=.env prisma/seed-local-accounts.ts",
     "db:backfill-badge-xp": "tsx --env-file-if-exists=.env prisma/backfill-badge-xp.ts",
     "db:backfill-daily-streaks": "tsx --env-file-if-exists=.env prisma/backfill-daily-streaks.ts",
-    "db:backfill-review-cards": "node --env-file-if-exists=.env --import tsx/esm prisma/backfill-review-cards.ts",
     "db:studio": "prisma studio",
     "clean": "rm -rf dist"
   },

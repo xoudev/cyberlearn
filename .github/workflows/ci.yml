@@ -363,7 +363,13 @@ jobs:
         # Gate 1: no public table without RLS. Allowlist: _prisma_migrations is
         # Prisma's own tracking table (no RLS by design; deliberately NOT
         # hardened, since enabling RLS on it could break migrate deploy itself).
-        # Gate 2: tripwire on the policy count: >= the 56 baseline policies.
+        # Gate 2: tripwire on the policy count: >= 55, the 56 baseline policies
+        # less the one that left with review_schedules_legacy. That table was
+        # dropped by 20261023120000_drop_review_schedules_legacy and carried
+        # exactly one policy at that point, the restrictive mfa_verified_session
+        # every table has (its review_select_own had gone with
+        # 20261018120000_retire_review_schedules), so the floor goes down by
+        # that one and no more.
         # Deliberately >=, not ==, so adding policies needs no CI edit; a DROP
         # that regresses the count below the baseline still fails loudly.
         # Both gates are fail-closed: `if ! [ ... ]` treats an empty/non-numeric
@@ -375,8 +381,8 @@ jobs:
             echo "::error::public tables without RLS: $EXPOSED"; exit 1
           fi
           COUNT=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -t -A -c "SELECT count(*) FROM pg_policies WHERE schemaname = 'public';")
-          if ! [ "$COUNT" -ge 56 ]; then
-            echo "::error::pg_policies count regressed or unreadable: '$COUNT' (expected >= 56)"; exit 1
+          if ! [ "$COUNT" -ge 55 ]; then
+            echo "::error::pg_policies count regressed or unreadable: '$COUNT' (expected >= 55)"; exit 1
           fi
           echo "RLS coverage OK: no exposed table, $COUNT policies"
 
