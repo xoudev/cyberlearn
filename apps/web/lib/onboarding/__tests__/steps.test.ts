@@ -2,19 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as Suggestions from "@/lib/paths/suggestions";
 
 const m = vi.hoisted(() => ({
-  findUnique: vi.fn<(args: unknown) => Promise<{ id: string } | null>>(),
-  update: vi.fn<(args: unknown) => unknown>(),
-  upsert: vi.fn<(args: unknown) => unknown>(),
-  transaction: vi.fn<(ops: unknown[]) => Promise<unknown>>(),
+  findIdByUsername: vi.fn<(username: string) => Promise<string | null>>(),
+  saveOnboardingProfile: vi.fn<(userId: string, profile: unknown) => Promise<void>>(),
+  setAvatarUrl: vi.fn<(userId: string, avatarUrl: string) => Promise<void>>(),
   saveLearningAnswers: vi.fn<(userId: string, answers: unknown) => Promise<void>>(),
   markOnboardingComplete: vi.fn<(userId: string) => Promise<void>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
-  prisma: {
-    user: { findUnique: m.findUnique, update: m.update },
-    userPreferences: { upsert: m.upsert },
-    $transaction: m.transaction,
+  userRepository: {
+    findIdByUsername: m.findIdByUsername,
+    saveOnboardingProfile: m.saveOnboardingProfile,
+    setAvatarUrl: m.setAvatarUrl,
   },
 }));
 vi.mock("@/lib/paths/suggestions", async () => {
@@ -34,35 +33,29 @@ const {
 
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
-  m.findUnique.mockResolvedValue(null);
-  m.update.mockImplementation((args) => ({ op: "update", args }));
-  m.upsert.mockImplementation((args) => ({ op: "upsert", args }));
-  m.transaction.mockResolvedValue([]);
+  m.findIdByUsername.mockResolvedValue(null);
+  m.saveOnboardingProfile.mockResolvedValue(undefined);
+  m.setAvatarUrl.mockResolvedValue(undefined);
 });
 
 describe("saveOnboardingProfile", () => {
-  it("writes the handle, the name and the bio, and makes sure preferences exist", async () => {
+  it("writes the handle, the name and the bio", async () => {
     const result = await saveOnboardingProfile("user-1", {
       username: "alex-b",
       displayName: " Alex ",
       bio: "Réseaux.",
     });
     expect(result).toEqual({ ok: true });
-    expect(m.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { username: "alex-b", displayName: "Alex", bio: "Réseaux." },
+    expect(m.saveOnboardingProfile).toHaveBeenCalledWith("user-1", {
+      username: "alex-b",
+      displayName: "Alex",
+      bio: "Réseaux.",
     });
-    expect(m.upsert).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
-      create: { userId: "user-1" },
-      update: {},
-    });
-    expect(m.transaction).toHaveBeenCalledTimes(1);
   });
 
   it("keeps no bio for an empty one", async () => {
     await saveOnboardingProfile("user-1", { username: "alex", displayName: "Alex", bio: "  " });
-    expect(m.update.mock.calls[0]?.[0]).toMatchObject({ data: { bio: null } });
+    expect(m.saveOnboardingProfile.mock.calls[0]?.[1]).toMatchObject({ bio: null });
   });
 
   it("explains each refused field in French, and writes nothing", async () => {
@@ -79,24 +72,27 @@ describe("saveOnboardingProfile", () => {
         bio: ONBOARDING_FIELD_ERROR.bio,
       },
     });
-    expect(m.transaction).not.toHaveBeenCalled();
+    expect(m.saveOnboardingProfile).not.toHaveBeenCalled();
     expect(await saveOnboardingProfile("user-1", null)).toMatchObject({ ok: false });
   });
 
   it("refuses a handle somebody else holds, and lets the owner keep theirs", async () => {
-    m.findUnique.mockResolvedValue({ id: "user-2" });
+    m.findIdByUsername.mockResolvedValue("user-2");
     expect(await saveOnboardingProfile("user-1", { username: "alex", displayName: "A" })).toEqual({
       ok: false,
       errors: { username: USERNAME_TAKEN },
     });
-    m.findUnique.mockResolvedValue({ id: "user-1" });
+    expect(m.saveOnboardingProfile).not.toHaveBeenCalled();
+    m.findIdByUsername.mockResolvedValue("user-1");
     expect(await saveOnboardingProfile("user-1", { username: "alex", displayName: "A" })).toEqual({
       ok: true,
     });
   });
 
   it("says taken when somebody got the handle between the check and the write", async () => {
-    m.transaction.mockRejectedValue(Object.assign(new Error("unique"), { code: "P2002" }));
+    m.saveOnboardingProfile.mockRejectedValue(
+      Object.assign(new Error("unique"), { code: "P2002" }),
+    );
     expect(await saveOnboardingProfile("user-1", { username: "alex", displayName: "A" })).toEqual({
       ok: false,
       errors: { username: USERNAME_TAKEN },
@@ -104,7 +100,7 @@ describe("saveOnboardingProfile", () => {
   });
 
   it("lets any other failure through", async () => {
-    m.transaction.mockRejectedValue(new Error("down"));
+    m.saveOnboardingProfile.mockRejectedValue(new Error("down"));
     await expect(
       saveOnboardingProfile("user-1", { username: "alex", displayName: "A" }),
     ).rejects.toThrow("down");
@@ -114,10 +110,7 @@ describe("saveOnboardingProfile", () => {
 describe("saveOnboardingAvatar", () => {
   it("keeps one of the built-in avatars", async () => {
     expect(await saveOnboardingAvatar("user-1", "/avatars/av-3.svg")).toEqual({ ok: true });
-    expect(m.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { avatarUrl: "/avatars/av-3.svg" },
-    });
+    expect(m.setAvatarUrl).toHaveBeenCalledWith("user-1", "/avatars/av-3.svg");
   });
 
   it.each([["https://evil.example/a.svg"], ["__upload:x.png"], [null]])(
@@ -127,7 +120,7 @@ describe("saveOnboardingAvatar", () => {
         ok: false,
         error: "Avatar invalide.",
       });
-      expect(m.update).not.toHaveBeenCalled();
+      expect(m.setAvatarUrl).not.toHaveBeenCalled();
     },
   );
 });

@@ -1,3 +1,4 @@
+import { friendsActivityReplySchema } from "@cyberlearn/types";
 import type { DuelResultCounts, HeadToHead } from "@cyberlearn/lib/social/duel";
 import type { FriendActivityItem } from "@cyberlearn/lib/social/friend-activity";
 import {
@@ -30,6 +31,26 @@ export interface FriendsActivity {
   /** False: the reader has no friend, and the home tab draws no section. */
   hasFriends: boolean;
   items: FriendActivityItem[];
+}
+
+/** Said when the friends' moments could not be loaded or their reply not read. */
+export const FRIENDS_ACTIVITY_FAILED = "Chargement impossible";
+
+/**
+ * /api/mobile/friends/activity's body read back: the moments, or why there
+ * are none. Never half a reply: the home tab reads `items.length`, which a
+ * body without `items` would make a crash rather than a missing section.
+ */
+export function readFriendsActivity(
+  body: unknown,
+): { ok: true; activity: FriendsActivity } | { ok: false; error: string } {
+  const parsed = friendsActivityReplySchema.safeParse(body);
+  if (!parsed.success) return { ok: false, error: FRIENDS_ACTIVITY_FAILED };
+  if (!parsed.data.ok) return { ok: false, error: parsed.data.error ?? FRIENDS_ACTIVITY_FAILED };
+  return {
+    ok: true,
+    activity: { hasFriends: parsed.data.hasFriends, items: parsed.data.items },
+  };
 }
 
 /** One person in a list, as /api/mobile/friends sends them. */

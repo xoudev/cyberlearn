@@ -25,6 +25,19 @@ describe("TwoMachineLab", () => {
     expect(screen.getByRole("alert").textContent).toContain("identifiant invalide");
   });
 
+  it("draws its reset as a button of the site, and sets the machines out by the lesson block", () => {
+    render(<TwoMachineLab id="blueteam-13-two-machine-lab" />);
+
+    // Unstyled, under Tailwind's reset, it was a line of text.
+    const reset = screen.getByRole("button", { name: "Réinitialiser les deux machines" });
+    expect(reset.classList.contains("btn")).toBe(true);
+    // The grid answers to the block's width (two-machine-lab.css), not the window's.
+    const machines = screen.getByTestId("terminal-attacker").parentElement;
+    expect(machines?.classList.contains("two-machine-lab__machines")).toBe(true);
+    expect(machines?.contains(screen.getByTestId("terminal-target"))).toBe(true);
+    expect(machines?.className).not.toMatch(/\bxl:/u);
+  });
+
   it("mounts attacker and target terminals sharing the same isolated network and resets both", () => {
     render(<TwoMachineLab id="blueteam-13-two-machine-lab" />);
 

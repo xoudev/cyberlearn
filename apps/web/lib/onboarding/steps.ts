@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { userRepository } from "@cyberlearn/db";
 import { KEEP_CURRENT_AVATAR, ONBOARDING_AVATARS } from "@cyberlearn/lib/onboarding/avatars";
 import { onboardingSchema } from "@cyberlearn/types";
 import { parseLearningAnswers, saveLearningAnswers } from "@/lib/paths/suggestions";
@@ -61,24 +61,18 @@ export async function saveOnboardingProfile(
   }
 
   const { username, displayName, bio } = parsed.data;
-  const existing = await prisma.user.findUnique({ where: { username }, select: { id: true } });
-  if (existing && existing.id !== userId) {
+  const holder = await userRepository.findIdByUsername(username);
+  if (holder !== null && holder !== userId) {
     return { ok: false, errors: { username: USERNAME_TAKEN } };
   }
 
   try {
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        // An empty bio is no bio.
-        data: { username, displayName, bio: bio && bio !== "" ? bio : null },
-      }),
-      prisma.userPreferences.upsert({
-        where: { userId },
-        create: { userId },
-        update: {},
-      }),
-    ]);
+    await userRepository.saveOnboardingProfile(userId, {
+      username,
+      displayName,
+      // An empty bio is no bio.
+      bio: bio && bio !== "" ? bio : null,
+    });
   } catch (error) {
     if (isDuplicate(error)) return { ok: false, errors: { username: USERNAME_TAKEN } };
     throw error;
@@ -100,10 +94,7 @@ export async function saveOnboardingAvatar(
   if (!parsed.success) return { ok: false, error: "Avatar invalide." };
   if (parsed.data === KEEP_CURRENT_AVATAR) return { ok: true };
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { avatarUrl: parsed.data },
-  });
+  await userRepository.setAvatarUrl(userId, parsed.data);
   return { ok: true };
 }
 

@@ -1,10 +1,15 @@
 /* The review window (rappel-dialog.tsx): one question at a time, its
    verdict, and the end. Square, like the rest of the site. */
 
+/* The window's body (.modal-shell__body, packages/ui) has no margin of its own:
+   its header and its action row hold 20px each side, and this is what puts the
+   pips, the question and the answers on the same line as them rather than
+   against the frame. */
 .rp {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding: 18px 20px 20px;
 }
 
 .rp-quiet {

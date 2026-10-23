@@ -18,7 +18,10 @@ export interface PlacementActionState {
  * (@/lib/onboarding/placement), which scores them against the database and
  * grants the waivers, then ends the onboarding and shows the result.
  *
- * A second submission goes to the dashboard: the test is taken once.
+ * A second submission goes to the dashboard: the test is taken once. It ends
+ * the sign-up on the way, as the first one does: a first submission that
+ * stopped after storing the result (the flag is a call to Supabase Auth) would
+ * otherwise leave the account with a result and no way to the dashboard.
  */
 export async function submitPlacementTest(
   _prev: PlacementActionState,
@@ -40,7 +43,10 @@ export async function submitPlacementTest(
 
   const result = await submitPlacementFor(user.id, { answers });
   if (!result.ok) {
-    if (result.reason === "taken") redirect("/dashboard");
+    if (result.reason === "taken") {
+      await setOnboardingComplete(user.id);
+      redirect("/dashboard");
+    }
     return { success: false, message: result.error };
   }
 

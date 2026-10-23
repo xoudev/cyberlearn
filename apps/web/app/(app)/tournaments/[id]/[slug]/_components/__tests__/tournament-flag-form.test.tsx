@@ -68,4 +68,22 @@ describe("TournamentFlagForm", () => {
     expect(screen.getByRole("alert").textContent).toBe("Le tournoi est terminé.");
     expect(m.refresh).not.toHaveBeenCalled();
   });
+
+  it("says the flag was not sent, and keeps what was typed, when the call fails", async () => {
+    m.submitTournamentFlagAction.mockRejectedValueOnce(new Error("network"));
+    render(<TournamentFlagForm tournamentId="t1" challengeId="c1" points={300} />);
+    await give("CL{bon-flag}");
+    expect((await screen.findByRole("alert")).textContent).toBe("Flag non envoyé, réessaie.");
+    expect(screen.getByLabelText(/Flag/u)).toHaveProperty("value", "CL{bon-flag}");
+    expect(m.refresh).not.toHaveBeenCalled();
+    // Sent again, it goes through.
+    m.submitTournamentFlagAction.mockResolvedValueOnce({
+      ok: true,
+      correct: true,
+      points: 300,
+      already: false,
+    });
+    await give("CL{bon-flag}");
+    expect((await screen.findByRole("status")).textContent).toContain("+300 points");
+  });
 });

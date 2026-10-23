@@ -18,26 +18,15 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   useNotificationHistory,
+  useUnreadCount,
   type NotificationItem,
 } from "@/lib/queries";
 import { acceptFriendApi, declineFriendApi, fetchFriendsApi } from "@/lib/api";
 import { answerableSender } from "@/lib/friends";
 import { inAppRouteFor } from "@/lib/notification-links";
 import { notificationMeta } from "@/lib/notification-meta";
-import { flattenNotificationPages } from "@/lib/notification-pages";
+import { flattenNotificationPages, unreadTotal } from "@/lib/notification-pages";
 import { useSession } from "@/lib/session";
-
-const TYPE_META: Record<string, { icon: string; color: string }> = {
-  BADGE_EARNED: { icon: "◆", color: colors.warning },
-  LEVEL_UP: { icon: "▲", color: colors.accent },
-  CERTIFICATE_ISSUED: { icon: "❖", color: colors.info },
-  LEAGUE: { icon: "♟", color: colors.promote },
-  REVIEW_DUE: { icon: "↻", color: colors.textSecondary },
-  FORUM_REPLY: { icon: "❝", color: colors.info },
-  DUEL_INVITE: { icon: "⚔", color: colors.accent },
-  DUEL_RESULT: { icon: "⚑", color: colors.warning },
-  TOURNAMENT_ANNOUNCED: { icon: "🏆", color: colors.accent },
-};
 
 /**
  * "Accepter" and "Refuser" under a friend request's notice, beside the card
@@ -115,7 +104,11 @@ export default function Notifications(): React.JSX.Element {
   // Every page loaded so far, fifty at a time; "Charger plus" adds the next.
   const items = data === undefined ? undefined : flattenNotificationPages(data.pages);
 
-  const unread = (items ?? []).filter((n) => n.readAt === null).length;
+  // What the bell announces (a count of every row on the server), for the
+  // heading and for "Tout marquer lu": the pages loaded show only some of the
+  // unread ones. Each card's own mark still reads its own row.
+  const { data: unreadOnServer } = useUnreadCount(userId);
+  const unread = unreadTotal(unreadOnServer, items ?? []);
 
   // Whose request still waits on the reader: the friends screen's incoming
   // list, read only when a friend request is on the screen.

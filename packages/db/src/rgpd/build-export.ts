@@ -1,14 +1,26 @@
 import { readDraw, readSessionAnswers } from "@cyberlearn/lib/revisions/cards";
 import { badgeRepository } from "../repositories/badge.repository.js";
+import { banRepository } from "../repositories/ban.repository.js";
 import { certificateRepository } from "../repositories/certificate.repository.js";
 import { challengeRepository } from "../repositories/challenge.repository.js";
+import { classRepository } from "../repositories/class.repository.js";
 import { contentReportRepository } from "../repositories/content-report.repository.js";
 import { cosmeticRepository } from "../repositories/cosmetic.repository.js";
 import { duelRepository } from "../repositories/duel.repository.js";
+import { exerciseRepository } from "../repositories/exercise.repository.js";
+import { FORUM_EXPORT_LIMIT, forumRepository } from "../repositories/forum.repository.js";
+import {
+  FRIENDSHIP_EXPORT_LIMIT,
+  friendshipRepository,
+} from "../repositories/friendship.repository.js";
 import { leagueRepository } from "../repositories/league.repository.js";
 import { lessonProgressRepository } from "../repositories/lesson-progress.repository.js";
 import { lessonQuizRepository } from "../repositories/lesson-quiz.repository.js";
 import { mockExamRepository } from "../repositories/mock-exam.repository.js";
+import {
+  MODERATION_EXPORT_LIMIT,
+  moderationRepository,
+} from "../repositories/moderation.repository.js";
 import { noteFolderRepository } from "../repositories/note-folder.repository.js";
 import { noteReportRepository } from "../repositories/note-report.repository.js";
 import { noteRepository } from "../repositories/note.repository.js";
@@ -66,7 +78,14 @@ export interface ExportPayload {
     format: string;
     rgpdContext: string;
     rights: string;
-    limitations: { notifications: string };
+    /** What the file cuts or leaves out, section by section, in words. */
+    limitations: {
+      notifications: string;
+      forum: string;
+      friendships: string;
+      moderationEvents: string;
+      sanctions: string;
+    };
   };
   profile: {
     email: string;
@@ -360,6 +379,81 @@ export interface ExportPayload {
     accentColor: string | null;
   } | null;
   answerUpvotes: { answerId: string; createdAt: Date }[];
+  /** The threads the account opened, the most recent first, withdrawn or hidden ones included. */
+  forumTopics: {
+    categoryName: string;
+    title: string;
+    isHidden: boolean;
+    lockedAt: Date | null;
+    createdAt: Date;
+  }[];
+  /**
+   * The messages the account wrote in the forum, opening messages included, the
+   * most recent first. A hidden one keeps its text: it is still held, and
+   * `hiddenByModeration` says whether the author or the moderation took it down.
+   */
+  forumPosts: {
+    topicTitle: string;
+    content: string;
+    isHidden: boolean;
+    hiddenByModeration: boolean;
+    editedAt: Date | null;
+    createdAt: Date;
+  }[];
+  /**
+   * The friendships and friend requests, sent or received, the most recent
+   * first. The other person is their username and nothing else: their e-mail
+   * and the rest of their account are theirs.
+   */
+  friendships: {
+    username: string | null;
+    direction: "sent" | "received";
+    status: string;
+    createdAt: Date;
+    respondedAt: Date | null;
+  }[];
+  /** The classes the account belongs to, archived ones included. */
+  classMemberships: {
+    className: string;
+    promotionName: string;
+    establishmentName: string;
+    joinedAt: Date;
+  }[];
+  /** The exercises finished inside lessons (terminal, Python), as the page verified them. */
+  exerciseCompletions: {
+    lessonTitle: string;
+    lessonSlug: string;
+    exerciseId: string;
+    kind: string;
+    completedAt: Date;
+  }[];
+  /**
+   * The bans the account has had, lifted ones included: the reason the person
+   * was shown, the dates, whether they saw the notice and filed an appeal (the
+   * ticket is in `contactTickets`). Not who decided, nor why a ban was lifted.
+   */
+  bans: {
+    reason: string;
+    createdAt: Date;
+    expiresAt: Date | null;
+    liftedAt: Date | null;
+    acknowledgedAt: Date | null;
+    appealed: boolean;
+  }[];
+  /**
+   * What the automatic screen recorded about the account's writing, the most
+   * recent first: where, its verdict, the text kept, and how a human ended it.
+   * The facts the settings page shows the person, and the verdict on top; not
+   * the score nor the rules that fired.
+   */
+  moderationEvents: {
+    surface: string;
+    verdict: string;
+    excerpt: string;
+    outcome: string;
+    createdAt: Date;
+    reviewedAt: Date | null;
+  }[];
 }
 
 export async function buildExportPayload(
@@ -404,6 +498,13 @@ export async function buildExportPayload(
     noteReports,
     contentReports,
     review,
+    forumTopics,
+    forumPosts,
+    friendships,
+    classMemberships,
+    exerciseCompletions,
+    bans,
+    moderationEvents,
   ] = await Promise.all([
     userRepository.exportProfileFor(userId),
     preferencesRepository.exportFor(userId),
@@ -441,18 +542,30 @@ export async function buildExportPayload(
     noteReportRepository.exportFor(userId),
     contentReportRepository.exportFor(userId),
     reviewCardRepository.exportFor(userId),
+    forumRepository.exportTopicsFor(userId),
+    forumRepository.exportPostsFor(userId),
+    friendshipRepository.exportFor(userId),
+    classRepository.exportMembershipsFor(userId),
+    exerciseRepository.exportFor(userId),
+    banRepository.exportFor(userId),
+    moderationRepository.exportFor(userId),
   ]);
   const { cards: reviewCards, sessions: reviewSessions } = review;
 
   return {
     exportMetadata: {
       exportedAt: new Date().toISOString(),
-      version: "1.0",
+      version: "1.1",
       format: "json",
       rgpdContext: "Article 20 RGPD - Droit à la portabilité",
       rights: `${siteUrl}/privacy#section-7`,
       limitations: {
         notifications: `Les ${String(NOTIFICATION_EXPORT_LIMIT)} notifications les plus récentes sont incluses.`,
+        forum: `Les ${String(FORUM_EXPORT_LIMIT)} sujets et les ${String(FORUM_EXPORT_LIMIT)} messages de forum les plus récents sont inclus, ceux qui ont été masqués compris.`,
+        friendships: `Les ${String(FRIENDSHIP_EXPORT_LIMIT)} relations d'amitié les plus récentes sont incluses, demandes en attente comprises. Un ami y figure par son pseudo et les dates de la relation : son e-mail et ses autres données sont les siennes.`,
+        moderationEvents: `Les ${String(MODERATION_EXPORT_LIMIT)} décisions du filtre automatique les plus récentes sont incluses, sans le score ni les règles qui les ont déclenchées.`,
+        sanctions:
+          "Une sanction figure avec le motif qui a été montré à la personne. Qui l'a décidée ou levée, et pourquoi elle a été levée, restent à l'équipe.",
       },
     },
     profile,
@@ -650,5 +763,59 @@ export async function buildExportPayload(
     cosmeticsUnlocked,
     cosmeticLoadout,
     answerUpvotes,
+    forumTopics: forumTopics.map((t) => ({
+      categoryName: t.category.name,
+      title: t.title,
+      isHidden: t.isHidden,
+      lockedAt: t.lockedAt,
+      createdAt: t.createdAt,
+    })),
+    forumPosts: forumPosts.map((post) => ({
+      topicTitle: post.topic.title,
+      content: post.content,
+      isHidden: post.isHidden,
+      hiddenByModeration: post.hiddenByModeration,
+      editedAt: post.editedAt,
+      createdAt: post.createdAt,
+    })),
+    // The other person is the side that is not the account's, and only their
+    // username is copied: the ids tell the sides apart and stay in here.
+    friendships: friendships.map((f) => ({
+      username: (f.userAId === userId ? f.userB : f.userA).username,
+      direction: f.requestedById === userId ? ("sent" as const) : ("received" as const),
+      status: f.status,
+      createdAt: f.createdAt,
+      respondedAt: f.respondedAt,
+    })),
+    classMemberships: classMemberships.map((m) => ({
+      className: m.class.name,
+      promotionName: m.class.promotion.name,
+      establishmentName: m.class.promotion.establishment.name,
+      joinedAt: m.joinedAt,
+    })),
+    exerciseCompletions: exerciseCompletions.map((e) => ({
+      lessonTitle: e.lesson.title,
+      lessonSlug: e.lesson.slug,
+      exerciseId: e.exerciseId,
+      kind: e.kind,
+      completedAt: e.completedAt,
+    })),
+    // The appeal ticket's id says there was an appeal; it is not copied.
+    bans: bans.map((b) => ({
+      reason: b.reason,
+      createdAt: b.createdAt,
+      expiresAt: b.expiresAt,
+      liftedAt: b.liftedAt,
+      acknowledgedAt: b.acknowledgedAt,
+      appealed: b.appealTicketId !== null,
+    })),
+    moderationEvents: moderationEvents.map((e) => ({
+      surface: e.surface,
+      verdict: e.verdict,
+      excerpt: e.excerpt,
+      outcome: e.outcome,
+      createdAt: e.createdAt,
+      reviewedAt: e.reviewedAt,
+    })),
   };
 }

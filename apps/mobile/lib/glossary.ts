@@ -23,15 +23,9 @@ function plainText(text: string): string {
 }
 
 function proseOf(block: Block): string | null {
-  switch (block.kind) {
-    case "paragraph":
-    case "callout":
-      return plainText(block.text);
-    case "list":
-      return block.items.map(plainText).join("\n");
-    default:
-      return null;
-  }
+  if (block.kind === "paragraph" || block.kind === "callout") return plainText(block.text);
+  if (block.kind === "list") return block.items.map(plainText).join("\n");
+  return null;
 }
 
 /** For each block of a section, the glossary words it is the first to use. */

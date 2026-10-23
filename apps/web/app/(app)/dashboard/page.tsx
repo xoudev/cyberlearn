@@ -18,12 +18,10 @@ import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
 import { runningTournaments } from "@cyberlearn/lib/dashboard/your-move";
 import { fmtWeekReset } from "@cyberlearn/lib/gamification/weekly-quests";
 import {
-  CATALOGUE_PATH,
+  dashboardRepository,
   leaderboardRepository,
-  PUBLISHED_PATH_LESSON,
   lessonRepository,
-  pathsVisibleTo,
-  prisma,
+  placementRepository,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
@@ -71,103 +69,36 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   const [
     dbUser,
-    inProgressRows,
+    resume,
     recallState,
-    completedTotal,
-    completedThisMonth,
-    badgeRows,
-    badgeTotal,
-    badgesThisMonth,
+    completed,
+    badges,
     certificateCount,
     certifiablePaths,
     userRank,
     allPaths,
     placementResult,
-    recentLessons,
+    recentCategories,
     wantsRevisions,
     learningAnswers,
     friends,
     duelInvites,
     tournaments,
   ] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { displayName: true, xpTotal: true, streakDays: true, longestStreak: true },
-    }),
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "IN_PROGRESS" },
-      include: {
-        lesson: {
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            description: true,
-            category: true,
-            estimatedMinutes: true,
-            xpReward: true,
-          },
-        },
-      },
-      orderBy: { lastAccessedAt: "desc" },
-      take: 1,
-    }),
+    dashboardRepository.findHeader(authUser.id),
+    dashboardRepository.findLessonInProgress(authUser.id),
     // The day's recall: to do, done, or nothing to ask, as the window will
     // find it (drawn here on the day's first visit with a card due). Never a
     // count.
     dailyRecallState(authUser.id, now),
-    prisma.userLessonProgress.count({ where: { userId: authUser.id, status: "COMPLETED" } }),
-    prisma.userLessonProgress.count({
-      where: { userId: authUser.id, status: "COMPLETED", completedAt: { gte: monthStart } },
-    }),
-    prisma.userBadge.findMany({
-      where: { userId: authUser.id },
-      include: { badge: { select: { name: true, rarity: true, iconUrl: true } } },
-      orderBy: { earnedAt: "desc" },
-      take: 3,
-    }),
-    prisma.userBadge.count({ where: { userId: authUser.id } }),
-    prisma.userBadge.count({ where: { userId: authUser.id, earnedAt: { gte: monthStart } } }),
-    prisma.certificate.count({ where: { userId: authUser.id, revokedAt: null } }),
-    // The denominator is the catalogue, because that is what issues
-    // certificates: checkAndIssueCertificates walks the catalogue paths a
-    // finished lesson belongs to. A class's own path is not one of them.
-    prisma.path.count({ where: CATALOGUE_PATH }),
+    dashboardRepository.countCompletedLessons(authUser.id, monthStart),
+    dashboardRepository.badgeSummary(authUser.id, monthStart),
+    dashboardRepository.countCertificates(authUser.id),
+    dashboardRepository.countCertifiablePaths(),
     leaderboardRepository.findUserRank(authUser.id),
-    // Not { status: "PUBLISHED" }. A path a teacher builds for their class is
-    // published - the class has to be able to open it - so that filter
-    // recommended one class's private work to the whole site. pathsVisibleTo is
-    // the rule the catalogue and the slug lookup read: the catalogue, plus the
-    // paths built for the classes this reader is in or teaches.
-    prisma.path.findMany({
-      where: pathsVisibleTo(authUser.id),
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        category: true,
-        difficulty: true,
-        estimatedHours: true,
-        _count: {
-          select: {
-            lessons: { where: PUBLISHED_PATH_LESSON },
-            progress: { where: { status: "COMPLETED" } },
-          },
-        },
-        progress: { where: { userId: authUser.id }, select: { status: true }, take: 1 },
-      },
-    }),
-    prisma.userPlacementResult.findUnique({
-      where: { userId: authUser.id },
-      select: { devScore: true, cybersecScore: true, networkScore: true },
-    }),
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "COMPLETED" },
-      select: { lesson: { select: { category: true } } },
-      orderBy: { completedAt: "desc" },
-      take: 20,
-    }),
+    dashboardRepository.listPathsToRank(authUser.id),
+    placementRepository.findScoresFor(authUser.id),
+    dashboardRepository.recentCompletedCategories(authUser.id),
     revisionsEnabled(authUser.id),
     // What they said they came for at sign-up, step 3.
     savedLearningAnswers(authUser.id),
@@ -197,59 +128,22 @@ async function DashboardContent(): Promise<React.ReactElement> {
             NETWORK: placementResult.networkScore,
           }
         : null,
-      recentCategories: recentLessons.map((row) => row.lesson.category),
+      recentCategories,
       goals: learningAnswers.goals ?? [],
     },
   );
 
   // Its lessons and modules, to draw the module the reader is in; and which
   // of those lessons are done. Only for the one path that leads.
-  const leadDetail = lead
-    ? await prisma.path.findUnique({
-        where: { id: lead.id },
-        select: {
-          modules: {
-            orderBy: { position: "asc" },
-            select: { id: true, position: true, title: true },
-          },
-          lessons: {
-            orderBy: { position: "asc" },
-            // The path page's missions: the mission card must not send the
-            // reader to a draft or an archived lesson, which is a 404.
-            where: PUBLISHED_PATH_LESSON,
-            select: {
-              moduleId: true,
-              lesson: {
-                select: {
-                  id: true,
-                  slug: true,
-                  title: true,
-                  description: true,
-                  estimatedMinutes: true,
-                  xpReward: true,
-                },
-              },
-            },
-          },
-        },
-      })
-    : null;
+  const leadDetail = lead ? await dashboardRepository.findLeadPath(lead.id) : null;
   const leadLessonIds = leadDetail?.lessons.map((pl) => pl.lesson.id) ?? [];
   // And which the placement test waived: the mission passes over them, as
   // "Commencer" on the path's page does. (An empty list costs no query.)
   const [completedInLead, waivedInLead] = await Promise.all([
-    leadLessonIds.length > 0
-      ? prisma.userLessonProgress
-          .findMany({
-            where: { userId: authUser.id, status: "COMPLETED", lessonId: { in: leadLessonIds } },
-            select: { lessonId: true },
-          })
-          .then((rows) => new Set(rows.map((row) => row.lessonId)))
-      : new Set<string>(),
+    dashboardRepository.completedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
     lessonRepository.findWaivedLessonIds(authUser.id, leadLessonIds).then((ids) => new Set(ids)),
   ]);
 
-  const resume = inProgressRows[0]?.lesson ?? null;
   const mission = planMission({
     lead: lead && leadDetail ? { ...lead, ...leadDetail } : null,
     completedInLead,
@@ -284,12 +178,12 @@ async function DashboardContent(): Promise<React.ReactElement> {
   }
 
   const stats = dashboardStats({
-    completedThisMonth,
-    completedTotal,
+    completedThisMonth: completed.thisMonth,
+    completedTotal: completed.total,
     streakDays,
     longestStreak: dbUser?.longestStreak ?? 0,
-    badgesThisMonth,
-    badgeTotal,
+    badgesThisMonth: badges.thisMonth,
+    badgeTotal: badges.total,
     certificateCount,
     certifiablePaths,
   });
@@ -363,7 +257,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
         {friends.hasFriends && <FriendsActivity items={friends.items} now={now.getTime()} />}
 
         {/* ── Where the reader stands ──────────────────────────────────────── */}
-        <Standing stats={stats} badges={badgeRows} badgeTotal={badgeTotal} />
+        <Standing stats={stats} badges={badges.recent} badgeTotal={badges.total} />
       </div>
     </div>
   );

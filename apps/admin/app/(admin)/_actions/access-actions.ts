@@ -172,11 +172,26 @@ export async function resetMfaAction(
     return { error: "Les facteurs de ce compte n'ont pas pu être lus. Rien n'a été retiré." };
   }
   if (found.length === 0) return { error: "Ce compte n'a pas de double authentification." };
+  // An enrolment started and never finished asks for no code at sign-in, so
+  // nobody is stuck behind it: the next activation clears it (the site's panel
+  // unenrols the unverified factors first). Resetting it would tell the owner
+  // their second factor was removed, and the alert mail would be false.
+  if (!found.some((factor) => factor.verified)) {
+    return {
+      error:
+        "Ce compte n'a pas de double authentification active : une activation commencée puis abandonnée ne bloque personne, et la prochaine activation la remplace. Rien n'a été retiré, aucun e-mail n'est parti.",
+    };
+  }
 
   // One at a time, so that a failure halfway is reported for what it is: some
-  // factors gone, some not. Retrying picks up where it stopped.
+  // factors gone, some not. Retrying picks up where it stopped - which holds
+  // only while a verified factor is left to retry on: the page offers the reset
+  // for one, and the guard above refuses it without one. So the unfinished
+  // enrolments go first, and a failure halfway never strands the verified factor
+  // that was the reason to reset.
   const removed: typeof found = [];
-  for (const factor of found) {
+  const unfinishedFirst = [...found].sort((a, b) => Number(a.verified) - Number(b.verified));
+  for (const factor of unfinishedFirst) {
     try {
       const { error } = await supabase.auth.admin.mfa.deleteFactor({
         id: factor.id,

@@ -48,6 +48,7 @@ import { BlockEditor } from "./block-editor/block-editor";
 import { MDX_EDITOR_THEME, mdxEditorTheme } from "./mdx-editor-theme";
 import {
   clampSplit,
+  opensSplit,
   readStoredSplit,
   SPLIT_DEFAULT,
   SPLIT_MAX,
@@ -1082,6 +1083,13 @@ export function MdxEditorPanel({
   useEffect(() => {
     const stored = readStoredSplit();
     if (stored !== null) setSplitPct(stored);
+  }, []);
+  // A narrow panel (a phone, a tablet upright) opens on the editor alone: the
+  // two side by side are a sliver each. Measured once, as it mounts; the SPLIT
+  // button is still there for whoever wants both.
+  useEffect(() => {
+    const width = gridRef.current?.getBoundingClientRect().width ?? 0;
+    if (!opensSplit(width)) setSplit(false);
   }, []);
   const moveSplit = useCallback((next: number, keep: boolean) => {
     const clamped = clampSplit(next);

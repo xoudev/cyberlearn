@@ -31,3 +31,4 @@ export * from "./schemas/incident-story.schema.js";
 export * from "./schemas/jwt-lab.schema.js";
 export * from "./schemas/password-lab.schema.js";
 export * from "./schemas/review-cards.schema.js";
+export * from "./schemas/friends-activity.schema.js";

@@ -72,14 +72,6 @@
 .trn .pg-eyebrow b {
   color: var(--trn-accent);
 }
-/* A challenge's crumb has four segments and a tournament's title in it: on a
-   phone it wraps rather than running off the page. */
-.trn .pg-crumb {
-  flex-wrap: wrap;
-  row-gap: 4px;
-  max-width: 100%;
-}
-
 /* ── Shared pieces ──────────────────────────────────────────────────────── */
 
 .trn-ico {

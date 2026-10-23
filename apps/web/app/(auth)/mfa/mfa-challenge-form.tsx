@@ -1,7 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import {
+  MFA_RECOURSE_HINT,
+  MFA_RECOURSE_PATH,
+  MFA_RECOURSE_PROMPT,
+} from "@cyberlearn/lib/auth/mfa-recourse";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { OtpCodeInput, useOtpAutoSubmit } from "@cyberlearn/ui";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
@@ -92,10 +98,26 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
         labelClassName={styles.label}
         inputClassName={[styles.input, styles.codeInput].join(" ")}
       />
-      {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
+      {/* The code leaves on the sixth digit, with no click: a refusal has to be
+          announced by itself, or somebody who cannot see it never learns the
+          sign-in failed. */}
+      {error ? (
+        <p className={[styles.message, styles.error].join(" ")} role="alert">
+          {error}
+        </p>
+      ) : null}
       <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Valider le code"}
       </button>
+      {/* Without the phone there is no code to type, and the team can remove the
+          factor. The contact form is outside the second-factor gate, so this
+          does not bring the person back here. */}
+      <div className={styles.recourse}>
+        <Link className={styles.link} href={MFA_RECOURSE_PATH}>
+          {MFA_RECOURSE_PROMPT}
+        </Link>
+        <p className={styles.finePrint}>{MFA_RECOURSE_HINT}</p>
+      </div>
       <button
         className={styles.link}
         type="button"

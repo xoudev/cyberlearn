@@ -1,4 +1,4 @@
-import { CATALOGUE_LESSON, CATALOGUE_PATH, prisma } from "@cyberlearn/db";
+import { placementRepository } from "@cyberlearn/db";
 import {
   PLACEMENT_TEST_PASSED_EVENT,
   computePlacementScores,
@@ -75,17 +75,9 @@ function optionsFrom(value: unknown): PlacementOption[] {
  * away. "taken" once they have a result: the test is taken once.
  */
 export async function placementTestFor(userId: string): Promise<PlacementTestState> {
-  const existing = await prisma.userPlacementResult.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (existing) return { status: "taken" };
+  if (await placementRepository.hasResult(userId)) return { status: "taken" };
 
-  const rows = await prisma.placementQuestion.findMany({
-    where: { isActive: true },
-    select: { id: true, category: true, difficulty: true, question: true, options: true },
-    orderBy: [{ category: "asc" }, { orderIndex: "asc" }],
-  });
+  const rows = await placementRepository.listActiveQuestions();
   const questions = rows.flatMap((row) =>
     isPlacementCategory(row.category)
       ? [
@@ -132,20 +124,13 @@ export async function submitPlacementFor(
   userId: string,
   input: unknown,
 ): Promise<PlacementSubmitResult> {
-  const existing = await prisma.userPlacementResult.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (existing) return { ok: false, reason: "taken" };
+  if (await placementRepository.hasResult(userId)) return { ok: false, reason: "taken" };
 
   const parsed = placementSubmissionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: "invalid", error: PLACEMENT_INVALID };
 
   const { answers } = parsed.data;
-  const questions = await prisma.placementQuestion.findMany({
-    where: { id: { in: answers.map((a) => a.questionId) }, isActive: true },
-    select: { id: true, category: true, correctOptionId: true },
-  });
+  const questions = await placementRepository.findAnswerKey(answers.map((a) => a.questionId));
   const byId = new Map(questions.map((q) => [q.id, q]));
 
   const results = answers.flatMap((answer) => {
@@ -165,52 +150,26 @@ export async function submitPlacementFor(
     (category) => mastered[category],
   );
 
-  const lessonsToWaive =
-    masteredCategories.length > 0
-      ? await prisma.lesson.findMany({
-          where: {
-            category: { in: masteredCategories },
-            difficulty: { in: [...WAIVED_DIFFICULTIES] },
-            // The catalogue only. A placement test waives lessons someone has
-            // shown they do not need; a class's own material is not something
-            // the platform can decide they already know, and this runs at
-            // onboarding, before they are in any class.
-            ...CATALOGUE_LESSON,
-          },
-          select: { id: true },
-        })
-      : [];
+  // The catalogue's lessons only: the repository says why.
+  const lessonsToWaive = await placementRepository.findLessonIdsToWaive(
+    masteredCategories,
+    WAIVED_DIFFICULTIES,
+  );
 
-  await prisma.$transaction([
-    prisma.userPlacementResult.create({
-      data: {
-        userId,
-        devScore: scores.devScore,
-        cybersecScore: scores.cybersecScore,
-        networkScore: scores.networkScore,
-      },
-    }),
-    ...lessonsToWaive.map((lesson) =>
-      prisma.userSkipWaiver.upsert({
-        where: { userId_lessonId: { userId, lessonId: lesson.id } },
-        create: { userId, lessonId: lesson.id },
-        update: {},
-      }),
-    ),
-  ]);
+  await placementRepository.saveResult(
+    userId,
+    {
+      devScore: scores.devScore,
+      cybersecScore: scores.cybersecScore,
+      networkScore: scores.networkScore,
+    },
+    lessonsToWaive,
+  );
 
-  let recommendedPathSlug: string | null = null;
   const topCategory = masteredCategories.length > 0 ? topMasteredCategory(scores) : null;
-  if (topCategory) {
-    // A catalogue path: a class's own is not something to recommend to a
-    // newcomer who is in no class yet.
-    const path = await prisma.path.findFirst({
-      where: { category: topCategory, ...CATALOGUE_PATH },
-      orderBy: { difficulty: "asc" },
-      select: { slug: true },
-    });
-    recommendedPathSlug = path?.slug ?? null;
-  }
+  const recommendedPathSlug = topCategory
+    ? await placementRepository.findPathSlugToRecommend(topCategory)
+    : null;
 
   // The badge reads the result just stored, so it comes after the transaction.
   if (masteredCategories.length > 0) {

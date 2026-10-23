@@ -49,7 +49,33 @@ const PROFILE = {
   preferences: null,
   badges: [{ badge: { rarity: "COMMON" } }],
   lessonProgress: [],
+  counts: { lessons: 0 },
 };
+
+/**
+ * Every prop bag in a rendered element tree, to find the one a component was
+ * given. Descends into plain objects too: the tabs' panels are an object of
+ * elements.
+ */
+function collectProps(
+  node: unknown,
+  out: Record<string, unknown>[] = [],
+): Record<string, unknown>[] {
+  if (Array.isArray(node)) {
+    for (const child of node) collectProps(child, out);
+  } else if (typeof node === "object" && node !== null && !(node instanceof Date)) {
+    // An element has `props`; the shape is checked before the cast is relied on.
+    const props = (node as { props?: unknown }).props;
+    if (typeof props === "object" && props !== null) {
+      // Cast: `props` was narrowed to a non-null object just above, keys unknown.
+      out.push(props as Record<string, unknown>);
+      for (const value of Object.values(props)) collectProps(value, out);
+    } else {
+      for (const value of Object.values(node)) collectProps(value, out);
+    }
+  }
+  return out;
+}
 
 /** Lets every pending promise callback run. */
 async function settle(): Promise<void> {
@@ -86,5 +112,36 @@ describe("the profile page", () => {
     finish(COLLECTION);
     await page;
     expect(m.findProfile).toHaveBeenCalledWith("u1");
+  });
+
+  it("counts the lessons completed from the repository, not from the twenty it lists", async () => {
+    // Thirty-five lessons completed; the repository lists the twenty latest.
+    m.findProfile.mockResolvedValue({
+      ...PROFILE,
+      counts: { lessons: 35 },
+      lessonProgress: Array.from({ length: 20 }, (_, i) => ({
+        lessonId: `l${String(i)}`,
+        completedAt: new Date("2026-10-01T10:00:00Z"),
+        lesson: {
+          title: `Leçon ${String(i)}`,
+          slug: `l${String(i)}`,
+          category: "DEV",
+          xpReward: 10,
+        },
+      })),
+    });
+
+    const tree = await ProfilePage();
+    const props = collectProps(tree);
+
+    // The Activité tab's counter and the "Leçons terminées" tile.
+    const tabs = props.find((bag) => "counts" in bag && "panels" in bag);
+    expect(tabs?.counts).toMatchObject({ activite: 35 });
+    const tile = props.find((bag) => bag.label === "Leçons");
+    expect(JSON.stringify(collectProps(tile?.children).map((bag) => bag.children))).toContain("35");
+    // The list says it stops short.
+    const feed = props.find((bag) => "lessons" in bag && "total" in bag);
+    expect(feed?.total).toBe(35);
+    expect(feed?.lessons).toHaveLength(20);
   });
 });

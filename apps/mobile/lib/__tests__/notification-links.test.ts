@@ -127,9 +127,67 @@ describe("inAppRouteFor", () => {
     expect(tapRoute("/dashboard?rappel=1")).toEqual({ pathname: "/revisions" });
     // The older reminders pointed at the site's revisions page.
     expect(inAppRouteFor("/revisions")).toEqual({ pathname: "/revisions" });
-    expect(inAppRouteFor("/dashboard")).toBeNull();
+    // Any other query is a window over the site's dashboard that the Home tab
+    // has no counterpart of.
     expect(inAppRouteFor("/dashboard?settings=preferences")).toBeNull();
     expect(inAppRouteFor("/dashboard?nonrappel=1")).toBeNull();
+  });
+
+  it("opens the Home tab for the site's dashboard, and every screen an announcement can name", () => {
+    expect(inAppRouteFor("/dashboard")).toEqual({ pathname: "/home" });
+    expect(inAppRouteFor("/dashboard/")).toEqual({ pathname: "/home" });
+    expect(inAppRouteFor("/paths")).toEqual({ pathname: "/paths" });
+    expect(inAppRouteFor("/leaderboard")).toEqual({ pathname: "/leaderboard" });
+    expect(inAppRouteFor("/forum")).toEqual({ pathname: "/forum" });
+    expect(inAppRouteFor("/support")).toEqual({ pathname: "/support" });
+    expect(inAppRouteFor("/locker")).toEqual({ pathname: "/locker" });
+    expect(inAppRouteFor("/changelog")).toEqual({ pathname: "/changelog" });
+    expect(inAppRouteFor("/wrapped")).toEqual({ pathname: "/wrapped" });
+    // The glossary's French address, the screen's English one.
+    expect(inAppRouteFor("/glossaire")).toEqual({ pathname: "/glossary" });
+    expect(tapRoute("/paths")).toEqual({ pathname: "/paths" });
+  });
+
+  it("opens a section of the forum, a thread and a challenge on their own screens", () => {
+    expect(inAppRouteFor("/forum/reseau")).toEqual({
+      pathname: "/forum/[category]",
+      params: { category: "reseau" },
+    });
+    expect(inAppRouteFor("/forum/reseau/")).toEqual({
+      pathname: "/forum/[category]",
+      params: { category: "reseau" },
+    });
+    // A thread is still a thread, one segment further.
+    expect(inAppRouteFor("/forum/reseau/subnetting")).toEqual({
+      pathname: "/forum/[category]/[topic]",
+      params: { category: "reseau", topic: "subnetting" },
+    });
+    expect(inAppRouteFor("/challenges/dossier-cache")).toEqual({
+      pathname: "/challenges/[slug]",
+      params: { slug: "dossier-cache" },
+    });
+    expect(inAppRouteFor("/challenges/dossier-cache/")).toEqual({
+      pathname: "/challenges/[slug]",
+      params: { slug: "dossier-cache" },
+    });
+    // A support request, by its id.
+    expect(inAppRouteFor("/support/55555555-5555-4555-8555-555555555555")).toEqual({
+      pathname: "/support/[id]",
+      params: { id: "55555555-5555-4555-8555-555555555555" },
+    });
+  });
+
+  it("leads nowhere for the addresses beneath these pages that the app has no screen for", () => {
+    expect(inAppRouteFor("/paths/reseau-bases/modules/2")).toBeNull();
+    expect(inAppRouteFor("/leaderboard/amis")).toBeNull();
+    expect(inAppRouteFor("/support/7f1d")).toBeNull();
+    expect(inAppRouteFor("/support/nouveau")).toBeNull();
+    expect(inAppRouteFor("/locker/frames")).toBeNull();
+    expect(inAppRouteFor("/forum/Reseau")).toBeNull();
+    expect(inAppRouteFor("/challenges/dossier cache")).toBeNull();
+    expect(inAppRouteFor("/glossaire/terme")).toBeNull();
+    expect(inAppRouteFor("/changelog/3-6")).toBeNull();
+    expect(inAppRouteFor("/wrapped/2026")).toBeNull();
   });
 
   it("opens the certificates sub-tab of the profile, for new notices and old ones", () => {
