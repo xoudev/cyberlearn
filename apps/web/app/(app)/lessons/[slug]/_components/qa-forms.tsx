@@ -6,6 +6,7 @@ import {
   postAnswerAction,
   acceptAnswerAction,
   upvoteAnswerAction,
+  type QaActionResult,
 } from "../_actions/qa-actions";
 import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 
@@ -23,8 +24,17 @@ export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and takes the lesson with it. It is said in the form
+    // instead, with what was typed kept.
     startTransition(async () => {
-      const res = await postQuestionAction(lessonId, title, content);
+      let res: QaActionResult;
+      try {
+        res = await postQuestionAction(lessonId, title, content);
+      } catch {
+        setError("Question non envoyée, réessaie.");
+        return;
+      }
       if (!res.success) {
         setError(res.error ?? "Erreur.");
         return;
@@ -173,7 +183,13 @@ export function PostAnswerForm({ questionId }: { questionId: string }): React.JS
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await postAnswerAction(questionId, content);
+      let res: QaActionResult;
+      try {
+        res = await postAnswerAction(questionId, content);
+      } catch {
+        setError("Réponse non envoyée, réessaie.");
+        return;
+      }
       if (!res.success) {
         setError(res.error ?? "Erreur.");
         return;
@@ -319,10 +335,15 @@ export function UpvoteButton({
   function handleUpvote() {
     if (voted || isPending) return;
     startTransition(async () => {
-      const res = await upvoteAnswerAction(answerId, lessonSlug);
-      if (res.success) {
-        setCount((c) => c + 1);
-        setVoted(true);
+      try {
+        const res = await upvoteAnswerAction(answerId, lessonSlug);
+        if (res.success) {
+          setCount((c) => c + 1);
+          setVoted(true);
+        }
+      } catch {
+        // The vote did not leave: the button is free again, one more click
+        // tries again. The failure would otherwise replace the lesson page.
       }
     });
   }

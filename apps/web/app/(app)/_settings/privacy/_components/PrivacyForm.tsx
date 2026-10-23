@@ -87,8 +87,17 @@ export function PrivacyForm({
     fd.set("leaderboardVisibility", visibility);
     fd.set("publicProfile", String(publicProfile));
     fd.set("friendsLeaderboard", String(friendsBoard));
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and replaces the page under the drawer. It is said in a
+    // toast instead, and the choices stay unsaved on the form.
     startTransition(async () => {
-      const res = await updatePrivacyAction({}, fd);
+      let res: Awaited<ReturnType<typeof updatePrivacyAction>>;
+      try {
+        res = await updatePrivacyAction({}, fd);
+      } catch {
+        toast.error("Confidentialité non enregistrée, réessaie.");
+        return;
+      }
       if (res.success) {
         setSaved({ visibility, publicProfile, friendsBoard });
         toast.success("Confidentialité enregistrée");
