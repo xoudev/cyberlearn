@@ -330,10 +330,12 @@ export function UpvoteButton({
 }): React.JSX.Element {
   const [count, setCount] = useState(upvotes);
   const [voted, setVoted] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleUpvote() {
     if (voted || isPending) return;
+    setFailed(false);
     startTransition(async () => {
       try {
         const res = await upvoteAnswerAction(answerId, lessonSlug);
@@ -342,44 +344,60 @@ export function UpvoteButton({
           setVoted(true);
         }
       } catch {
-        // The vote did not leave: the button is free again, one more click
-        // tries again. The failure would otherwise replace the lesson page.
+        // The vote did not leave: the person is told and the button is free
+        // again, one more click tries again. The failure would otherwise
+        // replace the lesson page.
+        setFailed(true);
       }
     });
   }
 
   return (
-    <button
-      type="button"
-      disabled={voted || isPending}
-      onClick={handleUpvote}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 4,
-        padding: "4px 8px",
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        background: "transparent",
-        border: `1px solid ${voted ? "rgba(0,36,255,0.4)" : "var(--color-border-subtle)"}`,
-        color: voted ? "var(--color-info)" : "var(--color-text-muted)",
-        cursor: voted ? "default" : "pointer",
-      }}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <>
+      {failed && (
+        <span
+          role="alert"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-category-cybersec)",
+          }}
+        >
+          Vote non enregistré, réessaie.
+        </span>
+      )}
+      <button
+        type="button"
+        disabled={voted || isPending}
+        onClick={handleUpvote}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 8px",
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          background: "transparent",
+          border: `1px solid ${voted ? "rgba(0,36,255,0.4)" : "var(--color-border-subtle)"}`,
+          color: voted ? "var(--color-info)" : "var(--color-text-muted)",
+          cursor: voted ? "default" : "pointer",
+        }}
       >
-        <path d="M8 13V3M3 8l5-5 5 5" />
-      </svg>
-      {count}
-    </button>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M8 13V3M3 8l5-5 5 5" />
+        </svg>
+        {count}
+      </button>
+    </>
   );
 }
 
