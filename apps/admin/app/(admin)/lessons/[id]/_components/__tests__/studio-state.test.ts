@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  answersAfterEdit,
   autosaveLabel,
   draftContentOf,
   fieldsOf,
@@ -93,6 +94,19 @@ describe("studioReducer", () => {
       value: "## Ports\n\nAutre.",
     });
     expect(state).toMatchObject({ conflict: "lesson", error: "La leçon a changé." });
+  });
+
+  it("forgets the go-ahead given to the quizzes once the content is edited", () => {
+    const told = { force: true, quizzesSeen: true };
+    // The content is what the quizzes were read from: a lesson conflict that
+    // stands after the edit must not publish the new ones unannounced.
+    expect(answersAfterEdit(told, "contentMdx")).toEqual({ force: true, quizzesSeen: false });
+    // The other fields are not quizzes, and the lesson's own go-ahead stays.
+    expect(answersAfterEdit(told, "title")).toEqual(told);
+    expect(answersAfterEdit({ force: false, quizzesSeen: false }, "contentMdx")).toEqual({
+      force: false,
+      quizzesSeen: false,
+    });
   });
 
   it("puts what was published in the fields, unless more was typed meanwhile", () => {

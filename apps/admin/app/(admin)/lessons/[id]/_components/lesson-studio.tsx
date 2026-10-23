@@ -24,6 +24,7 @@ import {
   saveLessonDraftAction,
 } from "../actions";
 import {
+  answersAfterEdit,
   autosaveLabel,
   draftContentOf,
   fieldsOf,
@@ -31,6 +32,7 @@ import {
   sameContent,
   studioReducer,
   VERSION_SOURCE_LABEL,
+  type PublishAnswers,
   type StudioDraftContent,
   type StudioField,
   type StudioFields,
@@ -56,14 +58,6 @@ import {
  * Every field is controlled, through studioReducer, and there is no <form>:
  * nothing for React 19 to reset once an action has answered.
  */
-
-/** What a publish has been told it may go past. */
-interface PublishAnswers {
-  /** The lesson changed since the draft was started. */
-  force: boolean;
-  /** Quizzes that already have answers change. */
-  quizzesSeen: boolean;
-}
 
 export interface StudioVersion {
   id: string;
@@ -242,6 +236,9 @@ export function LessonStudio({
   useUnsavedChangesGuard(autosave.dirty, LEAVE_WARNING);
 
   const edit = (field: StudioField, value: string): void => {
+    // « Publier quand même » on a quiz warning went with the content then:
+    // a lesson conflict that outlives this edit must not carry it over.
+    told.current = answersAfterEdit(told.current, field);
     dispatch({ type: "edit", field, value });
   };
 

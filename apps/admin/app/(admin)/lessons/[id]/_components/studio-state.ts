@@ -173,6 +173,30 @@ function studioFieldErrors(
   return out;
 }
 
+/** What a publish has been told it may go past. */
+export interface PublishAnswers {
+  /** The lesson changed since the draft was started. */
+  force: boolean;
+  /** Quizzes that already have answers change. */
+  quizzesSeen: boolean;
+}
+
+/**
+ * What a publish has been told, once `field` is edited. The go-ahead given to
+ * the quizzes was given for the content as it was when they were listed: typed
+ * in, the content may change other quizzes than those the author read about,
+ * and the next publish has to be told again. The lesson's own conflict is
+ * about the live lesson, which an edit does not touch.
+ *
+ * The reducer takes the warning down on the same edit (studioReducer, "edit");
+ * this is the consent it was answered with.
+ */
+export function answersAfterEdit(answers: PublishAnswers, field: StudioField): PublishAnswers {
+  return field === "contentMdx" && answers.quizzesSeen
+    ? { ...answers, quizzesSeen: false }
+    : answers;
+}
+
 export function studioReducer(state: StudioState, action: StudioAction): StudioState {
   switch (action.type) {
     case "edit": {
