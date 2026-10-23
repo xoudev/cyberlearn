@@ -32,6 +32,7 @@ import { mirrorInboxToDevice, onDeviceNotificationTapped } from "@/lib/device-no
 import { tapRoute } from "@/lib/notification-links";
 import { bindOfflineToAccount, MODULES_KEY as OFFLINE_MODULES_KEY } from "@/lib/offline-store";
 import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
+import { QUERY_DEFAULT_OPTIONS } from "@/lib/query-defaults";
 import { isRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { ensureUserRow, markNotificationRead, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
@@ -45,19 +46,7 @@ void SplashScreen.preventAutoHideAsync();
 // what /api/mobile/* returns is already worded by the site's server.
 configureZodLocale();
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 120_000,
-      gcTime: 10 * 60_000,
-      // Off by default: a query that wants it asks (the day's recall does), now
-      // that the app's coming back to the front is what "focus" means.
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-  },
-});
+const queryClient = new QueryClient({ defaultOptions: QUERY_DEFAULT_OPTIONS });
 bindFocusToAppState(AppState);
 
 /** Mirrors fresh inbox items to the device notification tray (60s polling). */

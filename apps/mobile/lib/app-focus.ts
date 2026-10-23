@@ -17,6 +17,12 @@ export interface AppStateSource {
  * comes back, if its data is stale by then (the client's `staleTime`); one
  * that does not opt in is left as it was, the client's default being off.
  *
+ * A poll (`refetchInterval`) is the other thing that reads the focus: it only
+ * runs while the app counts as focused, so with this binding every poll would
+ * stop as the app leaves the front, the inbox's one included, which the
+ * phone's tray mirrors. The client's `refetchIntervalInBackground`
+ * (lib/query-defaults.ts) keeps them running, as they did before.
+ *
  * Called once, when the app starts; a second call replaces the first.
  */
 export function bindFocusToAppState(appState: AppStateSource): void {

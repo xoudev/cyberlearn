@@ -1,6 +1,7 @@
-import { QueryClient, QueryObserver } from "@tanstack/react-query";
+import { environmentManager, QueryClient, QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bindFocusToAppState, type AppStateSource } from "../app-focus";
+import { QUERY_DEFAULT_OPTIONS } from "../query-defaults";
 
 /** A stand-in for react-native's AppState: the test says when the status changes. */
 function fakeAppState(): { source: AppStateSource; emit: (status: string) => void } {
@@ -28,6 +29,7 @@ describe("the app coming back to the front", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    environmentManager.setIsServer(() => typeof window === "undefined");
   });
 
   /** The app's own client settings: two minutes fresh, no refetch on focus unless asked. */
@@ -38,9 +40,7 @@ describe("the app coming back to the front", () => {
     stop: () => void;
   } {
     const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false, staleTime: 120_000, refetchOnWindowFocus: false },
-      },
+      defaultOptions: { queries: { ...QUERY_DEFAULT_OPTIONS.queries, retry: false } },
     });
     queryClient.mount();
     const { source, emit } = fakeAppState();
@@ -102,5 +102,54 @@ describe("the app coming back to the front", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(optedIn).toHaveBeenCalledTimes(1);
     stop();
+  });
+
+  it("keeps a poll running while the app is away, as it did before the focus was bound", async () => {
+    // React Native defines `window`; Node does not, and TanStack then treats
+    // the run as a server and schedules no poll at all.
+    environmentManager.setIsServer(() => false);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { ...QUERY_DEFAULT_OPTIONS.queries, retry: false } },
+    });
+    queryClient.mount();
+    const { source, emit } = fakeAppState();
+    bindFocusToAppState(source);
+    // Focus is global to TanStack: start from the app in front.
+    emit("active");
+
+    // The inbox's own poll, with only the client's settings.
+    const inbox = vi.fn<() => Promise<string>>(() => Promise.resolve("inbox"));
+    // A poll that opted out of the background: what the client's setting overrides.
+    const optedOutPoll = vi.fn<() => Promise<string>>(() => Promise.resolve("poll"));
+    const watching = [
+      new QueryObserver(queryClient, {
+        queryKey: ["notifications"],
+        queryFn: inbox,
+        refetchInterval: 60_000,
+      }),
+      new QueryObserver(queryClient, {
+        queryKey: ["opted-out"],
+        queryFn: optedOutPoll,
+        refetchInterval: 60_000,
+        refetchIntervalInBackground: false,
+      }),
+    ].map((observer) => observer.subscribe(() => undefined));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(inbox).toHaveBeenCalledTimes(1);
+
+    emit("background");
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    // Five minutes away: five more reads, so the tray keeps mirroring the inbox.
+    expect(inbox).toHaveBeenCalledTimes(6);
+    // The control: without the setting, the binding stops the poll.
+    expect(optedOutPoll).toHaveBeenCalledTimes(1);
+
+    emit("active");
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(inbox).toHaveBeenCalledTimes(7);
+    expect(optedOutPoll).toHaveBeenCalledTimes(2);
+
+    for (const unsubscribe of watching) unsubscribe();
+    queryClient.unmount();
   });
 });
