@@ -246,6 +246,21 @@ faite en production avant cette version. La table qui la gardait,
 la conversion ne vivent plus que dans l'historique git
 (`packages/db/src/backfill-review-cards.ts`, avant sa suppression).
 
+**Fenêtre du déploiement : les deux exports RGPD échouent quelques minutes.**
+La migration part avant le nouveau code (voir « Ce qui part tout seul sur un
+merge »), et pendant ce temps le déploiement précédent lit encore
+`review_schedules_legacy` pour la section `reviewSchedules` de l'export. La
+table n'existe plus : la lecture échoue, et avec elle `/api/me/export` du site
+et l'export de la console (`/users/[id]/export`), en erreur 500 jusqu'à ce que
+le nouveau code serve. Rien ne se perd : l'export ne fait que lire, et le
+quota du jour est rendu à l'apprenant quand la construction échoue. On relance
+l'export une fois le déploiement Vercel passé. Ce déploiement n'écrit nulle part
+dans la table, et la suppression d'un compte passe par les clés étrangères :
+aucune autre route n'est touchée. À la différence des écritures de fin de leçon,
+que la vue absorbe, cette lecture n'est pas protégée ; la protéger aurait
+demandé de livrer le retrait de la lecture et la suppression de la table dans
+deux versions.
+
 Pour les versions de l'app installées avant les cartes, qui lisaient la file
 elles-mêmes, `review_schedules` reste une vue vide, bâtie sur `review_cards` :
 la suppression de la table n'y change rien. **La retirer est une décision à

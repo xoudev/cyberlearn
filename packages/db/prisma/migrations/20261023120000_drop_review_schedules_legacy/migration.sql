@@ -35,6 +35,18 @@
 -- view is a separate decision, for when no installed build still reads it
 -- (docs/MOBILE_PARITY.md).
 --
+-- Deployment window: this migration reaches the database a few minutes before
+-- the code that stops reading the table (migrate.yml races the Vercel build).
+-- Until then the previous deployment still runs
+-- reviewScheduleLegacyRepository.listForExport inside the GDPR export, so both
+-- export routes (/api/me/export on the site, the user export in the console)
+-- fail with a missing-table error, and succeed again once the new code serves.
+-- That read is the only one the previous deployment has on this table: it
+-- writes nothing to it (lesson completions write to the view, which absorbs
+-- them) and deleting an account goes through the foreign keys. The read is not
+-- shielded, unlike those writes: doing so would take the read removal and this
+-- drop in two releases (docs/DEPLOY.md).
+--
 -- No CASCADE: were anything else to depend on the table, this statement would
 -- fail and leave the migration unapplied, instead of dropping a dependent
 -- object nobody listed.

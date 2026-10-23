@@ -34,7 +34,7 @@ apps/marketing → Remotion renders for the Play Store listing
 packages/db   → Prisma schema, migrations, repositories
 packages/ui   → Design tokens CSS + brand components (XPBar, LevelBadge, etc.)
 packages/types → Zod schemas, shared TS types
-packages/lib  → Business logic (XP calc, SM-2, badge evaluator, auth guards)
+packages/lib  → Business logic (XP calc, Leitner review cards, badge evaluator, auth guards)
 packages/email → React Email templates
 packages/config → Shared ESLint, TSConfig, Biome configs
 content/      → MDX lessons and quizzes, versioned
