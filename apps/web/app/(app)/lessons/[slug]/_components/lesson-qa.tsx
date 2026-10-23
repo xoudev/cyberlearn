@@ -229,11 +229,16 @@ function QuestionCard({
           {question.content}
         </p>
 
+        {/* Wraps like the answers' row below: at 375 px the name, the date, the
+            count and "Signaler" no longer fit on one line, and the card
+            (overflow hidden) cut the button off instead. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: 12,
+            rowGap: 8,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "var(--color-text-muted)",

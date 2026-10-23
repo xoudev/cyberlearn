@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { getActiveBan, getRequestUser } from "@/lib/auth";
+import { appealStanding } from "@/lib/moderation/ban-appeal";
 import { ExportDataButton } from "@/app/(app)/_settings/data/_components/ExportDataButton";
 import { BanNotice } from "./_components/ban-notice";
 import styles from "./banned.module.css";
@@ -27,6 +28,10 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
   const ban = await getActiveBan();
   // Nothing in force: expired, lifted, or never banned at all.
   if (!ban) redirect("/dashboard");
+
+  // The appeal's ticket is behind the ban gate for its own author, so this is
+  // where the team's answer is read.
+  const appeal = await appealStanding({ userId: user.id, appealTicketId: ban.appealTicketId });
 
   const endsLabel = banTimeLeft(ban.expiresAt);
   const issuedOn = new Intl.DateTimeFormat("fr-FR", {
@@ -65,6 +70,7 @@ export default async function BannedPage(): Promise<React.JSX.Element> {
           endsLabel={endsLabel}
           alreadyAcknowledged={ban.acknowledgedAt !== null}
           alreadyAppealed={ban.appealTicketId !== null}
+          appeal={appeal}
         />
 
         {/* A ban closes the site, not the rights over what it holds (RGPD art.

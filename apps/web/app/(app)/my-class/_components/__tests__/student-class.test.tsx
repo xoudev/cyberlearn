@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -79,6 +80,19 @@ describe("StudentClass roster", () => {
     expect(html).not.toContain("Ajouter Alex");
     expect(html).not.toContain("Ajouter Anonyme");
     expect(html).not.toContain("Ajouter Moi");
+  });
+
+  it("keeps the button out of the name, which is clipped to one line", () => {
+    // The name has `overflow: hidden` for its ellipsis, and a clip also cuts
+    // the touch area the button grows on a phone: the button sits beside it.
+    const page = document.createElement("div");
+    page.innerHTML = render([member({ id: "s1", name: "Sam", friendship: "none" })]);
+    const button = page.querySelector(".add-friend-btn");
+    expect(button).not.toBeNull();
+    expect(button?.closest(".cls-person__name")).toBeNull();
+    const who = button?.closest(".cls-person__who");
+    expect(who).not.toBeNull();
+    expect(who?.querySelector(".cls-person__name")?.textContent).toContain("Sam");
   });
 
   it("says a request already sent", () => {

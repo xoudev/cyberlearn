@@ -87,7 +87,10 @@ describe("fileTicket", () => {
     m.checkContactForm.mockResolvedValue({ success: false, retryAfterSeconds: 30 });
     expect(await fileTicket({ userId: "user-1", ip: "x", fields: FIELDS })).toEqual({
       ok: false,
-      error: "Trop de demandes. Réessaie dans 30 secondes.",
+      // In minutes and in the register of the rest of the site: "dans 900
+      // secondes" is a sum to do, and "Réessayez" a switch to "vous" at the
+      // moment the person is stopped.
+      error: "Trop de demandes. Réessaie dans 1 minute.",
     });
     expect(m.create).not.toHaveBeenCalled();
   });

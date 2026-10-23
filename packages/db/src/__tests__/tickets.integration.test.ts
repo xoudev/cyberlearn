@@ -386,4 +386,115 @@ describe("tickets (integration, real DB)", () => {
       expect(await prisma.ticketNote.count({ where: { ticketId: doomed } })).toBe(0);
     });
   });
+
+  describe("what the requester's list counts as replies", () => {
+    it("counts the team's replies and leaves the requester's own follow-ups out", async () => {
+      if (!configured) return;
+      const own = await makeTicket(`Compte des réponses ${suffix}`, "OPEN");
+      try {
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Une précision de ma part.",
+        });
+        const before = await ticketRepository.findForUser(requester);
+        // Only the requester has written: nobody has answered.
+        expect(before.find((t) => t.id === own)?._count.messages).toBe(0);
+
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: staff,
+          fromStaff: true,
+          body: "Bien reçu.",
+        });
+        await ticketRepository.addMessage({
+          ticketId: own,
+          authorId: requester,
+          fromStaff: false,
+          body: "Merci.",
+        });
+        const after = await ticketRepository.findForUser(requester);
+        expect(after.find((t) => t.id === own)?._count.messages).toBe(1);
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: own } });
+      }
+    });
+  });
+
+  describe("a ban appeal's standing, for the person who filed it", () => {
+    async function makeAppeal(status: "OPEN" | "RESOLVED"): Promise<string> {
+      const ticket = await prisma.contactTicket.create({
+        data: {
+          userId: requester,
+          email: `demandeur-${suffix}@t.internal`,
+          subject: `Appel ${suffix}`,
+          theme: "BAN_APPEAL",
+          message: "Motif du bannissement : spam\n\n---\n\nJe conteste cette décision.",
+          status,
+        },
+        select: { id: true },
+      });
+      return ticket.id;
+    }
+
+    it("reads the status and no reply for an appeal nobody has answered", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        expect(await ticketRepository.findAppealFor(appeal, requester)).toEqual({
+          status: "OPEN",
+          reply: null,
+        });
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
+    });
+
+    it("reads the team's last answer, never the appellant's own messages", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: staff,
+          fromStaff: true,
+          body: "Première réponse.",
+        });
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: staff,
+          fromStaff: true,
+          body: "Après relecture, le bannissement est maintenu.",
+        });
+        // The appellant writes last: the answer is still the team's.
+        await ticketRepository.addMessage({
+          ticketId: appeal,
+          authorId: requester,
+          fromStaff: false,
+          body: "Je ne suis pas d'accord.",
+        });
+        await prisma.contactTicket.update({ where: { id: appeal }, data: { status: "RESOLVED" } });
+
+        const standing = await ticketRepository.findAppealFor(appeal, requester);
+        expect(standing?.status).toBe("RESOLVED");
+        expect(standing?.reply?.body).toBe("Après relecture, le bannissement est maintenu.");
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
+    });
+
+    it("refuses it to anyone else, and refuses a ticket that is not an appeal", async () => {
+      if (!configured) return;
+      const appeal = await makeAppeal("OPEN");
+      try {
+        expect(await ticketRepository.findAppealFor(appeal, stranger)).toBeNull();
+        // A request of the ordinary kind is not read through here.
+        expect(await ticketRepository.findAppealFor(ticketId, requester)).toBeNull();
+        expect(await ticketRepository.findAppealFor(randomUUID(), requester)).toBeNull();
+      } finally {
+        await prisma.contactTicket.delete({ where: { id: appeal } });
+      }
+    });
+  });
 });

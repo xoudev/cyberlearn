@@ -3,6 +3,7 @@ import {
   canEditPost,
   canRemovePost,
   postDraftProblem,
+  removalNotice,
   replyCountLabel,
   roleLabel,
   threadFromHref,
@@ -64,6 +65,27 @@ describe("canEditPost / canRemovePost", () => {
   it("offers nothing on a post already taken down", () => {
     expect(canEditPost(post({ mine: true, hidden: true }))).toBe(false);
     expect(canRemovePost(post({ mine: true, hidden: true }), true)).toBe(false);
+  });
+});
+
+describe("removalNotice", () => {
+  it("says nothing of a post that is up", () => {
+    expect(removalNotice(post())).toBeNull();
+    expect(removalNotice(post({ removal: null }))).toBeNull();
+  });
+
+  it("tells a withdrawal, a hold and a moderator's decision apart, as the site does", () => {
+    const withdrawn = removalNotice(post({ hidden: true, removal: "WITHDRAWN" }));
+    const held = removalNotice(post({ hidden: true, removal: "HELD" }));
+    const moderated = removalNotice(post({ hidden: true, removal: "MODERATED" }));
+
+    expect(withdrawn).toBe("Retiré : toi seul le vois");
+    expect(held).toBe("En attente de validation : toi seul le vois");
+    expect(moderated).toBe("Masqué par la modération : toi seul le vois");
+  });
+
+  it("reads a server that does not say why as a withdrawal, which is all it used to send", () => {
+    expect(removalNotice(post({ hidden: true }))).toBe("Retiré : toi seul le vois");
   });
 });
 

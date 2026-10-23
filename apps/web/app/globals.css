@@ -4957,6 +4957,18 @@ a:hover > .lesson-author-card {
 .cls-person__name a:hover {
   color: var(--color-brand-turquoise);
 }
+/* The name and, beside it, "Ajouter" (components/add-friend-chip.tsx). The name
+   alone is clipped to one line with an ellipsis; the button is outside that
+   clip, which would otherwise cut the touch area it grows on a phone. */
+.cls-person__who {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.cls-person__who > .add-friend-sent,
+.cls-person__who > .add-friend-mark {
+  flex: none;
+}
 .cls-person__meta {
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -6445,6 +6457,23 @@ a.fp-name:hover {
 .add-friend-btn:disabled {
   opacity: 0.55;
   cursor: progress;
+}
+
+/* The button is about 17px tall and 60px wide, a target a fingertip misses:
+   on the leaderboard it sits on a card whose whole surface is the link to a
+   profile, so a touch beside it opened the profile instead of sending the
+   request. On a touch screen its hit area grows to about 45px tall through a
+   pseudo-element, which belongs to the button, so the look and the layout do
+   not move. It stops 6px short of the name on either side (the 8px margin). */
+@media (pointer: coarse) {
+  .add-friend-btn {
+    position: relative;
+  }
+  .add-friend-btn::before {
+    content: "";
+    position: absolute;
+    inset: -14px -6px;
+  }
 }
 .add-friend-sent {
   margin-left: 8px;

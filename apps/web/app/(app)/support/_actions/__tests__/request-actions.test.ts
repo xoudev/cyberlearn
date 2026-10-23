@@ -45,7 +45,7 @@ describe("fileRequestAction", () => {
   });
 
   it("passes a refusal on, and refreshes nothing", async () => {
-    const refusal = { ok: false, error: "Trop de demandes. Réessaie dans 30 secondes." };
+    const refusal = { ok: false, error: "Trop de demandes. Réessaie dans 1 minute." };
     m.fileAccountTicket.mockResolvedValue(refusal);
     m.forwardedFor = null;
     m.requireRequestUser.mockResolvedValue({ id: "user-1" });

@@ -20,6 +20,7 @@ import {
   canRemovePost,
   forumDate,
   postDraftProblem,
+  removalNotice,
   roleLabel,
   type ForumPost,
 } from "@/lib/forum";
@@ -251,9 +252,13 @@ function PostCard({
         </View>
       </View>
 
-      {post.hidden ? (
-        <Text variant="micro" style={{ color: colors.danger }}>
-          Retiré : toi seul le vois
+      {removalNotice(post) !== null ? (
+        <Text
+          variant="micro"
+          // Held for a moderator is waiting, not gone: not drawn as a removal.
+          style={{ color: post.removal === "HELD" ? colors.warning : colors.danger }}
+        >
+          {removalNotice(post)}
         </Text>
       ) : null}
 

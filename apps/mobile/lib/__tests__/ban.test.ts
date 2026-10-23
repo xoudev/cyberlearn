@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { activeBanOf, appealProblem, banDurationLabel, type RawBanRow } from "../ban";
+import { appealView } from "@cyberlearn/lib/tickets/appeal";
+import {
+  activeBanOf,
+  appealPanelOf,
+  appealProblem,
+  banDurationLabel,
+  type RawBanRow,
+} from "../ban";
 
 const NOW = new Date("2026-09-24T12:00:00.000Z");
 
@@ -92,6 +99,55 @@ describe("a ban read from the database, on a phone in Paris", () => {
       expect(activeBanOf(rows, new Date("2026-09-24T13:00:00Z"))).toBeNull();
     } finally {
       process.env.TZ = previous;
+    }
+  });
+});
+
+describe("appealPanelOf", () => {
+  const refused = appealView({
+    status: "CLOSED",
+    reply: { body: "Maintenu.", createdAt: "2026-09-22T09:00:00.000Z" },
+  });
+
+  it("shows the standing the server gave, whatever else is known", () => {
+    expect(appealPanelOf({ standing: refused, failed: false, sentHere: false })).toEqual({
+      kind: "view",
+      view: refused,
+    });
+    // A later read that fails keeps the last good one in front.
+    expect(appealPanelOf({ standing: refused, failed: true, sentHere: true })).toEqual({
+      kind: "view",
+      view: refused,
+    });
+  });
+
+  it("does not call an unread appeal received while it loads", () => {
+    const panel = appealPanelOf({ standing: undefined, failed: false, sentHere: false });
+    expect(panel).toMatchObject({ kind: "unknown", canRetry: false });
+    expect(JSON.stringify(panel)).not.toContain("transmis");
+  });
+
+  it("does not call it received when the read failed, and offers to retry", () => {
+    const panel = appealPanelOf({ standing: undefined, failed: true, sentHere: false });
+    expect(panel).toMatchObject({ kind: "unknown", canRetry: true });
+    expect(JSON.stringify(panel)).not.toContain("transmis");
+  });
+
+  it("treats an appeal the server does not hold, though the ban says one was filed, as unread", () => {
+    expect(appealPanelOf({ standing: null, failed: false, sentHere: false })).toMatchObject({
+      kind: "unknown",
+      canRetry: true,
+    });
+  });
+
+  it("assumes received for an appeal sent a moment ago from this screen, and only then", () => {
+    for (const failed of [false, true]) {
+      const panel = appealPanelOf({ standing: undefined, failed, sentHere: true });
+      expect(panel.kind).toBe("view");
+      if (panel.kind === "view") {
+        expect(panel.view.stage).toBe("RECEIVED");
+        expect(panel.view.title).toBe("Appel transmis");
+      }
     }
   });
 });

@@ -9,6 +9,16 @@ const m = vi.hoisted(() => ({
   deleteById: vi.fn<(ticketId: string) => Promise<void>>(),
   checkContactForm:
     vi.fn<(ip: string) => Promise<{ success: boolean; retryAfterSeconds: number }>>(),
+  findAppealFor:
+    vi.fn<
+      (
+        ticketId: string,
+        viewerId: string,
+      ) => Promise<{
+        status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+        reply: { body: string; createdAt: Date } | null;
+      } | null>
+    >(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -18,11 +28,15 @@ vi.mock("@cyberlearn/db", () => ({
     attachAppeal: m.attachAppeal,
   },
   userRepository: { findEmailById: m.findEmailById },
-  ticketRepository: { create: m.create, deleteById: m.deleteById },
+  ticketRepository: {
+    create: m.create,
+    deleteById: m.deleteById,
+    findAppealFor: m.findAppealFor,
+  },
 }));
 vi.mock("@/lib/rate-limit", () => ({ checkContactForm: m.checkContactForm }));
 
-const { acknowledgeBan, appealBan } = await import("../ban-appeal");
+const { acknowledgeBan, appealBan, appealStanding, currentAppeal } = await import("../ban-appeal");
 
 const BAN = { id: "ban-1", reason: "Insultes répétées sur le forum.", appealTicketId: null };
 const MESSAGE = "Je pense qu'il y a eu une erreur : je citais le message de quelqu'un d'autre.";
@@ -59,6 +73,64 @@ describe("acknowledgeBan", () => {
   });
 });
 
+describe("appealStanding", () => {
+  it("reads nothing for a ban nobody appealed", async () => {
+    expect(await appealStanding({ userId: "user-1", appealTicketId: null })).toBeNull();
+    expect(m.findAppealFor).not.toHaveBeenCalled();
+  });
+
+  it("reads the ticket as the account asking, and gives its stage and the team's answer", async () => {
+    m.findAppealFor.mockResolvedValue({
+      status: "RESOLVED",
+      reply: {
+        body: "Après relecture, le bannissement est maintenu.",
+        createdAt: new Date("2026-10-20T09:30:00.000Z"),
+      },
+    });
+
+    const view = await appealStanding({ userId: "user-1", appealTicketId: "ticket-1" });
+
+    expect(m.findAppealFor).toHaveBeenCalledWith("ticket-1", "user-1");
+    expect(view).toMatchObject({
+      stage: "DECIDED",
+      title: "Appel examiné",
+      reply: {
+        body: "Après relecture, le bannissement est maintenu.",
+        createdAt: "2026-10-20T09:30:00.000Z",
+      },
+    });
+  });
+
+  it("says an appeal not yet answered is received", async () => {
+    m.findAppealFor.mockResolvedValue({ status: "OPEN", reply: null });
+    const view = await appealStanding({ userId: "user-1", appealTicketId: "ticket-1" });
+    expect(view).toMatchObject({ stage: "RECEIVED", reply: null });
+  });
+
+  it("reads nothing for a ticket that is gone or not theirs", async () => {
+    m.findAppealFor.mockResolvedValue(null);
+    expect(await appealStanding({ userId: "user-1", appealTicketId: "ticket-1" })).toBeNull();
+  });
+});
+
+describe("currentAppeal", () => {
+  it("has nothing for an account with no ban in force", async () => {
+    m.findActive.mockResolvedValue(null);
+    expect(await currentAppeal("user-1")).toBeNull();
+    expect(m.findAppealFor).not.toHaveBeenCalled();
+  });
+
+  it("reads the appeal filed against the ban in force", async () => {
+    m.findActive.mockResolvedValue({ ...BAN, appealTicketId: "ticket-9" });
+    m.findAppealFor.mockResolvedValue({ status: "IN_PROGRESS", reply: null });
+
+    const view = await currentAppeal("user-1");
+
+    expect(m.findAppealFor).toHaveBeenCalledWith("ticket-9", "user-1");
+    expect(view?.stage).toBe("IN_REVIEW");
+  });
+});
+
 describe("appealBan", () => {
   it("refuses when there is no ban to appeal", async () => {
     m.findActive.mockResolvedValue(null);
@@ -85,8 +157,10 @@ describe("appealBan", () => {
 
   it("refuses over the contact form's budget, counted on the caller's address", async () => {
     m.findActive.mockResolvedValue(BAN);
-    m.checkContactForm.mockResolvedValue({ success: false, retryAfterSeconds: 42 });
-    expect(await appeal()).toEqual({ error: "Trop de demandes. Réessaie dans 42 secondes." });
+    // The delay is told in minutes, like the ticket form's: "dans 599
+    // secondes" is a number to divide.
+    m.checkContactForm.mockResolvedValue({ success: false, retryAfterSeconds: 599 });
+    expect(await appeal()).toEqual({ error: "Trop de demandes. Réessaie dans 10 minutes." });
     expect(m.checkContactForm).toHaveBeenCalledWith("203.0.113.7");
     expect(m.create).not.toHaveBeenCalled();
   });

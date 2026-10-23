@@ -276,7 +276,14 @@ export const ticketRepository = {
     return ticket?.id ?? null;
   },
 
-  /** Someone's own tickets, most recently touched first. */
+  /**
+   * Someone's own tickets, most recently touched first.
+   *
+   * `_count.messages` is the team's replies alone: the list says "N réponses"
+   * on the site and in the app, and the requester's own follow-ups are not
+   * answers. Counting every turn made a clarification of their own read as
+   * the team having written back.
+   */
   async findForUser(userId: string) {
     return prisma.contactTicket.findMany({
       where: { userId },
@@ -288,7 +295,7 @@ export const ticketRepository = {
         status: true,
         createdAt: true,
         updatedAt: true,
-        _count: { select: { messages: true } },
+        _count: { select: { messages: { where: { fromStaff: true } } } },
       },
     });
   },
@@ -327,6 +334,33 @@ export const ticketRepository = {
         },
       },
     });
+  },
+
+  /**
+   * Where a ban appeal stands, for the person who filed it: the ticket's
+   * status and the team's last written answer, nothing else.
+   *
+   * The appeal's author is shut out of every page that shows a ticket - the
+   * ban gate sends them to /banned - so this is what /banned and the app's
+   * banned screen read to say what became of it. Scoped to the viewer and to
+   * the appeal theme, like findForRequester: knowing an id is not enough.
+   * Null for a ticket that is not theirs, not an appeal, or no longer there.
+   */
+  async findAppealFor(ticketId: string, viewerId: string) {
+    const ticket = await prisma.contactTicket.findFirst({
+      where: { id: ticketId, userId: viewerId, theme: "BAN_APPEAL" },
+      select: {
+        status: true,
+        messages: {
+          where: { fromStaff: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { body: true, createdAt: true },
+        },
+      },
+    });
+    if (ticket === null) return null;
+    return { status: ticket.status, reply: ticket.messages[0] ?? null };
   },
 
   /**

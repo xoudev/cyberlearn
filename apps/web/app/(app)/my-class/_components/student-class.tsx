@@ -158,14 +158,19 @@ export function StudentClass({
                   student looks for is their own, and finding it by counting
                   down a list of thirty is the part that made this a table. */}
               <span className="cls-person__rank">{String(i + 1).padStart(2, "0")}</span>
-              <span className="cls-person__name">
-                {p.visible && p.username !== null ? (
-                  <Link href={`/u/${p.username}`}>{p.name}</Link>
-                ) : (
-                  p.name
-                )}
-                {p.visible && p.isFriend && p.id !== userId && <FriendMark size={12} />}
-                {p.id === userId && <b className="cls-person__you">toi</b>}
+              {/* "Ajouter" sits beside the name, not inside it: the name is clipped
+                  to one line with an ellipsis, and a clip also cuts the touch
+                  area the button grows on a phone (add-friend-btn::before). */}
+              <span className="cls-person__who">
+                <span className="cls-person__name">
+                  {p.visible && p.username !== null ? (
+                    <Link href={`/u/${p.username}`}>{p.name}</Link>
+                  ) : (
+                    p.name
+                  )}
+                  {p.visible && p.isFriend && p.id !== userId && <FriendMark size={12} />}
+                  {p.id === userId && <b className="cls-person__you">toi</b>}
+                </span>
                 {p.visible &&
                   p.friendship !== null &&
                   p.friendship !== "friends" &&

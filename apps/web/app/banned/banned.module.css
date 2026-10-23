@@ -180,6 +180,47 @@
   color: var(--color-brand-turquoise);
 }
 
+/* An appeal examined and refused is not a success to be shown in green. */
+.sent[data-stage="DECIDED"] {
+  border-color: var(--border-strong);
+  background: rgba(111, 107, 153, 0.08);
+  color: var(--color-text-secondary);
+}
+
+.sentTitle {
+  margin: 0 0 6px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sentText {
+  margin: 0;
+}
+
+/* The team's last written answer, as the person would read it in a mail. */
+.reply {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid currentColor;
+  background: rgba(5, 4, 26, 0.5);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.replyMeta {
+  display: block;
+  margin-bottom: 6px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 /* ── The account's data ─────────────────────────────────────────────────── */
 
 .data {

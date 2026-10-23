@@ -96,7 +96,8 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   if (section) return { pathname: "/forum/[category]", params: { category: section } };
   const challenge = new RegExp(`^/challenges/${SLUG}$`, "u").exec(path)?.[1];
   if (challenge) return { pathname: "/challenges/[slug]", params: { slug: challenge } };
-  // A request of the support page: its id is a UUID.
+  // A request of the support page, which is where the team's answer to a help
+  // request lands: its id is a UUID.
   const ticket = /^\/support\/([0-9a-f-]{36})$/u.exec(path)?.[1];
   if (ticket) return { pathname: "/support/[id]", params: { id: ticket } };
   const lesson = new RegExp(`^/lessons/${SLUG}$`, "u").exec(path)?.[1];

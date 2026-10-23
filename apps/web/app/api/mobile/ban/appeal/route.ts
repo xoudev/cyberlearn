@@ -1,6 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { appealBan } from "@/lib/moderation/ban-appeal";
+import { appealBan, currentAppeal } from "@/lib/moderation/ban-appeal";
 import { identityFromBearer } from "../../_lib/auth";
+
+/**
+ * Where the banned mobile user's appeal stands: its stage in the site's words
+ * and the team's last written answer. The appeal's ticket is behind the ban
+ * gate for its own author, on the app as on the site, so this is the one way
+ * the app can show the answer. `appeal` is null when no appeal was filed, or
+ * the account has no ban in force.
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const user = await identityFromBearer(request);
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
+  }
+  return NextResponse.json({ ok: true, appeal: await currentAppeal(user.id) });
+}
 
 /**
  * The banned mobile user's appeal, through the site's service: one per ban,

@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   assign: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   addNote: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   sendTicketReplyEmail: vi.fn<(input: Record<string, unknown>) => Promise<void>>(),
+  notify: vi.fn<(input: Record<string, unknown>) => Promise<unknown>>(),
   revalidatePath: vi.fn<(path: string) => void>(),
   loggerError: vi.fn(),
 }));
@@ -21,6 +22,7 @@ vi.mock("@cyberlearn/db", () => ({
   },
   auditLogRepository: { record: m.record },
   banRepository: { lift: m.lift },
+  notificationRepository: { create: m.notify },
   ticketRepository: {
     addMessage: m.addMessage,
     resolveIfOpen: m.resolveIfOpen,
@@ -40,13 +42,13 @@ vi.mock("@/lib/learner-url", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 
-const { liftAppealedBanAction, assignTicketAction, addTicketNoteAction } = await import(
-  "../ticket-actions"
-);
+const { liftAppealedBanAction, replyToTicketAction, assignTicketAction, addTicketNoteAction } =
+  await import("../ticket-actions");
 
 /**
- * The console's ticket page: accepting an appeal from the ticket, giving a
- * ticket to an administrator, and the notes the team keeps for itself.
+ * The console's ticket page: replying to a ticket, accepting an appeal from
+ * the ticket, giving a ticket to an administrator, and the notes the team
+ * keeps for itself.
  */
 
 const TICKET = "55555555-5555-4555-8555-555555555555";
@@ -57,7 +59,9 @@ const ADMIN = "88888888-8888-4888-8888-888888888888";
 function appealTicket(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: TICKET,
+    userId: LEARNER,
     subject: "Appel d'une décision de bannissement",
+    theme: "BAN_APPEAL",
     email: "eleve@exemple.fr",
     user: {
       email: "eleve@exemple.fr",
@@ -67,6 +71,20 @@ function appealTicket(over: Record<string, unknown> = {}): Record<string, unknow
     appealFor: { id: BAN, userId: LEARNER },
     ...over,
   };
+}
+
+/** A help request of the ordinary kind, the requester's choice about e-mail given. */
+function question(emailNotifications: boolean | null): Record<string, unknown> {
+  return appealTicket({
+    subject: "Comment réinitialiser mon mot de passe ?",
+    theme: "QUESTION",
+    appealFor: null,
+    user: {
+      email: "eleve@exemple.fr",
+      displayName: "Élève",
+      preferences: emailNotifications === null ? null : { emailNotifications },
+    },
+  });
 }
 
 function form(fields: Record<string, string>): FormData {
@@ -89,6 +107,116 @@ beforeEach(() => {
   m.addMessage.mockResolvedValue({ ok: true });
   m.resolveIfOpen.mockResolvedValue(true);
   m.sendTicketReplyEmail.mockResolvedValue(undefined);
+  m.notify.mockResolvedValue({ id: "notification-1" });
+});
+
+describe("replyToTicketAction", () => {
+  beforeEach(() => {
+    // The status read for the e-mail comes after the reply landed.
+    m.ticketFindUnique.mockResolvedValue(appealTicket());
+  });
+
+  it("mails the team's reply on a ban appeal to somebody who turned e-mails off", async () => {
+    // The author of an appeal is shut out of the ticket's page and of the bell
+    // until the ban ends: the mail is the only way the decision reaches them.
+    m.ticketFindUnique.mockResolvedValue(
+      appealTicket({
+        user: {
+          email: "eleve@exemple.fr",
+          displayName: "Élève",
+          preferences: { emailNotifications: false },
+        },
+      }),
+    );
+    const result = await replyToTicketAction(
+      TICKET,
+      "Après relecture, le bannissement est maintenu.",
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail.mock.calls[0]?.[0]).toMatchObject({
+      to: "eleve@exemple.fr",
+      reply: "Après relecture, le bannissement est maintenu.",
+    });
+  });
+
+  it("mails a ban appeal's reply to somebody with no preferences saved", async () => {
+    m.ticketFindUnique.mockResolvedValue(
+      appealTicket({
+        user: { email: "eleve@exemple.fr", displayName: "Élève", preferences: null },
+      }),
+    );
+    await replyToTicketAction(TICKET, "Nous examinons ton appel.");
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the requester's choice on an ordinary ticket, whose reply is on its page", async () => {
+    m.ticketFindUnique.mockResolvedValue(question(false));
+    const result = await replyToTicketAction(TICKET, "Utilise le lien « Mot de passe oublié ».");
+
+    expect(result).toEqual({ ok: true });
+    expect(m.addMessage).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
+  });
+
+  it("mails an ordinary ticket's reply to somebody who takes e-mails", async () => {
+    m.ticketFindUnique.mockResolvedValue(question(true));
+    await replyToTicketAction(TICKET, "Utilise le lien « Mot de passe oublié ».");
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+  });
+
+  it("puts the answer in the bell of somebody who turned e-mails off", async () => {
+    m.ticketFindUnique.mockResolvedValue(question(false));
+    await replyToTicketAction(TICKET, "Utilise le lien « Mot de passe oublié ».");
+
+    expect(m.notify).toHaveBeenCalledWith({
+      userId: LEARNER,
+      type: "TICKET_UPDATE",
+      title: "L'équipe a répondu à ta demande",
+      body: "Comment réinitialiser mon mot de passe ?",
+      actionUrl: `/support/${TICKET}`,
+    });
+  });
+
+  it("notifies nobody on a guest's ticket, which has no account, and still mails it", async () => {
+    m.ticketFindUnique.mockResolvedValue(
+      appealTicket({
+        userId: null,
+        theme: "QUESTION",
+        appealFor: null,
+        user: null,
+        email: "invite@exemple.fr",
+      }),
+    );
+    await replyToTicketAction(TICKET, "Bonjour, voici la réponse.");
+
+    expect(m.notify).not.toHaveBeenCalled();
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail.mock.calls[0]?.[0]).toMatchObject({ to: "invite@exemple.fr" });
+  });
+
+  it("keeps the reply as sent when the bell cannot be written", async () => {
+    m.notify.mockRejectedValue(new Error("connection reset"));
+    const result = await replyToTicketAction(TICKET, "Nous examinons ton appel.");
+
+    expect(result).toEqual({ ok: true });
+    expect(m.loggerError).toHaveBeenCalled();
+    // The mail does not wait on the bell.
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+  });
+
+  it("neither mails nor notifies a reply the repository refused", async () => {
+    m.addMessage.mockResolvedValue({ ok: false, reason: "TERMINAL" });
+    const result = await replyToTicketAction(TICKET, "Un mot de plus.");
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Ticket résolu ou clos : rouvre-le pour répondre.",
+    });
+    expect(m.notify).not.toHaveBeenCalled();
+    expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe("liftAppealedBanAction", () => {
@@ -285,7 +413,7 @@ describe("liftAppealedBanAction", () => {
     expect(m.lift).toHaveBeenCalledOnce();
   });
 
-  it("sends no e-mail to someone who turned them off", async () => {
+  it("mails the reply even to someone who turned e-mails off: it is the decision on their account", async () => {
     m.ticketFindUnique.mockResolvedValue(
       appealTicket({
         user: {
@@ -297,6 +425,27 @@ describe("liftAppealedBanAction", () => {
     );
     await liftAppealedBanAction({}, form({ ticketId: TICKET, reply: "C'est levé." }));
     expect(m.addMessage).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail).toHaveBeenCalledOnce();
+    expect(m.sendTicketReplyEmail.mock.calls[0]?.[0]).toMatchObject({
+      to: "eleve@exemple.fr",
+      reply: "C'est levé.",
+    });
+  });
+
+  it("tells the account in its bell too, for when the ban is over", async () => {
+    await liftAppealedBanAction({}, form({ ticketId: TICKET, reply: "C'est levé." }));
+    expect(m.notify).toHaveBeenCalledWith({
+      userId: LEARNER,
+      type: "TICKET_UPDATE",
+      title: "L'équipe a répondu à ton appel",
+      body: "Appel d'une décision de bannissement",
+      actionUrl: `/support/${TICKET}`,
+    });
+  });
+
+  it("notifies nothing when no reply was written", async () => {
+    await liftAppealedBanAction({}, form({ ticketId: TICKET }));
+    expect(m.notify).not.toHaveBeenCalled();
     expect(m.sendTicketReplyEmail).not.toHaveBeenCalled();
   });
 

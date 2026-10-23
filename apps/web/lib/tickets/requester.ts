@@ -11,6 +11,7 @@ import {
   type TicketFormTheme,
 } from "@cyberlearn/lib/tickets/tickets";
 import { checkContactForm, checkNotifyingWrite } from "@/lib/rate-limit";
+import { tooManyRequests } from "@/lib/rate-limit-copy";
 
 /**
  * A help request, from the side of the person asking: filing one, and adding
@@ -71,7 +72,7 @@ export async function fileTicket(input: {
   if (!limit.success) {
     return {
       ok: false,
-      error: `Trop de demandes. Réessaie dans ${String(limit.retryAfterSeconds)} secondes.`,
+      error: tooManyRequests(limit.retryAfterSeconds),
     };
   }
 

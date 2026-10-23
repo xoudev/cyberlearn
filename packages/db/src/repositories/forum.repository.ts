@@ -1,5 +1,7 @@
+import { removalKindOf, type RemovalKind } from "@cyberlearn/lib/moderation/removal";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { MODERATION_SURFACE } from "./moderation.repository.js";
 
 /**
  * The forum.
@@ -76,6 +78,12 @@ export interface ForumPostView {
   editedAt: Date | null;
   /** True only for a row the viewer is allowed to see anyway - their own. */
   isHidden: boolean;
+  /**
+   * Why such a row is out of the thread, null when it is up: withdrawn by its
+   * author, held by the screen until a moderator reads it, or hidden by a
+   * moderator. All three are `isHidden`; the author is told which.
+   */
+  removal: RemovalKind | null;
   author: ForumAuthor | null;
 }
 
@@ -126,6 +134,31 @@ function preview(content: string, max = 160): string {
     .replace(/\s+/gu, " ")
     .trim();
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;
+}
+
+/**
+ * Which of these messages the moderation queue still has an entry for, or whose
+ * thread it has one for: the ones the screen held and a moderator has not read.
+ *
+ * A thread opened and held records its event against the thread rather than
+ * its opening message, so the thread's id is asked about too. Nothing is read
+ * when there is no message to ask about, which is the thread of almost every
+ * reader.
+ */
+async function awaitingReviewAmong(
+  topicId: string,
+  postIds: readonly string[],
+): Promise<Set<string>> {
+  if (postIds.length === 0) return new Set();
+  const events = await prisma.moderationEvent.findMany({
+    where: {
+      outcome: "PENDING",
+      surface: { in: [MODERATION_SURFACE.forumPost, MODERATION_SURFACE.forumTopic] },
+      contentId: { in: [topicId, ...postIds] },
+    },
+    select: { contentId: true },
+  });
+  return new Set(events.flatMap((event) => (event.contentId === null ? [] : [event.contentId])));
 }
 
 /** What a reader may see: everything not hidden, plus their own hidden rows. */
@@ -260,11 +293,20 @@ export const forumRepository = {
           createdAt: true,
           editedAt: true,
           isHidden: true,
+          hiddenByModeration: true,
           author: { select: AUTHOR },
         },
       }),
       prisma.forumPost.count({ where: postWhere }),
     ]);
+
+    // A hidden message of the viewer's own is one of three things, and only
+    // the moderation queue tells a held one from one they withdrew (see
+    // removalKindOf). Asked only when there is such a message on the page.
+    const awaiting = await awaitingReviewAmong(
+      topic.id,
+      posts.filter((p) => p.isHidden && !p.hiddenByModeration).map((p) => p.id),
+    );
 
     return {
       ...toTopicSummary(topic),
@@ -275,6 +317,11 @@ export const forumRepository = {
         createdAt: p.createdAt,
         editedAt: p.editedAt,
         isHidden: p.isHidden,
+        removal: removalKindOf({
+          isHidden: p.isHidden,
+          hiddenByModeration: p.hiddenByModeration,
+          awaitingReview: awaiting.has(p.id) || awaiting.has(topic.id),
+        }),
         author: toAuthor(p.author),
       })),
     };

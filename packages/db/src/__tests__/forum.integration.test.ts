@@ -340,6 +340,134 @@ describe("forum (integration, real DB)", () => {
     expect(asOther?.posts).toHaveLength(1);
   });
 
+  it("tells an author why their own post is out of the thread: withdrawn, held or hidden", async () => {
+    if (!configured) return;
+    const topic = need(
+      await forumRepository.createTopic({
+        categorySlug: `test-a-${suffix}`,
+        authorId: A,
+        title: "Sujet des retraits",
+        content: "x",
+      }),
+    );
+    const withdrawn = need(
+      await forumRepository.reply({ topicId: topic.id, authorId: B, content: "retiré par moi" }),
+    );
+    await forumRepository.hidePost(withdrawn.postId, { id: B, isAdmin: false });
+    const held = need(
+      await forumRepository.reply({
+        topicId: topic.id,
+        authorId: B,
+        content: "retenu par le filtre",
+        isHidden: true,
+      }),
+    );
+    // What the screen records when it holds a message: the queue's entry.
+    await prisma.moderationEvent.create({
+      data: {
+        userId: B,
+        surface: "forum.post",
+        contentId: held.postId,
+        verdict: "REVIEW",
+        score: 60,
+        findings: [],
+        excerpt: "retenu par le filtre",
+      },
+    });
+    const moderated = need(
+      await forumRepository.reply({ topicId: topic.id, authorId: B, content: "masqué" }),
+    );
+    await forumRepository.hidePost(moderated.postId, { id: ADMIN, isAdmin: true });
+    const up = need(
+      await forumRepository.reply({ topicId: topic.id, authorId: B, content: "toujours là" }),
+    );
+
+    try {
+      const view = need(await forumRepository.findTopic(`test-a-${suffix}`, topic.slug, B));
+      const removalOf = (id: string): unknown => view.posts.find((p) => p.id === id)?.removal;
+
+      expect(removalOf(withdrawn.postId)).toBe("WITHDRAWN");
+      // Waiting its turn: not removed, and not told it was.
+      expect(removalOf(held.postId)).toBe("HELD");
+      expect(removalOf(moderated.postId)).toBe("MODERATED");
+      expect(removalOf(up.postId)).toBeNull();
+    } finally {
+      await prisma.moderationEvent.deleteMany({ where: { userId: B } });
+    }
+  });
+
+  it("stops calling a held message held once a moderator has read it", async () => {
+    if (!configured) return;
+    const topic = need(
+      await forumRepository.createTopic({
+        categorySlug: `test-a-${suffix}`,
+        authorId: A,
+        title: "Sujet relu",
+        content: "x",
+      }),
+    );
+    const reply = need(
+      await forumRepository.reply({
+        topicId: topic.id,
+        authorId: B,
+        content: "confirmé",
+        isHidden: true,
+      }),
+    );
+    // UPHELD: the screen was right, the message stays down and the entry leaves the queue.
+    await prisma.moderationEvent.create({
+      data: {
+        userId: B,
+        surface: "forum.post",
+        contentId: reply.postId,
+        verdict: "REVIEW",
+        score: 60,
+        findings: [],
+        excerpt: "confirmé",
+        outcome: "UPHELD",
+      },
+    });
+
+    try {
+      const view = need(await forumRepository.findTopic(`test-a-${suffix}`, topic.slug, B));
+      expect(view.posts.find((p) => p.id === reply.postId)?.removal).toBe("WITHDRAWN");
+    } finally {
+      await prisma.moderationEvent.deleteMany({ where: { userId: B } });
+    }
+  });
+
+  it("calls the opening post of a thread held for review held, the queue naming the thread", async () => {
+    if (!configured) return;
+    const topic = need(
+      await forumRepository.createTopic({
+        categorySlug: `test-a-${suffix}`,
+        authorId: A,
+        title: "Sujet retenu",
+        content: "retenu",
+        isHidden: true,
+      }),
+    );
+    // A thread's event is recorded against the thread, not its opening post.
+    await prisma.moderationEvent.create({
+      data: {
+        userId: A,
+        surface: "forum.topic",
+        contentId: topic.id,
+        verdict: "REVIEW",
+        score: 60,
+        findings: [],
+        excerpt: "retenu",
+      },
+    });
+
+    try {
+      const view = need(await forumRepository.findTopic(`test-a-${suffix}`, topic.slug, A));
+      expect(view.posts.map((p) => p.removal)).toEqual(["HELD"]);
+    } finally {
+      await prisma.moderationEvent.deleteMany({ where: { userId: A } });
+    }
+  });
+
   it("keeps a hidden thread out of the section, except for its author", async () => {
     if (!configured) return;
     const topic = await forumRepository.createTopic({

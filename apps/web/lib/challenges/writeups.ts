@@ -11,6 +11,7 @@ import {
 import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { TOO_MANY_MESSAGES } from "@/lib/rate-limit-copy";
 
 /**
  * Write-ups: after solving a challenge, a learner publishes their solution,
@@ -26,9 +27,9 @@ import { checkQaSubmission } from "@/lib/rate-limit";
 export interface WriteupAuthor {
   name: string;
   /**
-   * The handle to link to: set only when the reader would be let into that
-   * profile (userRepository.profilesOpenTo). A link that lands on a 404 is
-   * worse than a name that is not a link, so a closed profile has none.
+   * The handle the name opens a profile with: null when the author has none,
+   * or when the reader would not be let into their profile (a closed one,
+   * unless they are friends), as in the forum. A link to it is a 404.
    */
   username: string | null;
   /** One of the reader's friends: a write-up is always signed, so the mark hides nothing. */
@@ -73,7 +74,6 @@ const publishSchema = z.object({
     .max(10000, "10 000 caractères au plus pour une solution."),
 });
 
-const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 const NOT_FOUND = "Défi introuvable.";
 const HIDDEN_BY_MODERATION =
   "Ta solution a été masquée par la modération : tu ne peux pas la republier. Tu peux la retirer.";
@@ -85,12 +85,13 @@ async function findActive(id: string): Promise<{ slug: string } | null> {
 function authorOf(
   user: { id: string; displayName: string; username: string | null } | null,
   friends: ReadonlySet<string>,
-  openProfiles: ReadonlySet<string>,
+  open: ReadonlySet<string>,
 ): WriteupAuthor | null {
   if (user === null) return null;
   return {
     name: user.displayName || (user.username ?? "Sans nom"),
-    username: openProfiles.has(user.id) ? user.username : null,
+    // The name stays whatever the profile; only its link depends on the reader.
+    username: open.has(user.id) ? user.username : null,
     isFriend: friends.has(user.id),
   };
 }
@@ -116,8 +117,9 @@ export async function writeupBoardFor(
     writeupRepository.listOthers(id.data, userId),
     friendshipRepository.friendIds(userId),
   ]);
-  // Whose name may be a link: a private profile answers a stranger with a 404.
-  const openProfiles = await userRepository.profilesOpenTo(
+  // Whose profile would open for this reader, in one call for all the authors:
+  // the name of somebody who closed theirs is not a link.
+  const open = await userRepository.profilesOpenTo(
     userId,
     others.flatMap((w) => (w.user === null ? [] : [w.user.id])),
   );
@@ -136,7 +138,7 @@ export async function writeupBoardFor(
     others: others.map((w) => ({
       id: w.id,
       content: w.content,
-      author: authorOf(w.user, friends, openProfiles),
+      author: authorOf(w.user, friends, open),
       updatedAt: w.updatedAt.toISOString(),
     })),
   };
@@ -151,7 +153,7 @@ export async function writeupBoardFor(
  */
 export async function publishWriteup(userId: string, input: unknown): Promise<WriteupResult> {
   const limit = await checkQaSubmission(userId);
-  if (!limit.success) return { ok: false, error: TOO_FAST };
+  if (!limit.success) return { ok: false, error: TOO_MANY_MESSAGES };
 
   const parsed = publishSchema.safeParse(input);
   if (!parsed.success) {
