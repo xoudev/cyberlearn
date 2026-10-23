@@ -142,6 +142,7 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/support")).toEqual({ pathname: "/support" });
     expect(inAppRouteFor("/locker")).toEqual({ pathname: "/locker" });
     expect(inAppRouteFor("/changelog")).toEqual({ pathname: "/changelog" });
+    expect(inAppRouteFor("/wrapped")).toEqual({ pathname: "/wrapped" });
     // The glossary's French address, the screen's English one.
     expect(inAppRouteFor("/glossaire")).toEqual({ pathname: "/glossary" });
     expect(tapRoute("/paths")).toEqual({ pathname: "/paths" });
@@ -186,6 +187,7 @@ describe("inAppRouteFor", () => {
     expect(inAppRouteFor("/challenges/dossier cache")).toBeNull();
     expect(inAppRouteFor("/glossaire/terme")).toBeNull();
     expect(inAppRouteFor("/changelog/3-6")).toBeNull();
+    expect(inAppRouteFor("/wrapped/2026")).toBeNull();
   });
 
   it("opens the certificates sub-tab of the profile, for new notices and old ones", () => {

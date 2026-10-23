@@ -43,7 +43,8 @@ export type InAppRoute =
         | "/support"
         | "/glossary"
         | "/locker"
-        | "/changelog";
+        | "/changelog"
+        | "/wrapped";
     };
 
 const SLUG = "([a-z0-9-]+)";
@@ -120,6 +121,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // where the older reminders, which pointed at the site's revisions page,
   // land as well. Read before the query is cut off below.
   if (path === "/dashboard" && /[?&]rappel=/u.test(actionUrl)) return { pathname: "/revisions" };
+  // The site's pages that have a screen of the same name here. /wrapped is the
+  // year in review: out of season the screen shows the closed page, as the
+  // site's does.
   switch (path) {
     case "/lessons":
     case "/notes":
@@ -134,6 +138,7 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/support":
     case "/locker":
     case "/changelog":
+    case "/wrapped":
       return { pathname: path };
     // The dashboard is the Home tab. Its other addresses are windows over it
     // on the site (?settings=…), which the Home tab has no counterpart of.
