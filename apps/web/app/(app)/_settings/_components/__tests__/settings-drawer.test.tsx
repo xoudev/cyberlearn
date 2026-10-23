@@ -336,3 +336,78 @@ describe("the settings drawer", () => {
     expect(screen.getByRole("dialog").querySelector("a[href]")).toBeNull();
   });
 });
+
+/**
+ * On a narrow screen the sections are one row that scrolls sideways. Opened
+ * on a far section from an address (?settings=account), the drawer showed the
+ * row from its start: the open section stood at 714-813px of a 375px screen,
+ * out of sight. There is no layout in jsdom, so what is checked is that the
+ * current section's button is asked to scroll into view, and how.
+ */
+describe("the settings drawer's row of sections", () => {
+  const scrollIntoView = vi.fn<(arg?: boolean | ScrollIntoViewOptions) => void>();
+
+  /** The button of the open section: the one the nav marks as current. */
+  function currentSection(): Element | null {
+    return screen
+      .getByRole("navigation", { name: "Sections des paramètres" })
+      .querySelector('[aria-current="true"]');
+  }
+
+  beforeEach(() => {
+    scrollIntoView.mockReset();
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  afterEach(() => {
+    // jsdom has none of its own.
+    Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+  });
+
+  it("brings the section the address opened on into view", async () => {
+    nav.search = "?settings=account";
+    window.history.replaceState({}, "", "/dashboard?settings=account");
+    renderSite();
+    await screen.findByText("section:account nom:Ada");
+
+    const button = currentSection();
+    expect(button?.textContent).toMatch(/Compte/);
+    expect(scrollIntoView).toHaveBeenCalledWith({ inline: "nearest", block: "nearest" });
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(button);
+  });
+
+  it("brings the section into view when it is changed", async () => {
+    renderSite();
+    fireEvent.click(screen.getByText("vers la confidentialité"));
+    await screen.findByText("section:privacy nom:Ada");
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(currentSection());
+
+    scrollIntoView.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /Données/ }));
+    await screen.findByText("section:data nom:Ada");
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView).toHaveBeenCalledWith({ inline: "nearest", block: "nearest" });
+    expect(scrollIntoView.mock.contexts[0]).toBe(currentSection());
+    expect(currentSection()?.textContent).toMatch(/Données/);
+  });
+
+  it("does not scroll again when the sections reload under the same section", async () => {
+    renderSite();
+    fireEvent.click(screen.getByText("vers la confidentialité"));
+    await screen.findByText("section:privacy nom:Ada");
+    scrollIntoView.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "recharger" }));
+    await screen.findByText("section:privacy nom:Ada");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("opens all the same where the browser has no scrollIntoView", async () => {
+    Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    renderSite();
+    fireEvent.click(screen.getByText("vers la confidentialité"));
+    expect(await screen.findByText("section:privacy nom:Ada")).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Paramètres" })).toBeTruthy();
+  });
+});

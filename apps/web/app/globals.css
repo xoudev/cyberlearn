@@ -251,6 +251,25 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
+/* What stands in the sidebar's place while it streams in (components/app-shell.tsx).
+   It holds the column's width from the breakpoint where the sidebar is a column
+   in the flow (the drawer media query above ends at 1023px, MOBILE_BREAKPOINT in
+   hooks/use-mobile.ts) and nothing below it: there the sidebar is a drawer out
+   of the flow, and a fixed 240px here left the page 135px of a 375px phone,
+   which Chrome mobile answered by widening the layout window. */
+.sidebar-fallback {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .sidebar-fallback {
+    display: block;
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--color-bg-base);
+    border-right: 1px solid var(--color-border-subtle);
+  }
+}
+
 /* Smooth theme transitions (off when prefers-reduced-motion) */
 *,
 *::before,
@@ -6060,6 +6079,39 @@ a.cls-res__title:hover {
     0 8px 40px rgba(0, 0, 0, 0.6),
     0 0 0 1px var(--color-border-default);
   z-index: 1000;
+}
+
+/* The bell's panel (components/notification-panel.tsx), the friends' panel's
+   twin and a little wider. */
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px var(--color-border-default);
+  z-index: 1000;
+}
+
+/* On a phone they hung from their button, 340 and 360px wide, and the button
+   sits well to the right of the window's left edge: at 375px the panel ran off
+   the screen by 117 and 91px, the title and the search field cut off. Below
+   768px they span the window instead, 8px from either edge and 8px under the
+   bar (NAVBAR_PANEL_TOP in lib/chrome.ts), their height and their scrolling
+   unchanged. The navbar's backdrop filter makes it the box a fixed child is
+   placed in, which is the window's width all the same. */
+@media (max-width: 767px) {
+  .fp-panel,
+  .notif-panel {
+    position: fixed;
+    top: 64px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
 }
 
 .fp-head {
