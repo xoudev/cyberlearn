@@ -117,7 +117,9 @@ dans le MÊME fichier de migration (`DROP POLICY IF EXISTS` + `CREATE POLICY`).
 Les évolutions de policies existantes : leur propre migration, même pattern.
 Aucune application manuelle de RLS hors migration. La CI (job Integration,
 step « Assert RLS coverage ») échoue si une table public n'a pas la RLS ou si
-le compte de policies régresse sous 56.
+le compte de policies régresse sous 55 (les 56 de la baseline, moins celle de
+`review_schedules_legacy`, table supprimée par
+`20261023120000_drop_review_schedules_legacy`).
 
 ## Conventions Storage
 

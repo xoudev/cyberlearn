@@ -62,4 +62,4 @@ Add a private `avatars` bucket, mirroring the existing `certificates` setup:
   it next to `certificates`; prod via the Supabase dashboard / CLI, same as
   certificates).
 - Storage policies live in the `storage` schema, outside the public-schema RLS
-  coverage gate, so they do not affect the >= 56 policy count.
+  coverage gate, so they do not affect that gate's policy count.
