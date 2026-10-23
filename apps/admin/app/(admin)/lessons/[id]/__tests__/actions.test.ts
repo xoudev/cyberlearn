@@ -16,6 +16,7 @@ const m = vi.hoisted(() => ({
   versionFind: vi.fn(),
   versionCurrent: vi.fn(),
   findTaken: vi.fn(),
+  quizImpacts: vi.fn(),
   auditRecord: vi.fn(),
   resolveCover: vi.fn(),
 }));
@@ -23,6 +24,9 @@ const m = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ requireAdminAction: m.requireAdminAction }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("@/lib/lesson-cover/storage", () => ({ resolveLessonCoverSrc: m.resolveCover }));
+vi.mock("@/lib/services/lesson-publish-quizzes.service", () => ({
+  publishQuizImpacts: m.quizImpacts,
+}));
 vi.mock("@cyberlearn/db", () => ({
   // A stand-in fingerprint: what is checked is which lesson it is taken of.
   lessonBaseOf: ({ version, title }: { version: number; title: string }) => ({
@@ -110,6 +114,7 @@ beforeEach(() => {
   m.draftDiscard.mockResolvedValue(true);
   m.draftPublish.mockResolvedValue({ ok: true, version: 2, content: CONTENT, updatedAt: SAVED_AT });
   m.findTaken.mockResolvedValue({ refCode: false, slug: false });
+  m.quizImpacts.mockResolvedValue([]);
   m.auditRecord.mockResolvedValue(undefined);
   m.versionCurrent.mockResolvedValue({ ...CONTENT, version: 2 });
   m.resolveCover.mockImplementation((marker: string) =>
@@ -313,6 +318,44 @@ describe("publishLessonChangesAction", () => {
 
     await publishLessonChangesAction({ ...input, force: true });
     expect(m.draftPublish.mock.lastCall?.[2]).toMatchObject({ force: true });
+  });
+
+  it("stops once on quizzes that already have answers, and says which", async () => {
+    m.quizImpacts.mockResolvedValue([
+      { quizId: "ports-q1", answers: 240, change: "modified" },
+      { quizId: "ports-q2", answers: 1, change: "removed" },
+    ]);
+    const result = await publishLessonChangesAction(input);
+    expect(result).toMatchObject({ ok: false, conflict: "quizzes", problems: [] });
+    if (!result.ok) {
+      expect(result.error).toContain("« ports-q1 » (options ou réponse changées, 240 réponses)");
+      expect(result.error).toContain("« ports-q2 » (retiré, 1 réponse)");
+      expect(result.error).toContain("restent celles de l'ancienne version");
+    }
+    // Read against the content that would be published, trimmed.
+    expect(m.quizImpacts).toHaveBeenCalledExactlyOnceWith(LESSON, CONTENT.contentMdx.trim());
+    expect(m.draftPublish).not.toHaveBeenCalled();
+  });
+
+  it("publishes those quizzes once the author has been told", async () => {
+    m.quizImpacts.mockResolvedValue([{ quizId: "ports-q1", answers: 240, change: "modified" }]);
+    const result = await publishLessonChangesAction({ ...input, quizzesSeen: true });
+    expect(result).toMatchObject({ ok: true, version: 2 });
+    expect(m.quizImpacts).not.toHaveBeenCalled();
+    expect(m.draftPublish).toHaveBeenCalledOnce();
+  });
+
+  it("does not take a lesson's force for having seen its quizzes", async () => {
+    m.quizImpacts.mockResolvedValue([{ quizId: "ports-q1", answers: 3, change: "modified" }]);
+    const result = await publishLessonChangesAction({ ...input, force: true });
+    expect(result).toMatchObject({ ok: false, conflict: "quizzes" });
+    expect(m.draftPublish).not.toHaveBeenCalled();
+  });
+
+  it("looks at the quizzes only after the content passed its checks", async () => {
+    m.draftGet.mockResolvedValue(draftRow({ title: "Le" }));
+    await publishLessonChangesAction(input);
+    expect(m.quizImpacts).not.toHaveBeenCalled();
   });
 
   it("hands back the lesson when the draft held what it already does", async () => {

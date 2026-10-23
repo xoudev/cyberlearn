@@ -1,6 +1,7 @@
 import React from "react";
 import type { CatalogueChange } from "@cyberlearn/db/catalogue";
 import type { LessonDiffHunk, LessonFieldChange, LessonUpdatePreview } from "@cyberlearn/types";
+import { describeQuizImpacts } from "@/lib/quiz-impact-text";
 
 /**
  * What writing a file over the database would change, as the sync page and
@@ -159,14 +160,8 @@ export function LessonUpdateNotes({
       ) : null}
       {update.quizImpacts.length > 0 ? (
         <p className="a-sync-warn" data-tone="warning">
-          Quiz modifiés qui ont déjà des réponses :{" "}
-          {update.quizImpacts
-            .map(
-              (q) =>
-                `« ${q.quizId} » (${q.change === "removed" ? "retiré" : "options ou réponse changées"}, ${String(q.answers)} réponse${q.answers > 1 ? "s" : ""})`,
-            )
-            .join(", ")}
-          . Ces réponses et leur note restent celles de l&apos;ancienne version.
+          Quiz modifiés qui ont déjà des réponses : {describeQuizImpacts(update.quizImpacts)}. Ces
+          réponses et leur note restent celles de l&apos;ancienne version.
         </p>
       ) : null}
       {update.slugDiffers !== null ? (

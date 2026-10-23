@@ -68,6 +68,33 @@ describe("studioReducer", () => {
     });
   });
 
+  it("takes the quiz warning down once the content it was read from changes", () => {
+    const warned = studioReducer(initialStudioState(PUBLISHED, TYPED), {
+      type: "refused",
+      error: "Quiz modifiés qui ont déjà des réponses : « q1 ».",
+      conflict: "quizzes",
+    });
+    expect(warned.conflict).toBe("quizzes");
+    // Another field leaves it standing: the quizzes are in the content.
+    expect(studioReducer(warned, { type: "edit", field: "title", value: "Ports" })).toMatchObject({
+      conflict: "quizzes",
+      error: warned.error,
+    });
+    // The content itself is what the warning was read from.
+    expect(
+      studioReducer(warned, { type: "edit", field: "contentMdx", value: "## Ports\n\nAutre." }),
+    ).toMatchObject({ conflict: null, error: null });
+  });
+
+  it("keeps a lesson conflict standing when the content is edited", () => {
+    const state = studioReducer(initialStudioState(PUBLISHED, TYPED, "La leçon a changé."), {
+      type: "edit",
+      field: "contentMdx",
+      value: "## Ports\n\nAutre.",
+    });
+    expect(state).toMatchObject({ conflict: "lesson", error: "La leçon a changé." });
+  });
+
   it("puts what was published in the fields, unless more was typed meanwhile", () => {
     const now = { ...TYPED, title: TYPED.title.trim() };
     const replaced = studioReducer(initialStudioState(PUBLISHED, TYPED), {
