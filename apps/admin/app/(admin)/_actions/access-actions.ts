@@ -184,9 +184,14 @@ export async function resetMfaAction(
   }
 
   // One at a time, so that a failure halfway is reported for what it is: some
-  // factors gone, some not. Retrying picks up where it stopped.
+  // factors gone, some not. Retrying picks up where it stopped - which holds
+  // only while a verified factor is left to retry on: the page offers the reset
+  // for one, and the guard above refuses it without one. So the unfinished
+  // enrolments go first, and a failure halfway never strands the verified factor
+  // that was the reason to reset.
   const removed: typeof found = [];
-  for (const factor of found) {
+  const unfinishedFirst = [...found].sort((a, b) => Number(a.verified) - Number(b.verified));
+  for (const factor of unfinishedFirst) {
     try {
       const { error } = await supabase.auth.admin.mfa.deleteFactor({
         id: factor.id,
