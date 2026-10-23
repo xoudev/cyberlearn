@@ -61,8 +61,17 @@ export function NotificationsForm({
     fd.set("reviewReminders", String(values.reviewReminders));
     fd.set("weeklyDigest", String(values.weeklyDigest));
     fd.set("emailNotifications", String(values.emailNotifications));
+    // A call that fails inside a transition goes to the nearest error boundary,
+    // the site's own, and replaces the page under the drawer. It is said in a
+    // toast instead, and the choices stay unsaved on the form.
     startTransition(async () => {
-      const res = await updateNotificationsAction({}, fd);
+      let res: Awaited<ReturnType<typeof updateNotificationsAction>>;
+      try {
+        res = await updateNotificationsAction({}, fd);
+      } catch {
+        toast.error("Préférences non enregistrées, réessaie.");
+        return;
+      }
       if (res.success) {
         setSaved(values);
         toast.success("Préférences enregistrées");

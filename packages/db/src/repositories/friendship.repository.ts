@@ -17,6 +17,12 @@ import { CATALOGUE_PATH } from "./path.repository.js";
  * produce one row and one loser, and the loser is handled rather than crashed.
  */
 
+/**
+ * How many friendships a GDPR export lists, the most recent ones: the export
+ * says so in its metadata (rgpd/build-export.ts).
+ */
+export const FRIENDSHIP_EXPORT_LIMIT = 1000;
+
 /** Enough of the other person to put them in a list. */
 const PERSON = {
   id: true,
@@ -465,6 +471,32 @@ export const friendshipRepository = {
         requestedById: { not: userId },
         OR: [{ userAId: userId }, { userBId: userId }],
       },
+    });
+  },
+
+  /**
+   * The account's friendships, requests included (sent and received), most
+   * recent first, for its GDPR export (rgpd/build-export.ts).
+   *
+   * The other person is read by their username and nothing else: no e-mail,
+   * no name, no level. Their ids are read to tell which side is the account's
+   * and never reach the file. The cut is a number of friendships, and the
+   * export says so in its metadata.
+   */
+  async exportFor(userId: string) {
+    return prisma.friendship.findMany({
+      where: { OR: [{ userAId: userId }, { userBId: userId }] },
+      select: {
+        userAId: true,
+        requestedById: true,
+        status: true,
+        createdAt: true,
+        respondedAt: true,
+        userA: { select: { username: true } },
+        userB: { select: { username: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FRIENDSHIP_EXPORT_LIMIT,
     });
   },
 };

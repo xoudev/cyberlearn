@@ -100,6 +100,64 @@ describe("DuelPlay", () => {
     expect(screen.getByText("Que fait chmod ?")).toBeTruthy();
   });
 
+  it("says an answer was not sent, and keeps the duel on screen, when the call fails", async () => {
+    m.answerDuelAction.mockRejectedValue(new Error("network"));
+    // The duel read back has no answer in it: nothing reached the server.
+    m.duelViewAction.mockResolvedValue(BASE);
+    render(<DuelPlay initial={BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copie" }));
+      await Promise.resolve();
+    });
+    expect((await screen.findByRole("alert")).textContent).toBe("Réponse non envoyée, réessaie.");
+    expect(m.duelViewAction).toHaveBeenCalledWith("d1");
+    // Still the same question, to be picked again.
+    expect(screen.getByText("Que fait ls ?")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copie" })).toBeTruthy();
+  });
+
+  it("moves on, without the failure message, when the answer had been recorded before the call failed", async () => {
+    m.answerDuelAction.mockRejectedValue(new Error("network"));
+    m.duelViewAction.mockResolvedValue({
+      ...BASE,
+      readerScore: { answered: 1, correct: 0 },
+      readerAnswers: [{ index: 0, selected: 0, correct: false, correctIndex: 1 }],
+    });
+    render(<DuelPlay initial={BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copie" }));
+      await Promise.resolve();
+    });
+    expect(await screen.findByText("Que fait chmod ?")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("Raté. La bonne réponse : Liste.")).toBeTruthy();
+  });
+
+  it("keeps the failure message when the duel cannot be read back either", async () => {
+    m.answerDuelAction.mockRejectedValue(new Error("network"));
+    m.duelViewAction.mockRejectedValue(new Error("network"));
+    render(<DuelPlay initial={BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copie" }));
+      await Promise.resolve();
+    });
+    expect((await screen.findByRole("alert")).textContent).toBe("Réponse non envoyée, réessaie.");
+  });
+
+  it("keeps the verdict of an answer that went through when the refresh fails", async () => {
+    m.answerDuelAction.mockResolvedValue({ ok: true, correct: true, correctIndex: 1 });
+    m.duelViewAction.mockRejectedValue(new Error("network"));
+    render(<DuelPlay initial={BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Liste" }));
+      await Promise.resolve();
+    });
+    expect(await screen.findByText("Bonne réponse.")).toBeTruthy();
+    // The answer is in: the next question comes up from the call's own verdict.
+    expect(screen.getByText("Que fait chmod ?")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("draws both pictures, and opens the other's profile from their name", () => {
     render(
       <DuelPlay
@@ -195,6 +253,23 @@ describe("DuelPlay", () => {
     rerender(<DuelPlay initial={{ ...BASE, readerIsChallenger: false }} />);
     expect(screen.queryByRole("button", { name: "Accepter" })).toBeNull();
     expect(screen.getByText("Que fait ls ?")).toBeTruthy();
+  });
+
+  it("says so, and stays on the invitation, when answering it fails", async () => {
+    m.respondToDuelAction.mockRejectedValue(new Error("network"));
+    render(
+      <DuelPlay
+        initial={{ ...BASE, status: "PENDING", readerIsChallenger: false, questions: [] }}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Accepter" }));
+      await Promise.resolve();
+    });
+    expect((await screen.findByRole("alert")).textContent).toBe("Réponse non envoyée, réessaie.");
+    expect(m.push).not.toHaveBeenCalled();
+    // The buttons are back, to try again.
+    expect(screen.getByRole("button", { name: "Accepter" }).hasAttribute("disabled")).toBe(false);
   });
 
   it("offers a new duel with the same friend when this one was declined", () => {

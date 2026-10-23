@@ -57,6 +57,13 @@ const { mockPrisma } = vi.hoisted(() => {
       contentReport: read(),
       reviewCard: read(),
       reviewSession: read(),
+      forumTopic: read(),
+      forumPost: read(),
+      friendship: read(),
+      classMember: read(),
+      exerciseCompletion: read(),
+      userBan: read(),
+      moderationEvent: read(),
     },
   };
 });
@@ -65,6 +72,8 @@ vi.mock("../prisma.js", () => ({ prisma: mockPrisma }));
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
+/** A friend whose id sorts before the account's: the pair stores the lower id first. */
+const FRIEND = "00000000-0000-4000-8000-0000000000aa";
 const SITE = "https://cyberlearn.fr";
 const NOW = new Date("2026-10-18T12:00:00.000Z");
 
@@ -421,17 +430,130 @@ function seed(): void {
       createdAt: d("2026-10-17T17:58:00.000Z"),
     },
   ]);
+  mockPrisma.forumTopic.findMany.mockResolvedValue([
+    {
+      title: "Comment lire une capture Wireshark ?",
+      isHidden: false,
+      lockedAt: d("2026-09-02T08:00:00.000Z"),
+      createdAt: d("2026-09-01T10:00:00.000Z"),
+      category: { name: "Réseau" },
+    },
+  ]);
+  mockPrisma.forumPost.findMany.mockResolvedValue([
+    {
+      content: "Merci, c'était le filtre de capture.",
+      isHidden: false,
+      hiddenByModeration: false,
+      editedAt: d("2026-09-01T12:30:00.000Z"),
+      createdAt: d("2026-09-01T12:00:00.000Z"),
+      topic: { title: "Comment lire une capture Wireshark ?" },
+    },
+    {
+      content: "Message retiré par son auteur.",
+      isHidden: true,
+      hiddenByModeration: false,
+      editedAt: null,
+      createdAt: d("2026-09-01T10:00:00.000Z"),
+      topic: { title: "Comment lire une capture Wireshark ?" },
+    },
+  ]);
+  // The rows carry more than the export keeps (an e-mail, a display name):
+  // none of it may reach the file. The second friend asked first, from the
+  // other side of the pair.
+  mockPrisma.friendship.findMany.mockResolvedValue([
+    {
+      userAId: USER,
+      requestedById: USER,
+      status: "ACCEPTED",
+      createdAt: d("2026-06-01T10:00:00.000Z"),
+      respondedAt: d("2026-06-01T12:00:00.000Z"),
+      userA: { username: "lea", email: "lea@exemple.fr" },
+      userB: { username: "ines", email: "ines@exemple.fr", displayName: "Inès" },
+    },
+    {
+      userAId: FRIEND,
+      requestedById: FRIEND,
+      status: "PENDING",
+      createdAt: d("2026-05-01T10:00:00.000Z"),
+      respondedAt: null,
+      userA: { username: null, email: "samir@exemple.fr" },
+      userB: { username: "lea", email: "lea@exemple.fr" },
+    },
+  ]);
+  mockPrisma.classMember.findMany.mockResolvedValue([
+    {
+      joinedAt: d("2026-09-10T08:00:00.000Z"),
+      class: {
+        name: "SIO1-A",
+        promotion: { name: "BTS SIO 1re année", establishment: { name: "Lycée Pasteur" } },
+      },
+    },
+  ]);
+  mockPrisma.exerciseCompletion.findMany.mockResolvedValue([
+    {
+      exerciseId: "ls-et-cd",
+      kind: "TERMINAL",
+      completedAt: d("2026-02-02T10:00:00.000Z"),
+      lesson: { title: "Les bases du terminal", slug: "bases-terminal" },
+    },
+  ]);
+  // The team's side of a ban is in the row here and must stay out of the file.
+  mockPrisma.userBan.findMany.mockResolvedValue([
+    {
+      reason: "Propos injurieux sur le forum.",
+      createdAt: d("2026-07-01T09:00:00.000Z"),
+      expiresAt: d("2026-07-08T09:00:00.000Z"),
+      liftedAt: d("2026-07-05T09:00:00.000Z"),
+      acknowledgedAt: d("2026-07-01T09:05:00.000Z"),
+      appealTicketId: "ticket-1",
+      liftReason: "note interne de l'équipe",
+      issuedById: "moderator-1",
+    },
+    {
+      reason: "Partage d'un flag de tournoi.",
+      createdAt: d("2026-08-01T09:00:00.000Z"),
+      expiresAt: null,
+      liftedAt: null,
+      acknowledgedAt: null,
+      appealTicketId: null,
+      liftReason: null,
+      issuedById: "moderator-1",
+    },
+  ]);
+  mockPrisma.moderationEvent.findMany.mockResolvedValue([
+    {
+      surface: "forum.post",
+      verdict: "REVIEW",
+      excerpt: "Un extrait du message retenu.",
+      outcome: "OVERTURNED",
+      createdAt: d("2026-06-15T10:00:00.000Z"),
+      reviewedAt: d("2026-06-15T14:00:00.000Z"),
+      score: 8,
+      findings: [{ rule: "insult" }],
+      reviewedById: "moderator-1",
+    },
+  ]);
 }
 
 /** The file for the rows above, key by key in the order it is written. */
 const EXPECTED = {
   exportMetadata: {
     exportedAt: "2026-10-18T12:00:00.000Z",
-    version: "1.0",
+    version: "1.1",
     format: "json",
     rgpdContext: "Article 20 RGPD - Droit à la portabilité",
     rights: "https://cyberlearn.fr/privacy#section-7",
-    limitations: { notifications: "Les 1000 notifications les plus récentes sont incluses." },
+    limitations: {
+      notifications: "Les 1000 notifications les plus récentes sont incluses.",
+      forum:
+        "Les 1000 sujets et les 1000 messages de forum les plus récents sont inclus, ceux qui ont été masqués compris.",
+      friendships:
+        "Les 1000 relations d'amitié les plus récentes sont incluses, demandes en attente comprises. Un ami y figure par son pseudo et les dates de la relation : son e-mail et ses autres données sont les siennes.",
+      moderationEvents:
+        "Les 1000 décisions du filtre automatique les plus récentes sont incluses, sans le score ni les règles qui les ont déclenchées.",
+      sanctions:
+        "Une sanction figure avec le motif qui a été montré à la personne. Qui l'a décidée ou levée, et pourquoi elle a été levée, restent à l'équipe.",
+    },
   },
   profile: {
     email: "lea@exemple.fr",
@@ -769,6 +891,94 @@ const EXPECTED = {
     accentColor: null,
   },
   answerUpvotes: [{ answerId: "answer-9", createdAt: "2026-02-02T09:30:00.000Z" }],
+  forumTopics: [
+    {
+      categoryName: "Réseau",
+      title: "Comment lire une capture Wireshark ?",
+      isHidden: false,
+      lockedAt: "2026-09-02T08:00:00.000Z",
+      createdAt: "2026-09-01T10:00:00.000Z",
+    },
+  ],
+  forumPosts: [
+    {
+      topicTitle: "Comment lire une capture Wireshark ?",
+      content: "Merci, c'était le filtre de capture.",
+      isHidden: false,
+      hiddenByModeration: false,
+      editedAt: "2026-09-01T12:30:00.000Z",
+      createdAt: "2026-09-01T12:00:00.000Z",
+    },
+    {
+      topicTitle: "Comment lire une capture Wireshark ?",
+      content: "Message retiré par son auteur.",
+      isHidden: true,
+      hiddenByModeration: false,
+      editedAt: null,
+      createdAt: "2026-09-01T10:00:00.000Z",
+    },
+  ],
+  friendships: [
+    {
+      username: "ines",
+      direction: "sent",
+      status: "ACCEPTED",
+      createdAt: "2026-06-01T10:00:00.000Z",
+      respondedAt: "2026-06-01T12:00:00.000Z",
+    },
+    {
+      username: null,
+      direction: "received",
+      status: "PENDING",
+      createdAt: "2026-05-01T10:00:00.000Z",
+      respondedAt: null,
+    },
+  ],
+  classMemberships: [
+    {
+      className: "SIO1-A",
+      promotionName: "BTS SIO 1re année",
+      establishmentName: "Lycée Pasteur",
+      joinedAt: "2026-09-10T08:00:00.000Z",
+    },
+  ],
+  exerciseCompletions: [
+    {
+      lessonTitle: "Les bases du terminal",
+      lessonSlug: "bases-terminal",
+      exerciseId: "ls-et-cd",
+      kind: "TERMINAL",
+      completedAt: "2026-02-02T10:00:00.000Z",
+    },
+  ],
+  bans: [
+    {
+      reason: "Propos injurieux sur le forum.",
+      createdAt: "2026-07-01T09:00:00.000Z",
+      expiresAt: "2026-07-08T09:00:00.000Z",
+      liftedAt: "2026-07-05T09:00:00.000Z",
+      acknowledgedAt: "2026-07-01T09:05:00.000Z",
+      appealed: true,
+    },
+    {
+      reason: "Partage d'un flag de tournoi.",
+      createdAt: "2026-08-01T09:00:00.000Z",
+      expiresAt: null,
+      liftedAt: null,
+      acknowledgedAt: null,
+      appealed: false,
+    },
+  ],
+  moderationEvents: [
+    {
+      surface: "forum.post",
+      verdict: "REVIEW",
+      excerpt: "Un extrait du message retenu.",
+      outcome: "OVERTURNED",
+      createdAt: "2026-06-15T10:00:00.000Z",
+      reviewedAt: "2026-06-15T14:00:00.000Z",
+    },
+  ],
 };
 
 /** What the route sends. */
@@ -835,6 +1045,64 @@ describe("buildExportPayload", () => {
       "cosmeticsUnlocked",
       "cosmeticLoadout",
       "answerUpvotes",
+      "forumTopics",
+      "forumPosts",
+      "friendships",
+      "classMemberships",
+      "exerciseCompletions",
+      "bans",
+      "moderationEvents",
+    ]);
+  });
+
+  it("names a friend by username and dates, and nobody else's data", async () => {
+    const payload = await buildExportPayload(USER, { siteUrl: SITE });
+    const file = asFile(payload);
+
+    // The pair's other side, whichever side the account is on.
+    expect(payload.friendships.map((f) => f.username)).toEqual(["ines", null]);
+    expect(Object.keys(payload.friendships[0] ?? {})).toEqual([
+      "username",
+      "direction",
+      "status",
+      "createdAt",
+      "respondedAt",
+    ]);
+    // No e-mail, no display name, no id of either person.
+    expect(file).not.toContain("ines@exemple.fr");
+    expect(file).not.toContain("samir@exemple.fr");
+    expect(file).not.toContain("Inès");
+    expect(file).not.toContain(FRIEND);
+  });
+
+  it("keeps the team's side of a sanction and of the screen out of the file", async () => {
+    const payload = await buildExportPayload(USER, { siteUrl: SITE });
+    const file = asFile(payload);
+
+    expect(file).not.toContain("note interne de l'équipe");
+    expect(file).not.toContain("moderator-1");
+    // The appeal ticket's id says there was an appeal and goes no further.
+    expect(file).not.toContain("ticket-1");
+    expect(payload.bans.map((b) => b.appealed)).toEqual([true, false]);
+    expect(Object.keys(payload.moderationEvents[0] ?? {})).toEqual([
+      "surface",
+      "verdict",
+      "excerpt",
+      "outcome",
+      "createdAt",
+      "reviewedAt",
+    ]);
+  });
+
+  it("says in its metadata what it cuts and what it leaves to the team", async () => {
+    const { limitations } = (await buildExportPayload(USER, { siteUrl: SITE })).exportMetadata;
+
+    expect(Object.keys(limitations)).toEqual([
+      "notifications",
+      "forum",
+      "friendships",
+      "moderationEvents",
+      "sanctions",
     ]);
   });
 
@@ -873,5 +1141,16 @@ describe("buildExportPayload", () => {
     expect(payload.cosmeticLoadout).toBeNull();
     expect(payload.lessonsProgress).toEqual([]);
     expect(payload.qaActivity).toEqual({ questions: [], answers: [] });
+    for (const section of [
+      payload.forumTopics,
+      payload.forumPosts,
+      payload.friendships,
+      payload.classMemberships,
+      payload.exerciseCompletions,
+      payload.bans,
+      payload.moderationEvents,
+    ]) {
+      expect(section).toEqual([]);
+    }
   });
 });

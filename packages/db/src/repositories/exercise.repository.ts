@@ -51,4 +51,24 @@ export const exerciseRepository = {
     });
     return rows.map((row) => row.exerciseId);
   },
+
+  /**
+   * Every exercise the account finished, oldest first, for its GDPR export
+   * (rgpd/build-export.ts), with the lesson it was in.
+   *
+   * Not cut: a row is one per account, lesson and exercise (the unique key),
+   * so the list cannot outgrow the catalogue.
+   */
+  async exportFor(userId: string) {
+    return prisma.exerciseCompletion.findMany({
+      where: { userId },
+      select: {
+        exerciseId: true,
+        kind: true,
+        completedAt: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+      orderBy: { completedAt: "asc" },
+    });
+  },
 };
