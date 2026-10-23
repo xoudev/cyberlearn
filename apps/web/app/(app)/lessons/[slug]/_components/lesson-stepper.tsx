@@ -250,8 +250,19 @@ export function LessonStepper({
     if (!canAdvance) return;
     if (isLastStep && !isCompleted && !reviewing) {
       setRefusal(null);
+      // A call that fails inside a transition goes to the nearest error
+      // boundary, the site's own, and the lesson just finished with it. It is
+      // said under the lesson instead. Finishing again is safe: if the server
+      // recorded the first one before the connection broke, it answers
+      // `alreadyCompleted` and the page is read again.
       startTransition(async () => {
-        const res = await completeLesson(lessonId);
+        let res: Awaited<ReturnType<typeof completeLesson>>;
+        try {
+          res = await completeLesson(lessonId);
+        } catch {
+          setRefusal("La leçon n'a pas pu être validée, réessaie.");
+          return;
+        }
         if (res.refusal !== null) {
           // The page reads the lesson again: a lock it did not know about,
           // say, shows as the locked lesson.

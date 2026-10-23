@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useActionState } from "react";
 import { submitPlacementTest } from "../_actions/submit-placement";
+import { skipOnboarding } from "../../../_actions/finalize-onboarding";
 import type { PlacementActionState } from "../_actions/submit-placement";
 import {
   PLACEMENT_CATEGORY_LABEL,
@@ -47,11 +48,10 @@ export function PlacementTestForm({
     <div style={{ width: "100%", maxWidth: 640 }}>
       {/* ── Intro card ──────────────────────────────────────────────────── */}
       <div
-        className="card"
+        className="card onboarding-card"
         style={{
           position: "relative",
           marginBottom: 32,
-          padding: "32px 36px 28px",
         }}
       >
         <div
@@ -109,28 +109,14 @@ export function PlacementTestForm({
           </p>
 
           {/* Stats grid */}
-          <div
-            className="card"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 0,
-              marginBottom: 22,
-            }}
-          >
+          <div className="card onboarding-stats" style={{ marginBottom: 22 }}>
             {[
               { label: "Questions", value: String(questions.length), unit: "" },
               { label: "Durée", value: String(estimatedMinutes), unit: "min" },
               { label: "XP max", value: "0", unit: "XP", accent: false },
               { label: "Difficulté", value: "Mixte", unit: "", accent: true },
-            ].map(({ label, value, unit, accent }, i) => (
-              <div
-                key={label}
-                style={{
-                  padding: "16px 14px",
-                  borderRight: i < 3 ? "1px solid var(--color-border-default)" : "none",
-                }}
-              >
+            ].map(({ label, value, unit, accent }) => (
+              <div key={label}>
                 <span
                   className="mono-label mono-label--xs"
                   style={{
@@ -487,17 +473,28 @@ export function PlacementTestForm({
             )}
           </button>
 
-          <a
+          {/* Ends the sign-up, as the intro's "Passer" does: a plain link to the
+              dashboard sent a new account back to step 2, as the middleware
+              keeps it in the onboarding until the flag is set. formNoValidate
+              because skipping must not wait for the answers. */}
+          <button
             className="mono-label"
-            href="/dashboard"
+            type="submit"
+            formAction={skipOnboarding}
+            formNoValidate
+            disabled={isPending}
             style={{
               color: "var(--color-text-muted)",
-              textDecoration: "none",
+              background: "transparent",
+              border: 0,
+              cursor: isPending ? "wait" : "pointer",
               textAlign: "center",
               borderBottom: "1px solid transparent",
-              paddingBottom: 2,
+              minHeight: 44,
+              padding: "0 0 2px",
               transition: "color 180ms ease",
               display: "block",
+              width: "100%",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "var(--color-text-secondary)";
@@ -507,7 +504,7 @@ export function PlacementTestForm({
             }}
           >
             Passer · aller au tableau de bord
-          </a>
+          </button>
         </div>
       </form>
     </div>

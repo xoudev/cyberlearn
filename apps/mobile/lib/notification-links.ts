@@ -12,6 +12,9 @@ import { profileSubFrom, profileSubParam, type ProfileSubParam } from "./profile
 export type InAppRoute =
   | { pathname: "/moderation" }
   | { pathname: "/forum/[category]/[topic]"; params: { category: string; topic: string } }
+  | { pathname: "/forum/[category]"; params: { category: string } }
+  | { pathname: "/challenges/[slug]"; params: { slug: string } }
+  | { pathname: "/support/[id]"; params: { id: string } }
   | { pathname: "/lessons/[slug]"; params: { slug: string } }
   | { pathname: "/paths/[slug]"; params: { slug: string } }
   | { pathname: "/u/[username]"; params: { username: string } }
@@ -30,7 +33,18 @@ export type InAppRoute =
         | "/duels"
         | "/tournaments"
         | "/challenges"
-        | "/placement";
+        | "/placement"
+        // The tabs the site's pages of the same name are, and the screens an
+        // announcement of the console can point at.
+        | "/home"
+        | "/paths"
+        | "/leaderboard"
+        | "/forum"
+        | "/support"
+        | "/glossary"
+        | "/locker"
+        | "/changelog"
+        | "/wrapped";
     };
 
 const SLUG = "([a-z0-9-]+)";
@@ -76,6 +90,15 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
       params: { category: thread.category, topic: thread.slug },
     };
   }
+  // A section of the forum: /forum/<section>, one segment under /forum. The
+  // thread above has two.
+  const section = new RegExp(`^/forum/${SLUG}$`, "u").exec(path)?.[1];
+  if (section) return { pathname: "/forum/[category]", params: { category: section } };
+  const challenge = new RegExp(`^/challenges/${SLUG}$`, "u").exec(path)?.[1];
+  if (challenge) return { pathname: "/challenges/[slug]", params: { slug: challenge } };
+  // A request of the support page: its id is a UUID.
+  const ticket = /^\/support\/([0-9a-f-]{36})$/u.exec(path)?.[1];
+  if (ticket) return { pathname: "/support/[id]", params: { id: ticket } };
   const lesson = new RegExp(`^/lessons/${SLUG}$`, "u").exec(path)?.[1];
   if (lesson) return { pathname: "/lessons/[slug]", params: { slug: lesson } };
   const pathSlug = new RegExp(`^/paths/${SLUG}$`, "u").exec(path)?.[1];
@@ -98,6 +121,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   // where the older reminders, which pointed at the site's revisions page,
   // land as well. Read before the query is cut off below.
   if (path === "/dashboard" && /[?&]rappel=/u.test(actionUrl)) return { pathname: "/revisions" };
+  // The site's pages that have a screen of the same name here. /wrapped is the
+  // year in review: out of season the screen shows the closed page, as the
+  // site's does.
   switch (path) {
     case "/lessons":
     case "/notes":
@@ -106,7 +132,21 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/friends":
     case "/duels":
     case "/tournaments":
+    case "/paths":
+    case "/leaderboard":
+    case "/forum":
+    case "/support":
+    case "/locker":
+    case "/changelog":
+    case "/wrapped":
       return { pathname: path };
+    // The dashboard is the Home tab. Its other addresses are windows over it
+    // on the site (?settings=…), which the Home tab has no counterpart of.
+    case "/dashboard":
+      return query === "" ? { pathname: "/home" } : null;
+    // The site's glossary has a French address, the app's screen an English one.
+    case "/glossaire":
+      return { pathname: "/glossary" };
     // The certificates and the badges are tabs of the site's profile, and
     // sub-tabs of the Profile screen here: a new notice names its tab
     // (/profile?tab=certificats), an older one the page it had before.

@@ -5,6 +5,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
+import type { DuelResult } from "@/lib/social/duels";
 import { respondToDuelAction } from "../_actions/duel-actions";
 
 /**
@@ -23,9 +24,21 @@ export function RespondButtons({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // A call that fails inside a transition goes to the nearest error boundary,
+  // the site's own, and the invitation with it. It is said under the buttons
+  // instead; the page is read again, since the server may have taken the
+  // answer before the connection broke.
   const respond = (accept: boolean): void => {
     startTransition(async () => {
-      const result = await respondToDuelAction(duelId, accept);
+      setError(null);
+      let result: DuelResult;
+      try {
+        result = await respondToDuelAction(duelId, accept);
+      } catch {
+        setError("Réponse non envoyée, réessaie.");
+        router.refresh();
+        return;
+      }
       if (!result.ok) {
         setError(result.error);
         router.refresh();

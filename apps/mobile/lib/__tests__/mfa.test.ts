@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { MFA_RECOURSE_PATH, MFA_RECOURSE_SUBJECT } from "@cyberlearn/lib/auth/mfa-recourse";
 import {
   leaveMfaChallenge,
   loadTotpPanel,
+  mfaRecourseUrl,
   readMfaRemovalAnswer,
   readTotpQrSvg,
   SIGN_OUT_FAILED,
@@ -113,5 +115,27 @@ describe("leaveMfaChallenge", () => {
     await expect(
       leaveMfaChallenge({ signOut: () => Promise.reject(new Error("boom")) }),
     ).resolves.toBe(SIGN_OUT_FAILED);
+  });
+});
+
+describe("mfaRecourseUrl", () => {
+  it("opens the site's contact form on the security theme, with the subject filled in", () => {
+    const url = new URL(mfaRecourseUrl("https://cyberlearn.fr"));
+    expect(url.origin).toBe("https://cyberlearn.fr");
+    expect(url.pathname).toBe("/contact");
+    expect(url.searchParams.get("theme")).toBe("SECURITY");
+    expect(url.searchParams.get("subject")).toBe(MFA_RECOURSE_SUBJECT);
+  });
+
+  it("is the address the site's own link uses, behind the site's origin", () => {
+    expect(mfaRecourseUrl("https://cyberlearn.fr")).toBe(
+      `https://cyberlearn.fr${MFA_RECOURSE_PATH}`,
+    );
+  });
+
+  it("does not double the slash when the origin carries one", () => {
+    expect(mfaRecourseUrl("http://localhost:3000/")).toBe(
+      `http://localhost:3000${MFA_RECOURSE_PATH}`,
+    );
   });
 });

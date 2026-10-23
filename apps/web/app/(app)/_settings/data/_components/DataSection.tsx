@@ -94,7 +94,22 @@ export function DataSection({ data }: { data: DataSectionData }): React.JSX.Elem
             }}
           >
             Conformément à l&apos;article 20 du RGPD (droit à la portabilité), tu peux télécharger
-            l&apos;ensemble de tes données au format JSON.
+            tes données au format JSON : ton profil et tes préférences, ta progression, tes
+            exercices, tes notes, tes messages du forum, tes questions et réponses, tes demandes au
+            support, tes amis, tes classes, tes sanctions et les décisions du filtre automatique sur
+            tes textes.
+          </p>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--color-text-muted)",
+              lineHeight: "1.6",
+              margin: "0 0 12px",
+            }}
+          >
+            Tes amis y figurent par leur pseudo seulement : leur e-mail est le leur. Pour les
+            notifications, les messages du forum, les amitiés et les décisions du filtre, les plus
+            récents sont inclus ; le fichier dit en tête combien.
           </p>
 
           {/* Info row */}
@@ -116,9 +131,6 @@ export function DataSection({ data }: { data: DataSectionData }): React.JSX.Elem
             <span style={{ color: "var(--color-border-subtle)" }}>·</span>
             <span>Format</span>
             <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>JSON</b>
-            <span style={{ color: "var(--color-border-subtle)" }}>·</span>
-            <span>Portée</span>
-            <b style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>17 modèles</b>
           </div>
 
           {/* CTA */}

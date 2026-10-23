@@ -238,9 +238,12 @@ export default async function PlacementResultPage({
         >
           cyber<span style={{ color: "var(--color-brand-turquoise)" }}>learn</span>
         </span>
-        <span style={{ color: "var(--color-text-faint)" }}>/</span>
-        <span>RÉSULTATS · TEST DE PLACEMENT</span>
+        <span className="onboarding-bar__label" style={{ color: "var(--color-text-faint)" }}>
+          /
+        </span>
+        <span className="onboarding-bar__label">RÉSULTATS · TEST DE PLACEMENT</span>
         <span
+          className="onboarding-bar__label"
           style={{
             marginLeft: "auto",
             fontFamily: "var(--font-mono)",
@@ -255,15 +258,14 @@ export default async function PlacementResultPage({
 
       {/* ── Content ───────────────────────────────────────────────────── */}
       <div
+        className="onboarding-content"
         style={{
           position: "relative",
           zIndex: 1,
           minHeight: "100vh",
-          paddingTop: 44,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "44px 32px 120px",
         }}
       >
         <div style={{ width: "100%", maxWidth: 640, marginTop: 56 }}>
@@ -483,14 +485,8 @@ export default async function PlacementResultPage({
           )}
 
           {/* CTA */}
-          <div style={{ display: "flex", gap: 12 }}>
-            <Link
-              href="/dashboard"
-              className="btn btn--lg"
-              style={{
-                flex: 1,
-              }}
-            >
+          <div className="onboarding-actions">
+            <Link href="/dashboard" className="btn btn--lg">
               Accéder au tableau de bord
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                 <path

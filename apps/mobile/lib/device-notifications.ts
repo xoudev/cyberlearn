@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
+import type * as ExpoNotifications from "expo-notifications";
 import type { NotificationResponse } from "expo-notifications";
 import type { NotificationItem } from "@/lib/queries";
 import { dbTime } from "@/lib/db-time";
@@ -24,7 +25,7 @@ function lastSeenKey(userId: string): string {
   return `${LAST_SEEN_PREFIX}${userId}`;
 }
 
-type NotificationsModule = typeof import("expo-notifications");
+type NotificationsModule = typeof ExpoNotifications;
 
 // Expo Go ("store client") has no notification runtime on Android since
 // SDK 53 - requiring the module there logs a red error even when caught.

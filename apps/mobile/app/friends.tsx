@@ -44,10 +44,7 @@ export default function Friends(): React.JSX.Element {
   };
 
   const empty =
-    data !== undefined &&
-    data.incoming.length === 0 &&
-    data.friends.length === 0 &&
-    data.outgoing.length === 0;
+    data?.incoming.length === 0 && data.friends.length === 0 && data.outgoing.length === 0;
 
   return (
     <Screen onRefresh={() => refetch()}>

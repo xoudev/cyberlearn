@@ -1228,4 +1228,31 @@ export const classRepository = {
   async removeMember(classId: string, userId: string) {
     await prisma.classMember.deleteMany({ where: { classId, userId } });
   },
+
+  /**
+   * Every class the account belongs to, oldest first, for its GDPR export
+   * (rgpd/build-export.ts): the class, its intake, its school, and when they
+   * joined. Archived ones are kept (no LIVE_CLASS_FILTER): the row is still
+   * held. Not the teachers, nor the other members, who are other people.
+   *
+   * Not cut: a membership is one row per class, put there by an administrator
+   * or an invitation, so the account's list is a handful.
+   */
+  async exportMembershipsFor(userId: string) {
+    return prisma.classMember.findMany({
+      where: { userId },
+      select: {
+        joinedAt: true,
+        class: {
+          select: {
+            name: true,
+            promotion: {
+              select: { name: true, establishment: { select: { name: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: "asc" },
+    });
+  },
 };

@@ -593,13 +593,12 @@ function ResultView({
   const syncFailed = !saving && !reward && !refused;
   const resultMessage = saving
     ? "Synchronisation de ta progression…"
-    : refusal !== null
-      ? refusal
-      : reward?.alreadyCompleted
+    : (refusal ??
+      (reward?.alreadyCompleted
         ? "Cette leçon était déjà validée. Ton meilleur résultat reste enregistré."
         : reward
           ? "Ta progression et tes récompenses sont enregistrées."
-          : "Le contenu est terminé, mais la progression n’a pas encore été synchronisée.";
+          : "Le contenu est terminé, mais la progression n’a pas encore été synchronisée."));
 
   return (
     <ScrollView

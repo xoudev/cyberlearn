@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { prisma } from "@cyberlearn/db";
+import { userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "./_components/onboarding-form";
@@ -27,10 +27,7 @@ export default async function OnboardingPage({
 
   if (!user) redirect("/login");
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { username: true, displayName: true, bio: true, avatarUrl: true },
-  });
+  const dbUser = await userRepository.findOnboardingProfile(user.id);
 
   const view = profileStepView(dbUser, await searchParams);
   if (view === "done") redirect("/onboarding/avatar");

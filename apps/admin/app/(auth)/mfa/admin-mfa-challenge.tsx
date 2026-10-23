@@ -76,7 +76,12 @@ export function AdminMfaChallenge({
         labelClassName="a-label"
         inputClassName="a-input a-input--code"
       />
-      {error ? <p className="a-form-error">{error}</p> : null}
+      {/* Announced by itself: the code leaves on the sixth digit, with no click. */}
+      {error ? (
+        <p className="a-form-error" role="alert">
+          {error}
+        </p>
+      ) : null}
       <button className="a-btn a-btn--primary" type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Valider"}
       </button>

@@ -11,6 +11,7 @@ import {
   TARGET_FILES,
 } from "../../../../../../../labs/two-machine/scenario";
 import { LinuxTerminal } from "./linux-terminal";
+import "./two-machine-lab.css";
 
 export function TwoMachineLab(rawProps: Record<string, unknown>): React.ReactElement {
   const parsed = z
@@ -22,7 +23,7 @@ export function TwoMachineLab(rawProps: Record<string, unknown>): React.ReactEle
   if (!parsed.success)
     return <p role="alert">Exercice à deux machines indisponible : identifiant invalide.</p>;
   return (
-    <section aria-label="Deux machines reliées">
+    <section aria-label="Deux machines reliées" className="two-machine-lab">
       <p>
         Deux Linux distincts, reliés seulement entre eux dans cet onglet : attackbox (10.77.0.1) et
         app01 (10.77.0.2). Démarre les deux machines, puis travaille depuis attackbox. La console
@@ -30,13 +31,14 @@ export function TwoMachineLab(rawProps: Record<string, unknown>): React.ReactEle
       </p>
       <button
         type="button"
+        className="btn btn--ghost btn--sm"
         onClick={() => {
           setGeneration((value) => value + 1);
         }}
       >
         Réinitialiser les deux machines
       </button>
-      <div key={generation} className="grid gap-4 xl:grid-cols-2">
+      <div key={generation} className="two-machine-lab__machines">
         <NetworkMachineContext.Provider value={{ role: "attacker", network }}>
           <LinuxTerminal title="Attackbox · 10.77.0.1" files={ATTACKER_FILES} height={420} />
         </NetworkMachineContext.Provider>

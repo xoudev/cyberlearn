@@ -324,7 +324,14 @@
   margin-top: 4px;
 }
 
+/* A quiet link, with a touch target the size of a finger: the text is 10px, and
+   "Annuler et se déconnecter" - the one way out of the code screen - sat on a
+   row about 13px high, at the edge of the numeric keypad. The minimum height
+   makes the target; the look is unchanged. */
 .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   border: 0;
   background: transparent;
   padding: 0;
@@ -344,6 +351,12 @@
   text-underline-offset: 4px;
 }
 
+/* A link with the sentence that says what it leads to, kept together. */
+.recourse {
+  display: flex;
+  flex-direction: column;
+}
+
 .codeInput {
   height: 64px;
   text-align: center;
@@ -351,6 +364,27 @@
   font-weight: 700;
   letter-spacing: 0.38em;
   padding-left: calc(14px + 0.38em);
+}
+
+/* The text links and the "Afficher" button are one line of 9 to 10px text,
+   about 14px tall. "Renvoyer l'e-mail de confirmation" is the only way out
+   for an address that was never confirmed. On a phone, and on anything
+   touched, the text keeps its size and the target is 44px high. */
+@media (max-width: 900px), (pointer: coarse) {
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .reveal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 8px;
+    right: 4px;
+  }
 }
 
 @media (max-width: 900px) {

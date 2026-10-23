@@ -418,6 +418,18 @@ export const userRepository = {
    * that is still empty and nothing more. It used to be written at every
    * sign-in, over whatever the learner had picked at sign-up or uploaded since:
    * their choice lasted until the next time they signed in.
+   *
+   * A sign-in moves lastActiveAt, the clock of the inactivity notice, unless a
+   * streak is running. The same column is the streak's last active day (the
+   * lesson, the daily recall and the challenges read it as such), and a
+   * sign-in is not an activity of the streak. Written at the sign-in, it made
+   * the day count before anything was done: the lesson finished afterwards
+   * found the day already taken and left the streak where it was, and the
+   * nightly check kept alive a streak nobody had worked on. A running streak
+   * is recent by construction (the nightly check breaks one that has gone two
+   * days without activity), so the notice, which waits for two years, loses
+   * nothing by it. A streak that is broken, or that never started, leaves the
+   * column to the sign-in as it always did.
    */
   async upsertFromAuth(input: {
     id: string;
@@ -425,15 +437,25 @@ export const userRepository = {
     displayName: string;
     avatarUrl: string | null;
   }) {
-    const { avatarUrl: storedAvatar, ...profile } = await prisma.user.upsert({
+    const {
+      avatarUrl: storedAvatar,
+      streakDays,
+      ...profile
+    } = await prisma.user.upsert({
       where: { id: input.id },
       create: input,
-      update: {
-        email: input.email,
-        lastActiveAt: new Date(),
-      },
-      select: { username: true, role: true, avatarUrl: true },
+      update: { email: input.email },
+      select: { username: true, role: true, avatarUrl: true, streakDays: true },
     });
+
+    // Guarded in the statement: a lesson that starts a streak between the read
+    // above and this write wins, and the day stays the lesson's.
+    if (streakDays === 0) {
+      await prisma.user.updateMany({
+        where: { id: input.id, streakDays: 0 },
+        data: { lastActiveAt: new Date() },
+      });
+    }
 
     // Only when there is something to fill, which is rare once a profile
     // exists, and guarded in the statement so a choice made in between stands.
@@ -481,6 +503,49 @@ export const userRepository = {
     return user?.email ?? null;
   },
 
+  /**
+   * What the sign-up steps read of the account: the handle (null until step 1
+   * is done), the name shown, the bio and the avatar. Null when there is no
+   * such account.
+   */
+  async findOnboardingProfile(userId: string) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, displayName: true, bio: true, avatarUrl: true },
+    });
+  },
+
+  /** The id of the account that holds this handle, or null when it is free. */
+  async findIdByUsername(username: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+    return user?.id ?? null;
+  },
+
+  /**
+   * Step 1 of the sign-up: the handle, the name shown and the bio, with the
+   * preferences row every account needs from then on, in one transaction.
+   * Throws the unique-constraint error (P2002) when somebody took the handle
+   * since it was checked; the caller says so.
+   */
+  async saveOnboardingProfile(
+    userId: string,
+    profile: { username: string; displayName: string; bio: string | null },
+  ): Promise<void> {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: profile }),
+      prisma.userPreferences.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      }),
+    ]);
+  },
+
+  /** Step 2 of the sign-up: the avatar the account picked. */
+  async setAvatarUrl(userId: string, avatarUrl: string): Promise<void> {
+    await prisma.user.update({ where: { id: userId }, data: { avatarUrl } });
+  },
+
   /** Minimal user data needed for XP + streak computation on lesson completion. */
   async findForGamification(userId: string) {
     return prisma.user.findUnique({
@@ -496,9 +561,17 @@ export const userRepository = {
     });
   },
 
-  /** Full profile data for authenticated user's own profile page. */
+  /**
+   * Full profile data for authenticated user's own profile page.
+   *
+   * `lessonProgress` is the twenty latest lessons, for the Activité list;
+   * `counts.lessons` is how many were completed. The page printed the list's
+   * length, so a learner past twenty lessons read "20" on their own profile
+   * and the real figure on /u/<them> and in the app (same count as
+   * `findPublicProfile`).
+   */
   async findProfile(userId: string) {
-    return prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         preferences: true,
@@ -516,8 +589,12 @@ export const userRepository = {
           orderBy: { completedAt: "desc" },
           take: 20,
         },
+        _count: { select: { lessonProgress: { where: { status: "COMPLETED" } } } },
       },
     });
+    if (!user) return null;
+    const { _count: count, ...profile } = user;
+    return { ...profile, counts: { lessons: count.lessonProgress } };
   },
 
   /**

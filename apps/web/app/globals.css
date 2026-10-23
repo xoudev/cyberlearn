@@ -221,7 +221,11 @@ aside[data-state="collapsed"] .sidebar-nav-item {
     position: fixed;
     top: 0;
     left: 0;
+    /* The dynamic viewport: on iOS Safari 100vh is the height with the browser
+       bars folded away, so with the toolbar showing the foot of the drawer (the
+       account block, the only way to sign out) sat beneath it. */
     height: 100vh;
+    height: 100dvh;
     z-index: 49;
     width: 280px !important;
     min-width: 280px !important;
@@ -3765,6 +3769,74 @@ a.dash-friend-name:hover {
     padding: 44px 32px 120px;
   }
 }
+/* The panel of the onboarding screens drawn by hand (identity, avatar, the
+   placement test): the same square padding as OnboardingShell's panel, which
+   leaves 237px of a 375px phone to the content when it keeps the desktop's. */
+.onboarding-card {
+  padding: 26px 18px 22px;
+}
+@media (min-width: 640px) {
+  .onboarding-card {
+    padding: 32px 36px 28px;
+  }
+}
+/* The figures of the placement test (questions, duration, XP...): four columns
+   where they fit, two by two below, as their labels cannot be broken and four
+   of them ask for 320px or more. Their borders are drawn here, as they depend
+   on the number of columns. */
+.onboarding-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.onboarding-stats > * {
+  padding: 16px 14px;
+  min-width: 0;
+}
+.onboarding-stats > :nth-child(odd) {
+  border-right: 1px solid var(--color-border-default);
+}
+.onboarding-stats > :nth-child(n + 3) {
+  border-top: 1px solid var(--color-border-default);
+}
+@media (min-width: 640px) {
+  .onboarding-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .onboarding-stats > * {
+    border-right: 1px solid var(--color-border-default);
+  }
+  .onboarding-stats > :nth-child(n + 3) {
+    border-top: 0;
+  }
+  .onboarding-stats > :last-child {
+    border-right: 0;
+  }
+}
+/* The buttons that close an onboarding screen: side by side while they fit,
+   one under the other below that. */
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.onboarding-actions > .btn {
+  flex: 1 1 auto;
+}
+/* A button's label is on one line (.btn is nowrap), and "Passer → Accéder au
+   dashboard" or "Accéder au tableau de bord →" is wider than a phone's panel:
+   below 640px the label breaks, and the button grows with it. */
+@media (max-width: 639px) {
+  .onboarding-card .btn,
+  .onboarding-actions > .btn {
+    height: auto;
+    min-height: 50px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
 /* The top bar of the onboarding pages drawn by hand: below 768px it has no
    room for the step's labels and "Se déconnecter" together, and the button
    was pushed off the right edge. The labels are decoration; the way out is
@@ -3775,6 +3847,14 @@ a.dash-friend-name:hover {
   }
   .onboarding-bar__signout {
     margin-left: auto;
+    position: relative;
+  }
+  /* The button is 32px tall in a 44px bar and stays so; its target reaches
+     the edges of the bar (44px), past its own border. */
+  .onboarding-bar__signout::after {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
   }
 }
 
@@ -3943,16 +4023,8 @@ html:has(.lesson-toolbar) {
   max-width: 720px;
   margin: 0 auto 28px;
 }
-/* The breadcrumb ends on the lesson's slug, which can be long: it wraps
-   rather than pushing the page sideways on a phone. */
 .lesson-head .pg-crumb {
-  flex-wrap: wrap;
-  row-gap: 4px;
-  max-width: 100%;
   margin-bottom: 20px;
-}
-.lesson-head .pg-crumb__leaf {
-  overflow-wrap: anywhere;
 }
 .lesson-head__title {
   margin: 0 0 12px;
@@ -4580,8 +4652,12 @@ a:hover > .lesson-author-card {
 
 .pg-crumb {
   display: inline-flex;
+  /* It ends on a slug or a title, which can be long: it goes on to a second
+     line rather than running off a phone, or being cut by the page's clip. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
+  max-width: 100%;
   margin-bottom: 26px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -4601,10 +4677,12 @@ a:hover > .lesson-author-card {
 .pg-crumb__leaf {
   color: var(--color-text-primary);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .pg-crumb__link {
   color: inherit;
   text-decoration: none;
+  overflow-wrap: anywhere;
   transition: color 150ms ease;
 }
 .pg-crumb__link:hover {
@@ -6074,6 +6152,18 @@ a.cls-res__title:hover {
     display: none;
   }
 }
+/* On a phone, the bar is the sidebar's button, the actions (this chip, the
+   news, the friends, the bell, the settings, the avatar) and three gaps, and
+   at 375px it is 22px wider than the screen with the word "Wrapped" in the
+   chip: the whole page scrolled sideways for as long as the window is open
+   (December to mid-January). The icon says it, as the news chip's does
+   (.news-chip__label): the button keeps its name for a screen reader
+   (aria-label, wrapped-chip.tsx). */
+@media (max-width: 420px) {
+  .wr-chip__label {
+    display: none;
+  }
+}
 /* Until it has been opened once this edition. Two seconds of breathing, not a
    blink: it has a month to be noticed and nothing to interrupt. */
 .wr-chip--fresh {
@@ -6206,10 +6296,16 @@ a.cls-res__title:hover {
   padding: 0;
 }
 
+/* The actions go under the name when the row cannot give the name 64px beside
+   them: a friend in a duel has "Duel en cours" and "Retirer" (about 210px) in a
+   panel whose rows are 302px wide inside their padding, and the name was left
+   46px, "Jord...". The other rows (Défier and Retirer, Accepter and Refuser)
+   keep their actions on the line, as they did. */
 .fp-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   padding: 9px 18px;
   border-bottom: 1px solid #1a1640;
 }
@@ -6237,7 +6333,7 @@ a.cls-res__title:hover {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 64px;
 }
 
 .fp-name {
@@ -6265,6 +6361,7 @@ a.fp-name:hover {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .fp-error {

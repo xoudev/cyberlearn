@@ -13,7 +13,9 @@ import { monthsBefore } from "./retention.js";
  * mail failed is never erased on the strength of a notice nobody received.
  *
  * "Inactive" is lastActiveAt, which a sign-in (userRepository.upsertFromAuth)
- * and every lesson or challenge finished move forward.
+ * and every lesson or challenge finished move forward. A sign-in leaves it
+ * alone while a streak is running, as it is then the streak's last active day
+ * and under two days old: an account about to be warned has no streak.
  *
  * Administrator accounts are left out: the console must not lose the people
  * who run it to a job that runs at night.

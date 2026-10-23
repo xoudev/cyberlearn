@@ -35,9 +35,18 @@ export function WriteupEditor({
   );
   const [pending, startTransition] = useTransition();
 
+  // A call that fails inside a transition goes to the nearest error boundary,
+  // the site's own, and takes the challenge page with the solution being
+  // written. It is said under the field instead, with the text kept.
   const publish = (): void => {
     startTransition(async () => {
-      const result = await publishWriteupAction({ challengeId, content });
+      let result: Awaited<ReturnType<typeof publishWriteupAction>>;
+      try {
+        result = await publishWriteupAction({ challengeId, content });
+      } catch {
+        setMessage({ tone: "error", text: "Solution non envoyée, réessaie." });
+        return;
+      }
       if (!result.ok) {
         setMessage({ tone: "error", text: result.error });
         return;
@@ -56,7 +65,13 @@ export function WriteupEditor({
 
   const remove = (): void => {
     startTransition(async () => {
-      const result = await deleteWriteupAction(challengeId);
+      let result: Awaited<ReturnType<typeof deleteWriteupAction>>;
+      try {
+        result = await deleteWriteupAction(challengeId);
+      } catch {
+        setMessage({ tone: "error", text: "Solution non retirée, réessaie." });
+        return;
+      }
       if (!result.ok) {
         setMessage({ tone: "error", text: result.error });
         return;

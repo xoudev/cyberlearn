@@ -26,7 +26,7 @@ import {
   type DuelResultOutcome,
 } from "@cyberlearn/lib/social/duel";
 import { CornerBrackets } from "@/app/_components/corner-brackets";
-import type { DuelView } from "@/lib/social/duels";
+import type { DuelAnswerResult, DuelView } from "@/lib/social/duels";
 import { answerDuelAction, duelViewAction } from "../../_actions/duel-actions";
 import { DuelAvatar, DuelName } from "../../_components/duel-face";
 import { ChallengeButton } from "../../_components/challenge-button";
@@ -293,9 +293,13 @@ export function DuelPlay({ initial }: { initial: DuelView }): React.ReactElement
   useEffect(() => {
     if (!live) return;
     const id = setInterval(() => {
-      void duelViewAction(view.id).then((next) => {
-        if (next !== null) setView(next);
-      });
+      void duelViewAction(view.id)
+        .then((next) => {
+          if (next !== null) setView(next);
+        })
+        .catch(() => {
+          // Offline for a moment: the next tick tries again.
+        });
     }, REFRESH_MS);
     return () => {
       clearInterval(id);
@@ -306,18 +310,65 @@ export function DuelPlay({ initial }: { initial: DuelView }): React.ReactElement
   const last =
     feedback === null ? null : view.readerAnswers.find((a) => a.index === feedback.index);
 
+  // A call that fails inside a transition goes to the nearest error boundary,
+  // the site's own: a network cut or a database hiccup while answering used to
+  // replace the duel with "Cette section n'a pas pu se charger", with no way
+  // to tell whether the answer had left. It is said under the question
+  // instead, and the duel is read again to find out.
   const answer = (index: number, selected: number): void => {
     startTransition(async () => {
       setError(null);
-      const result = await answerDuelAction({ duelId: view.id, index, selected });
+      let result: DuelAnswerResult;
+      try {
+        result = await answerDuelAction({ duelId: view.id, index, selected });
+      } catch {
+        setError("Réponse non envoyée, réessaie.");
+        await recoverAnswer(index);
+        return;
+      }
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setFeedback({ index, correct: result.correct });
-      const fresh = await duelViewAction(view.id);
-      if (fresh !== null) setView(fresh);
+      const { correct, correctIndex } = result;
+      setFeedback({ index, correct });
+      try {
+        const fresh = await duelViewAction(view.id);
+        if (fresh !== null) setView(fresh);
+      } catch {
+        // The answer is in and its verdict known: the question moves on from
+        // what the call returned, and the next refresh brings the scores up
+        // to date.
+        setView((current) => ({
+          ...current,
+          readerAnswers: [
+            ...current.readerAnswers.filter((a) => a.index !== index),
+            { index, selected, correct, correctIndex },
+          ],
+        }));
+      }
     });
+  };
+
+  /**
+   * After an answer whose call failed: the server may have recorded it before
+   * the connection broke. Reads the duel again; an answer found in it is the
+   * one just given, so the question moves on rather than asking twice (an
+   * answer is final), and the failure message goes.
+   */
+  const recoverAnswer = async (index: number): Promise<void> => {
+    try {
+      const fresh = await duelViewAction(view.id);
+      if (fresh === null) return;
+      setView(fresh);
+      const saved = fresh.readerAnswers.find((a) => a.index === index);
+      if (saved !== undefined) {
+        setFeedback({ index, correct: saved.correct });
+        setError(null);
+      }
+    } catch {
+      // Still cut off: the message stays, and picking the option again retries.
+    }
   };
 
   const outcome = outcomeOf(view);
