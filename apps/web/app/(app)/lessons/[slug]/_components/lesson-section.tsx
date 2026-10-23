@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { rehypeGlossary } from "@cyberlearn/lib/glossary/rehype";
 import { protectPropIndentation } from "@cyberlearn/lib/mdx-check";
+import { GlossaryTipFit } from "./glossary-tip-fit";
 
 /**
  * One section of a lesson, rendered so that its failure is its own.
@@ -61,7 +62,13 @@ export async function LessonSection({
     // element's type is the compiled MDX content function. See the note above
     // for why calling it directly is safe.
     const Content = content.type as MdxContentFn;
-    return <>{Content({ components })}</>;
+    return (
+      <>
+        {Content({ components })}
+        {/* Keeps the glossary's definitions on screen; draws nothing. */}
+        <GlossaryTipFit />
+      </>
+    );
   } catch (error) {
     Sentry.captureException(error, {
       tags: { area: "lesson.section-render", lesson: lessonSlug },

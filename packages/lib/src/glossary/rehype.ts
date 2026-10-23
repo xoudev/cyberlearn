@@ -11,9 +11,11 @@ import { findGlossaryTerms, type GlossaryHit } from "./match";
  * first time it appears in the section.
  *
  * The tooltip is plain HTML and CSS (`.glossary-term`, `.glossary-tip` in the
- * site's stylesheet): nothing runs in the browser for it. The word can take the
+ * site's stylesheet): showing it needs no script. The word can take the
  * focus, so a keyboard or a tap reaches the definition too, and the definition
- * is tied to it by aria-describedby.
+ * is tied to it by aria-describedby. The site only adds a small script that
+ * moves a definition sideways when it would be cut at the edge of the page
+ * (`GlossaryTipFit`, in the lesson page's components).
  */
 
 /** The parts of a HTML (hast) node this plugin reads and writes. */

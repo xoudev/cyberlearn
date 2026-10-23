@@ -27,6 +27,17 @@ interface ExerciseState {
   done: Map<number, Set<string>>;
 }
 
+/** The exercises already done when the lesson opens, held done for their sections. */
+function seedExerciseState(done: readonly { step: number; id: string }[]): ExerciseState {
+  const doneByStep = new Map<number, Set<string>>();
+  for (const { step, id } of done) {
+    const ids = doneByStep.get(step) ?? new Set<string>();
+    ids.add(id);
+    doneByStep.set(step, ids);
+  }
+  return { required: new Map<number, Set<string>>(), done: doneByStep };
+}
+
 type ExerciseAction =
   | { type: "register"; step: number; id: string }
   | { type: "unregister"; step: number; id: string }
@@ -97,6 +108,14 @@ interface LessonStepperProps {
    * is read off the address.
    */
   initialStep?: number;
+  /**
+   * A lesson not finished opens where the reader stopped (lib/lessons/resume.ts):
+   * the sections they got through, marked done in the plan, and the exercises
+   * they already passed, held done so that their section is not shut again.
+   * Read on the first render only.
+   */
+  initialDoneSteps?: readonly number[];
+  initialExercisesDone?: readonly { step: number; id: string }[];
   /** Under the plan's sections, in the toolbar's drawer: the author, the glossary note. */
   planExtra?: ReactNode;
   /** The reader's note on the lesson, as saved. */
@@ -117,6 +136,8 @@ export function LessonStepper({
   reviewing = false,
   sections,
   initialStep = 0,
+  initialDoneSteps = [],
+  initialExercisesDone = [],
   planExtra,
   note,
 }: LessonStepperProps): React.ReactElement {
@@ -125,15 +146,18 @@ export function LessonStepper({
 
   const [currentStep, setCurrentStep] = useState(firstStep);
   const [doneSteps, setDoneSteps] = useState<ReadonlySet<number>>(() =>
-    isCompleted ? new Set(Array.from({ length: totalSteps }, (_el, i) => i)) : new Set<number>(),
+    isCompleted
+      ? new Set(Array.from({ length: totalSteps }, (_el, i) => i))
+      : new Set(initialDoneSteps.filter((step) => step < totalSteps)),
   );
   // The furthest section the reader has had on screen: going back from it
   // with "Précédente" leaves it open in the plan, where it used to shut.
   const [furthestStep, setFurthestStep] = useState(firstStep);
-  const [exerciseState, dispatchExercise] = useReducer(exerciseReducer, {
-    required: new Map<number, Set<string>>(),
-    done: new Map<number, Set<string>>(),
-  });
+  const [exerciseState, dispatchExercise] = useReducer(
+    exerciseReducer,
+    initialExercisesDone,
+    seedExerciseState,
+  );
   const exerciseStateRef = useRef(exerciseState);
   exerciseStateRef.current = exerciseState;
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);

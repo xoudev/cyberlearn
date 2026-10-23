@@ -24,7 +24,7 @@ export function TwoMachineLab(rawProps: Record<string, unknown>): React.ReactEle
     return <p role="alert">Exercice à deux machines indisponible : identifiant invalide.</p>;
   return (
     <section aria-label="Deux machines reliées" className="two-machine-lab">
-      <p>
+      <p className="two-machine-lab__brief">
         Deux Linux distincts, reliés seulement entre eux dans cet onglet : attackbox (10.77.0.1) et
         app01 (10.77.0.2). Démarre les deux machines, puis travaille depuis attackbox. La console
         app01 sert à observer et à corriger après l’exercice.

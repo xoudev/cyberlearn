@@ -6,9 +6,11 @@ import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { lessonTabTitle, readLesson } from "@/lib/lessons/read-lesson";
+import { NO_RESUME, lessonResume } from "@/lib/lessons/resume";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import { sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
 import {
+  exerciseRepository,
   friendshipRepository,
   lessonQuizRepository,
   quizReportRepository,
@@ -76,6 +78,7 @@ export default async function LessonPage({
     reportedQuizIds,
     unlockAll,
     friendIds,
+    passedExercises,
   ] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
     // "Next" used to mean the next lesson published anywhere in the catalogue,
@@ -101,6 +104,9 @@ export default async function LessonPage({
     unlocksEveryLesson(authUser.id),
     // The reader's friends, marked beside their names in the questions.
     friendshipRepository.friendIds(authUser.id),
+    // The exercises passed in this lesson: a Python challenge passed holds its
+    // section shut no more when the lesson is opened again.
+    exerciseRepository.listForLesson(authUser.id, lesson.id),
   ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
@@ -145,8 +151,20 @@ export default async function LessonPage({
   // administrator's preview. Anywhere else the lesson starts at its start.
   // With the lesson already on screen, the stepper meets the request itself:
   // it keeps its state across this page's renders.
-  const initialStep =
-    isCompleted || reviewing ? sectionFromQuery(sectionParam, Math.max(1, sections.length)) : 0;
+  const settled = isCompleted || reviewing;
+  // A lesson not finished opens where the reader stopped, read from what they
+  // did (lib/lessons/resume.ts), not on its first section with every one
+  // ahead shut in the plan.
+  const resume = settled
+    ? NO_RESUME
+    : lessonResume(
+        mdxSections,
+        new Set(quizAnswers.map((a) => a.quizId)),
+        new Set(passedExercises),
+      );
+  const initialStep = settled
+    ? sectionFromQuery(sectionParam, Math.max(1, sections.length))
+    : resume.step;
 
   const stepper = (
     <LessonStepper
@@ -157,6 +175,8 @@ export default async function LessonPage({
       reviewing={reviewing}
       sections={sections}
       initialStep={initialStep}
+      initialDoneSteps={resume.doneSteps}
+      initialExercisesDone={resume.exercisesDone}
       note={{ content: note?.content ?? "", wordCount: note?.wordCount ?? 0 }}
       planExtra={
         <>

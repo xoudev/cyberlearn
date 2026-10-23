@@ -1,13 +1,18 @@
-/* <TwoMachineLab>: the note, the reset, then the two machines. They stand one
-   under the other until the lesson block (lesson-block.ts) has room for two
-   screens of a usable width side by side. The block, not the window: at 1440px
-   the block can be 1150px wide, or half that with the notes docked beside the
-   lesson, and two terminals in 530px are about thirty columns each, where the
-   prompt and every command wrap on themselves. */
+/* <TwoMachineLab>: the brief, the reset, then the two machines. They stand one
+   under the other, each as wide as the block, as on a phone, until the lesson
+   block (lesson-block.ts) has room for two screens of a usable width side by
+   side. The block, not the window: at 1440px the block can be 1150px wide, or
+   half that with the notes docked beside the lesson, and two terminals in
+   530px are about thirty columns each, where the prompt and every command wrap
+   on themselves. */
 
 .two-machine-lab {
   display: grid;
   gap: 14px;
+}
+
+.two-machine-lab__brief {
+  margin: 0;
 }
 
 .two-machine-lab__machines {

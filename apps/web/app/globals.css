@@ -1200,8 +1200,11 @@ article.lesson-content > p {
 }
 
 /* Glossary words (rehypeGlossary, @cyberlearn/lib/glossary): dotted, so they
-   do not read as links, with the definition shown on hover and on focus. No
-   script: a tap focuses the word, which shows it too. */
+   do not read as links, with the definition shown on hover and on focus. A tap
+   focuses the word, which shows it too. Showing is this sheet's alone; a small
+   script (glossary-tip-fit.tsx) only moves a definition sideways, with
+   --glossary-shift, when it would be cut at the edge of the page: it starts at
+   its word and spreads to the right, and <main> clips what leaves it. */
 .glossary-term {
   position: relative;
   text-decoration: underline dotted rgba(10, 255, 212, 0.6);
@@ -1216,7 +1219,7 @@ article.lesson-content > p {
   display: none;
   position: absolute;
   z-index: 30;
-  left: 0;
+  left: var(--glossary-shift, 0px);
   top: calc(100% + 6px);
   width: max-content;
   max-width: min(320px, 80vw);
@@ -4234,6 +4237,16 @@ html:has(.lesson-toolbar) {
     display: block;
   }
 }
+/* Under a thumb the bar's buttons are 44px targets: at 34px, "Suivante" and
+   "Plan" sat 6px from "Précédente" and "Notes", and a touch a little off
+   opened the wrong drawer or went back a section. The bar is 48px
+   (LESSON_TOOLBAR_HEIGHT) and holds them as it is: nothing around it moves. */
+@media (pointer: coarse) {
+  .lesson-toolbar .btn {
+    height: 44px;
+    min-width: 44px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .lesson-toolbar__bar > span {
     transition: none;
@@ -4355,6 +4368,40 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
 .lesson-notes .side-drawer__foot {
   flex-wrap: wrap;
   row-gap: 6px;
+}
+/* The formatting buttons and "Agrandir" (note-drawer.tsx). The sizes are here,
+   not inline, so that a touch screen can give them the 44px a thumb needs;
+   the close button of the same drawer follows. */
+.lesson-notes__tool {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+}
+.lesson-notes__expand {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .lesson-notes__tool,
+  .lesson-notes__expand,
+  .lesson-notes .side-drawer__close {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* ─── The bar under the lesson (next-bar.tsx) ──────────────────────────────
