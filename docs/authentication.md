@@ -58,16 +58,18 @@ portal, and the native mobile application.
   `/login`, `/register`, `/forgot-password` or the onboarding steps, and before
   it sends a session that owes its second-factor code to `/mfa`, it asks the
   auth server (`getUser`, capped like the other auth calls, once per request).
-  A session the server answers is gone falls through to the page and its cookie
-  is dropped; without that check `/login` sent the account to `/dashboard`, the
-  layout sent it back, and the browser stopped on `ERR_TOO_MANY_REDIRECTS` (for
-  a session waiting for its code, the same loop ran between `/mfa` and
-  `/login`, which is where a learner who lost the phone sits when the team
-  removes the factor). An auth server that cannot be reached, or answers with a
-  5xx, proves nothing about the session: the code is still asked for, and
-  nobody is sent into the app. The app does not have this failure: it
-  refreshes its session on launch and signs out locally when the refresh token
-  is refused (`lib/session.tsx`).
+  A session the server answers is gone (`session_not_found`, or `user_not_found`
+  for a deleted account) falls through to the page. Its cookie is dropped when
+  auth-js signs the session out, which it does for the former only: the
+  deleted account's cookie stays until its token expires, which loops nowhere.
+  Without that check `/login` sent the account to `/dashboard`, the layout sent
+  it back, and the browser stopped on `ERR_TOO_MANY_REDIRECTS` (for a session
+  waiting for its code, the same loop ran between `/mfa` and `/login`, which is
+  where a learner who lost the phone sits when the team removes the factor).
+  An auth server that cannot be reached, or answers with a 5xx, proves nothing
+  about the session: the code is still asked for, and nobody is sent into the
+  app. The app does not have this failure: it refreshes its session on launch
+  and signs out locally when the refresh token is refused (`lib/session.tsx`).
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
   and mobile route gates require AAL2 before mounting protected application UI.
   `/mfa` sends a session with no verified factor (`nextLevel !== "aal2"`) on to

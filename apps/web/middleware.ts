@@ -1,5 +1,5 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
-import { isAuthSessionMissingError } from "@supabase/supabase-js";
+import { isAuthApiError, isAuthSessionMissingError } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { isProtectedRoute } from "@/lib/routes";
 import { REQUEST_ID_HEADER, requestIdFor } from "@/lib/request-id";
@@ -265,18 +265,30 @@ async function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T
  * What the auth server says of the session the cookie carries:
  *  - "live": it knows the session;
  *  - "gone": it answered that the session does not exist (deleted by "Déconnecter
- *    toutes les sessions", by a global sign-out, by the removal of the second
- *    factor, or with the account);
+ *    toutes les sessions", by a global sign-out, or by the removal of the second
+ *    factor), or that the account does not (deleted);
  *  - "unreachable": no answer, or one that says nothing of the session (a 5xx).
  *
  * getSession() cannot tell: it reads the cookie, which stays valid for the
- * hour its token lasts. getUser() asks over the network. On "gone", auth-js
+ * hour its token lasts. getUser() asks over the network. For a deleted session
+ * (auth-js raises "session_not_found" as an AuthSessionMissingError), auth-js
  * has dropped the session from the client's storage and @supabase/ssr has
  * turned that into cookie removals through `setAll`, which has finished by the
  * time this resolves (the sign-out event is awaited): the response built there
  * carries them, so the next request starts signed out.
+ *
+ * A deleted account is answered differently: GoTrue checks the user named by
+ * the token's `sub` before it looks for the session, and says 403
+ * "user_not_found", a plain AuthApiError that auth-js does not turn into a
+ * sign-out. It is "gone" all the same - nobody is sent into the app on its
+ * word, so nobody loops - but the cookie stays until its token expires.
  */
 type SessionCheck = "live" | "gone" | "unreachable";
+
+function isGoneFromServer(error: unknown): boolean {
+  if (isAuthSessionMissingError(error)) return true;
+  return isAuthApiError(error) && error.code === "user_not_found";
+}
 
 async function checkSessionOnServer(
   getUser: () => PromiseLike<{ data: { user: unknown }; error: unknown }>,
@@ -284,7 +296,7 @@ async function checkSessionOnServer(
   const result = await withTimeout(getUser(), "getUser");
   if (result === null) return "unreachable";
   if (result.data.user !== null) return "live";
-  return isAuthSessionMissingError(result.error) ? "gone" : "unreachable";
+  return isGoneFromServer(result.error) ? "gone" : "unreachable";
 }
 
 /**
@@ -448,7 +460,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         // closed, was sent from /mfa to /login by the page, which asks the
         // server, and from /login back to /mfa by this gate, which did not:
         // the same redirect loop as below. A session the server does not know
-        // owes nothing; it falls through, and its cookie is dropped.
+        // owes nothing; it falls through (its cookie is dropped by `response`).
         mustTypeCode = (await sessionOnServer()) !== "gone";
       } else {
         mustTypeCode = false;
@@ -505,7 +517,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // page, until the token expired. So the server is asked before anybody is
     // sent away from a page they have a reason to see, and a session it does not
     // know falls through to the page itself - with the cookie dropped by
-    // `response` (setAll), so the next request starts signed out.
+    // `response` (setAll) when auth-js signs the session out, so the next
+    // request starts signed out.
     if (
       isOnboardingComplete &&
       (isLanding ||

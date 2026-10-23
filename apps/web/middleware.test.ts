@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AuthRetryableFetchError, AuthSessionMissingError } from "@supabase/supabase-js";
+import {
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthSessionMissingError,
+} from "@supabase/supabase-js";
 import { NextRequest, type NextResponse } from "next/server";
 import { consoleOrigin, isProtectedRoute, middleware } from "./middleware";
 
@@ -23,6 +27,8 @@ const auth = vi.hoisted(() => ({
   serverDown: false,
   /** The auth host answers with a 5xx, which says nothing of the session. */
   serverFails: false,
+  /** The account itself is gone: GoTrue answers 403 "user_not_found". */
+  accountDeleted: false,
   getUserCalls: 0,
   /** The assurance level of the cookie's session. */
   assurance: { currentLevel: "aal1", nextLevel: "aal1" },
@@ -52,6 +58,18 @@ vi.mock("@supabase/ssr", () => ({
         if (auth.serverFails) {
           return { data: { user: null }, error: new AuthRetryableFetchError("Bad Gateway", 502) };
         }
+        // GoTrue looks the user up before the session. auth-js raises this as a
+        // plain AuthApiError and does not sign the session out.
+        if (auth.accountDeleted) {
+          return {
+            data: { user: null },
+            error: new AuthApiError(
+              "User from sub claim in JWT does not exist",
+              403,
+              "user_not_found",
+            ),
+          };
+        }
         if (auth.session !== null && auth.serverKnowsSession) {
           return { data: { user: auth.session.user }, error: null };
         }
@@ -76,6 +94,7 @@ afterEach(() => {
   auth.serverKnowsSession = true;
   auth.serverDown = false;
   auth.serverFails = false;
+  auth.accountDeleted = false;
   auth.getUserCalls = 0;
   auth.assurance = { currentLevel: "aal1", nextLevel: "aal1" };
 });
@@ -366,6 +385,19 @@ describe("a session the auth server no longer knows", () => {
     expect(last.cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 
+  it("ends on the sign-in page for a deleted account too, whose cookie auth-js leaves alone", async () => {
+    // GoTrue checks the user before the session: an account deleted with its
+    // sessions answers "user_not_found", not "session_not_found", and auth-js
+    // does not sign that out. It is no more a reason to go to the dashboard.
+    auth.accountDeleted = true;
+
+    const { visited, last } = await browse("/dashboard");
+
+    expect(visited).toEqual(["/dashboard", "/login"]);
+    expect(last.headers.get("location")).toBeNull();
+    expect(last.cookies.get(SESSION_COOKIE)).toBeUndefined();
+  });
+
   it("keeps the placement test open, without asking the server", async () => {
     const response = await middleware(
       new NextRequest("https://cyberlearn.fr/onboarding/placement-test"),
@@ -397,6 +429,14 @@ describe("a session the auth server no longer knows", () => {
       expect(visited).toEqual(["/mfa", "/login"]);
       expect(last.headers.get("location")).toBeNull();
       expect(last.cookies.get(SESSION_COOKIE)?.value).toBe("");
+    });
+
+    it("does not ask for a code either when the account itself was deleted", async () => {
+      auth.accountDeleted = true;
+
+      const { visited } = await browse("/mfa");
+
+      expect(visited).toEqual(["/mfa", "/login"]);
     });
 
     it("does not send a protected page to a code that nobody can type", async () => {
