@@ -49,11 +49,21 @@ function rulesOf(selector: string): Rule[] {
   return found.sort((a, b) => a.at - b.at).map((entry) => entry.rule);
 }
 
+/**
+ * The values `property` is given across `rules`, whitespace collapsed. The body
+ * is cut on ";" into declarations and each one on its first ":" (a value may
+ * hold others, as in a url()); string operations rather than a RegExp built
+ * from the property name, which the static analysis refuses.
+ */
 function declared(rules: Rule[], property: string): string[] {
   return rules.flatMap((rule) =>
-    [...rule.body.matchAll(new RegExp(`(?:^|;|\\s)${property}\\s*:\\s*([^;]+)`, "gu"))].map(
-      (match) => (match[1] ?? "").replace(/\s+/gu, " ").trim(),
-    ),
+    rule.body.split(";").flatMap((declaration) => {
+      const colon = declaration.indexOf(":");
+      if (colon === -1 || declaration.slice(0, colon).trim() !== property) return [];
+      const value = declaration.slice(colon + 1);
+      // A declaration with nothing after its colon declares no value.
+      return value === "" ? [] : [value.replace(/\s+/gu, " ").trim()];
+    }),
   );
 }
 
