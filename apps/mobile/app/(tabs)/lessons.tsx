@@ -1,12 +1,12 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Rise, PressableScale } from "@/components/anim";
 import { LessonCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { useTourAnchor } from "@/components/tour";
-import { Pill, SectionLabel, Text } from "@/components/ui";
+import { Pill, SectionLabel } from "@/components/ui";
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,

@@ -464,12 +464,12 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
   return useQuery({
     queryKey: ["lessons", userId, filters],
     queryFn: async (): Promise<LessonCard[]> => {
-      type ProgressRow = {
+      interface ProgressRow {
         lessonId: string;
         status: ProgressStatus;
         quizCorrect: number | null;
         quizTotal: number | null;
-      };
+      }
       // Read first: the status filter is built from it.
       let progressRows: ProgressRow[] = [];
       if (userId) {

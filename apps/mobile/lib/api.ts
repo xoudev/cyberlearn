@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import type { PhotoPart } from "@/lib/avatar-photo";
+import type { WrappedPayload } from "@cyberlearn/lib/gamification/wrapped";
 import type { RevisionSheet } from "@cyberlearn/lib/paths/sheet";
 import type { DuelBoard, DuelView } from "@/lib/duels";
 import type {
@@ -47,28 +48,27 @@ import {
   type RecallAnswerReply,
   type RecallView,
 } from "@/lib/rappel";
+import { firstNonEmpty } from "@/lib/public-env";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
 // The one copy of the site's address in the app, without a trailing slash so
 // every "<SITE_URL>/path" holds a single one.
-export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr").replace(
-  /\/+$/u,
-  "",
-);
+export const SITE_URL = firstNonEmpty(
+  process.env.EXPO_PUBLIC_SITE_URL,
+  "https://cyberlearn.fr",
+).replace(/\/+$/u, "");
 
 function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
   // A multipart body sets its own Content-Type, boundary included.
   const json = !(init?.body instanceof FormData);
-  return fetch(`${SITE_URL}${path}`, {
-    ...init,
-    headers: {
-      ...(json ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
-  });
+  // Headers, not a spread: a caller's headers may be a Headers or a list of
+  // pairs, which spread into an object as nothing. Theirs win over ours.
+  const headers = new Headers(init?.headers);
+  if (json && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(`${SITE_URL}${path}`, { ...init, headers });
 }
 
 /** Authenticated fetch that refreshes and retries once after an expired JWT. */
@@ -1156,7 +1156,7 @@ export async function claimCertificateApi(
 export type WrappedReply =
   | {
       open: true;
-      payload: import("@cyberlearn/lib/gamification/wrapped").WrappedPayload | null;
+      payload: WrappedPayload | null;
       handle: string;
       periodKey: string;
     }

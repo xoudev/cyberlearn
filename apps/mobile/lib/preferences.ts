@@ -9,10 +9,6 @@
  * then showed the defaults (« Anonyme », profil public), a privacy setting
  * the reader never chose.
  */
-export function undoSettingChange<T extends object, K extends keyof T>(
-  current: T,
-  before: T,
-  key: K,
-): T {
+export function undoSettingChange<T extends object>(current: T, before: T, key: keyof T): T {
   return { ...current, [key]: before[key] };
 }

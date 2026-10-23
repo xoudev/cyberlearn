@@ -20,7 +20,9 @@ export function readLessonLocks(body: unknown): Map<string, LessonLock> {
   if (!("ok" in body) || body.ok !== true || !("locked" in body)) return locks;
   const { locked } = body;
   if (typeof locked !== "object" || locked === null) return locks;
-  for (const [lessonId, lock] of Object.entries(locked)) {
+  // SAFETY: `locked` is an object (checked above); Object.entries types a bare
+  // `object`'s values `any`, and each is narrowed again below.
+  for (const [lessonId, lock] of Object.entries(locked as Record<string, unknown>)) {
     if (typeof lock !== "object" || lock === null) continue;
     if (!("slug" in lock) || typeof lock.slug !== "string" || lock.slug === "") continue;
     const title = "title" in lock && typeof lock.title === "string" ? lock.title : "";

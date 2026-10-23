@@ -1,7 +1,7 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React from "react";
-import { Pressable, Share, View } from "react-native";
+import { Share, View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
 import { certificateVerifyUrl } from "@cyberlearn/lib/social/portfolio";
 import { colors, fonts } from "@cyberlearn/tokens";
@@ -20,7 +20,6 @@ function fmtDate(iso: string): string {
 }
 
 export default function CertificateDetail(): React.JSX.Element {
-  const router = useRouter();
   const { session } = useSession();
   const { publicId, title, score, date } = useLocalSearchParams<{
     publicId: string;

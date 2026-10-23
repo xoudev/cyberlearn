@@ -4,7 +4,7 @@ import Svg, { Path, Polygon } from "react-native-svg";
 // The CSS-aware loader: uploaded icons (SVG Repo exports) hide their bounding
 // square with a <style> rule that plain SvgUri ignores, drawing a grey block.
 import { SvgCssUri } from "react-native-svg/css";
-import { colors, fonts } from "@cyberlearn/tokens";
+import { fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { SITE_URL } from "@/lib/api";
 import { useCosmetics } from "@/lib/cosmetics";
