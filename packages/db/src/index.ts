@@ -329,6 +329,7 @@ export {
   contentReportRepository,
   CONTENT_REPORT_REASONS,
   type ContentReportReasonValue,
+  type ReportAgainstAuthor,
   type ReportedContent,
   type ReportQueue,
 } from "./repositories/content-report.repository.js";

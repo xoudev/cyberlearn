@@ -9,6 +9,7 @@ import {
   badgeRepository,
   banRepository,
   certificateRepository,
+  contentReportRepository,
   isTicketOpen,
   lessonProgressRepository,
   moderationRepository,
@@ -106,6 +107,8 @@ export default async function AdminUserPage({
     moderationTotal,
     noteReports,
     noteReportTotal,
+    contentReports,
+    contentGestures,
     auditRows,
     paths,
     exams,
@@ -126,6 +129,11 @@ export default async function AdminUserPage({
     moderationRepository.countForUser(user.id),
     noteReportRepository.againstAuthor(user.id, RECENT_ROWS),
     noteReportRepository.countAgainstAuthor(user.id),
+    // What the contents it published drew, and what the console did to them:
+    // the reports are filed against a content and the gestures logged against
+    // it too, so neither is among the lines about the account itself.
+    contentReportRepository.againstAuthor(user.id, RECENT_ROWS),
+    auditLogRepository.contentGesturesOnAuthor(user.id, RECENT_ROWS),
     auditLogRepository.recentForUser(user.id, RECENT_ROWS),
     pathRepository.findProgressForConsole(user.id),
     quizRepository.latestAttemptsForConsole(user.id),
@@ -329,6 +337,9 @@ export default async function AdminUserPage({
             eventTotal={moderationTotal}
             noteReports={noteReports}
             noteReportTotal={noteReportTotal}
+            contentReports={contentReports}
+            contentGestures={contentGestures}
+            contentSearch={user.username ?? user.displayName}
           />
 
           <AuditPanel userId={user.id} rows={auditRows} />

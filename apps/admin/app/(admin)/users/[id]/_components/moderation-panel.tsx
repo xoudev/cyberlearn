@@ -1,11 +1,17 @@
 import React from "react";
 import Link from "next/link";
-import type { moderationRepository, noteReportRepository } from "@cyberlearn/db";
+import type {
+  AuditRow,
+  moderationRepository,
+  noteReportRepository,
+  ReportAgainstAuthor,
+} from "@cyberlearn/db";
 import { NOTE_REPORT_REASON_LABELS } from "@cyberlearn/lib/notes/report-reasons";
 import { Card, Tag, type Tone } from "../../../_components/admin-ui";
 import { USER_CARDS } from "../../_components/columns";
 import { SURFACE_LABEL } from "../../../moderation/surface-labels";
 import { formatDay } from "../../_components/dates";
+import { gestureLine, reportLine } from "./author-content";
 
 type ModerationRow = Awaited<ReturnType<typeof moderationRepository.findForUser>>[number];
 type NoteReportRow = Awaited<ReturnType<typeof noteReportRepository.againstAuthor>>[number];
@@ -38,15 +44,19 @@ function heading(
 }
 
 /**
- * What the platform flagged in this account's writing, and what recipients
- * reported about the notes it shared. Read only: both are judged in their
- * queues, which this links to.
+ * What the platform flagged in this account's writing, what recipients
+ * reported about the notes it shared, what others reported about the contents
+ * it published, and what the console did to those. Read only: each is judged
+ * in its own queue, which this links to.
  */
 export function ModerationPanel({
   events,
   eventTotal,
   noteReports,
   noteReportTotal,
+  contentReports,
+  contentGestures,
+  contentSearch,
 }: {
   /** The latest ones only. */
   events: ModerationRow[];
@@ -54,7 +64,15 @@ export function ModerationPanel({
   /** The latest ones only. */
   noteReports: NoteReportRow[];
   noteReportTotal: number;
+  /** Reports about the account's published contents: the latest ones, and how many in all. */
+  contentReports: { total: number; rows: ReportAgainstAuthor[] };
+  /** What the console did to those contents: the latest ones, and how many in all. */
+  contentGestures: { total: number; rows: AuditRow[] };
+  /** What the contents list is searched for to find this account's: the name it shows them under. */
+  contentSearch: string;
 }): React.ReactElement {
+  const reports = contentReports.rows.map(reportLine);
+  const gestures = contentGestures.rows.map(gestureLine);
   return (
     <Card
       title={USER_CARDS.moderation}
@@ -65,6 +83,15 @@ export function ModerationPanel({
           </Link>
           <Link href="/moderation/notes" className="a-btn a-btn--ghost a-btn--sm">
             Notes signalées
+          </Link>
+          <Link href="/moderation/reports" className="a-btn a-btn--ghost a-btn--sm">
+            Signalements
+          </Link>
+          <Link
+            href={`/moderation/content?q=${encodeURIComponent(contentSearch)}`}
+            className="a-btn a-btn--ghost a-btn--sm"
+          >
+            Ses contenus
           </Link>
         </span>
       }
@@ -134,6 +161,78 @@ export function ModerationPanel({
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 className="a-subhead">
+          {heading("Contenus publiés, signalés", contentReports.total, reports.length, "derniers")}
+        </h3>
+        {reports.length === 0 ? (
+          <p className="a-field-hint">Aucun de ses contenus publiés n&apos;a été signalé.</p>
+        ) : (
+          <div className="a-table-wrap">
+            <table className="a-table">
+              <tbody>
+                {reports.map((report) => (
+                  <tr key={report.id}>
+                    <td>
+                      <span className="a-row-link-title">{report.title}</span>
+                      <div
+                        className="a-field-hint"
+                        style={{ overflowWrap: "anywhere", maxWidth: 420 }}
+                      >
+                        {report.detail ?? "Ce contenu n'existe plus."}
+                      </div>
+                    </td>
+                    <td className="mono a-field-hint">{formatDay(report.at)}</td>
+                    <td align="right">
+                      <Tag tone={report.status.tone}>{report.status.label}</Tag>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <h3 className="a-subhead">
+          {heading(
+            "Gestes de la console sur ses contenus",
+            contentGestures.total,
+            gestures.length,
+            "derniers",
+          )}
+        </h3>
+        {gestures.length === 0 ? (
+          <p className="a-field-hint">
+            Aucun de ses contenus publiés n&apos;a été masqué, réaffiché ni supprimé.
+          </p>
+        ) : (
+          <div className="a-table-wrap">
+            <table className="a-table">
+              <tbody>
+                {gestures.map((line) => (
+                  <tr key={line.id}>
+                    <td>
+                      <span className="a-row-link-title">{line.title}</span>
+                      {line.detail !== null && (
+                        <div
+                          className="a-field-hint"
+                          style={{ overflowWrap: "anywhere", maxWidth: 420 }}
+                        >
+                          {line.detail}
+                        </div>
+                      )}
+                      <div className="a-field-hint">par {line.by}</div>
+                    </td>
+                    <td className="mono a-field-hint">{formatDay(line.at)}</td>
+                    <td align="right">
+                      <Tag tone={line.gesture.tone}>{line.gesture.label}</Tag>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -39,9 +39,12 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     tx,
     mockPrisma: {
       $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
-      challengeWriteup: { findFirst: vi.fn() },
+      forumPost: { findMany: vi.fn() },
+      lessonQuestion: { findMany: vi.fn() },
+      lessonAnswer: { findMany: vi.fn() },
+      challengeWriteup: { findFirst: vi.fn(), findMany: vi.fn() },
       userChallengeProgress: { findUnique: vi.fn() },
-      classResource: { findFirst: vi.fn() },
+      classResource: { findFirst: vi.fn(), findMany: vi.fn() },
       classMember: { findFirst: vi.fn() },
     },
   };
@@ -463,6 +466,37 @@ describe("contentModerationRepository.reportable", () => {
     mockPrisma.classResource.findFirst.mockResolvedValue({ classId: "k-1", createdById: "t-1" });
     mockPrisma.classMember.findFirst.mockResolvedValue(null);
     expect(await contentModerationRepository.reportable("CLASS_RESOURCE", ID, ADMIN)).toBeNull();
+  });
+});
+
+describe("contentModerationRepository.authoredBy", () => {
+  it("lists what an account wrote on every surface, by the column that names its author", async () => {
+    mockPrisma.forumPost.findMany.mockResolvedValue([{ id: "p-1" }, { id: "p-2" }]);
+    mockPrisma.lessonQuestion.findMany.mockResolvedValue([]);
+    mockPrisma.lessonAnswer.findMany.mockResolvedValue([{ id: "a-1" }]);
+    mockPrisma.challengeWriteup.findMany.mockResolvedValue([{ id: "w-1" }]);
+    mockPrisma.classResource.findMany.mockResolvedValue([{ id: "c-1" }]);
+
+    expect(await contentModerationRepository.authoredBy(AUTHOR.id)).toEqual([
+      { surface: "FORUM_POST", ids: ["p-1", "p-2"] },
+      { surface: "LESSON_QUESTION", ids: [] },
+      { surface: "LESSON_ANSWER", ids: ["a-1"] },
+      { surface: "CHALLENGE_WRITEUP", ids: ["w-1"] },
+      { surface: "CLASS_RESOURCE", ids: ["c-1"] },
+    ]);
+    expect(mockPrisma.forumPost.findMany).toHaveBeenCalledWith({
+      where: { authorId: AUTHOR.id },
+      select: { id: true },
+    });
+    expect(mockPrisma.classResource.findMany).toHaveBeenCalledWith({
+      where: { createdById: AUTHOR.id },
+      select: { id: true },
+    });
+    // Hidden ones included: a report is filed on a content the console may have hidden since.
+    expect(mockPrisma.lessonAnswer.findMany).toHaveBeenCalledWith({
+      where: { userId: AUTHOR.id },
+      select: { id: true },
+    });
   });
 });
 
