@@ -58,7 +58,8 @@ beforeEach(() => {
   m.screen.mockResolvedValue({ flagged: false, throttled: false, eventId: null });
   m.upsert.mockResolvedValue({ id: "w-1" });
   m.friendIds.mockResolvedValue(new Set());
-  m.profilesOpenTo.mockResolvedValue(new Set());
+  // Every profile is open unless a test closes it.
+  m.profilesOpenTo.mockImplementation((_viewer, ids) => Promise.resolve(new Set(ids)));
 });
 
 describe("writeupBoardFor", () => {
@@ -134,8 +135,7 @@ describe("writeupBoardFor", () => {
     expect(JSON.stringify(board)).not.toContain("u2");
   });
 
-  it("names an author whose profile is closed to the reader without a handle to follow", async () => {
-    // A link to a closed profile is a 404 ("Cette page est introuvable").
+  it("links an author's name only when the reader may open that profile", async () => {
     const at = new Date("2026-10-01T10:00:00Z");
     m.findOwn.mockResolvedValue(null);
     m.profilesOpenTo.mockResolvedValue(new Set(["u2"]));
@@ -152,16 +152,15 @@ describe("writeupBoardFor", () => {
         updatedAt: at,
         user: { id: "u3", displayName: "Sam", username: "sam" },
       },
+      { id: "w-3", content: "Avec cut.", updatedAt: at, user: null },
     ]);
-
     const board = await writeupBoardFor("u1", CHALLENGE);
-
+    // The name stays; the handle a closed profile would 404 on does not travel.
     expect(board?.solved && board.others.map((w) => w.author)).toEqual([
       { name: "Alex", username: "alex", isFriend: false },
-      // The name stays: the solution is signed whatever the profile.
       { name: "Sam", username: null, isFriend: false },
+      null,
     ]);
-    // One call for every author, asked for the reader.
     expect(m.profilesOpenTo).toHaveBeenCalledTimes(1);
     expect(m.profilesOpenTo).toHaveBeenCalledWith("u1", ["u2", "u3"]);
   });

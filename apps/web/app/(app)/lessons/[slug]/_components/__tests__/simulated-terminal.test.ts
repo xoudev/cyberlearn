@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { completePrefix, SimulatedTerminal } from "../simulated-terminal";
+import { completePrefix, didYouMeanLine, SimulatedTerminal } from "../simulated-terminal";
 
 describe("completePrefix", () => {
   const COMMANDS = ["cat robots.txt", "curl http://target.ctf/", "curl -I http://target.ctf/admin"];
@@ -54,5 +54,24 @@ describe("the terminal's screen height", () => {
 
   it("is the author's, written on the screen, when there is one", () => {
     expect(screenHeight({ height: 420 })).toBe("420px");
+  });
+});
+
+/**
+ * The line offered after a mistyped command. The terminal and the site speak
+ * to the reader with "tu": this one said "vous", right above a "tape help".
+ */
+describe("didYouMeanLine", () => {
+  // Strips the colour codes xterm reads, to look at the words alone.
+  const ESCAPE = String.fromCharCode(27);
+  const colours = new RegExp(`${ESCAPE}\\[[0-9;]*m`, "g");
+  const plain = (line: string): string => line.replace(colours, "");
+
+  it("offers the nearest command to the reader as 'tu'", () => {
+    expect(plain(didYouMeanLine("ls"))).toBe("Tu voulais dire : ls ?");
+  });
+
+  it("never addresses the reader as 'vous'", () => {
+    expect(plain(didYouMeanLine("cat robots.txt"))).not.toMatch(/vous|vouliez/i);
   });
 });

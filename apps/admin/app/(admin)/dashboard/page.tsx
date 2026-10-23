@@ -9,6 +9,7 @@ import {
   WITHOUT_CRON_RUNS,
 } from "@cyberlearn/db";
 import { auditActorName } from "@/lib/audit-export";
+import { consoleDateFormat } from "@/lib/console-time";
 import { roleLabel, roleTone } from "@/lib/roles";
 import { fetchSentryIssues } from "@/lib/sentry-issues";
 import { SentryCard } from "../_components/SentryCard";
@@ -75,10 +76,10 @@ function relativeDate(date: Date): string {
   const diff = Date.now() - date.getTime();
   const day = 24 * 60 * 60 * 1000;
   if (diff < day) {
-    return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(date);
+    return consoleDateFormat({ hour: "2-digit", minute: "2-digit" }).format(date);
   }
   if (diff < 2 * day) return "hier";
-  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+  return consoleDateFormat({ day: "2-digit", month: "short" }).format(date);
 }
 
 export default async function DashboardPage(): Promise<React.ReactElement> {
@@ -361,7 +362,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                           </b>
                         </td>
                         <td className="num" style={{ color: "var(--a-muted)" }}>
-                          {new Intl.DateTimeFormat("fr-FR", {
+                          {consoleDateFormat({
                             day: "2-digit",
                             month: "short",
                           }).format(u.createdAt)}

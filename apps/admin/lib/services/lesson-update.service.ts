@@ -1,13 +1,12 @@
 import crypto from "node:crypto";
 import { lessonFileRepository, lessonRepository, type LessonFileRow } from "@cyberlearn/db";
-import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
 import type {
   ImportValidationError,
   LessonFieldChange,
-  LessonQuizImpact,
   LessonUpdatePreview,
 } from "@cyberlearn/types";
 import { findPrerequisiteCycle } from "@/lib/lesson-prerequisites";
+import { quizImpactsOf } from "@/lib/quiz-impacts";
 import { compareLines, diffHunks, diffStats } from "@/lib/text-diff";
 import { checkLessonFile, type LessonFileMetadata } from "./lesson-file-check";
 
@@ -99,20 +98,6 @@ function fieldChanges(before: LessonFields, after: LessonFields): LessonFieldCha
   });
 }
 
-/** Quizzes whose options or answer key the update changes. */
-function changedQuizzes(before: string, after: string): Map<string, LessonQuizImpact["change"]> {
-  const next = new Map(extractLessonQuizzes(after).map((q) => [q.id, q]));
-  const out = new Map<string, LessonQuizImpact["change"]>();
-  for (const q of extractLessonQuizzes(before)) {
-    const n = next.get(q.id);
-    if (!n) out.set(q.id, "removed");
-    else if (n.correct !== q.correct || JSON.stringify(n.options) !== JSON.stringify(q.options)) {
-      out.set(q.id, "modified");
-    }
-  }
-  return out;
-}
-
 /** What the comparison needs to know of a lesson besides its row. */
 export interface LessonUpdateContext {
   /** Answers already recorded, per quiz id. Empty for a lesson nobody answered. */
@@ -145,15 +130,9 @@ export function compareLesson(
   const diff = compareLines(before.contentMdx, after.contentMdx);
   const { added, removed } = diffStats(diff.lines);
   // Reading a lesson's quizzes parses its MDX, twice: only worth it where
-  // somebody answered one. On 189 changed lessons, parsing them all took most
-  // of a ten-second page load.
-  const quizImpacts: LessonQuizImpact[] = [];
-  if (context.answers.size > 0) {
-    for (const [quizId, change] of changedQuizzes(before.contentMdx, after.contentMdx)) {
-      const answers = context.answers.get(quizId) ?? 0;
-      if (answers > 0) quizImpacts.push({ quizId, answers, change });
-    }
-  }
+  // somebody answered one (quizImpactsOf returns first otherwise). On 189
+  // changed lessons, parsing them all took most of a ten-second page load.
+  const quizImpacts = quizImpactsOf(before.contentMdx, after.contentMdx, context.answers);
   const fields = fieldChanges(before, after);
   // A file that changes only the prerequisites writes no version: the
   // content, and so the fingerprint a studio draft keeps, stays as it was, and

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { banRepository, prisma, ticketRepository } from "@cyberlearn/db";
+import { banRepository, ticketRepository, userRepository } from "@cyberlearn/db";
 import { appealView, type AppealView } from "@cyberlearn/lib/tickets/appeal";
 import { checkContactForm } from "@/lib/rate-limit";
 import { tooManyRequests } from "@/lib/rate-limit-copy";
@@ -107,30 +107,23 @@ export async function appealBan(input: {
     return { error: tooManyRequests(limit.retryAfterSeconds) };
   }
 
-  const profile = await prisma.user.findUnique({
-    where: { id: input.userId },
-    select: { email: true },
-  });
+  const profileEmail = await userRepository.findEmailById(input.userId);
 
-  const ticket = await prisma.contactTicket.create({
-    data: {
-      userId: input.userId,
-      email: profile?.email ?? input.fallbackEmail ?? null,
-      subject: "Appel d'une décision de bannissement",
-      theme: "BAN_APPEAL",
-      // The decision being contested travels with the appeal: whoever picks it
-      // up should not have to go and look up why the person was banned.
-      message: `Motif du bannissement : ${ban.reason}\n\n---\n\n${parsed.data.message}`,
-      status: "OPEN",
-    },
-    select: { id: true },
+  const ticket = await ticketRepository.create({
+    userId: input.userId,
+    email: profileEmail ?? input.fallbackEmail,
+    subject: "Appel d'une décision de bannissement",
+    theme: "BAN_APPEAL",
+    // The decision being contested travels with the appeal: whoever picks it
+    // up should not have to go and look up why the person was banned.
+    message: `Motif du bannissement : ${ban.reason}\n\n---\n\n${parsed.data.message}`,
   });
 
   const attached = await banRepository.attachAppeal(ban.id, input.userId, ticket.id);
   if (!attached) {
     // Two submissions at once: the first one won. The second ticket would be a
     // duplicate of a conversation that is already open.
-    await prisma.contactTicket.deleteMany({ where: { id: ticket.id } });
+    await ticketRepository.deleteById(ticket.id);
     return { error: "Un appel est déjà ouvert pour cette décision." };
   }
 

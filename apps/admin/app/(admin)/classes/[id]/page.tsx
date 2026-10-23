@@ -8,13 +8,14 @@ import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
 import { requireAdminPage } from "@/lib/auth";
+import { consoleDateFormat } from "@/lib/console-time";
 import { routeIdOrNotFound } from "@/lib/route-id";
 
 export const metadata: Metadata = { title: "Classe" };
 export const dynamic = "force-dynamic";
 
 function formatDay(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(d);
+  return consoleDateFormat({ dateStyle: "long" }).format(d);
 }
 
 /**

@@ -225,6 +225,58 @@ export const ticketRepository = {
   },
 
   /**
+   * Files a request: a new ticket, open. The contact form for a guest
+   * (`userId` null), the "Nouvelle demande" window and the app's support
+   * screen for an account, all through the service that validates and limits
+   * them (apps/web/lib/tickets/requester.ts), and a banned account's appeal
+   * (apps/web/lib/moderation/ban-appeal.ts). The caller has checked the
+   * fields; this writes them, and nothing else a requester could send.
+   * `email` is null only for an appeal from an account that has no address.
+   */
+  async create(input: {
+    subject: string;
+    theme: TicketTheme;
+    message: string;
+    email: string | null;
+    userId: string | null;
+  }): Promise<{ id: string }> {
+    return prisma.contactTicket.create({
+      data: {
+        subject: input.subject,
+        theme: input.theme,
+        message: input.message,
+        email: input.email,
+        userId: input.userId,
+        status: "OPEN" satisfies TicketStatus,
+      },
+      select: { id: true },
+    });
+  },
+
+  /**
+   * Drops a ticket nobody has answered yet: the filing that lost a race (two
+   * appeals sent at once, the second would duplicate an open conversation).
+   * Only ever called on the ticket the caller has just created, so it carries
+   * no message and no reader.
+   */
+  async deleteById(ticketId: string): Promise<void> {
+    await prisma.contactTicket.deleteMany({ where: { id: ticketId } });
+  },
+
+  /**
+   * The id of a ticket this account opened, null for one somebody else did or
+   * that is not there: the ownership check on its own, before any write to
+   * the conversation (addMessage knows about statuses, not about who may write).
+   */
+  async findOwnedId(ticketId: string, userId: string): Promise<string | null> {
+    const ticket = await prisma.contactTicket.findFirst({
+      where: { id: ticketId, userId },
+      select: { id: true },
+    });
+    return ticket?.id ?? null;
+  },
+
+  /**
    * Someone's own tickets, most recently touched first.
    *
    * `_count.messages` is the team's replies alone: the list says "N réponses"

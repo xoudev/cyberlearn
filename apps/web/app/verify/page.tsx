@@ -6,7 +6,7 @@ import { Crumb } from "@/components/crumb";
 
 export const metadata: Metadata = {
   title: "Vérifier un certificat",
-  description: "Vérifiez l'authenticité d'un certificat Cyber Learn.",
+  description: "Vérifie l'authenticité d'un certificat Cyber Learn.",
   ...pageAddress("/verify"),
 };
 

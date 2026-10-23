@@ -27,6 +27,8 @@ vi.mock("next/link", () => ({
 }));
 
 const { MockExamFlow } = await import("../mock-exam-flow");
+const { draftKey } = await import("@cyberlearn/lib/exam/answers-draft");
+const { SUBMIT_FAILED } = await import("@/lib/exam/network-messages");
 
 /**
  * The mock exam as a learner goes through it, once the window on the path's
@@ -76,6 +78,7 @@ const QUESTIONS = [
 ];
 
 beforeEach(() => {
+  window.localStorage.clear();
   m.startMockExamAction.mockReset();
   m.submitMockExamAction.mockReset();
   m.replace.mockReset();
@@ -300,5 +303,128 @@ describe("MockExamFlow", () => {
       screen.getByText("Ce parcours n'a pas encore assez de questions pour un examen blanc."),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Réessayer" })).toBeNull();
+  });
+});
+
+/**
+ * The mock exam when the call itself fails: the network drops as the copy is
+ * handed in. The paper used to stay on a disabled button with nothing said,
+ * the clock running (the start had its catch, the hand-in did not), and a
+ * reload brought the attempt back with every answer gone.
+ */
+describe("MockExamFlow when the network fails", () => {
+  /** Clicks the first "Rendre la copie" and lets the action answer. */
+  async function handIn(): Promise<void> {
+    await act(async () => {
+      const [button] = screen.getAllByRole("button", { name: "Rendre la copie" });
+      if (button === undefined) throw new Error("no hand-in button");
+      fireEvent.click(button);
+      await Promise.resolve();
+    });
+  }
+
+  const checked = (label: string): boolean =>
+    screen.getByLabelText<HTMLInputElement>(label).checked;
+
+  it("says the hand-in failed, keeps the answers and the buttons, and hands them in again", async () => {
+    m.submitMockExamAction.mockRejectedValueOnce(new Error("Failed to fetch"));
+    await open();
+    fireEvent.click(screen.getByLabelText("Liste"));
+    fireEvent.click(screen.getByLabelText("Date"));
+
+    await handIn();
+
+    expect(screen.getByRole("alert").textContent).toBe(SUBMIT_FAILED);
+    // Not stuck: the buttons are back, enabled, and every answer is where it was.
+    for (const button of screen.getAllByRole("button", { name: "Rendre la copie" })) {
+      expect(button).toHaveProperty("disabled", false);
+    }
+    expect(screen.getByText("2 / 2 répondues")).toBeTruthy();
+    expect(checked("Liste")).toBe(true);
+    expect(checked("Date")).toBe(true);
+
+    await handIn();
+    expect(m.submitMockExamAction).toHaveBeenCalledTimes(2);
+    expect(m.submitMockExamAction).toHaveBeenLastCalledWith("a1", { "0": 0, "1": 1 });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("50 %")).toBeTruthy();
+  });
+
+  it("tries the hand-in at zero once when the call fails, and leaves the retry to the learner", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+    m.startMockExamAction.mockResolvedValue({
+      ok: true,
+      attemptId: "a1",
+      startedAt: new Date(Date.now()).toISOString(),
+      timeLimitMinutes: 1,
+      questions: QUESTIONS,
+    });
+    m.submitMockExamAction.mockRejectedValue(new Error("Failed to fetch"));
+    await open();
+    fireEvent.click(screen.getByLabelText("Liste"));
+    for (const ms of [61_000, 1000, 1000, 1000]) {
+      await act(async () => {
+        vi.advanceTimersByTime(ms);
+        await Promise.resolve();
+      });
+    }
+    expect(m.submitMockExamAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert").textContent).toBe(SUBMIT_FAILED);
+
+    m.submitMockExamAction.mockResolvedValue({ ok: false, error: "Trop de tentatives." });
+    await handIn();
+    expect(m.submitMockExamAction).toHaveBeenCalledTimes(2);
+    expect(m.submitMockExamAction).toHaveBeenLastCalledWith("a1", { "0": 0 });
+  });
+
+  it("takes the attempt up again after a reload with the answers it had", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Liste"));
+    fireEvent.click(screen.getByLabelText("Date"));
+    expect(window.localStorage.getItem(draftKey("mock", "a1"))).not.toBeNull();
+
+    // The page is reloaded: the window leads back here, and the server gives
+    // the attempt still running, with the same questions.
+    cleanup();
+    await open();
+
+    expect(screen.getByText("2 / 2 répondues")).toBeTruthy();
+    expect(checked("Liste")).toBe(true);
+    expect(checked("Date")).toBe(true);
+    await handIn();
+    expect(m.submitMockExamAction).toHaveBeenCalledWith("a1", { "0": 0, "1": 1 });
+  });
+
+  it("does not hand back an answer the paper cannot take", async () => {
+    window.localStorage.setItem(
+      draftKey("mock", "a1"),
+      JSON.stringify({ v: 1, savedAt: Date.now(), answers: { "0": 7, "1": 1, "9": 0 } }),
+    );
+    await open();
+
+    // The server would refuse the whole copy for one answer it does not know.
+    expect(screen.getByText("1 / 2 répondues")).toBeTruthy();
+    expect(checked("Liste")).toBe(false);
+    expect(checked("Date")).toBe(true);
+  });
+
+  it("drops the answers kept once the copy is in", async () => {
+    await open();
+    fireEvent.click(screen.getByLabelText("Liste"));
+    expect(window.localStorage.getItem(draftKey("mock", "a1"))).not.toBeNull();
+
+    await handIn();
+    expect(screen.getByText("50 %")).toBeTruthy();
+    expect(window.localStorage.getItem(draftKey("mock", "a1"))).toBeNull();
+  });
+
+  it("keeps the answers on the device when the server refuses the copy, to try again", async () => {
+    m.submitMockExamAction.mockResolvedValueOnce({ ok: false, error: "Trop d'envois." });
+    await open();
+    fireEvent.click(screen.getByLabelText("Liste"));
+
+    await handIn();
+    expect(screen.getByRole("alert").textContent).toBe("Trop d'envois.");
+    expect(window.localStorage.getItem(draftKey("mock", "a1"))).not.toBeNull();
   });
 });

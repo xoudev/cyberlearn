@@ -23,6 +23,7 @@ const { tx, mockPrisma } = vi.hoisted(() => {
       $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
       lesson: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
       path: { findMany: vi.fn(), findUnique: vi.fn() },
+      pathLesson: { findMany: vi.fn() },
       auditLog: { create: vi.fn() },
     },
   };
@@ -216,6 +217,88 @@ describe("the console's reads", () => {
 
     mockPrisma.path.findUnique.mockResolvedValueOnce(null);
     expect(await pathRepository.findLessonRefCodes(LINUX)).toBeNull();
+  });
+});
+
+// The studio's page and the new-lesson form used to read these through prisma.
+describe("the lesson pages' reads", () => {
+  it("opens the studio on the lesson's content, its places and what it requires", async () => {
+    mockPrisma.lesson.findUnique.mockResolvedValue({ id: LESSON });
+    expect(await lessonRepository.findForStudio(LESSON)).toEqual({ id: LESSON });
+    const call = mockPrisma.lesson.findUnique.mock.calls[0] as
+      | [{ where: unknown; select: Record<string, unknown> }]
+      | undefined;
+    expect(call?.[0].where).toEqual({ id: LESSON });
+    // What the studio publishes, the state it shows, and the two relations it places the lesson by.
+    expect(Object.keys(call?.[0].select ?? {})).toEqual(
+      expect.arrayContaining([
+        "contentMdx",
+        "coverImageUrl",
+        "status",
+        "audience",
+        "version",
+        "avgRating",
+        "ratingsCount",
+        "pathLessons",
+        "prerequisites",
+      ]),
+    );
+  });
+
+  it("offers the catalogue lessons to require, archives left aside, the lesson itself out", async () => {
+    mockPrisma.lesson.findMany.mockResolvedValue([
+      { id: A, refCode: "CL-LSN-02001-V01", title: "A" },
+    ]);
+    expect(await lessonRepository.findPrerequisiteOptions({ except: LESSON, keep: [B] })).toEqual([
+      { id: A, refCode: "CL-LSN-02001-V01", title: "A" },
+    ]);
+    expect(mockPrisma.lesson.findMany).toHaveBeenCalledExactlyOnceWith({
+      where: {
+        NOT: { id: LESSON },
+        // One already required stays on offer, archived since or not.
+        OR: [{ audience: "CATALOGUE", status: { not: "ARCHIVED" } }, { id: { in: [B] } }],
+      },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true },
+    });
+  });
+
+  it("offers every catalogue lesson to a lesson that does not exist yet", async () => {
+    mockPrisma.lesson.findMany.mockResolvedValue([]);
+    await lessonRepository.findPrerequisiteOptions();
+    expect(mockPrisma.lesson.findMany).toHaveBeenCalledExactlyOnceWith({
+      where: { OR: [{ audience: "CATALOGUE", status: { not: "ARCHIVED" } }, { id: { in: [] } }] },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true },
+    });
+  });
+
+  it("offers the catalogue paths, those the lesson is in kept even when archived", async () => {
+    mockPrisma.path.findMany.mockResolvedValue([]);
+    await pathRepository.findCatalogueOptions([LINUX, NETWORK]);
+    expect(mockPrisma.path.findMany).toHaveBeenCalledExactlyOnceWith({
+      where: {
+        audience: "CATALOGUE",
+        OR: [{ status: { not: "ARCHIVED" } }, { id: { in: [LINUX, NETWORK] } }],
+      },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true, status: true },
+    });
+  });
+
+  it("reads the lessons before a place in a path, by refCode", async () => {
+    mockPrisma.pathLesson.findMany.mockResolvedValue([
+      { lesson: { refCode: "CL-LSN-02001-V01" } },
+      { lesson: { refCode: "CL-LSN-02002-V01" } },
+    ]);
+    expect(await pathRepository.findRefCodesBefore(LINUX, 3)).toEqual([
+      "CL-LSN-02001-V01",
+      "CL-LSN-02002-V01",
+    ]);
+    expect(mockPrisma.pathLesson.findMany).toHaveBeenCalledExactlyOnceWith({
+      where: { pathId: LINUX, position: { lt: 3 } },
+      select: { lesson: { select: { refCode: true } } },
+    });
   });
 });
 

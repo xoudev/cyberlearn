@@ -28,19 +28,30 @@ vi.mock("next/image", () => ({
   default: ({ src, alt }: { src: string; alt: string }) => React.createElement("img", { src, alt }),
 }));
 
+const session = vi.hoisted(() => ({
+  getRequestUser: vi.fn<() => Promise<{ id: string } | null>>(),
+  getActiveBan: vi.fn<() => Promise<unknown>>(),
+}));
+vi.mock("@/lib/auth", () => session);
+
 const { default: DownloadPage } = await import("../page");
 
 const PLAY = "https://play.google.com/store/apps/details?id=fr.cyberlearn.app";
 const APP_STORE = "https://apps.apple.com/fr/app/cyberlearn/id1";
 
-function render(): string {
+/** The page's markup, for whoever is reading it. */
+async function markup(): Promise<string> {
+  return renderToStaticMarkup(await DownloadPage());
+}
+
+async function render(): Promise<string> {
   // Text only: the apostrophes are typographic, and markup would escape them.
-  return renderToStaticMarkup(<DownloadPage />)
-    .replace(/<[^>]+>/gu, " ")
-    .replace(/&#x27;/gu, "'");
+  return (await markup()).replace(/<[^>]+>/gu, " ").replace(/&#x27;/gu, "'");
 }
 
 beforeEach(() => {
+  session.getRequestUser.mockResolvedValue(null);
+  session.getActiveBan.mockResolvedValue(null);
   links.env.NEXT_PUBLIC_ANDROID_PLAY_URL = undefined;
   links.env.NEXT_PUBLIC_ANDROID_APK_URL = undefined;
   links.env.NEXT_PUBLIC_IOS_APP_STORE_URL = undefined;
@@ -83,40 +94,40 @@ describe("the installation intro", () => {
 });
 
 describe("the download page", () => {
-  it("no longer calls the Android app unpublished once its Play Store link is set", () => {
+  it("no longer calls the Android app unpublished once its Play Store link is set", async () => {
     links.env.NEXT_PUBLIC_ANDROID_PLAY_URL = PLAY;
-    const text = render();
+    const text = await render();
 
     expect(text).toContain("Installer l’application");
     expect(text).toContain("Application Android disponible");
     expect(text).not.toContain("Publication Android en cours");
   });
 
-  it("an APK link counts as published too", () => {
+  it("an APK link counts as published too", async () => {
     links.env.NEXT_PUBLIC_ANDROID_APK_URL = "https://cyberlearn.fr/cyberlearn.apk";
 
-    expect(render()).toContain("Application Android disponible");
+    expect(await render()).toContain("Application Android disponible");
   });
 
-  it("still says Android is on its way while no link is set", () => {
-    const text = render();
+  it("still says Android is on its way while no link is set", async () => {
+    const text = await render();
 
     expect(text).toContain("Être prévenu du lancement");
     expect(text).toContain("Publication Android en cours · Web app disponible sur iPhone");
   });
 
-  it("speaks of the native iPhone app, not the web app, once the App Store link is set", () => {
+  it("speaks of the native iPhone app, not the web app, once the App Store link is set", async () => {
     links.env.NEXT_PUBLIC_IOS_APP_STORE_URL = APP_STORE;
-    const text = render();
+    const text = await render();
 
     expect(text).toContain("Application iPhone disponible");
     expect(text).not.toContain("Web app installable");
     expect(text).not.toContain("s’installe depuis Safari");
   });
 
-  it("never calls Android native while only the App Store link is set", () => {
+  it("never calls Android native while only the App Store link is set", async () => {
     links.env.NEXT_PUBLIC_IOS_APP_STORE_URL = APP_STORE;
-    const text = render();
+    const text = await render();
 
     expect(text).toContain("Publication Android en cours");
     expect(text).toContain("Celle d’Android est en cours de publication.");
@@ -127,15 +138,76 @@ describe("the download page", () => {
     expect(text).not.toMatch(/Android\s+Application native/u);
   });
 
-  it("calls Android native in the stats strip once it is published", () => {
+  it("calls Android native in the stats strip once it is published", async () => {
     links.env.NEXT_PUBLIC_ANDROID_PLAY_URL = PLAY;
 
-    expect(render()).toMatch(/Android\s+Application native/u);
+    expect(await render()).toMatch(/Android\s+Application native/u);
   });
 
-  it("names no version, which only the store knows", () => {
+  it("names no version, which only the store knows", async () => {
     links.env.NEXT_PUBLIC_ANDROID_PLAY_URL = PLAY;
 
-    expect(render()).not.toMatch(/\bv\d+\.\d+/u);
+    expect(await render()).not.toMatch(/\bv\d+\.\d+/u);
+  });
+});
+
+describe("the download page, signed in", () => {
+  const SIGNED_IN = { id: "user-1" };
+
+  /** The links the page offers, by where they lead. */
+  function hrefs(html: string): string[] {
+    return [...html.matchAll(/href="([^"]*)"/gu)].map((match) => match[1] ?? "");
+  }
+
+  it("offers a visitor the way in, and the sign-in links", async () => {
+    const html = await markup();
+
+    expect(html).toContain('aria-label="Navigation principale"');
+    expect(hrefs(html)).toContain("/login");
+    expect(html).toContain("Ouvrir sur le web");
+    expect(html).toContain("<main");
+    expect(html).toContain("download-footer");
+  });
+
+  it("is a page of the app for a member: no navbar of its own, no sign-in, no second main", async () => {
+    session.getRequestUser.mockResolvedValue(SIGNED_IN);
+    const html = await markup();
+
+    expect(html).not.toContain('aria-label="Navigation principale"');
+    expect(html).not.toContain("Ouvrir sur le web");
+    expect(html).not.toContain("Ouvrir CyberLearn");
+    expect(hrefs(html)).not.toContain("/login");
+    expect(hrefs(html)).not.toContain("/register");
+    // The shell's <main> is the page's, and its footer is the footer.
+    expect(html).not.toContain("<main");
+    expect(html).not.toContain("download-footer");
+    expect(html).toContain("download-page--member");
+  });
+
+  it("sends a member's « Être prévenu » to the request window, answered at the account's address", async () => {
+    session.getRequestUser.mockResolvedValue(SIGNED_IN);
+    const links = hrefs(await markup());
+
+    expect(links).toContain("/support?request=android");
+    expect(links.some((href) => href.startsWith("/contact"))).toBe(false);
+  });
+
+  it("keeps a visitor's « Être prévenu » on the public form, subject and theme written", async () => {
+    const links = hrefs(await markup());
+
+    expect(links).toContain(
+      "/contact?theme=FEATURE_REQUEST&amp;subject=Disponibilit%C3%A9%20de%20l%27application%20Android",
+    );
+    expect(links).not.toContain("/support?request=android");
+  });
+
+  it("treats a banned account as a visitor, since the app is closed to it", async () => {
+    session.getRequestUser.mockResolvedValue(SIGNED_IN);
+    session.getActiveBan.mockResolvedValue({ reason: "x" });
+    const html = await markup();
+
+    expect(html).toContain('aria-label="Navigation principale"');
+    expect(hrefs(html)).toContain("/login");
+    expect(html).not.toContain("download-page--member");
   });
 });

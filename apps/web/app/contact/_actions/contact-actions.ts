@@ -2,6 +2,11 @@
 
 import { headers } from "next/headers";
 import { getRequestUser } from "@/lib/auth";
+import {
+  isTicketFormTheme,
+  TICKET_MESSAGE_MAX,
+  TICKET_SUBJECT_MAX,
+} from "@cyberlearn/lib/tickets/tickets";
 import { needsMfaStep } from "@/lib/auth/password-flow";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fileTicket, type TicketField } from "@/lib/tickets/requester";
@@ -14,11 +19,41 @@ import { fileTicket, type TicketField } from "@/lib/tickets/requester";
 const HONEYPOT_FIELD = "website";
 const TIMESTAMP_FIELD = "loaded_at";
 const MIN_FILL_MS = 2500;
+/** The longest address there is (RFC 5321): what the e-mail field can ever hold. */
+const EMAIL_MAX = 254;
+
+/** What the form held when it was sent. */
+export interface ContactFormValues {
+  email: string;
+  /** A theme of the form, or "" for none: nothing else is handed back. */
+  theme: string;
+  subject: string;
+  message: string;
+}
 
 export interface ContactFormState {
   success?: boolean;
   error?: string;
   fieldErrors?: Partial<Record<TicketField, string>>;
+  /**
+   * The fields as they were typed, handed back with every refusal. React
+   * empties an uncontrolled form once its action has run: without these, a
+   * refused message - a mistyped address, or the shared-IP rate limit, which
+   * is no fault of the visitor - cost everything that had been written.
+   */
+  values?: ContactFormValues;
+}
+
+/** The theme that was chosen, if it is one the form offers. */
+function chosenTheme(formData: FormData): string {
+  const value = formData.get("theme");
+  return typeof value === "string" && isTicketFormTheme(value) ? value : "";
+}
+
+/** A field as it was typed, never longer than the form lets it be. */
+function typed(formData: FormData, name: string, max: number): string {
+  const value = formData.get(name);
+  return typeof value === "string" ? value.slice(0, max) : "";
 }
 
 /**
@@ -74,9 +109,15 @@ export async function submitContactAction(
     },
   });
   if (!result.ok) {
+    const values: ContactFormValues = {
+      email: typed(formData, "email", EMAIL_MAX),
+      theme: chosenTheme(formData),
+      subject: typed(formData, "subject", TICKET_SUBJECT_MAX),
+      message: typed(formData, "message", TICKET_MESSAGE_MAX),
+    };
     return result.fieldErrors
-      ? { error: result.error, fieldErrors: result.fieldErrors }
-      : { error: result.error };
+      ? { error: result.error, fieldErrors: result.fieldErrors, values }
+      : { error: result.error, values };
   }
 
   return { success: true };

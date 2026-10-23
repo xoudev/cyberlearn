@@ -39,9 +39,12 @@ const { tx, mockPrisma } = vi.hoisted(() => {
     tx,
     mockPrisma: {
       $transaction: vi.fn((run: (client: typeof tx) => Promise<unknown>) => run(tx)),
-      challengeWriteup: { findFirst: vi.fn() },
+      forumPost: { findMany: vi.fn(), count: vi.fn() },
+      lessonQuestion: { findMany: vi.fn(), count: vi.fn() },
+      lessonAnswer: { findMany: vi.fn(), count: vi.fn() },
+      challengeWriteup: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
       userChallengeProgress: { findUnique: vi.fn() },
-      classResource: { findFirst: vi.fn() },
+      classResource: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
       classMember: { findFirst: vi.fn() },
     },
   };
@@ -463,6 +466,88 @@ describe("contentModerationRepository.reportable", () => {
     mockPrisma.classResource.findFirst.mockResolvedValue({ classId: "k-1", createdById: "t-1" });
     mockPrisma.classMember.findFirst.mockResolvedValue(null);
     expect(await contentModerationRepository.reportable("CLASS_RESOURCE", ID, ADMIN)).toBeNull();
+  });
+});
+
+describe("contentModerationRepository.authoredBy", () => {
+  it("lists what an account wrote on every surface, by the column that names its author", async () => {
+    mockPrisma.forumPost.findMany.mockResolvedValue([{ id: "p-1" }, { id: "p-2" }]);
+    mockPrisma.lessonQuestion.findMany.mockResolvedValue([]);
+    mockPrisma.lessonAnswer.findMany.mockResolvedValue([{ id: "a-1" }]);
+    mockPrisma.challengeWriteup.findMany.mockResolvedValue([{ id: "w-1" }]);
+    mockPrisma.classResource.findMany.mockResolvedValue([{ id: "c-1" }]);
+
+    expect(await contentModerationRepository.authoredBy(AUTHOR.id)).toEqual([
+      { surface: "FORUM_POST", ids: ["p-1", "p-2"] },
+      { surface: "LESSON_QUESTION", ids: [] },
+      { surface: "LESSON_ANSWER", ids: ["a-1"] },
+      { surface: "CHALLENGE_WRITEUP", ids: ["w-1"] },
+      { surface: "CLASS_RESOURCE", ids: ["c-1"] },
+    ]);
+    expect(mockPrisma.forumPost.findMany).toHaveBeenCalledWith({
+      where: { authorId: AUTHOR.id },
+      select: { id: true },
+    });
+    expect(mockPrisma.classResource.findMany).toHaveBeenCalledWith({
+      where: { createdById: AUTHOR.id },
+      select: { id: true },
+    });
+    // Hidden ones included: a report is filed on a content the console may have hidden since.
+    expect(mockPrisma.lessonAnswer.findMany).toHaveBeenCalledWith({
+      where: { userId: AUTHOR.id },
+      select: { id: true },
+    });
+  });
+});
+
+describe("contentModerationRepository.listForConsole, narrowed to an author", () => {
+  // The column that names the author is not the same on every table.
+  const BY_AUTHOR = [
+    { surface: "FORUM_POST", model: mockPrisma.forumPost, column: "authorId" },
+    { surface: "LESSON_QUESTION", model: mockPrisma.lessonQuestion, column: "userId" },
+    { surface: "LESSON_ANSWER", model: mockPrisma.lessonAnswer, column: "userId" },
+    { surface: "CHALLENGE_WRITEUP", model: mockPrisma.challengeWriteup, column: "userId" },
+    { surface: "CLASS_RESOURCE", model: mockPrisma.classResource, column: "createdById" },
+  ] as const;
+
+  it.each(BY_AUTHOR)("counts only what the account wrote on $surface", async (target) => {
+    target.model.count.mockResolvedValue(0);
+    await contentModerationRepository.listForConsole({
+      surface: target.surface,
+      hidden: undefined,
+      q: "",
+      authorId: AUTHOR.id,
+      page: 1,
+      pageSize: 25,
+    });
+    expect(target.model.count).toHaveBeenCalledWith({ where: { [target.column]: AUTHOR.id } });
+  });
+
+  it("leaves the author out when none is asked for", async () => {
+    mockPrisma.forumPost.count.mockResolvedValue(0);
+    await contentModerationRepository.listForConsole({
+      surface: "FORUM_POST",
+      hidden: false,
+      q: "",
+      page: 1,
+      pageSize: 25,
+    });
+    expect(mockPrisma.forumPost.count).toHaveBeenCalledWith({ where: { isHidden: false } });
+  });
+
+  it("keeps the author and the search together, the search finding within that author's", async () => {
+    mockPrisma.forumPost.count.mockResolvedValue(0);
+    await contentModerationRepository.listForConsole({
+      surface: "FORUM_POST",
+      hidden: true,
+      q: "masque",
+      authorId: AUTHOR.id,
+      page: 1,
+      pageSize: 25,
+    });
+    const call = mockPrisma.forumPost.count.mock.calls[0] as [{ where: Record<string, unknown> }];
+    expect(call[0].where).toMatchObject({ isHidden: true, authorId: AUTHOR.id });
+    expect(call[0].where).toHaveProperty("OR");
   });
 });
 

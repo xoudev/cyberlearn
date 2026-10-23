@@ -1,5 +1,5 @@
 import { prisma } from "../prisma.js";
-import type { Prisma, ProgressStatus } from "@prisma/client";
+import type { ContentStatus, Prisma, ProgressStatus } from "@prisma/client";
 import { planPathLessons, POSITION_PARKING } from "./path-lessons.js";
 
 /** The global client or a transaction's: both have the models. */
@@ -251,6 +251,33 @@ export const pathRepository = {
       where: { id: { in: [...ids] }, audience: "CATALOGUE" },
       select: { id: true, refCode: true },
     });
+  },
+
+  /**
+   * The paths the console offers to put a lesson in, by refCode: the
+   * catalogue's, archives left aside, and those the lesson is already in
+   * (`keep`) even if archived since. A teacher's class path is never offered.
+   */
+  async findCatalogueOptions(
+    keep: readonly string[] = [],
+  ): Promise<{ id: string; refCode: string; title: string; status: ContentStatus }[]> {
+    return prisma.path.findMany({
+      where: {
+        audience: "CATALOGUE",
+        OR: [{ status: { not: "ARCHIVED" } }, { id: { in: [...keep] } }],
+      },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true, status: true },
+    });
+  },
+
+  /** The refCodes of the lessons that come before this place in a path, whatever their state. */
+  async findRefCodesBefore(pathId: string, position: number): Promise<string[]> {
+    const rows = await prisma.pathLesson.findMany({
+      where: { pathId, position: { lt: position } },
+      select: { lesson: { select: { refCode: true } } },
+    });
+    return rows.map((row) => row.lesson.refCode);
   },
 
   /**

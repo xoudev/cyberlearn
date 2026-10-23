@@ -68,19 +68,7 @@ function ToolBtn({
       onClick={onClick}
       aria-label={label}
       title={label}
-      style={{
-        display: "grid",
-        placeItems: "center",
-        width: 30,
-        height: 28,
-        background: "transparent",
-        border: "none",
-        color: "var(--color-text-secondary)",
-        fontFamily: "var(--font-mono)",
-        fontSize: 13,
-        cursor: "pointer",
-        borderRadius: 2,
-      }}
+      className="lesson-notes__tool"
     >
       {children}
     </button>
@@ -238,7 +226,7 @@ export function NoteDrawer({
           aria-label={expanded ? "Réduire" : "Agrandir"}
           aria-pressed={expanded}
           title={expanded ? "Réduire" : "Agrandir"}
-          style={hdrBtn}
+          className="lesson-notes__expand"
         >
           <svg
             width="13"
@@ -478,16 +466,5 @@ const retryBtn: React.CSSProperties = {
   letterSpacing: "inherit",
   textTransform: "inherit",
   textDecoration: "underline",
-  cursor: "pointer",
-};
-
-const hdrBtn: React.CSSProperties = {
-  display: "grid",
-  placeItems: "center",
-  width: 28,
-  height: 28,
-  background: "transparent",
-  border: "1px solid var(--color-border-default)",
-  color: "var(--color-text-muted)",
   cursor: "pointer",
 };

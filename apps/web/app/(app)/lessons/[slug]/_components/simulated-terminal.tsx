@@ -453,6 +453,14 @@ function buildHelpText(commands: string[]): string {
 }
 
 /**
+ * The line that offers the nearest command after a mistyped one. It speaks to
+ * the reader as the rest of the terminal and of the site do, with "tu".
+ */
+export function didYouMeanLine(near: string): string {
+  return `\x1b[33mTu voulais dire : \x1b[37m${near}\x1b[33m ?\x1b[0m`;
+}
+
+/**
  * The accepted command closest to what was typed, or null when nothing is
  * close. Levenshtein over the whole string, capped at a quarter of its length
  * so "ls -la" does not get "cat robots.txt" suggested at it.
@@ -656,7 +664,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         // "commande introuvable", which is where the reader got stuck.
         const near = closestCommand(cmd, Object.keys(commandMap));
         if (near !== null && near !== "help") {
-          term.writeln(`\x1b[33mVouliez-vous dire : \x1b[37m${near}\x1b[33m ?\x1b[0m`);
+          term.writeln(didYouMeanLine(near));
         } else if (!isPs) {
           term.writeln(
             "\x1b[33mAstuce : tape \x1b[37mhelp\x1b[33m pour voir les commandes.\x1b[0m",

@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import { pageAddress } from "@/app/page-metadata";
+import { newRequestHref } from "@/app/(app)/support/_components/new-request-query";
+import { getActiveBan, getRequestUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { availabilityLine, installIntro } from "./availability";
 import "./download.css";
@@ -188,20 +190,34 @@ function MobileAppPreview(): React.JSX.Element {
   );
 }
 
-export default function DownloadPage(): React.JSX.Element {
+/**
+ * Rendered for each request, since the layout reads the session. Signed in
+ * (and not banned) the page is drawn in the app's shell, which brings the
+ * navbar, the footer and the way back into the app: so it brings none of its
+ * own, and leaves out what only a visitor needs, the links to sign in. The
+ * layout's rule, read again (both reads are cached for the request).
+ */
+export default async function DownloadPage(): Promise<React.JSX.Element> {
+  const viewer = await getRequestUser();
+  const member = viewer !== null && (await getActiveBan()) === null;
+  // One <main> per document: the shell's already is the page's.
+  const Body = member ? "div" : "main";
   const androidPlayUrl = env.NEXT_PUBLIC_ANDROID_PLAY_URL;
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
   const iosAppStoreUrl = env.NEXT_PUBLIC_IOS_APP_STORE_URL;
   const androidAvailable = Boolean(androidPlayUrl ?? androidApkUrl);
   const stores = { android: androidAvailable, iosAppStore: Boolean(iosAppStoreUrl) };
-  const androidNotifyUrl =
-    "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
+  // A member asks from the site, answered at the account's address; a visitor
+  // from the public form.
+  const androidNotifyUrl = member
+    ? newRequestHref("android")
+    : "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
 
   return (
-    <div className="download-page">
-      <PublicNavbar />
+    <div className={member ? "download-page download-page--member" : "download-page"}>
+      {member ? null : <PublicNavbar />}
 
-      <main>
+      <Body>
         <section className="download-hero" aria-labelledby="download-title">
           <div className="download-hero__copy">
             <div className="download-kicker">
@@ -229,9 +245,11 @@ export default function DownloadPage(): React.JSX.Element {
                   <ArrowIcon />
                 </Link>
               )}
-              <Link href="/login" className="download-action download-action--secondary">
-                Ouvrir sur le web
-              </Link>
+              {member ? null : (
+                <Link href="/login" className="download-action download-action--secondary">
+                  Ouvrir sur le web
+                </Link>
+              )}
             </div>
             <p className="download-hero__availability">
               <span aria-hidden="true" />
@@ -418,7 +436,7 @@ export default function DownloadPage(): React.JSX.Element {
                   </li>
                 </ol>
               )}
-              {!iosAppStoreUrl ? (
+              {!iosAppStoreUrl && !member ? (
                 <div className="download-install__actions">
                   <Link href="/login" className="download-action">
                     <span>Ouvrir CyberLearn</span>
@@ -429,24 +447,26 @@ export default function DownloadPage(): React.JSX.Element {
             </article>
           </div>
         </section>
-      </main>
+      </Body>
 
-      <footer className="download-footer">
-        <div>
-          <Link href="/" className="download-brand">
-            <Image src="/icon_app.png" alt="" width={26} height={26} />
-            <span>
-              cyber<b>learn</b>
-            </span>
-          </Link>
-          <nav aria-label="Liens de pied de page">
-            <Link href="/privacy">Confidentialité</Link>
-            <Link href="/legal">Mentions légales</Link>
-            <Link href="/contact">Contact</Link>
-          </nav>
-          <span>© {new Date().getFullYear()} CyberLearn</span>
-        </div>
-      </footer>
+      {member ? null : (
+        <footer className="download-footer">
+          <div>
+            <Link href="/" className="download-brand">
+              <Image src="/icon_app.png" alt="" width={26} height={26} />
+              <span>
+                cyber<b>learn</b>
+              </span>
+            </Link>
+            <nav aria-label="Liens de pied de page">
+              <Link href="/privacy">Confidentialité</Link>
+              <Link href="/legal">Mentions légales</Link>
+              <Link href="/contact">Contact</Link>
+            </nav>
+            <span>© {new Date().getFullYear()} CyberLearn</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

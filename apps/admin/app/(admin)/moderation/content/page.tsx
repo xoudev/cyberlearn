@@ -1,7 +1,11 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { contentModerationRepository, contentReportRepository } from "@cyberlearn/db";
+import {
+  contentModerationRepository,
+  contentReportRepository,
+  userRepository,
+} from "@cyberlearn/db";
 import {
   CONTENT_REPORT_SURFACE_KEYS,
   CONTENT_SURFACE_LABEL,
@@ -30,9 +34,13 @@ export const metadata: Metadata = { title: "Contenus publiés" };
 /**
  * Everything learners publish to each other, one surface at a time (five
  * tables, five shapes of row), 25 to a page: the surface, the state, the
- * search and the page are the URL's (?surface=&state=&q=&page=), and the
- * database reads that page alone. Hiding, showing again and deleting happen
- * on the row.
+ * search, the author and the page are the URL's
+ * (?surface=&state=&q=&author=&page=), and the database reads that page alone.
+ * Hiding, showing again and deleting happen on the row.
+ *
+ * `author` is an account's id, the link of its page in the console: exactly
+ * what that account wrote, where a search on its name would also find the
+ * messages that quote it.
  */
 export default async function AdminContentPage({
   searchParams,
@@ -41,9 +49,12 @@ export default async function AdminContentPage({
 }): Promise<React.ReactElement> {
   await requireAdminPage();
   const params = parseContentListParams(await searchParams);
-  const [slice, reported] = await Promise.all([
+  const [slice, reported, author] = await Promise.all([
     contentModerationRepository.listForConsole(contentQueryOf(params)),
     contentReportRepository.countOpenContents(),
+    params.author === undefined
+      ? Promise.resolve(null)
+      : userRepository.findConsoleTarget(params.author),
   ]);
 
   const rows: GridRowBase[] = slice.rows.map((c) => ({
@@ -96,8 +107,43 @@ export default async function AdminContentPage({
         }
       />
 
+      {params.author !== undefined && (
+        <p
+          className="a-field-hint"
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+            margin: "0 0 16px",
+          }}
+        >
+          <span>
+            Contenus publiés par{" "}
+            {author === null ? (
+              "un compte introuvable"
+            ) : (
+              <Link href={`/users/${author.id}`} style={{ color: "var(--a-accent)" }}>
+                {author.displayName}
+              </Link>
+            )}
+            .
+          </span>
+          <Link
+            href={gridHref("/moderation/content", {
+              ...(params.surface !== DEFAULT_CONTENT_SURFACE && { surface: params.surface }),
+              ...(params.state !== undefined && { state: params.state }),
+            })}
+            className="a-btn a-btn--ghost a-btn--sm"
+          >
+            Tous les contenus
+          </Link>
+        </p>
+      )}
+
       {/* One surface at a time: a link each, which keeps the state filter and
-          drops the search and the page, both of them the other surface's. */}
+          the author, and drops the search and the page, both of them the other
+          surface's. */}
       <nav
         aria-label="Type de contenu"
         style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}
@@ -110,6 +156,7 @@ export default async function AdminContentPage({
               href={gridHref("/moderation/content", {
                 ...(surface !== DEFAULT_CONTENT_SURFACE && { surface }),
                 ...(params.state !== undefined && { state: params.state }),
+                ...(params.author !== undefined && { author: params.author }),
               })}
               aria-current={active ? "page" : undefined}
               className={`a-btn a-btn--sm ${active ? "a-btn--primary" : "a-btn--ghost"}`}

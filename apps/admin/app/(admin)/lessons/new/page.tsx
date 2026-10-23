@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import { lessonRepository, pathRepository } from "@cyberlearn/db";
 import { requireAdminPage } from "@/lib/auth";
 import { learnerLessonUrlPrefix } from "@/lib/learner-url";
 import { PageHeader, Tag } from "../../_components/admin-ui";
@@ -18,16 +18,8 @@ export default async function NewLessonPage(): Promise<React.ReactElement> {
   // What the lesson can be put in and made to require: the catalogue's paths
   // and lessons, archives left aside.
   const [pathOptions, lessonOptions] = await Promise.all([
-    prisma.path.findMany({
-      where: { audience: "CATALOGUE", status: { not: "ARCHIVED" } },
-      orderBy: { refCode: "asc" },
-      select: { id: true, refCode: true, title: true, status: true },
-    }),
-    prisma.lesson.findMany({
-      where: { audience: "CATALOGUE", status: { not: "ARCHIVED" } },
-      orderBy: { refCode: "asc" },
-      select: { id: true, refCode: true, title: true },
-    }),
+    pathRepository.findCatalogueOptions(),
+    lessonRepository.findPrerequisiteOptions(),
   ]);
 
   return (

@@ -4,9 +4,9 @@ const m = vi.hoisted(() => ({
   findActive: vi.fn<(userId: string) => Promise<Record<string, unknown> | null>>(),
   acknowledge: vi.fn<(banId: string, userId: string) => Promise<void>>(),
   attachAppeal: vi.fn<(banId: string, userId: string, ticketId: string) => Promise<boolean>>(),
-  findUnique: vi.fn<(args: unknown) => Promise<{ email: string | null } | null>>(),
-  create: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ id: string }>>(),
-  deleteMany: vi.fn<(args: unknown) => Promise<{ count: number }>>(),
+  findEmailById: vi.fn<(userId: string) => Promise<string | null>>(),
+  create: vi.fn<(input: Record<string, unknown>) => Promise<{ id: string }>>(),
+  deleteById: vi.fn<(ticketId: string) => Promise<void>>(),
   checkContactForm:
     vi.fn<(ip: string) => Promise<{ success: boolean; retryAfterSeconds: number }>>(),
   findAppealFor:
@@ -27,10 +27,11 @@ vi.mock("@cyberlearn/db", () => ({
     acknowledge: m.acknowledge,
     attachAppeal: m.attachAppeal,
   },
-  ticketRepository: { findAppealFor: m.findAppealFor },
-  prisma: {
-    user: { findUnique: m.findUnique },
-    contactTicket: { create: m.create, deleteMany: m.deleteMany },
+  userRepository: { findEmailById: m.findEmailById },
+  ticketRepository: {
+    create: m.create,
+    deleteById: m.deleteById,
+    findAppealFor: m.findAppealFor,
   },
 }));
 vi.mock("@/lib/rate-limit", () => ({ checkContactForm: m.checkContactForm }));
@@ -53,7 +54,7 @@ function appeal(overrides: Partial<Parameters<typeof appealBan>[0]> = {}) {
 beforeEach(() => {
   for (const fn of Object.values(m)) fn.mockReset();
   m.checkContactForm.mockResolvedValue({ success: true, retryAfterSeconds: 0 });
-  m.findUnique.mockResolvedValue({ email: "profil@example.org" });
+  m.findEmailById.mockResolvedValue("profil@example.org");
   m.create.mockResolvedValue({ id: "ticket-1" });
   m.attachAppeal.mockResolvedValue(true);
 });
@@ -167,12 +168,11 @@ describe("appealBan", () => {
   it("files a BAN_APPEAL ticket carrying the reason, and attaches it to the ban", async () => {
     m.findActive.mockResolvedValue(BAN);
     expect(await appeal()).toEqual({ ok: true });
-    const data = m.create.mock.calls[0]?.[0].data;
+    const data = m.create.mock.calls[0]?.[0];
     expect(data).toMatchObject({
       userId: "user-1",
       email: "profil@example.org",
       theme: "BAN_APPEAL",
-      status: "OPEN",
     });
     expect(data?.message).toBe(`Motif du bannissement : ${BAN.reason}\n\n---\n\n${MESSAGE}`);
     expect(m.attachAppeal).toHaveBeenCalledWith("ban-1", "user-1", "ticket-1");
@@ -180,15 +180,22 @@ describe("appealBan", () => {
 
   it("falls back on the session's address when the profile has none", async () => {
     m.findActive.mockResolvedValue(BAN);
-    m.findUnique.mockResolvedValue({ email: null });
+    m.findEmailById.mockResolvedValue(null);
     await appeal();
-    expect(m.create.mock.calls[0]?.[0].data.email).toBe("session@example.org");
+    expect(m.create.mock.calls[0]?.[0].email).toBe("session@example.org");
+  });
+
+  it("files the appeal with no address when neither the profile nor the session has one", async () => {
+    m.findActive.mockResolvedValue(BAN);
+    m.findEmailById.mockResolvedValue(null);
+    await appeal({ fallbackEmail: null });
+    expect(m.create.mock.calls[0]?.[0].email).toBeNull();
   });
 
   it("drops its own ticket when a simultaneous appeal won the race", async () => {
     m.findActive.mockResolvedValue(BAN);
     m.attachAppeal.mockResolvedValue(false);
     expect(await appeal()).toEqual({ error: "Un appel est déjà ouvert pour cette décision." });
-    expect(m.deleteMany).toHaveBeenCalledWith({ where: { id: "ticket-1" } });
+    expect(m.deleteById).toHaveBeenCalledWith("ticket-1");
   });
 });

@@ -274,6 +274,25 @@ describe("over the page or beside it", () => {
       new RegExp(`\\.side-drawer--docked\\.lesson-notes \\{\\s*top: ${String(NAVBAR_HEIGHT)}px;`),
     );
   });
+
+  it("sizes its small buttons from the stylesheet, which gives a touch screen 44px", () => {
+    render(<Notes />);
+    const classOf = (name: string): string =>
+      within(drawer()).getByRole("button", { name }).className;
+    expect(classOf("Gras")).toBe("lesson-notes__tool");
+    expect(classOf("Liste")).toBe("lesson-notes__tool");
+    expect(classOf("Agrandir")).toBe("lesson-notes__expand");
+    // No size written inline: an inline size would beat the touch rule.
+    expect(within(drawer()).getByRole("button", { name: "Gras" }).getAttribute("style")).toBeNull();
+    expect(
+      within(drawer()).getByRole("button", { name: "Agrandir" }).getAttribute("style"),
+    ).toBeNull();
+
+    const css = readFileSync(path.resolve(__dirname, "../../../../../globals.css"), "utf8");
+    expect(css).toMatch(
+      /@media \(pointer: coarse\) \{\s*\.lesson-notes__tool,\s*\.lesson-notes__expand,\s*\.lesson-notes \.side-drawer__close \{\s*width: 44px;\s*height: 44px;/,
+    );
+  });
 });
 
 describe("charactersLeft", () => {

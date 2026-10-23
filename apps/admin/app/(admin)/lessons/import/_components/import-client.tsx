@@ -408,7 +408,7 @@ export function ImportClient(): React.ReactElement {
   return (
     <div className="import-grid">
       {/* Panel 1 - Drop zone + file list + validation results */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="import-files">
         {/* Drop zone: the whole of it opens the picker, by pointer or keyboard. */}
         <div
           role="button"
@@ -623,7 +623,7 @@ export function ImportClient(): React.ReactElement {
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div className="import-actions">
           <button
             type="button"
             onClick={handleValidate}
@@ -674,15 +674,7 @@ export function ImportClient(): React.ReactElement {
       </div>
 
       {/* Panel 2 - MDX editor, or the differences with the lesson in the database */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-          background: "color-mix(in srgb, var(--a-surface-2) 60%, transparent)",
-          border: "1px solid var(--a-border)",
-        }}
-      >
+      <div className="import-editor">
         <div
           style={{
             padding: "10px 16px",
@@ -825,15 +817,7 @@ export function ImportClient(): React.ReactElement {
       </div>
 
       {/* Panel 3 - Preview (selected file) */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          background: "color-mix(in srgb, var(--a-surface-2) 40%, transparent)",
-          border: "1px solid var(--a-border)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="import-preview">
         <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--a-border)" }}>
           <span
             style={{

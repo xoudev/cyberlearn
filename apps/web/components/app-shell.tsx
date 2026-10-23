@@ -98,7 +98,7 @@ export async function AppShell({
             <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-x-clip">
               {children}
             </main>
-            <Footer />
+            <Footer signedIn />
           </div>
         </SidebarProvider>
         <QueryDialogHost />

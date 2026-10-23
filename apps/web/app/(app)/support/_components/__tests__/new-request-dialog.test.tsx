@@ -150,4 +150,44 @@ describe("NewRequestDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it("opens with an error screen's incident already written, and files it as a bug", async () => {
+    m.fileRequestAction.mockResolvedValue({ ok: true, ticketId: TICKET_ID });
+    render(<NewRequestDialog value="incident-abc123" onClose={vi.fn()} />);
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Objet" }).value).toBe(
+      "Incident abc123",
+    );
+    expect(screen.getByRole("combobox", { name: "Thème" }).textContent).toContain("Bug");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Message" }), {
+      target: { value: MESSAGE },
+    });
+    send();
+    await screen.findByRole("dialog", { name: "Demande envoyée" });
+    expect(m.fileRequestAction).toHaveBeenCalledWith({
+      theme: "BUG",
+      subject: "Incident abc123",
+      message: MESSAGE,
+    });
+  });
+
+  it("opens with the Android app's notice already written", () => {
+    render(<NewRequestDialog value="android" onClose={vi.fn()} />);
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Objet" }).value).toBe(
+      "Disponibilité de l'application Android",
+    );
+    expect(screen.getByRole("combobox", { name: "Thème" }).textContent).toContain("Suggestion");
+  });
+
+  it("still closes on Escape while only what the link wrote is there", () => {
+    const onClose = vi.fn();
+    render(<NewRequestDialog value="incident-abc123" onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a value it does not know, as an address anybody can write", () => {
+    render(<NewRequestDialog value="incident-<script>" onClose={vi.fn()} />);
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Objet" }).value).toBe("");
+  });
 });
