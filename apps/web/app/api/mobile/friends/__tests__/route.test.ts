@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { friendsActivityReplySchema } from "@cyberlearn/types";
 
 const m = vi.hoisted(() => ({
   userFromBearer: vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>(),
@@ -167,6 +168,34 @@ describe("GET /api/mobile/friends/activity", () => {
     const res = await ACTIVITY(get("friends/activity?limit=500"));
     expect(res.status).toBe(400);
     expect(m.friendsActivityFor).not.toHaveBeenCalled();
+  });
+
+  it("parses its replies as the app does", async () => {
+    m.friendsActivityFor.mockResolvedValue({
+      hasFriends: true,
+      items: [
+        {
+          key: "lesson:alex:tcp-handshake",
+          kind: "lesson",
+          at: "2026-10-21T08:30:00.000Z",
+          title: "La poignée de main TCP",
+          friend: {
+            id: THEM,
+            name: "Alex",
+            username: "alex",
+            avatarSrc: null,
+            profileOpen: true,
+            duelOpen: false,
+          },
+        },
+      ],
+    });
+    const reply: unknown = await (await ACTIVITY(get("friends/activity"))).json();
+    expect(friendsActivityReplySchema.safeParse(reply).success).toBe(true);
+
+    m.userFromBearer.mockResolvedValue(null);
+    const refusal: unknown = await (await ACTIVITY(get("friends/activity"))).json();
+    expect(friendsActivityReplySchema.safeParse(refusal).success).toBe(true);
   });
 });
 

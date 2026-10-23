@@ -28,6 +28,12 @@ const AUTHOR = {
 export const POSTS_PER_PAGE = 30;
 /** How many threads a section shows at once. */
 export const TOPICS_PER_PAGE = 25;
+/**
+ * How many threads, and how many messages, a GDPR export lists: the most
+ * recent ones of each. The export says so in its metadata
+ * (rgpd/build-export.ts); a message is free text, so the file is bounded.
+ */
+export const FORUM_EXPORT_LIMIT = 1000;
 
 export interface ForumAuthor {
   id: string;
@@ -518,6 +524,50 @@ export const forumRepository = {
   /** Holds a thread at the top of its section, or lets it go. Administrators only. */
   async setPinned(topicId: string, pinned: boolean): Promise<void> {
     await prisma.forumTopic.update({ where: { id: topicId }, data: { pinned } });
+  },
+
+  /**
+   * The threads the account opened, most recent first, for its GDPR export
+   * (rgpd/build-export.ts). Hidden ones included: a withdrawn or moderated
+   * thread is still held. The title and the section, not the thread's replies,
+   * which are their authors'; the opening message is among the posts below.
+   */
+  async exportTopicsFor(userId: string) {
+    return prisma.forumTopic.findMany({
+      where: { authorId: userId },
+      select: {
+        title: true,
+        isHidden: true,
+        lockedAt: true,
+        createdAt: true,
+        category: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    });
+  },
+
+  /**
+   * The messages the account wrote, replies and opening messages, most recent
+   * first, for its GDPR export. Hidden ones included, with who hid them (the
+   * author's own withdrawal or the moderation's): the text stays in the base
+   * and is theirs. The thread's title says where it was written; the other
+   * people's messages around it are not read.
+   */
+  async exportPostsFor(userId: string) {
+    return prisma.forumPost.findMany({
+      where: { authorId: userId },
+      select: {
+        content: true,
+        isHidden: true,
+        hiddenByModeration: true,
+        editedAt: true,
+        createdAt: true,
+        topic: { select: { title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    });
   },
 };
 

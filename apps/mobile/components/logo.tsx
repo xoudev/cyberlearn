@@ -5,6 +5,7 @@ import { Text } from "@/components/ui";
 
 // The real CyberLearn mark: shield + keyhole + mesh (same asset as the web).
 // SAFETY: Metro types require() of images as number (asset module id).
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- Metro resolves images through require() only
 const MARK = require("../assets/logo.png") as number;
 
 export function LogoMark({ size = 40 }: { size?: number }): React.JSX.Element {

@@ -4,6 +4,7 @@ import {
   NOTIFICATION_PAGE_SIZE,
   nextNotificationOffset,
   notificationRange,
+  unreadTotal,
 } from "../notification-pages";
 
 describe("the inbox's pages", () => {
@@ -32,5 +33,35 @@ describe("the inbox's pages", () => {
         [{ id: "b" }, { id: "c" }],
       ]),
     ).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
+  });
+});
+
+describe("the inbox's unread count", () => {
+  const read = { readAt: "2026-10-20T08:00:00.000Z" };
+  const unread = { readAt: null };
+
+  it("counts every unread notice of the account, not only the pages loaded", () => {
+    // Fifty read notices on screen, twelve unread ones further back: the bell says twelve.
+    expect(
+      unreadTotal(
+        12,
+        Array.from({ length: 50 }, () => read),
+      ),
+    ).toBe(12);
+    expect(unreadTotal(12, [unread, read])).toBe(12);
+  });
+
+  it("falls back on the loaded pages until the server's count has arrived", () => {
+    expect(unreadTotal(undefined, [unread, unread, read])).toBe(2);
+    expect(unreadTotal(undefined, [])).toBe(0);
+  });
+
+  it("never says fewer than the list shows unread", () => {
+    // A notice that came in after the count was read.
+    expect(unreadTotal(1, [unread, unread, read])).toBe(2);
+  });
+
+  it("says none when nothing is unread anywhere", () => {
+    expect(unreadTotal(0, [read, read])).toBe(0);
   });
 });

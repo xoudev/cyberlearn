@@ -77,12 +77,11 @@ export function AvatarForm({
 
   return (
     <div
-      className="card"
+      className="card onboarding-card"
       style={{
         position: "relative",
         width: "100%",
         maxWidth: 640,
-        padding: "32px 36px 28px",
       }}
     >
       {cropFile && (

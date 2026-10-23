@@ -6,7 +6,7 @@ const INVALID_REFRESH_CODES = new Set([
 
 function readStringProperty(value: unknown, property: string): string | null {
   if (typeof value !== "object" || value === null || !(property in value)) return null;
-  const propertyValue = Reflect.get(value, property);
+  const propertyValue: unknown = Reflect.get(value, property);
   return typeof propertyValue === "string" ? propertyValue : null;
 }
 

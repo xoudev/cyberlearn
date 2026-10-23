@@ -281,6 +281,24 @@ describe("finishing the lesson", () => {
     );
     expect(screen.queryByText("// leçon validée")).toBeNull();
   });
+
+  it("says the lesson could not be validated, instead of failing the page, when the call fails", async () => {
+    const { completeLesson } = await import("../../_actions/track-progress");
+    vi.mocked(completeLesson).mockRejectedValueOnce(new Error("network"));
+    render(<Lesson />);
+    fireEvent.click(next());
+    fireEvent.click(next());
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Terminer la leçon" }));
+      await Promise.resolve();
+    });
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "La leçon n'a pas pu être validée, réessaie.",
+    );
+    // Still on the last section, with the button to try again.
+    expect(screen.getByRole("button", { name: "Terminer la leçon" })).toBeTruthy();
+    expect(screen.queryByText("// leçon validée")).toBeNull();
+  });
 });
 
 describe("a passage asked for (?section=, from a review question)", () => {

@@ -99,7 +99,7 @@ export function moduleAnswerBody(
  * as a switch that did nothing), or nothing read yet. Never a count.
  */
 export function recallCardState(view: RecallView | undefined): RecallState | null {
-  if (view === undefined || view.mode !== "daily" || view.status === "off") return null;
+  if (view?.mode !== "daily" || view.status === "off") return null;
   if (view.status === "open") return "todo";
   if (view.status === "done") return "done";
   return "empty";

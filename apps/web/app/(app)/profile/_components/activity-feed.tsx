@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { moreLabel } from "@cyberlearn/lib/social/portfolio";
 
 /** A lesson the reader completed, its date already written out. */
 export interface SerializedLesson {
@@ -17,8 +18,20 @@ const CAT_COLOR: Record<string, string> = {
   NETWORK: "var(--color-brand-turquoise)",
 };
 
-/** The profile's Activité tab: the lessons completed, the latest first. */
-export function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }): React.ReactElement {
+/**
+ * The profile's Activité tab: the lessons completed, the latest first.
+ *
+ * `lessons` is only the latest ones; `total` is how many were completed, and
+ * the list says so when it stops short of it (the tab's counter is the total).
+ */
+export function ActivityFeed({
+  lessons,
+  total = lessons.length,
+}: {
+  lessons: SerializedLesson[];
+  total?: number;
+}): React.ReactElement {
+  const more = moreLabel(lessons.length, total);
   if (lessons.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -112,6 +125,14 @@ export function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }): Reac
           </Link>
         );
       })}
+      {more !== null && (
+        <p
+          className="mono-label"
+          style={{ color: "var(--color-text-muted)", margin: "6px 0 0", textAlign: "center" }}
+        >
+          {`// ${more}`}
+        </p>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { headers } from "next/headers";
 import { getRequestUser } from "@/lib/auth";
+import { needsMfaStep } from "@/lib/auth/password-flow";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fileTicket, type TicketField } from "@/lib/tickets/requester";
 
 // Behavioural anti-spam. The IP rate limit alone doesn't stop distributed
@@ -17,6 +19,24 @@ export interface ContactFormState {
   success?: boolean;
   error?: string;
   fieldErrors?: Partial<Record<TicketField, string>>;
+}
+
+/**
+ * Whether the session behind this request has gone through its second factor,
+ * or has none to go through.
+ *
+ * The middleware lets a session that still owes its code open this form (the
+ * way for somebody who lost the phone to reach the team), so the form can no
+ * longer count on the gate to have checked. A session that has only typed the
+ * password has not proved it is the account's owner: its request is filed as a
+ * visitor's, answered at the address typed in the form like any other, and not
+ * attached to the account - where the team would read it as the owner's word.
+ * The level is read from the token, with no network call; an unreadable one
+ * counts as owed (needsMfaStep), like everywhere else.
+ */
+async function hasProvedSecondFactor(): Promise<boolean> {
+  const supabase = await getSupabaseServerClient();
+  return !needsMfaStep(await supabase.auth.mfa.getAuthenticatorAssuranceLevel());
 }
 
 export async function submitContactAction(
@@ -39,11 +59,12 @@ export async function submitContactAction(
   const rawIp = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   // Get logged-in user if any (contact is also available to guests)
   const authUser = await getRequestUser();
+  const userId = authUser !== null && (await hasProvedSecondFactor()) ? authUser.id : null;
 
   // Validation, the rate limit (before any future captcha, so an attacker
   // cannot burn its quota for free) and the write: shared with the app.
   const result = await fileTicket({
-    userId: authUser?.id ?? null,
+    userId,
     ip: rawIp,
     fields: {
       subject: formData.get("subject"),

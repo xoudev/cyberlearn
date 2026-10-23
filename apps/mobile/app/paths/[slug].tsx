@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { CheckIcon, ChevronRight, LockIcon } from "@/components/icons";
-import { BackButton, GradientButton } from "@/components/buttons";
+import { BackButton, GradientButton, TEXT_LINK_TARGET } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -204,7 +204,7 @@ function PathBody({
                         }}
                         accessibilityRole="button"
                         accessibilityLabel={`Fiche de révision du ${moduleLabel(moduleStart).toLowerCase()}`}
-                        style={{ marginTop: 4 }}
+                        style={TEXT_LINK_TARGET}
                       >
                         <Text variant="micro" style={{ color: colors.accent }}>
                           FICHE DE RÉVISION ›
@@ -219,7 +219,7 @@ function PathBody({
                           accessibilityRole="button"
                           accessibilityLabel={`Réviser le ${moduleLabel(moduleStart).toLowerCase()} en deux minutes`}
                           accessibilityHint={MODULE_REVIEW_HINT}
-                          style={{ marginTop: 4 }}
+                          style={TEXT_LINK_TARGET}
                         >
                           <Text variant="micro" style={{ color: colors.accent }}>
                             {MODULE_REVIEW_ACTION.toUpperCase()} ›

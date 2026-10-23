@@ -464,12 +464,12 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
   return useQuery({
     queryKey: ["lessons", userId, filters],
     queryFn: async (): Promise<LessonCard[]> => {
-      type ProgressRow = {
+      interface ProgressRow {
         lessonId: string;
         status: ProgressStatus;
         quizCorrect: number | null;
         quizTotal: number | null;
-      };
+      }
       // Read first: the status filter is built from it.
       let progressRows: ProgressRow[] = [];
       if (userId) {
@@ -1199,11 +1199,17 @@ export function dailyRecallKey(userId: string | undefined): readonly unknown[] {
  * The day's recall, drawn on the server on its first opening of the day, as
  * the site's dashboard draws it. Spaced repetition switched off in the
  * settings comes back as `status: "off"`.
+ *
+ * Read again as the app comes back to the front (lib/app-focus.ts): the card
+ * and the home tab's link say where the recall stands today, and the home tab
+ * stays mounted overnight, so yesterday's "Fait pour aujourd'hui" would
+ * otherwise stay on screen until the reader pulled the page down.
  */
 export function useDailyRecall(userId: string | undefined) {
   return useQuery({
     queryKey: dailyRecallKey(userId),
     enabled: Boolean(userId),
+    refetchOnWindowFocus: true,
     queryFn: fetchDailyRecallApi,
   });
 }

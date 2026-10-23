@@ -260,7 +260,8 @@ export default async function AdminUserPage({
               userId={user.id}
               email={user.email}
               displayName={user.displayName || handle}
-              factorCount={signIn.verifiedTotp + signIn.pendingTotp}
+              verifiedCount={signIn.verifiedTotp}
+              abandonedCount={signIn.pendingTotp}
               refusal={mfaResetRefusal({
                 actorId: viewer.id,
                 targetId: user.id,
