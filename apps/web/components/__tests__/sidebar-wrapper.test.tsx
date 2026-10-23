@@ -13,6 +13,23 @@ import { stubMatchMedia } from "@/test/match-media";
 
 const nav = vi.hoisted(() => ({ pathname: "/dashboard" }));
 vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
+// The router is not mounted here: the link renders as the anchor it comes down to.
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
+const { default: Link } = await import("next/link");
 
 const { SidebarProvider, useSidebar } = await import("@/components/ui/sidebar");
 const { SidebarWrapper } = await import("../sidebar-wrapper");
@@ -40,7 +57,7 @@ function Page({ folded = false }: { folded?: boolean }): React.ReactElement {
     <SidebarProvider defaultOpen={!folded}>
       <Controls />
       <SidebarWrapper>
-        <a
+        <Link
           href="/forum"
           onClick={(event) => {
             // jsdom cannot navigate, and the router would have taken the click.
@@ -48,7 +65,7 @@ function Page({ folded = false }: { folded?: boolean }): React.ReactElement {
           }}
         >
           Forum
-        </a>
+        </Link>
         <button type="button">Déconnexion</button>
       </SidebarWrapper>
     </SidebarProvider>
@@ -56,7 +73,7 @@ function Page({ folded = false }: { folded?: boolean }): React.ReactElement {
 }
 
 function drawer(): string {
-  return screen.getByTestId("drawer").textContent ?? "";
+  return screen.getByTestId("drawer").textContent;
 }
 
 function aside(): HTMLElement {
