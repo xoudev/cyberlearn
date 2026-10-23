@@ -37,7 +37,6 @@ import { quizReportRepository } from "../repositories/quiz-report.repository.js"
 import { quizRepository } from "../repositories/quiz.repository.js";
 import { ratingRepository } from "../repositories/rating.repository.js";
 import { reviewCardRepository } from "../repositories/review-card.repository.js";
-import { reviewScheduleLegacyRepository } from "../repositories/review-schedule-legacy.repository.js";
 import { streakRepository } from "../repositories/streak.repository.js";
 import { ticketRepository } from "../repositories/ticket.repository.js";
 import { tournamentRepository } from "../repositories/tournament.repository.js";
@@ -203,20 +202,6 @@ export interface ExportPayload {
     verifyUrl: string;
     revokedAt: Date | null;
     revokedReason: string | null;
-  }[];
-  /**
-   * The retired lesson-level review queue (SM-2): its rows are kept, out of
-   * use, until they are converted into review cards and a later release drops
-   * their table. Listed until then, since the platform still holds them.
-   */
-  reviewSchedules: {
-    lessonTitle: string;
-    lessonSlug: string;
-    easeFactor: number;
-    intervalDays: number;
-    repetitions: number;
-    nextReviewAt: Date;
-    lastReviewedAt: Date;
   }[];
   /** The lesson questions to be asked again, each in its box, retired ones included. */
   reviewCards: {
@@ -471,7 +456,6 @@ export async function buildExportPayload(
     hintReveals,
     badges,
     certs,
-    reviewSchedules,
     ratings,
     questions,
     answers,
@@ -515,7 +499,6 @@ export async function buildExportPayload(
     challengeRepository.exportHintRevealsFor(userId),
     badgeRepository.exportFor(userId),
     certificateRepository.exportFor(userId),
-    reviewScheduleLegacyRepository.listForExport(userId),
     ratingRepository.exportFor(userId),
     qaRepository.exportQuestionsFor(userId),
     qaRepository.exportAnswersFor(userId),
@@ -555,7 +538,10 @@ export async function buildExportPayload(
   return {
     exportMetadata: {
       exportedAt: new Date().toISOString(),
-      version: "1.1",
+      // 1.1 added the forum, friendships, classes, exercises, sanctions and
+      // filter decisions. 1.2 drops reviewSchedules: the retired SM-2 queue's
+      // table is gone, its rows converted into the reviewCards that stay.
+      version: "1.2",
       format: "json",
       rgpdContext: "Article 20 RGPD - Droit à la portabilité",
       rights: `${siteUrl}/privacy#section-7`,
@@ -641,7 +627,6 @@ export async function buildExportPayload(
       revokedAt: c.revokedAt,
       revokedReason: c.revokedReason,
     })),
-    reviewSchedules,
     reviewCards: reviewCards.map((card) => ({
       lessonTitle: card.lesson.title,
       lessonSlug: card.lesson.slug,

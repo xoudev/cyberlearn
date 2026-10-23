@@ -83,7 +83,7 @@
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
-| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
+| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). Version 1.2 : l'ancienne file de révisions (`reviewSchedules`) n'y figure plus, sa table est supprimée et ses lignes ont été converties en cartes (`reviewCards`). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |
@@ -173,8 +173,7 @@
 - Cron quotidien `review-reminders` : une notification « Ton rappel du jour est prêt », sans nombre, vers `/dashboard?rappel=1`, à qui a une carte due dont la question est encore dans sa leçon (la règle du tirage, `learnersWithRecall`, chaque leçon lue une fois pour tous), garde les deux interrupteurs et n'a pas encore fait le rappel du jour ; une fois par jour au plus
 - Remises à zéro avec la progression et incluses dans l'export RGPD (les séances y nomment la leçon, jamais d'identifiant interne)
 - Les leçons de classe n'ont pas de cartes : l'en-tête de « Écrire une leçon » (`/my-class/lessons/new`) le dit aux enseignants
-- L'ancienne file SM-2 est retirée (`sm2.ts`, la page `/revisions`, son service de notation, `reviewRepository`) : une leçon terminée n'y ajoute plus rien, `/revisions` et `/review` ouvrent le rappel du jour. Ses lignes attendent leur conversion dans `review_schedules_legacy`, lue par le script de conversion et par l'export RGPD (section `reviewSchedules`, tant que la plateforme garde ces lignes), sans aucun accès client (RLS, droits révoqués), supprimée dans une version ultérieure une fois la conversion passée en production, avec la lecture de l'export. Pour les versions de l'app d'avant les cartes, qui lisaient la file elles-mêmes : `review_schedules` est une vue vide (`security_invoker`, aucune ligne, relation vers `lessons` gardée), où elles voient une file sans rien à faire, et `/api/mobile/review` refuse toute note sans rien noter ni créditer (migration `20261018120000_retire_review_schedules`). La vue accepte sans rien en garder les écritures du déploiement précédent, qui tourne encore quelques minutes après la migration : une fin de leçon n'échoue pas pendant le déploiement
-- Conversion de l'ancienne file en cartes : `db:backfill-review-cards`, lancé à la main, sur `review_schedules_legacy`, avant la version qui supprime cette table (essai par défaut, `--apply` pour écrire, une deuxième passe n'écrit rien). Une leçon que l'apprenant n'a plus terminée (remise à zéro depuis) ne donne rien ; les leçons qui ne donnent pas de carte en fin de leçon n'en donnent pas non plus ; une leçon en brouillon ou archivée au moment de la passe est convertie, ses cartes cachées tant qu'elle n'est pas republiée ; avec les réponses enregistrées, les cartes de la fin de leçon ; sans réponse, la dernière question dans la boîte que l'intervalle SM-2 avait atteinte ; les leçons déjà dues réparties sur cinq jours, les autres à la date de l'ancienne file. Détail et moment dans `docs/DEPLOY.md`
+- L'ancienne file SM-2 est retirée (`sm2.ts`, la page `/revisions`, son service de notation, `reviewRepository`) : une leçon terminée n'y ajoute plus rien, `/revisions` et `/review` ouvrent le rappel du jour. Ses lignes ont été converties en cartes (script `db:backfill-review-cards`, lancé à la main en production avant cette version), puis sa table `review_schedules_legacy` a été supprimée (migration `20261023120000_drop_review_schedules_legacy`), avec le script et la section `reviewSchedules` de l'export RGPD (version 1.2). Pour les versions de l'app d'avant les cartes, qui lisaient la file elles-mêmes : `review_schedules` est une vue vide (`security_invoker`, aucune ligne, bâtie sur `review_cards`, relation vers `lessons` gardée), où elles voient une file sans rien à faire, et `/api/mobile/review` refuse toute note sans rien noter ni créditer (migration `20261018120000_retire_review_schedules`). La vue accepte aussi, sans rien en garder, les écritures d'un déploiement d'avant les cartes. La vue et la route restent : les retirer est une décision à part, quand plus aucune de ces versions n'est supportée (`docs/MOBILE_PARITY.md`)
 
 #### Profil & Préférences
 - Page de profil publique ou privée (toggle)
@@ -560,12 +559,11 @@
 - Migrations versionnées, RLS incluse : toute migration qui crée une table
   active la RLS et pose ses policies dans le même fichier
 - Row Level Security sur toutes les tables du schéma `public`, vérifiée par un
-  gate CI fail-closed (aucune table exposée, >= 56 policies)
+  gate CI fail-closed (aucune table exposée, >= 55 policies)
 - Seeds séparés : `db:seed`, `db:seed-paths`, `db:seed-quizzes`,
   `db:seed-cosmetics`, `db:seed-season`
 - Scripts lancés à la main, en essai par défaut (`--apply` pour écrire) :
-  `db:backfill-badge-xp`, `db:backfill-daily-streaks`,
-  `db:backfill-review-cards` (voir `docs/DEPLOY.md`)
+  `db:backfill-badge-xp`, `db:backfill-daily-streaks` (voir `docs/DEPLOY.md`)
 - Les sources ne sont jamais compilées à côté d'elles-mêmes (`noEmit` +
   garde `.gitignore`) : un `.js` émis passerait devant son `.ts` à la
   résolution et les tests liraient le dernier build

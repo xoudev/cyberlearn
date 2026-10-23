@@ -34,7 +34,7 @@ apps/marketing → Remotion renders for the Play Store listing
 packages/db   → Prisma schema, migrations, repositories
 packages/ui   → Design tokens CSS + brand components (XPBar, LevelBadge, etc.)
 packages/types → Zod schemas, shared TS types
-packages/lib  → Business logic (XP calc, SM-2, badge evaluator, auth guards)
+packages/lib  → Business logic (XP calc, Leitner review cards, badge evaluator, auth guards)
 packages/email → React Email templates
 packages/config → Shared ESLint, TSConfig, Biome configs
 content/      → MDX lessons and quizzes, versioned
@@ -117,7 +117,9 @@ dans le MÊME fichier de migration (`DROP POLICY IF EXISTS` + `CREATE POLICY`).
 Les évolutions de policies existantes : leur propre migration, même pattern.
 Aucune application manuelle de RLS hors migration. La CI (job Integration,
 step « Assert RLS coverage ») échoue si une table public n'a pas la RLS ou si
-le compte de policies régresse sous 56.
+le compte de policies régresse sous 55 (les 56 de la baseline, moins celle de
+`review_schedules_legacy`, table supprimée par
+`20261023120000_drop_review_schedules_legacy`).
 
 ## Conventions Storage
 

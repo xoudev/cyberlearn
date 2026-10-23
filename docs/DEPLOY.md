@@ -151,7 +151,8 @@ WHERE schemaname = 'public' AND NOT rowsecurity
   AND tablename NOT IN ('_prisma_migrations');
 -- attendu : 0 ligne
 
--- 2. Compte de policies (>= 56, la baseline)
+-- 2. Compte de policies (>= 55 : les 56 de la baseline, moins celle de
+--    review_schedules_legacy, supprimée avec sa table)
 SELECT count(*) FROM pg_policies WHERE schemaname = 'public';
 ```
 
@@ -233,69 +234,43 @@ après ne change rien.
 |---|---|
 | `db:backfill-badge-xp` | Crédite l'XP des badges gagnés avant que les badges en rapportent |
 | `db:backfill-daily-streaks` | Reconstruit les jours d'activité et la plus longue série depuis les leçons terminées |
-| `db:backfill-review-cards` | Convertit l'ancienne file de révisions (SM-2), gardée dans `review_schedules_legacy`, en cartes du rappel du jour ; à lancer avant la version qui supprime cette table, voir ci-dessous |
 
-### Conversion des révisions : `db:backfill-review-cards`
+### Ancienne file de révisions (SM-2) : convertie, puis supprimée
 
-```sh
-pnpm --filter @cyberlearn/db db:backfill-review-cards             # essai : les comptes, rien n'est écrit
-pnpm --filter @cyberlearn/db db:backfill-review-cards --verbose   # les mêmes, par apprenant et par leçon
-pnpm --filter @cyberlearn/db db:backfill-review-cards --apply     # écrit les cartes
-```
+La conversion de l'ancienne file de révisions en cartes du rappel du jour a été
+faite en production avant cette version. La table qui la gardait,
+`review_schedules_legacy`, est supprimée (migration
+`20261023120000_drop_review_schedules_legacy`), et avec elle le script
+`db:backfill-review-cards` et la section `reviewSchedules` de l'export RGPD
+(version 1.2 du fichier : les cartes y restent dans `reviewCards`). Les règles de
+la conversion ne vivent plus que dans l'historique git
+(`packages/db/src/backfill-review-cards.ts`, avant sa suppression).
 
-**Quand :** l'ancienne file est retirée du site et de l'app (migration
-`20261018120000_retire_review_schedules`). Plus rien n'y ajoute de ligne :
-celles qui restent attendent leur conversion dans `review_schedules_legacy`,
-la table renommée, fermée à tout client. Deux lectures seulement : ce script,
-et l'export RGPD (`/api/me/export`, section `reviewSchedules`), qui liste les
-lignes d'un apprenant tant que la plateforme les garde
-(`reviewScheduleLegacyRepository` de `packages/db`). **Cette table est
-supprimée dans une version ultérieure, une fois la conversion passée en
-production** : lancer `--apply` avant de déployer cette version, sans quoi les
-lignes non converties partent avec elle. La lecture de l'export part avec la
-table, dans la même version. Une passe lancée après la première n'écrit rien.
-
-Chaque ligne de `review_schedules_legacy` (un apprenant, une leçon) devient :
-
-- rien si l'apprenant n'a plus la leçon terminée : sa progression a été remise
-  à zéro depuis (tout le compte, ou la leçon depuis la console), et ni l'une
-  ni l'autre ne touche plus l'ancienne file ;
-- rien pour un bilan de module, un projet, une leçon de classe ou une leçon
-  sans quiz, comme à la fin d'une leçon ;
-- rien non plus si l'apprenant a déjà une carte pour la leçon, retirée ou non
-  (leçon terminée depuis l'arrivée des cartes, ou passage précédent) ;
-- avec les réponses au quiz enregistrées (depuis le 24 septembre 2026) : les
-  cartes que la fin de leçon met en file, les questions ratées en boîte 1 et la
-  dernière réussie en boîte 3. Une réponse à une question retirée de la leçon
-  ne compte pas (les questions sont relues dans le MDX actuel) ;
-- sans réponse enregistrée : une carte, la dernière question de la leçon, dans
-  la boîte que l'intervalle SM-2 avait atteinte (1, 3, 7 puis 21 jours), pour
-  que des mois de révisions ne repartent pas de zéro.
-
-Une leçon en brouillon ou archivée au moment de la passe (dépubliée le temps
-d'une correction, par exemple) est convertie comme si elle était publiée :
-ses cartes restent cachées tant qu'elle ne l'est pas, comme l'étaient ses
-lignes SM-2, et reviennent avec elle si elle est republiée. Sans cela,
-l'historique de ses apprenants partirait avec l'ancienne file. Le compte rendu
-dit combien de lignes sont dans ce cas.
-
-Les leçons déjà dues (le jour même ou avant) sont réparties sur cinq jours à
-partir du jour même, les plus en retard d'abord : personne ne reçoit tout son
-retard dans la même séance. Les autres gardent la date que l'ancienne file
-leur donnait. L'interrupteur de répétition espacée n'est pas lu : ses cartes
-restent cachées tant qu'il est coupé, comme l'était l'ancienne file. Les lignes
-SM-2 ne sont pas modifiées. Règles et tests :
-`packages/db/src/backfill-review-cards.ts`.
+**Fenêtre du déploiement : les deux exports RGPD échouent quelques minutes.**
+La migration part avant le nouveau code (voir « Ce qui part tout seul sur un
+merge »), et pendant ce temps le déploiement précédent lit encore
+`review_schedules_legacy` pour la section `reviewSchedules` de l'export. La
+table n'existe plus : la lecture échoue, et avec elle `/api/me/export` du site
+et l'export de la console (`/users/[id]/export`), en erreur 500 jusqu'à ce que
+le nouveau code serve. Rien ne se perd : l'export ne fait que lire, et le
+quota du jour est rendu à l'apprenant quand la construction échoue. On relance
+l'export une fois le déploiement Vercel passé. Ce déploiement n'écrit nulle part
+dans la table, et la suppression d'un compte passe par les clés étrangères :
+aucune autre route n'est touchée. À la différence des écritures de fin de leçon,
+que la vue absorbe, cette lecture n'est pas protégée ; la protéger aurait
+demandé de livrer le retrait de la lecture et la suppression de la table dans
+deux versions.
 
 Pour les versions de l'app installées avant les cartes, qui lisaient la file
-elles-mêmes, `review_schedules` est désormais une vue vide, bâtie sur
-`review_cards` : elle ne dépend pas de `review_schedules_legacy` et reste en
-place quand cette table est supprimée. Elle accepte aussi, sans rien en
-garder, les écritures du déploiement précédent : la migration part quelques
-minutes avant le nouveau code (voir « Ce qui part tout seul sur un merge »),
-et pendant ce temps l'ancien code écrit encore une ligne chaque fois qu'une
-leçon est terminée pour la première fois. Refusée, cette écriture annulerait
-la fin de leçon entière.
+elles-mêmes, `review_schedules` reste une vue vide, bâtie sur `review_cards` :
+la suppression de la table n'y change rien. **La retirer est une décision à
+part**, à prendre quand plus aucune version installée de l'app d'avant les
+cartes n'est supportée (`docs/MOBILE_PARITY.md`) : la migration qui la
+supprimera devra aussi supprimer la fonction `private.review_schedules_drop_write()`,
+que `DROP VIEW` laisse en place avec son déclencheur parti. La vue accepte
+encore, sans rien en garder, les écritures d'un déploiement d'avant les cartes
+(la migration part quelques minutes avant le nouveau code, voir « Ce qui part
+tout seul sur un merge »).
 
 ---
 

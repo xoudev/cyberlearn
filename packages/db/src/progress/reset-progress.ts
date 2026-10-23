@@ -37,10 +37,6 @@ import { logger, errorMessage } from "@cyberlearn/lib/logger";
  *   notifications, tickets, forum posts, notes, ratings, questions and answers
  *   - somebody else is reading those
  *   friendships, class memberships, moderation events, bans, audit logs
- *   the rows of the retired SM-2 queue (review_schedules_legacy), which no
- *   surface reads (the GDPR export lists them) and which go in a later
- *   release: db:backfill-review-cards converts only the lessons still
- *   completed, so the lessons cleared here give no card back
  *
  * All database work is one interactive transaction. Object storage is not
  * transactional, so the certificate PDFs are removed after it commits and a

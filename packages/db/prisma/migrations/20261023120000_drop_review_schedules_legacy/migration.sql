@@ -1,0 +1,54 @@
+-- The retired SM-2 queue's table goes: review_schedules_legacy is dropped.
+--
+-- IRREVERSIBLE once applied. Its rows are the old lesson-level review queue,
+-- and the only copy of what db:backfill-review-cards would have turned into
+-- review cards. This migration must not reach production before that
+-- conversion has run there (dry run first, then --apply): whatever it has not
+-- converted goes with the table. The check, before merging:
+--
+--   select count(*) from review_schedules_legacy s
+--   where not exists (
+--     select 1 from review_cards c
+--     where c."userId" = s."userId" and c."lessonId" = s."lessonId"
+--   );
+--
+-- It must count only the rows the conversion skips on purpose: a lesson the
+-- learner no longer has completed, a module review, a project or a class
+-- lesson, or a lesson with no quiz to ask (docs/DEPLOY.md). SQL cannot tell
+-- those from a row left unconverted, since the last two depend on the lesson's
+-- MDX, so no guard here: the dry run of the script is the judge.
+--
+-- What goes with it, and only that:
+--   - its two foreign keys (to users and to lessons), its primary key and its
+--     two indexes, which belong to the table;
+--   - its row level security: the one policy still on it, the restrictive
+--     mfa_verified_session every table carries (20260726000000), since
+--     20261018120000_retire_review_schedules had already dropped
+--     review_select_own. The count of policies the CI step "Assert RLS
+--     coverage" expects drops by that one policy, and its floor with it.
+--
+-- What stays: the view public.review_schedules, the empty queue the app builds
+-- installed before the review cards still read through the Data API. It is
+-- built on review_cards, not on this table (see its definition in
+-- 20261018120000_retire_review_schedules), so this drop leaves it alone, and so
+-- does the trigger that takes the previous deployment's writes. Removing the
+-- view is a separate decision, for when no installed build still reads it
+-- (docs/MOBILE_PARITY.md).
+--
+-- Deployment window: this migration reaches the database a few minutes before
+-- the code that stops reading the table (migrate.yml races the Vercel build).
+-- Until then the previous deployment still runs
+-- reviewScheduleLegacyRepository.listForExport inside the GDPR export, so both
+-- export routes (/api/me/export on the site, the user export in the console)
+-- fail with a missing-table error, and succeed again once the new code serves.
+-- That read is the only one the previous deployment has on this table: it
+-- writes nothing to it (lesson completions write to the view, which absorbs
+-- them) and deleting an account goes through the foreign keys. The read is not
+-- shielded, unlike those writes: doing so would take the read removal and this
+-- drop in two releases (docs/DEPLOY.md).
+--
+-- No CASCADE: were anything else to depend on the table, this statement would
+-- fail and leave the migration unapplied, instead of dropping a dependent
+-- object nobody listed.
+
+DROP TABLE public.review_schedules_legacy;
