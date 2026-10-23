@@ -104,6 +104,11 @@ export interface ConsoleContentQuery extends ConsolePage {
   hidden: boolean | undefined;
   /** Searched in the text, where it lives and the author's names. */
   q: string;
+  /**
+   * Only what this account wrote: the account itself, not a search on its
+   * name, which also finds other people's messages that quote or resemble it.
+   */
+  authorId?: string | undefined;
 }
 
 export interface ContentNotice {
@@ -276,6 +281,7 @@ function forumPostContent(row: ForumPostRow): ModeratedContent {
 function forumPostWhere(query: ConsoleContentQuery): Prisma.ForumPostWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { authorId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -415,6 +421,7 @@ function questionContent(row: QuestionRow): ModeratedContent {
 function questionWhere(query: ConsoleContentQuery): Prisma.LessonQuestionWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { title: contains(query.q) },
@@ -513,6 +520,7 @@ function answerContent(row: AnswerRow): ModeratedContent {
 function answerWhere(query: ConsoleContentQuery): Prisma.LessonAnswerWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -626,6 +634,7 @@ function writeupContent(row: WriteupRow): ModeratedContent {
 function writeupWhere(query: ConsoleContentQuery): Prisma.ChallengeWriteupWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -728,6 +737,7 @@ function resourceContent(row: ResourceRow): ModeratedContent {
 function resourceWhere(query: ConsoleContentQuery): Prisma.ClassResourceWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { createdById: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { title: contains(query.q) },

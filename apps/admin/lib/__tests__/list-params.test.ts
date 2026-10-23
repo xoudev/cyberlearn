@@ -278,12 +278,19 @@ describe("the certificate list's parameters", () => {
 describe("the published-content list's parameters", () => {
   it("opens on the forum's messages, visible and hidden, page 1", () => {
     const params = parseContentListParams({});
-    expect(params).toEqual({ surface: "FORUM_POST", state: undefined, q: "", page: 1 });
+    expect(params).toEqual({
+      surface: "FORUM_POST",
+      state: undefined,
+      q: "",
+      author: undefined,
+      page: 1,
+    });
     expect(contentListSearch(params)).toEqual({});
     expect(contentQueryOf(params)).toEqual({
       surface: "FORUM_POST",
       hidden: undefined,
       q: "",
+      authorId: undefined,
       page: 1,
       pageSize: 25,
     });
@@ -311,6 +318,20 @@ describe("the published-content list's parameters", () => {
       surface: "FORUM_POST",
       state: undefined,
     });
+  });
+
+  it("reads an author's id, keeps it in the links and hands it to the query", () => {
+    const author = "44444444-4444-4444-8444-444444444444";
+    const params = parseContentListParams({ author, surface: "LESSON_ANSWER" });
+    expect(params.author).toBe(author);
+    expect(contentListSearch(params)).toEqual({ surface: "LESSON_ANSWER", author });
+    expect(contentQueryOf(params).authorId).toBe(author);
+  });
+
+  it("drops an author that is not an id, rather than searching for it", () => {
+    expect(parseContentListParams({ author: "ada" }).author).toBeUndefined();
+    expect(parseContentListParams({ author: "" }).author).toBeUndefined();
+    expect(contentQueryOf(parseContentListParams({ author: "ada" })).authorId).toBeUndefined();
   });
 });
 

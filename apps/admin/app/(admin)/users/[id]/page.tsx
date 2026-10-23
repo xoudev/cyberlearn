@@ -30,6 +30,7 @@ import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { avatarLabel } from "@/lib/user-record";
 import { AuditPanel } from "./_components/audit-panel";
+import { authorContentHref } from "./_components/author-content";
 import { BanForm } from "./_components/ban-form";
 import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
@@ -339,7 +340,7 @@ export default async function AdminUserPage({
             noteReportTotal={noteReportTotal}
             contentReports={contentReports}
             contentGestures={contentGestures}
-            contentSearch={user.username ?? user.displayName}
+            contentHref={authorContentHref(user.id, contentReports.rows, contentGestures.rows)}
           />
 
           <AuditPanel userId={user.id} rows={auditRows} />

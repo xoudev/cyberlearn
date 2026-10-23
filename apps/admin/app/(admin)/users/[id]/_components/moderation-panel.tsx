@@ -56,7 +56,7 @@ export function ModerationPanel({
   noteReportTotal,
   contentReports,
   contentGestures,
-  contentSearch,
+  contentHref,
 }: {
   /** The latest ones only. */
   events: ModerationRow[];
@@ -68,8 +68,8 @@ export function ModerationPanel({
   contentReports: { total: number; rows: ReportAgainstAuthor[] };
   /** What the console did to those contents: the latest ones, and how many in all. */
   contentGestures: { total: number; rows: AuditRow[] };
-  /** What the contents list is searched for to find this account's: the name it shows them under. */
-  contentSearch: string;
+  /** The contents list narrowed to what this account wrote (authorContentHref). */
+  contentHref: string;
 }): React.ReactElement {
   const reports = contentReports.rows.map(reportLine);
   const gestures = contentGestures.rows.map(gestureLine);
@@ -87,10 +87,7 @@ export function ModerationPanel({
           <Link href="/moderation/reports" className="a-btn a-btn--ghost a-btn--sm">
             Signalements
           </Link>
-          <Link
-            href={`/moderation/content?q=${encodeURIComponent(contentSearch)}`}
-            className="a-btn a-btn--ghost a-btn--sm"
-          >
+          <Link href={contentHref} className="a-btn a-btn--ghost a-btn--sm">
             Ses contenus
           </Link>
         </span>

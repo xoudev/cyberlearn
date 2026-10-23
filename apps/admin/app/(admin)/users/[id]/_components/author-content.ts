@@ -1,4 +1,4 @@
-import type { AuditRow, ReportAgainstAuthor } from "@cyberlearn/db";
+import type { AuditRow, ContentSurface, ReportAgainstAuthor } from "@cyberlearn/db";
 import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
 import {
   CONTENT_REPORT_REASON_LABELS,
@@ -7,6 +7,8 @@ import {
 } from "@cyberlearn/lib/moderation/report-reasons";
 import type { Tone } from "../../../_components/admin-ui";
 import { auditActorName } from "@/lib/audit-export";
+import { gridHref } from "@/lib/grid-href";
+import { DEFAULT_CONTENT_SURFACE, contentListSearch } from "@/lib/list-params";
 
 /**
  * What an account's page says of the contents it published, the way
@@ -95,4 +97,36 @@ export function gestureLine(row: AuditRow): GestureLine {
     at: row.createdAt,
     gesture: GESTURE[row.action] ?? { label: row.action, tone: "neutral" },
   };
+}
+
+/**
+ * The contents list, narrowed to what this account wrote. The list shows one
+ * surface at a time and opens on the forum's: an account whose latest report
+ * or gesture is on a write-up would land on an empty forum tab, so the link
+ * opens on the surface of the most recent of them, and the tabs reach the rest.
+ */
+export function authorContentHref(
+  authorId: string,
+  reports: readonly Pick<ReportAgainstAuthor, "surface" | "createdAt">[],
+  gestures: readonly Pick<AuditRow, "targetType" | "createdAt">[],
+): string {
+  // Both lists come newest first: their first line is each one's latest.
+  const candidates: { surface: ContentSurface; at: Date }[] = [];
+  const report = reports[0];
+  if (report !== undefined) candidates.push({ surface: report.surface, at: report.createdAt });
+  const gesture = gestures[0];
+  if (gesture !== undefined && isContentReportSurface(gesture.targetType)) {
+    candidates.push({ surface: gesture.targetType, at: gesture.createdAt });
+  }
+  const latest = candidates.sort((a, b) => b.at.getTime() - a.at.getTime())[0];
+  return gridHref(
+    "/moderation/content",
+    contentListSearch({
+      surface: latest?.surface ?? DEFAULT_CONTENT_SURFACE,
+      state: undefined,
+      q: "",
+      author: authorId,
+      page: 1,
+    }),
+  );
 }

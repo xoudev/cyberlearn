@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AuditRow, ReportAgainstAuthor, ReviewableContent } from "@cyberlearn/db";
 import { AUDIT_ACTION } from "@cyberlearn/db/audit-actions";
-import { EXCERPT_MAX, gestureLine, reportLine } from "../author-content";
+import { EXCERPT_MAX, authorContentHref, gestureLine, reportLine } from "../author-content";
 
 /**
  * What an account's page says of the contents it published: the reports they
@@ -139,5 +139,51 @@ describe("gestureLine", () => {
 
   it("prints a kind of content it does not know as it was written", () => {
     expect(gestureLine(entry({ targetType: "SOMETHING_NEW" })).title).toBe("SOMETHING_NEW");
+  });
+});
+
+describe("authorContentHref", () => {
+  const AUTHOR = "44444444-4444-4444-8444-444444444444";
+  const EARLIER = new Date("2026-10-01T10:00:00Z");
+  const LATER = new Date("2026-10-09T10:00:00Z");
+
+  it("narrows the list to the account itself, not to a search on its name", () => {
+    const href = authorContentHref(AUTHOR, [], []);
+    const query = new URLSearchParams(href.split("?")[1]);
+    expect(href.startsWith("/moderation/content?")).toBe(true);
+    expect(query.get("author")).toBe(AUTHOR);
+    expect(query.has("q")).toBe(false);
+  });
+
+  it("opens on the forum when nothing was reported or done", () => {
+    expect(authorContentHref(AUTHOR, [], [])).toBe(`/moderation/content?author=${AUTHOR}`);
+  });
+
+  it("opens on the surface of the latest report", () => {
+    const href = authorContentHref(AUTHOR, [report({ surface: "CHALLENGE_WRITEUP" })], []);
+    expect(href).toBe(`/moderation/content?surface=CHALLENGE_WRITEUP&author=${AUTHOR}`);
+  });
+
+  it("opens on the surface of the latest gesture when it is newer than the latest report", () => {
+    const href = authorContentHref(
+      AUTHOR,
+      [report({ surface: "LESSON_ANSWER", createdAt: EARLIER })],
+      [entry({ targetType: "CLASS_RESOURCE", createdAt: LATER })],
+    );
+    expect(new URLSearchParams(href.split("?")[1]).get("surface")).toBe("CLASS_RESOURCE");
+  });
+
+  it("opens on the report's surface when it is newer than the latest gesture", () => {
+    const href = authorContentHref(
+      AUTHOR,
+      [report({ surface: "LESSON_ANSWER", createdAt: LATER })],
+      [entry({ targetType: "CLASS_RESOURCE", createdAt: EARLIER })],
+    );
+    expect(new URLSearchParams(href.split("?")[1]).get("surface")).toBe("LESSON_ANSWER");
+  });
+
+  it("ignores a gesture on a kind of content it does not know", () => {
+    const href = authorContentHref(AUTHOR, [], [entry({ targetType: "SOMETHING_NEW" })]);
+    expect(href).toBe(`/moderation/content?author=${AUTHOR}`);
   });
 });
