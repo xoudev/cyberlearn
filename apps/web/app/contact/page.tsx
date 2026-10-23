@@ -42,6 +42,8 @@ export default function ContactPage(): React.ReactElement {
     setTheme(known);
     setLoadedAt(String(Date.now()));
   }, []);
+  // What the theme control starts from: what a refused send held, else the link's.
+  const shownTheme = state.values?.theme ?? initialTheme;
 
   if (state.success) {
     return (
@@ -222,12 +224,16 @@ export default function ContactPage(): React.ReactElement {
           >
             Thème *
           </label>
+          {/* The control keeps its choice on its own, but the field it feeds is
+              emptied by the reset like the others (back to the value it was
+              mounted with): after a refusal it is mounted again, with the theme
+              that was sent, so the next send carries it. */}
           <Select
             id="contact-theme"
-            key={initialTheme || "theme"}
+            key={shownTheme || "theme"}
             name="theme"
             required
-            defaultValue={initialTheme}
+            defaultValue={shownTheme}
             placeholder="Choisir un thème…"
             options={THEMES}
             onChange={setTheme}

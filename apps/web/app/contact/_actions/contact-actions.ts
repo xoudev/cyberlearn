@@ -2,7 +2,11 @@
 
 import { headers } from "next/headers";
 import { getRequestUser } from "@/lib/auth";
-import { TICKET_MESSAGE_MAX, TICKET_SUBJECT_MAX } from "@cyberlearn/lib/tickets/tickets";
+import {
+  isTicketFormTheme,
+  TICKET_MESSAGE_MAX,
+  TICKET_SUBJECT_MAX,
+} from "@cyberlearn/lib/tickets/tickets";
 import { fileTicket, type TicketField } from "@/lib/tickets/requester";
 
 // Behavioural anti-spam. The IP rate limit alone doesn't stop distributed
@@ -19,6 +23,8 @@ const EMAIL_MAX = 254;
 /** What the form held when it was sent. */
 export interface ContactFormValues {
   email: string;
+  /** A theme of the form, or "" for none: nothing else is handed back. */
+  theme: string;
   subject: string;
   message: string;
 }
@@ -34,6 +40,12 @@ export interface ContactFormState {
    * is no fault of the visitor - cost everything that had been written.
    */
   values?: ContactFormValues;
+}
+
+/** The theme that was chosen, if it is one the form offers. */
+function chosenTheme(formData: FormData): string {
+  const value = formData.get("theme");
+  return typeof value === "string" && isTicketFormTheme(value) ? value : "";
 }
 
 /** A field as it was typed, never longer than the form lets it be. */
@@ -78,6 +90,7 @@ export async function submitContactAction(
   if (!result.ok) {
     const values: ContactFormValues = {
       email: typed(formData, "email", EMAIL_MAX),
+      theme: chosenTheme(formData),
       subject: typed(formData, "subject", TICKET_SUBJECT_MAX),
       message: typed(formData, "message", TICKET_MESSAGE_MAX),
     };

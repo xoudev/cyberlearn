@@ -66,7 +66,12 @@ describe("submitContactAction", () => {
     });
     expect(await submitContactAction({}, form())).toEqual({
       error: "Trop de demandes. Réessaie dans 30 secondes.",
-      values: { email: FIELDS.email, subject: FIELDS.subject, message: FIELDS.message },
+      values: {
+        email: FIELDS.email,
+        theme: FIELDS.theme,
+        subject: FIELDS.subject,
+        message: FIELDS.message,
+      },
     });
   });
 
@@ -80,6 +85,7 @@ describe("submitContactAction", () => {
     expect(state.fieldErrors).toEqual({ email: "Adresse e-mail invalide." });
     expect(state.values).toEqual({
       email: "jean@gmail",
+      theme: FIELDS.theme,
       subject: FIELDS.subject,
       message: FIELDS.message,
     });
@@ -100,7 +106,21 @@ describe("submitContactAction", () => {
     const data = new FormData();
     data.set("subject", "Un sujet");
     const state = await submitContactAction({}, data);
-    expect(state.values).toEqual({ email: "", subject: "Un sujet", message: "" });
+    expect(state.values).toEqual({ email: "", theme: "", subject: "Un sujet", message: "" });
+  });
+
+  it("hands back a theme the form offers, and no other", async () => {
+    m.fileTicket.mockResolvedValue({ ok: false, error: "Formulaire invalide." });
+    for (const theme of ["BUG", "OTHER"]) {
+      const state = await submitContactAction({}, form({ ...FIELDS, theme }));
+      expect(state.values?.theme).toBe(theme);
+    }
+    // A theme the form never lists (an appeal is filed from the ban notice) or
+    // anything else a hand-made request carries is not echoed into the page.
+    for (const theme of ["BAN_APPEAL", "<script>", ""]) {
+      const state = await submitContactAction({}, form({ ...FIELDS, theme }));
+      expect(state.values?.theme).toBe("");
+    }
   });
 
   it("answers a bot as if it had been sent, without filing anything", async () => {

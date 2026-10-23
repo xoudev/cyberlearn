@@ -44,16 +44,26 @@ async function fillAndSend(container: HTMLElement): Promise<void> {
 beforeEach(() => {
   m.submitContactAction.mockReset();
   window.history.replaceState({}, "", "/contact?theme=ESTABLISHMENT_REQUEST");
+  // jsdom has none; the theme list keeps its highlighted option in view.
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+});
 
 describe("the contact form after a refusal", () => {
   it("keeps the address, the subject and the message after a refused address", async () => {
     m.submitContactAction.mockResolvedValue({
       error: "Formulaire invalide.",
       fieldErrors: { email: "Adresse e-mail invalide." },
-      values: { email: "jean@gmail", subject: "Mon établissement", message: MESSAGE },
+      values: {
+        email: "jean@gmail",
+        theme: "ESTABLISHMENT_REQUEST",
+        subject: "Mon établissement",
+        message: MESSAGE,
+      },
     });
     const { container, findByText } = render(<ContactPage />);
 
@@ -68,7 +78,12 @@ describe("the contact form after a refusal", () => {
   it("keeps them when the limit per IP is what stopped the message", async () => {
     m.submitContactAction.mockResolvedValue({
       error: "Trop de demandes. Réessaie dans 30 secondes.",
-      values: { email: "jean@gmail", subject: "Mon établissement", message: MESSAGE },
+      values: {
+        email: "jean@gmail",
+        theme: "ESTABLISHMENT_REQUEST",
+        subject: "Mon établissement",
+        message: MESSAGE,
+      },
     });
     const { container, findByText } = render(<ContactPage />);
 
@@ -82,7 +97,12 @@ describe("the contact form after a refusal", () => {
   it("keeps the chosen theme as well", async () => {
     m.submitContactAction.mockResolvedValue({
       error: "Trop de demandes. Réessaie dans 30 secondes.",
-      values: { email: "jean@gmail", subject: "Mon établissement", message: MESSAGE },
+      values: {
+        email: "jean@gmail",
+        theme: "ESTABLISHMENT_REQUEST",
+        subject: "Mon établissement",
+        message: MESSAGE,
+      },
     });
     const { container, findByText } = render(<ContactPage />);
     await waitFor(() => {
@@ -97,6 +117,37 @@ describe("the contact form after a refusal", () => {
     expect(container.querySelector<HTMLSelectElement>("select[name=theme]")?.value).toBe(
       "ESTABLISHMENT_REQUEST",
     );
+  });
+
+  it("keeps a theme picked by hand, in the field that is sent as well as on the control", async () => {
+    // No ?theme= in the address: the theme is the visitor's own choice. The
+    // native field behind the control is emptied by the reset like the others,
+    // so it has to be handed its value back, not only the control that shows it.
+    window.history.replaceState({}, "", "/contact");
+    m.submitContactAction.mockResolvedValue({
+      error: "Trop de demandes. Réessaie dans 30 secondes.",
+      values: {
+        email: "jean@gmail",
+        theme: "ESTABLISHMENT_REQUEST",
+        subject: "Mon établissement",
+        message: MESSAGE,
+      },
+    });
+    const { container, findByText, getByRole } = render(<ContactPage />);
+    const nativeTheme = (): string | undefined =>
+      container.querySelector<HTMLSelectElement>("select[name=theme]")?.value;
+
+    fireEvent.click(getByRole("combobox"));
+    fireEvent.click(await findByText("Ajouter mon établissement", { selector: "[role=option] *" }));
+    await waitFor(() => {
+      expect(nativeTheme()).toBe("ESTABLISHMENT_REQUEST");
+    });
+
+    await fillAndSend(container);
+
+    await findByText("Trop de demandes. Réessaie dans 30 secondes.");
+    expect(nativeTheme()).toBe("ESTABLISHMENT_REQUEST");
+    expect(getByRole("combobox").textContent).toContain("Ajouter mon établissement");
   });
 
   it("starts a first visit empty, with only the subject a link asked for", () => {
