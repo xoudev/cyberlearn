@@ -249,6 +249,12 @@ export function isActionableEvent(surface: string, contentId: string | null): bo
   return contentId !== null && handlerFor(surface) !== null;
 }
 
+/**
+ * How many screening records a GDPR export lists, the most recent ones: the
+ * export says so in its metadata (rgpd/build-export.ts).
+ */
+export const MODERATION_EXPORT_LIMIT = 1000;
+
 export const moderationRepository = {
   /**
    * Screens a piece of text and records anything that was not plainly fine.
@@ -373,6 +379,32 @@ export const moderationRepository = {
   /** How many decisions were recorded about one account's writing, all told. */
   async countForUser(userId: string): Promise<number> {
     return prisma.moderationEvent.count({ where: { userId } });
+  },
+
+  /**
+   * What the screen recorded about the account's writing, most recent first,
+   * for its GDPR export (rgpd/build-export.ts): where, the verdict, the text
+   * kept (the excerpt is the person's own), how a human ended it, and when.
+   *
+   * The same columns findForUser shows the person on their own page, and for
+   * the same reason: not the score and not the rules that fired, which
+   * describe how the screen is tuned rather than the person. Not who
+   * reviewed it. Cut at MODERATION_EXPORT_LIMIT, and the export says so.
+   */
+  async exportFor(userId: string) {
+    return prisma.moderationEvent.findMany({
+      where: { userId },
+      select: {
+        surface: true,
+        verdict: true,
+        excerpt: true,
+        outcome: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: MODERATION_EXPORT_LIMIT,
+    });
   },
 
   /**

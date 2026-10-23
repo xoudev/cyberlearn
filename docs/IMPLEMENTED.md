@@ -83,7 +83,7 @@
 | `/auth/callback` | Échange PKCE après OAuth, contrôle MFA, synchronisation du profil |
 | `/auth/confirm` | Confirmation par jeton implicite, maintenue pour les builds mobiles installés |
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
-| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même |
+| `/api/me/export` | Export des données personnelles (RGPD Art. 20), construit dans `@cyberlearn/db` (`rgpd/build-export.ts`, chaque table lue par son dépôt), où la console construit le même. Version 1.1 : s'y ajoutent les sujets et messages du forum (les 1 000 plus récents de chaque, masqués compris), les amitiés (pseudo et dates seulement, jamais l'e-mail), les classes, les exercices réussis, les sanctions (sans qui les a décidées ni pourquoi elles ont été levées) et les décisions du filtre (sans le score ni les règles). `exportMetadata.limitations` dit ce qui est coupé ou laissé à l'équipe |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod ; `?period=week\|month` pour la semaine ou le mois, sans paramètre la réponse d'avant |

@@ -12,15 +12,27 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { badgeRepository } from "../repositories/badge.repository.js";
+import { banRepository } from "../repositories/ban.repository.js";
 import { certificateRepository } from "../repositories/certificate.repository.js";
 import { challengeRepository } from "../repositories/challenge.repository.js";
+import { classRepository } from "../repositories/class.repository.js";
 import { contentReportRepository } from "../repositories/content-report.repository.js";
 import { cosmeticRepository } from "../repositories/cosmetic.repository.js";
 import { duelRepository } from "../repositories/duel.repository.js";
+import { exerciseRepository } from "../repositories/exercise.repository.js";
+import { FORUM_EXPORT_LIMIT, forumRepository } from "../repositories/forum.repository.js";
+import {
+  FRIENDSHIP_EXPORT_LIMIT,
+  friendshipRepository,
+} from "../repositories/friendship.repository.js";
 import { leagueRepository } from "../repositories/league.repository.js";
 import { lessonProgressRepository } from "../repositories/lesson-progress.repository.js";
 import { lessonQuizRepository } from "../repositories/lesson-quiz.repository.js";
 import { mockExamRepository } from "../repositories/mock-exam.repository.js";
+import {
+  MODERATION_EXPORT_LIMIT,
+  moderationRepository,
+} from "../repositories/moderation.repository.js";
 import { noteFolderRepository } from "../repositories/note-folder.repository.js";
 import { noteReportRepository } from "../repositories/note-report.repository.js";
 import { noteRepository } from "../repositories/note.repository.js";
@@ -86,6 +98,13 @@ const { mockPrisma } = vi.hoisted(() => {
       contentReport: read(),
       reviewCard: read(),
       reviewSession: read(),
+      forumTopic: read(),
+      forumPost: read(),
+      friendship: read(),
+      classMember: read(),
+      exerciseCompletion: read(),
+      userBan: read(),
+      moderationEvent: read(),
     },
   };
 });
@@ -612,6 +631,136 @@ const CASES: ReadCase[] = [
       orderBy: { createdAt: "asc" },
     },
   },
+  {
+    name: "forumRepository.exportTopicsFor",
+    read: (id) => forumRepository.exportTopicsFor(id),
+    prisma: mockPrisma.forumTopic.findMany,
+    query: {
+      // The threads the account opened, not those it replied in.
+      where: { authorId: USER },
+      select: {
+        title: true,
+        isHidden: true,
+        lockedAt: true,
+        createdAt: true,
+        category: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    },
+  },
+  {
+    name: "forumRepository.exportPostsFor",
+    read: (id) => forumRepository.exportPostsFor(id),
+    prisma: mockPrisma.forumPost.findMany,
+    query: {
+      // The account's own messages: no filter on isHidden, a withdrawn one is held.
+      where: { authorId: USER },
+      select: {
+        content: true,
+        isHidden: true,
+        hiddenByModeration: true,
+        editedAt: true,
+        createdAt: true,
+        topic: { select: { title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FORUM_EXPORT_LIMIT,
+    },
+  },
+  {
+    name: "friendshipRepository.exportFor",
+    read: (id) => friendshipRepository.exportFor(id),
+    prisma: mockPrisma.friendship.findMany,
+    query: {
+      where: { OR: [{ userAId: USER }, { userBId: USER }] },
+      // The other person is a username: no e-mail, no name, no level.
+      select: {
+        userAId: true,
+        requestedById: true,
+        status: true,
+        createdAt: true,
+        respondedAt: true,
+        userA: { select: { username: true } },
+        userB: { select: { username: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: FRIENDSHIP_EXPORT_LIMIT,
+    },
+  },
+  {
+    name: "classRepository.exportMembershipsFor",
+    read: (id) => classRepository.exportMembershipsFor(id),
+    prisma: mockPrisma.classMember.findMany,
+    query: {
+      // No LIVE_CLASS_FILTER: an archived class is still held.
+      where: { userId: USER },
+      select: {
+        joinedAt: true,
+        class: {
+          select: {
+            name: true,
+            promotion: {
+              select: { name: true, establishment: { select: { name: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: "asc" },
+    },
+  },
+  {
+    name: "exerciseRepository.exportFor",
+    read: (id) => exerciseRepository.exportFor(id),
+    prisma: mockPrisma.exerciseCompletion.findMany,
+    query: {
+      where: { userId: USER },
+      select: {
+        exerciseId: true,
+        kind: true,
+        completedAt: true,
+        lesson: { select: { title: true, slug: true } },
+      },
+      orderBy: { completedAt: "asc" },
+    },
+  },
+  {
+    name: "banRepository.exportFor",
+    read: (id) => banRepository.exportFor(id),
+    prisma: mockPrisma.userBan.findMany,
+    query: {
+      // Lifted bans included; neither who issued or lifted one nor why.
+      where: { userId: USER },
+      select: {
+        reason: true,
+        createdAt: true,
+        expiresAt: true,
+        liftedAt: true,
+        acknowledgedAt: true,
+        appealTicketId: true,
+      },
+      orderBy: { createdAt: "asc" },
+    },
+  },
+  {
+    name: "moderationRepository.exportFor",
+    read: (id) => moderationRepository.exportFor(id),
+    prisma: mockPrisma.moderationEvent.findMany,
+    query: {
+      // What findForUser shows the person: not the score, not the rules, not the reviewer.
+      where: { userId: USER },
+      select: {
+        surface: true,
+        verdict: true,
+        excerpt: true,
+        outcome: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: MODERATION_EXPORT_LIMIT,
+    },
+  },
 ];
 
 beforeEach(() => {
@@ -645,14 +794,21 @@ describe("the repositories' reads for the GDPR export", () => {
   });
 
   it("covers every read the export makes through these repositories", () => {
-    // The 37 reads of build-export.ts: these 34, the two of
+    // The 44 reads of build-export.ts: these 41, the two of
     // reviewCardRepository.exportFor below, and the retired SM-2 queue's
     // (review-schedule-legacy.test.ts).
-    expect(new Set(CASES.map((c) => c.prisma)).size).toBe(34);
+    expect(new Set(CASES.map((c) => c.prisma)).size).toBe(41);
   });
 
   it("lists as many notifications as the export says it does", () => {
     expect(NOTIFICATION_EXPORT_LIMIT).toBe(1000);
+  });
+
+  it("cuts the free-text and open-ended sections, and says where", () => {
+    // build-export.ts words these numbers in the file's metadata.
+    expect(FORUM_EXPORT_LIMIT).toBe(1000);
+    expect(FRIENDSHIP_EXPORT_LIMIT).toBe(1000);
+    expect(MODERATION_EXPORT_LIMIT).toBe(1000);
   });
 });
 
