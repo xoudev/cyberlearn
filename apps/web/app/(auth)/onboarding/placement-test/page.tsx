@@ -19,8 +19,13 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
   if (!dbUser?.username) redirect("/onboarding");
 
-  // If already submitted, finalize and go to dashboard
-  if (await placementRepository.hasResult(user.id)) redirect("/dashboard");
+  // The test is taken once. With the sign-up finished there is nothing left
+  // here. A result without the flag is a submission that stopped between its
+  // two steps (it stores the result, then ends the sign-up): the dashboard
+  // would send that account back to step 2, so the page stays, with the one
+  // button that ends the sign-up.
+  const taken = await placementRepository.hasResult(user.id);
+  if (taken && user.app_metadata.onboarding_complete === true) redirect("/dashboard");
 
   const questionCount = await placementRepository.countActiveQuestions();
   const estimatedMinutes = Math.ceil(questionCount * 0.75);
@@ -461,9 +466,23 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
 
             {/* CTAs */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* No active question, nothing to start: the questions page would
-                  send the reader straight back here. */}
-              {questionCount > 0 && (
+              {taken && (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Ton test est déjà enregistré : il ne reste qu&apos;à terminer l&apos;inscription.
+                </p>
+              )}
+
+              {/* Nothing to start with no active question or a test already
+                  taken: the questions page would send the reader straight back
+                  here. */}
+              {questionCount > 0 && !taken && (
                 <Link
                   className="btn btn--lg btn--block"
                   href="/onboarding/placement-test/questions"

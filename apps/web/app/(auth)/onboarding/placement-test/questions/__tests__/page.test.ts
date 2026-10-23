@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * The questions of the placement test, for somebody who is still signing up.
  *
- * With no active question there is nothing to take, and "/dashboard" is not
- * open to an account that has not finished signing up: the middleware sends it
- * to /onboarding, which sends it to the avatar. A page cannot finish the
- * sign-up (that rewrites the session cookies, and only an action can), so it
- * sends the reader to the intro, where "Passer" does.
+ * With no active question, or a test already taken, there is nothing to take,
+ * and "/dashboard" is not open to an account that has not finished signing up:
+ * the middleware sends it to /onboarding, which sends it to the avatar. A page
+ * cannot finish the sign-up (that rewrites the session cookies, and only an
+ * action can), so it sends the reader to the intro, where "Passer" does, and
+ * which sends on to the dashboard an account that is done.
  */
 
 const m = vi.hoisted(() => ({
@@ -48,9 +49,9 @@ describe("the placement test's questions page", () => {
     await expect(PlacementQuestionsPage()).rejects.toThrow("REDIRECT /onboarding/placement-test");
   });
 
-  it("sends to the dashboard somebody whose result is already in", async () => {
+  it("sends back to the intro somebody whose result is already in", async () => {
     m.placementTestFor.mockResolvedValue({ status: "taken" });
-    await expect(PlacementQuestionsPage()).rejects.toThrow("REDIRECT /dashboard");
+    await expect(PlacementQuestionsPage()).rejects.toThrow("REDIRECT /onboarding/placement-test");
   });
 
   it("draws the test when there are questions", async () => {
