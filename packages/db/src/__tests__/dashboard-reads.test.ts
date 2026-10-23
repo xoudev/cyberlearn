@@ -56,6 +56,7 @@ describe("the lesson left open", () => {
     mockPrisma.userLessonProgress.findMany.mockResolvedValueOnce([{ lesson }]);
     expect(await dashboardRepository.findLessonInProgress("user-1")).toEqual(lesson);
 
+    // The mock is untyped; its one argument is the findMany's options.
     const [args] = mockPrisma.userLessonProgress.findMany.mock.calls[0] as [
       Record<string, unknown>,
     ];
@@ -142,6 +143,7 @@ describe("the paths", () => {
     mockPrisma.path.findMany.mockResolvedValue([]);
     await dashboardRepository.listPathsToRank("user-1");
 
+    // The mock is untyped; its one argument is the findMany's options.
     const [args] = mockPrisma.path.findMany.mock.calls[0] as [Record<string, unknown>];
     // The catalogue, plus the classes this learner is in or teaches: not the
     // site-wide "published", which would show one class's work to everybody.
@@ -162,6 +164,7 @@ describe("the paths", () => {
     mockPrisma.path.findUnique.mockResolvedValue({ modules: [], lessons: [] });
     await dashboardRepository.findLeadPath("path-1");
 
+    // The mock is untyped; its one argument is the findUnique's options.
     const [args] = mockPrisma.path.findUnique.mock.calls[0] as [
       { where: unknown; select: { modules: unknown; lessons: Record<string, unknown> } },
     ];

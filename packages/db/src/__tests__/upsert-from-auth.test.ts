@@ -39,6 +39,7 @@ function signIn(avatarUrl: string | null): ReturnType<typeof userRepository.upse
 /** The writes that ask for the avatar, apart from those that ask for the day. */
 function avatarWrites(): unknown[][] {
   return mockPrisma.user.updateMany.mock.calls.filter(([args]) =>
+    // The mock is untyped; its one argument is the updateMany's options.
     Object.prototype.hasOwnProperty.call((args as { data: object }).data, "avatarUrl"),
   );
 }
@@ -127,6 +128,7 @@ describe("upsertFromAuth", () => {
 
     function dayWrites(): unknown[][] {
       return mockPrisma.user.updateMany.mock.calls.filter(([args]) =>
+        // The mock is untyped; its one argument is the updateMany's options.
         Object.prototype.hasOwnProperty.call((args as { data: object }).data, "lastActiveAt"),
       );
     }
@@ -162,6 +164,7 @@ describe("upsertFromAuth", () => {
       await signIn(null);
 
       expect(dayWrites()).toHaveLength(1);
+      // The call is untyped; its one argument is the updateMany's options.
       const [args] = dayWrites()[0] as [{ where: object; data: { lastActiveAt: Date } }];
       // Guarded in the statement: a streak started in between is not overwritten.
       expect(args.where).toEqual({ id: ID, streakDays: 0 });

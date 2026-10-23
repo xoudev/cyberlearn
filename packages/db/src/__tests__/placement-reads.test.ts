@@ -40,6 +40,7 @@ describe("the questions", () => {
     mockPrisma.placementQuestion.findMany.mockResolvedValue([]);
     await placementRepository.listActiveQuestions();
 
+    // The mock is untyped; its one argument is the findMany's options.
     const [args] = mockPrisma.placementQuestion.findMany.mock.calls[0] as [
       { where: unknown; select: Record<string, unknown>; orderBy: unknown },
     ];
