@@ -747,7 +747,8 @@ const CASES: ReadCase[] = [
     read: (id) => moderationRepository.exportFor(id),
     prisma: mockPrisma.moderationEvent.findMany,
     query: {
-      // What findForUser shows the person: not the score, not the rules, not the reviewer.
+      // What findForUser shows the person, and the verdict on top (the decision taken
+      // about them): not the score, not the rules, not the reviewer.
       where: { userId: USER },
       select: {
         surface: true,

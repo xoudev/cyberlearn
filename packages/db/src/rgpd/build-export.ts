@@ -443,8 +443,8 @@ export interface ExportPayload {
   /**
    * What the automatic screen recorded about the account's writing, the most
    * recent first: where, its verdict, the text kept, and how a human ended it.
-   * The same facts the settings page shows the person; not the score nor the
-   * rules that fired.
+   * The facts the settings page shows the person, and the verdict on top; not
+   * the score nor the rules that fired.
    */
   moderationEvents: {
     surface: string;

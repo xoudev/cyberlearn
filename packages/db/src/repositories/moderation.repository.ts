@@ -386,10 +386,14 @@ export const moderationRepository = {
    * for its GDPR export (rgpd/build-export.ts): where, the verdict, the text
    * kept (the excerpt is the person's own), how a human ended it, and when.
    *
-   * The same columns findForUser shows the person on their own page, and for
-   * the same reason: not the score and not the rules that fired, which
-   * describe how the screen is tuned rather than the person. Not who
-   * reviewed it. Cut at MODERATION_EXPORT_LIMIT, and the export says so.
+   * The columns findForUser shows the person on their own page, plus the
+   * verdict (ALLOW, REVIEW or BLOCK) the settings page does not print: it is
+   * the automatic decision taken about their writing, which an access request
+   * is owed, and it reveals nothing the person was not already told when it
+   * happened (a refused or held message says so at once). Not the score and
+   * not the rules that fired, which describe how the screen is tuned rather
+   * than the person. Not who reviewed it. Cut at MODERATION_EXPORT_LIMIT, and
+   * the export says so.
    */
   async exportFor(userId: string) {
     return prisma.moderationEvent.findMany({

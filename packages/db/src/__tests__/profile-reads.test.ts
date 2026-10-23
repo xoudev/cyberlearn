@@ -72,6 +72,8 @@ describe("findPublicProfile's counts", () => {
       paths: 3,
     });
     expect(profile).not.toHaveProperty("_count");
+    // The mock records the call's argument as unknown; the shape is the
+    // findPublicProfile query asserted just below.
     const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
       include: Record<string, unknown>;
     };
@@ -99,6 +101,8 @@ describe("findProfile's counts", () => {
     // The row says 48 completed; the list holds at most twenty.
     expect(profile?.counts).toEqual({ lessons: 48 });
     expect(profile).not.toHaveProperty("_count");
+    // The mock records the call's argument as unknown; the shape is the
+    // findProfile query asserted just below.
     const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
       include: { lessonProgress: { where: unknown; take: number }; _count: unknown };
     };
