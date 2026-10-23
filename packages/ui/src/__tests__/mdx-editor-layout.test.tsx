@@ -5,11 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clampSplit,
   MOBILE_PREVIEW_WIDTH,
+  opensSplit,
   readStoredDevice,
   readStoredSplit,
   SPLIT_DEFAULT,
   SPLIT_MAX,
   SPLIT_MIN,
+  SPLIT_MIN_PANEL_WIDTH,
   SPLIT_STEP,
   splitAt,
   storeSplit,
@@ -118,6 +120,51 @@ describe("the editor's share of the width", () => {
     storeSplit(70);
     render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
     expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", "70");
+  });
+});
+
+/** Gives every element the width a browser would have measured. */
+function measuredAt(width: number): void {
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    width,
+    height: 400,
+    top: 0,
+    left: 0,
+    right: width,
+    bottom: 400,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
+describe("a panel too narrow for two halves", () => {
+  it("keeps the preview beside the editor from 700px up, and when nothing was measured", () => {
+    expect(opensSplit(SPLIT_MIN_PANEL_WIDTH)).toBe(true);
+    expect(opensSplit(1200)).toBe(true);
+    expect(opensSplit(0)).toBe(true);
+    expect(opensSplit(Number.NaN)).toBe(true);
+  });
+
+  it("opens the editor alone under 700px", () => {
+    expect(opensSplit(SPLIT_MIN_PANEL_WIDTH - 1)).toBe(false);
+    expect(opensSplit(343)).toBe(false);
+    expect(opensSplit(472)).toBe(false);
+  });
+
+  it("opens a phone-wide panel on the editor alone, the split button bringing the preview back", () => {
+    measuredAt(343);
+    render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
+    expect(screen.queryByRole("separator")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "SPLIT" }));
+    expect(screen.getByRole("separator")).toHaveAttribute("aria-valuenow", String(SPLIT_DEFAULT));
+  });
+
+  it("opens a wide panel as it always did, both halves", () => {
+    measuredAt(1100);
+    render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
+    expect(screen.getByRole("separator")).toBeInTheDocument();
   });
 });
 
