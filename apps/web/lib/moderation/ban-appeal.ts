@@ -2,6 +2,7 @@ import { z } from "zod";
 import { banRepository, prisma, ticketRepository } from "@cyberlearn/db";
 import { appealView, type AppealView } from "@cyberlearn/lib/tickets/appeal";
 import { checkContactForm } from "@/lib/rate-limit";
+import { tooManyRequests } from "@/lib/rate-limit-copy";
 
 /**
  * What somebody can still do while they are banned: close the notice, and
@@ -103,9 +104,7 @@ export async function appealBan(input: {
   // can still reach, so it is the one that would be used.
   const limit = await checkContactForm(input.ip);
   if (!limit.success) {
-    return {
-      error: `Trop de demandes. Réessaie dans ${String(limit.retryAfterSeconds)} secondes.`,
-    };
+    return { error: tooManyRequests(limit.retryAfterSeconds) };
   }
 
   const profile = await prisma.user.findUnique({

@@ -156,8 +156,10 @@ describe("appealBan", () => {
 
   it("refuses over the contact form's budget, counted on the caller's address", async () => {
     m.findActive.mockResolvedValue(BAN);
-    m.checkContactForm.mockResolvedValue({ success: false, retryAfterSeconds: 42 });
-    expect(await appeal()).toEqual({ error: "Trop de demandes. Réessaie dans 42 secondes." });
+    // The delay is told in minutes, like the ticket form's: "dans 599
+    // secondes" is a number to divide.
+    m.checkContactForm.mockResolvedValue({ success: false, retryAfterSeconds: 599 });
+    expect(await appeal()).toEqual({ error: "Trop de demandes. Réessaie dans 10 minutes." });
     expect(m.checkContactForm).toHaveBeenCalledWith("203.0.113.7");
     expect(m.create).not.toHaveBeenCalled();
   });
