@@ -240,6 +240,48 @@ describe("resetMfaAction", () => {
     expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
   });
 
+  it("removes the unfinished enrolment before the verified factor, whatever order they are listed in", async () => {
+    m.listFactors.mockResolvedValue({
+      data: {
+        factors: [
+          { id: "f-1", factor_type: "totp", status: "verified" },
+          { id: "f-2", factor_type: "totp", status: "unverified" },
+        ],
+      },
+      error: null,
+    });
+
+    await resetMfaAction({}, typed(LEARNER));
+
+    expect(m.deleteFactor.mock.calls).toEqual([
+      [{ id: "f-2", userId: LEARNER }],
+      [{ id: "f-1", userId: LEARNER }],
+    ]);
+  });
+
+  it("leaves the verified factor in place when the unfinished one cannot be removed, so the retry is still offered", async () => {
+    // The page offers the reset only while a verified factor remains, and the
+    // action refuses it without one: stopping on the verified factor first
+    // would have left only the unfinished one, and no way to finish.
+    m.listFactors.mockResolvedValue({
+      data: {
+        factors: [
+          { id: "f-1", factor_type: "totp", status: "verified" },
+          { id: "f-2", factor_type: "totp", status: "unverified" },
+        ],
+      },
+      error: null,
+    });
+    m.deleteFactor.mockResolvedValueOnce({ data: null, error: new Error("boom") });
+
+    const result = await resetMfaAction({}, typed(LEARNER));
+
+    expect(result.error).toMatch(/Rien n'a été retiré/u);
+    expect(m.deleteFactor).toHaveBeenCalledTimes(1);
+    expect(m.deleteFactor).toHaveBeenCalledWith({ id: "f-2", userId: LEARNER });
+    expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+  });
+
   it("says so when there is nothing to remove, and writes nothing", async () => {
     m.listFactors.mockResolvedValue({ data: { factors: [] }, error: null });
     const result = await resetMfaAction({}, typed(LEARNER));
@@ -251,6 +293,50 @@ describe("resetMfaAction", () => {
     m.sendMfaResetEmail.mockRejectedValue(new Error("resend down"));
     const result = await resetMfaAction({}, typed(LEARNER));
     expect(result).toMatchObject({ ok: true, emailFailed: true });
+  });
+
+  describe("an activation that was started and never finished", () => {
+    beforeEach(() => {
+      m.listFactors.mockResolvedValue({
+        data: { factors: [{ id: "f-9", factor_type: "totp", status: "unverified" }] },
+        error: null,
+      });
+    });
+
+    it("is not reset: nothing is removed, nothing is logged, and nobody is told", async () => {
+      // The owner never had a second factor. Telling them it was reset, and
+      // that "your authenticator no longer serves CyberLearn", would be false,
+      // and so would the alert that follows it.
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result.ok).toBeUndefined();
+      expect(result.error).toMatch(/pas de double authentification active/u);
+      expect(result.error).toMatch(/Rien n'a été retiré/u);
+      expect(m.deleteFactor).not.toHaveBeenCalled();
+      expect(m.record).not.toHaveBeenCalled();
+      expect(m.sendMfaResetEmail).not.toHaveBeenCalled();
+      expect(m.revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it("is removed along with a finished factor, which is what the reset is for", async () => {
+      m.listFactors.mockResolvedValue({
+        data: {
+          factors: [
+            { id: "f-9", factor_type: "totp", status: "unverified" },
+            { id: "f-1", factor_type: "totp", status: "verified" },
+          ],
+        },
+        error: null,
+      });
+
+      const result = await resetMfaAction({}, typed(LEARNER));
+
+      expect(result).toMatchObject({ ok: true });
+      expect(m.deleteFactor).toHaveBeenCalledTimes(2);
+      expect(m.sendMfaResetEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionsClosed: true }),
+      );
+    });
   });
 });
 

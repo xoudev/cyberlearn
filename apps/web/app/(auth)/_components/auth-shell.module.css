@@ -324,7 +324,14 @@
   margin-top: 4px;
 }
 
+/* A quiet link, with a touch target the size of a finger: the text is 10px, and
+   "Annuler et se déconnecter" - the one way out of the code screen - sat on a
+   row about 13px high, at the edge of the numeric keypad. The minimum height
+   makes the target; the look is unchanged. */
 .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   border: 0;
   background: transparent;
   padding: 0;
@@ -342,6 +349,12 @@
 .link:focus-visible {
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+/* A link with the sentence that says what it leads to, kept together. */
+.recourse {
+  display: flex;
+  flex-direction: column;
 }
 
 .codeInput {
