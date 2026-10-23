@@ -130,7 +130,6 @@ function preview(content: string, max = 160): string {
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;
 }
 
-/** What a reader may see: everything not hidden, plus their own hidden rows. */
 /**
  * Which of these messages the moderation queue still has an entry for, or whose
  * thread it has one for: the ones the screen held and a moderator has not read.
@@ -156,6 +155,7 @@ async function awaitingReviewAmong(
   return new Set(events.flatMap((event) => (event.contentId === null ? [] : [event.contentId])));
 }
 
+/** What a reader may see: everything not hidden, plus their own hidden rows. */
 function visibleTopics(viewerId: string): Prisma.ForumTopicWhereInput {
   return { OR: [{ isHidden: false }, { authorId: viewerId }] };
 }
