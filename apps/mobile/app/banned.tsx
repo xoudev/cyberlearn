@@ -8,8 +8,7 @@ import { Screen } from "@/components/screen";
 import { ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
 import { acknowledgeBanApi, appealBanApi, SITE_URL } from "@/lib/api";
-import { APPEAL_MAX_LENGTH, appealProblem, banDurationLabel } from "@/lib/ban";
-import { appealView } from "@cyberlearn/lib/tickets/appeal";
+import { APPEAL_MAX_LENGTH, appealPanelOf, appealProblem, banDurationLabel } from "@/lib/ban";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 import { useActiveBan } from "@/lib/use-active-ban";
@@ -41,7 +40,11 @@ export default function Banned(): React.JSX.Element {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const { data: standing } = useBanAppeal(userId, sent || ban?.appealed === true);
+  const {
+    data: standing,
+    isError: standingFailed,
+    refetch: readStanding,
+  } = useBanAppeal(userId, sent || ban?.appealed === true);
 
   // The whole screen is the notice: having shown it counts as seen, which the
   // site records when its notice is closed.
@@ -89,8 +92,10 @@ export default function Banned(): React.JSX.Element {
     void queryClient.invalidateQueries({ queryKey: ["ban-appeal", userId] });
   };
 
-  // An appeal sent a moment ago has no ticket read yet: it is just received.
-  const view = standing ?? appealView({ status: "OPEN", reply: null });
+  // Only an appeal sent a moment ago from here may be taken for received before
+  // the server has been read: one examined and refused must never read as
+  // "transmis" because the read is loading or has failed.
+  const panel = appealPanelOf({ standing, failed: standingFailed, sentHere: sent });
 
   return (
     <Screen>
@@ -121,36 +126,61 @@ export default function Banned(): React.JSX.Element {
         </Card>
 
         {appealed ? (
-          <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
-            {/* An appeal examined and refused is not a success to be shown in green. */}
-            <Text
-              variant="micro"
-              style={{ color: view.stage === "DECIDED" ? colors.textMuted : colors.success }}
-            >
-              {view.title}
-            </Text>
-            <Text variant="bodySm" style={{ color: colors.textSecondary }}>
-              {view.text}
-            </Text>
-            {view.reply !== null ? (
-              <View
+          panel.kind === "view" ? (
+            <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
+              {/* An appeal examined and refused is not a success to be shown in green. */}
+              <Text
+                variant="micro"
                 style={{
-                  gap: 4,
-                  marginTop: 6,
-                  paddingLeft: 10,
-                  borderLeftWidth: 2,
-                  borderLeftColor: colors.borderDefault,
+                  color: panel.view.stage === "DECIDED" ? colors.textMuted : colors.success,
                 }}
               >
-                <Text variant="micro">
-                  Réponse de l&apos;équipe · {REPLY_DAY.format(new Date(view.reply.createdAt))}
-                </Text>
-                <Text variant="body" style={{ color: colors.textPrimary }}>
-                  {view.reply.body}
-                </Text>
-              </View>
-            ) : null}
-          </Card>
+                {panel.view.title}
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                {panel.view.text}
+              </Text>
+              {panel.view.reply !== null ? (
+                <View
+                  style={{
+                    gap: 4,
+                    marginTop: 6,
+                    paddingLeft: 10,
+                    borderLeftWidth: 2,
+                    borderLeftColor: colors.borderDefault,
+                  }}
+                >
+                  <Text variant="micro">
+                    Réponse de l&apos;équipe ·{" "}
+                    {REPLY_DAY.format(new Date(panel.view.reply.createdAt))}
+                  </Text>
+                  <Text variant="body" style={{ color: colors.textPrimary }}>
+                    {panel.view.reply.body}
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+          ) : (
+            // The standing is not read yet, or could not be: say so rather than
+            // "transmis", which would be wrong for an appeal already refused.
+            <Card style={{ gap: 6 }} accessibilityLiveRegion="polite">
+              <Text variant="micro" style={{ color: colors.textMuted }}>
+                {panel.title}
+              </Text>
+              <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+                {panel.text}
+              </Text>
+              {panel.canRetry ? (
+                <View style={{ alignSelf: "flex-start", marginTop: 6 }}>
+                  <ActionChip
+                    label="Réessayer"
+                    tone="neutral"
+                    onPress={() => void readStanding()}
+                  />
+                </View>
+              ) : null}
+            </Card>
+          )
         ) : appealOpen ? (
           <View style={{ gap: 10 }}>
             <Text variant="micro">Ton message</Text>
