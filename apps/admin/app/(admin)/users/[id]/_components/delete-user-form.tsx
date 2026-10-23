@@ -80,7 +80,7 @@ export function DeleteUserForm({
         <button
           type="submit"
           disabled={pending || !matches}
-          className="a-btn a-btn--danger"
+          className="a-btn a-btn--danger a-btn--wrap"
           title={matches ? undefined : "Saisis l'adresse du compte pour activer ce bouton"}
         >
           {pending ? "Suppression…" : "Supprimer ce compte et toutes ses données"}

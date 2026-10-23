@@ -323,7 +323,17 @@ jobs:
 
       - name: Start Supabase local stack
         # Exclude services the integration tests don't need (saves image pulls).
-        run: supabase start -x studio,imgproxy,vector,logflare
+        # Three tries: a registry that refuses image pulls ("toomanyrequests", as
+        # on 22 October) for a minute is not a failed run. Signing in to ghcr.io
+        # did not lift that refusal; waiting did.
+        run: |
+          for attempt in 1 2 3; do
+            if supabase start -x studio,imgproxy,vector,logflare; then exit 0; fi
+            echo "supabase start failed (attempt $attempt of 3)"
+            supabase stop --no-backup || true
+            sleep $((attempt * 45))
+          done
+          exit 1
 
       - name: Export local stack env (exact names the tests read)
         run: |

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@cyberlearn/lib/paths/unlock";
 import { unlocksEveryLesson } from "@/lib/lessons/access";
+import { lessonTabTitle, readLesson } from "@/lib/lessons/read-lesson";
 import { NO_RESUME, lessonResume } from "@/lib/lessons/resume";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import { sectionFromQuery } from "@cyberlearn/lib/revisions/passage";
@@ -31,16 +32,24 @@ import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
 
-// Not the lesson's own title: the slug alone would put the title of a
-// class-only lesson in the tab of anyone who guessed its address.
-export const metadata: Metadata = { title: "Leçon" };
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface Props {
   params: Promise<{ slug: string }>;
   /** `section`: the section to open on, from 1 ("Revoir ce passage", revisions/passage.ts). */
   searchParams: Promise<{ section?: string | string[] }>;
+}
+
+/**
+ * The lesson's own title in the tab. Not read from the slug alone, which would
+ * put the title of a class-only lesson in the tab of anyone who guessed its
+ * address: it comes from the page's own reader-scoped read, cached for the
+ * request (lib/lessons/read-lesson.ts), and is "Leçon" where the reader has no
+ * lesson to see.
+ */
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
+  const { slug } = await params;
+  return { title: await lessonTabTitle(slug) };
 }
 
 export default async function LessonPage({
@@ -52,17 +61,10 @@ export default async function LessonPage({
 
   const authUser = await requireRequestUser();
 
-  // Scoped to the reader: a lesson written for a class is published, so
-  // looking it up by slug alone would hand it to anyone who guessed one.
-  let lesson = await lessonRepository.findBySlug(slug, authUser.id);
-  // An administrator may open what nobody else can yet: a draft, to see it as
-  // the site renders it before publishing. Nothing is recorded for them on it,
-  // and the page says so; the catalogue still lists nothing unpublished.
-  let reviewing = false;
-  if (!lesson && (await unlocksEveryLesson(authUser.id))) {
-    lesson = await lessonRepository.findBySlugForReview(slug);
-    reviewing = lesson !== null;
-  }
+  // Scoped to the reader, an administrator being allowed a draft: nothing is
+  // recorded for them on it, and the page says so. The tab's title reads the
+  // same cached result (generateMetadata above), so it costs no query.
+  const { lesson, reviewing } = await readLesson(slug, authUser.id);
   if (!lesson) notFound();
 
   const [

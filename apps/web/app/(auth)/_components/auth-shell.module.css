@@ -196,6 +196,21 @@
   text-transform: uppercase;
 }
 
+/* On a touch screen the word is a 14px-tall target, a third of the 44px a
+   finger needs. The button grows to 44px around the word, and its right edge
+   moves out to the field's so the word stays where it was (the 12px it sat
+   in from the edge, plus the 6px of the browser's own padding); its left edge
+   stops at the 76px the field keeps free for it, so it never covers what is
+   typed. The desktop look is untouched. */
+@media (max-width: 767px) {
+  .reveal {
+    right: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 18px 0 8px;
+  }
+}
+
 .hint,
 .finePrint {
   color: var(--color-text-muted);

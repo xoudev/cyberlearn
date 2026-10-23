@@ -378,3 +378,19 @@ describe("NotificationPanel failures", () => {
     expect(screen.getByRole("button", { name: /Maintenance ce soir/ })).toBeTruthy();
   });
 });
+
+describe("NotificationPanel on a phone", () => {
+  it("draws the panel from a class, so the phone's rule can move it", async () => {
+    await openPanel();
+    const panel = document.querySelector<HTMLElement>(".notif-panel");
+    expect(panel).not.toBeNull();
+    // An inline position or width would win over the media query that makes
+    // the panel span the window below 768px (globals.css), and at 375px the
+    // panel ran off the screen by 91px.
+    for (const property of ["position", "top", "right", "left", "width", "max-width"]) {
+      expect(panel?.style.getPropertyValue(property), property).toBe("");
+    }
+    // The panel is the one holding the notices.
+    expect(panel?.textContent).toContain("Révision recommandée");
+  });
+});
