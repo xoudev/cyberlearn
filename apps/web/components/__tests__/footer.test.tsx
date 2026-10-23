@@ -10,9 +10,29 @@ import { Footer } from "../footer";
  * the answer should reach the account's own.
  */
 
+/**
+ * The address of the link whose text is exactly `label`. Read with string
+ * operations, not a pattern built from the label: a label is data, and a
+ * dynamic RegExp is what the Semgrep rules refuse.
+ */
 function hrefOf(html: string, label: string): string | undefined {
-  const match = new RegExp(`<a[^>]*href="([^"]*)"[^>]*>${label}</a>`, "u").exec(html);
-  return match?.[1];
+  const opening = "<a";
+  const hrefStart = 'href="';
+  // The first piece is what comes before the first link.
+  for (const piece of html.split(opening).slice(1)) {
+    const end = piece.indexOf(">");
+    // `<a` is a link only when a space or `>` follows: `<abbr` and the like are not.
+    if (end === -1 || (!piece.startsWith(" ") && !piece.startsWith(">"))) continue;
+    if (piece.slice(end + 1, end + 1 + label.length + "</a>".length) !== `${label}</a>`) continue;
+    const attributes = piece.slice(0, end);
+    const start = attributes.indexOf(hrefStart);
+    if (start === -1) continue;
+    const valueStart = start + hrefStart.length;
+    const valueEnd = attributes.indexOf('"', valueStart);
+    if (valueEnd === -1) continue;
+    return attributes.slice(valueStart, valueEnd);
+  }
+  return undefined;
 }
 
 describe("Footer", () => {

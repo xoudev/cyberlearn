@@ -108,14 +108,14 @@ describe("appealBan", () => {
     m.findActive.mockResolvedValue(BAN);
     m.findEmailById.mockResolvedValue(null);
     await appeal();
-    expect(m.create.mock.calls[0]?.[0]["email"]).toBe("session@example.org");
+    expect(m.create.mock.calls[0]?.[0].email).toBe("session@example.org");
   });
 
   it("files the appeal with no address when neither the profile nor the session has one", async () => {
     m.findActive.mockResolvedValue(BAN);
     m.findEmailById.mockResolvedValue(null);
     await appeal({ fallbackEmail: null });
-    expect(m.create.mock.calls[0]?.[0]["email"]).toBeNull();
+    expect(m.create.mock.calls[0]?.[0].email).toBeNull();
   });
 
   it("drops its own ticket when a simultaneous appeal won the race", async () => {
