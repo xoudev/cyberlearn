@@ -2,14 +2,18 @@ import "react-native-url-polyfill/auto";
 import { createClient } from "@supabase/supabase-js";
 import Constants from "expo-constants";
 import { AppState } from "react-native";
+import { firstNonEmpty } from "@/lib/public-env";
 import { sessionStorage } from "@/lib/session-storage";
 
 const extra = (Constants.expoConfig?.extra ?? {}) as {
   supabaseUrl?: string;
   supabaseAnonKey?: string;
 };
-const supabaseUrl = extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = extra.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl = firstNonEmpty(extra.supabaseUrl, process.env.EXPO_PUBLIC_SUPABASE_URL);
+const supabaseAnonKey = firstNonEmpty(
+  extra.supabaseAnonKey,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+);
 
 if (__DEV__ && (!supabaseUrl || !supabaseAnonKey)) {
   // Surfaced early so a missing apps/mobile/.env.local is obvious in dev logs.

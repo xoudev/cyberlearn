@@ -10,6 +10,13 @@ import { useCosmetics } from "@/lib/cosmetics";
 // give every inline action a visible bounding box, a pressed state, a >=36px
 // touch target (plus hitSlop) and an accessibility role.
 
+/**
+ * A tappable line of text with no frame ("Fiche de révision ›"): the 44 px
+ * target the chips below have, which a bare line of 10 px text is far from.
+ * Set it on the Pressable, not on the Text.
+ */
+export const TEXT_LINK_TARGET: ViewStyle = { minHeight: 44, justifyContent: "center" };
+
 /** Bordered back chip used at the top of every pushed screen. */
 export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.Element {
   const router = useRouter();

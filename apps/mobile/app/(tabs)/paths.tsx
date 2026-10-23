@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { PathCardView } from "@/components/cards";

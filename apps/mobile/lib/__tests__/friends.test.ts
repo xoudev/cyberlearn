@@ -3,6 +3,7 @@ import {
   addableHandle,
   answerableSender,
   boardName,
+  FRIENDS_ACTIVITY_FAILED,
   friendsBoardNotice,
   friendsCountLabel,
   handleFrom,
@@ -14,6 +15,7 @@ import {
   profileEyebrow,
   profileRarity,
   profileTarget,
+  readFriendsActivity,
   removeLabel,
   shortDay,
   showsFriendMark,
@@ -220,5 +222,56 @@ describe("what a profile sends", () => {
       const date = new Date(2026, month, 12, 12);
       expect(longDay(date.toISOString())).toBe(full.format(date));
     }
+  });
+});
+
+describe("the friends' moments on the home tab", () => {
+  const item = {
+    key: "badge:alex:premier-pas",
+    kind: "badge",
+    at: "2026-10-21T08:30:00.000Z",
+    title: "Premier pas",
+    friend: {
+      id: "11111111-1111-4111-8111-111111111111",
+      name: "Alex",
+      username: "alex",
+      avatarSrc: null,
+      profileOpen: true,
+      duelOpen: false,
+    },
+  };
+
+  it("reads the moments the route sends", () => {
+    expect(readFriendsActivity({ ok: true, hasFriends: true, items: [item] })).toEqual({
+      ok: true,
+      activity: { hasFriends: true, items: [item] },
+    });
+    expect(readFriendsActivity({ ok: true, hasFriends: false, items: [] })).toEqual({
+      ok: true,
+      activity: { hasFriends: false, items: [] },
+    });
+  });
+
+  it("says the route's reason when it refuses, or a failed load when it gives none", () => {
+    expect(readFriendsActivity({ ok: false, error: "Non authentifié." })).toEqual({
+      ok: false,
+      error: "Non authentifié.",
+    });
+    expect(readFriendsActivity({ ok: false })).toEqual({
+      ok: false,
+      error: FRIENDS_ACTIVITY_FAILED,
+    });
+  });
+
+  it("fails the load of a reply without its items, which the tab would read the length of", () => {
+    expect(readFriendsActivity({ ok: true, hasFriends: true })).toEqual({
+      ok: false,
+      error: FRIENDS_ACTIVITY_FAILED,
+    });
+    expect(readFriendsActivity({ ok: true, hasFriends: true, items: [{ key: "x" }] }).ok).toBe(
+      false,
+    );
+    expect(readFriendsActivity(null).ok).toBe(false);
+    expect(readFriendsActivity("<html>502</html>").ok).toBe(false);
   });
 });

@@ -18,6 +18,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
@@ -25,11 +26,13 @@ import { configureZodLocale } from "@cyberlearn/types/zod-locale";
 import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
 import { useReducedMotionPreference } from "@/lib/accessibility";
+import { bindFocusToAppState } from "@/lib/app-focus";
 import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice, onDeviceNotificationTapped } from "@/lib/device-notifications";
 import { tapRoute } from "@/lib/notification-links";
 import { bindOfflineToAccount, MODULES_KEY as OFFLINE_MODULES_KEY } from "@/lib/offline-store";
 import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
+import { QUERY_DEFAULT_OPTIONS } from "@/lib/query-defaults";
 import { isRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { ensureUserRow, markNotificationRead, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
@@ -43,17 +46,8 @@ void SplashScreen.preventAutoHideAsync();
 // what /api/mobile/* returns is already worded by the site's server.
 configureZodLocale();
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 120_000,
-      gcTime: 10 * 60_000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-  },
-});
+const queryClient = new QueryClient({ defaultOptions: QUERY_DEFAULT_OPTIONS });
+bindFocusToAppState(AppState);
 
 /** Mirrors fresh inbox items to the device notification tray (60s polling). */
 function NotificationMirror(): null {
