@@ -221,7 +221,11 @@ aside[data-state="collapsed"] .sidebar-nav-item {
     position: fixed;
     top: 0;
     left: 0;
+    /* The dynamic viewport: on iOS Safari 100vh is the height with the browser
+       bars folded away, so with the toolbar showing the foot of the drawer (the
+       account block, the only way to sign out) sat beneath it. */
     height: 100vh;
+    height: 100dvh;
     z-index: 49;
     width: 280px !important;
     min-width: 280px !important;
@@ -3986,16 +3990,8 @@ html:has(.lesson-toolbar) {
   max-width: 720px;
   margin: 0 auto 28px;
 }
-/* The breadcrumb ends on the lesson's slug, which can be long: it wraps
-   rather than pushing the page sideways on a phone. */
 .lesson-head .pg-crumb {
-  flex-wrap: wrap;
-  row-gap: 4px;
-  max-width: 100%;
   margin-bottom: 20px;
-}
-.lesson-head .pg-crumb__leaf {
-  overflow-wrap: anywhere;
 }
 .lesson-head__title {
   margin: 0 0 12px;
@@ -4623,8 +4619,12 @@ a:hover > .lesson-author-card {
 
 .pg-crumb {
   display: inline-flex;
+  /* It ends on a slug or a title, which can be long: it goes on to a second
+     line rather than running off a phone, or being cut by the page's clip. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
+  max-width: 100%;
   margin-bottom: 26px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -4644,10 +4644,12 @@ a:hover > .lesson-author-card {
 .pg-crumb__leaf {
   color: var(--color-text-primary);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .pg-crumb__link {
   color: inherit;
   text-decoration: none;
+  overflow-wrap: anywhere;
   transition: color 150ms ease;
 }
 .pg-crumb__link:hover {
@@ -6117,6 +6119,18 @@ a.cls-res__title:hover {
     display: none;
   }
 }
+/* On a phone, the bar is the sidebar's button, the actions (this chip, the
+   news, the friends, the bell, the settings, the avatar) and three gaps, and
+   at 375px it is 22px wider than the screen with the word "Wrapped" in the
+   chip: the whole page scrolled sideways for as long as the window is open
+   (December to mid-January). The icon says it, as the news chip's does
+   (.news-chip__label): the button keeps its name for a screen reader
+   (aria-label, wrapped-chip.tsx). */
+@media (max-width: 420px) {
+  .wr-chip__label {
+    display: none;
+  }
+}
 /* Until it has been opened once this edition. Two seconds of breathing, not a
    blink: it has a month to be noticed and nothing to interrupt. */
 .wr-chip--fresh {
@@ -6249,10 +6263,16 @@ a.cls-res__title:hover {
   padding: 0;
 }
 
+/* The actions go under the name when the row cannot give the name 64px beside
+   them: a friend in a duel has "Duel en cours" and "Retirer" (about 210px) in a
+   panel whose rows are 302px wide inside their padding, and the name was left
+   46px, "Jord...". The other rows (Défier and Retirer, Accepter and Refuser)
+   keep their actions on the line, as they did. */
 .fp-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   padding: 9px 18px;
   border-bottom: 1px solid #1a1640;
 }
@@ -6280,7 +6300,7 @@ a.cls-res__title:hover {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 64px;
 }
 
 .fp-name {
@@ -6308,6 +6328,7 @@ a.fp-name:hover {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .fp-error {
