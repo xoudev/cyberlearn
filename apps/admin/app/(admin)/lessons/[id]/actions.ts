@@ -30,6 +30,8 @@ import {
   publishFieldErrors,
   STUDIO_MESSAGES,
 } from "@/lib/lesson-studio";
+import { publishQuizImpacts } from "@/lib/services/lesson-publish-quizzes.service";
+import { quizImpactsMessage } from "@/lib/quiz-impact-text";
 
 /**
  * The lesson studio's actions: save the draft, publish it, discard it,
@@ -95,6 +97,8 @@ const publishInput = z.object({
   expectedUpdatedAt: ISO_STAMP,
   /** Publish over a lesson that changed since the draft was started, once told. */
   force: z.boolean().optional(),
+  /** Publish quizzes that already have answers changed or taken out, once told. */
+  quizzesSeen: z.boolean().optional(),
 });
 
 export type PublishLessonChangesResult =
@@ -105,8 +109,11 @@ export type PublishLessonChangesResult =
       error: string;
       fieldErrors?: Partial<Record<string, string>>;
       problems?: LessonEditorProblem[];
-      /** The draft moved under the studio, or the lesson moved under the draft. */
-      conflict?: "draft" | "lesson";
+      /**
+       * The draft moved under the studio, the lesson moved under the draft, or
+       * the publish would change quizzes that already have answers.
+       */
+      conflict?: "draft" | "lesson" | "quizzes";
       /**
        * The draft held what the lesson already does, and is gone: `content` is
        * that lesson, for the studio to show as published.
@@ -120,7 +127,7 @@ export async function publishLessonChangesAction(
   const admin = await requireAdminAction();
   const parsed = publishInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Demande de publication invalide." };
-  const { lessonId, force } = parsed.data;
+  const { lessonId, force, quizzesSeen } = parsed.data;
   const expectedUpdatedAt = new Date(parsed.data.expectedUpdatedAt);
 
   const draft = await lessonDraftRepository.get(lessonId);
@@ -174,6 +181,16 @@ export async function publishLessonChangesAction(
       fieldErrors: { slug: "Déjà utilisé" },
       problems: [],
     };
+  }
+
+  // Quizzes learners already answered: the import and the sync say so before
+  // they write, and so does this, once. The answers and their marks keep the
+  // old key, which the author may not know.
+  if (quizzesSeen !== true) {
+    const impacts = await publishQuizImpacts(lessonId, contentMdx.text);
+    if (impacts.length > 0) {
+      return { ok: false, error: quizImpactsMessage(impacts), conflict: "quizzes", problems: [] };
+    }
   }
 
   const content: LessonContent = { ...fields, contentMdx: contentMdx.text };

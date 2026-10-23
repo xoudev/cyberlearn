@@ -65,15 +65,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
 
       <QuickSearch />
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginLeft: "auto",
-          flexShrink: 0,
-        }}
-      >
+      <div className="a-topbar-account">
         <span
           style={{
             display: "inline-flex",

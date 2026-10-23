@@ -2,12 +2,12 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
-  LESSON_CONTENT_SELECT,
   lessonBaseOf,
   lessonContentOf,
   lessonDraftRepository,
+  lessonRepository,
   lessonVersionRepository,
-  prisma,
+  pathRepository,
   ratingRepository,
 } from "@cyberlearn/db";
 import { PageHeader, Tag } from "../../../_components/admin-ui";
@@ -48,28 +48,7 @@ export default async function LessonStudioPage({
   const id = routeIdOrNotFound((await params).id);
 
   const [lesson, draft, versions, ratings] = await Promise.all([
-    prisma.lesson.findUnique({
-      where: { id },
-      select: {
-        ...LESSON_CONTENT_SELECT,
-        id: true,
-        status: true,
-        audience: true,
-        version: true,
-        avgRating: true,
-        ratingsCount: true,
-        pathLessons: {
-          select: {
-            position: true,
-            module: { select: { title: true } },
-            path: {
-              select: { id: true, refCode: true, title: true, status: true, audience: true },
-            },
-          },
-        },
-        prerequisites: { select: { prerequisiteId: true } },
-      },
-    }),
+    lessonRepository.findForStudio(id),
     lessonDraftRepository.get(id),
     lessonVersionRepository.list(id),
     // The latest only: the card links to the page that holds every one.
@@ -97,36 +76,11 @@ export default async function LessonStudioPage({
     // from 1 starts at 0. Their codes give the rank a refCode is drawn from,
     // which leaves the module recaps out.
     Promise.all(
-      pathLessons.map((link) =>
-        prisma.pathLesson.findMany({
-          where: { pathId: link.path.id, position: { lt: link.position } },
-          select: { lesson: { select: { refCode: true } } },
-        }),
-      ),
+      pathLessons.map((link) => pathRepository.findRefCodesBefore(link.path.id, link.position)),
     ),
-    prisma.path.findMany({
-      where: {
-        audience: "CATALOGUE",
-        OR: [{ status: { not: "ARCHIVED" } }, { id: { in: pathIds } }],
-      },
-      orderBy: { refCode: "asc" },
-      select: { id: true, refCode: true, title: true, status: true },
-    }),
-    prisma.lesson.findMany({
-      where: {
-        NOT: { id },
-        OR: [
-          { audience: "CATALOGUE", status: { not: "ARCHIVED" } },
-          { id: { in: prerequisiteIds } },
-        ],
-      },
-      orderBy: { refCode: "asc" },
-      select: { id: true, refCode: true, title: true },
-    }),
-    prisma.lesson.findMany({
-      where: { refCode: { startsWith: "CL-LSN-" } },
-      select: { refCode: true },
-    }),
+    pathRepository.findCatalogueOptions(pathIds),
+    lessonRepository.findPrerequisiteOptions({ except: id, keep: prerequisiteIds }),
+    lessonRepository.findLessonRefCodes(),
   ]);
 
   const coverPreviews: Record<string, string> = {};
@@ -137,7 +91,7 @@ export default async function LessonStudioPage({
 
   const placed = pathLessons
     .map((link, index) => {
-      const before = (ahead[index] ?? []).map((row) => row.lesson.refCode);
+      const before = ahead[index] ?? [];
       const membership: LessonMembership = {
         pathId: link.path.id,
         refCode: link.path.refCode,
@@ -162,7 +116,7 @@ export default async function LessonStudioPage({
         position: p.membership.position,
         title: p.membership.title,
       })),
-    codes.map((c) => c.refCode),
+    codes,
   );
 
   const studioVersions: StudioVersion[] = versions.map((version) => ({

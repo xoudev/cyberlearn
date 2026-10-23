@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { contentReportRepository } from "../repositories/content-report.repository.js";
 
-const { mockPrisma, read } = vi.hoisted(() => ({
+const { mockPrisma, read, authoredBy } = vi.hoisted(() => ({
   mockPrisma: {
     contentReport: {
       upsert: vi.fn(),
@@ -18,6 +18,7 @@ const { mockPrisma, read } = vi.hoisted(() => ({
     },
   },
   read: vi.fn(),
+  authoredBy: vi.fn(),
 }));
 
 vi.mock("../prisma.js", () => ({ prisma: mockPrisma }));
@@ -29,7 +30,7 @@ vi.mock("../repositories/content-moderation.repository.js", () => ({
     "CHALLENGE_WRITEUP",
     "CLASS_RESOURCE",
   ],
-  contentModerationRepository: { read },
+  contentModerationRepository: { read, authoredBy },
 }));
 
 const READER = "11111111-1111-4111-8111-111111111111";
@@ -164,6 +165,77 @@ describe("contentReportRepository.openByContent", () => {
       page: 1,
       openReports: 0,
     });
+    expect(mockPrisma.contentReport.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("contentReportRepository.againstAuthor", () => {
+  const AUTHOR = "44444444-4444-4444-8444-444444444444";
+  const MINE = "55555555-5555-4555-8555-555555555555";
+
+  it("lists the reports of what the account wrote, found by the content's own author", async () => {
+    authoredBy.mockResolvedValue([
+      { surface: "FORUM_POST", ids: [POST] },
+      { surface: "LESSON_QUESTION", ids: [] },
+      { surface: "LESSON_ANSWER", ids: [ANSWER, MINE] },
+    ]);
+    mockPrisma.contentReport.count.mockResolvedValue(14);
+    mockPrisma.contentReport.findMany.mockResolvedValue([
+      {
+        id: "r-1",
+        surface: "LESSON_ANSWER",
+        contentId: ANSWER,
+        reason: "HATE",
+        status: "OPEN",
+        createdAt: new Date("2026-10-03T10:00:00Z"),
+      },
+      {
+        id: "r-2",
+        surface: "FORUM_POST",
+        contentId: POST,
+        reason: "SPAM",
+        status: "DISMISSED",
+        createdAt: new Date("2026-10-02T10:00:00Z"),
+      },
+    ]);
+    read.mockImplementation((surface: string, ids: string[]) =>
+      Promise.resolve(
+        surface === "LESSON_ANSWER" ? ids.map((id) => ({ surface, id, text: "Une réponse." })) : [],
+      ),
+    );
+
+    const result = await contentReportRepository.againstAuthor(AUTHOR, 2);
+
+    expect(authoredBy).toHaveBeenCalledExactlyOnceWith(AUTHOR);
+    // A surface where the account wrote nothing is not asked about.
+    const where = {
+      OR: [
+        { surface: "FORUM_POST", contentId: { in: [POST] } },
+        { surface: "LESSON_ANSWER", contentId: { in: [ANSWER, MINE] } },
+      ],
+    };
+    expect(mockPrisma.contentReport.count).toHaveBeenCalledWith({ where });
+    expect(mockPrisma.contentReport.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where, take: 2, orderBy: [{ createdAt: "desc" }, { id: "desc" }] }),
+    );
+    // The whole count, and the latest lines, each with its content as it is now.
+    expect(result.total).toBe(14);
+    expect(result.rows.map((row) => [row.id, row.status, row.content?.text ?? null])).toEqual([
+      ["r-1", "OPEN", "Une réponse."],
+      ["r-2", "DISMISSED", null],
+    ]);
+    // Only the ids of the lines shown are read, one surface at a time.
+    expect(read).toHaveBeenCalledWith("LESSON_ANSWER", [ANSWER]);
+    expect(read).toHaveBeenCalledWith("FORUM_POST", [POST]);
+  });
+
+  it("asks nothing of the reports for an account that published nothing", async () => {
+    authoredBy.mockResolvedValue([
+      { surface: "FORUM_POST", ids: [] },
+      { surface: "CLASS_RESOURCE", ids: [] },
+    ]);
+    expect(await contentReportRepository.againstAuthor(AUTHOR)).toEqual({ total: 0, rows: [] });
+    expect(mockPrisma.contentReport.count).not.toHaveBeenCalled();
     expect(mockPrisma.contentReport.findMany).not.toHaveBeenCalled();
   });
 });

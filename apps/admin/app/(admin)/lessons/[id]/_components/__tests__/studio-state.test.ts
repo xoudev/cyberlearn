@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  answersAfterEdit,
   autosaveLabel,
   draftContentOf,
   fieldsOf,
@@ -65,6 +66,46 @@ describe("studioReducer", () => {
       conflict: null,
       error: null,
       fields: TYPED,
+    });
+  });
+
+  it("takes the quiz warning down once the content it was read from changes", () => {
+    const warned = studioReducer(initialStudioState(PUBLISHED, TYPED), {
+      type: "refused",
+      error: "Quiz modifiés qui ont déjà des réponses : « q1 ».",
+      conflict: "quizzes",
+    });
+    expect(warned.conflict).toBe("quizzes");
+    // Another field leaves it standing: the quizzes are in the content.
+    expect(studioReducer(warned, { type: "edit", field: "title", value: "Ports" })).toMatchObject({
+      conflict: "quizzes",
+      error: warned.error,
+    });
+    // The content itself is what the warning was read from.
+    expect(
+      studioReducer(warned, { type: "edit", field: "contentMdx", value: "## Ports\n\nAutre." }),
+    ).toMatchObject({ conflict: null, error: null });
+  });
+
+  it("keeps a lesson conflict standing when the content is edited", () => {
+    const state = studioReducer(initialStudioState(PUBLISHED, TYPED, "La leçon a changé."), {
+      type: "edit",
+      field: "contentMdx",
+      value: "## Ports\n\nAutre.",
+    });
+    expect(state).toMatchObject({ conflict: "lesson", error: "La leçon a changé." });
+  });
+
+  it("forgets the go-ahead given to the quizzes once the content is edited", () => {
+    const told = { force: true, quizzesSeen: true };
+    // The content is what the quizzes were read from: a lesson conflict that
+    // stands after the edit must not publish the new ones unannounced.
+    expect(answersAfterEdit(told, "contentMdx")).toEqual({ force: true, quizzesSeen: false });
+    // The other fields are not quizzes, and the lesson's own go-ahead stays.
+    expect(answersAfterEdit(told, "title")).toEqual(told);
+    expect(answersAfterEdit({ force: false, quizzesSeen: false }, "contentMdx")).toEqual({
+      force: false,
+      quizzesSeen: false,
     });
   });
 

@@ -9,6 +9,8 @@ import {
   badgeRepository,
   banRepository,
   certificateRepository,
+  contentReportRepository,
+  isTicketOpen,
   lessonProgressRepository,
   moderationRepository,
   noteReportRepository,
@@ -22,11 +24,13 @@ import {
 import { banTimeLeft } from "@cyberlearn/lib";
 import { isUploadedAvatar } from "@cyberlearn/types";
 import { mfaResetRefusal, recentAdminSince } from "@/lib/account-guards";
+import { consoleDateFormat } from "@/lib/console-time";
 import { RECENT_LEDGER_ROWS } from "@/lib/gamification-corrections";
 import { routeIdOrNotFound } from "@/lib/route-id";
 import { readSignInState, type SignInState } from "@/lib/sign-in-state";
 import { avatarLabel } from "@/lib/user-record";
 import { AuditPanel } from "./_components/audit-panel";
+import { authorContentHref } from "./_components/author-content";
 import { BanForm } from "./_components/ban-form";
 import { CertificatesPanel } from "./_components/certificates-panel";
 import { DeleteUserForm } from "./_components/delete-user-form";
@@ -39,6 +43,7 @@ import { ProgressPanel } from "./_components/progress-panel";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 import { SignInActions } from "./_components/sign-in-actions";
 import { TicketsPanel } from "./_components/tickets-panel";
+import { describeBanAppeal } from "../../tickets/appealed-ban";
 import { USER_CARDS, USER_CRUMBS, USER_DETAIL_KPI_LABELS } from "../_components/columns";
 
 import { requireAdminPage } from "@/lib/auth";
@@ -47,7 +52,7 @@ export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
 
 function formatDate(d: Date): string {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(d);
+  return consoleDateFormat({ dateStyle: "long", timeStyle: "short" }).format(d);
 }
 
 /** How Supabase names a sign-in method, and how support says it. */
@@ -103,6 +108,8 @@ export default async function AdminUserPage({
     moderationTotal,
     noteReports,
     noteReportTotal,
+    contentReports,
+    contentGestures,
     auditRows,
     paths,
     exams,
@@ -123,6 +130,11 @@ export default async function AdminUserPage({
     moderationRepository.countForUser(user.id),
     noteReportRepository.againstAuthor(user.id, RECENT_ROWS),
     noteReportRepository.countAgainstAuthor(user.id),
+    // What the contents it published drew, and what the console did to them:
+    // the reports are filed against a content and the gestures logged against
+    // it too, so neither is among the lines about the account itself.
+    contentReportRepository.againstAuthor(user.id, RECENT_ROWS),
+    auditLogRepository.contentGesturesOnAuthor(user.id, RECENT_ROWS),
     auditLogRepository.recentForUser(user.id, RECENT_ROWS),
     pathRepository.findProgressForConsole(user.id),
     quizRepository.latestAttemptsForConsole(user.id),
@@ -137,19 +149,30 @@ export default async function AdminUserPage({
   ]);
 
   const stamp = (date: Date): string =>
-    new Intl.DateTimeFormat("fr-FR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: "Europe/Paris",
-    }).format(date);
+    consoleDateFormat({ dateStyle: "short", timeStyle: "short" }).format(date);
 
+  // The appeal's ticket is among the account's own: it was opened by the person
+  // the ban is on. Its status says whether the appeal still waits for an answer.
+  const appealTicketId = active?.appealTicketId ?? null;
+  const appealTicket =
+    appealTicketId === null ? undefined : tickets.find((ticket) => ticket.id === appealTicketId);
   const activeBan = active
     ? {
         reason: active.reason,
         endsLabel: banTimeLeft(active.expiresAt),
         issuedOn: stamp(active.createdAt),
         issuedBy: active.issuedBy?.displayName ?? null,
-        appealTicketId: active.appealTicketId,
+        appeal:
+          appealTicketId === null
+            ? null
+            : {
+                ticketId: appealTicketId,
+                ...describeBanAppeal(
+                  appealTicket === undefined
+                    ? null
+                    : { status: appealTicket.status, open: isTicketOpen(appealTicket.status) },
+                ),
+              },
       }
     : null;
 
@@ -316,6 +339,9 @@ export default async function AdminUserPage({
             eventTotal={moderationTotal}
             noteReports={noteReports}
             noteReportTotal={noteReportTotal}
+            contentReports={contentReports}
+            contentGestures={contentGestures}
+            contentHref={authorContentHref(user.id, contentReports.rows, contentGestures.rows)}
           />
 
           <AuditPanel userId={user.id} rows={auditRows} />

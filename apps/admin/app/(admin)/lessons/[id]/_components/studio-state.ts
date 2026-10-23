@@ -107,6 +107,8 @@ export function sameContent(a: StudioFields, b: StudioFields): boolean {
   return FIELD_KEYS.every((key) => left[key] === right[key]);
 }
 
+export type StudioConflict = "draft" | "lesson" | "quizzes";
+
 export interface StudioState {
   fields: StudioFields;
   /** What the lesson holds now: what the page opened on, then each publish. */
@@ -115,8 +117,12 @@ export interface StudioState {
   fieldErrors: Partial<Record<StudioField, string>>;
   /** Why the last publish was refused, in a sentence. */
   error: string | null;
-  /** The last refusal is a conflict: the lesson changed under the draft, or the draft under the studio. */
-  conflict: "draft" | "lesson" | null;
+  /**
+   * The last refusal is one the author can go past, or must reload for: the
+   * lesson changed under the draft, the draft under the studio, or the
+   * publish would change quizzes that already have answers.
+   */
+  conflict: StudioConflict | null;
 }
 
 export type StudioAction =
@@ -126,7 +132,7 @@ export type StudioAction =
       type: "refused";
       error: string;
       fieldErrors?: Partial<Record<string, string>> | undefined;
-      conflict?: "draft" | "lesson" | undefined;
+      conflict?: StudioConflict | undefined;
     }
   | { type: "published"; published: StudioFields; replaceFields: boolean }
   /** The draft is gone: back to the lesson as it is now, which may not be what the page loaded. */
@@ -167,6 +173,30 @@ function studioFieldErrors(
   return out;
 }
 
+/** What a publish has been told it may go past. */
+export interface PublishAnswers {
+  /** The lesson changed since the draft was started. */
+  force: boolean;
+  /** Quizzes that already have answers change. */
+  quizzesSeen: boolean;
+}
+
+/**
+ * What a publish has been told, once `field` is edited. The go-ahead given to
+ * the quizzes was given for the content as it was when they were listed: typed
+ * in, the content may change other quizzes than those the author read about,
+ * and the next publish has to be told again. The lesson's own conflict is
+ * about the live lesson, which an edit does not touch.
+ *
+ * The reducer takes the warning down on the same edit (studioReducer, "edit");
+ * this is the consent it was answered with.
+ */
+export function answersAfterEdit(answers: PublishAnswers, field: StudioField): PublishAnswers {
+  return field === "contentMdx" && answers.quizzesSeen
+    ? { ...answers, quizzesSeen: false }
+    : answers;
+}
+
 export function studioReducer(state: StudioState, action: StudioAction): StudioState {
   switch (action.type) {
     case "edit": {
@@ -176,10 +206,15 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         const message = state.fieldErrors[key];
         if (key !== action.field && message !== undefined) fieldErrors[key] = message;
       }
+      // The quizzes the last refusal named are those of the content it read:
+      // typed in, they may no longer be the ones a publish would change.
+      const staleQuizzes = state.conflict === "quizzes" && action.field === "contentMdx";
       return {
         ...state,
         fields: { ...state.fields, [action.field]: action.value },
         fieldErrors,
+        error: staleQuizzes ? null : state.error,
+        conflict: staleQuizzes ? null : state.conflict,
       };
     }
     case "replace":

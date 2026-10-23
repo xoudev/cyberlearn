@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeAppealedBan, type AppealedBan } from "../appealed-ban";
+import { describeAppealedBan, describeBanAppeal, type AppealedBan } from "../appealed-ban";
 import { adminName, ASSIGNMENT_FACET_OPTIONS, assignmentOf } from "../ticket-meta";
 
 /**
@@ -111,5 +111,41 @@ describe("describeAppealedBan", () => {
 
   it("names nobody for a decision whose author's account is gone", () => {
     expect(describeAppealedBan(ban({ issuedBy: null }), NOW, stamp).issued).toBe("2026-10-13");
+  });
+});
+
+describe("describeBanAppeal", () => {
+  it("says an appeal is open while its ticket waits for an answer", () => {
+    expect(describeBanAppeal({ status: "OPEN", open: true })).toEqual({
+      label: "Un appel est ouvert · lire",
+      tone: "warning",
+    });
+    expect(describeBanAppeal({ status: "IN_PROGRESS", open: true }).tone).toBe("warning");
+  });
+
+  it("says an answered appeal is answered, whatever the ban became", () => {
+    // A refused appeal is answered and its ticket closed; the ban stays in
+    // force, with the link to the ticket.
+    expect(describeBanAppeal({ status: "RESOLVED", open: false })).toEqual({
+      label: "Appel traité (résolu) · lire",
+      tone: "neutral",
+    });
+    expect(describeBanAppeal({ status: "CLOSED", open: false })).toEqual({
+      label: "Appel traité (fermé) · lire",
+      tone: "neutral",
+    });
+  });
+
+  it("only says an appeal was filed when the ticket is not known", () => {
+    expect(describeBanAppeal(null)).toEqual({
+      label: "Un appel a été déposé · lire",
+      tone: "neutral",
+    });
+  });
+
+  it("never calls an answered appeal open", () => {
+    for (const status of ["RESOLVED", "CLOSED"]) {
+      expect(describeBanAppeal({ status, open: false }).label).not.toContain("ouvert");
+    }
   });
 });

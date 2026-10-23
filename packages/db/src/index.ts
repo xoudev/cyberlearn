@@ -46,8 +46,10 @@ export type {
   ConsoleLessonPrerequisitesChange,
   LessonCataloguePaths,
   LessonDeletionCheck,
+  LessonOption,
   LessonPrerequisites,
   LessonRef,
+  LessonStudioView,
 } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export {
@@ -328,6 +330,7 @@ export {
   contentReportRepository,
   CONTENT_REPORT_REASONS,
   type ContentReportReasonValue,
+  type ReportAgainstAuthor,
   type ReportedContent,
   type ReportQueue,
 } from "./repositories/content-report.repository.js";

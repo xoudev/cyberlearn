@@ -11,7 +11,7 @@ import { isFirstCatalogueLesson } from "@cyberlearn/types";
 import { AUDIT_ACTION } from "../audit-actions.js";
 import { auditLogRepository } from "./audit-log.repository.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
-import type { LessonContent } from "./lesson-version.repository.js";
+import { LESSON_CONTENT_SELECT, type LessonContent } from "./lesson-version.repository.js";
 import { pathRepository } from "./path.repository.js";
 
 /**
@@ -213,6 +213,40 @@ const LESSON_PREREQUISITES = {
 export type LessonPrerequisites = Prisma.LessonGetPayload<{
   select: typeof LESSON_PREREQUISITES;
 }>;
+
+/**
+ * A lesson as its studio opens on it: the content it publishes, its state
+ * and rating, the paths that hold it with the place in each, and what it
+ * requires.
+ */
+const LESSON_STUDIO = {
+  ...LESSON_CONTENT_SELECT,
+  id: true,
+  status: true,
+  audience: true,
+  version: true,
+  avgRating: true,
+  ratingsCount: true,
+  pathLessons: {
+    select: {
+      position: true,
+      module: { select: { title: true } },
+      path: {
+        select: { id: true, refCode: true, title: true, status: true, audience: true },
+      },
+    },
+  },
+  prerequisites: { select: { prerequisiteId: true } },
+} as const satisfies Prisma.LessonSelect;
+
+export type LessonStudioView = Prisma.LessonGetPayload<{ select: typeof LESSON_STUDIO }>;
+
+/** A lesson the console offers as a prerequisite. */
+export interface LessonOption {
+  id: string;
+  refCode: string;
+  title: string;
+}
 
 /** A lesson and its refCode, as the console's audit rows name it. */
 export interface LessonRef {
@@ -796,6 +830,32 @@ export const lessonRepository = {
       }),
     ]);
     return { refCode: refCodeOwner !== null, slug: slugOwner !== null };
+  },
+
+  /** The lesson as its studio opens on it; null when it does not exist. */
+  async findForStudio(lessonId: string): Promise<LessonStudioView | null> {
+    return prisma.lesson.findUnique({ where: { id: lessonId }, select: LESSON_STUDIO });
+  },
+
+  /**
+   * The lessons the console offers a lesson to require, by refCode: the
+   * catalogue's, archives left aside, without the lesson itself (`except`),
+   * and those already required kept even if archived since (`keep`).
+   */
+  async findPrerequisiteOptions(
+    options: { except?: string; keep?: readonly string[] } = {},
+  ): Promise<LessonOption[]> {
+    return prisma.lesson.findMany({
+      where: {
+        ...(options.except !== undefined && { NOT: { id: options.except } }),
+        OR: [
+          { audience: "CATALOGUE", status: { not: "ARCHIVED" } },
+          { id: { in: [...(options.keep ?? [])] } },
+        ],
+      },
+      orderBy: { refCode: "asc" },
+      select: { id: true, refCode: true, title: true },
+    });
   },
 
   async findCataloguePaths(lessonId: string): Promise<LessonCataloguePaths | null> {

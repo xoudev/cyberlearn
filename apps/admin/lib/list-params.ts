@@ -407,6 +407,8 @@ export interface ContentListParams {
   surface: ContentSurface;
   state: ContentState | undefined;
   q: string;
+  /** An account's id: only the contents it wrote, which a search on its name cannot promise. */
+  author: string | undefined;
   page: number;
 }
 
@@ -415,6 +417,7 @@ export function parseContentListParams(raw: RawParams): ContentListParams {
     surface: oneOf(raw, "surface", CONTENT_REPORT_SURFACE_KEYS) ?? DEFAULT_CONTENT_SURFACE,
     state: oneOf(raw, "state", CONTENT_STATE_VALUES),
     q: searchParam(raw),
+    author: valid(z.guid(), first(raw, "author")),
     page: pageParam(raw),
   };
 }
@@ -424,6 +427,7 @@ export function contentListSearch(params: ContentListParams): Record<string, str
   if (params.surface !== DEFAULT_CONTENT_SURFACE) out.surface = params.surface;
   if (params.state !== undefined) out.state = params.state;
   if (params.q !== "") out.q = params.q;
+  if (params.author !== undefined) out.author = params.author;
   if (params.page > 1) out.page = String(params.page);
   return out;
 }
@@ -433,6 +437,7 @@ export function contentQueryOf(params: ContentListParams): ConsoleContentQuery {
     surface: params.surface,
     hidden: params.state === undefined ? undefined : params.state === "hidden",
     q: params.q,
+    authorId: params.author,
     page: params.page,
     pageSize: CONTENT_PAGE_SIZE,
   };

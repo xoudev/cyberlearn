@@ -1,9 +1,10 @@
 import React from "react";
 import Link from "next/link";
 import type { ConsoleRatingRow } from "@cyberlearn/db";
+import { consoleDateFormat } from "@/lib/console-time";
 import { Card, EmptyState } from "./admin-ui";
 
-const dated = new Intl.DateTimeFormat("fr-FR", {
+const dated = consoleDateFormat({
   day: "numeric",
   month: "short",
   year: "numeric",

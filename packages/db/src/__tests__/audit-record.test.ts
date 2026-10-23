@@ -209,3 +209,26 @@ describe("auditLogRepository.record", () => {
     ).rejects.toThrow("audit_logs unavailable");
   });
 });
+
+describe("auditLogRepository.contentGesturesOnAuthor", () => {
+  it("finds the gestures on an account's contents by the author the entry keeps", async () => {
+    const find = vi.fn().mockResolvedValue([{ id: "e-1" }]);
+    const count = vi.fn().mockResolvedValue(3);
+    Object.assign(mockPrisma.auditLog, { findMany: find, count });
+
+    const result = await auditLogRepository.contentGesturesOnAuthor(TARGET, 5);
+
+    // Hide, restore and delete carry the author; the dismissal of reports does not.
+    const where = {
+      action: {
+        in: [AUDIT_ACTION.content.hide, AUDIT_ACTION.content.restore, AUDIT_ACTION.content.delete],
+      },
+      metadata: { path: ["authorId"], equals: TARGET },
+    };
+    expect(count).toHaveBeenCalledWith({ where });
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({ where, take: 5, orderBy: [{ createdAt: "desc" }, { id: "desc" }] }),
+    );
+    expect(result).toEqual({ total: 3, rows: [{ id: "e-1" }] });
+  });
+});

@@ -202,19 +202,88 @@ body::before {
   }
 }
 
-/* MDX Import - 3-panel layout: stacked mobile → 3-col desktop */
+/* MDX import: the files, and under them the metadata of the selected one, in a
+   column; the editor, or the differences with the lesson in the database,
+   beside it on the rest of the width.
+
+   Below 1100px the three panes stack. A 320px column beside the editor leaves
+   it 450px from 1100px (the sidebar takes 240px, the page 56px) and about
+   600px at 1280px; any narrower and the differences, whose lines wrap, are a
+   strip of a few words. They used to sit between two columns of 320px and
+   340px, which left them 260px at 1280px and nothing at 1024px, with the
+   confirm button wider than the pane. The metadata is no third column: it
+   uses the height of the left one rather than the width of the window. */
 .import-grid {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 500px;
 }
-@media (min-width: 1024px) {
+.import-files {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.import-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.import-editor,
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--a-border);
+}
+.import-editor {
+  /* Stacked, the editor is what the page is for: a screen of its own, not the
+     two lines a textarea has by default. */
+  min-height: min(70vh, 640px);
+  background: color-mix(in srgb, var(--a-surface-2) 60%, transparent);
+}
+.import-preview {
+  overflow: hidden;
+  background: color-mix(in srgb, var(--a-surface-2) 40%, transparent);
+}
+@media (min-width: 1100px) {
   .import-grid {
     display: grid;
-    grid-template-columns: 320px minmax(0, 1fr) 340px;
+    grid-template-columns: 320px minmax(0, 1fr);
+    /* The files take what height they need. The metadata is capped, and its
+       body scrolls inside the pane, so a long batch is not pushed out of
+       sight by it. */
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "files editor"
+      "preview editor";
     height: calc(100vh - 200px);
     min-height: 600px;
+  }
+  .import-files {
+    grid-area: files;
+    min-height: 0;
+    overflow-y: auto;
+    /* Room for the focus ring of a control at the column's edge, which the
+       scroll would clip; the negative margin gives the width back. */
+    padding: 4px;
+    margin: -4px;
+  }
+  .import-editor {
+    grid-area: editor;
+    min-height: 0;
+  }
+  .import-preview {
+    grid-area: preview;
+    max-height: 40vh;
+  }
+  /* The validate and import buttons stay in reach while the list scrolls
+     under them. */
+  .import-actions {
+    position: sticky;
+    bottom: 4px;
+    padding-top: 8px;
+    background: var(--a-bg);
   }
 }
 
@@ -304,9 +373,17 @@ body::before {
   min-height: 0;
   overflow-y: auto;
   display: grid;
+  /* One column that cannot grow past the pane. An implicit column is `auto`,
+     which a nowrap button or a long line widens: the whole pane then scrolls
+     sideways, differences included. */
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 12px;
   padding: 16px;
+}
+/* A button's label breaks rather than runs out of the pane. */
+.import-update .a-btn {
+  white-space: normal;
 }
 .import-update .a-sync-confirm .a-head-actions,
 .import-update .a-diff {

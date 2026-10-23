@@ -1,4 +1,4 @@
-import type { ContentReportReason } from "@prisma/client";
+import type { ContentReportReason, ContentReportStatus } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import {
   CONTENT_SURFACES,
@@ -43,6 +43,21 @@ export interface ReportedContent {
     /** Null once the reporter's account is erased. */
     reporterUsername: string | null;
   }[];
+}
+
+/** A report about something an account published, as that account's page lists it. */
+export interface ReportAgainstAuthor {
+  id: string;
+  surface: ContentSurface;
+  reason: ContentReportReasonValue;
+  status: ContentReportStatus;
+  createdAt: Date;
+  /**
+   * The content as it is now; null once it is gone. The console deleting a
+   * content closes its reports as DELETED and they are not listed here then,
+   * so null is a content its author or a teacher removed meanwhile.
+   */
+  content: ReviewableContent | null;
 }
 
 /** One page of the report queue, one content per entry. */
@@ -183,6 +198,67 @@ export const contentReportRepository = {
     }
 
     return { rows: all, total: slice.total, page: slice.page, openReports };
+  },
+
+  /**
+   * The reports filed about what an account published, newest first, with
+   * how many there are in all: for the account's page in the console. Not who
+   * filed them: a report is somebody's claim, and the queue
+   * (/moderation/reports) is where it is judged.
+   *
+   * A report names a content, not its author, so the author's contents are
+   * listed first (contentModerationRepository.authoredBy). The reports of a
+   * content the console deleted are not here: the content is gone, and the
+   * audit log holds the deletion (auditLogRepository.contentGesturesOnAuthor).
+   */
+  async againstAuthor(
+    authorId: string,
+    limit = 10,
+  ): Promise<{ total: number; rows: ReportAgainstAuthor[] }> {
+    const authored = (await contentModerationRepository.authoredBy(authorId)).filter(
+      (group) => group.ids.length > 0,
+    );
+    if (authored.length === 0) return { total: 0, rows: [] };
+
+    const where = {
+      OR: authored.map((group) => ({ surface: group.surface, contentId: { in: group.ids } })),
+    };
+    const [total, reports] = await Promise.all([
+      prisma.contentReport.count({ where }),
+      prisma.contentReport.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit,
+        select: {
+          id: true,
+          surface: true,
+          contentId: true,
+          reason: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    // One read per surface for the lines shown, not one per report.
+    const contents = new Map<string, ReviewableContent>();
+    for (const surface of CONTENT_SURFACES) {
+      const ids = reports.filter((r) => r.surface === surface).map((r) => r.contentId);
+      for (const content of await contentModerationRepository.read(surface, ids)) {
+        contents.set(`${surface}:${content.id}`, content);
+      }
+    }
+    return {
+      total,
+      rows: reports.map((r) => ({
+        id: r.id,
+        surface: r.surface,
+        reason: r.reason,
+        status: r.status,
+        createdAt: r.createdAt,
+        content: contents.get(`${r.surface}:${r.contentId}`) ?? null,
+      })),
+    };
   },
 
   /**

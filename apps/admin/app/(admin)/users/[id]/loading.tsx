@@ -147,11 +147,17 @@ export default function UserLoading(): React.ReactElement {
             <TableSkeleton columns={3} rows={2} />
           </Card>
 
-          <Card title={USER_CARDS.moderation} action={<CardButtons widths={[50, 120]} />}>
+          {/* Four links (file, notes, reports, the account's contents) and four
+              sections, as ModerationPanel draws them. */}
+          <Card title={USER_CARDS.moderation} action={<CardButtons widths={[50, 120, 105, 100]} />}>
             <div className="a-card-pad" aria-hidden="true">
               <SubheadSkeleton width={230} first />
               <TableSkeleton columns={3} rows={2} />
               <SubheadSkeleton width={130} />
+              <TableSkeleton columns={3} rows={1} />
+              <SubheadSkeleton width={210} />
+              <TableSkeleton columns={3} rows={1} />
+              <SubheadSkeleton width={260} />
               <TableSkeleton columns={3} rows={1} />
             </div>
           </Card>

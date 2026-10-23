@@ -104,6 +104,11 @@ export interface ConsoleContentQuery extends ConsolePage {
   hidden: boolean | undefined;
   /** Searched in the text, where it lives and the author's names. */
   q: string;
+  /**
+   * Only what this account wrote: the account itself, not a search on its
+   * name, which also finds other people's messages that quote or resemble it.
+   */
+  authorId?: string | undefined;
 }
 
 export interface ContentNotice {
@@ -225,6 +230,8 @@ interface SurfaceHandler {
   destroy(db: Db, id: string): Promise<RemovedRow[]>;
   /** The author, when this viewer can see the content; null when they cannot. */
   reportable(viewerId: string, id: string): Promise<{ authorId: string | null } | null>;
+  /** The ids of the rows this account wrote, hidden or not. */
+  authoredBy(userId: string): Promise<string[]>;
   /** The ids a pending decision of the screen may be attached to. */
   reviewIds(content: ModeratedContent): string[];
 }
@@ -274,6 +281,7 @@ function forumPostContent(row: ForumPostRow): ModeratedContent {
 function forumPostWhere(query: ConsoleContentQuery): Prisma.ForumPostWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { authorId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -362,6 +370,13 @@ const forumPostHandler: SurfaceHandler = {
     });
     return row === null ? null : { authorId: row.authorId };
   },
+  async authoredBy(userId) {
+    const rows = await prisma.forumPost.findMany({
+      where: { authorId: userId },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
   reviewIds(content) {
     // A thread the screen held is recorded against its topic.
     return content.opensThread && content.threadId !== null
@@ -406,6 +421,7 @@ function questionContent(row: QuestionRow): ModeratedContent {
 function questionWhere(query: ConsoleContentQuery): Prisma.LessonQuestionWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { title: contains(query.q) },
@@ -462,6 +478,13 @@ const lessonQuestionHandler: SurfaceHandler = {
     });
     return row === null ? null : { authorId: row.userId };
   },
+  async authoredBy(userId) {
+    const rows = await prisma.lessonQuestion.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
   reviewIds: (content) => [content.id],
 };
 
@@ -497,6 +520,7 @@ function answerContent(row: AnswerRow): ModeratedContent {
 function answerWhere(query: ConsoleContentQuery): Prisma.LessonAnswerWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -569,6 +593,10 @@ const lessonAnswerHandler: SurfaceHandler = {
     });
     return row === null ? null : { authorId: row.userId };
   },
+  async authoredBy(userId) {
+    const rows = await prisma.lessonAnswer.findMany({ where: { userId }, select: { id: true } });
+    return rows.map((row) => row.id);
+  },
   reviewIds: (content) => [content.id],
 };
 
@@ -606,6 +634,7 @@ function writeupContent(row: WriteupRow): ModeratedContent {
 function writeupWhere(query: ConsoleContentQuery): Prisma.ChallengeWriteupWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { userId: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { content: contains(query.q) },
@@ -661,6 +690,13 @@ const challengeWriteupHandler: SurfaceHandler = {
     });
     return progress?.status === "COMPLETED" ? { authorId: row.userId } : null;
   },
+  async authoredBy(userId) {
+    const rows = await prisma.challengeWriteup.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
   reviewIds: (content) => [content.id],
 };
 
@@ -701,6 +737,7 @@ function resourceContent(row: ResourceRow): ModeratedContent {
 function resourceWhere(query: ConsoleContentQuery): Prisma.ClassResourceWhereInput {
   return {
     ...hiddenFilter(query.hidden),
+    ...(query.authorId !== undefined && { createdById: query.authorId }),
     ...(query.q !== "" && {
       OR: [
         { title: contains(query.q) },
@@ -758,6 +795,13 @@ const classResourceHandler: SurfaceHandler = {
     const readable = await classRepository.listResourcesForStudent(viewerId, [row.classId]);
     return readable.some((r) => r.id === id) ? { authorId: row.createdById } : null;
   },
+  async authoredBy(userId) {
+    const rows = await prisma.classResource.findMany({
+      where: { createdById: userId },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
   reviewIds: (content) => [content.id],
 };
 
@@ -806,6 +850,21 @@ export const contentModerationRepository = {
     viewerId: string,
   ): Promise<{ authorId: string | null } | null> {
     return HANDLERS[surface].reportable(viewerId, id);
+  },
+
+  /**
+   * Everything this account published, by surface: the ids, hidden or not.
+   * What the reports about an author are looked up by (contentReportRepository):
+   * a report names a content, and only the content's own table knows who
+   * wrote it.
+   */
+  async authoredBy(userId: string): Promise<{ surface: ContentSurface; ids: string[] }[]> {
+    return Promise.all(
+      CONTENT_SURFACES.map(async (surface) => ({
+        surface,
+        ids: await HANDLERS[surface].authoredBy(userId),
+      })),
+    );
   },
 
   /**

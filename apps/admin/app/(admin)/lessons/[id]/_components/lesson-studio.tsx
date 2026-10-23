@@ -24,6 +24,7 @@ import {
   saveLessonDraftAction,
 } from "../actions";
 import {
+  answersAfterEdit,
   autosaveLabel,
   draftContentOf,
   fieldsOf,
@@ -31,6 +32,7 @@ import {
   sameContent,
   studioReducer,
   VERSION_SOURCE_LABEL,
+  type PublishAnswers,
   type StudioDraftContent,
   type StudioField,
   type StudioFields,
@@ -180,6 +182,10 @@ export function LessonStudio({
   const [lessonStatus, setLessonStatus] = useState<ContentStatus>(status);
   const latestFields = useRef(fields);
   latestFields.current = fields;
+  // What the author has been told, and gone past, in the publish under way:
+  // the lesson that changed under the draft, and quizzes that have answers.
+  // One « Publier quand même » keeps what the other was already told.
+  const told = useRef<PublishAnswers>({ force: false, quizzesSeen: false });
 
   const preview = useLessonPreview(refreshLessonPreviewAction);
   const [busy, startTask] = useTransition();
@@ -230,6 +236,9 @@ export function LessonStudio({
   useUnsavedChangesGuard(autosave.dirty, LEAVE_WARNING);
 
   const edit = (field: StudioField, value: string): void => {
+    // « Publier quand même » on a quiz warning went with the content then:
+    // a lesson conflict that outlives this edit must not carry it over.
+    told.current = answersAfterEdit(told.current, field);
     dispatch({ type: "edit", field, value });
   };
 
@@ -255,7 +264,8 @@ export function LessonStudio({
     autosave.markSaved(draftContentOf(now), null);
   };
 
-  const publish = (force: boolean): void => {
+  const publish = (answers: PublishAnswers): void => {
+    told.current = answers;
     startTask(async () => {
       const sent = latestFields.current;
       if (!(await autosave.flush())) {
@@ -275,7 +285,8 @@ export function LessonStudio({
       const result = await publishLessonChangesAction({
         lessonId,
         expectedUpdatedAt: stamp.current,
-        force,
+        force: answers.force,
+        quizzesSeen: answers.quizzesSeen,
       });
       if (result.ok) {
         settle(result.content, result.base, sent);
@@ -416,7 +427,7 @@ export function LessonStudio({
               changed ? undefined : "Le brouillon reprend la leçon telle qu'elle est en ligne."
             }
             onClick={() => {
-              publish(false);
+              publish({ force: false, quizzesSeen: false });
             }}
           >
             {busy ? "Un instant…" : "Publier les changements"}
@@ -437,7 +448,19 @@ export function LessonStudio({
                 className="a-btn a-btn--danger a-btn--sm"
                 disabled={busy}
                 onClick={() => {
-                  publish(true);
+                  publish({ ...told.current, force: true });
+                }}
+              >
+                Publier quand même
+              </button>
+            )}
+            {state.conflict === "quizzes" && (
+              <button
+                type="button"
+                className="a-btn a-btn--danger a-btn--sm"
+                disabled={busy}
+                onClick={() => {
+                  publish({ ...told.current, quizzesSeen: true });
                 }}
               >
                 Publier quand même

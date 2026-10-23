@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { CONSOLE_AUDIT_ACTIONS, type AuditAction } from "../audit-actions.js";
+import { AUDIT_ACTION, CONSOLE_AUDIT_ACTIONS, type AuditAction } from "../audit-actions.js";
 import { prisma } from "../prisma.js";
 import { readSlice, type ConsolePage, type ConsoleSlice, type SortDir } from "./console-page.js";
 import { WITHOUT_CRON_RUNS } from "./cron-run.repository.js";
@@ -133,6 +133,16 @@ export function auditWhere(filter: AuditFilter): Prisma.AuditLogWhereInput {
   return { AND: terms };
 }
 
+/** The entries of a hide, a restore or a delete whose content an account wrote. */
+function contentGesturesOn(authorId: string): Prisma.AuditLogWhereInput {
+  return {
+    action: {
+      in: [AUDIT_ACTION.content.hide, AUDIT_ACTION.content.restore, AUDIT_ACTION.content.delete],
+    },
+    metadata: { path: ["authorId"], equals: authorId },
+  };
+}
+
 export const auditLogRepository = {
   /**
    * Writes one entry.
@@ -185,6 +195,30 @@ export const auditLogRepository = {
       take: limit,
       select: AUDIT_ROW,
     });
+  },
+
+  /**
+   * The console's gestures on what an account published (hidden, shown again,
+   * deleted), newest first, with how many there are in all. They are written
+   * against the content, with the author in the metadata: a deleted content
+   * leaves nothing else to find its author by, and recentForUser, which reads
+   * the target and the actor, never sees them.
+   */
+  async contentGesturesOnAuthor(
+    authorId: string,
+    limit = 10,
+  ): Promise<{ total: number; rows: AuditRow[] }> {
+    const where = contentGesturesOn(authorId);
+    const [total, rows] = await Promise.all([
+      prisma.auditLog.count({ where }),
+      prisma.auditLog.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit,
+        select: AUDIT_ROW,
+      }),
+    ]);
+    return { total, rows };
   },
 
   async count(filter: AuditFilter): Promise<number> {

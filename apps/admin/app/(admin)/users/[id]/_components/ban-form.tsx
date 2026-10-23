@@ -7,7 +7,7 @@ import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
 import { banUserAction, liftBanAction, type BanUserState } from "../../../_actions/user-actions";
-import { Card, Tag } from "../../../_components/admin-ui";
+import { Card, Tag, type Tone } from "../../../_components/admin-ui";
 import { LiftReasonField } from "../../../_components/lift-reason-field";
 
 /**
@@ -34,8 +34,11 @@ export function BanForm({
     endsLabel: string;
     issuedOn: string;
     issuedBy: string | null;
-    /** The ticket contesting this ban, when one was opened. */
-    appealTicketId: string | null;
+    /**
+     * The ticket contesting this ban, when one was filed, and what to say of
+     * it: open, or answered (the ban stays in force when the appeal is refused).
+     */
+    appeal: { ticketId: string; label: string; tone: Tone } | null;
   } | null;
   history: { id: string; reason: string; issuedOn: string; outcome: string }[];
 }): React.ReactElement {
@@ -90,11 +93,11 @@ export function BanForm({
           </div>
           <div className="a-defrow">
             <span className="a-defrow-label">Appel</span>
-            {active.appealTicketId !== null ? (
+            {active.appeal !== null ? (
               // The appeal is read and answered on its ticket: one click there,
               // and the ticket links back here to lift the ban.
-              <Link href={`/tickets/${active.appealTicketId}`} className="a-row-link">
-                <Tag tone="warning">Un appel est ouvert · lire</Tag>
+              <Link href={`/tickets/${active.appeal.ticketId}`} className="a-row-link">
+                <Tag tone={active.appeal.tone}>{active.appeal.label}</Tag>
               </Link>
             ) : (
               <span className="mono a-field-hint">Aucun</span>
