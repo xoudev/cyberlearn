@@ -139,17 +139,22 @@ function measuredAt(width: number): void {
 }
 
 describe("a panel too narrow for two halves", () => {
-  it("keeps the preview beside the editor from 700px up, and when nothing was measured", () => {
+  it("keeps the preview beside the editor from 520px up, and when nothing was measured", () => {
     expect(opensSplit(SPLIT_MIN_PANEL_WIDTH)).toBe(true);
     expect(opensSplit(1200)).toBe(true);
     expect(opensSplit(0)).toBe(true);
     expect(opensSplit(Number.NaN)).toBe(true);
   });
 
-  it("opens the editor alone under 700px", () => {
+  it("opens the editor alone under 520px: a phone, a tablet held upright", () => {
     expect(opensSplit(SPLIT_MIN_PANEL_WIDTH - 1)).toBe(false);
     expect(opensSplit(343)).toBe(false);
     expect(opensSplit(472)).toBe(false);
+  });
+
+  it("keeps both halves in the console's studio on a laptop, where the panel is 596 to 682px", () => {
+    expect(opensSplit(596)).toBe(true);
+    expect(opensSplit(682)).toBe(true);
   });
 
   it("opens a phone-wide panel on the editor alone, the split button bringing the preview back", () => {
@@ -163,6 +168,12 @@ describe("a panel too narrow for two halves", () => {
 
   it("opens a wide panel as it always did, both halves", () => {
     measuredAt(1100);
+    render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
+    expect(screen.getByRole("separator")).toBeInTheDocument();
+  });
+
+  it("opens a laptop-wide panel (about 600px beside the studio's rail) on both halves", () => {
+    measuredAt(600);
     render(<MdxEditorPanel value={CODE} onChange={() => undefined} />);
     expect(screen.getByRole("separator")).toBeInTheDocument();
   });
