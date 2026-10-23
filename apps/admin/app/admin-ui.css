@@ -115,6 +115,73 @@
     display: flex;
   }
 }
+/* Below 768px the bar has no room for the field beside the menu and the
+   account: a button of the touch size stands in for it, and the field is laid
+   over the whole bar once it is opened. The button is gone from 768px, where
+   the field is on the bar all the time. */
+.a-topbar-search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--a-border);
+  color: var(--a-fg-2);
+  cursor: pointer;
+}
+.a-topbar-search-toggle:hover {
+  background: var(--a-hover);
+  color: var(--a-fg);
+}
+@media (min-width: 768px) {
+  .a-topbar-search-toggle {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .a-topbar-search.a-cmd[data-over-bar="true"] {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    max-width: none;
+    margin-left: 0;
+    padding: 0 16px;
+    background: var(--a-bg);
+  }
+  .a-topbar-search[data-over-bar="true"] .a-topbar-search-box {
+    height: 44px;
+  }
+  /* 16px: below it, iOS zooms the page in when the field takes the focus. */
+  .a-topbar-search[data-over-bar="true"] .a-topbar-search-box input {
+    font-size: 16px;
+  }
+  .a-topbar-search[data-over-bar="true"] .a-kbd {
+    display: none;
+  }
+  .a-topbar-search[data-over-bar="true"] .a-cmd-panel {
+    left: 16px;
+    right: 16px;
+  }
+}
+/* Who is signed in, at the end of the bar. With the field on the bar (768px
+   and up) the free space is shared between the two; under it the button
+   already pushes the account to the end. */
+.a-topbar-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .a-topbar-account {
+    margin-left: auto;
+  }
+}
 .a-topbar-search-box {
   display: flex;
   align-items: center;
