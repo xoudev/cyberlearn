@@ -496,9 +496,17 @@ export const userRepository = {
     });
   },
 
-  /** Full profile data for authenticated user's own profile page. */
+  /**
+   * Full profile data for authenticated user's own profile page.
+   *
+   * `lessonProgress` is the twenty latest lessons, for the Activité list;
+   * `counts.lessons` is how many were completed. The page printed the list's
+   * length, so a learner past twenty lessons read "20" on their own profile
+   * and the real figure on /u/<them> and in the app (same count as
+   * `findPublicProfile`).
+   */
   async findProfile(userId: string) {
-    return prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         preferences: true,
@@ -516,8 +524,12 @@ export const userRepository = {
           orderBy: { completedAt: "desc" },
           take: 20,
         },
+        _count: { select: { lessonProgress: { where: { status: "COMPLETED" } } } },
       },
     });
+    if (!user) return null;
+    const { _count: count, ...profile } = user;
+    return { ...profile, counts: { lessons: count.lessonProgress } };
   },
 
   /**

@@ -90,6 +90,32 @@ describe("findPublicProfile's counts", () => {
   });
 });
 
+describe("findProfile's counts", () => {
+  it("counts the completed lessons that its twenty-row list only samples", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(ownerRow(true));
+
+    const profile = await userRepository.findProfile(OWNER);
+
+    // The row says 48 completed; the list holds at most twenty.
+    expect(profile?.counts).toEqual({ lessons: 48 });
+    expect(profile).not.toHaveProperty("_count");
+    const query = mockPrisma.user.findUnique.mock.calls[0]?.[0] as {
+      include: { lessonProgress: { where: unknown; take: number }; _count: unknown };
+    };
+    expect(query.include.lessonProgress.take).toBe(20);
+    expect(query.include._count).toEqual({
+      select: { lessonProgress: { where: { status: "COMPLETED" } } },
+    });
+    // The same filter as the list and as the public profile's count.
+    expect(query.include.lessonProgress.where).toEqual({ status: "COMPLETED" });
+  });
+
+  it("returns null for a user that does not exist", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    expect(await userRepository.findProfile(OWNER)).toBeNull();
+  });
+});
+
 describe("profileAccess", () => {
   it("tells a public profile from a private one the reader was let into", async () => {
     mockPrisma.user.findUnique.mockResolvedValue({

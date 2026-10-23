@@ -200,7 +200,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   }));
 
   // Stats
-  const completedLessonsCount = user.lessonProgress.length; // already filtered to COMPLETED in repo
+  // Counted by the repository: `lessonProgress` is only the twenty latest, and
+  // its length used to stand for the total (so it stopped at 20).
+  const completedLessonsCount = user.counts.lessons;
   const badgesCount = user.badges.length;
   // The tab lists the revoked ones too; the count is of those still valid.
   const certsCount = certs.filter((cert) => cert.revokedAt === null).length;
@@ -890,12 +892,12 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       {/* ── Tabs: ?tab=activite|badges|certificats ──────────────────────────── */}
       <ProfileContent
         counts={{
-          activite: serializedLessons.length,
+          activite: completedLessonsCount,
           badges: `${String(collection.earnedCount)}/${String(collection.totalCount)}`,
           certificats: certsCount,
         }}
         panels={{
-          activite: <ActivityFeed lessons={serializedLessons} />,
+          activite: <ActivityFeed lessons={serializedLessons} total={completedLessonsCount} />,
           badges: (
             <BadgesCollection
               groups={collection.groups}
