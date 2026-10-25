@@ -16,6 +16,8 @@
     "render:locker": "remotion still src/index.tsx StoreLocker dist/phone-05-locker.png",
     "render:video": "remotion render src/index.tsx PromoVideo dist/cyberlearn-promo.mp4 --codec=h264 --crf=18",
     "render:linkedin": "remotion render src/index.tsx LinkedInVideo dist/cyberlearn-linkedin.mp4 --codec=h264 --crf=18",
+    "render:web-launch": "remotion render src/web-entry.tsx WebLaunch ../web/public/videos/launch.mp4 --codec=h264 --crf=20",
+    "render:web-welcome": "remotion render src/web-entry.tsx WebWelcome ../web/public/videos/welcome.mp4 --codec=h264 --crf=20",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -24,7 +24,7 @@ export default async function DuelPage({ params }: Props): Promise<React.ReactEl
   if (view === null) notFound();
 
   return (
-    <div className="page-container dl">
+    <div className="page-container dl learning-catalogue learning-workspace community-workspace">
       <Crumb segments={[{ label: "duels", href: "/duels" }, view.other.name]} />
       <DuelPlay initial={view} />
     </div>

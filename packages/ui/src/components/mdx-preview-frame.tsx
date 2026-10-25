@@ -200,11 +200,12 @@ export function MdxPreviewFrame({
 
   return (
     <div
+      className="mdx-preview-frame"
       style={{
         height: 620,
         display: "flex",
         flexDirection: "column",
-        background: "#060422",
+        background: "var(--color-bg-sunken)",
       }}
     >
       <div

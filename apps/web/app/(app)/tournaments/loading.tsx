@@ -40,7 +40,11 @@ function CardSkeleton(): React.ReactElement {
 
 export default function TournamentsLoading(): React.ReactElement {
   return (
-    <div className="page-container trn" aria-busy="true" aria-label="Chargement des tournois">
+    <div
+      className="page-container learning-catalogue learning-workspace trn"
+      aria-busy="true"
+      aria-label="Chargement des tournois"
+    >
       <header className="trn-head">
         <div>
           <Skeleton w={210} h={14} style={{ marginBottom: 26 }} />
@@ -86,18 +90,6 @@ export default function TournamentsLoading(): React.ReactElement {
         </div>
       </div>
 
-      <ol className="trn-steps" aria-hidden="true">
-        {[0, 1, 2].map((i) => (
-          <li key={i}>
-            <Skeleton w={18} h={12} />
-            <div>
-              <Skeleton w="55%" h={15} style={{ marginBottom: 10 }} />
-              <SkeletonText lines={2} lastWidth="70%" lineHeight={12} gap={8} />
-            </div>
-          </li>
-        ))}
-      </ol>
-
       <div className="trn-shead" aria-hidden="true">
         <Skeleton w={90} h={12} />
         <Skeleton w={70} h={10} />
@@ -106,6 +98,9 @@ export default function TournamentsLoading(): React.ReactElement {
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
+      </div>
+      <div className="trn-guide" aria-hidden="true">
+        <Skeleton w={180} h={16} style={{ marginBlock: 18 }} />
       </div>
     </div>
   );

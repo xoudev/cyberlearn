@@ -86,9 +86,9 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
           style: (feature) => {
             const france = feature?.properties.code === "FRA";
             return {
-              color: france ? ACCENT : "#3A3670",
+              color: france ? ACCENT : "#74767D",
               weight: france ? 1.5 : 1,
-              fillColor: france ? "#16123F" : "#0E0B2E",
+              fillColor: france ? "#272A30" : "#191C22",
               fillOpacity: 1,
             };
           },
@@ -96,9 +96,9 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
         for (const town of TOWNS) {
           L.circleMarker([town.latitude, town.longitude], {
             radius: town.rank === 1 ? 3 : 2,
-            color: "#B8B5D1",
+            color: "#C2BFB8",
             weight: 1,
-            fillColor: "#B8B5D1",
+            fillColor: "#C2BFB8",
             fillOpacity: 1,
             interactive: false,
           })
@@ -177,7 +177,7 @@ export function OsintMap({ guess, truth, onPick }: OsintMapProps): React.ReactEl
 
   if (failed) {
     return (
-      <p style={{ margin: 0, color: "#B8B5D1", fontSize: 13 }}>
+      <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 13 }}>
         La carte n&apos;a pas pu se charger : place ton point par ses coordonnées, ci-dessous.
       </p>
     );

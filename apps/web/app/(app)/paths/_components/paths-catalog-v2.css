@@ -11,10 +11,6 @@
   --k-color: #c2bfb8;
   color: #f4f2ed;
 }
-.pc2-root .pc2 {
-  width: 100%;
-  padding: 8px var(--page-gutter) 80px;
-}
 .pc2-root .pc2-guide {
   display: flex;
   align-items: center;
@@ -633,9 +629,6 @@
   }
 }
 @media (max-width: 650px) {
-  .pc2-root .pc2 {
-    padding-bottom: 48px;
-  }
   .pc2-root .pc2-discover,
   .pc2-root .pc2-duo {
     grid-template-columns: 1fr;
@@ -690,5 +683,39 @@
   .pc2-root *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+.pc2-root .game-card .game-card__cover--poster {
+  display: block;
+  height: 250px;
+}
+.pc2-root .game-card__cover--poster .catalogue-artwork {
+  min-height: 250px;
+}
+.pc2-root .game-card__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  color: #aaa79f;
+  font-size: 11px;
+}
+.pc2-root .game-card__labels > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pc2-root .game-card:only-child .game-card__cover--poster {
+  height: 100%;
+  min-height: 280px;
+}
+.pc2-root .game-card:only-child .catalogue-artwork {
+  min-height: 280px;
+}
+@media (max-width: 650px) {
+  .pc2-root .game-card:only-child .game-card__cover--poster,
+  .pc2-root .game-card:only-child .catalogue-artwork {
+    height: 240px;
+    min-height: 240px;
   }
 }

@@ -61,7 +61,7 @@ export function NewTopicDialog({
         title="Nouveau sujet"
         meta="Tout le monde sur la plateforme peut le lire et y répondre."
         maxWidth={720}
-        className="fo-compose"
+        className="fo-compose community-dialog"
       >
         <TopicComposer
           categorySlug={categorySlug}

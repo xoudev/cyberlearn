@@ -290,7 +290,7 @@ export function LogHunt(props: Record<string, unknown>): React.ReactElement {
               {shown.slice(0, ROWS_SHOWN).map((event, i) => (
                 <tr
                   key={`${event.time}-${String(i)}`}
-                  style={{ borderBottom: "1px solid #110F33" }}
+                  style={{ borderBottom: "1px solid var(--color-border-subtle)" }}
                 >
                   <td
                     style={{

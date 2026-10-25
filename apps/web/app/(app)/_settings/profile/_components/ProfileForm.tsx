@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { SaveBar } from "../../_components/SettingsControls";
-import { EASE, MONO, S } from "../../_components/tokens";
+import { EASE, MONO, S, SANS } from "../../_components/tokens";
 import { updateProfileAction } from "../_actions/update-profile";
 import { uploadAvatarAction } from "@/lib/avatar/actions";
 import { AvatarCropper } from "@/components/avatar-cropper";
@@ -40,12 +40,10 @@ function labelStyle(): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    fontFamily: MONO,
-    fontWeight: 600,
-    fontSize: 11,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    color: S.turq,
+    fontFamily: SANS,
+    fontWeight: 500,
+    fontSize: 13,
+    color: S.fg2,
     marginBottom: 10,
   };
 }
@@ -163,11 +161,10 @@ export function ProfileForm({
 
       {/* Avatar picker */}
       <div style={{ marginBottom: 24 }}>
-        <span style={labelStyle()}>
-          <span aria-hidden="true">›</span>Avatar
-        </span>
+        <span style={labelStyle()}>Avatar</span>
         <div
           role="radiogroup"
+          className="settings-avatar-grid"
           aria-label="Avatar"
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}
         >
@@ -291,7 +288,7 @@ export function ProfileForm({
       >
         <div>
           <label htmlFor={usernameId} style={labelStyle()}>
-            <span aria-hidden="true">›</span>Identifiant
+            Identifiant
           </label>
           <div
             style={{
@@ -341,7 +338,7 @@ export function ProfileForm({
         </div>
         <div>
           <label htmlFor={nameId} style={labelStyle()}>
-            <span aria-hidden="true">›</span>Nom affiché
+            Nom affiché
           </label>
           <input
             id={nameId}
@@ -365,7 +362,7 @@ export function ProfileForm({
       {/* Bio */}
       <div>
         <label htmlFor={bioId} style={labelStyle()}>
-          <span aria-hidden="true">›</span>Bio courte
+          Bio courte
         </label>
         <textarea
           id={bioId}

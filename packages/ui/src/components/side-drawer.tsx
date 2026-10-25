@@ -101,7 +101,9 @@ export function SideDrawer({
     <>
       <header className="side-drawer__head">
         <span className="side-drawer__dot" aria-hidden="true" />
-        <span id={titleId}>{title}</span>
+        <span id={titleId} className="side-drawer__title">
+          {title}
+        </span>
         {meta !== undefined && meta !== null && meta !== "" && (
           <span className="side-drawer__meta">{meta}</span>
         )}
@@ -169,6 +171,7 @@ export function SideDrawer({
       open
       onClose={onClose}
       chrome="none"
+      returnFocus={false}
       labelledBy={titleId}
       className="side-drawer-root"
     >

@@ -6,7 +6,7 @@ import { AvatarView } from "@/components/avatar-view";
 // (season pod) views so both render with the same visual language.
 
 export const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-export const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };
+export const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-display), sans-serif" };
 
 export function fmtXp(xp: number): string {
   // Rendered by client components: see formatNumberFr for why not toLocaleString.

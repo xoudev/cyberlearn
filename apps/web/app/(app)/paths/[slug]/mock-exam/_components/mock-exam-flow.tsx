@@ -28,7 +28,8 @@ import {
   type MockResult,
   type MockReviewItem,
 } from "@cyberlearn/lib/exam/mock";
-import { Brackets } from "@/app/_components/corner-brackets";
+import { BastionLogo } from "@/components/bastion-logo";
+import "@/components/assessment-workspace.css";
 import { ProgressBar } from "@/components/progress-bar";
 import { StickyRail } from "@/components/sticky-rail";
 import type { MockOverview } from "@/lib/exam/mock-exam";
@@ -172,10 +173,13 @@ function Intro({
 
   return (
     <section className="mkx-intro" aria-label="Examen blanc">
-      <Brackets />
+      <header className="assessment-brand">
+        <BastionLogo size={36} />
+        <span>CyberLearn / Examen blanc</span>
+      </header>
 
       <div className="mkx-intro__main">
-        <p className="mkx-eyebrow">{"// Examen blanc"}</p>
+        <p className="mkx-eyebrow">T’entraîner avant l’examen</p>
         <h1 className="pg-title">{overview.pathTitle}</h1>
         <p className="pg-lede">
           {String(overview.questionCount)} questions tirées des quiz du parcours, trois par module,
@@ -183,92 +187,94 @@ function Intro({
           par module : chaque module dit ce qui est acquis et ce qui reste à revoir.
         </p>
 
-        <ul className="mkx-stats" aria-label="L'examen en chiffres">
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconQuestion />
-            </span>
-            <span className="mkx-stat__val">{overview.questionCount}</span>
-            <span className="mkx-stat__lbl">Questions</span>
-          </li>
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconClock />
-            </span>
-            <span className="mkx-stat__val">
-              {overview.timeLimitMinutes}
-              <small> min</small>
-            </span>
-            <span className="mkx-stat__lbl">Chrono</span>
-          </li>
-          <li className="mkx-stat">
-            <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
-              <IconModules />
-            </span>
-            <span className="mkx-stat__val">{moduleCount}</span>
-            <span className="mkx-stat__lbl">{plural(moduleCount, "Module")}</span>
-          </li>
-        </ul>
+        <div className="assessment-departure">
+          <ul className="mkx-stats" aria-label="L'examen en chiffres">
+            <li className="mkx-stat">
+              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
+                <IconQuestion />
+              </span>
+              <span className="mkx-stat__val">{overview.questionCount}</span>
+              <span className="mkx-stat__lbl">Questions</span>
+            </li>
+            <li className="mkx-stat">
+              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
+                <IconClock />
+              </span>
+              <span className="mkx-stat__val">
+                {overview.timeLimitMinutes}
+                <small> min</small>
+              </span>
+              <span className="mkx-stat__lbl">Chrono</span>
+            </li>
+            <li className="mkx-stat">
+              <span className="mkx-stat__hex mkx-hex" aria-hidden="true">
+                <IconModules />
+              </span>
+              <span className="mkx-stat__val">{moduleCount}</span>
+              <span className="mkx-stat__lbl">{plural(moduleCount, "Module")}</span>
+            </li>
+          </ul>
 
-        <ul className="mkx-rules">
-          <li>
-            <span className="mkx-rules__k">Chrono</span>
-            <span>
-              Il part dès que tu commences et ne s&apos;arrête plus. À 00:00, ta copie est rendue
-              telle quelle.
-            </span>
-          </li>
-          <li>
-            <span className="mkx-rules__k">Verdict</span>
-            <span>
-              Chaque module reçoit le sien : acquis, à consolider ou à revoir, avec la correction de
-              chaque question.
-            </span>
-          </li>
-          <li>
-            <span className="mkx-rules__k">Sans enjeu</span>
-            <span>
-              C&apos;est un entraînement : ni certificat, ni XP, autant de fois que tu veux.
-            </span>
-          </li>
-        </ul>
+          <ul className="mkx-rules">
+            <li>
+              <span className="mkx-rules__k">Chrono</span>
+              <span>
+                Il part dès que tu commences et ne s&apos;arrête plus. À 00:00, ta copie est rendue
+                telle quelle.
+              </span>
+            </li>
+            <li>
+              <span className="mkx-rules__k">Verdict</span>
+              <span>
+                Chaque module reçoit le sien : acquis, à consolider ou à revoir, avec la correction
+                de chaque question.
+              </span>
+            </li>
+            <li>
+              <span className="mkx-rules__k">Sans enjeu</span>
+              <span>
+                C&apos;est un entraînement : ni certificat, ni XP, autant de fois que tu veux.
+              </span>
+            </li>
+          </ul>
 
-        {overview.ready && overview.running !== null ? (
-          <p className="mkx-live">
-            <span className="mkx-live__dot" aria-hidden="true" />
-            Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
-            sont pas gardées.
-          </p>
-        ) : null}
-        {error !== null ? (
-          <p role="alert" className="mkx-error">
-            {error}
-          </p>
-        ) : null}
-        {overview.ready ? null : (
-          <p className="mkx-note">
-            Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
-          </p>
-        )}
-
-        <div className="mkx-cta">
-          {overview.ready ? (
-            <button
-              type="button"
-              className="btn btn--accent btn--lg mkx-start"
-              onClick={onStart}
-              disabled={busy}
-            >
-              {overview.running !== null
-                ? "Reprendre l'examen en cours"
-                : "Commencer l'examen blanc"}
-              <IconArrowRight />
-            </button>
+          {overview.ready && overview.running !== null ? (
+            <p className="mkx-live">
+              <span className="mkx-live__dot" aria-hidden="true" />
+              Un examen blanc est en cours : le chrono tourne toujours. Tes réponses d&apos;avant ne
+              sont pas gardées.
+            </p>
           ) : null}
-          <Link href={`/paths/${overview.pathSlug}`} className="mkx-back">
-            <IconArrowLeft />
-            Retour au parcours
-          </Link>
+          {error !== null ? (
+            <p role="alert" className="mkx-error">
+              {error}
+            </p>
+          ) : null}
+          {overview.ready ? null : (
+            <p className="mkx-note">
+              Ce parcours n&apos;a pas encore assez de questions pour un examen blanc.
+            </p>
+          )}
+
+          <div className="mkx-cta">
+            {overview.ready ? (
+              <button
+                type="button"
+                className="btn btn--accent btn--lg mkx-start"
+                onClick={onStart}
+                disabled={busy}
+              >
+                {overview.running !== null
+                  ? "Reprendre l'examen en cours"
+                  : "Commencer l'examen blanc"}
+                <IconArrowRight />
+              </button>
+            ) : null}
+            <Link href={`/paths/${overview.pathSlug}`} className="mkx-back">
+              <IconArrowLeft />
+              Retour au parcours
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -719,8 +725,6 @@ function Result({
 }): React.ReactElement {
   const first = new Set(weakestDomains(result.domains).map((d) => d.domain));
   const { wrong, blank } = answerCounts(result.review);
-  // The gauge's ring: a circle of radius 86 in a 200 box, filled to the score.
-  const ring = 2 * Math.PI * 86;
   // The focus lands on the heading at hand-in, past the gauge and the badge:
   // the heading says the score first, for whoever does not see them.
   const scoreSaid = `${String(result.score)} %, ${domainVerdict(result.score)}. `;
@@ -728,22 +732,13 @@ function Result({
   return (
     <section className="mkx-result" aria-label="Résultat de l'examen blanc">
       <div className="mkx-hero" data-tone={verdictTone(result.score)}>
-        <div className="mkx-gauge">
-          <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
-            <circle className="mkx-gauge__track" cx="100" cy="100" r="86" />
-            <circle
-              className="mkx-gauge__fill"
-              cx="100"
-              cy="100"
-              r="86"
-              strokeDasharray={ring}
-              strokeDashoffset={ring * (1 - result.score / 100)}
-            />
-          </svg>
-          <div className="mkx-gauge__center">
-            <p className="mkx-gauge__pct">{result.score} %</p>
-            <p className="mkx-gauge__sub">Score global</p>
-          </div>
+        <div className="assessment-score" aria-label="Score global">
+          <span>Ton résultat</span>
+          <strong>{result.score} %</strong>
+          <p>
+            {result.correct} / {result.total} réponses correctes
+          </p>
+          <span>Examen blanc · sans XP ni certificat</span>
         </div>
 
         <div>

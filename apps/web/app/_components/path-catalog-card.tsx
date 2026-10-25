@@ -2,7 +2,7 @@ import Link from "next/link";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
 import { formatAverage } from "@cyberlearn/lib/content/rating";
-import { Brackets } from "./corner-brackets";
+import { CatalogueArtwork } from "@/components/catalogue-artwork";
 
 export interface PathCatalogCardData {
   slug: string;
@@ -146,33 +146,21 @@ export function PathCatalogCard({
 
   return (
     <Link id={id} href={href} className={`game-card game-card--${kind}`}>
-      <Brackets />
-      <div className={`game-card__cover${path.coverSrc ? " game-card__cover--image" : ""}`}>
-        {path.coverSrc && (
-          // A background, not an <img>: the picture is decoration, the card's
-          // title says what it is, and a signed URL must not be cached by the
-          // image optimizer past its expiry.
-          <span
-            className="game-card__img"
-            aria-hidden="true"
-            style={{ backgroundImage: `url("${path.coverSrc}")` }}
-          />
-        )}
-        <span className="game-card__cat">{category.short}</span>
-        <span className="game-card__track">{TRACK_META[path.track] ?? "Compétence"}</span>
-        <span className="game-card__diff">
-          <DiffBars level={barsOf(difficulty.level)} />
-          {difficulty.label}
-        </span>
-        <span className="game-card__glyph">
-          <KindGlyph kind={kind} />
-        </span>
-        <span className="game-card__id">
-          {"// "}
-          <b>{path.refCode}</b>
-        </span>
+      <div className="game-card__cover game-card__cover--poster">
+        <CatalogueArtwork
+          category={path.category}
+          reference={path.refCode}
+          coverSrc={path.coverSrc ?? null}
+        />
       </div>
       <div className="game-card__body">
+        <div className="game-card__labels">
+          <span>{category.short}</span>
+          <span>{TRACK_META[path.track] ?? "Compétence"}</span>
+          <span>
+            <DiffBars level={barsOf(difficulty.level)} /> {difficulty.label}
+          </span>
+        </div>
         <h3 className="game-card__title">{path.title}</h3>
         <p className="game-card__desc">{path.description}</p>
         <div className="game-card__stats">
@@ -216,7 +204,7 @@ export function PathCatalogCard({
       </div>
       <div className="game-card__foot">
         <span className="btn btn--ghost btn--block">
-          Commencer
+          Voir le parcours
           <svg
             width="13"
             height="13"

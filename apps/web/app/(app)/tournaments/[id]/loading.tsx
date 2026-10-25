@@ -56,7 +56,11 @@ function TeamSkeleton(): React.ReactElement {
 
 export default function TournamentLoading(): React.ReactElement {
   return (
-    <div className="page-container trn" aria-busy="true" aria-label="Chargement du tournoi">
+    <div
+      className="page-container learning-catalogue learning-workspace trn"
+      aria-busy="true"
+      aria-label="Chargement du tournoi"
+    >
       <Skeleton w={300} h={14} style={{ marginBottom: 26 }} />
 
       <div className="trn-hero" aria-hidden="true">

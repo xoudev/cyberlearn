@@ -33,131 +33,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: challenge?.title ?? "Challenge introuvable" };
 }
 
-// ── Color maps ────────────────────────────────────────────────────────────────
+import { Crumb } from "@/components/crumb";
+import "./challenge-detail.css";
 
-const TYPE_COLOR: Record<string, string> = {
-  CTF: "var(--color-danger)",
-  PUZZLE: "var(--color-info)",
-  LAB: "var(--cosmetic-accent)",
-  SCRIPT: "var(--color-text-muted)",
-};
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-/** Angular tag with clip-path - matches design reference */
-function AngularTag({
-  label,
-  color,
-  bg,
-  border,
-}: {
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-}): React.ReactElement {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "6px 14px 6px 10px",
-        fontFamily: "var(--font-mono)",
-        fontWeight: 600,
-        fontSize: 10,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        border: `1px solid ${border}`,
-        background: bg,
-        color,
-        // SAFETY: clip-path is a valid CSS property, inline-style fallback OK
-        clipPath: "polygon(0 0, calc(100% - 8px) 0, 100% 100%, 0 100%)",
-        position: "relative",
-      }}
-    >
-      {/* Dot before text */}
-      <span
-        style={{
-          width: 5,
-          height: 5,
-          background: "currentColor",
-          borderRadius: "50%",
-          boxShadow: "0 0 6px currentColor",
-          flexShrink: 0,
-        }}
-      />
-      {label}
-    </span>
-  );
-}
-
-/** Stats card bracket corner span */
-function BracketCorner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }): React.ReactElement {
-  const top = pos === "tl" || pos === "tr" ? -1 : undefined;
-  const bottom = pos === "bl" || pos === "br" ? -1 : undefined;
-  const left = pos === "tl" || pos === "bl" ? -1 : undefined;
-  const right = pos === "tr" || pos === "br" ? -1 : undefined;
-  return (
-    <span
-      style={{
-        position: "absolute",
-        width: 14,
-        height: 14,
-        borderColor: "var(--color-danger)",
-        pointerEvents: "none",
-        zIndex: 2,
-        top,
-        bottom,
-        left,
-        right,
-        borderTop: pos === "tl" || pos === "tr" ? "1.5px solid" : undefined,
-        borderBottom: pos === "bl" || pos === "br" ? "1.5px solid" : undefined,
-        borderLeft: pos === "tl" || pos === "bl" ? "1.5px solid" : undefined,
-        borderRight: pos === "tr" || pos === "br" ? "1.5px solid" : undefined,
-      }}
-    />
-  );
-}
-
-/** Section header in terminal style */
 function SectionHead({ label, meta }: { label: string; meta?: string }): React.ReactElement {
   return (
-    <div
-      className="mono-label"
-      style={{
-        color: "var(--cosmetic-accent)",
-        fontWeight: 600,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        paddingBottom: 14,
-        borderBottom: "1px dashed var(--color-border-subtle)",
-        marginBottom: 28,
-      }}
-    >
-      <span>
-        {"// "}
-        {label}
-      </span>
-      {meta !== undefined && (
-        <span
-          style={{
-            marginLeft: "auto",
-            color: "var(--color-text-muted)",
-            fontWeight: 500,
-            fontSize: 10,
-            letterSpacing: "0.12em",
-          }}
-        >
-          {meta}
-        </span>
-      )}
+    <div className="challenge-section-head">
+      <h2>{label}</h2>
+      {meta !== undefined && <span>{meta}</span>}
     </div>
   );
 }
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function ChallengeDetailPage({ params }: Props): Promise<React.ReactElement> {
   const { slug } = await params;
@@ -212,9 +98,6 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   }
 
   const catLabel = categoryMeta(challenge.category).short;
-  const catColor = categoryMeta(challenge.category).color;
-  const diffColor = difficultyMeta(challenge.difficulty).color;
-  const typeColor = TYPE_COLOR[challenge.type] ?? "var(--color-text-muted)";
   const userAttempts = userProgress?.attempts ?? 0;
   const remaining = Math.max(0, challenge.maxAttempts - userAttempts);
   const solveCount: number = challenge._count.progress;
@@ -225,11 +108,6 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
     ? (userProgress?.xpEarned ?? challenge.xpReward)
     : challenge.xpReward * (weekly?.multiplier ?? 1);
 
-  // Split title on " - " for colored em part
-  const titleParts = challenge.title.split(" - ");
-  const titleMain = titleParts[0] ?? challenge.title;
-  const titleEm = titleParts.length > 1 ? titleParts.slice(1).join(" - ") : null;
-
   const statusLabel =
     displayStatus === "COMPLETED"
       ? "Résolu"
@@ -239,305 +117,78 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           ? "Verrouillé"
           : "Disponible";
 
-  const statusColor =
-    displayStatus === "COMPLETED"
-      ? "var(--cosmetic-accent)"
-      : displayStatus === "IN_PROGRESS"
-        ? "var(--color-info)"
-        : displayStatus === "LOCKED"
-          ? "var(--color-text-muted)"
-          : "var(--cosmetic-accent)";
-
   return (
-    <div className="chx">
-      {/* ── Breadcrumb ───────────────────────────────────────────────────────── */}
-      <div
-        className="card card--sunken"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0,
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          color: "var(--color-text-muted)",
-          letterSpacing: "0.04em",
-          padding: "7px 16px",
-          marginBottom: 36,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700, marginRight: 10 }}>$</span>
-        <span style={{ color: "var(--color-text-secondary)" }}>~</span>
-        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
-        <span style={{ color: "var(--color-text-secondary)" }}>cyberlearn</span>
-        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
-        <Link
-          href="/challenges"
-          style={{ color: "var(--color-text-secondary)", textDecoration: "none" }}
-        >
-          défis
-        </Link>
-        <span style={{ color: "var(--color-text-muted)", margin: "0 4px" }}>/</span>
-        <span style={{ color: "var(--color-danger)" }}>{challenge.slug}</span>
-      </div>
-
-      {/* ── Hero (2-col grid, stacked on narrow screens: globals.css) ────────── */}
-      <section className="chx-hero">
-        {/* Left: title + tags + description */}
-        <div>
-          <div
-            className="mono-label"
-            style={{
-              color: "var(--color-text-muted)",
-              fontWeight: 600,
-              marginBottom: 18,
-            }}
-          >
-            <span style={{ color: "var(--color-danger)" }}>{"// "}</span>
-            {challenge.refCode}
-          </div>
-
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 800,
-              fontSize: "clamp(40px, 5.2vw, 68px)",
-              lineHeight: 0.98,
-              letterSpacing: "-0.035em",
-              color: "var(--color-text-primary)",
-              margin: "0 0 26px",
-            }}
-          >
-            {titleMain}
-            {titleEm !== null && (
-              <>
-                {" · "}
-                <em style={{ fontStyle: "normal", color: "var(--color-danger)" }}>{titleEm}</em>
-              </>
-            )}
-          </h1>
-
-          {/* Angular tags */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 22 }}>
-            <AngularTag
-              label={catLabel}
-              color={catColor}
-              bg={`color-mix(in srgb, ${catColor} 10%, transparent)`}
-              border={`color-mix(in srgb, ${catColor} 40%, transparent)`}
-            />
-            <AngularTag
-              label={difficultyMeta(challenge.difficulty).label}
-              color={diffColor}
-              bg={`color-mix(in srgb, ${diffColor} 8%, transparent)`}
-              border={`color-mix(in srgb, ${diffColor} 40%, transparent)`}
-            />
-            <AngularTag
-              label={challenge.type}
-              color={typeColor}
-              bg={`color-mix(in srgb, ${typeColor} 6%, transparent)`}
-              border={`color-mix(in srgb, ${typeColor} 30%, transparent)`}
-            />
-          </div>
-
-          <p
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 16,
-              color: "var(--color-text-secondary)",
-              lineHeight: 1.6,
-              maxWidth: 580,
-              margin: 0,
-            }}
-          >
-            {challenge.description}
-          </p>
+    <div className="page-container learning-catalogue learning-workspace challenge-workspace">
+      <Crumb segments={[{ label: "défis", href: "/challenges" }, slug]} />
+      <header className="challenge-hero">
+        <p className="workspace-kicker">Pratiquer / {challenge.refCode}</p>
+        <div className="challenge-hero__meta">
+          <span>{catLabel}</span>
+          <span>{difficultyMeta(challenge.difficulty).label}</span>
+          <span>{challenge.type}</span>
+          <strong>{statusLabel}</strong>
         </div>
-
-        {/* Right: stats card with bracket corners */}
-        <div
-          className="card card--sunken"
-          style={{
-            position: "relative",
-            padding: 0,
-          }}
-        >
-          <BracketCorner pos="tl" />
-          <BracketCorner pos="tr" />
-          <BracketCorner pos="bl" />
-          <BracketCorner pos="br" />
-
-          {/* Stats card header */}
-          <div
-            className="mono-label"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "12px 18px",
-              borderBottom: "1px solid var(--color-border-subtle)",
-              background: "rgba(255,77,109,0.05)",
-              color: "var(--color-danger)",
-              fontWeight: 600,
-            }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "currentColor",
-                  boxShadow: "0 0 6px currentColor",
-                  // SAFETY: inline animation keyword
-                  animation: "pulse 2s ease-in-out infinite",
-                  flexShrink: 0,
-                }}
-              />
-              défi · briefing
-            </span>
-            <span>id · {challenge.refCode}</span>
+        <h1>
+          {challenge.title}
+          {!/[.?!…:]$/.test(challenge.title) && <span>.</span>}
+        </h1>
+        <p className="challenge-hero__description">{challenge.description}</p>
+      </header>
+      <section className="challenge-brief" aria-label="Ce défi en bref">
+        <dl className="challenge-facts">
+          <div>
+            <dt>{solved ? "XP gagnés" : "Récompense"}</dt>
+            <dd>
+              +{xpShown}
+              <span> XP</span>
+            </dd>
+            {!solved && weekly !== null && (
+              <p>
+                ×{weekly.multiplier} cette semaine, au lieu de {challenge.xpReward} XP
+              </p>
+            )}
           </div>
-
-          {/* Stats 2×2 grid */}
-          <div
-            style={{
-              padding: "22px 22px 18px",
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px 24px",
-            }}
-          >
-            {/* XP */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>
-                {solved ? "XP gagnés" : "XP Récompense"}
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 800,
-                  fontSize: 26,
-                  color: "var(--cosmetic-accent)",
-                  lineHeight: 1,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                +{String(xpShown)} XP
-              </span>
-              {!solved && weekly !== null && (
-                <span className="mono-label" style={{ color: "var(--color-warning)" }}>
-                  ×{String(weekly.multiplier)} cette semaine, au lieu de{" "}
-                  {String(challenge.xpReward)}
-                </span>
-              )}
-            </div>
-
-            {/* Time */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Limite de temps
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: "var(--color-text-primary)",
-                  lineHeight: 1,
-                }}
-              >
-                {challenge.timeLimitMin > 0 ? `${String(challenge.timeLimitMin)} min` : "Illimitée"}
-              </span>
-            </div>
-
-            {/* Attempts */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Tentatives
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: "var(--color-text-primary)",
-                  lineHeight: 1,
-                }}
-              >
-                {String(remaining)}/{String(challenge.maxAttempts)}
-              </span>
-            </div>
-
-            {/* Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="mono-label"
-                style={{
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span style={{ color: "var(--cosmetic-accent)" }}>{"› "}</span>Statut
-              </span>
-              <span
-                className="mono-label"
-                style={{
-                  fontWeight: 700,
-                  color: statusColor,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  lineHeight: 1,
-                }}
-              >
-                <span
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: "currentColor",
-                    boxShadow: "0 0 6px currentColor",
-                    flexShrink: 0,
-                  }}
-                />
-                {statusLabel}
-              </span>
-            </div>
+          <div>
+            <dt>Limite de temps</dt>
+            <dd>
+              {challenge.timeLimitMin > 0 ? challenge.timeLimitMin : "Sans limite"}
+              {challenge.timeLimitMin > 0 && <span> min</span>}
+            </dd>
           </div>
-
-          {/* The week's challenge: the bonus, and how long it lasts. */}
-          {weekly !== null && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-                padding: "12px 22px",
-                borderTop: "1px solid var(--color-border-subtle)",
-              }}
+          <div>
+            <dt>Tentatives restantes</dt>
+            <dd>
+              {remaining}
+              <span> / {challenge.maxAttempts}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Résolutions</dt>
+            <dd>{solveCount}</dd>
+            {firstBlood !== null && <p>First blood · {firstBlood.displayName}</p>}
+          </div>
+        </dl>
+        <div className="challenge-brief__actions">
+          {displayStatus === "LOCKED" && challenge.prerequisite !== null ? (
+            <Link className="btn" href={`/challenges/${challenge.prerequisite.slug}`}>
+              Termine d’abord « {challenge.prerequisite.title} »
+            </Link>
+          ) : solved ? (
+            <a className="btn" href="#challenge-action">
+              Défi résolu
+            </a>
+          ) : (
+            <a
+              className="btn"
+              href={challenge.type === "SCRIPT" ? "#challenge-script" : "#challenge-action"}
             >
-              <span
-                className="mono-label"
-                style={{ color: "var(--color-danger)", fontWeight: 700 }}
-              >
-                Défi de la semaine
-              </span>
+              {displayStatus === "IN_PROGRESS" ? "Reprendre le défi" : "Relever le défi"}{" "}
+              <span aria-hidden="true">↗</span>
+            </a>
+          )}
+          {weekly !== null && (
+            <div className="challenge-brief__weekly">
+              <strong>Défi de la semaine</strong>
               <WeeklyCountdown
                 endsAt={weekly.endsAt}
                 nowMs={now.getTime()}
@@ -545,37 +196,10 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
               />
             </div>
           )}
-
-          {/* The way in, by state: to the flag, or to the challenge that opens this one. */}
-          {displayStatus === "LOCKED" && challenge.prerequisite !== null ? (
-            <Link
-              className="btn btn--danger btn--ghost btn--lg btn--block"
-              href={`/challenges/${challenge.prerequisite.slug}`}
-            >
-              Termine d&apos;abord « {challenge.prerequisite.title} » →
-            </Link>
-          ) : solved ? (
-            <a className="btn btn--ghost btn--lg btn--block" href="#challenge-action">
-              Défi résolu
-            </a>
-          ) : (
-            <a
-              className="btn btn--danger btn--lg btn--block"
-              href={challenge.type === "SCRIPT" ? "#challenge-script" : "#challenge-action"}
-              style={{
-                borderTop: "1px solid var(--color-danger)",
-                textAlign: "center",
-                boxSizing: "border-box",
-              }}
-            >
-              {displayStatus === "IN_PROGRESS" ? "Reprendre le défi →" : "Relever le défi →"}
-            </a>
-          )}
         </div>
       </section>
-
       {/* ── Content grid (1.85fr | 1fr, stacked on narrow screens) ──────────── */}
-      <div className="chx-body">
+      <div className="chx-body" data-has-hints={challenge.hints.length > 0}>
         {/* ── Left column ────────────────────────────────────────────────────── */}
         <div>
           {/* Instructions */}
@@ -710,82 +334,15 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           )}
         </div>
 
-        {/* ── Right rail (sticky, by its bottom once taller than the window) ──── */}
-        <StickyRail className="chx-rail">
-          {/* Hints panel */}
-          {challenge.hints.length > 0 && (
+        {challenge.hints.length > 0 && (
+          <StickyRail className="chx-rail">
             <HintsPanel
               hints={challenge.hints}
               initialRevealed={initialRevealed}
               userXp={userData?.xpTotal ?? 0}
             />
-          )}
-
-          {/* Stats panel */}
-          <section>
-            <div
-              className="mono-label"
-              style={{
-                color: "var(--cosmetic-accent)",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                paddingBottom: 14,
-                borderBottom: "1px dashed var(--color-border-subtle)",
-                marginBottom: 16,
-              }}
-            >
-              {"// "}Statistiques
-            </div>
-            <div
-              className="card card--sunken"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12.5,
-                color: "var(--color-text-secondary)",
-                lineHeight: 1.8,
-                letterSpacing: "0.02em",
-                padding: "14px 16px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ color: "var(--color-text-muted)" }}>Résolutions</span>
-                <strong style={{ color: "var(--cosmetic-accent)" }}>{String(solveCount)}</strong>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "4px 0",
-                  borderTop: "1px dashed rgba(31,27,71,0.6)",
-                }}
-              >
-                <span style={{ color: "var(--color-text-muted)" }}>Limite de temps</span>
-                <strong style={{ color: "var(--color-text-primary)" }}>
-                  {challenge.timeLimitMin > 0
-                    ? `${String(challenge.timeLimitMin)} min`
-                    : "Illimitée"}
-                </strong>
-              </div>
-              {firstBlood !== null && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "4px 0",
-                    borderTop: "1px dashed rgba(31,27,71,0.6)",
-                  }}
-                >
-                  <span style={{ color: "var(--color-text-muted)" }}>First blood</span>
-                  <strong style={{ color: "var(--color-text-primary)" }}>
-                    {firstBlood.displayName}
-                  </strong>
-                </div>
-              )}
-            </div>
-          </section>
-        </StickyRail>
+          </StickyRail>
+        )}
       </div>
 
       {writeupBoard !== null ? (
@@ -794,6 +351,8 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
 
       {/* ── Bottom nav ────────────────────────────────────────────────────────── */}
       <nav
+        className="challenge-neighbours"
+        aria-label="Autres défis"
         style={{
           marginTop: 64,
           display: "grid",

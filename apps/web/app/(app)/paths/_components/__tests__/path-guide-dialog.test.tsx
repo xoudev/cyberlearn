@@ -69,6 +69,9 @@ describe("the path guide's window", () => {
     expect(link.getAttribute("href")).toBe("/paths/reseaux-tcp-ip");
     expect(screen.getByText("Réseaux TCP/IP")).toBeTruthy();
     expect(screen.getByText(/Tu as répondu/)).toBeTruthy();
+    expect(document.activeElement).toBe(
+      screen.getByRole("region", { name: "Tes suggestions de parcours" }),
+    );
   });
 
   it("says which question is missing instead of suggesting", () => {

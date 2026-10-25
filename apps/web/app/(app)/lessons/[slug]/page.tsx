@@ -27,6 +27,7 @@ import { LESSON_MDX_COMPONENTS } from "./_components/lesson-mdx-components";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
+import "./lesson-detail.css";
 
 // Not the lesson's own title: the slug alone would put the title of a
 // class-only lesson in the tab of anyone who guessed its address.
@@ -168,7 +169,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   );
 
   return (
-    <div className="lesson-page">
+    <div className="lesson-page learning-catalogue learning-workspace lesson-workspace">
       <LessonHeader
         title={lesson.title}
         description={lesson.description}

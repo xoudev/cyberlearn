@@ -31,7 +31,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
       maxWidth={420}
       ariaLabel={`Niveau ${String(newLevel)} atteint`}
     >
-      <div style={{ padding: "36px 32px 28px", textAlign: "center" }}>
+      <div className="level-up-recap" style={{ padding: "36px 32px 28px", textAlign: "center" }}>
         <LevelReached level={newLevel} />
 
         <div

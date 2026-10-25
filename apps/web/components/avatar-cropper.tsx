@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AVATAR_EXPORT_PX } from "@cyberlearn/types";
 import { ModalShell } from "@cyberlearn/ui";
+import "./community-workspace.css";
+import "./avatar-cropper.css";
 
 const VIEWPORT = 280; // on-screen crop square (px)
 const OUTPUT = AVATAR_EXPORT_PX; // exported avatar size (px), the app's too
@@ -15,7 +17,7 @@ interface Offset {
 
 /**
  * In-place avatar cropper: pan (drag) + zoom (slider) over a square viewport
- * with a circular guide, then export the visible square as a Blob. No external
+ * then export the visible square as a Blob. No external
  * dependency - the crop is rasterized with a canvas. Exports WebP (falls back to
  * JPEG) so the result stays small and within the upload validation allowlist.
  */
@@ -165,10 +167,11 @@ export function AvatarCropper({
       onClose={onCancel}
       dismissable={!busy}
       title="Recadrer l'avatar"
-      maxWidth={360}
+      className="community-dialog avatar-cropper"
+      maxWidth={400}
       actions={actions}
     >
-      <div style={{ padding: "20px 24px 4px" }}>
+      <div className="avatar-cropper__content">
         {/* Crop viewport */}
         <div
           className="card card--sunken"
@@ -207,18 +210,6 @@ export function AvatarCropper({
               }}
             />
           )}
-          {/* Circular guide (preview of the round avatar crop) */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "50%",
-              boxShadow: "0 0 0 9999px rgba(2,1,12,0.55)",
-              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
-              pointerEvents: "none",
-            }}
-          />
         </div>
 
         {/* Zoom */}
@@ -229,7 +220,7 @@ export function AvatarCropper({
             alignItems: "center",
             gap: 10,
             margin: "16px 0 4px",
-            color: "#7F7BA9",
+            color: "#c2bfb8",
           }}
         >
           Zoom
@@ -248,9 +239,9 @@ export function AvatarCropper({
 
         <p
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "#44406B",
+            fontFamily: "var(--font-interface)",
+            fontSize: 12,
+            color: "#aaa79f",
             margin: "4px 0 14px",
           }}
         >

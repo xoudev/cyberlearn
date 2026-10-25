@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/page-header";
 import { STATUS_LABEL, STATUS_TONE, THEME_LABEL } from "@/lib/tickets/meta";
 import { NewRequestButton } from "../_components/new-request-button";
 import { TicketReply } from "../_components/ticket-reply";
+import "../support.css";
 
 export const metadata: Metadata = { title: "Ma demande" };
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function TicketPage({
   if (!ticket) notFound();
 
   return (
-    <div className="page-container">
+    <div className="page-container learning-catalogue learning-workspace community-workspace support-workspace">
       <PageHeader
         crumb="mes-demandes/detail"
         eyebrow={THEME_LABEL[ticket.theme]}

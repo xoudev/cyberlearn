@@ -26,13 +26,13 @@ type MermaidAPI = typeof mermaidLib;
  * The values are the dark theme's tokens (packages/ui/src/tokens.css), the one
  * the site renders in. A test holds each of them to hex.
  */
-const SURFACE = "#0A0826"; // --color-bg-elevated
-const BOX = "#1F1B47"; // --color-border-subtle
-const OVERLAY = "#110F33"; // --color-bg-overlay
-const TEXT = "#F5F5FA"; // --color-text-primary
-const TEXT_SECONDARY = "#B8B5D1"; // --color-text-secondary
+const SURFACE = "#121418"; // --color-bg-elevated
+const BOX = "#191C22"; // Diagram node fill
+const OVERLAY = "#0B0C0E"; // Group background
+const TEXT = "#F4F2ED"; // --color-text-primary
+const TEXT_SECONDARY = "#C2BFB8"; // --color-text-secondary
 /** --cosmetic-accent when no accent is equipped: --color-brand-turquoise. */
-const DEFAULT_ACCENT = "#0AFFD4";
+const DEFAULT_ACCENT = "#FF6B2B";
 
 const HEX_COLOUR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -69,7 +69,7 @@ export const MERMAID_THEME = {
     primaryBorderColor: BORDER,
     secondaryColor: OVERLAY,
     tertiaryColor: SURFACE,
-    fontFamily: "monospace",
+    fontFamily: "Space Grotesk, Arial, sans-serif",
     fontSize: "13px",
     labelBackground: SURFACE,
     actorBorder: BORDER,

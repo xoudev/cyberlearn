@@ -82,6 +82,7 @@ export function BadgeCard({ badge }: { badge: SerializedBadge }): React.JSX.Elem
 
   return (
     <article
+      className="badge-card"
       onMouseEnter={() => {
         setHovered(true);
       }}

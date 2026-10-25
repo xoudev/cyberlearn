@@ -378,7 +378,7 @@ export function ScriptRunner({
 
   return (
     <div
-      className="card card--sunken"
+      className="card card--sunken challenge-runner"
       id="challenge-action"
       style={{
         position: "relative",

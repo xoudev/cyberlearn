@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 import { stampedSubject } from "../subject.js";
 
@@ -26,14 +26,12 @@ export function AccountDeletionConfirmEmail({
   confirmUrl,
 }: AccountDeletionConfirmEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>Confirme la suppression de ton compte Cyber Learn</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Confirmation requise</Heading>
@@ -42,7 +40,7 @@ export function AccountDeletionConfirmEmail({
 
             <Text style={styles.paragraph}>
               Tu as demandé la suppression définitive de ton compte Cyber Learn. Cette action est{" "}
-              <strong style={{ color: "#F5F5FA" }}>irréversible</strong>.
+              <strong style={shared.detailStrong}>irréversible</strong>.
             </Text>
 
             <Text style={styles.paragraph}>
@@ -60,15 +58,15 @@ export function AccountDeletionConfirmEmail({
             <Text style={styles.listItem}>· Cette action ne peut pas être annulée</Text>
 
             <Section style={styles.buttonWrap}>
-              <Button style={styles.button} href={confirmUrl}>
-                Confirmer la suppression →
+              <Button style={{ ...styles.button, ...styles.dangerButton }} href={confirmUrl}>
+                Confirmer la suppression
               </Button>
             </Section>
 
             <Hr style={styles.hr} />
 
             <Text style={styles.muted}>
-              Ce lien expire dans <strong style={{ color: "#F5F5FA" }}>1 heure</strong>. Si tu n'as
+              Ce lien expire dans <strong style={shared.detailStrong}>1 heure</strong>. Si tu n'as
               pas demandé cette suppression, ignore ce mail - aucune action ne sera prise.
             </Text>
           </Section>

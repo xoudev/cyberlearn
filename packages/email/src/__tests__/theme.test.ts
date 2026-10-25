@@ -5,6 +5,7 @@ import { AccountDeletionConfirmEmail } from "../templates/account-deletion-confi
 import { BanNoticeEmail } from "../templates/ban-notice";
 import { ClassEnrolledEmail } from "../templates/class-enrolled";
 import { ClassInvitationEmail } from "../templates/class-invitation";
+import { InactivityNoticeEmail } from "../templates/inactivity-notice";
 import { MagicLinkEmail } from "../templates/magic-link";
 import { MfaResetEmail } from "../templates/mfa-reset";
 import { ModerationNoticeEmail } from "../templates/moderation-notice";
@@ -22,6 +23,15 @@ import { tokens } from "../theme";
  */
 
 const RENDERED: [string, React.ReactElement][] = [
+  [
+    "inactivity-notice",
+    InactivityNoticeEmail({
+      displayName: "Amélie",
+      eraseOn: "24 novembre 2026",
+      keepUrl: "https://cyberlearn.fr/account/keep?token=sample",
+      siteUrl: "https://cyberlearn.fr",
+    }),
+  ],
   [
     "magic-link",
     MagicLinkEmail({ magicLink: "https://cyberlearn.fr/x", type: "magiclink", code: "483920" }),
@@ -136,9 +146,11 @@ describe.each(RENDERED)("%s", (_name, element) => {
     expect(html).not.toMatch(/border-radius/iu);
   });
 
-  it("names the site's two typefaces and no others", async () => {
+  it("uses the Bastion typefaces with safe mail fallbacks", async () => {
     const html = await render(element);
-    expect(html).toContain("Plus Jakarta Sans");
+    expect(html).toContain("Barlow Condensed");
+    expect(html).toContain("Space Grotesk");
+    expect(html).not.toContain("Plus Jakarta Sans");
     // Inter was named in every template and is used nowhere on the site.
     expect(html).not.toContain("Inter");
   });
@@ -160,26 +172,26 @@ describe.each(RENDERED)("%s", (_name, element) => {
   it("loads both faces for the clients that honour a webfont", async () => {
     const html = await render(element);
     expect(html).toContain("@font-face");
-    expect(html).toContain("JetBrains Mono");
+    expect(html).toContain("Arial");
   });
 });
 
-/** The first case, without an assertion the linter would rather see as `!`. */
 function magicLinkElement(): React.ReactElement {
-  const first = RENDERED[0];
-  if (!first) throw new Error("no templates to render");
-  return first[1];
+  return MagicLinkEmail({ magicLink: "https://cyberlearn.fr/x", type: "magiclink" });
 }
 
-describe("the mono reaches the places the site puts it", () => {
-  it("sets it on the wordmark, the button and the footer", async () => {
+describe("the mail's brand and typography", () => {
+  it("uses the actual mark and carries the interface font to controls", async () => {
     const html = await render(magicLinkElement());
 
     // Each of these carries the family itself rather than inheriting it: the
     // three that regressed were all cases of inheritance being cut.
-    const monoRuns = html.match(/JetBrains Mono/gu) ?? [];
+    const interfaceRuns = html.match(/Space Grotesk/gu) ?? [];
     // One @font-face, plus every element that names it.
-    expect(monoRuns.length).toBeGreaterThanOrEqual(5);
+    expect(interfaceRuns.length).toBeGreaterThanOrEqual(5);
+    expect(html).toContain("https://cyberlearn.fr/brand/bastion-mark.png");
+    expect(html).toContain('lang="fr"');
+    expect(html).not.toMatch(/#(?:0024ff|0affd4|030219|0a0826|110f33|7f7ba9)/iu);
   });
 
   it("leaves the body copy in the sans", async () => {

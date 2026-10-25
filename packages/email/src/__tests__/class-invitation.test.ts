@@ -36,7 +36,7 @@ describe("ClassInvitationEmail - rendered HTML", () => {
 
   it("carries no token: every link is the plain sign-up page", async () => {
     const html = await render(ClassInvitationEmail(BASE));
-    const hrefs = [...html.matchAll(/href="([^"]*)"/gu)].map((m) => m[1] ?? "");
+    const hrefs = [...html.matchAll(/<a\b[^>]*\bhref="([^"]*)"/gu)].map((m) => m[1] ?? "");
 
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {

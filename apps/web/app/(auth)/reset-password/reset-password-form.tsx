@@ -1,5 +1,7 @@
 "use client";
 
+// Password visibility and the action result are handled within this form.
+
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { initialAuthActionState } from "../_actions/auth-action-state";
@@ -36,6 +38,7 @@ export function ResetPasswordForm(): React.JSX.Element {
             className={[styles.input, styles.passwordInput].join(" ")}
             type={showPassword ? "text" : "password"}
             name="password"
+            aria-label="Nouveau mot de passe"
             autoComplete="new-password"
             minLength={12}
             required
@@ -43,6 +46,7 @@ export function ResetPasswordForm(): React.JSX.Element {
           <button
             className={styles.reveal}
             type="button"
+            aria-pressed={showPassword}
             onClick={() => {
               setShowPassword((value) => !value);
             }}
@@ -63,7 +67,9 @@ export function ResetPasswordForm(): React.JSX.Element {
         />
       </label>
       {state.status === "error" ? (
-        <p className={[styles.message, styles.error].join(" ")}>{state.message}</p>
+        <p className={[styles.message, styles.error].join(" ")} role="alert">
+          {state.message}
+        </p>
       ) : null}
       <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Mise à jour…" : "Enregistrer le mot de passe"}

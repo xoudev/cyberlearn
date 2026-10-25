@@ -11,14 +11,13 @@
  * and eats their first click.
  *
  * So the markup is server-rendered and the animation lives here. The browser
- * paints it in the first frame, alongside everything else in the document, and
- * the keyframes run the same 950 ms + 420 ms without waiting for React. The
- * durations are unchanged; only their starting point moved.
+ * paints it in the first frame. The brief entrance and fade do not wait for
+ * React; returning sessions and reduced-motion readers skip the takeover.
  */
 
 :root {
-  --cl-splash-enter: 950ms;
-  --cl-splash-fade: 420ms;
+  --cl-splash-enter: 400ms;
+  --cl-splash-fade: 160ms;
 }
 
 [data-splash] {
@@ -35,9 +34,7 @@
   align-items: center;
   justify-content: center;
   gap: 26px;
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0, 36, 255, 0.16), transparent 65%),
-    var(--color-bg-base);
+  background: #0b0c0e;
   /* `both` holds the last frame, so the overlay stays hidden and inert rather
      than reappearing when the animation ends. Nothing removes the node: at
      visibility:hidden it paints nothing and catches nothing. */
@@ -81,9 +78,12 @@ html[data-splash-seen] [data-splash] {
   display: grid;
   place-items: center;
   animation: cl-splash-in 400ms ease both;
+  background: #eae7df;
+  color: #141518;
 }
 
 .cl-splash-ring {
+  display: none;
   position: absolute;
   inset: 0;
   border-radius: 50%;
@@ -116,9 +116,9 @@ html[data-splash-seen] [data-splash] {
 }
 
 .cl-splash-wordmark {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 17px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);
 }
@@ -130,10 +130,8 @@ html[data-splash-seen] [data-splash] {
 
 .cl-splash-caption {
   margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-family: var(--font-interface);
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
@@ -148,7 +146,7 @@ html[data-splash-seen] [data-splash] {
 .cl-splash-bar-fill {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--color-brand-blue), var(--cosmetic-accent));
+  background: #ff6b2b;
   transform-origin: left;
   /* scaleX rather than width: the old version animated a width in React state,
      which laid the bar out again on every one of its sixty frames a second.

@@ -34,7 +34,7 @@ export default async function EditClassLessonPage({
   const klassName = lesson.classLinks[0]?.class.name ?? "cette classe";
 
   return (
-    <div className="tle-page">
+    <div className="tle-page learning-catalogue learning-workspace class-workspace">
       <PageHeader
         crumb="my-class/edit-lesson"
         eyebrow={`Classe · ${klassName}`}

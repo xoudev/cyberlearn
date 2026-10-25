@@ -70,7 +70,12 @@ export function Field({
         </span>
       ) : (
         hint !== undefined && (
-          <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}>{hint}</span>
+          <span
+            className="mdx-field-hint"
+            style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}
+          >
+            {hint}
+          </span>
         )
       )}
     </div>

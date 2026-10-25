@@ -8,9 +8,20 @@ import type { SerializedFolder, SerializedIncomingNote, SerializedNote } from ".
 
 const moveNoteAction = vi.fn();
 const recolorFolderAction = vi.fn();
+const deleteFolderAction = vi.fn<(input: { folderId: string }) => Promise<{ ok: boolean }>>();
+const createFolderAction =
+  vi.fn<
+    (input: {
+      name: string;
+      color?: string | null;
+      icon?: string | null;
+    }) => Promise<{ ok: boolean }>
+  >();
 vi.mock("../../_actions/folder-actions", () => ({
-  createFolderAction: vi.fn(),
-  deleteFolderAction: vi.fn(),
+  createFolderAction: (...args: Parameters<typeof createFolderAction>) =>
+    createFolderAction(...args),
+  deleteFolderAction: (...args: Parameters<typeof deleteFolderAction>) =>
+    deleteFolderAction(...args),
   moveNoteAction: (...args: unknown[]) => moveNoteAction(...args) as unknown,
   recolorFolderAction: (...args: unknown[]) => recolorFolderAction(...args) as unknown,
   reiconFolderAction: vi.fn(),
@@ -68,6 +79,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   moveNoteAction.mockResolvedValue({ ok: true });
   recolorFolderAction.mockResolvedValue({ ok: true });
+  deleteFolderAction.mockResolvedValue({ ok: true });
+  createFolderAction.mockResolvedValue({ ok: false });
   saveNoteAction.mockResolvedValue({ ok: true, wordCount: 0 });
   dismissSharedNoteAction.mockResolvedValue({ ok: true });
 });
@@ -84,6 +97,20 @@ function rightClick(element: Element): void {
 }
 
 describe("NotesLibrary right-click menu", () => {
+  it("creates a folder with a hex colour accepted by the server", async () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "Gérer les dossiers" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Nom du nouveau dossier" }), {
+      target: { value: "Mes rappels" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Créer" }));
+      await Promise.resolve();
+    });
+    const input = createFolderAction.mock.calls[0]?.[0];
+    expect(input?.name).toBe("Mes rappels");
+    expect(input?.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+  });
   it("moves a note to a folder", async () => {
     renderLibrary();
     rightClick(screen.getByText("Les variables"));
@@ -105,26 +132,51 @@ describe("NotesLibrary right-click menu", () => {
   });
 
   it("deletes a note by saving it empty, once confirmed", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
-    renderLibrary();
-    rightClick(screen.getByText("Les variables"));
-    await act(async () => {
-      fireEvent.click(screen.getByRole("menuitem", { name: "Supprimer la note" }));
-      await Promise.resolve();
-    });
-    expect(confirm).toHaveBeenCalled();
-    expect(saveNoteAction).toHaveBeenCalledWith({ lessonId: NOTE.lessonId, content: "" });
-    expect(screen.queryByText("Les variables")).toBeNull();
-    confirm.mockRestore();
-  });
-
-  it("keeps the note when the deletion is not confirmed", () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderLibrary();
     rightClick(screen.getByText("Les variables"));
     fireEvent.click(screen.getByRole("menuitem", { name: "Supprimer la note" }));
     expect(saveNoteAction).not.toHaveBeenCalled();
-    confirm.mockRestore();
+    expect(screen.getByRole("dialog", { name: "Supprimer cette note ?" })).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Supprimer" }));
+      await Promise.resolve();
+    });
+    expect(saveNoteAction).toHaveBeenCalledWith({ lessonId: NOTE.lessonId, content: "" });
+    expect(screen.queryByText("Les variables")).toBeNull();
+  });
+
+  it("keeps the note when the deletion is not confirmed", () => {
+    renderLibrary();
+    rightClick(screen.getByText("Les variables"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Supprimer la note" }));
+    fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(saveNoteAction).not.toHaveBeenCalled();
+    expect(screen.getByText("Les variables")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("deletes a folder only after the confirmation button", async () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "Gérer les dossiers" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer Réseau" }));
+    expect(deleteFolderAction).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Supprimer ce dossier ?" })).toBeTruthy();
+    expect(screen.getByText(/Les notes iront dans Sans dossier/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Supprimer" }));
+      await Promise.resolve();
+    });
+    expect(deleteFolderAction).toHaveBeenCalledWith({ folderId: FOLDER.id });
+  });
+
+  it("keeps a folder when Escape closes the confirmation", () => {
+    renderLibrary();
+    fireEvent.click(screen.getByRole("button", { name: "Gérer les dossiers" }));
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer Réseau" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(deleteFolderAction).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: "Supprimer Réseau" })).toBeTruthy();
   });
 
   it("offers a received note no editing, sharing or filing", () => {

@@ -150,6 +150,7 @@ export function ClassResources({
               <span className="cls-field__label">Corrigé de · optionnel</span>
               <Select
                 name="assignmentId"
+                panelClassName="class-select-panel"
                 aria-label="Leçon liée"
                 value={linkedAssignment}
                 options={[

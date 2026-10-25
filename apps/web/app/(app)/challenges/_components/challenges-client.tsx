@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
-import { Crumb } from "@/components/crumb";
+import { BastionLogo } from "@/components/bastion-logo";
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, type TabItem } from "@/components/tabs";
 import type { ChallengeItem, DisplayStatus, WeeklyChallenge } from "@/lib/challenges/catalogue";
@@ -237,15 +237,15 @@ function WeekPanel({
 
       <div className="dfx-week__side">
         <div className="dfx-week__side-head">
-          <span>Pièce fournie</span>
-          <span>Aperçu</span>
+          <BastionLogo size={36} />
+          <span>Pièce fournie / Aperçu</span>
         </div>
         {item.displayStatus === "LOCKED" ? (
           <>
             <Redacted rows={5} />
             {item.lockedByTitle !== null && (
               <p className="dfx-locked-note">
-                La machine s&apos;ouvre une fois « {item.lockedByTitle} » résolu.
+                Ce défi s&apos;ouvre une fois « {item.lockedByTitle} » résolu.
               </p>
             )}
           </>
@@ -349,7 +349,12 @@ function ChallengeCard({ item }: { item: ChallengeItem }): React.JSX.Element {
           </span>
           <StatusBadge status={item.displayStatus} />
         </div>
-        <Peek item={item} />
+        <div className="dfx-card__evidence">
+          <span className="dfx-card__type">{TYPE_LABEL[item.type]}</span>
+          <div className="dfx-card__preview">
+            <Peek item={item} />
+          </div>
+        </div>
       </div>
       <div className="dfx-card__body">
         <p className="dfx-card__ref">
@@ -452,56 +457,58 @@ export function ChallengesClient({ items, weekly, nowMs }: Props): React.ReactEl
   ];
 
   return (
-    <div className="chx dfx">
-      <header className="dfx-head">
-        <div>
-          <Crumb segments={["défis"]} />
-          <h1 className="pg-title">Défis</h1>
-          <p className="pg-lede">
-            Des enquêtes sur pièces. Chaque défi te confie une machine Linux, dans ton navigateur :
-            tu fouilles ses fichiers, tu trouves le flag, tu le soumets. Rien à installer.
-          </p>
+    <div className="chx dfx learning-catalogue learning-workspace">
+      <header className="catalogue-masthead">
+        <div className="catalogue-masthead__title">
+          <p className="catalogue-masthead__eyebrow">Pratiquer / Mettre ses réflexes à l’épreuve</p>
+          <h1>
+            Les défis<span>.</span>
+          </h1>
+          <p>Choisis un exercice et mets tes connaissances à l’épreuve.</p>
         </div>
-        <ul className="dfx-tally" aria-label="Où tu en es">
-          {tally.map(({ status, n }) => (
-            <li key={status} data-tally={status}>
-              <b>{n}</b>
-              {status === "IN_PROGRESS" ? TALLY_WORD[status] : plural(n, TALLY_WORD[status])}
-            </li>
-          ))}
-        </ul>
       </header>
-
-      <ol className="dfx-steps">
-        <li>
-          <span className="dfx-steps__n">01</span>
-          <div>
-            <h2>Ouvre la machine</h2>
-            <p>Chaque défi a la sienne, avec ses pièces : journaux, configurations, archives.</p>
-          </div>
-        </li>
-        <li>
-          <span className="dfx-steps__n">02</span>
-          <div>
-            <h2>Enquête à ta façon</h2>
-            <p>ls, grep, find : tes commandes, ton rythme. Un indice se paie en XP.</p>
-          </div>
-        </li>
-        <li>
-          <span className="dfx-steps__n">03</span>
-          <div>
-            <h2>Soumets le flag</h2>
-            <p>
-              Il est à toi seul. Le bon te rapporte l&apos;XP du défi, le double pour le défi de la
-              semaine.
-            </p>
-          </div>
-        </li>
-      </ol>
-
+      <ul className="dfx-tally catalogue-ledger" aria-label="Où tu en es">
+        {tally.map(({ status, n }) => (
+          <li key={status} data-tally={status}>
+            <b>{n}</b>{" "}
+            {status === "IN_PROGRESS" ? TALLY_WORD[status] : plural(n, TALLY_WORD[status])}
+          </li>
+        ))}
+      </ul>
       {featured !== null && weekly !== null && (
         <WeekPanel item={featured} weekly={weekly} nowMs={nowMs} />
       )}
+      <details className="dfx-guide">
+        <summary>Comment se déroule un défi ?</summary>
+        <ol className="dfx-steps">
+          <li>
+            <span className="dfx-steps__n">01</span>
+            <div>
+              <h2>Examine les pièces</h2>
+              <p>
+                Un énoncé, des fichiers ou une machine : chaque défi précise ce qu’il te fournit.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span className="dfx-steps__n">02</span>
+            <div>
+              <h2>Enquête à ta façon</h2>
+              <p>ls, grep, find : tes commandes, ton rythme. Un indice se paie en XP.</p>
+            </div>
+          </li>
+          <li>
+            <span className="dfx-steps__n">03</span>
+            <div>
+              <h2>Valide ta solution</h2>
+              <p>
+                Selon le défi, soumets ton flag ou marque l’exercice fait. Le défi de la semaine
+                vaut le double d’XP.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </details>
 
       <section aria-labelledby="dfx-list-title">
         <div className="dfx-list-head">

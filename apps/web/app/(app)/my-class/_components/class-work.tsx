@@ -164,6 +164,7 @@ export function ClassWork({
                     type="button"
                     className="cw-cat"
                     data-active={category === c.value}
+                    aria-pressed={category === c.value}
                     onClick={() => {
                       setCategory(c.value);
                     }}
@@ -186,6 +187,7 @@ export function ClassWork({
                       type="button"
                       className="cw-pool__row"
                       data-chosen={chosen === l.id}
+                      aria-pressed={chosen === l.id}
                       onClick={() => {
                         setChosen(l.id);
                       }}

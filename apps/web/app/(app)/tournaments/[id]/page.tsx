@@ -24,7 +24,7 @@ export default async function TournamentPage({ params }: Props): Promise<React.R
   if (view === null) notFound();
 
   return (
-    <div className="page-container trn">
+    <div className="page-container learning-catalogue learning-workspace trn">
       <Crumb segments={[{ label: "tournois", href: "/tournaments" }, view.title]} />
       <TournamentBoard initial={view} />
     </div>

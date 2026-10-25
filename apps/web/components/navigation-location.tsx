@@ -11,8 +11,11 @@ const sections = sidebarGroups({ hasClasses: true, showRevisions: true, dueRevie
 export function NavigationLocation(): React.JSX.Element {
   const pathname = usePathname();
   const section = sections.find((item) => isActiveHref(pathname, item.href));
+  const publicSection =
+    pathname === "/catalogue" ? "Catalogue" : pathname === "/glossaire" ? "Glossaire" : null;
   const label =
     section?.label ??
+    publicSection ??
     (pathname.startsWith("/profile") || pathname.startsWith("/u/") ? "Profil" : "Ton espace");
   return (
     <div className="chrome-location" aria-label="Section actuelle">

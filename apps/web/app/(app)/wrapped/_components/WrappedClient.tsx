@@ -1,24 +1,12 @@
 "use client";
 
-import { MONO_STYLE as MONO } from "@cyberlearn/ui";
+// Canvas export and the browser's share sheet require client APIs.
 import React, { useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
-import { StatTile } from "@/components/stat-tile";
-import {
-  WRAPPED_CARD_SIZE,
-  fmtCompact,
-  wrappedCardContent,
-} from "@cyberlearn/lib/gamification/wrapped-card";
+import { WRAPPED_CARD_SIZE, wrappedCardContent } from "@cyberlearn/lib/gamification/wrapped-card";
+import { BASTION_MARK_PATHS, BastionLogo } from "@/components/bastion-logo";
+import "./wrapped.css";
 
-// ── Style language (shared dark / neon idiom, one accent per card) ────────────
-
-const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };
-
-const DOMAIN_LABEL: Record<string, string> = {
-  DEV: "Dev",
-  CYBERSEC: "Cybersec",
-  NETWORK: "Réseau",
-};
 const TIER_LABEL: Record<string, string> = {
   BRONZE: "Bronze",
   ARGENT: "Argent",
@@ -33,8 +21,6 @@ function topPercent(rank: number, total: number): number {
   return Math.max(1, Math.round((rank / total) * 100));
 }
 
-// ── Final shareable card ──────────────────────────────────────────────────────
-
 function FinalCard({
   payload,
   handle,
@@ -42,244 +28,120 @@ function FinalCard({
   payload: WrappedPayload;
   handle: string;
 }): React.JSX.Element {
-  const top = payload.lessons.topDomain;
+  const card = wrappedCardContent(payload, handle);
   const season = payload.season;
   const pct =
     season?.globalRank != null ? topPercent(season.globalRank, season.totalMembers) : null;
-
   return (
-    <div
-      style={{
-        position: "relative",
-        width: 300,
-        background:
-          "radial-gradient(ellipse 100% 40% at 50% 0%, color-mix(in srgb, var(--cosmetic-accent) 6%, transparent), transparent 55%), rgba(5,4,26,0.9)",
-        border: "1px solid #2A2560",
-        padding: 22,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          ...MONO,
-          fontSize: 10.5,
-          color: "#7F7BA9",
-          letterSpacing: "0.1em",
-        }}
-      >
-        <span>
-          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>cyber</b> learn
-        </span>
-        <span>{payload.periodKey}</span>
-      </div>
-
-      <h2
-        style={{
-          ...DISPLAY,
-          fontWeight: 800,
-          fontSize: 30,
-          letterSpacing: "-0.02em",
-          color: "#F5F5FA",
-          margin: "16px 0 4px",
-        }}
-      >
-        Mon{" "}
-        <span
-          style={{
-            background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          Wrapped
-        </span>
-      </h2>
-      <span style={{ ...MONO, fontSize: 10, letterSpacing: "0.14em", color: "#7F7BA9" }}>
-        {"// "}RÉCAP DE L’ANNÉE
-      </span>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "20px 0 0" }}>
-        <StatTile value={String(payload.lessons.total)} label="leçons" />
-        <StatTile value={fmtCompact(payload.xp.thisYear)} label="XP gagnés" />
-        <StatTile value={`${String(payload.streak.longest)}j`} label="plus longue série" />
-        <StatTile value={String(payload.badges.thisYear)} label="badges" />
-      </div>
-
-      {top || season?.globalRank != null ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-          {top ? (
-            <div
-              style={{
-                border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)",
-                background: "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)",
-                padding: "12px 16px",
-              }}
-            >
-              <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 15, color: "#F5F5FA" }}>
-                {DOMAIN_LABEL[top]}
-              </span>
-              <div
-                style={{
-                  ...MONO,
-                  fontSize: 9.5,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "#7F7BA9",
-                  marginTop: 4,
-                }}
-              >
-                domaine de prédilection
-              </div>
-            </div>
-          ) : null}
-          {season?.globalRank != null ? (
-            <div
-              style={{
-                border: "1px solid rgba(177,77,255,0.3)",
-                background: "rgba(177,77,255,0.06)",
-                padding: "12px 16px",
-              }}
-            >
-              <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 15, color: "#F5F5FA" }}>
-                Rang #{season.globalRank}
-                {pct !== null ? <span style={{ color: "#B14DFF" }}> · Top {pct}%</span> : null}
-              </span>
-              <div
-                style={{
-                  ...MONO,
-                  fontSize: 9.5,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "#7F7BA9",
-                  marginTop: 4,
-                }}
-              >
-                division {TIER_LABEL[season.division] ?? season.division} · saison{" "}
-                {String(season.seasonIndex).padStart(2, "0")}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div
-        style={{
-          marginTop: 18,
-          paddingTop: 14,
-          borderTop: "1px solid #2A2560",
-          ...MONO,
-          fontSize: 11,
-          color: "#B8B5D1",
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>@</span>
-        {handle}
-        <div style={{ fontSize: 9, color: "#44406B", letterSpacing: "0.1em", marginTop: 3 }}>
-          CYBERLEARN.FR/WRAPPED
-        </div>
-      </div>
-    </div>
+    <article className="wrapped-card" aria-label="Ta carte récapitulative">
+      <header className="wrapped-brand">
+        <BastionLogo size={28} />
+        <span>CyberLearn / Wrapped</span>
+      </header>
+      <h2>{card.year}</h2>
+      <p className="wrapped-card__caption">Ton année de pratique</p>
+      <dl className="wrapped-card__stats">
+        {card.stats.map(({ value, label }) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {card.domain !== null && <p className="wrapped-card__domain">{card.domain}</p>}
+      {season?.globalRank != null && (
+        <p className="wrapped-card__season">
+          Rang #{season.globalRank}
+          {pct !== null && <span> · Top {pct}%</span>}
+          <small>
+            Division {TIER_LABEL[season.division] ?? season.division} · saison{" "}
+            {String(season.seasonIndex).padStart(2, "0")}
+          </small>
+        </p>
+      )}
+      <footer>
+        <strong>{card.handle}</strong>
+        <span>{card.site}</span>
+      </footer>
+    </article>
   );
 }
 
-// ── Export panel ──────────────────────────────────────────────────────────────
-
-/**
- * Drawing the shareable card, at story size.
- *
- * Canvas rather than a screenshot library: the card is a dozen strings and a
- * few rules, drawing them costs nothing and adds no dependency, and the output
- * is 1080x1920 regardless of the screen it was exported from - which is the
- * whole point of a story image. A DOM screenshot would have inherited whatever
- * width the reader happened to have.
- *
- * Fonts are named rather than loaded: the page's own faces are already in the
- * document by the time anyone reaches this button, and a canvas draws with what
- * the document has. The fallbacks keep it legible if they are not.
- */
+/** Draws the shared card content at a fixed size, with the existing brand paths. */
 function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasElement {
-  const W = WRAPPED_CARD_SIZE.width;
-  const H = WRAPPED_CARD_SIZE.height;
-  // The figures and the words are the app's too (@cyberlearn/lib/gamification/wrapped-card).
   const card = wrappedCardContent(payload, handle);
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = WRAPPED_CARD_SIZE.width;
+  canvas.height = WRAPPED_CARD_SIZE.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) return canvas;
+  const bodyStyle = getComputedStyle(document.body);
+  const displayFont =
+    bodyStyle.getPropertyValue("--font-display").trim() || "'Barlow Condensed', sans-serif";
+  const textFont =
+    bodyStyle.getPropertyValue("--font-interface").trim() || "'Space Grotesk', sans-serif";
 
-  const accent = getComputedStyle(document.documentElement)
-    .getPropertyValue("--cosmetic-accent")
-    .trim();
-  const ACCENT = accent === "" ? "#0AFFD4" : accent;
-  const MONO_F = "'JetBrains Mono', ui-monospace, monospace";
-  const SANS_F = "'Plus Jakarta Sans', system-ui, sans-serif";
-
-  ctx.fillStyle = "#030219";
-  ctx.fillRect(0, 0, W, H);
-
-  const glow = ctx.createRadialGradient(W / 2, 420, 0, W / 2, 420, 900);
-  glow.addColorStop(0, "rgba(10,255,212,0.10)");
-  glow.addColorStop(1, "rgba(3,2,25,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.textAlign = "center";
-
-  ctx.fillStyle = ACCENT;
-  ctx.font = `700 34px ${MONO_F}`;
-  ctx.fillText(card.title, W / 2, 190);
-
-  ctx.fillStyle = "#F5F5FA";
-  ctx.font = `800 210px ${SANS_F}`;
-  ctx.fillText(card.year, W / 2, 400);
-
-  ctx.fillStyle = "#7F7BA9";
-  ctx.font = `28px ${MONO_F}`;
-  ctx.fillText(card.handle, W / 2, 470);
-
-  // Four figures, two per row. Numbers first and labels under them, because the
-  // number is what somebody screenshots this for.
-  card.stats.forEach(({ value, label }, i) => {
-    const x = i % 2 === 0 ? W / 4 : (W / 4) * 3;
-    const y = 760 + Math.floor(i / 2) * 320;
-    ctx.fillStyle = ACCENT;
-    ctx.font = `800 120px ${SANS_F}`;
-    ctx.fillText(value, x, y);
-    ctx.fillStyle = "#7F7BA9";
-    ctx.font = `30px ${MONO_F}`;
-    ctx.fillText(label, x, y + 60);
-  });
-
-  if (card.domain !== null) {
-    ctx.fillStyle = "#B8B5D1";
-    ctx.font = `36px ${SANS_F}`;
-    ctx.fillText(card.domain, W / 2, 1300);
+  ctx.fillStyle = "#0b0c0e";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(72, 84);
+  ctx.scale(76 / 256, 76 / 256);
+  for (const [part, path] of Object.entries(BASTION_MARK_PATHS)) {
+    ctx.fillStyle = part === "top" || part === "core" ? "#ff6b2b" : "#f4f2ed";
+    ctx.fill(new Path2D(path));
   }
+  ctx.restore();
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#f4f2ed";
+  ctx.font = `700 48px ${displayFont}`;
+  ctx.fillText(card.title, 170, 142, 838);
+  ctx.font = `700 280px ${displayFont}`;
+  ctx.fillText(card.year, 72, 420, 936);
+  ctx.fillStyle = "#aaa79f";
+  ctx.font = `32px ${textFont}`;
+  ctx.fillText("Ton année de pratique", 72, 480, 936);
 
-  // Everything stays above ~1550: the bottom of a story is where the app's own
-  // controls sit, and a wordmark under them is a wordmark nobody sees.
-  ctx.strokeStyle = "#1F1B47";
+  ctx.fillStyle = "#eae7df";
+  ctx.fillRect(72, 580, 936, 620);
+  ctx.strokeStyle = "#bdbab3";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(140, 1440);
-  ctx.lineTo(W - 140, 1440);
+  ctx.moveTo(540, 580);
+  ctx.lineTo(540, 1200);
+  ctx.moveTo(72, 890);
+  ctx.lineTo(1008, 890);
   ctx.stroke();
-
-  ctx.fillStyle = "#44406B";
-  ctx.font = `28px ${MONO_F}`;
-  ctx.fillText(card.site, W / 2, 1520);
-
+  ctx.textAlign = "center";
+  card.stats.forEach(({ value, label }, index) => {
+    const x = index % 2 === 0 ? 306 : 774;
+    const y = index < 2 ? 780 : 1090;
+    ctx.fillStyle = "#141518";
+    ctx.font = `700 128px ${displayFont}`;
+    ctx.fillText(value, x, y, 388);
+    ctx.fillStyle = "#55524d";
+    ctx.font = `32px ${textFont}`;
+    ctx.fillText(label, x, y + 60, 388);
+  });
+  ctx.textAlign = "left";
+  if (card.domain !== null) {
+    ctx.fillStyle = "#c2bfb8";
+    ctx.font = `32px ${textFont}`;
+    ctx.fillText(card.domain, 72, 1280, 936);
+  }
+  ctx.fillStyle = "#f4f2ed";
+  ctx.font = `38px ${textFont}`;
+  ctx.fillText(card.handle, 72, 1380, 936);
+  ctx.strokeStyle = "#44454a";
+  ctx.beginPath();
+  ctx.moveTo(72, 1440);
+  ctx.lineTo(1008, 1440);
+  ctx.stroke();
+  ctx.fillStyle = "#aaa79f";
+  ctx.font = `30px ${textFont}`;
+  ctx.fillText(card.site, 72, 1520, 936);
   return canvas;
 }
 
-/**
- * The card, as an image to keep or share. There is no "copy the link": /wrapped
- * needs an account, so the link showed whoever opened it their own recap, or
- * the login page. The image is the thing that travels.
- */
 function ExportPanel({
   payload,
   handle,
@@ -290,12 +152,12 @@ function ExportPanel({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
-  const toBlob = async (): Promise<Blob | null> =>
-    new Promise((resolve) => {
-      drawStoryCard(payload, handle).toBlob((b) => {
-        resolve(b);
-      }, "image/png");
+  const toBlob = async (): Promise<Blob | null> => {
+    await document.fonts.ready;
+    return new Promise((resolve) => {
+      drawStoryCard(payload, handle).toBlob(resolve, "image/png");
     });
+  };
 
   const download = (): void => {
     setFailed(null);
@@ -307,28 +169,23 @@ function ExportPanel({
           return;
         }
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = wrappedCardContent(payload, handle).fileName;
-        a.click();
-        // Revoked on the next tick: revoking synchronously can beat the click
-        // in some browsers and download an empty file.
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = wrappedCardContent(payload, handle).fileName;
+        anchor.click();
+        // Let the browser consume the download URL before releasing it.
         setTimeout(() => {
           URL.revokeObjectURL(url);
         }, 0);
+      })
+      .catch(() => {
+        setFailed("L'image n'a pas pu être générée.");
       })
       .finally(() => {
         setBusy(false);
       });
   };
 
-  /**
-   * The share sheet, where the browser has one.
-   *
-   * navigator.share with files is missing on most desktops, so the button only
-   * appears when it is actually available rather than being shown and failing -
-   * a share button that errors is worse than no share button.
-   */
   const canShare =
     typeof navigator !== "undefined" &&
     typeof navigator.canShare === "function" &&
@@ -349,104 +206,51 @@ function ExportPanel({
         try {
           await navigator.share({ files: [file], title: "Mon CyberLearn Wrapped" });
         } catch {
-          // A cancelled share sheet throws too; nothing to report either way.
+          /* Closing the native share sheet is not an export failure. */
         }
+      })
+      .catch(() => {
+        setFailed("L'image n'a pas pu être générée.");
       })
       .finally(() => {
         setBusy(false);
       });
   };
 
-  const btn = (
-    label: string,
-    onClick: (() => void) | null,
-    primary: boolean,
-  ): React.JSX.Element => (
-    <button
-      type="button"
-      onClick={onClick ?? undefined}
-      disabled={onClick === null}
-      style={{
-        width: "100%",
-        textAlign: "left",
-        padding: "14px 18px",
-        ...MONO,
-        fontSize: 12,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
-        cursor: onClick ? "pointer" : "not-allowed",
-        border: primary ? "0" : "1px solid #2A2560",
-        background: primary ? "var(--cosmetic-accent)" : "rgba(5,4,26,0.5)",
-        color: primary ? "#030219" : onClick ? "#B8B5D1" : "#44406B",
-        fontWeight: primary ? 700 : 500,
-      }}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-      <span
-        style={{
-          ...MONO,
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#7F7BA9",
-          marginBottom: 4,
-        }}
-      >
-        Exporter
-      </span>
-      {btn(busy ? "⤓ Génération…" : "⤓ Télécharger l'image", busy ? null : download, true)}
-      {canShare && btn("⇆ Partager l'image", busy ? null : share, false)}
+    <div className="wrapped-export" aria-busy={busy}>
+      <p>Garder ton récap</p>
+      <button type="button" className="wrapped-export__primary" disabled={busy} onClick={download}>
+        {busy ? "Génération…" : "Télécharger l’image"}
+      </button>
+      {canShare && (
+        <button type="button" disabled={busy} onClick={share}>
+          Partager l’image
+        </button>
+      )}
       {failed !== null ? (
-        <p style={{ ...MONO, fontSize: 10.5, color: "#FF4D6D", marginTop: 4 }}>{failed}</p>
-      ) : (
-        <p
-          style={{ ...MONO, fontSize: 10, color: "#44406B", letterSpacing: "0.06em", marginTop: 4 }}
-        >
-          Story 1080×1920, prête à poster.
+        <p className="wrapped-export__error" role="alert">
+          {failed}
         </p>
+      ) : (
+        <small>Image 1080 × 1920.</small>
       )}
     </div>
   );
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
-
-interface Props {
+export function WrappedShare({
+  payload,
+  handle,
+}: {
   payload: WrappedPayload | null;
   handle: string;
-}
-
-/**
- * Everything below the title: the filmstrip, the shareable card and the export.
- *
- * Split out when the recap stopped being a page you navigate to and became a
- * pop-up you open from the navbar. Both surfaces show the same recap; what
- * differs is the chrome around it, so the chrome is what each one supplies.
- */
-/**
- * The card somebody actually posts, and the two buttons that get it out.
- *
- * This is all that is left of the page the recap used to be: the filmstrip and
- * its heading became the story, which shows one figure at a time. The card did
- * not - it was already the payoff, and a payoff is the one thing a story ends
- * on rather than scrolls past. So it is the last slide.
- */
-export function WrappedShare({ payload, handle }: Props): React.JSX.Element {
-  if (!payload) {
-    return <p style={{ ...DISPLAY, color: "#B8B5D1" }}>Ton récap n’est pas encore disponible.</p>;
-  }
-
+}): React.JSX.Element {
+  if (!payload) return <p className="ws-lead">Ton récap n’est pas encore disponible.</p>;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 26, alignItems: "flex-start" }}>
+    <div className="wrapped-share">
       <FinalCard payload={payload} handle={handle} />
-      <div style={{ flex: "1 1 220px", minWidth: 200 }}>
-        <ExportPanel payload={payload} handle={handle} />
-      </div>
+      <ExportPanel payload={payload} handle={handle} />
     </div>
   );
 }

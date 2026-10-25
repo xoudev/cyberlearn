@@ -56,6 +56,25 @@ Every button asks for a confirmation, in this order:
 Last, `pnpm --filter @cyberlearn/db db:seed-paths` attaches the lessons to the
 paths that only exist in the seed.
 
+## Component showcase
+
+To add the repository's component showcase to the local lesson catalogue:
+
+```bash
+cd apps/admin
+node --env-file=.env.local scripts/seed-local-showcase.mjs
+```
+
+This validates the source with the admin import pipeline, then upserts only
+`CL-LSN-99001-V01` at `/lessons/vitrine-des-composants`, published locally with
+zero lesson XP. It reuses the installed Vitest/Vite loader to run the ESM MDX
+validator and workspace TypeScript; no extra dependency is needed. Both the
+database and Supabase URLs must be loopback addresses, and `NODE_ENV=production`
+is refused. The source MDX and all other lessons stay intact. The local copy
+has a notice explaining why the source introduction calls it a draft. Quiz
+answers and exercise gates work like other lessons; this is a catalogue copy,
+not a completed learner record.
+
 ## Test accounts
 
 `db:seed-local-accounts` creates the accounts below, all with the password

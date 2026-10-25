@@ -18,7 +18,7 @@ const VARIANTS: Record<
     bg: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
     iconBg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
     iconColor: "var(--cosmetic-accent)",
-    icon: "✦",
+    icon: "✓",
   },
   warning: {
     border: "var(--color-warning)",
@@ -36,8 +36,8 @@ const VARIANTS: Record<
   },
   note: {
     border: "var(--color-text-disabled)",
-    bg: "rgba(63,61,92,0.15)",
-    iconBg: "rgba(63,61,92,0.30)",
+    bg: "var(--color-bg-elevated)",
+    iconBg: "var(--color-bg-base)",
     iconColor: "var(--color-text-muted)",
     icon: "·",
   },
@@ -94,13 +94,12 @@ export function Callout({ type = "info", title, children }: CalloutProps): React
         {title && (
           <div
             style={{
-              fontSize: "13px",
+              fontSize: "24px",
               fontWeight: 700,
               color: v.iconColor,
               marginBottom: "6px",
-              fontFamily: "var(--font-mono, monospace)",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              fontFamily: "var(--font-display), sans-serif",
+              lineHeight: 1.2,
             }}
           >
             {title}

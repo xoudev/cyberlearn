@@ -1,38 +1,48 @@
 import React from "react";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { sheetSummary, type RevisionSheet } from "@cyberlearn/lib/paths/sheet";
+import { PdfBastion, pdfBrand as brand } from "./brand";
 
 /**
  * The revision sheet as a PDF: portrait A4, light so it prints, the brand's
- * turquoise for the rule and the labels, one section per lesson with its
- * points. Built-in Helvetica, like the certificate, so nothing is fetched.
+ * copper for the rule and labels, local Bastion fonts and the same mark as
+ * the site. Sections may continue on another page without losing a point.
  */
 
-const INK = "#14123A";
-const INK_MUTED = "#5C5987";
-const LINE = "#D9D7EA";
-const TURQ = "#0AA88C";
+const INK = brand.ink;
+const INK_MUTED = brand.muted;
+const LINE = brand.line;
+const TURQ = brand.copper;
 
 const styles = StyleSheet.create({
   page: {
     backgroundColor: "#FFFFFF",
-    fontFamily: "Helvetica",
+    fontFamily: brand.text,
     color: INK,
     fontSize: 10.5,
-    paddingTop: 48,
+    paddingTop: 76,
     paddingBottom: 56,
     paddingHorizontal: 48,
   },
   topbar: { position: "absolute", top: 0, left: 0, right: 0, height: 6, backgroundColor: TURQ },
-  kicker: { fontSize: 8, letterSpacing: 1.6, color: TURQ, fontFamily: "Helvetica-Bold" },
+  kicker: { fontSize: 9, color: TURQ },
+  brandRow: {
+    position: "absolute",
+    top: 24,
+    left: 48,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  wordmark: { fontFamily: brand.display, fontWeight: 600, fontSize: 21, color: INK },
   path: { fontSize: 11, color: INK_MUTED, marginTop: 6 },
-  title: { fontSize: 20, fontFamily: "Helvetica-Bold", marginTop: 4 },
+  title: { fontSize: 28, fontFamily: brand.display, fontWeight: 600, marginTop: 6 },
   summary: { fontSize: 9.5, color: INK_MUTED, marginTop: 6 },
   rule: { height: 1, backgroundColor: LINE, marginTop: 14, marginBottom: 6 },
   section: { marginTop: 14 },
-  lesson: { fontSize: 12.5, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  lesson: { fontSize: 18, fontFamily: brand.display, fontWeight: 600, marginBottom: 8 },
   point: { flexDirection: "row", marginBottom: 4 },
-  dot: { width: 12, color: TURQ, fontFamily: "Helvetica-Bold" },
+  dot: { width: 12, color: TURQ },
   text: { flex: 1, lineHeight: 1.45 },
   empty: { color: INK_MUTED, marginTop: 14 },
   footer: {
@@ -67,6 +77,10 @@ export function SheetDocument({
     >
       <Page size="A4" style={styles.page}>
         <View style={styles.topbar} fixed />
+        <View style={styles.brandRow} fixed>
+          <PdfBastion size={26} />
+          <Text style={styles.wordmark}>CYBERLEARN.</Text>
+        </View>
         <Text style={styles.kicker}>FICHE DE RÉVISION</Text>
         <Text style={styles.path}>{sheet.pathTitle}</Text>
         <Text style={styles.title}>{sheet.title}</Text>
@@ -79,10 +93,12 @@ export function SheetDocument({
           </Text>
         ) : null}
         {sheet.sections.map((section, k) => (
-          <View key={k} style={styles.section} wrap={false} minPresenceAhead={60}>
-            <Text style={styles.lesson}>{section.lessonTitle}</Text>
+          <View key={k} style={styles.section} minPresenceAhead={60}>
+            <Text style={styles.lesson} minPresenceAhead={40}>
+              {section.lessonTitle}
+            </Text>
             {section.points.map((point, p) => (
-              <View key={p} style={styles.point}>
+              <View key={p} style={styles.point} wrap={false}>
                 <Text style={styles.dot}>•</Text>
                 <Text style={styles.text}>{point}</Text>
               </View>

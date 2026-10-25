@@ -1,5 +1,7 @@
 "use client";
 
+import "./lesson-practice.css";
+
 import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { parseChallengeTests, type ChallengeTestCase } from "@cyberlearn/types";
@@ -167,7 +169,7 @@ function PythonChallengeBody({
   return (
     <div
       ref={frameRef}
-      className="card card--sunken"
+      className="card card--sunken lesson-practice"
       style={{
         margin: "32px 0",
         position: "relative",
@@ -175,13 +177,14 @@ function PythonChallengeBody({
     >
       {/* Header */}
       <div
+        className="lesson-practice__head"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.6)",
+          background: "var(--color-bg-elevated)",
         }}
       >
         <span
@@ -202,9 +205,7 @@ function PythonChallengeBody({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: allPassed ? "var(--cosmetic-accent)" : "#B14DFF",
-              boxShadow: allPassed ? "0 0 8px var(--cosmetic-accent)99" : "0 0 8px #B14DFF99",
-              animation: "pulse 2s ease-in-out infinite",
+              background: allPassed ? "var(--color-success)" : "var(--cosmetic-accent)",
             }}
           />
           {title ?? "Python Challenge"}
@@ -216,10 +217,10 @@ function PythonChallengeBody({
             fontWeight: 700,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#B14DFF",
+            color: "var(--color-text-secondary)",
             padding: "4px 8px",
-            border: "1px solid #B14DFF59",
-            background: "#B14DFF0D",
+            border: "1px solid var(--color-border-default)",
+            background: "var(--color-bg-base)",
           }}
         >
           Pyodide · {totalCount} test{totalCount > 1 ? "s" : ""}
@@ -232,7 +233,7 @@ function PythonChallengeBody({
           style={{
             padding: "14px 20px",
             borderBottom: "1px solid var(--color-border-subtle)",
-            background: "rgba(5,4,26,0.3)",
+            background: "var(--color-bg-base)",
           }}
         >
           <p
@@ -313,45 +314,21 @@ function PythonChallengeBody({
 
       {/* Action bar */}
       <div
+        className="lesson-practice__actions"
         style={{
           display: "flex",
           alignItems: "stretch",
           borderTop: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.7)",
+          background: "var(--color-bg-elevated)",
         }}
       >
         <button
+          className="lesson-run-button"
           type="button"
           onClick={() => {
             void handleRunTests();
           }}
           disabled={running}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "0 22px",
-            minHeight: 44,
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            background: running ? "rgba(177,77,255,0.4)" : "#B14DFF",
-            color: "#ffffff",
-            border: 0,
-            borderRight: "1px solid rgba(177,77,255,0.5)",
-            cursor: running ? "wait" : "pointer",
-            transition: "background 180ms ease",
-            boxShadow: running ? "none" : "inset 0 0 0 1px rgba(255,255,255,0.15)",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            if (!running) e.currentTarget.style.background = "#C060FF";
-          }}
-          onMouseLeave={(e) => {
-            if (!running) e.currentTarget.style.background = "#B14DFF";
-          }}
         >
           {running ? (
             <span
@@ -368,9 +345,9 @@ function PythonChallengeBody({
           )}
           {running
             ? runtimeState === "loading"
-              ? "DÉMARRAGE..."
-              : "TESTS EN COURS..."
-            : "LANCER LES TESTS"}
+              ? "Démarrage…"
+              : "Tests en cours…"
+            : "Lancer les tests"}
         </button>
 
         <div
@@ -393,7 +370,6 @@ function PythonChallengeBody({
                     background: allPassed
                       ? "var(--cosmetic-accent)"
                       : "var(--color-category-cybersec)",
-                    boxShadow: `0 0 6px ${allPassed ? "var(--cosmetic-accent)" : "var(--color-category-cybersec)"}`,
                     flexShrink: 0,
                   }}
                 />
@@ -430,7 +406,7 @@ function PythonChallengeBody({
                   fontSize: 10,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#B14DFF",
+                  color: "var(--cosmetic-accent)",
                 }}
               >
                 EXÉCUTION...
@@ -489,7 +465,8 @@ function PythonChallengeBody({
                   alignItems: "start",
                   gap: 12,
                   padding: "10px 18px",
-                  borderBottom: i < testResults.length - 1 ? "1px solid #0F0D2B" : "none",
+                  borderBottom:
+                    i < testResults.length - 1 ? "1px solid var(--color-border-subtle)" : "none",
                   background: result.passed
                     ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
                     : "rgba(255,71,87,0.02)",
@@ -521,7 +498,7 @@ function PythonChallengeBody({
                     }}
                   >
                     <span style={{ color: "var(--color-text-faint)" }}>{label} · </span>
-                    <span style={{ color: "#B14DFF" }}>{result.input}</span>
+                    <span style={{ color: "var(--color-text-secondary)" }}>{result.input}</span>
                   </div>
                   {!result.passed && (
                     <div

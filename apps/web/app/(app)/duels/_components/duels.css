@@ -1,3 +1,5 @@
+@import "../../../../components/community-workspace.css";
+
 /* Quiz duels (/duels and /duels/[id]): the list with its record, the rules,
    the invitations, the new duel panel and the duel cards; a duel's page with
    its scoreboard, the question, the waiting panels and the result. Square
@@ -1420,5 +1422,276 @@
   .dl-opt__key,
   .dl-field select {
     transition: none;
+  }
+}
+
+.dl.community-workspace {
+  --dl-accent: #ff6b2b;
+  --dl-accent-ink: #ff864f;
+  --dl-accent-soft: #74767d;
+  --dl-accent-wash: #191c22;
+}
+.dl-head {
+  margin-bottom: 0;
+}
+.dl-head > .catalogue-masthead {
+  flex: 1 1 440px;
+}
+.dl-record {
+  margin-block: 24px;
+  flex-wrap: wrap;
+}
+.dl-record li {
+  min-width: 76px;
+  padding: 16px;
+}
+.dl-record b {
+  font-family: var(--font-display), sans-serif;
+  font-size: 40px;
+}
+.dl-record span,
+.dl-sec__meta,
+.dl-badge,
+.dl-card__path,
+.dl-card__meta,
+.dl-card__name,
+.dl-card__go,
+.dl-link,
+.dl-field__label,
+.dl-rules__text,
+.dl-invite__eyebrow,
+.dl-invite__meta,
+.dl-state__when,
+.dl-q__meta,
+.dl-side__count {
+  font-family: var(--font-interface), sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.dl-guide {
+  margin: 20px 0 32px;
+  border-bottom: 1px solid #303137;
+}
+.dl-guide summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 14px;
+  font-size: 13px;
+  color: #c2bfb8;
+}
+.dl-guide summary::before {
+  content: "+";
+  color: #ff864f;
+  font-size: 20px;
+}
+.dl-guide[open] summary::before {
+  content: "−";
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dl-guide[open] .dl-rules {
+    animation: workspace-open 180ms ease-out;
+  }
+}
+.dl-rules {
+  margin: 8px 0 24px;
+  border: 0;
+  background: none;
+}
+.dl-rules li {
+  padding: 20px 16px;
+}
+.dl-rules__title {
+  font:
+    600 26px / 1.15 var(--font-display),
+    sans-serif;
+}
+.dl-rules__n {
+  color: #aaa79f;
+}
+.dl-sec {
+  border-bottom-style: solid;
+}
+.dl-sec__title {
+  font:
+    600 34px / 1 var(--font-display),
+    sans-serif;
+}
+.dl-launch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.5fr);
+  margin: 28px 0 40px;
+  border-top: 4px solid #ff6b2b;
+  background: #eae7df;
+  color: #141518;
+}
+.dl-launch__body {
+  min-width: 0;
+  padding: clamp(24px, 3vw, 40px);
+}
+.dl-launch .dl-sec {
+  border-color: #bdbab3;
+  margin-bottom: 24px;
+}
+.dl-launch .dl-sec__title {
+  color: #141518;
+  font-size: 40px;
+}
+.dl-launch .empty-state {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.dl-launch .empty-state__title {
+  color: #141518;
+  font-size: 30px;
+}
+.dl-launch .empty-state__message {
+  color: #55524d;
+}
+.dl-launch__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 32px;
+  background: #191c22;
+  color: #eae7df;
+}
+.dl-launch__aside p {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: #c2bfb8;
+  line-height: 1.65;
+}
+.dl-launch__aside strong {
+  display: block;
+  margin-top: 6px;
+  font:
+    600 34px / 1 var(--font-display),
+    sans-serif;
+}
+.dl-launch .dl-new {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.dl-launch .dl-field__label,
+.dl-launch .dl-new__who {
+  color: #55524d;
+}
+.dl-launch .dl-vs {
+  color: #55524d;
+  border-color: #74767d;
+}
+.dl-launch :is(button, a, select):focus-visible {
+  outline-color: #141518;
+}
+.dl-new select {
+  min-height: 48px;
+  border-color: #74767d;
+}
+.dl-card {
+  background: #191c22;
+  border-color: #303137;
+  box-shadow: none;
+}
+.dl-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #74767d;
+}
+.dl-card__top {
+  align-items: start;
+}
+.dl-card__path {
+  font:
+    600 28px / 1.1 var(--font-display),
+    sans-serif;
+  white-space: normal;
+}
+.dl-card__score {
+  font-family: var(--font-display), sans-serif;
+}
+.dl-card__go {
+  min-height: 48px;
+  font-size: 13px;
+}
+.dl-invite {
+  background: #191c22;
+  border-color: #74767d;
+}
+.dl-badge {
+  font-size: 11px;
+}
+.dl-pulse {
+  border-radius: 0;
+  animation: none;
+}
+.dl-board {
+  background: #191c22;
+  border: 0;
+  border-top: 4px solid #ff6b2b;
+}
+.dl-side__score {
+  font-family: var(--font-display), sans-serif;
+}
+.dl-q,
+.dl-result,
+.dl-callout,
+.dl-off {
+  background: #191c22;
+  border-color: #74767d;
+}
+.dl-q__text,
+.dl-result__title,
+.dl-wait__title {
+  font-family: var(--font-display), sans-serif;
+}
+.dl-opt {
+  border-color: #74767d;
+  background: #121418;
+  font-family: var(--font-interface), sans-serif;
+}
+@media (max-width: 1100px) {
+  .dl-launch {
+    grid-template-columns: 1fr;
+  }
+  .dl-launch__aside {
+    flex-direction: row;
+    align-items: center;
+    padding: 24px;
+  }
+  .dl-launch__aside svg {
+    width: 48px;
+    height: 48px;
+  }
+  .dl-launch__aside div {
+    max-width: 440px;
+  }
+}
+@media (max-width: 620px) {
+  .dl-launch__aside {
+    gap: 24px;
+  }
+  .dl-launch__aside strong {
+    font-size: 28px;
+  }
+  .dl-rules {
+    grid-template-columns: 1fr;
+  }
+  .dl-rules li + li {
+    border-left: 0;
+    border-top: 1px solid #303137;
+  }
+  .dl-duel-head {
+    grid-template-columns: 1fr;
+  }
+  .dl-state {
+    justify-items: start;
+  }
+  .dl-state__when {
+    text-align: left;
   }
 }

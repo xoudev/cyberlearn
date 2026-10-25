@@ -3,11 +3,65 @@
    off-canvas drawer and the content area is too narrow for both). Shared by
    LockerClient and the page's loading skeleton. */
 
+@import "../../../../components/progression-workspace.css";
+
+.locker-empty {
+  padding: 28px 0;
+}
+.locker-empty h2 {
+  margin: 0 0 18px;
+  font:
+    600 36px / 1.05 var(--font-display),
+    sans-serif;
+}
+.locker-empty p {
+  color: #aaa79f;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
 .casier-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 28px;
   align-items: start;
+}
+.locker-workspace .casier-layout {
+  margin-top: 28px;
+}
+.locker-workspace .locker-item {
+  min-width: 0;
+  padding: 20px !important;
+  background: #121418 !important;
+  border-color: #44454a !important;
+  opacity: 1 !important;
+}
+.locker-workspace .locker-item[data-equipped="true"] {
+  border-color: #ff864f !important;
+  border-top-width: 4px !important;
+}
+.locker-workspace .locker-item > div:nth-child(2) > span:first-child {
+  font:
+    600 28px / 1.05 var(--font-display),
+    sans-serif !important;
+}
+.locker-workspace .locker-item .mono-label {
+  font-family: var(--font-interface), sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.locker-workspace .locker-item button,
+.locker-workspace .locker-item > span {
+  min-height: 44px;
+}
+.locker-workspace .casier-preview {
+  background: #191c22;
+  border-color: #44454a;
+}
+.locker-workspace .casier-preview > .mono-label {
+  font-family: var(--font-interface), sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
 }
 /* Its top comes from StickyRail: below the navbar, or by its bottom when too tall to fit. */
 .casier-preview {

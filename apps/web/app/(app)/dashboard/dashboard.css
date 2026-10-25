@@ -2,7 +2,6 @@
   --learning-quiet: #aaa79f;
   --font-sans: var(--font-interface);
   width: 100%;
-  padding: 40px 42px 64px;
   color: var(--color-text-primary);
   font-family: var(--font-interface), sans-serif;
 }
@@ -793,14 +792,8 @@
     grid-template-columns: minmax(0, 1fr) 360px;
     gap: 32px;
   }
-  .learning-dashboard {
-    padding: 48px 55px 70px;
-  }
 }
 @media (max-width: 1250px) {
-  .learning-dashboard {
-    padding: 32px 25px 50px;
-  }
   .learning-grid {
     grid-template-columns: minmax(0, 1fr) 280px;
     gap: 18px;
@@ -836,9 +829,6 @@
   }
 }
 @media (max-width: 760px) {
-  .learning-dashboard {
-    padding: 28px 20px 44px;
-  }
   .learning-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;

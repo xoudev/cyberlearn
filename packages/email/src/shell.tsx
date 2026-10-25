@@ -1,76 +1,50 @@
-import { Head } from "@react-email/components";
+import { Column, Head, Img, Row, Section, Text } from "@react-email/components";
 import React from "react";
+import { styles, tokens } from "./theme.js";
 
-/**
- * The head every mail shares, which exists to carry the two typefaces.
- *
- * Naming Plus Jakarta Sans and JetBrains Mono in a font stack only helps the
- * handful of readers who happen to have them installed. Declaring them makes
- * the mail look like the site in every client that honours a webfont - Apple
- * Mail, Thunderbird, most desktop readers - and costs nothing in the ones that
- * do not: Gmail strips the rule and falls through to the same stack it would
- * have used anyway.
- *
- * Written out rather than built with react-email's <Font>, which was tried
- * first. That component emits its @font-face *and* a blanket
- * `* { font-family: … }`, and a universal selector does not set a default - it
- * matches every element, which beats inheritance. Three consequences, all of
- * them seen in the rendered output:
- *
- *   the last <Font> won the blanket rule, so declaring the mono last put every
- *   paragraph in JetBrains Mono;
- *   with the sans declared last instead, the mono stopped reaching anything it
- *   was not named on directly - react-email's <Button> wraps its label in a
- *   <span> of its own, and the blanket rule recaptured that span even though
- *   its parent <a> is mono;
- *   the footer's link went the same way, inside a footer that is mono.
- *
- * Only @font-face is emitted here. The body font then comes from styles.main
- * on <Body> and reaches everything by inheritance, which is what a font stack
- * is for, and the mono reaches its handful of places by being named on them.
- */
+const ASSETS = "https://cyberlearn.fr/brand";
 
-const JAKARTA =
-  "https://fonts.gstatic.com/s/plusjakartasans/v8/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_qU79PDGg.woff2";
-const JETBRAINS =
-  "https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2";
-
-/**
- * mso-font-alt is what Outlook reads instead of the webfont, so each face
- * names the family it should fall back to there.
- */
+// Only font declarations: a universal font rule would override the button's descendants.
 const FACES = `
 @font-face {
-  font-family: 'Plus Jakarta Sans';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 400;
-  mso-font-alt: 'Helvetica';
-  src: url(${JAKARTA}) format('woff2');
+  font-weight: 300 700;
+  mso-font-alt: 'Arial';
+  src: url('${ASSETS}/fonts/SpaceGrotesk.ttf') format('truetype');
 }
 @font-face {
-  font-family: 'Plus Jakarta Sans';
+  font-family: 'Barlow Condensed';
   font-style: normal;
-  font-weight: 800;
-  mso-font-alt: 'Helvetica';
-  src: url(${JAKARTA}) format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 700;
-  mso-font-alt: 'Courier New';
-  src: url(${JETBRAINS}) format('woff2');
+  font-weight: 600;
+  mso-font-alt: 'Arial Narrow';
+  src: url('${ASSETS}/fonts/BarlowCondensed-SemiBold.ttf') format('truetype');
 }
 `;
 
 export function EmailHead(): React.ReactElement {
   return (
     <Head>
-      {/* The only way to put a style block in a mail's head from JSX. The
-          content is a constant above, never interpolated from anything. */}
+      <meta name="color-scheme" content="dark" />
+      <meta name="supported-color-schemes" content="dark" />
       <style dangerouslySetInnerHTML={{ __html: FACES }} />
     </Head>
   );
 }
 
-/** Re-exported so a template imports its chrome and its styles from one place. */
+export function EmailBrand(): React.ReactElement {
+  return (
+    <Section style={styles.logoSection}>
+      <Row>
+        <Column style={{ width: "48px", verticalAlign: "middle" }}>
+          <Img src={`${ASSETS}/bastion-mark.png`} alt="" width="32" height="32" />
+        </Column>
+        <Column style={{ verticalAlign: "middle" }}>
+          <Text style={styles.logoText}>
+            CYBERLEARN<span style={{ color: tokens.brandBlue }}>.</span>
+          </Text>
+        </Column>
+      </Row>
+    </Section>
+  );
+}

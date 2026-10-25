@@ -18,32 +18,32 @@ export const LESSON_EDITOR_THEME = "cyberlearn-dark";
  * Monaco painted red.
  */
 export function lessonEditorTheme(scope?: Element | null): MonacoTheme {
-  const accent = cssColor("--cosmetic-accent", "#0AFFD4", scope);
+  const accent = cssColor("--cosmetic-accent", "#FF6B2B", scope);
   return {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "7F7BA9", fontStyle: "italic" },
-      { token: "keyword", foreground: "4D8BFF" },
-      { token: "string", foreground: "0AFFD4" },
-      { token: "number", foreground: "FFB020" },
-      { token: "type", foreground: "B14DFF" },
-      { token: "identifier", foreground: "E0DDFF" },
+      { token: "comment", foreground: "AAA79F", fontStyle: "italic" },
+      { token: "keyword", foreground: "FFAF85" },
+      { token: "string", foreground: "A3D9AE" },
+      { token: "number", foreground: "FFD08A" },
+      { token: "type", foreground: "BFC6F6" },
+      { token: "identifier", foreground: "F4F2ED" },
     ],
     colors: {
       // --color-bg-elevated
-      "editor.background": "#0A0826",
-      "editor.foreground": "#E0DDFF",
-      "editor.lineHighlightBackground": "#1A1838",
+      "editor.background": "#0B0C0E",
+      "editor.foreground": "#F4F2ED",
+      "editor.lineHighlightBackground": "#191C22",
       // --color-text-disabled
-      "editorLineNumber.foreground": "#3F3D5C",
+      "editorLineNumber.foreground": "#AAA79F",
       "editorLineNumber.activeForeground": accent,
       // --color-border-default
       "editor.selectionBackground": BORDER,
       "editorCursor.foreground": accent,
       // --color-border-subtle
-      "editor.inactiveSelectionBackground": "#1F1B47",
-      "editorIndentGuide.background1": "#1F1B47",
+      "editor.inactiveSelectionBackground": "#303137",
+      "editorIndentGuide.background1": "#303137",
       "editorWhitespace.foreground": BORDER,
     },
   };

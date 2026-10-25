@@ -32,7 +32,7 @@ export default async function EditClassPathPage({
   const lessons = await pickableLessonsFor(user.id);
 
   return (
-    <div className="tle-page">
+    <div className="tle-page learning-catalogue learning-workspace class-workspace">
       <PageHeader
         crumb="my-class/edit-path"
         eyebrow={`Classe · ${klassName}`}

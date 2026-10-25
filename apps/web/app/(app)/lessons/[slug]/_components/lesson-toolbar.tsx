@@ -276,6 +276,7 @@ export function LessonToolbar({
         title="Plan de la leçon"
         meta={`${String(sections.length)} section${sections.length > 1 ? "s" : ""}`}
         closeLabel="Fermer le plan"
+        className="lesson-tools"
         width={420}
       >
         <div className="lesson-plan">

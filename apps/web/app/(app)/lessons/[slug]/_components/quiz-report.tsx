@@ -109,7 +109,7 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
         margin: "16px 0 0",
         padding: "16px 18px",
         border: "1px solid var(--color-border-default)",
-        background: "rgba(5,4,26,0.6)",
+        background: "var(--color-bg-elevated)",
       }}
     >
       <legend
@@ -211,16 +211,16 @@ export function QuizReport({ quizId }: { quizId: string }): React.ReactElement |
             void send();
           }}
           style={{
-            minHeight: 40,
+            minHeight: 44,
             padding: "0 18px",
-            fontFamily: "var(--font-mono, monospace)",
+            fontFamily: "var(--font-interface), sans-serif",
             fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
+            fontSize: 14,
+            letterSpacing: 0,
+            textTransform: "none",
             border: "1px solid var(--color-brand-blue)",
             background: reason === null ? "transparent" : "var(--color-brand-blue)",
-            color: reason === null ? "var(--color-text-disabled)" : "#FFFFFF",
+            color: reason === null ? "var(--color-text-disabled)" : "#141518",
             cursor: reason === null ? "not-allowed" : pending ? "wait" : "pointer",
           }}
         >

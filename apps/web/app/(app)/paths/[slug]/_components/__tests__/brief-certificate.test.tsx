@@ -16,18 +16,18 @@ afterEach(() => {
 describe("BriefCertificate", () => {
   it("includes the certificate on a catalogue path", () => {
     const { container } = render(<BriefCertificate certifiable certObtained={false} />);
-    expect(container.textContent).toBe("Certificatinclus");
+    expect(container.textContent).toBe("Certificat inclus");
   });
 
   it("says it is available once issued", () => {
     const { container } = render(<BriefCertificate certifiable certObtained />);
-    expect(container.textContent).toBe("Certificatdisponible");
+    expect(container.textContent).toBe("Certificat disponible");
   });
 
   it("promises no certificate on a class path", () => {
     const { container } = render(<BriefCertificate certifiable={false} certObtained={false} />);
     expect(container.textContent).not.toMatch(/Certificat/u);
-    expect(container.textContent).toBe("Parcoursde classe");
+    expect(container.textContent).toBe("Parcours de classe");
     expect(screen.getByTitle(/ne délivre pas de certificat/u)).toBeTruthy();
   });
 });

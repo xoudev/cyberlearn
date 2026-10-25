@@ -1,28 +1,28 @@
 import React from "react";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import "./_components/paths-catalog-v2.css";
+import "./_components/paths-workshop.css";
 
 export default function PathsLoading(): React.ReactElement {
   return (
     <div
-      className="pc2-root learning-catalogue"
+      className="pc2-root learning-catalogue paths-workshop"
       aria-busy="true"
       aria-label="Chargement des parcours"
     >
       <div className="pc2" aria-hidden="true">
-        <div className="catalogue-heading">
+        <div className="catalogue-masthead">
           <div>
             <Skeleton w={140} h={12} style={{ marginBottom: 22 }} />
-            <Skeleton w="55%" h={72} style={{ marginBottom: 8 }} />
-            <Skeleton w="90%" h={72} style={{ marginBottom: 24 }} />
-            <SkeletonText lines={2} lastWidth="65%" lineHeight={15} gap={10} />
+            <Skeleton w="min(70vw, 540px)" h={72} style={{ marginBottom: 18 }} />
+            <Skeleton w="min(65vw, 420px)" h={14} />
           </div>
-          <div className="catalogue-summary">
-            <Skeleton w={100} h={72} />
-            <Skeleton w="90%" h={14} style={{ marginBlock: 24 }} />
-            <SkeletonText lines={2} lastWidth="75%" lineHeight={12} gap={8} />
-            <Skeleton w="100%" h={44} style={{ marginTop: 20 }} />
-          </div>
+          <Skeleton w="min(80vw, 310px)" h={70} />
+        </div>
+        <div className="catalogue-ledger">
+          {[80, 90, 100].map((w) => (
+            <Skeleton key={w} w={w} h={24} />
+          ))}
         </div>
         <div className="pc2-filters catalogue-tools">
           {[70, 100, 62, 84, 130].map((w) => (
@@ -36,6 +36,11 @@ export default function PathsLoading(): React.ReactElement {
           <Skeleton w={160} h={30} />
         </div>
         <div className="hero-path">
+          <div className="hero-path__poster">
+            <div className="catalogue-artwork">
+              <Skeleton w="100%" h="100%" />
+            </div>
+          </div>
           <div className="hero-path__main">
             <Skeleton w="70%" h={16} style={{ marginBottom: 28 }} />
             <Skeleton w="90%" h={48} style={{ marginBottom: 20 }} />
@@ -49,9 +54,6 @@ export default function PathsLoading(): React.ReactElement {
             </div>
           </div>
           <div className="hero-path__console">
-            <div className="hero-glyph">
-              <Skeleton w={100} h={100} />
-            </div>
             <div className="hero-next">
               <Skeleton w="80%" h={24} />
             </div>

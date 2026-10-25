@@ -1,5 +1,7 @@
 "use client";
 
+// The browser downloads the authenticated export response without a navigation.
+
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -44,28 +46,13 @@ export function ExportDataButton(): React.JSX.Element {
 
   return (
     <button
-      className="mono-label mono-label--md"
+      className="settings-button"
       type="button"
       onClick={() => {
         void handleExport();
       }}
       disabled={loading}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "8px 20px",
-        fontWeight: 600,
-        background: "transparent",
-        border: "1px solid var(--color-brand-blue)",
-        color: loading ? "var(--color-text-faint)" : "var(--color-text-primary)",
-        cursor: loading ? "not-allowed" : "pointer",
-        transition: "color 150ms ease",
-      }}
     >
-      <span style={{ color: loading ? "var(--color-text-faint)" : "var(--cosmetic-accent)" }}>
-        &#9656;
-      </span>
       {loading ? "Chargement…" : "Télécharger l'export"}
     </button>
   );

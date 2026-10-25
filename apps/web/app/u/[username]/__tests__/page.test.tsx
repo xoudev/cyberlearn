@@ -96,7 +96,7 @@ describe("the public profile page", () => {
     auth.getRequestUser.mockResolvedValue(null);
     const html = await render();
 
-    expect(html).toContain('class="page-container"');
+    expect(html).toMatch(/class="page-container(?:\s[^"]*)?"/u);
     expect(html).toContain("pg-crumb");
     expect(html).toContain('<p class="pg-eyebrow">Profil public · membre depuis');
     expect(html).toContain('<h1 class="pg-title pp-title"><em>Alex</em>.</h1>');
@@ -343,7 +343,8 @@ describe("the profile's content", () => {
     const html = await render();
 
     expect(html).toContain("<b>64</b> jours actifs cette année");
-    expect(html).toContain("dash-heat-grid");
+    expect(html).toContain("Son rythme, mois après mois.");
+    expect(html).toContain("Détail des jours actifs");
     expect(html).toContain('aria-label="Ses badges les plus rares"');
     expect(html).toContain("Détenu par 3 personnes");
     expect(db.streakRepository.getOverview).toHaveBeenCalledWith(OWNER);

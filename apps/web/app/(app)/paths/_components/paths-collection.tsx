@@ -21,6 +21,7 @@ import {
 } from "@cyberlearn/lib/content/vocabulary";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
+import "./paths-workshop.css";
 import { formatNumberFr } from "@cyberlearn/lib";
 import { Brackets } from "@/app/_components/corner-brackets";
 import { EmptyState } from "@/components/empty-state";
@@ -28,6 +29,7 @@ import { ProgressBar } from "@/components/progress-bar";
 import { useSlashFocus } from "@/hooks/use-slash-focus";
 import type { LearningAnswers, SuggestedPath } from "@/lib/paths/guide-answers";
 import { PathGuideDialog } from "./path-guide-dialog";
+import { CatalogueArtwork } from "@/components/catalogue-artwork";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -185,6 +187,13 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   return (
     <article className={`hero-path hero-path--${kind}`}>
       <Brackets />
+      <div className="hero-path__poster">
+        <CatalogueArtwork
+          category={path.category}
+          reference={path.refCode}
+          coverSrc={path.coverSrc}
+        />
+      </div>
       <div className="hero-path__main">
         <div className="hero-path__topline">
           <span className="state-chip">
@@ -199,10 +208,6 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           <span className="diff-tag">
             <DiffBars level={barsOf(diff.level)} />
             {diff.label}
-          </span>
-          <span className="refcode">
-            {"// "}
-            <b>{path.refCode}</b>
           </span>
         </div>
         <h2 className="hero-path__title">{path.title}</h2>
@@ -241,6 +246,15 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
             <span className="pct">{pct}%</span>
           </div>
           <ProgressBar value={pct} size="xl" tip label="Progression du parcours" />
+          <div
+            className="hero-path__segments"
+            aria-hidden="true"
+            style={{ gap: Math.min(4, 100 / Math.max(path.progressTotal, 1)) }}
+          >
+            {Array.from({ length: path.progressTotal }, (_, index) => (
+              <span key={index} data-done={index < path.progressDone} />
+            ))}
+          </div>
           <div className="hero-path__cta-row">
             <Link href={cta.href} className="btn btn--lg">
               {cta.label} {ARROW}
@@ -253,23 +267,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
           </div>
         </div>
       </div>
-      <div className={`hero-path__console${path.coverSrc ? " hero-path__console--image" : ""}`}>
-        {path.coverSrc ? (
-          <>
-            <span
-              className="hero-path__img"
-              aria-hidden="true"
-              style={{ backgroundImage: `url("${path.coverSrc}")` }}
-            />
-            {/* Holds the room above the next mission, as the glyph does. */}
-            <div className="hero-glyph" />
-          </>
-        ) : (
-          <div className="hero-glyph">
-            <span className="hero-glyph__halo" />
-            <KindGlyph kind={kind} size={132} />
-          </div>
-        )}
+      <div className="hero-path__console">
         {path.nextLesson && (
           <Link href={`/lessons/${path.nextLesson.slug}`} className="hero-next">
             <div className="hero-next__lbl">Prochaine mission · {path.nextLesson.n}</div>
@@ -547,42 +545,37 @@ export function PathsCollection({
   ];
 
   return (
-    <div className="pc2-root learning-catalogue">
+    <div className="pc2-root learning-catalogue paths-workshop">
       <div className="pc2">
-        <header className="catalogue-heading">
-          <div>
-            <p className="catalogue-heading__index">Apprendre / Parcours</p>
+        <header className="catalogue-masthead">
+          <div className="catalogue-masthead__title">
+            <p className="catalogue-masthead__eyebrow">Apprendre / Choisir un cap</p>
             <h1>
-              Un cap.
-              <br />
-              <em>Des compétences.</em>
+              Les parcours<span>.</span>
             </h1>
-            <p className="catalogue-heading__description">
-              Choisis un domaine. Avance mission par mission, des premières notions à la pratique.
-            </p>
+            <p>Du premier réflexe à la maîtrise. Une mission après l’autre.</p>
           </div>
-          <aside className="catalogue-summary" aria-label="Ton catalogue de parcours">
-            <div className="catalogue-summary__count">
-              <strong>{String(paths.length).padStart(2, "0")}</strong>
-              <span>{paths.length > 1 ? "parcours disponibles" : "parcours disponible"}</span>
-            </div>
-            <div className="catalogue-summary__stats">
-              <span>
-                <b>{inProgCount}</b> en cours
-              </span>
-              <span>
-                <b>{doneCount}</b> terminés
-              </span>
-              <span>
-                <b>{idleCount}</b> à découvrir
-              </span>
-            </div>
-            <p className="catalogue-summary__note">
-              {totalHours} h de contenu · {fmtXp(totalXp)} XP au total
-            </p>
+          <div className="catalogue-masthead__guide">
             <PathGuideDialog catalogue={guide.catalogue} saved={guide.saved} />
-          </aside>
+          </div>
         </header>
+        <div className="catalogue-ledger" aria-label="Ton catalogue de parcours">
+          <span>
+            <b>{String(paths.length).padStart(2, "0")}</b> parcours
+          </span>
+          <span>
+            <b>{inProgCount}</b> en cours
+          </span>
+          <span>
+            <b>{doneCount}</b> terminés
+          </span>
+          <span>
+            <b>{idleCount}</b> à découvrir
+          </span>
+          <span className="catalogue-ledger__total">
+            {totalHours} h de contenu <i>·</i> {fmtXp(totalXp)} XP
+          </span>
+        </div>
 
         {/* filters */}
         <div className="pc2-filters catalogue-tools">

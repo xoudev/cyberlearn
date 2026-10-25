@@ -162,6 +162,7 @@ export function LessonRating({
   } else if (!isCompleted) {
     body = (
       <div
+        className="lesson-rating__locked"
         style={{
           display: "flex",
           alignItems: "center",

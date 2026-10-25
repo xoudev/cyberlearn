@@ -1,5 +1,7 @@
 "use client";
 
+// Client boundary: the season countdown updates while the league is open.
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import type { PodLadderEntry } from "@cyberlearn/db";
@@ -22,8 +24,8 @@ const DIVISION_VAR: Record<LeagueDivisionCode, string> = {
 const PROMOTE = "var(--color-promote)";
 const RELEGATE = "var(--color-relegate)";
 const CYAN = "var(--cosmetic-accent)";
-const CYAN_GRAD = "linear-gradient(135deg, var(--cosmetic-accent), var(--color-brand-blue))";
-const NEUTRAL_GRAD = "linear-gradient(135deg, #3a3668, #211d4d)";
+const CYAN_GRAD = "var(--cosmetic-accent)";
+const NEUTRAL_GRAD = "#aaa79f";
 const ROW_COLS = "80px minmax(0,1fr) 160px 130px 120px";
 
 // ── Countdown ────────────────────────────────────────────────────────────────
@@ -136,23 +138,18 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
   const handle = entry.username ?? entry.displayName ?? "Anonyme";
   const accent = isMe ? CYAN : entry.promotion ? PROMOTE : entry.relegation ? RELEGATE : null;
 
-  const background = isMe
-    ? "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 10%, transparent) 0%, color-mix(in srgb, var(--cosmetic-accent) 2%, transparent) 60%, transparent 100%)"
-    : entry.promotion
-      ? "linear-gradient(90deg, color-mix(in srgb, var(--color-promote) 9%, transparent), transparent 70%)"
-      : entry.relegation
-        ? "linear-gradient(90deg, color-mix(in srgb, var(--color-relegate) 9%, transparent), transparent 70%)"
-        : undefined;
+  const background = isMe ? "#191c22" : "#121418";
 
   return (
     <div
+      className="league-player"
       style={{
         display: "grid",
         gridTemplateColumns: ROW_COLS,
         alignItems: "center",
         gap: 16,
         padding: accent ? "14px 24px 14px 21px" : "14px 24px",
-        borderBottom: "1px solid rgba(31,27,71,0.5)",
+        borderBottom: "1px solid #303137",
         borderLeft: accent ? `3px solid ${accent}` : undefined,
         background,
         position: "relative",
@@ -179,6 +176,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           #
         </span>
         {entry.rank}
+        {isMe && <span className="league-player__you">Toi</span>}
       </div>
 
       {/* player */}
@@ -273,28 +271,6 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
       <div style={{ justifySelf: "end" }}>
         <ZoneChip entry={entry} />
       </div>
-
-      {/* TOI label */}
-      {isMe && (
-        <span
-          style={{
-            position: "absolute",
-            right: 24,
-            top: "50%",
-            transform: "translateY(-50%)",
-            ...MONO,
-            fontWeight: 700,
-            fontSize: 9,
-            letterSpacing: "0.22em",
-            color: CYAN,
-            background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
-            padding: "3px 8px",
-          }}
-        >
-          › TOI
-        </span>
-      )}
     </div>
   );
 }
@@ -367,7 +343,7 @@ function LeagueBoard({
       : "Zone neutre";
 
   return (
-    <div>
+    <div className="league-workspace">
       {/* Season strip */}
       <div
         style={{
@@ -407,6 +383,7 @@ function LeagueBoard({
 
       {/* TA LIGUE banner */}
       <section
+        className="league-position"
         style={{
           position: "relative",
           display: "grid",
@@ -534,6 +511,8 @@ function LeagueBoard({
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
+          gap: 16,
           alignItems: "baseline",
           justifyContent: "space-between",
           marginBottom: 16,
@@ -550,7 +529,7 @@ function LeagueBoard({
             margin: 0,
           }}
         >
-          <span style={{ color: "var(--color-text-muted)" }}>{"// "}</span>POULE · CLASSEMENT VIF
+          Ta poule
         </h3>
         <span
           style={{
@@ -568,7 +547,7 @@ function LeagueBoard({
       </div>
 
       <div
-        className="card"
+        className="card league-ladder"
         style={{
           position: "relative",
           overflow: "hidden",
@@ -576,6 +555,7 @@ function LeagueBoard({
       >
         {/* header */}
         <div
+          className="league-ladder__head"
           style={{
             display: "grid",
             gridTemplateColumns: ROW_COLS,

@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 
 /**
@@ -39,14 +39,12 @@ export function InactivityNoticeEmail({
   siteUrl,
 }: InactivityNoticeEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{`Ton compte CyberLearn sera supprimé le ${eraseOn}, sauf si tu le gardes`}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Ton compte va être supprimé</Heading>

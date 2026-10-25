@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import "../exam.css";
-import { Brackets } from "@/app/_components/corner-brackets";
+import { BastionLogo } from "@/components/bastion-logo";
+import "@/components/assessment-workspace.css";
 import { Crumb } from "@/components/crumb";
 import { unlockDateLabel, waitLeftLabel } from "@/lib/exam/cooldown-label";
 import {
@@ -394,278 +395,119 @@ function IntroScreen(props: {
       : "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
 
   return (
-    <div className="exam-root">
-      <div className="exam-bg" aria-hidden="true">
-        <div className="exam-bg__glow1" />
-        <div className="exam-bg__glow2" />
-        <div className="exam-bg__grid" />
-      </div>
-
+    <div className="exam-root learning-catalogue learning-workspace assessment-workspace">
       <div className="exam-stage">
-        <main className="exam-frame">
-          <Brackets />
-
-          <div className="exam-bar">
-            <span className="exam-bar__dots">
-              <i />
-              <i />
-              <i />
-            </span>
-            <span className="exam-bar__path">
-              $ ~/ cyberlearn / {pathSlug} / <b>examen-final</b>
-            </span>
-            <span className="exam-bar__status">
-              <span className="dot" />
-              Accès examen requis
-            </span>
-          </div>
-
+        <div className="exam-frame">
+          <header className="assessment-brand">
+            <BastionLogo size={36} />
+            <span>CyberLearn / Examen final</span>
+            <span className="assessment-brand__reference">{refCode}</span>
+          </header>
           <div className="exam-body">
-            {/* LEFT */}
             <section className="exam-left">
-              <span className="exam-eyebrow">{"// Examen final"}</span>
-              <h1 className="exam-title gradient-title">{pathTitle}</h1>
-              <div className="exam-refcode">
-                {"// "}
-                <b>{refCode}</b> · Certification vérifiable
-              </div>
-
-              <div className="exam-brief">
-                <p>
-                  {"Tu t'apprêtes à passer l'"}
-                  <strong>examen certifiant</strong>
-                  {
-                    " du parcours. Il valide l'ensemble des compétences acquises au fil des missions."
-                  }
-                </p>
-                <p>
-                  {"Les questions sont "}
-                  <span className="tq">tirées aléatoirement</span>
-                  {" d'un pool, l'épreuve est "}
-                  <strong>chronométrée</strong>
-                  {", et tu disposes d'"}
-                  <strong>une seule tentative</strong>
-                  {". Une fois lancé, le chrono ne s'arrête plus."}
-                </p>
-              </div>
-
-              <div className="exam-stats">
-                <div className="exam-stat">
-                  <span className="exam-stat__hex">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M7 8 a3 3 0 1 1 4 2.6 c-0.7 0.5-1 1-1 2" />
-                      <circle cx="10" cy="15.5" r="0.6" fill="currentColor" stroke="none" />
-                    </svg>
-                  </span>
-                  <div className="exam-stat__val">{questionCount}</div>
-                  <div className="exam-stat__lbl">Questions</div>
-                </div>
-                <div className="exam-stat">
-                  <span className="exam-stat__hex">{IcoClock}</span>
-                  <div className="exam-stat__val">
-                    {timeLimitMinutes}
-                    <span className="u">:00</span>
+              <p className="exam-eyebrow">Valider tes acquis</p>
+              <h1 className="exam-title">
+                {pathTitle}
+                <span>.</span>
+              </h1>
+              <p className="exam-brief">
+                Une épreuve chronométrée pour valider le parcours et obtenir ton certificat
+                vérifiable. Lis les conditions avant de commencer.
+              </p>
+              <div className="exam-departure">
+                <dl className="exam-stats">
+                  <div className="exam-stat">
+                    <dt>Questions</dt>
+                    <dd>{questionCount}</dd>
                   </div>
-                  <div className="exam-stat__lbl">Chronométré</div>
-                </div>
-                <div className="exam-stat exam-stat--pass">
-                  <span className="exam-stat__hex">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="10" cy="10" r="6.5" />
-                      <circle cx="10" cy="10" r="2.4" />
-                    </svg>
-                  </span>
-                  <div className="exam-stat__val">
-                    {passThreshold}
-                    <span className="u">%</span>
+                  <div className="exam-stat">
+                    <dt>Minutes</dt>
+                    <dd>{timeLimitMinutes}</dd>
                   </div>
-                  <div className="exam-stat__lbl">Pour réussir</div>
-                </div>
-              </div>
-
-              <div className="exam-cta-row">
-                {pathCompleted ? (
-                  <Link
-                    className="exam-start"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
-                  >
-                    Voir mon certificat
-                    {IcoArrowRight}
+                  <div className="exam-stat">
+                    <dt>Pour réussir</dt>
+                    <dd>
+                      {passThreshold}
+                      <span> %</span>
+                    </dd>
+                  </div>
+                </dl>
+                <div className="exam-cta-row">
+                  {pathCompleted ? (
+                    <Link
+                      className="exam-start"
+                      href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
+                    >
+                      Voir mon certificat {IcoArrowRight}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      className="exam-start"
+                      onClick={onStart}
+                      disabled={startDisabled}
+                    >
+                      {busy ? "Préparation…" : "Commencer l'examen"}
+                      {!busy && IcoArrowRight}
+                    </button>
+                  )}
+                  <Link href={`/paths/${pathSlug}`} className="exam-back">
+                    Retour au parcours
                   </Link>
-                ) : (
-                  <button
-                    type="button"
-                    className="exam-start"
-                    onClick={onStart}
-                    disabled={startDisabled}
-                  >
-                    <span className="exam-start__bk tl" />
-                    <span className="exam-start__bk tr" />
-                    <span className="exam-start__bk bl" />
-                    <span className="exam-start__bk br" />
-                    {busy ? "Préparation…" : "Commencer l'examen"}
-                    {!busy && IcoArrowRight}
-                  </button>
+                </div>
+                {statusNote && (
+                  <p className="assessment-notice" role="status">
+                    {statusNote}
+                  </p>
                 )}
-                <Link href={`/paths/${pathSlug}`} className="exam-back">
-                  {IcoArrowLeft}
-                  Retour au parcours
-                </Link>
+                {error && (
+                  <p className="assessment-error" role="alert">
+                    {error}
+                  </p>
+                )}
               </div>
-
-              {statusNote && (
-                <p
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    color: "var(--color-rarity-legendary)",
-                    marginTop: 16,
-                  }}
-                >
-                  {statusNote}
-                </p>
-              )}
-              {error && (
-                <p
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    color: "var(--color-danger)",
-                    marginTop: 12,
-                  }}
-                >
-                  {error}
-                </p>
-              )}
             </section>
-
-            {/* RIGHT */}
             <aside className="exam-right">
-              <div className="exam-right__head">
-                <span className="sl">{"//"}</span> {"Ce qui t'attend"}
-              </div>
-
-              <div className="rules">
-                <div className="rule">
-                  <span className="rule__ico">
-                    <svg
-                      width="19"
-                      height="19"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect x="3" y="3" width="14" height="14" rx="2.2" />
-                      <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none" />
-                      <circle cx="13" cy="7" r="1" fill="currentColor" stroke="none" />
-                      <circle cx="10" cy="10" r="1" fill="currentColor" stroke="none" />
-                      <circle cx="7" cy="13" r="1" fill="currentColor" stroke="none" />
-                      <circle cx="13" cy="13" r="1" fill="currentColor" stroke="none" />
-                    </svg>
-                  </span>
-                  <div className="rule__body">
-                    <p className="rule__title">Questions tirées au sort</p>
-                    <p className="rule__desc">
-                      {`${String(questionCount)} questions piochées aléatoirement dans un pool. Chaque tentative est unique.`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rule">
-                  <span className="rule__ico">{IcoClock}</span>
-                  <div className="rule__body">
-                    <p className="rule__title">{`Chrono de ${String(timeLimitMinutes)} minutes`}</p>
-                    <p className="rule__desc">
-                      {
-                        "Le temps défile en continu, sans pause possible. La copie est rendue à 0:00."
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rule">
-                  <span className="rule__ico">
-                    <svg
-                      width="19"
-                      height="19"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="10" cy="10" r="6.5" />
-                      <circle cx="10" cy="10" r="2.4" />
-                    </svg>
-                  </span>
-                  <div className="rule__body">
-                    <p className="rule__title">{`Seuil de réussite : ${String(passThreshold)} %`}</p>
-                    <p className="rule__desc">
-                      {`Soit ${String(passNeeded)} bonnes réponses sur ${String(questionCount)} pour valider et débloquer le certificat.`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rule rule--warn">
-                  <span className="rule__ico">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect x="4.5" y="9" width="11" height="8" rx="1.4" />
-                      <path d="M6.7 9 V6.5 A3.3 3.3 0 0 1 13.3 6.5 V9" />
-                      <circle cx="10" cy="13" r="1" fill="currentColor" stroke="none" />
-                    </svg>
-                  </span>
-                  <div className="rule__body">
-                    <p className="rule__title">Une seule tentative</p>
-                    <p className="rule__desc">
-                      {"En cas d'échec, un "}
-                      <b>cooldown de 48 h</b>
-                      {" s'applique avant de pouvoir réessayer."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="exam-note">
+              <h2>Avant de te lancer.</h2>
+              <ol className="assessment-rules">
+                <li>
+                  <h3>Des questions tirées au sort</h3>
+                  <p>
+                    {hasQuiz
+                      ? `${String(questionCount)} questions choisies dans le questionnaire du parcours. Une seule réponse par question.`
+                      : "Le questionnaire de ce parcours n’est pas encore disponible."}
+                  </p>
+                </li>
+                <li>
+                  <h3>Un chrono sans pause</h3>
+                  <p>
+                    {timeLimitMinutes} minutes dès le lancement. À zéro, ta copie est rendue
+                    automatiquement.
+                  </p>
+                </li>
+                <li>
+                  <h3>Un seuil à atteindre</h3>
+                  <p>
+                    {hasQuiz
+                      ? `${String(passNeeded)} bonnes réponses sur ${String(questionCount)} pour atteindre ${String(passThreshold)} % et valider l’examen.`
+                      : "Le seuil de réussite s’appliquera quand le questionnaire sera disponible."}
+                  </p>
+                </li>
+                <li>
+                  <h3>Une tentative à la fois</h3>
+                  <p>En cas d’échec, un délai de 48 h s’applique avant de pouvoir réessayer.</p>
+                </li>
+              </ol>
+              <p className="exam-note">
                 {IcoShield}
                 <span>
-                  <b>{"Charte d'honneur."}</b>
-                  {" En commençant, tu certifies passer cet examen seul, sans aide extérieure."}
+                  <b>Charte d’honneur.</b> En commençant, tu certifies passer cet examen seul, sans
+                  aide extérieure.
                 </span>
-              </div>
+              </p>
             </aside>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
@@ -711,16 +553,13 @@ function TakingScreen(props: {
   const pct = questionCount > 0 ? ((index + 1) / questionCount) * 100 : 0;
 
   return (
-    <div className="exam-root exam-root--fixed">
-      <div className="exam-bg" aria-hidden="true">
-        <div className="exam-bg__glow1" />
-        <div className="exam-bg__grid" />
-      </div>
-
+    <div className="exam-root exam-root--fixed learning-catalogue learning-workspace assessment-workspace">
       <div className="q-app">
         <header className="q-topbar">
           <div className="q-exam">
-            <span className="q-exam__mark">{IcoShield}</span>
+            <span className="q-exam__mark">
+              <BastionLogo size={32} />
+            </span>
             <span className="q-exam__txt">
               <span className="q-exam__label">{"// Examen final"}</span>
               <span className="q-exam__name">{pathTitle}</span>
@@ -761,6 +600,7 @@ function TakingScreen(props: {
                       key={o.id}
                       type="button"
                       className={`q-opt${selected ? " is-selected" : ""}`}
+                      aria-pressed={selected}
                       onClick={() => {
                         onSelect(q.id, o.id);
                       }}
@@ -860,41 +700,23 @@ function ResultsScreen(props: {
 
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
-  // gauge geometry (matches the mockup: viewBox 200, r 86)
-  const R = 86;
-  const C = 2 * Math.PI * R;
-  const offset = C * (1 - score / 100);
-
   return (
-    <div className="exam-root">
-      <div className="exam-bg" aria-hidden="true">
-        <div className="exam-bg__glow1" />
-        <div className="exam-bg__grid" />
-      </div>
-
+    <div className="exam-root learning-catalogue learning-workspace assessment-workspace">
       <div className={`r-app ${passed ? "is-pass" : "is-fail"}`}>
         <div className="r-wrap">
           <Crumb segments={[pathSlug, "résultats"]} caret={false} />
 
           <section className="r-hero">
-            <div className="r-gauge">
-              <svg viewBox="0 0 200 200">
-                <circle className="r-gauge__track" cx="100" cy="100" r={R} />
-                <circle
-                  className="r-gauge__fill"
-                  cx="100"
-                  cy="100"
-                  r={R}
-                  strokeDasharray={C}
-                  strokeDashoffset={offset}
-                />
-              </svg>
-              <div className="r-gauge__center">
-                <div className="r-gauge__pct">{score}%</div>
-                <div className="r-gauge__sub">
-                  {okCount} / {total} correctes
-                </div>
-              </div>
+            <div className="assessment-score" aria-label="Score de l’examen">
+              <span>Ton résultat</span>
+              <strong>
+                {score}
+                <span> %</span>
+              </strong>
+              <p>
+                {okCount} / {total} réponses correctes
+              </p>
+              <span>Seuil de réussite : {passThreshold} %</span>
             </div>
 
             <div className="r-status">
@@ -990,7 +812,6 @@ function ResultsScreen(props: {
                     className="r-btn r-btn--cert"
                     href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
                   >
-                    <Brackets />
                     <svg
                       width="17"
                       height="17"
@@ -1163,7 +984,7 @@ function ReviewRow(props: {
 
   return (
     <div className={`r-q${wrong ? " is-wrong" : ""}${open ? " is-open" : ""}`}>
-      <button type="button" className="r-q__head" onClick={onToggle}>
+      <button type="button" className="r-q__head" onClick={onToggle} aria-expanded={open}>
         <span className="r-q__mark">
           {wrong ? (
             <svg

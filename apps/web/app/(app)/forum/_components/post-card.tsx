@@ -1,5 +1,7 @@
 "use client";
 
+// Client state keeps the edit draft and action feedback inside its message.
+
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 // The notes renderer: a dependency-free markdown pass that builds React
@@ -144,6 +146,7 @@ export function PostCard({
         {editing ? (
           <>
             <textarea
+              aria-label="Modifier le message"
               className="fo-textarea"
               value={draft}
               onChange={(e) => {

@@ -48,17 +48,15 @@ function CardSkeleton(): React.ReactElement {
 
 export default function DuelsLoading(): React.ReactElement {
   return (
-    <div className="page-container dl" aria-busy="true" aria-label="Chargement des duels">
-      <header className="dl-head" aria-hidden="true">
+    <div
+      className="page-container dl learning-catalogue learning-workspace community-workspace"
+      aria-busy="true"
+      aria-label="Chargement des duels"
+    >
+      <header className="catalogue-masthead" aria-hidden="true">
         <div>
-          <div className="pg-crumb">
-            <Skeleton w={150} h={12} style={{ margin: "3px 0" }} />
-          </div>
           <Skeleton w={230} h={11} style={{ margin: "2.75px 0 16.75px" }} />
-          <div className="pg-title">
-            {/* 0.8em plus 0.14em above and below: the title's 1.08 line. */}
-            <Skeleton w="2.9em" h="0.8em" style={{ maxWidth: "100%", margin: "0.14em 0" }} />
-          </div>
+          <Skeleton w="min(65vw,480px)" h={76} />
           <SkeletonText
             className="pg-lede"
             lines={2}
@@ -78,38 +76,40 @@ export default function DuelsLoading(): React.ReactElement {
         </ul>
       </header>
 
-      <ol className="dl-rules" aria-hidden="true">
-        {[0, 1, 2].map((i) => (
-          <li key={i}>
-            <Skeleton w={18} h={12} />
-            <div>
-              <Skeleton w="70%" h={15} style={{ marginBottom: 10 }} />
-              <SkeletonText lines={2} lastWidth="60%" lineHeight={12} gap={8} />
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="catalogue-ledger" aria-hidden="true">
+        <Skeleton w={120} h={26} />
+        <Skeleton w={120} h={26} />
+      </div>
+      <div className="dl-guide" aria-hidden="true">
+        <Skeleton w={220} h={16} style={{ marginBlock: 24 }} />
+      </div>
 
-      <div className="dl-section" aria-hidden="true">
-        <div className="dl-sec">
-          <Skeleton w={200} h={26} style={{ margin: "2.5px 0" }} />
+      <div className="dl-section dl-launch" aria-hidden="true">
+        <div className="dl-launch__body">
+          <div className="dl-sec">
+            <Skeleton w={200} h={26} style={{ margin: "2.5px 0" }} />
+          </div>
+          <div className="dl-new">
+            <div className="dl-new__versus">
+              <div className="dl-new__me">
+                <Skeleton w={44} h={44} />
+                <Skeleton w={30} h={16} />
+              </div>
+              <Skeleton w={70} h={26} style={{ marginBottom: 9 }} />
+              <div className="dl-new__them">
+                <Skeleton w={44} h={44} />
+                <FieldSkeleton />
+              </div>
+            </div>
+            <FieldSkeleton />
+            <div className="dl-new__go">
+              <Skeleton w={190} h={44} />
+            </div>
+          </div>
         </div>
-        <div className="dl-new">
-          <div className="dl-new__versus">
-            <div className="dl-new__me">
-              <Skeleton w={44} h={44} />
-              <Skeleton w={30} h={16} />
-            </div>
-            <Skeleton w={70} h={26} style={{ marginBottom: 9 }} />
-            <div className="dl-new__them">
-              <Skeleton w={44} h={44} />
-              <FieldSkeleton />
-            </div>
-          </div>
-          <FieldSkeleton />
-          <div className="dl-new__go">
-            <Skeleton w={190} h={44} />
-          </div>
+        <div className="dl-launch__aside">
+          <Skeleton w={64} h={64} />
+          <Skeleton w="90%" h={70} />
         </div>
       </div>
 

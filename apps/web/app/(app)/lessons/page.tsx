@@ -14,6 +14,7 @@ import { CatalogFilterSelect } from "./_components/catalog-filter-select";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
 import { EmptyState } from "@/components/empty-state";
+import { CatalogueDomainIcon } from "@/components/catalogue-domain-icon";
 import "./lessons-catalogue.css";
 
 export const metadata: Metadata = { title: "Leçons" };
@@ -101,166 +102,211 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
   const hasFilters = [filters.category, filters.difficulty, filters.status, filters.q].some(
     (value) => Boolean(value),
   );
+  const featuredIndex =
+    lessons.length >= 3
+      ? lessons.findIndex(
+          (lesson) =>
+            lesson.progressStatus === "IN_PROGRESS" &&
+            placements.get(lesson.id)?.state !== "locked",
+        )
+      : -1;
+  const featuredLesson = lessons[featuredIndex];
 
   return (
     <>
-      <header className="catalogue-heading">
-        <div>
-          <p className="catalogue-heading__index">Apprendre / Leçons</p>
+      <header className="catalogue-masthead">
+        <div className="catalogue-masthead__title">
+          <p className="catalogue-masthead__eyebrow">Apprendre / Une notion à la fois</p>
           <h1>
-            Une notion.
-            <br />
-            <em>À toi de jouer.</em>
+            Les leçons<span>.</span>
           </h1>
-          <p className="catalogue-heading__description">
-            Un protocole à comprendre, une faille à repérer, du code à écrire. Choisis ce que tu
-            veux travailler aujourd’hui.
-          </p>
+          <p>Comprendre. Essayer. Savoir refaire.</p>
         </div>
-        <aside className="catalogue-summary" aria-label="Leçons correspondant aux filtres">
-          <div className="catalogue-summary__count">
-            <strong>{String(total).padStart(2, "0")}</strong>
-            <span>{hasFilters ? "leçons dans ta sélection" : "leçons au catalogue"}</span>
-          </div>
-          <div className="catalogue-summary__stats">
-            <span>
-              <b>{inProgressCount}</b> en cours
-            </span>
-            <span>
-              <b>{completedCount}</b> terminées
-            </span>
-          </div>
-          <p className="catalogue-summary__note">
-            Les leçons accessibles apparaissent en premier. Celles à débloquer te renvoient vers
-            leur parcours.
-          </p>
-        </aside>
+        <div className="lessons-catalogue__edition" aria-label="Leçons correspondant aux filtres">
+          <strong>{String(total).padStart(2, "0")}</strong>
+          <span>{hasFilters ? "dans ta sélection" : "leçons au catalogue"}</span>
+        </div>
       </header>
-
-      <div className="catalogue-tools">
-        <nav className="catalogue-tools__domains" aria-label="Domaine des leçons">
-          <span className="catalogue-tools__label">Domaine</span>
-          <div className="lessons-catalogue__domains">
-            {CATEGORIES.map((c) => {
-              const active =
-                c.value === "ALL" ? activeCategory === undefined : activeCategory === c.value;
-              const count = c.value === "ALL" ? allCount : (categoryCounts[c.value] ?? 0);
-              return (
-                <Link
-                  key={c.value}
-                  href={catalogHref(filters, { category: c.value === "ALL" ? null : c.value })}
-                  className="catalogue-domain"
-                  aria-current={active ? "true" : undefined}
-                >
-                  {c.label}
-                  <b>{count}</b>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-        <div className="lessons-catalogue__refine">
-          <CatalogFilterSelect
-            label="Niveau"
-            value={filters.difficulty ?? "ALL"}
-            options={DIFFICULTIES.map((d) => ({
-              ...d,
-              href: catalogHref(filters, { difficulty: d.value === "ALL" ? null : d.value }),
-            }))}
-          />
-          <CatalogFilterSelect
-            label="Statut"
-            value={filters.status ?? "ALL"}
-            options={STATUSES.map((s) => ({
-              ...s,
-              href: catalogHref(filters, { status: s.value === "ALL" ? null : s.value }),
-            }))}
-          />
-          <LessonsSearchBar />
-        </div>
+      <div className="catalogue-ledger">
+        <span>
+          <b>{inProgressCount}</b> en cours
+        </span>
+        <span>
+          <b>{completedCount}</b> terminées
+        </span>
+        <span className="catalogue-ledger__total">
+          Les accessibles d’abord. Les autres se débloquent dans leur parcours.
+        </span>
       </div>
 
-      <div className="catalogue-results">
-        <h2>{hasFilters ? "Ta sélection" : "Toutes les leçons"}</h2>
-        <p>
-          {total} résultat{total > 1 ? "s" : ""}
-        </p>
-        {hasFilters && (
-          <Link href="/lessons" className="catalogue-results__link">
-            Réinitialiser les filtres
+      {featuredLesson && (
+        <section className="lessons-catalogue__featured" aria-label="Une leçon à reprendre">
+          <div className="catalogue-results">
+            <h2>Reprends le fil</h2>
+            <p>Ta leçon en cours</p>
+          </div>
+          <Link
+            href={`/lessons/${featuredLesson.slug}`}
+            className="lessons-catalogue__card-link"
+            aria-label={`Reprendre ${featuredLesson.title}`}
+          >
+            <CatalogueLessonCard
+              featured
+              title={featuredLesson.title}
+              description={featuredLesson.description}
+              difficulty={featuredLesson.difficulty}
+              category={featuredLesson.category}
+              durationMinutes={featuredLesson.estimatedMinutes}
+              xpReward={featuredLesson.xpReward}
+              status={featuredLesson.progressStatus ?? "IN_PROGRESS"}
+              refCode={featuredLesson.refCode}
+              coverSrc={coverSrcs[featuredIndex] ?? null}
+              quizScore={featuredLesson.quizScore}
+              lockedPath={null}
+            />
           </Link>
-        )}
-      </div>
-
-      {lessons.length === 0 ? (
-        <LessonsEmpty />
-      ) : (
-        <div className="lessons-catalogue__grid">
-          {lessons.map((lesson, i) => {
-            const placement = placements.get(lesson.id);
-            const locked = placement?.state === "locked";
-            return (
-              <Link
-                key={lesson.id}
-                href={locked ? `/paths/${placement.path.slug}` : `/lessons/${lesson.slug}`}
-                className="lessons-catalogue__card-link"
-                aria-label={
-                  locked
-                    ? `${lesson.title}. Leçon verrouillée, à débloquer dans le parcours ${placement.path.title}`
-                    : lesson.title
-                }
-              >
-                <CatalogueLessonCard
-                  title={lesson.title}
-                  description={lesson.description}
-                  difficulty={lesson.difficulty}
-                  category={lesson.category}
-                  durationMinutes={lesson.estimatedMinutes}
-                  xpReward={lesson.xpReward}
-                  status={lesson.progressStatus ?? "NOT_STARTED"}
-                  refCode={lesson.refCode}
-                  coverSrc={coverSrcs[i] ?? null}
-                  quizScore={lesson.quizScore}
-                  lockedPath={locked ? placement.path.title : null}
-                />
-              </Link>
-            );
-          })}
-        </div>
+        </section>
       )}
 
-      {totalPages > 1 && (
-        <nav className="lessons-catalogue__pagination" aria-label="Pagination des leçons">
-          <span>
-            Affichage{" "}
-            <b>
-              {startIdx}–{endIdx}
-            </b>{" "}
-            sur <b>{total}</b>
-          </span>
-          <div>
-            {page > 1 && (
-              <PageBtn href={catalogHref(filters, { page: String(page - 1) })}>← Précédent</PageBtn>
-            )}
-            {buildPageRange(page, totalPages).map((n, i) =>
-              n === "…" ? (
-                <span key={`ellipsis-${String(i)}`}>…</span>
-              ) : (
-                <PageBtn
-                  key={n}
-                  href={catalogHref(filters, { page: String(n) })}
-                  active={n === page}
-                >
-                  {String(n).padStart(2, "0")}
-                </PageBtn>
-              ),
-            )}
-            {page < totalPages && (
-              <PageBtn href={catalogHref(filters, { page: String(page + 1) })}>Suivant →</PageBtn>
+      <div className="lessons-catalogue__workspace">
+        <aside
+          className="catalogue-tools lessons-catalogue__filters"
+          aria-label="Affiner les leçons"
+        >
+          <nav className="catalogue-tools__domains" aria-label="Domaine des leçons">
+            <span className="catalogue-tools__label">Choisis un domaine</span>
+            <div className="lessons-catalogue__domains">
+              {CATEGORIES.map((c) => {
+                const active =
+                  c.value === "ALL" ? activeCategory === undefined : activeCategory === c.value;
+                const count = c.value === "ALL" ? allCount : (categoryCounts[c.value] ?? 0);
+                return (
+                  <Link
+                    key={c.value}
+                    href={catalogHref(filters, { category: c.value === "ALL" ? null : c.value })}
+                    className="catalogue-domain lesson-domain"
+                    aria-current={active ? "true" : undefined}
+                  >
+                    <CatalogueDomainIcon category={c.value} />
+                    <span>{c.value === "ALL" ? "Tout explorer" : c.label}</span>
+                    <b>
+                      {count} leçon{count > 1 ? "s" : ""}
+                    </b>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+          <div className="lessons-catalogue__refine">
+            <CatalogFilterSelect
+              label="Niveau"
+              value={filters.difficulty ?? "ALL"}
+              options={DIFFICULTIES.map((d) => ({
+                ...d,
+                href: catalogHref(filters, { difficulty: d.value === "ALL" ? null : d.value }),
+              }))}
+            />
+            <CatalogFilterSelect
+              label="Statut"
+              value={filters.status ?? "ALL"}
+              options={STATUSES.map((s) => ({
+                ...s,
+                href: catalogHref(filters, { status: s.value === "ALL" ? null : s.value }),
+              }))}
+            />
+            <LessonsSearchBar />
+          </div>
+        </aside>
+
+        <section className="lessons-catalogue__results" aria-label="Résultats du catalogue">
+          <div className="catalogue-results">
+            <h2>{hasFilters ? "Ta sélection" : "Le catalogue"}</h2>
+            <p>
+              {total} résultat{total > 1 ? "s" : ""}
+            </p>
+            {hasFilters && (
+              <Link href="/lessons" className="catalogue-results__link">
+                Réinitialiser les filtres
+              </Link>
             )}
           </div>
-        </nav>
-      )}
+
+          {lessons.length === 0 ? (
+            <LessonsEmpty />
+          ) : (
+            <div className="lessons-catalogue__grid">
+              {lessons.map((lesson, i) => {
+                if (lesson.id === featuredLesson?.id) return null;
+                const placement = placements.get(lesson.id);
+                const locked = placement?.state === "locked";
+                return (
+                  <Link
+                    key={lesson.id}
+                    href={locked ? `/paths/${placement.path.slug}` : `/lessons/${lesson.slug}`}
+                    className="lessons-catalogue__card-link"
+                    aria-label={
+                      locked
+                        ? `${lesson.title}. Leçon verrouillée, à débloquer dans le parcours ${placement.path.title}`
+                        : lesson.title
+                    }
+                  >
+                    <CatalogueLessonCard
+                      title={lesson.title}
+                      description={lesson.description}
+                      difficulty={lesson.difficulty}
+                      category={lesson.category}
+                      durationMinutes={lesson.estimatedMinutes}
+                      xpReward={lesson.xpReward}
+                      status={lesson.progressStatus ?? "NOT_STARTED"}
+                      refCode={lesson.refCode}
+                      coverSrc={coverSrcs[i] ?? null}
+                      quizScore={lesson.quizScore}
+                      lockedPath={locked ? placement.path.title : null}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <nav className="lessons-catalogue__pagination" aria-label="Pagination des leçons">
+              <span>
+                Affichage{" "}
+                <b>
+                  {startIdx}–{endIdx}
+                </b>{" "}
+                sur <b>{total}</b>
+              </span>
+              <div>
+                {page > 1 && (
+                  <PageBtn href={catalogHref(filters, { page: String(page - 1) })}>
+                    ← Précédent
+                  </PageBtn>
+                )}
+                {buildPageRange(page, totalPages).map((n, i) =>
+                  n === "…" ? (
+                    <span key={`ellipsis-${String(i)}`}>…</span>
+                  ) : (
+                    <PageBtn
+                      key={n}
+                      href={catalogHref(filters, { page: String(n) })}
+                      active={n === page}
+                    >
+                      {String(n).padStart(2, "0")}
+                    </PageBtn>
+                  ),
+                )}
+                {page < totalPages && (
+                  <PageBtn href={catalogHref(filters, { page: String(page + 1) })}>
+                    Suivant →
+                  </PageBtn>
+                )}
+              </div>
+            </nav>
+          )}
+        </section>
+      </div>
     </>
   );
 }

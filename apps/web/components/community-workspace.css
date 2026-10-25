@@ -1,0 +1,156 @@
+@import "./learning-workspace.css";
+
+.community-workspace,
+.community-dialog {
+  --cl-select-font: var(--font-interface), sans-serif;
+  --color-bg-base: #0b0c0e;
+  --color-bg-sunken: #121418;
+  --color-bg-elevated: #191c22;
+  --color-text-primary: #f4f2ed;
+  --color-text-secondary: #c2bfb8;
+  --color-text-muted: #aaa79f;
+  --color-text-faint: #aaa79f;
+  --color-border-subtle: #303137;
+  --color-border-default: #74767d;
+  --font-body: var(--font-interface);
+  --font-sans: var(--font-interface);
+  color: #f4f2ed;
+  font-family: var(--font-interface), sans-serif;
+}
+.community-select-panel {
+  --cl-select-font: var(--font-interface), sans-serif;
+  --cl-select-panel-bg: #191c22;
+  --cl-select-border: #74767d;
+  --cl-select-option-fg: #f4f2ed;
+  --cl-select-option-active-bg: #303137;
+  --cl-select-accent: #ff864f;
+  --cl-select-fg-muted: #aaa79f;
+}
+.community-select-panel [role="option"] {
+  min-height: 44px;
+}
+:is(.community-workspace, .community-dialog) *,
+:is(.community-workspace, .community-dialog) *::before,
+:is(.community-workspace, .community-dialog) *::after {
+  border-radius: 0 !important;
+}
+.community-workspace .section-head {
+  font:
+    600 32px / 1.1 var(--font-display),
+    sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #f4f2ed;
+}
+.community-workspace .section-head::before,
+.community-workspace .pg-eyebrow::before {
+  content: none;
+}
+.community-workspace .pg-title {
+  font:
+    700 clamp(44px, 6vw, 80px) / 1 var(--font-display),
+    sans-serif;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.community-workspace .pg-lede {
+  max-width: 650px;
+  color: #aaa79f;
+  font:
+    14px / 1.65 var(--font-interface),
+    sans-serif;
+}
+.community-workspace .pg-eyebrow {
+  color: #aaa79f;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.community-workspace .empty-state {
+  align-items: flex-start;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid #303137;
+  background: #121418;
+  text-align: left;
+}
+.community-workspace .empty-state__title {
+  color: #f4f2ed;
+  font:
+    600 clamp(28px, 4vw, 40px) / 1.1 var(--font-display),
+    sans-serif;
+}
+.community-workspace .empty-state__message {
+  letter-spacing: 0;
+  max-width: 600px;
+  margin-left: 0;
+  color: #c2bfb8;
+  font:
+    14px / 1.65 var(--font-interface),
+    sans-serif;
+}
+:is(.community-workspace, .community-dialog) :is(button, input, select, [role="combobox"]) {
+  min-height: 44px;
+}
+:is(.community-workspace, .community-dialog) :is(input, textarea, select, [role="combobox"]) {
+  max-width: 100%;
+  background: #0b0c0e;
+  border-color: #74767d;
+  font-family: var(--font-interface), sans-serif;
+  color: #f4f2ed;
+}
+:is(.community-workspace, .community-dialog)
+  :is(button, a, input, textarea, select, summary, [role="combobox"]):focus-visible {
+  outline: 2px solid #ff864f;
+  outline-offset: 4px;
+}
+.community-dialog .btn {
+  min-height: 44px;
+  font-family: var(--font-interface), sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.community-dialog .btn:not(:where(.btn--ghost)) {
+  background: #ff6b2b;
+  color: #141518;
+  border-color: #ff6b2b;
+}
+.community-dialog .modal-shell__title {
+  font:
+    600 clamp(34px, 5vw, 48px) / 1 var(--font-display),
+    sans-serif;
+  text-transform: none;
+}
+.community-dialog .modal-shell__body {
+  padding: 24px;
+}
+.community-dialog.modal-shell__frame {
+  animation: none;
+  box-shadow: none;
+}
+.community-dialog .modal-shell__meta {
+  color: #aaa79f;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
+  letter-spacing: 0;
+}
+.modal-shell:has(.community-dialog) {
+  background: #000b;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.community-dialog .modal-shell__eyebrow,
+.community-dialog .cls-field__label {
+  color: #c2bfb8;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--font-interface), sans-serif;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.community-workspace, .community-dialog) *,
+  :is(.community-workspace, .community-dialog) *::before,
+  :is(.community-workspace, .community-dialog) *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

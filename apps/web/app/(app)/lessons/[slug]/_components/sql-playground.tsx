@@ -146,7 +146,7 @@ export function SqlPlayground(
             padding: "10px 12px",
             background: "var(--color-bg-elevated)",
             border: "1px solid var(--color-border-default)",
-            color: "#D8D6EA",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 13,
             lineHeight: 1.6,
@@ -172,7 +172,9 @@ export function SqlPlayground(
           >
             Réinitialiser la base
           </button>
-          <span style={{ fontSize: 12, color: "#5A5680" }}>Ctrl + Entrée pour exécuter</span>
+          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+            Ctrl + Entrée pour exécuter
+          </span>
         </div>
 
         <div aria-live="polite" style={labStack(8)}>

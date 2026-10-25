@@ -316,19 +316,18 @@ export function ShareDialog({
 }
 
 const mutedLine: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 12.5,
+  fontFamily: "var(--font-interface)",
+  fontSize: 14,
   lineHeight: 1.6,
   color: "var(--color-text-muted)",
   margin: 0,
 };
 
 const ghostBtn: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontFamily: "var(--font-interface)",
+  fontSize: 14,
   fontWeight: 700,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  minHeight: 44,
   color: "var(--color-text-secondary)",
   background: "transparent",
   border: "1px solid var(--color-border-default)",
@@ -337,11 +336,10 @@ const ghostBtn: React.CSSProperties = {
 };
 
 const accentBtn: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontFamily: "var(--font-interface)",
+  fontSize: 14,
   fontWeight: 700,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  minHeight: 44,
   color: "var(--color-bg-sunken)",
   background: "var(--cosmetic-accent)",
   border: "1px solid var(--cosmetic-accent)",

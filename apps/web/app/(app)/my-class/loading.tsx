@@ -13,7 +13,11 @@ const NAMES = ["42%", "55%", "36%", "48%", "60%", "40%", "52%", "45%"] as const;
 
 export default function MyClassLoading(): React.ReactElement {
   return (
-    <div className="page-container" aria-busy="true" aria-label="Chargement de la classe">
+    <div
+      className="page-container learning-catalogue learning-workspace class-workspace"
+      aria-busy="true"
+      aria-label="Chargement de la classe"
+    >
       <ClassHeaderSkeleton crumb={227} eyebrow={260} title="5.4em" ledeLines={2} ledeLast="38%" />
 
       <div className="cls-stack" aria-hidden="true">
@@ -43,7 +47,7 @@ export default function MyClassLoading(): React.ReactElement {
           <div className="cls-stats">
             {[84, 92, 104, 52].map((label) => (
               <div key={label} className="cls-stat">
-                <Skeleton w={40} h={18} style={{ margin: "1.5px 0" }} />
+                <Skeleton w={40} h={56} style={{ margin: "1.5px 0" }} />
                 <div className="cls-stat__label">
                   <Skeleton w={label} h={9} style={{ margin: "2.6px 0" }} />
                 </div>

@@ -46,8 +46,8 @@ export function SqlResultTable({ result }: { result: SqlResult }): React.ReactEl
                   key={c}
                   style={{
                     padding: "5px 10px",
-                    borderBottom: "1px solid #14113A",
-                    color: cell === null ? "#5A5680" : "#D8D6EA",
+                    borderBottom: "1px solid var(--color-border-subtle)",
+                    color: cell === null ? "var(--color-text-muted)" : "var(--color-text-primary)",
                     whiteSpace: "pre",
                   }}
                 >

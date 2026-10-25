@@ -1,6 +1,4 @@
-/* "Trouver mon parcours": the two questions and the suggestions they lead to.
-   Shared by the onboarding step and /paths/guide. Square, dark, mono labels:
-   the onboarding panel's vocabulary. */
+/* Shared by onboarding and the catalogue's guide, including its body-level portal. */
 
 .pg-question {
   border: 0;
@@ -9,18 +7,16 @@
 }
 
 .pg-question__legend {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-interface);
+  font-size: 13px;
   color: var(--color-text-muted);
   margin-bottom: 6px;
 }
 
 .pg-question__title {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
   letter-spacing: -0.01em;
   color: var(--color-text-primary);
   margin: 0 0 4px;
@@ -28,7 +24,7 @@
 
 .pg-question__hint {
   font-size: 13px;
-  color: #8a86b3;
+  color: #aaa79f;
   margin: 0 0 14px;
 }
 
@@ -45,7 +41,7 @@
   align-items: start;
   padding: 14px 16px;
   border: 1px solid var(--color-border-default);
-  background: rgba(5, 4, 26, 0.6);
+  background: #121418;
   cursor: pointer;
   transition:
     border-color 160ms ease,
@@ -53,12 +49,13 @@
 }
 
 .pg-choice:hover {
-  border-color: #3f3a80;
+  border-color: #74767d;
 }
 
 .pg-choice:has(input:checked) {
   border-color: var(--color-brand-turquoise);
-  background: rgba(10, 255, 212, 0.06);
+  background: #eae7df;
+  color: #141518;
 }
 
 .pg-choice:has(input:focus-visible) {
@@ -76,7 +73,7 @@
   width: 16px;
   height: 16px;
   margin-top: 2px;
-  border: 1.5px solid #3f3a80;
+  border: 1.5px solid #74767d;
   display: grid;
   place-items: center;
 }
@@ -89,7 +86,7 @@
 .pg-choice:has(input:checked) .pg-choice__box {
   border-color: var(--color-brand-turquoise);
   background: var(--color-brand-turquoise);
-  box-shadow: 0 0 8px rgba(10, 255, 212, 0.5);
+  box-shadow: none;
 }
 
 .pg-choice__box::after {
@@ -101,6 +98,9 @@
 
 .pg-choice:has(input:checked) .pg-choice__box::after {
   background: var(--color-bg-base);
+}
+.pg-choice:has(input:checked) :is(.pg-choice__label, .pg-choice__examples) {
+  color: #141518;
 }
 
 .pg-choice__label {
@@ -115,7 +115,7 @@
   margin-top: 3px;
   font-size: 13px;
   line-height: 1.5;
-  color: #8a86b3;
+  color: #aaa79f;
 }
 
 .pg-error {
@@ -123,8 +123,8 @@
   padding: 10px 14px;
   border-left: 3px solid var(--color-category-cybersec);
   background: rgba(255, 71, 87, 0.06);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-interface);
+  font-size: 14px;
   color: #ff8a95;
 }
 
@@ -139,22 +139,20 @@
   padding: 18px 20px;
   border: 1px solid var(--color-border-default);
   border-left: 3px solid var(--color-brand-turquoise);
-  background: rgba(5, 4, 26, 0.7);
+  background: #191c22;
 }
 
 .pg-suggestion__meta {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-interface);
+  font-size: 13px;
   color: var(--color-text-muted);
   margin-bottom: 6px;
 }
 
 .pg-suggestion__title {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
   letter-spacing: -0.01em;
   color: var(--color-text-primary);
   margin: 0 0 6px;
@@ -168,10 +166,8 @@
 }
 
 .pg-suggestion__why b {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-family: var(--font-interface);
+  font-size: 14px;
   color: var(--color-brand-turquoise);
   margin-right: 6px;
 }
@@ -179,7 +175,7 @@
 .pg-note {
   font-size: 13px;
   line-height: 1.55;
-  color: #8a86b3;
+  color: #aaa79f;
   margin: 0 0 18px;
 }
 
@@ -187,7 +183,7 @@
   margin: 0 0 22px;
   padding: 12px 14px;
   border-left: 2px solid var(--color-brand-turquoise);
-  background: rgba(10, 255, 212, 0.04);
+  background: #191c22;
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--color-text-secondary);
@@ -195,11 +191,9 @@
 
 .pg-recap b {
   display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-interface);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   color: var(--color-brand-turquoise);
   margin-bottom: 2px;
 }
@@ -212,6 +206,21 @@
 
 .pg-recap__edit:hover {
   color: var(--color-brand-turquoise);
+}
+.pg-dialog .pg-suggestion:first-child {
+  --color-text-primary: #141518;
+  --color-text-secondary: #55524d;
+  --color-text-muted: #55524d;
+  --color-brand-turquoise: #923200;
+  background: #eae7df;
+  border-color: #bdbab3;
+}
+.pg-dialog .pg-suggestion:first-child :focus-visible {
+  outline-color: #923200;
+}
+.pg-dialog :is(section[tabindex="-1"], .pg-recap__edit):focus-visible {
+  outline: 2px solid #ff864f;
+  outline-offset: 4px;
 }
 
 /* The same words as a button, in the guide's window. */

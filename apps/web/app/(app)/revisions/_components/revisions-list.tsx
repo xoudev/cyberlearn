@@ -80,48 +80,23 @@ function GradeRowBody({
   }
 
   return (
-    <div
-      style={{
-        padding: "14px 24px 18px 80px",
-        borderTop: "1px dashed rgba(31,27,71,0.8)",
-        background: "rgba(5,4,26,0.5)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <span
-          style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}
-        >
+    <div className="revision-grade" id={`review-grade-${row.scheduleId}`}>
+      <div className="revision-grade__intro">
+        <p>
           Comment tu as retenu cette leçon ?
           {row.reviewXp > 0 && (
-            <span style={{ color: "var(--color-text-faint)" }}>
-              {" "}
-              · réussite = +{String(row.reviewXp)} XP
-            </span>
+            <>
+              <br />
+              Réussite = +{row.reviewXp} XP
+            </>
           )}
-        </span>
-        <Link
-          className="mono-label card card--ghost"
-          href={`/lessons/${row.slug}`}
-          style={{
-            color: "var(--color-text-muted)",
-            textDecoration: "none",
-            padding: "6px 12px",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Relire la leçon →
+        </p>
+        <Link className="workspace-link" href={`/lessons/${row.slug}`}>
+          Relire la leçon ↗
         </Link>
       </div>
-      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        {GRADE_BUTTONS.map(({ quality, label, color }) => (
+      <div className="revision-grades">
+        {GRADE_BUTTONS.map(({ quality, label }) => (
           <button
             key={quality}
             type="button"
@@ -129,35 +104,18 @@ function GradeRowBody({
             onClick={() => {
               grade(quality);
             }}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 10,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              background: `color-mix(in srgb, ${color} 8%, transparent)`,
-              border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-              color,
-              cursor: isPending ? "not-allowed" : "pointer",
-              opacity: isPending ? 0.5 : 1,
-            }}
           >
             {label}
           </button>
         ))}
       </div>
+      {isPending && (
+        <p className="revision-grade__intro" role="status">
+          Enregistrement…
+        </p>
+      )}
       {error !== null && (
-        <p
-          role="alert"
-          style={{
-            margin: "10px 0 0",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-danger)",
-          }}
-        >
+        <p role="alert" className="revision-error">
           {error}
         </p>
       )}
@@ -201,195 +159,45 @@ export function RevisionsList({
 
   return (
     <>
-      <section style={{ marginBottom: 0 }}>
-        <div className="card" style={{ overflow: "hidden" }}>
+      <section aria-label="Leçons de la session">
+        <div className="revision-rows">
           {session.map((row, i) => {
             const result = done[row.scheduleId];
             const isOpen = openId === row.scheduleId && !result;
-            const borderBottom = i < session.length - 1 ? "1px solid rgba(31,27,71,0.6)" : "none";
-
             if (result) {
               const display = OUTCOME_DISPLAY[result.outcome];
               return (
-                <div
-                  key={row.scheduleId}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "16px 24px",
-                    borderBottom,
-                    background: "rgba(5,4,26,0.4)",
-                  }}
-                >
-                  <span style={{ fontSize: 16, color: display.color, flexShrink: 0 }}>
-                    {display.icon}
-                  </span>
+                <div key={row.scheduleId} className="revision-entry revision-completed">
+                  <span aria-hidden="true">{display.icon}</span>
                   <div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontWeight: 600,
-                        fontSize: 14,
-                        color: "var(--color-text-muted)",
-                        marginBottom: 2,
-                        textDecoration: "line-through",
-                      }}
-                    >
-                      {row.title}
-                    </div>
-                    <div
-                      style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: display.color }}
-                    >
-                      {outcomeText(result.outcome, result.xp)}
-                    </div>
+                    <h3>{row.title}</h3>
+                    <p>{outcomeText(result.outcome, result.xp)}</p>
                   </div>
                 </div>
               );
             }
-
             return (
-              <div key={row.scheduleId} style={{ borderBottom }}>
+              <div key={row.scheduleId} className="revision-entry">
                 <button
                   type="button"
+                  className="revision-toggle"
+                  aria-expanded={isOpen}
+                  aria-controls={isOpen ? `review-grade-${row.scheduleId}` : undefined}
                   onClick={() => {
                     setOpenId(isOpen ? null : row.scheduleId);
                   }}
-                  className="rv-row review-row-layout"
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "background 150ms ease",
-                  }}
                 >
-                  {/* index */}
-                  <div
-                    className="card"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontWeight: 700,
-                      fontSize: 11,
-                      letterSpacing: "0.04em",
-                      color: "var(--color-text-muted)",
-                      width: 36,
-                      height: 28,
-                      display: "grid",
-                      placeItems: "center",
-                    }}
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-
-                  {/* body */}
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span
-                        className="mono-label"
-                        style={{
-                          fontWeight: 700,
-                          padding: "2px 8px",
-                          border: `1px solid ${row.catBorder}`,
-                          color: row.catColor,
-                          background: "rgba(0,0,0,0.2)",
-                        }}
-                      >
-                        {row.catLabel}
-                      </span>
-                      <span
-                        className="mono-label"
-                        style={{
-                          color: "var(--color-text-faint)",
-                        }}
-                      >
-                        · auto-évaluation
-                      </span>
-                    </div>
-                    <h3
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontWeight: 600,
-                        fontSize: 15,
-                        color: "var(--color-text-primary)",
-                        margin: 0,
-                        letterSpacing: "-0.005em",
-                      }}
-                    >
-                      {row.title}
-                    </h3>
-                  </div>
-
-                  {/* due */}
-                  <div
-                    className="mono-label"
-                    style={{
-                      color: row.dueToday ? "var(--color-danger)" : "var(--color-text-muted)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: "50%",
-                        background: row.dueToday
-                          ? "var(--color-danger)"
-                          : "var(--color-text-faint)",
-                        boxShadow: row.dueToday ? "0 0 6px var(--color-danger)" : "none",
-                        display: "inline-block",
-                      }}
-                    />
-                    {row.dueText}
-                  </div>
-
-                  {/* time */}
-                  <div
-                    className="mono-label"
-                    style={{
-                      color: "var(--color-text-faint)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {row.est}
-                  </div>
-
-                  {/* toggle */}
-                  <div
-                    className="rv-go mono-label"
-                    style={{
-                      fontWeight: 700,
-                      color: "var(--cosmetic-accent)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      whiteSpace: "nowrap",
-                      transition: "color 150ms ease",
-                    }}
-                  >
-                    {isOpen ? "Fermer" : "Noter"}
-                    <svg
-                      width={12}
-                      height={12}
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      style={{ transform: isOpen ? "rotate(90deg)" : "none" }}
-                    >
-                      <path
-                        d="M3 7H11M8 4L11 7L8 10"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                  <span className="revision-index">{String(i + 1).padStart(2, "0")}</span>
+                  <span>
+                    <span className="revision-toggle__meta">
+                      <span>{row.catLabel}</span>
+                      <span>{row.dueText}</span>
+                      <span>{row.est}</span>
+                    </span>
+                    <strong className="revision-title">{row.title}</strong>
+                  </span>
+                  <span className="revision-toggle__action">{isOpen ? "Fermer −" : "Noter +"}</span>
                 </button>
-
                 {isOpen && (
                   <GradeRowBody
                     row={row}

@@ -23,6 +23,7 @@ import { settingsDataSchema, type SettingsData } from "../_lib/settings-data";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsSkeleton } from "./SettingsSkeleton";
 import { SettingsReloadContext } from "./settings-reload";
+import "./settings-bastion.css";
 import { isSettingsSectionKey, settingsSectionFromHref, type SettingsSectionKey } from "./sections";
 
 /**
@@ -320,6 +321,8 @@ function SettingsDrawerFrame({
       returnFocus={open}
       onClose={onClose}
       title="Paramètres"
+      className="settings-bastion"
+      width={960}
       meta={username !== null && username !== "" ? `@${username}` : undefined}
       closeLabel="Fermer les paramètres"
     >

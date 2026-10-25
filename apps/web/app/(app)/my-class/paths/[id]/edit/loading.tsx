@@ -10,7 +10,7 @@ export default function EditClassPathLoading(): React.ReactElement {
     // .tle-page is a flex item with auto margins: the real page reaches its
     // max-width through its text, which bars do not have, hence the width.
     <div
-      className="tle-page"
+      className="tle-page learning-catalogue learning-workspace class-workspace"
       style={{ width: "100%" }}
       aria-busy="true"
       aria-label="Chargement du parcours"

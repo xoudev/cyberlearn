@@ -12,6 +12,7 @@ import {
   PythonStatusNotice,
   usePythonRuntimeState,
 } from "./python-status";
+import "./lesson-practice.css";
 
 const WORKER_TIMEOUT_MS = 10_000;
 
@@ -252,7 +253,7 @@ export function CodePlayground({
   return (
     <div
       ref={frameRef}
-      className="card card--sunken"
+      className="card card--sunken lesson-practice"
       style={{
         margin: "32px 0",
         position: "relative",
@@ -260,13 +261,14 @@ export function CodePlayground({
     >
       {/* Header */}
       <div
+        className="lesson-practice__head"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 16px",
           borderBottom: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.6)",
+          background: "var(--color-bg-elevated)",
         }}
       >
         <span
@@ -288,8 +290,6 @@ export function CodePlayground({
               height: 8,
               borderRadius: "50%",
               background: langColor,
-              boxShadow: `0 0 8px color-mix(in srgb, ${langColor} 60%, transparent)`,
-              animation: "pulse 2s ease-in-out infinite",
             }}
           />
           {title ?? sandboxLabel}
@@ -383,45 +383,21 @@ export function CodePlayground({
 
       {/* Action bar */}
       <div
+        className="lesson-practice__actions"
         style={{
           display: "flex",
           alignItems: "stretch",
           borderTop: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.7)",
+          background: "var(--color-bg-elevated)",
         }}
       >
         <button
+          className="lesson-run-button"
           type="button"
           onClick={() => {
             void handleRun();
           }}
           disabled={running}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "0 22px",
-            minHeight: 44,
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            background: running ? "rgba(0,36,255,0.4)" : "var(--color-brand-blue)",
-            color: "#ffffff",
-            border: 0,
-            borderRight: "1px solid rgba(0,36,255,0.5)",
-            cursor: running ? "wait" : "pointer",
-            transition: "background 180ms ease",
-            boxShadow: running ? "none" : "inset 0 0 0 1px rgba(255,255,255,0.15)",
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            if (!running) e.currentTarget.style.background = "#1F3BFF";
-          }}
-          onMouseLeave={(e) => {
-            if (!running) e.currentTarget.style.background = "var(--color-brand-blue)";
-          }}
         >
           {running ? (
             <span
@@ -436,7 +412,7 @@ export function CodePlayground({
           ) : (
             <span style={{ fontSize: 9, lineHeight: 1 }}>▶</span>
           )}
-          {running ? "EXÉCUTION..." : "EXÉCUTER"}
+          {running ? "Exécution…" : "Exécuter"}
         </button>
 
         <div
@@ -455,7 +431,6 @@ export function CodePlayground({
                 height: 6,
                 borderRadius: "50%",
                 background: statusColor,
-                boxShadow: `0 0 6px ${statusColor}`,
                 flexShrink: 0,
               }}
             />
@@ -552,7 +527,7 @@ export function CodePlayground({
                   >
                     &gt;&gt;&gt;
                   </span>
-                  <span style={{ color: "#E0DDFF" }}>{line}</span>
+                  <span style={{ color: "var(--color-text-primary)" }}>{line}</span>
                 </div>
               ))}
           {result.error &&
@@ -591,7 +566,7 @@ export function CodePlayground({
         <div
           style={{
             padding: "6px 18px",
-            background: "rgba(3,2,25,0.5)",
+            background: "var(--color-bg-base)",
             borderTop: "1px solid var(--color-border-subtle)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9,

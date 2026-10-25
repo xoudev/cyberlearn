@@ -87,7 +87,7 @@ export function PythonStatusNotice({
           ...MONO,
           padding: "10px 16px",
           borderTop: "1px solid var(--color-border-subtle)",
-          background: "rgba(5,4,26,0.6)",
+          background: "var(--color-bg-elevated)",
           color: "var(--color-text-secondary)",
         }}
       >

@@ -168,8 +168,8 @@ describe("the list", () => {
   it("tallies where the learner stands", () => {
     renderList();
     const tally = screen.getByRole("list", { name: "Où tu en es" });
-    expect(tally.textContent).toContain("1résolu");
-    expect(tally.textContent).toContain("1en cours");
-    expect(tally.textContent).toContain("1verrouillé");
+    expect(tally.textContent).toMatch(/1\s*résolu/);
+    expect(tally.textContent).toMatch(/1\s*en cours/);
+    expect(tally.textContent).toMatch(/1\s*verrouillé/);
   });
 });

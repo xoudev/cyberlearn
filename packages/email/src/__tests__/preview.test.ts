@@ -17,7 +17,7 @@ describe("every sample in the list renders", () => {
     // Rendered, not merely non-null: an empty string would pass a null check
     // and show nothing.
     expect(html?.length ?? 0).toBeGreaterThan(500);
-    expect(html).toContain("CYBER LEARN");
+    expect(html).toContain("CYBERLEARN");
   });
 });
 

@@ -11,7 +11,7 @@ import {
   tournamentDateLabel,
 } from "@cyberlearn/lib/challenges/tournament";
 import { categoryMeta, difficultyMeta } from "@cyberlearn/lib/content/vocabulary";
-import { CornerBrackets } from "@/app/_components/corner-brackets";
+import { BastionLogo } from "@/components/bastion-logo";
 import { LinuxTerminal } from "@/app/(app)/lessons/[slug]/_components/linux-terminal";
 import { CopyButton } from "@/components/copy-button";
 import { Crumb } from "@/components/crumb";
@@ -65,7 +65,10 @@ export function TournamentChallenge({
   const script = challenge.type === "SCRIPT";
 
   return (
-    <div className="page-container trn" data-phase={tournament.phase}>
+    <div
+      className="page-container learning-catalogue learning-workspace trn"
+      data-phase={tournament.phase}
+    >
       <Crumb
         segments={[
           { label: "tournois", href: "/tournaments" },
@@ -96,9 +99,10 @@ export function TournamentChallenge({
         </div>
 
         <div className="trn-brief">
-          <CornerBrackets color="var(--trn-accent)" />
           <div className="trn-brief__head">
-            <span>Défi · briefing</span>
+            <span>
+              <BastionLogo size={24} /> Ce défi en bref
+            </span>
             <PhaseBadge phase={tournament.phase} />
           </div>
           <dl className="trn-brief__stats">

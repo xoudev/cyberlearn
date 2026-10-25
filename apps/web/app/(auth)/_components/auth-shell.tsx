@@ -20,64 +20,26 @@ export function AuthShell({
 }): React.JSX.Element {
   return (
     <main className={styles.page}>
-      <section className={styles.context}>
-        <Link className={styles.brand} href="/">
-          <BastionLogo size={28} />
+      <section className={styles.context} aria-label="CyberLearn">
+        <Link className={styles.brand} href="/" aria-label="CyberLearn · accueil">
+          <BastionLogo size={36} />
           <span>
-            CYBER<span className={styles.brandAccent}>LEARN</span>
+            CYBERLEARN<span className={styles.brandAccent}>.</span>
           </span>
         </Link>
-
         <div className={styles.contextCopy}>
-          <span className={styles.eyebrow}>{eyebrow}</span>
-          <h1 className={styles.contextTitle}>{contextTitle}</h1>
+          <p className={styles.eyebrow}>{eyebrow}</p>
+          <h2 className={styles.contextTitle}>{contextTitle}</h2>
           <p className={styles.contextText}>{contextText}</p>
-
-          <div className={styles.contextTray} aria-hidden="true">
-            <div className={styles.contextAxis}>
-              <span
-                className={styles.contextAxisDot}
-                style={{ background: "var(--color-category-cybersec)" }}
-              />
-              <div>
-                <strong>Cybersécurité</strong>
-                <span>Labs Web, système & crypto</span>
-              </div>
-            </div>
-            <div className={styles.contextAxis}>
-              <span
-                className={styles.contextAxisDot}
-                style={{ background: "var(--color-category-dev)" }}
-              />
-              <div>
-                <strong>Développement</strong>
-                <span>Architecture & code sûr</span>
-              </div>
-            </div>
-            <div className={styles.contextAxis}>
-              <span
-                className={styles.contextAxisDot}
-                style={{ background: "var(--color-category-network)" }}
-              />
-              <div>
-                <strong>Réseaux</strong>
-                <span>Protocoles, routage & DNS</span>
-              </div>
-            </div>
-          </div>
         </div>
-
-        <div className={styles.contextFoot}>
-          <span>Session chiffrée</span>
-          <span>Mot de passe protégé</span>
-          <span>MFA TOTP</span>
-        </div>
+        <p className={styles.contextFoot}>Développement / Cybersécurité / Réseaux</p>
       </section>
-
-      <section className={styles.panel}>
+      <section className={styles.panel} aria-labelledby="auth-title">
         <div className={styles.card}>
           <header className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>{title}</h2>
+            <h1 id="auth-title" className={styles.cardTitle}>
+              {title}
+            </h1>
             <p className={styles.cardText}>{description}</p>
           </header>
           {children}

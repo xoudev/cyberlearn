@@ -11,18 +11,15 @@
 }
 .folderHeading h2 {
   margin: 0;
-  font: 600 12px var(--font-mono);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-.folderHeading h2::before {
-  content: "// ";
-  color: var(--color-text-muted);
+  font:
+    600 30px / 1 var(--font-display),
+    sans-serif;
+  color: #f4f2ed;
 }
 .folderHeading span {
-  font: 10px var(--font-mono);
-  letter-spacing: 0.06em;
+  font:
+    12px var(--font-interface),
+    sans-serif;
   color: var(--color-text-secondary);
 }
 .folderGrid {
@@ -41,36 +38,38 @@
   font: inherit;
   cursor: pointer;
   min-width: 0;
+  background: #191c22;
+  border: 1px solid #74767d;
   transition:
     background 150ms,
     border-color 150ms;
 }
 .folderTile:hover {
-  background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
-  border-color: var(--color-border-default);
+  background: #22262d;
+  border-color: #ff864f;
 }
 .folderTile[data-selected="true"],
 .folderTile[data-drop-active="true"] {
-  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
-  border-color: var(--cosmetic-accent);
+  background: #22262d;
+  border-color: #ff864f;
 }
 .folderTile:focus-visible {
   outline: 2px solid var(--cosmetic-accent);
   outline-offset: 4px;
 }
 .folderTile strong {
-  font-family: var(--font-sans);
+  font-family: var(--font-display), sans-serif;
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 28px;
 }
 .folderTile > span:last-child {
   color: var(--color-text-secondary);
-  font: 10px var(--font-mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font:
+    12px var(--font-interface),
+    sans-serif;
 }
 .folderArtwork {
   position: relative;

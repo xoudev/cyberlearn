@@ -175,7 +175,7 @@ export function TournamentsList({
   ] as const;
 
   return (
-    <div className="page-container trn">
+    <div className="page-container learning-catalogue learning-workspace trn">
       <header className="trn-head">
         <div>
           <Crumb segments={["tournois"]} />
@@ -207,8 +207,6 @@ export function TournamentsList({
           ))}
         </div>
       )}
-
-      <Steps />
 
       {sorted.length === 0 ? (
         <EmptyState
@@ -248,6 +246,10 @@ export function TournamentsList({
           )}
         </>
       )}
+      <details className="trn-guide">
+        <summary>Comprendre les scores</summary>
+        <Steps />
+      </details>
     </div>
   );
 }

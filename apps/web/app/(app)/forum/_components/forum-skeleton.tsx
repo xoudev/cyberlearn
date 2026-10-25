@@ -3,7 +3,7 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 
 /**
  * The forum's pieces while one of its pages loads, drawn on the forum's own
- * classes (forum.css) so that widths, gaps and breakpoints are the real ones.
+ * classes (community-forum.css) so widths and breakpoints follow the page.
  * Shared by the four loading states the way forum-bits.tsx is by the pages.
  */
 
@@ -45,7 +45,7 @@ export function ForumHeaderSkeleton({
   action?: number;
 }): React.ReactElement {
   return (
-    <div aria-hidden="true">
+    <div className="fo-header" aria-hidden="true">
       <div className="fo-eyebrow">
         <Skeleton w={eyebrow} h={11} style={{ margin: "2px 0" }} />
       </div>

@@ -81,8 +81,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           marginBottom: 20,
         }}
       >
-        <span style={{ color: "var(--cosmetic-accent)" }}>{"// "}</span>
-        <span>Indices</span>
+        <h2 className="hint-title">Indices</h2>
         <span
           style={{
             marginLeft: "auto",

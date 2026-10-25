@@ -79,7 +79,6 @@ function ToolBtn({
         fontFamily: "var(--font-mono)",
         fontSize: 13,
         cursor: "pointer",
-        borderRadius: 2,
       }}
     >
       {children}
@@ -228,7 +227,9 @@ export function NoteDrawer({
       title="Mes notes"
       closeLabel="Fermer les notes"
       width={width}
-      className={expanded ? "lesson-notes lesson-notes--wide" : "lesson-notes"}
+      className={
+        expanded ? "lesson-tools lesson-notes lesson-notes--wide" : "lesson-tools lesson-notes"
+      }
       meta={
         <button
           type="button"

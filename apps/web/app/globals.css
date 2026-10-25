@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@cyberlearn/ui/tokens.css";
 @import "@cyberlearn/ui/dialogs.css";
+@import "../components/secondary-surfaces.css";
 
 /* The page vocabulary: the names the page stylesheets and the CSS modules
    use (--fg-primary, --border, --brand-turquoise, --font-body, --dur-base),
@@ -44,12 +45,18 @@
   --warning: var(--amber);
   --red: var(--color-danger);
   --danger: var(--color-danger);
-  --font-display: var(--font-sans);
-  --font-body: var(--font-sans);
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 280ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+:root {
+  --font-display: var(--font-sans);
+  --font-body: var(--font-sans);
+}
+body {
+  --font-sans: var(--font-interface);
+  --font-body: var(--font-interface);
 }
 @plugin "@tailwindcss/typography";
 
@@ -149,12 +156,6 @@ body {
 ::selection {
   background: rgba(255, 107, 43, 0.26);
   color: var(--color-text-primary);
-}
-
-/* Ensure content renders cleanly on the matte carbon canvas */
-body > * {
-  position: relative;
-  z-index: 1;
 }
 
 /* ─── Sidebar collapsed: hide text labels ────────────────────────────────── */
@@ -355,12 +356,7 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   margin-bottom: 16px;
   padding: 14px 16px;
   border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent);
-  background: linear-gradient(
-    90deg,
-    rgba(0, 36, 255, 0.15),
-    color-mix(in srgb, var(--cosmetic-accent) 12%, transparent),
-    rgba(0, 36, 255, 0.15)
-  );
+  background: var(--color-bg-overlay);
 }
 .level-reached--sm .level-reached__eyebrow {
   margin-bottom: 6px;
@@ -804,20 +800,6 @@ aside[data-state="collapsed"] .sidebar-nav-item {
   }
 }
 
-@keyframes xp-count-glow {
-  0% {
-    text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
-  }
-  50% {
-    text-shadow:
-      0 0 32px rgba(10, 255, 212, 0.9),
-      0 0 60px rgba(10, 255, 212, 0.4);
-  }
-  100% {
-    text-shadow: 0 0 18px rgba(10, 255, 212, 0.5);
-  }
-}
-
 /* Skeleton shimmer moved to a scoped, co-located stylesheet:
    apps/web/components/ui/skeleton.css (.cl-skel / .cl-skel-card). */
 
@@ -935,6 +917,10 @@ aside[data-state="collapsed"] .sidebar-nav-item {
    and sets its own paragraphs, further down. */
 
 article.lesson-content {
+  max-width: 960px;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
   counter-reset: h2-counter;
   padding-bottom: 20px;
   /* What a component layers inside it stays inside it: the map of PhotoOsint
@@ -943,12 +929,10 @@ article.lesson-content {
   isolation: isolate;
 }
 
-/* The measure. The prose an author writes reads in a column of about seventy
-   characters, centred in the article; a component, whose root is a child of
-   the article too but none of these, keeps the article's width. */
+/* Prose and exercises share their left edge; long lines keep a reading measure. */
 article.lesson-content > :is(p, ul, ol, h1, h2, h3, h4, h5, h6, blockquote, table, hr, dl) {
   max-width: 720px;
-  margin-inline: auto;
+  margin-inline: 0;
 }
 
 article.lesson-content > p {
@@ -974,7 +958,7 @@ article.lesson-content > p {
   > :is(p, ul, ol, blockquote, table, h1, h2, h3, h4)
   a:hover {
   color: var(--color-brand-turquoise);
-  text-decoration-color: rgba(10, 255, 212, 0.5);
+  text-decoration-color: var(--cosmetic-accent);
 }
 
 /* Inline code. Not a fenced block's: that one is CodeBlock's, in a <pre>. */
@@ -983,8 +967,8 @@ article.lesson-content > p {
   > :is(p, ul, ol, blockquote, table, h1, h2, h3, h4)
   :not(pre)
   > code {
-  background: rgba(10, 255, 212, 0.08);
-  border: 1px solid rgba(10, 255, 212, 0.2);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 4px;
   padding: 2px 6px;
   color: var(--color-brand-turquoise);
@@ -997,7 +981,7 @@ article.lesson-content > p {
    script: a tap focuses the word, which shows it too. */
 .glossary-term {
   position: relative;
-  text-decoration: underline dotted rgba(10, 255, 212, 0.6);
+  text-decoration: underline dotted var(--cosmetic-accent);
   text-underline-offset: 3px;
   cursor: help;
 }
@@ -1156,7 +1140,7 @@ article.lesson-content > h2::after {
   bottom: 0.25em;
   width: 3px;
   background: var(--color-brand-turquoise);
-  box-shadow: 0 0 8px rgba(10, 255, 212, 0.6);
+  box-shadow: none;
 }
 
 article.lesson-content > h3 {
@@ -1184,8 +1168,8 @@ article.lesson-content > h4 {
    the prose: a component's own <blockquote> keeps its look. */
 article.lesson-content > blockquote {
   position: relative;
-  background: linear-gradient(135deg, rgba(10, 255, 212, 0.06), transparent 70%);
-  border: 1px solid rgba(10, 255, 212, 0.35);
+  background: var(--color-bg-overlay);
+  border: 1px solid var(--cosmetic-accent);
   border-left: 3px solid var(--color-brand-turquoise);
   padding: 20px 24px;
   /* Top and bottom only: across, it sits in the measure, centred. */
@@ -1236,8 +1220,8 @@ article.lesson-content > blockquote p strong {
 }
 
 article.lesson-content > blockquote p code {
-  background: rgba(10, 255, 212, 0.08);
-  border: 1px solid rgba(10, 255, 212, 0.2);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  border: 1px solid var(--color-border-subtle);
   color: var(--color-brand-turquoise);
 }
 
@@ -1271,7 +1255,7 @@ article.lesson-content > blockquote p code {
   transition: background 150ms ease;
 }
 .review-row:hover {
-  background: rgba(42, 37, 96, 0.3) !important;
+  background: var(--color-bg-overlay) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1913,7 +1897,7 @@ aside[data-state="collapsed"] .sidebar-account {
   gap: 10px;
   padding: 64px 32px;
   border: 1px dashed var(--color-border-default);
-  background: rgba(5, 4, 26, 0.5);
+  background: var(--color-bg-sunken);
   text-align: center;
 }
 .empty-state__glyph {
@@ -2133,35 +2117,37 @@ button.notif-row:hover {
 
 :root {
   --page-gutter: 16px;
+  --page-space-top: 24px;
+  --page-space-bottom: 80px;
 }
 @media (min-width: 768px) {
   :root {
     --page-gutter: 28px;
+    --page-space-top: 28px;
+    --page-space-bottom: 96px;
   }
 }
 @media (min-width: 1280px) {
   :root {
     --page-gutter: 36px;
+    --page-space-top: 32px;
+    --page-space-bottom: 110px;
   }
 }
 
 /* Standard app page container - full-screen fluid layout */
-.page-container {
+.page-container,
+.lesson-page,
+.chx,
+.fo-page,
+.tle-page,
+.learning-dashboard,
+.pc2-root .pc2 {
   max-width: none;
   width: 100%;
   margin: 0 auto;
-  padding: 24px var(--page-gutter) 80px;
+  padding: var(--page-space-top) var(--page-gutter) var(--page-space-bottom);
   position: relative;
-}
-@media (min-width: 768px) {
-  .page-container {
-    padding: 28px var(--page-gutter) 96px;
-  }
-}
-@media (min-width: 1280px) {
-  .page-container {
-    padding: 32px var(--page-gutter) 110px;
-  }
 }
 
 /* Navbar: responsive padding + gap */
@@ -3424,7 +3410,7 @@ a.dash-panel-badge:hover {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
-  background: rgba(5, 4, 26, 0.92);
+  background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-default);
 }
 .lesson-locked__chip svg {
@@ -3825,25 +3811,12 @@ a.dash-panel-badge:hover {
    article's width. The plan and the notes are drawers opened from the
    toolbar. The editor's preview (app/preview) draws on the same classes. */
 .lesson-page {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 20px 16px 80px;
   /* width:100% + min-width:0 pin the column to the content area. Without them
      the block is a flex item (of <main>) that content-sizes to its widest
      descendant (a wide component), blowing the whole lesson past the viewport
      on mobile instead of letting that component scroll inside itself. */
   width: 100%;
   min-width: 0;
-}
-@media (min-width: 768px) {
-  .lesson-page {
-    padding: 28px 32px 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .lesson-page {
-    padding: 28px 56px 120px;
-  }
 }
 
 /* A lesson's anchors, and each new section (lesson-stepper.tsx), land below
@@ -3871,7 +3844,7 @@ html:has(.lesson-toolbar) {
 
 /* The header (lesson-header.tsx), in the prose's column. */
 .lesson-head {
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto 28px;
 }
 /* The breadcrumb ends on the lesson's slug, which can be long: it wraps
@@ -3960,7 +3933,7 @@ html:has(.lesson-toolbar) {
   margin-bottom: 36px;
   padding: 0 8px 0 14px;
   border: 1px solid var(--color-border-default);
-  background: rgba(3, 2, 25, 0.88);
+  background: #000c;
   backdrop-filter: blur(24px) saturate(140%);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
 }
@@ -4103,7 +4076,7 @@ html:has(.lesson-toolbar) {
    column, under its last line. */
 .lesson-end,
 .lesson-pending {
-  max-width: 720px;
+  max-width: 960px;
   margin-inline: auto;
 }
 .lesson-pending {
@@ -4171,7 +4144,7 @@ html:has(.lesson-toolbar) {
 }
 .lesson-plan__item:not(:disabled):hover {
   color: var(--color-text-primary);
-  background: rgba(42, 37, 96, 0.25);
+  background: var(--color-bg-overlay);
 }
 .lesson-plan__item:disabled {
   cursor: default;
@@ -4286,7 +4259,7 @@ main:has(.lesson-notes--wide.side-drawer--docked) {
 /* ─── Lesson author byline, in the plan's drawer ─────────────────────────── */
 .lesson-author-card {
   border: 1px solid var(--color-border-subtle);
-  background: rgba(5, 4, 26, 0.5);
+  background: var(--color-bg-sunken);
   transition:
     border-color 150ms ease,
     background 150ms ease;
@@ -4307,26 +4280,6 @@ a:hover > .lesson-author-card {
 /* ─── Défis/Challenges pages ─────────────────────────────────────────────────
    The list and a challenge's page share this container; the list draws the
    rest in app/(app)/challenges/_components/challenges.css. */
-
-/* Page container */
-.chx {
-  /* Mirrors .page-container so the challenges pages match every other page. */
-  max-width: 1760px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 24px var(--page-gutter) 80px;
-  position: relative;
-}
-@media (min-width: 768px) {
-  .chx {
-    padding: 32px var(--page-gutter) 100px;
-  }
-}
-@media (min-width: 1280px) {
-  .chx {
-    padding: 40px var(--page-gutter) 120px;
-  }
-}
 
 /* A challenge's hero and content grid: the briefing card and the rail beside
    them where there is room, below them where there is not. They were inline
@@ -4485,7 +4438,7 @@ a:hover > .lesson-author-card {
   gap: 12px;
   min-width: 0;
   padding: 7px 0;
-  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .class-roster__name {
   min-width: 0;
@@ -4619,7 +4572,7 @@ a:hover > .lesson-author-card {
   padding: 22px 24px;
   border: 1px solid var(--color-border-default);
   border-left: 3px solid var(--color-brand-turquoise);
-  background: rgba(5, 4, 26, 0.6);
+  background: var(--color-bg-sunken);
 }
 /* A teacher's classes are filed under a school and an intake; a student has
    one class and no filing to do. The rule tells them apart without a heading. */
@@ -4656,7 +4609,7 @@ a:hover > .lesson-author-card {
 .cls-stat {
   flex: 1 1 116px;
   padding: 10px 12px;
-  border: 1px solid rgba(42, 37, 96, 0.7);
+  border: 1px solid var(--color-border-default);
   background: rgba(10, 8, 38, 0.5);
 }
 .cls-stat__value {
@@ -4728,7 +4681,7 @@ a:hover > .lesson-author-card {
   align-items: center;
   gap: 6px 16px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 @media (max-width: 560px) {
   /* Too narrow for three columns: the bar drops to its own line rather than
@@ -4831,7 +4784,7 @@ a:hover > .lesson-author-card {
   align-items: baseline;
   gap: 4px 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .cls-work__row:last-child {
   border-bottom: none;
@@ -4893,7 +4846,7 @@ a:hover > .lesson-author-card {
   text-transform: uppercase;
   color: var(--color-text-muted);
   background: transparent;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -4925,7 +4878,7 @@ a:hover > .lesson-author-card {
    every day, and the page belongs to the second. */
 .cls-assign {
   margin-top: 14px;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   background: rgba(10, 8, 38, 0.4);
 }
 .cls-assign__head {
@@ -4957,7 +4910,7 @@ a:hover > .lesson-author-card {
   display: grid;
   gap: 12px;
   padding: 4px 12px 14px;
-  border-top: 1px solid rgba(42, 37, 96, 0.6);
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .cls-field {
@@ -4980,8 +4933,8 @@ a:hover > .lesson-author-card {
 .cls-input {
   width: 100%;
   padding: 8px 10px;
-  background: rgba(5, 4, 26, 0.8);
-  border: 1px solid rgba(42, 37, 96, 0.9);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
   color: var(--color-text-primary);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -5000,7 +4953,7 @@ a:hover > .lesson-author-card {
   margin: 0;
   padding: 8px 11px;
   border-left: 2px solid var(--color-brand-turquoise);
-  background: rgba(10, 255, 212, 0.06);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
@@ -5035,15 +4988,7 @@ a:hover > .lesson-author-card {
 }
 
 /* ─── Teacher lesson editor (its own page) ────────────────────────────────── */
-/* Wider than the reading pages: this one holds a code editor beside its own
-   preview, and squeezing that into a column of prose would leave neither half
-   usable. */
-
-.tle-page {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 24px clamp(16px, 4vw, 40px) 80px;
-}
+/* The editor shares the fluid app frame; its form owns the two-column layout. */
 
 .tle-form {
   display: grid;
@@ -5055,7 +5000,7 @@ a:hover > .lesson-author-card {
   display: grid;
   gap: 14px;
   padding: 18px;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   background: rgba(10, 8, 38, 0.4);
 }
 
@@ -5144,7 +5089,7 @@ a:hover > .lesson-author-card {
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   white-space: nowrap;
 }
 .cls-chip b {
@@ -5179,8 +5124,8 @@ a:hover > .lesson-author-card {
   align-items: center;
   gap: 10px;
   padding: 8px 12px 8px 8px;
-  border: 1px solid rgba(42, 37, 96, 0.8);
-  background: rgba(5, 4, 26, 0.5);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-sunken);
 }
 .cls-teacher__mark {
   width: 28px;
@@ -5189,7 +5134,7 @@ a:hover > .lesson-author-card {
   display: grid;
   place-items: center;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  background: color-mix(in srgb, var(--cosmetic-accent) 22%, #110f33);
+  background: color-mix(in srgb, var(--cosmetic-accent) 22%, #191c22);
   font: 700 12px var(--font-mono);
   color: var(--cosmetic-accent);
 }
@@ -5265,7 +5210,7 @@ a:hover > .lesson-author-card {
   gap: 10px;
   align-content: start;
   padding: 16px;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   background: rgba(10, 8, 38, 0.4);
 }
 .pb-panel__head {
@@ -5289,8 +5234,8 @@ a:hover > .lesson-author-card {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border: 1px solid rgba(42, 37, 96, 0.55);
-  background: rgba(5, 4, 26, 0.5);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sunken);
 }
 .pb-chosen__rank {
   font-family: var(--font-mono);
@@ -5337,7 +5282,7 @@ a:hover > .lesson-author-card {
   font-size: 12px;
   color: var(--color-text-muted);
   background: transparent;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   cursor: pointer;
 }
 .pb-icon:hover:not(:disabled) {
@@ -5407,7 +5352,7 @@ a:hover > .lesson-author-card {
 }
 .cls-res__item {
   padding: 12px 0;
-  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 .cls-res__item:last-child {
   border-bottom: none;
@@ -5439,7 +5384,7 @@ a.cls-res__title:hover {
 .cls-res__body {
   margin: 10px 0 0;
   padding: 11px 13px;
-  background: rgba(5, 4, 26, 0.75);
+  background: var(--color-bg-elevated);
   border-left: 2px solid rgba(177, 77, 255, 0.5);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -5490,7 +5435,7 @@ a.cls-res__title:hover {
   text-transform: uppercase;
   color: var(--color-text-muted);
   background: transparent;
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   cursor: pointer;
 }
 .cw-cat:hover {
@@ -5510,8 +5455,8 @@ a.cls-res__title:hover {
   gap: 2px;
   max-height: 260px;
   overflow-y: auto;
-  border: 1px solid rgba(42, 37, 96, 0.9);
-  background: rgba(3, 2, 25, 0.6);
+  border: 1px solid var(--color-border-default);
+  background: #0009;
 }
 .cw-pool__row {
   width: 100%;
@@ -5576,7 +5521,7 @@ a.cls-res__title:hover {
   max-height: min(70vh, 460px);
   overflow-y: auto;
   padding: 4px 0;
-  background: rgba(5, 4, 26, 0.97);
+  background: var(--color-bg-elevated);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--color-border-default);
@@ -5766,7 +5711,7 @@ a.cls-res__title:hover {
   gap: 16px;
   padding: 14px 16px;
   text-decoration: none;
-  background: rgba(5, 4, 26, 0.5);
+  background: var(--color-bg-sunken);
   border: 1px solid var(--color-border-subtle);
   border-left: 3px solid var(--cosmetic-accent);
   transition:
@@ -5814,7 +5759,7 @@ a.cls-res__title:hover {
 }
 .tk-status[data-tone="muted"] {
   color: var(--color-text-muted);
-  border-color: rgba(42, 37, 96, 0.9);
+  border-color: var(--color-border-default);
 }
 
 .tk-head {
@@ -5835,7 +5780,7 @@ a.cls-res__title:hover {
    the plain ones. One glance has to answer "did they reply yet". */
 .tk-msg {
   padding: 12px 15px;
-  background: rgba(5, 4, 26, 0.5);
+  background: var(--color-bg-sunken);
   border: 1px solid var(--color-border-subtle);
   border-left: 3px solid var(--color-border-default);
 }
@@ -5866,7 +5811,7 @@ a.cls-res__title:hover {
 }
 
 .tk-reply {
-  border: 1px solid rgba(42, 37, 96, 0.8);
+  border: 1px solid var(--color-border-default);
   background: rgba(10, 8, 38, 0.4);
   padding: 16px;
 }

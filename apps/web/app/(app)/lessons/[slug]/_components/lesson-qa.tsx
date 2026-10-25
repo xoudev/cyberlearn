@@ -42,7 +42,7 @@ export function LessonQA({
   friendIds = NO_FRIENDS,
 }: LessonQAProps): React.JSX.Element {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div className="lesson-discussion" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <div
@@ -107,7 +107,7 @@ export function LessonQA({
             padding: "48px 24px",
             textAlign: "center",
             border: "1px dashed var(--color-border-subtle)",
-            background: "rgba(5,4,26,0.4)",
+            background: "var(--color-bg-elevated)",
           }}
         >
           <svg
@@ -161,10 +161,9 @@ function QuestionCard({
 
   return (
     <div
+      className="lesson-question"
       style={{
-        background: question.isResolved
-          ? "linear-gradient(135deg, color-mix(in srgb, var(--cosmetic-accent) 4%, transparent), transparent 50%), rgba(5,4,26,0.5)"
-          : "rgba(5,4,26,0.5)",
+        background: "var(--color-bg-elevated)",
         border: `1px solid ${question.isResolved ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "var(--color-border-subtle)"}`,
         overflow: "hidden",
       }}
@@ -229,6 +228,7 @@ function QuestionCard({
         </p>
 
         <div
+          className="lesson-question__meta"
           style={{
             display: "flex",
             alignItems: "center",
@@ -268,7 +268,7 @@ function QuestionCard({
       <div
         style={{
           padding: "14px 22px",
-          borderTop: question.answers.length > 0 ? "1px solid #1A1640" : "none",
+          borderTop: question.answers.length > 0 ? "1px solid var(--color-border-subtle)" : "none",
         }}
       >
         <PostAnswerForm questionId={question.id} />
@@ -298,7 +298,7 @@ function AnswerRow({
     <div
       style={{
         padding: "16px 22px 16px 38px",
-        borderBottom: !isLast ? "1px solid #1A1640" : "none",
+        borderBottom: !isLast ? "1px solid var(--color-border-subtle)" : "none",
         background: answer.isAccepted
           ? "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)"
           : "transparent",

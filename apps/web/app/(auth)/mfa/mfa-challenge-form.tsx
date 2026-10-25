@@ -1,5 +1,6 @@
 "use client";
 
+// TOTP entry, automatic submission and verification require browser interaction.
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
@@ -92,7 +93,11 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
         labelClassName={styles.label}
         inputClassName={[styles.input, styles.codeInput].join(" ")}
       />
-      {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
+      {error ? (
+        <p className={[styles.message, styles.error].join(" ")} role="alert">
+          {error}
+        </p>
+      ) : null}
       <button className={styles.submit} type="submit" disabled={pending}>
         {pending ? "Vérification…" : "Valider le code"}
       </button>

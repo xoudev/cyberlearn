@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { cookies, headers } from "next/headers";
 import { SplashScreen } from "@/components/splash-screen";
+import { brandTypeface } from "@/components/brand-typeface";
 import "@/components/splash-screen.css";
 import { CookieBanner } from "@/components/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
 import { OPEN_GRAPH_SITE } from "./page-metadata";
 import { SITE_URL } from "./site-url";
 import "./globals.css";
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
@@ -72,9 +67,9 @@ export default async function RootLayout({
       // unasked).
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${jakarta.variable} ${jetbrains.variable}`}
+      className={jetbrains.variable}
     >
-      <body className="font-sans antialiased">
+      <body className={`font-sans antialiased ${brandTypeface}`}>
         {/*
          * Dark-only for launch: the light theme isn't designed yet, so the
          * provider is pinned with forcedTheme="dark". This overrides any stored

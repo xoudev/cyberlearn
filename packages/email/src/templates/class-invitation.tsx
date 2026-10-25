@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 
 /**
@@ -49,14 +49,12 @@ export function ClassInvitationEmail({
   signUpUrl,
 }: ClassInvitationEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{`Tu es invité·e à rejoindre ${className} sur CyberLearn`}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>Rejoins {className}</Heading>
@@ -83,7 +81,7 @@ export function ClassInvitationEmail({
 
             <Section style={styles.buttonWrap}>
               <Button style={styles.button} href={signUpUrl}>
-                Créer mon compte →
+                Créer mon compte
               </Button>
             </Section>
 

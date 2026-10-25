@@ -69,6 +69,8 @@ export interface SelectProps {
   "aria-labelledby"?: string;
   /** On the wrapper, for how the field sits among its neighbours. */
   className?: string;
+  /** On the portalled list, so app-specific styles reach it outside the form. */
+  panelClassName?: string;
   /** On the wrapper too: width, margin, flex. */
   style?: React.CSSProperties;
   /** On the closed control, for its own metrics - height, font size. */
@@ -89,7 +91,7 @@ const C = {
   option: "var(--cl-select-option-fg, var(--color-text-secondary))",
   active: "var(--cl-select-option-active-bg, #141040)",
   off: "var(--cl-select-option-disabled-fg, var(--color-text-faint))",
-  font: "var(--font-mono, ui-monospace, monospace)",
+  font: "var(--cl-select-font, var(--font-mono, ui-monospace, monospace))",
 } as const;
 
 const PANEL_MAX_HEIGHT = 280;
@@ -136,6 +138,7 @@ export function Select({
   placeholder = "Choisir…",
   block = true,
   className,
+  panelClassName,
   style,
   triggerStyle,
   ...aria
@@ -284,6 +287,7 @@ export function Select({
         return;
       case "Escape":
         event.preventDefault();
+        event.stopPropagation();
         close(true);
         return;
       case "Tab":
@@ -418,6 +422,7 @@ export function Select({
               ref={listRef}
               id={listboxId}
               role="listbox"
+              className={panelClassName}
               aria-label={aria["aria-label"]}
               aria-labelledby={aria["aria-labelledby"]}
               style={{

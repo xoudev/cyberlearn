@@ -1,217 +1,247 @@
-/* What the ban page says, on the frame of app/standalone-page.css. */
-
 .code {
-  margin: 0 0 14px;
-  font: 11px var(--font-mono);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #ff6b7a;
+  margin: 0 0 24px;
+  color: #ffb9bf;
+  font:
+    12px / 1.6 var(--font-interface),
+    sans-serif;
 }
-
 .title {
-  margin: 0 0 14px;
-  font-family: var(--font-sans);
-  font-size: clamp(26px, 4vw, 38px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  margin: 0 0 24px;
+  font:
+    600 clamp(40px, 6vw, 64px) / 1 var(--font-display),
+    sans-serif;
+  letter-spacing: -0.02em;
 }
-
 .lede {
-  margin: 0 0 26px;
-  font-family: var(--font-body);
+  margin: 0 0 28px;
+  color: #c2bfb8;
   font-size: 15px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  line-height: 1.8;
 }
-
 .facts {
   display: grid;
-  gap: 1px;
-  margin-bottom: 26px;
-  background: var(--border-strong);
-  border: 1px solid var(--border-strong);
+  gap: 0;
+  margin-bottom: 28px;
+  background: #eae7df;
+  color: #141518;
 }
-
 .fact {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: rgba(5, 4, 26, 0.9);
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 10px 24px;
+  align-items: baseline;
+  padding: 20px;
 }
-
+.fact + .fact {
+  border-top: 1px solid #bdbab3;
+}
 .factLabel {
-  font: 10px var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: #55524d;
+  font-size: 12px;
 }
-
 .factValue {
-  font: 12px var(--font-mono);
-  color: var(--color-text-primary);
-  text-align: right;
-}
-
-.reason {
-  margin: 0;
-  padding: 14px 16px;
-  border-left: 2px solid var(--color-danger);
-  background: rgba(255, 71, 87, 0.06);
-  font-family: var(--font-body);
+  color: #141518;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--color-text-primary);
-  white-space: pre-wrap;
+  text-align: right;
 }
-
+.reason {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #a9636c;
+  background: #291c20;
+  color: #ffb9bf;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 26px;
+  gap: 12px;
+  margin-top: 24px;
 }
-
 .primary,
 .ghost {
-  padding: 12px 22px;
-  border: 1px solid var(--border-strong);
-  font: 700 11px var(--font-mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 13px 20px;
+  font:
+    600 14px / 1.5 var(--font-interface),
+    sans-serif;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #74767d;
+  background: transparent;
+  color: #f4f2ed;
   transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 120ms,
+    border-color 120ms;
 }
-
 .primary {
-  border-color: var(--color-danger);
-  background: var(--color-danger);
-  color: var(--color-bg-base);
+  background: #ff929b;
+  border-color: #ff929b;
+  color: #141518;
 }
-.primary:hover {
-  background: #ff6b7a;
-  border-color: #ff6b7a;
+.primary:hover:not(:disabled) {
+  background: #ffb9bf;
+  border-color: #ffb9bf;
 }
 .primary:disabled {
   opacity: 0.55;
-  cursor: progress;
-}
-
-.ghost {
-  background: transparent;
-  color: var(--color-text-secondary);
+  cursor: wait;
 }
 .ghost:hover {
-  border-color: var(--color-text-muted);
-  background: rgba(111, 107, 153, 0.08);
+  background: #191c22;
+  border-color: #c2bfb8;
 }
-
-/* ── The notice on arrival (in the site's dialog, ModalShell of @cyberlearn/ui) ── */
-
+.noticeRoot {
+  --color-bg-base: #0b0c0e;
+  --color-bg-elevated: #121418;
+  --color-text-primary: #f4f2ed;
+  --color-text-secondary: #c2bfb8;
+  --color-text-muted: #aaa79f;
+  --color-border-subtle: #44454a;
+  --color-danger: #ff929b;
+  --font-sans: var(--font-interface);
+  background: #121418 !important;
+  box-shadow: none !important;
+  color: #f4f2ed;
+  font-family: var(--font-interface), sans-serif;
+}
+.noticeRoot,
+.noticeRoot *,
+.noticeRoot *::before,
+.noticeRoot *::after {
+  border-radius: 0 !important;
+}
+.noticeRoot :is(a, button, textarea):focus-visible {
+  outline: 2px solid #ff864f;
+  outline-offset: 3px;
+}
+.noticeRoot :global(.modal-shell__head) {
+  background: #191c22;
+}
+.noticeRoot :global(.modal-shell__title) {
+  font:
+    600 36px / 1 var(--font-display),
+    sans-serif;
+}
+.noticeRoot :global(.modal-shell__eyebrow) {
+  font:
+    12px var(--font-interface),
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+:global(.modal-shell):has(.noticeRoot) {
+  background: #000b !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 .notice {
-  padding: 20px;
+  padding: 24px;
 }
-
 .noticeText {
   margin: 0 0 18px;
-  font-family: var(--font-body);
+  color: #c2bfb8;
   font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
+  line-height: 1.7;
 }
-
-/* ── The appeal ─────────────────────────────────────────────────────────── */
-
 .field {
   display: block;
-  margin-top: 18px;
+  margin-top: 24px;
 }
-
 .label {
   display: block;
-  margin-bottom: 8px;
-  font: 10px var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  color: #c2bfb8;
+  font:
+    13px / 1.6 var(--font-interface),
+    sans-serif;
 }
-
 .textarea {
   width: 100%;
   min-height: 150px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-strong);
-  background: rgba(5, 4, 26, 0.9);
-  color: var(--color-text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.6;
+  padding: 14px;
+  border: 1px solid #74767d;
+  background: #0b0c0e;
+  color: #f4f2ed;
+  font:
+    16px / 1.6 var(--font-interface),
+    sans-serif;
   resize: vertical;
 }
-.textarea:focus {
-  outline: none;
-  border-color: #ff6b7a;
+.textarea:focus-visible {
+  outline: 2px solid #ff864f;
+  outline-offset: 3px;
 }
-
+.textarea::placeholder {
+  color: #aaa79f;
+}
 .error {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 71, 87, 0.35);
-  background: rgba(255, 71, 87, 0.06);
-  font: 12px var(--font-mono);
-  line-height: 1.5;
-  color: #ff6b7a;
-}
-
-.sent {
-  margin: 14px 0 0;
-  padding: 12px 14px;
-  border: 1px solid rgba(10, 255, 212, 0.3);
-  background: rgba(10, 255, 212, 0.05);
-  font: 12px var(--font-mono);
-  line-height: 1.55;
-  color: var(--color-brand-turquoise);
-}
-
-/* ── The account's data ─────────────────────────────────────────────────── */
-
-.data {
-  margin-top: 30px;
-  padding-top: 22px;
-  border-top: 1px solid var(--border-strong);
-}
-
-.dataTitle {
-  margin: 0 0 10px;
-  font: 10px var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.dataText {
-  margin: 0 0 14px;
-  font-family: var(--font-body);
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--color-text-secondary);
-}
-
-.dataText:last-child {
   margin: 16px 0 0;
+  padding: 16px;
+  color: #ffb9bf;
+  border: 1px solid #a9636c;
+  background: #291c20;
+  font-size: 13px;
+  line-height: 1.7;
 }
-
+.sent {
+  margin: 24px 0 0;
+  padding: 20px;
+  background: #1a2822;
+  border: 1px solid #4b8a6a;
+  color: #b2e9c9;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.data {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid #44454a;
+}
+.dataTitle {
+  margin: 0 0 18px;
+  font:
+    600 32px / 1.1 var(--font-display),
+    sans-serif;
+}
+.dataText {
+  margin: 0 0 20px;
+  color: #c2bfb8;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.dataText:last-child {
+  margin: 20px 0 0;
+}
 .mail {
-  color: var(--color-info);
-  text-decoration: none;
+  color: #ff864f;
+  text-underline-offset: 4px;
 }
-.mail:hover {
-  text-decoration: underline;
+@media (max-width: 600px) {
+  .fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .factValue {
+    text-align: left;
+  }
+  .actions > * {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .ghost,
+  .noticeRoot * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

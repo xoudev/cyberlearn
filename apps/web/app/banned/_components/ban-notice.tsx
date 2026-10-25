@@ -1,5 +1,6 @@
 "use client";
 
+// The acknowledgement, appeal form and sign-out need browser interaction.
 import React, { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
@@ -59,6 +60,7 @@ export function BanNotice({
           close(false);
         }}
         dismissable={false}
+        className={styles.noticeRoot ?? ""}
         eyebrow={<span style={{ color: "#ff6b7a" }}>Accès suspendu</span>}
         title="Ton compte est banni."
         accent="var(--color-danger)"
@@ -93,7 +95,7 @@ export function BanNotice({
       </ModalShell>
 
       {sent ? (
-        <p className={styles.sent}>
+        <p className={styles.sent} role="status">
           Ton appel a été transmis à l&apos;équipe de modération. La réponse arrivera par e-mail :
           elle contient la décision, pas seulement un avis de passage.
         </p>

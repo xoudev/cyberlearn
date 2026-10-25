@@ -1,6 +1,6 @@
 "use client";
 
-import { ACCENT, MONO, RED } from "@cyberlearn/ui";
+import { ACCENT, BORDER, MONO, MUTED, RED } from "@cyberlearn/ui";
 import React, { useState } from "react";
 import { parsePhotoOsint } from "@cyberlearn/types";
 import { distanceKm, distanceLabel, parseCoordinates, type Point } from "@/lib/osint/geo";
@@ -37,7 +37,7 @@ async function cleanedBytes(src: string): Promise<ArrayBuffer> {
 function MetadataTable({ rows }: { rows: readonly MetadataRow[] }): React.ReactElement {
   if (rows.length === 0) {
     return (
-      <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+      <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
         Aucune métadonnée : ni appareil, ni date, ni position.
       </p>
     );
@@ -46,25 +46,25 @@ function MetadataTable({ rows }: { rows: readonly MetadataRow[] }): React.ReactE
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.tag} style={{ borderTop: "1px solid #1F1B47" }}>
+          <tr key={row.tag} style={{ borderTop: `1px solid ${BORDER}` }}>
             <th
               scope="row"
               style={{
                 textAlign: "left",
                 fontWeight: 400,
-                color: "#B8B5D1",
+                color: "var(--color-text-secondary)",
                 padding: "6px 8px 6px 0",
               }}
             >
               {row.label}
-              <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: "#5A5680" }}>
+              <span style={{ display: "block", fontFamily: MONO, fontSize: 11, color: MUTED }}>
                 {row.tag}
               </span>
             </th>
             <td
               style={{
                 fontFamily: MONO,
-                color: row.tag.startsWith("GPS") ? ACCENT : "#F5F5FA",
+                color: row.tag.startsWith("GPS") ? ACCENT : "var(--color-text-primary)",
                 padding: "6px 0",
                 overflowWrap: "anywhere",
               }}
@@ -165,7 +165,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
       <header
         style={{
           padding: "12px 16px",
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: `1px solid ${BORDER}`,
           display: "flex",
           gap: 10,
           alignItems: "baseline",
@@ -176,12 +176,16 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
           OSINT · PHOTO
         </span>
         {exercise.title ? (
-          <span style={{ color: "#F5F5FA", fontWeight: 600, fontSize: 15 }}>{exercise.title}</span>
+          <span style={{ color: "var(--color-text-primary)", fontWeight: 600, fontSize: 15 }}>
+            {exercise.title}
+          </span>
         ) : null}
       </header>
 
       <div style={{ padding: "12px 16px", display: "grid", gap: 14 }}>
-        <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>{exercise.task}</p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+          {exercise.task}
+        </p>
 
         <figure style={{ margin: 0, display: "grid", gap: 6 }}>
           {/* A static picture of public/osint, read byte for byte below: next/image would re-encode it. */}
@@ -189,11 +193,16 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
           <img
             src={exercise.src}
             alt={exercise.alt}
-            style={{ width: "100%", height: "auto", display: "block", border: "1px solid #1F1B47" }}
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              border: `1px solid ${BORDER}`,
+            }}
           />
           {exercise.caption ? (
-            <figcaption style={{ color: "#D8D6EA", fontSize: 14 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", marginRight: 8 }}>
+            <figcaption style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED, marginRight: 8 }}>
                 LÉGENDE QUI CIRCULE
               </span>
               « {exercise.caption} »
@@ -214,7 +223,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
             </button>
           ) : (
             <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
                 MÉTADONNÉES DU FICHIER
               </span>
               <MetadataTable rows={rows} />
@@ -244,9 +253,9 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
                 flex: "1 1 220px",
                 minWidth: 0,
                 padding: "8px 10px",
-                background: "#0A0826",
-                border: `1px solid ${typedWrong ? RED : "#2A2560"}`,
-                color: "#D8D6EA",
+                background: "var(--color-bg-elevated)",
+                border: `1px solid ${typedWrong ? RED : BORDER}`,
+                color: "var(--color-text-primary)",
                 fontFamily: MONO,
                 fontSize: 13,
               }}
@@ -262,7 +271,7 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
             </p>
           ) : null}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontFamily: MONO, fontSize: 12, color: "#7F7BA9" }}>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: MUTED }}>
               {guess === null
                 ? "Pas encore de point : clique sur la carte."
                 : `Ton point : ${guess.latitude.toFixed(4)}, ${guess.longitude.toFixed(4)}`}
@@ -287,19 +296,21 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
                 prise de vue.
               </p>
               {exercise.conclusion ? (
-                <p style={{ margin: 0, color: "#D8D6EA", fontSize: 14 }}>{exercise.conclusion}</p>
+                <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
+                  {exercise.conclusion}
+                </p>
               ) : null}
             </>
           ) : null}
           {verdict !== null && !found ? (
-            <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+            <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
               Pas là : ton point est à {distanceLabel(verdict.km)} du lieu de prise de vue.
             </p>
           ) : null}
           {!found && misses >= 2 && exercise.hints && exercise.hints.length > 0 ? (
             <ol style={{ margin: 0, paddingLeft: 22, display: "grid", gap: 4 }}>
               {exercise.hints.map((hint) => (
-                <li key={hint} style={{ color: "#B8B5D1", fontSize: 13 }}>
+                <li key={hint} style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>
                   {hint}
                 </li>
               ))}
@@ -308,10 +319,12 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
         </div>
 
         {found ? (
-          <div style={{ display: "grid", gap: 8, borderTop: "1px solid #1F1B47", paddingTop: 12 }}>
+          <div
+            style={{ display: "grid", gap: 8, borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}
+          >
             {cleaned === null ? (
               <>
-                <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+                <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
                   Et si la photo avait été nettoyée avant d&apos;être partagée ?
                 </p>
                 <button
@@ -326,11 +339,11 @@ export function PhotoOsint(props: Record<string, unknown>): React.ReactElement {
               </>
             ) : (
               <div aria-live="polite" style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
                   APRÈS NETTOYAGE
                 </span>
                 <MetadataTable rows={cleaned} />
-                <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14 }}>
+                <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: 14 }}>
                   L&apos;image est la même ; seules les informations cachées ont disparu. C&apos;est
                   ce que fait exiftool -all= photo.jpg, ou une application qui retire la position
                   avant l&apos;envoi.

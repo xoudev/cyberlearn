@@ -258,7 +258,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
   const classCount = taughtClassIds.length;
 
   return (
-    <div className="page-container">
+    <div className="page-container learning-catalogue learning-workspace class-workspace">
       <PageHeader
         crumb="ma-classe"
         eyebrow={

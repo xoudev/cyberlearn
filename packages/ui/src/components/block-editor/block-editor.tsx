@@ -98,6 +98,7 @@ export function BlockEditor({ value, onChange }: BlockEditorProps): React.ReactE
   const [list, commit] = useSyncedList(value, onChange);
   return (
     <div
+      className="mdx-block-editor"
       style={{
         height: "100%",
         overflowY: "auto",
@@ -199,7 +200,7 @@ function InsertPoint({
   taken: ReadonlySet<string>;
 }): React.ReactElement {
   return (
-    <div style={{ padding: "4px 0" }}>
+    <div className="mdx-insert-point" style={{ padding: "4px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ flex: 1, height: 1, background: open ? BORDER : "#15123A" }} />
         <button
@@ -428,6 +429,7 @@ function BlockCard({
   return (
     <section
       aria-label={label}
+      className="mdx-block"
       style={{
         border: `1px solid ${errorCount > 0 ? `color-mix(in srgb, ${DANGER} 40%, transparent)` : "var(--color-border-subtle)"}`,
         borderLeft: `3px solid ${errorCount > 0 ? DANGER : accent}`,
@@ -577,7 +579,7 @@ function HeadingBody({
   onChange: (block: LessonBlock) => void;
 }): React.ReactElement {
   return (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div className="mdx-block-heading" style={{ display: "flex", gap: 8 }}>
       <SelectInput
         value={String(block.depth)}
         options={
@@ -620,7 +622,10 @@ function TextBody({
           onChange(updateText(block, source));
         }}
       />
-      <span style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}>
+      <span
+        className="mdx-field-hint"
+        style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}
+      >
         Markdown : **gras**, *italique*, `code`, - liste, ```langage pour un bloc de code.
       </span>
     </div>

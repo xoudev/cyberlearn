@@ -3,7 +3,7 @@
 // "use client" justification: the guide is a window over the catalogue. It
 // opens and closes in place, and suggests from the answers as they are sent.
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { suggestPaths } from "@cyberlearn/lib/paths/suggest";
 import { ModalShell } from "@cyberlearn/ui";
@@ -33,6 +33,13 @@ export function PathGuideDialog({
   const [draft, setDraft] = useState<Partial<LearningAnswers>>(saved);
   const [answers, setAnswers] = useState<LearningAnswers | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const questionsRef = useRef<HTMLDivElement>(null);
+  const suggestionsRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    if (answers) suggestionsRef.current?.focus();
+    else questionsRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [open, answers]);
 
   const suggestions = useMemo(
     () => (answers === null ? [] : suggestPaths(catalogue, answers)),
@@ -69,21 +76,23 @@ export function PathGuideDialog({
             des suggestions : rien n&apos;est enregistré ni imposé.
           </p>
           {answers === null ? (
-            <GuideQuestions
-              // Remounted on each round, so the boxes tick what was last sent.
-              key={JSON.stringify(draft)}
-              answers={draft}
-              error={error}
-              submitLabel="Voir mes suggestions"
-              onSubmit={(form) => {
-                const view = readGuideForm(form);
-                setDraft(view.draft);
-                setError(view.error);
-                setAnswers(view.answers);
-              }}
-            />
+            <div ref={questionsRef}>
+              <GuideQuestions
+                // Remounted on each round, so the boxes tick what was last sent.
+                key={JSON.stringify(draft)}
+                answers={draft}
+                error={error}
+                submitLabel="Voir mes suggestions"
+                onSubmit={(form) => {
+                  const view = readGuideForm(form);
+                  setDraft(view.draft);
+                  setError(view.error);
+                  setAnswers(view.answers);
+                }}
+              />
+            </div>
           ) : (
-            <>
+            <section ref={suggestionsRef} tabIndex={-1} aria-label="Tes suggestions de parcours">
               <AnswerRecap
                 answers={answers}
                 onEdit={() => {
@@ -102,7 +111,7 @@ export function PathGuideDialog({
                   </Link>
                 )}
               />
-            </>
+            </section>
           )}
         </div>
       </ModalShell>

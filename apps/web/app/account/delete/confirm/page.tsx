@@ -1,127 +1,47 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { z } from "zod";
+import { StandaloneFrame } from "@/components/standalone-frame";
 
-// The token only ever travels to the POST below, so nothing here is cached.
+// Confirmation tokens must be rendered for each request, never cached.
 export const dynamic = "force-dynamic";
 
-const TOKEN_PATTERN = /^[A-Za-z0-9_-]{1,200}$/;
+const tokenSchema = z.string().regex(/^[A-Za-z0-9_-]{1,200}$/);
 
-/**
- * Last step before an irreversible deletion. The emailed link lands here
- * instead of deleting straight away: a GET is followed by mail clients,
- * scanners and prefetchers, so the destructive call has to be a form the
- * account holder submits themselves.
- */
+// A GET only presents the confirmation; the existing POST route consumes its token.
 export default async function AccountDeleteConfirmPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<React.JSX.Element> {
-  const params = await searchParams;
-  const token = typeof params.token === "string" ? params.token : "";
-  if (!TOKEN_PATTERN.test(token)) redirect("/account/delete/error?reason=invalid");
-
+  const parsed = tokenSchema.safeParse((await searchParams).token);
+  if (!parsed.success) redirect("/account/delete/error?reason=invalid");
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "var(--color-bg-base)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      }}
-    >
-      <div
-        className="card"
-        style={{
-          maxWidth: 520,
-          width: "100%",
-          borderTop: "2px solid var(--color-danger)",
-          padding: "32px 30px",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "monospace",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--color-danger)",
-            marginBottom: 18,
-          }}
-        >
-          Suppression définitive
-        </div>
-
-        <h1
-          style={{
-            fontWeight: 800,
-            fontSize: 26,
-            letterSpacing: "-0.03em",
-            color: "var(--color-text-primary)",
-            margin: "0 0 14px",
-          }}
-        >
-          Confirmer la suppression de ton compte
-        </h1>
-
-        <p
-          style={{
-            fontSize: 14.5,
-            lineHeight: 1.65,
-            color: "var(--color-text-secondary)",
-            margin: "0 0 10px",
-          }}
-        >
-          Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.
-          <b style={{ color: "var(--color-text-primary)" }}> Cette action est irréversible.</b>
+    <StandaloneFrame danger>
+      <p className="state-code">Suppression définitive</p>
+      <h1 id="standalone-title" className="state-title">
+        Confirmer la suppression de ton compte
+      </h1>
+      <div className="state-description">
+        <p>
+          Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.{" "}
+          <b>Cette action est irréversible.</b>
         </p>
-        <p
-          style={{
-            fontSize: 13,
-            lineHeight: 1.6,
-            color: "var(--color-text-muted)",
-            margin: "0 0 26px",
-          }}
-        >
-          Si tu n&apos;es pas à l&apos;origine de cette demande, ferme simplement cette page : rien
-          ne sera supprimé.
+        <p>
+          Si tu n’es pas à l’origine de cette demande, ferme simplement cette page : rien ne sera
+          supprimé.
         </p>
-
-        <form
-          method="POST"
-          action="/api/me/delete/confirm"
-          style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-        >
-          <input type="hidden" name="token" value={token} />
-          <button className="btn btn--danger btn--sm" type="submit">
-            Supprimer définitivement
-          </button>
-          <Link
-            className="card card--ghost"
-            href="/dashboard"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 44,
-              padding: "0 22px",
-              color: "var(--color-text-secondary)",
-              fontFamily: "monospace",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-            }}
-          >
-            Annuler
-          </Link>
-        </form>
       </div>
-    </main>
+      <form method="POST" action="/api/me/delete/confirm" className="state-actions">
+        <input type="hidden" name="token" value={parsed.data} />
+        <button className="state-primary state-primary--danger" type="submit">
+          Supprimer définitivement
+        </button>
+        <Link className="state-secondary" href="/dashboard">
+          Annuler
+        </Link>
+      </form>
+    </StandaloneFrame>
   );
 }

@@ -2,6 +2,7 @@ import React from "react";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { LESSON_TOOLBAR_HEIGHT, NAVBAR_HEIGHT } from "@/lib/chrome";
 import { LESSON_ARTICLE_CLASS } from "./_components/lesson-article";
+import "./lesson-detail.css";
 
 /**
  * A lesson while it loads, drawn on the page's own classes (`.lesson-page`,
@@ -19,17 +20,23 @@ function ChipSkeleton({ w }: { w: number }): React.ReactElement {
 
 /** A button of the toolbar, icon only as on a phone: its words come with the page. */
 function ToolSkeleton(): React.ReactElement {
-  return <Skeleton w={34} h={34} />;
+  return <Skeleton w={44} h={44} />;
 }
 
 export default function LessonDetailLoading(): React.ReactElement {
   return (
-    <div className="lesson-page" aria-busy="true" aria-label="Chargement de la leçon">
+    <div
+      className="lesson-page learning-catalogue learning-workspace lesson-workspace"
+      aria-busy="true"
+      aria-label="Chargement de la leçon"
+    >
       <div className="lesson-head" aria-hidden="true">
         <div className="pg-crumb">
           <Skeleton w={260} h={12} style={{ maxWidth: "100%", margin: "3px 0" }} />
         </div>
-        {/* The h1: clamp(28px, 4vw, 44px) on a 1.08 line, two lines. */}
+        <div className="lesson-head__domain">
+          <Skeleton w={140} h={12} />
+        </div>
         <div className="lesson-head__title">
           <Skeleton w="88%" h="0.8em" style={{ margin: "0.14em 0" }} />
           <Skeleton w="52%" h="0.8em" style={{ margin: "0.14em 0" }} />

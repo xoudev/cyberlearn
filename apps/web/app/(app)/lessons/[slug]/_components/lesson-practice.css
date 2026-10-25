@@ -1,0 +1,76 @@
+.lesson-practice {
+  min-width: 0;
+  background: var(--color-bg-base);
+  box-shadow: none;
+}
+.lesson-practice__head {
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 64px;
+}
+.lesson-practice__head > span {
+  font-family: var(--font-interface), sans-serif !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.lesson-practice__head > span:first-child > span {
+  width: 4px !important;
+  height: 20px !important;
+}
+.lesson-practice__actions {
+  flex-wrap: wrap;
+  gap: 0;
+}
+.lesson-practice__actions > div {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-block: 10px !important;
+}
+.lesson-practice__actions button,
+.lesson-practice :is([role="status"], [role="alert"]) button {
+  min-height: 44px;
+  font-family: var(--font-interface), sans-serif !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.lesson-practice__actions > div > span {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 12px !important;
+}
+.lesson-run-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border: 0;
+  background: #ff6b2b;
+  color: #141518;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lesson-run-button:hover:not(:disabled) {
+  background: #ff864f;
+}
+.lesson-run-button:disabled {
+  background: #44454a;
+  color: #f4f2ed;
+  cursor: wait;
+}
+.lesson-practice button:focus-visible,
+.lesson-practice textarea:focus-visible {
+  outline: 2px solid #ff864f !important;
+  outline-offset: -3px;
+}
+@media (max-width: 600px) {
+  .lesson-run-button {
+    width: 100%;
+  }
+  .lesson-practice__actions > div {
+    flex-basis: 100%;
+  }
+}

@@ -641,6 +641,7 @@ function TBtn({
     <button
       type="button"
       title={title}
+      aria-pressed={active}
       onClick={onClick}
       onMouseEnter={() => {
         setHov(true);
@@ -850,7 +851,10 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
   );
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", background: "#060422" }}>
+    <div
+      className="mdx-editor-guide"
+      style={{ height: "100%", overflowY: "auto", background: "#060422" }}
+    >
       <div
         style={{
           position: "sticky",
@@ -1078,10 +1082,12 @@ export function MdxEditorPanel({
   return (
     <div
       ref={panelRef}
+      className="mdx-editor-panel"
       style={{ border: `1px solid ${BORDER}`, overflow: "hidden", background: "#07051E" }}
     >
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
       <div
+        className="mdx-editor-toolbar"
         style={{
           display: "flex",
           alignItems: "center",
@@ -1527,6 +1533,7 @@ export function MdxEditorPanel({
               setShowGuide(next);
             }}
             title={showGuide ? "Masquer le guide" : "Guide MDX · référence des composants"}
+            aria-pressed={showGuide}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1566,6 +1573,7 @@ export function MdxEditorPanel({
               setSplit((v) => !v);
             }}
             title={split ? "Vue éditeur seul" : "Vue scindée"}
+            aria-pressed={split}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1635,6 +1643,8 @@ export function MdxEditorPanel({
 
       {/* ── Editor + Preview ──────────────────────────────────────────── */}
       <div
+        className="mdx-editor-panes"
+        data-split={split}
         style={{
           display: "grid",
           gridTemplateColumns: split ? "55% 45%" : "1fr",
@@ -1703,6 +1713,7 @@ export function MdxEditorPanel({
             />
           ) : (
             <div
+              className="mdx-editor-quick"
               style={{
                 height: 620,
                 overflow: "auto",
@@ -1754,6 +1765,7 @@ export function MdxEditorPanel({
 
       {/* ── Status bar ────────────────────────────────────────────────── */}
       <div
+        className="mdx-editor-status"
         style={{
           display: "flex",
           alignItems: "center",

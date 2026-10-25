@@ -12,8 +12,8 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
-import { styles as shared } from "../theme.js";
+import { EmailBrand, EmailHead } from "../shell.js";
+import { fonts, styles as shared, tokens } from "../theme.js";
 import { stampedSubject } from "../subject.js";
 
 export type EmailActionType = "magiclink" | "signup" | "recovery" | "invite" | "email_change";
@@ -63,11 +63,11 @@ const DESCRIPTION: Record<EmailActionType, string> = {
 };
 
 const BUTTON_LABEL: Record<EmailActionType, string> = {
-  magiclink: "Se connecter →",
-  signup: "Confirmer mon compte →",
-  recovery: "Réinitialiser mon accès →",
-  invite: "Accepter l'invitation →",
-  email_change: "Confirmer le changement →",
+  magiclink: "Se connecter",
+  signup: "Confirmer mon compte",
+  recovery: "Réinitialiser mon accès",
+  invite: "Accepter l'invitation",
+  email_change: "Confirmer le changement",
 };
 
 export function MagicLinkEmail({
@@ -76,20 +76,18 @@ export function MagicLinkEmail({
   code,
 }: MagicLinkEmailProps): React.ReactElement {
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{SUBJECT[type]}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>{HEADING[type]}</Heading>
             <Text style={styles.paragraph}>{DESCRIPTION[type]}</Text>
             <Text style={styles.paragraph}>
-              Ce lien expire dans <strong style={{ color: "#F5F5FA" }}>1 heure</strong> et ne peut
+              Ce lien expire dans <strong style={shared.detailStrong}>1 heure</strong> et ne peut
               être utilisé qu'une seule fois.
             </Text>
 
@@ -151,20 +149,18 @@ const styles = {
   } satisfies React.CSSProperties,
 
   codeLabel: {
-    fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+    fontFamily: fonts.sans,
     fontSize: "11px",
-    color: "#7F7BA9",
-    letterSpacing: "0.12em",
-    textTransform: "uppercase" as const,
+    color: tokens.textMuted,
     margin: "0 0 8px",
   } satisfies React.CSSProperties,
 
   code: {
-    fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+    fontFamily: fonts.mono,
     fontSize: "30px",
     fontWeight: "700",
-    letterSpacing: "0.35em",
-    color: "#0AFFD4",
+    letterSpacing: "0.15em",
+    color: tokens.link,
     margin: "0",
   } satisfies React.CSSProperties,
 } as const;

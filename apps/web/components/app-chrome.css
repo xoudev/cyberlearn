@@ -10,12 +10,15 @@
   border-radius: 0 !important;
 }
 .app-frame .sidebar-wrapper {
+  overflow: hidden;
   background: #111317;
   border-right: 1px solid #34363c;
   padding-bottom: 0;
 }
 .chrome-sidebar {
   position: relative;
+  min-height: 0;
+  width: 100%;
 }
 .sidebar-mobile-close {
   position: absolute;
@@ -52,6 +55,7 @@
   color: #d4430d;
 }
 .app-frame .sidebar-scroll {
+  min-height: 0;
   padding: 15px 12px;
   scrollbar-width: thin;
 }
@@ -358,6 +362,49 @@
 }
 .app-frame aside[data-state="collapsed"] .sidebar-nav-item::after {
   display: none;
+}
+@media (min-width: 1024px) {
+  .app-frame aside[data-state="collapsed"] .sidebar-logo {
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-scroll {
+    padding: 15px 0;
+    scrollbar-width: none;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-group {
+    width: 44px;
+    margin-inline: auto;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-nav-item {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-account {
+    padding: 12px 0;
+  }
+  .app-frame aside[data-state="collapsed"] :is(.sidebar-account-row, .sidebar-account-rail) {
+    width: 44px;
+    margin-inline: auto;
+    padding: 0;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-account-user {
+    width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0;
+    flex: none;
+  }
+  .app-frame aside[data-state="collapsed"] .sidebar-nav-item:hover .sidebar-nav-icon {
+    transform: none;
+  }
 }
 @media (max-width: 1400px) {
   .chrome-profile-name {

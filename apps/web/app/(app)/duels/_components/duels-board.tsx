@@ -9,7 +9,8 @@ import {
   wasPlayed,
   type DuelRecordCounts,
 } from "@cyberlearn/lib/social/duel";
-import { Crumb } from "@/components/crumb";
+import { ProgressionHeading } from "@/components/progression-heading";
+import { BastionLogo } from "@/components/bastion-logo";
 import { EmptyState } from "@/components/empty-state";
 import { initialsOf } from "@/lib/avatar/glyphs";
 import type { DuelSummary } from "@/lib/social/duels";
@@ -134,25 +135,13 @@ export function DuelsBoard({
   const record = duelRecordLines(counts);
 
   return (
-    <div className="page-container dl">
+    <div className="page-container dl learning-catalogue learning-workspace community-workspace">
       <header className="dl-head">
-        <div>
-          <Crumb segments={["duels"]} />
-          <p className="pg-eyebrow">
-            Communauté
-            {friendCount > 0 ? (
-              <>
-                {" "}
-                · <b>{friendCount}</b> {plural(friendCount, "ami")} à défier
-              </>
-            ) : null}
-          </p>
-          <h1 className="pg-title">Duels</h1>
-          <p className="pg-lede">
-            Défie un ami sur un parcours : chacun répond de son côté aux mêmes questions, et voit le
-            score de l&apos;autre avancer en direct.
-          </p>
-        </div>
+        <ProgressionHeading
+          eyebrow="Communauté / Face à face"
+          title="Les duels"
+          description="Un ami, un parcours, les mêmes questions. À vous de jouer."
+        />
         {duels.length > 0 && (
           <ul className="dl-record" aria-label="Ton bilan">
             {record.map((line) => (
@@ -165,36 +154,48 @@ export function DuelsBoard({
         )}
       </header>
 
-      <ol className="dl-rules" aria-label="Les règles">
-        <li>
-          <span className="dl-rules__n">01</span>
-          <div>
-            <p className="dl-rules__title">Cinq questions, les mêmes pour vous deux</p>
-            <p className="dl-rules__text">
-              Tirées au hasard des quiz des leçons du parcours choisi.
-            </p>
-          </div>
-        </li>
-        <li>
-          <span className="dl-rules__n">02</span>
-          <div>
-            <p className="dl-rules__title">Un jour pour accepter, un jour pour jouer</p>
-            <p className="dl-rules__text">
-              Passé ce délai, un défi sans réponse expire, et un duel se règle sur les réponses
-              données.
-            </p>
-          </div>
-        </li>
-        <li>
-          <span className="dl-rules__n">03</span>
-          <div>
-            <p className="dl-rules__title">À égalité, le premier à finir gagne</p>
-            <p className="dl-rules__text">
-              Le plus de bonnes réponses l&apos;emporte. Une réponse donnée est définitive.
-            </p>
-          </div>
-        </li>
-      </ol>
+      <div className="catalogue-ledger">
+        <span>
+          <b>{friendCount}</b> {plural(friendCount, "ami")} à défier
+        </span>
+        <span>
+          <b>{invitations.length}</b> {plural(invitations.length, "invitation")} reçue
+          {invitations.length > 1 ? "s" : ""}
+        </span>
+      </div>
+      <details className="dl-guide">
+        <summary>Comment se joue un duel ?</summary>
+        <ol className="dl-rules" aria-label="Les règles">
+          <li>
+            <span className="dl-rules__n">01</span>
+            <div>
+              <p className="dl-rules__title">Cinq questions, les mêmes pour vous deux</p>
+              <p className="dl-rules__text">
+                Tirées au hasard des quiz des leçons du parcours choisi.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span className="dl-rules__n">02</span>
+            <div>
+              <p className="dl-rules__title">Un jour pour accepter, un jour pour jouer</p>
+              <p className="dl-rules__text">
+                Passé ce délai, un défi sans réponse expire, et un duel se règle sur les réponses
+                données.
+              </p>
+            </div>
+          </li>
+          <li>
+            <span className="dl-rules__n">03</span>
+            <div>
+              <p className="dl-rules__title">À égalité, le premier à finir gagne</p>
+              <p className="dl-rules__text">
+                Le plus de bonnes réponses l&apos;emporte. Une réponse donnée est définitive.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </details>
 
       {invitations.length > 0 ? (
         <section className="dl-section" aria-labelledby="dl-invites-title">
@@ -214,25 +215,35 @@ export function DuelsBoard({
         </section>
       ) : null}
 
-      <section className="dl-section" aria-labelledby="dl-new-title">
-        <div className="dl-sec">
-          <h2 id="dl-new-title" className="dl-sec__title">
-            Lancer un duel
-          </h2>
+      <section className="dl-section dl-launch" aria-labelledby="dl-new-title">
+        <div className="dl-launch__body">
+          <div className="dl-sec">
+            <h2 id="dl-new-title" className="dl-sec__title">
+              Lancer un duel
+            </h2>
+          </div>
+          {friendCount === 0 ? (
+            <EmptyState
+              title="Pas encore d'ami à défier"
+              message="Un duel se joue entre amis : ajoute quelqu'un depuis son profil, ou accepte une demande dans le panneau Amis en haut de page, puis reviens ici."
+            />
+          ) : (
+            <NewDuelForm
+              friends={friends}
+              paths={paths}
+              initialFriend={initialFriend}
+              readerInitials={initialsOf(readerName)}
+            />
+          )}
         </div>
-        {friendCount === 0 ? (
-          <EmptyState
-            title="Pas encore d'ami à défier"
-            message="Un duel se joue entre amis : ajoute quelqu'un depuis son profil, ou accepte une demande dans le panneau Amis en haut de page, puis reviens ici."
-          />
-        ) : (
-          <NewDuelForm
-            friends={friends}
-            paths={paths}
-            initialFriend={initialFriend}
-            readerInitials={initialsOf(readerName)}
-          />
-        )}
+        <aside className="dl-launch__aside">
+          <BastionLogo size={64} />
+          <div>
+            <p>Même terrain.</p>
+            <strong>À chacun son rythme.</strong>
+            <p>Vous jouez séparément. Le score avance au fil de vos réponses.</p>
+          </div>
+        </aside>
       </section>
 
       {/* With no friend and no duel, the panel above already says what to do. */}

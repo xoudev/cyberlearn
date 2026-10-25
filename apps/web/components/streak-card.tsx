@@ -12,7 +12,7 @@ import { ActivityHeatmap } from "./activity-heatmap";
  * The count, the record, Monday to Sunday with the active days lit, and the
  * freezes in reserve. With `year`, the profile's version goes on below the
  * same card: the days this year, the next milestone, and the last twelve
- * months as a calendar.
+ * months as an activity summary.
  *
  * The dashboard and the profile used to draw the streak with two components
  * that agreed on nothing: not the icon, not the colours, not the words for a
@@ -23,7 +23,7 @@ export async function StreakCard({
   year = false,
 }: {
   userId: string;
-  /** The profile's version: the year's figures and its calendar under the week. */
+  /** The profile's version: the year's figures and activity history under the week. */
   year?: boolean;
 }): Promise<React.ReactElement | null> {
   const overview = await streakRepository.getOverview(userId);
@@ -93,8 +93,7 @@ function weekLabel(days: ReturnType<typeof streakWeek>): string {
 }
 
 /**
- * The year under the week: two figures in the dashboard's own vocabulary, and
- * the calendar the app draws too (same grid, same levels, same words).
+ * The year under the week: the counters and monthly activity from the same daily records.
  */
 function StreakYear({
   overview,

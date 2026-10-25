@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { BastionLogo } from "@/components/bastion-logo";
 import { PublicNavbar } from "@/app/_components/public-navbar";
 import { pageAddress } from "@/app/page-metadata";
 import { env } from "@/lib/env";
@@ -8,9 +8,9 @@ import { availabilityLine, installIntro } from "./availability";
 import "./download.css";
 
 export const metadata: Metadata = {
-  title: "Télécharger l'application",
+  title: "Télécharger l’application",
   description:
-    "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
+    "Installe CyberLearn sur Android ou ajoute la version web à l’écran d’accueil de ton iPhone.",
   ...pageAddress("/download"),
 };
 
@@ -38,46 +38,6 @@ function ArrowIcon(): React.JSX.Element {
   );
 }
 
-function BellIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8ZM10 21h4" />
-    </svg>
-  );
-}
-
-function HomeIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4Z" />
-    </svg>
-  );
-}
-
-function RouteIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM8 6h3a3 3 0 0 1 3 3v6a3 3 0 0 0 3 3h-1" />
-    </svg>
-  );
-}
-
-function BookIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5Zm16 0A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5Z" />
-    </svg>
-  );
-}
-
-function UserIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0" />
-    </svg>
-  );
-}
-
 function ExternalAction({
   href,
   label,
@@ -100,94 +60,6 @@ function ExternalAction({
   );
 }
 
-function MobileAppPreview(): React.JSX.Element {
-  return (
-    <figure className="mobile-preview">
-      <div className="mobile-preview__device">
-        <div className="mobile-preview__screen">
-          <div className="mobile-preview__status" aria-hidden="true">
-            <span>9:41</span>
-            <span>● ◒</span>
-          </div>
-
-          <div className="mobile-preview__greeting">
-            <div className="mobile-preview__identity">
-              <Image src="/icon_app.png" alt="" width={28} height={28} priority />
-              <div>
-                <span>Bon retour</span>
-                <strong>@apprenti</strong>
-              </div>
-            </div>
-            <div className="mobile-preview__bell">
-              <BellIcon />
-            </div>
-          </div>
-
-          <div className="mobile-preview__level">
-            <div>
-              <strong>Niveau 7</strong>
-              <span>1 840 / 2 000 XP</span>
-            </div>
-            <div className="mobile-preview__xp">
-              <span />
-            </div>
-            <small>◆ Palier Argent</small>
-          </div>
-
-          <div className="mobile-preview__section-title">
-            <span>Progression</span>
-            <strong>Ta série</strong>
-          </div>
-          <div className="mobile-preview__streak">
-            <span aria-hidden="true">🔥</span>
-            <div>
-              <strong>12</strong>
-              <small>jours de série</small>
-            </div>
-            <p>
-              Record personnel
-              <br />
-              <b>18 jours</b>
-            </p>
-          </div>
-
-          <div className="mobile-preview__section-title mobile-preview__section-title--resume">
-            <strong>Reprends où tu t’es arrêté</strong>
-          </div>
-          <div className="mobile-preview__lesson">
-            <span>Cybersécurité</span>
-            <strong>Sécuriser une API</strong>
-            <small>Continuer →</small>
-          </div>
-
-          <div className="mobile-preview__nav" aria-hidden="true">
-            <span className="mobile-preview__nav-item mobile-preview__nav-item--active">
-              <HomeIcon />
-              Accueil
-            </span>
-            <span className="mobile-preview__nav-item">
-              <RouteIcon />
-              Parcours
-            </span>
-            <span className="mobile-preview__nav-item">
-              <BookIcon />
-              Leçons
-            </span>
-            <span className="mobile-preview__nav-item">
-              <UserIcon />
-              Profil
-            </span>
-          </div>
-        </div>
-      </div>
-      <figcaption>
-        <span>Écran d’accueil</span>
-        <span>Application Android</span>
-      </figcaption>
-    </figure>
-  );
-}
-
 export default function DownloadPage(): React.JSX.Element {
   const androidPlayUrl = env.NEXT_PUBLIC_ANDROID_PLAY_URL;
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
@@ -200,18 +72,14 @@ export default function DownloadPage(): React.JSX.Element {
   return (
     <div className="download-page">
       <PublicNavbar />
-
-      <main>
+      <main id="contenu">
         <section className="download-hero" aria-labelledby="download-title">
           <div className="download-hero__copy">
-            <div className="download-kicker">
-              <span aria-hidden="true" />
-              <b>{androidAvailable ? "Disponible" : "Aperçu"}</b> · Application mobile · Android
-            </div>
+            <p className="download-kicker">CyberLearn / Application mobile</p>
             <h1 id="download-title">
-              Tout CyberLearn,
+              Le même compte.
               <br />
-              <em>sur ton téléphone.</em>
+              <em>Un autre écran.</em>
             </h1>
             <p className="download-hero__intro">
               Continue une leçon, relis tes notes et garde ta progression à jour, même loin de ton
@@ -220,30 +88,32 @@ export default function DownloadPage(): React.JSX.Element {
             <div className="download-hero__actions">
               {androidAvailable ? (
                 <a href="#installation" className="download-action">
-                  <span>Installer l’application</span>
-                  <ArrowIcon />
+                  Installer l’application
                 </a>
               ) : (
                 <Link href={androidNotifyUrl} className="download-action">
-                  <span>Être prévenu du lancement</span>
-                  <ArrowIcon />
+                  Être prévenu du lancement
                 </Link>
               )}
               <Link href="/login" className="download-action download-action--secondary">
                 Ouvrir sur le web
               </Link>
             </div>
-            <p className="download-hero__availability">
-              <span aria-hidden="true" />
-              {availabilityLine(stores)}
+            <p className="download-hero__availability">{availabilityLine(stores)}</p>
+          </div>
+          <aside className="download-poster" aria-label="CyberLearn sur mobile">
+            <BastionLogo size={88} />
+            <p>
+              Apprendre.
+              <br />
+              Pratiquer.
+              <br />
+              <em>Recommencer.</em>
             </p>
-          </div>
-
-          <div className="download-hero__stage">
-            <MobileAppPreview />
-          </div>
+            <span>Développement / Cybersécurité / Réseaux</span>
+            <a href="#installation">Choisir ton installation</a>
+          </aside>
         </section>
-
         <dl className="download-stats" aria-label="Informations sur l’application">
           <div>
             <dt>Android</dt>
@@ -262,86 +132,39 @@ export default function DownloadPage(): React.JSX.Element {
             <dd>MFA disponible</dd>
           </div>
         </dl>
-
         <section className="download-product" aria-labelledby="product-title">
           <div className="download-product__inner">
             <header className="download-product__heading">
-              <p className="download-section-index">
-                <span aria-hidden="true" />
-                02 · Dans l’application
-              </p>
+              <p className="download-section-index">Dans l’application</p>
               <h2 id="product-title">
-                Ton espace CyberLearn,
+                Ton apprentissage
                 <br />
-                <em>adapté au mobile.</em>
+                <em>te suit.</em>
               </h2>
-              <p>
-                L’interface a été reconstruite pour le téléphone, avec les mêmes données et le même
-                niveau de sécurité que le site.
-              </p>
+              <p>Retrouve les parcours, les notes et la progression de ton compte sur téléphone.</p>
             </header>
-
             <div className="download-feature-list">
               <article>
-                <div
-                  className="download-feature-demo download-feature-demo--lesson"
-                  aria-hidden="true"
-                >
-                  <span>{"// LEÇON EN COURS"}</span>
-                  <strong>Sécuriser une API</strong>
-                  <div>
-                    <span />
-                  </div>
-                  <small>68% · SECTION 04/06</small>
-                </div>
-                <div className="download-feature-copy">
-                  <span>/ 01 · LEÇONS</span>
-                  <h3>Reprends au bon endroit</h3>
-                  <p>Continue tes cours et tes parcours sans perdre ta progression.</p>
-                </div>
+                <span aria-hidden="true">01</span>
+                <h3>Reprends au bon endroit</h3>
+                <p>Continue tes cours et tes parcours sans perdre ta progression.</p>
               </article>
               <article>
-                <div
-                  className="download-feature-demo download-feature-demo--notes"
-                  aria-hidden="true"
-                >
-                  <span>{"// BLOC-NOTES"}</span>
-                  <p>JWT · vérifier la signature avant de lire les claims.</p>
-                  <p>CORS · limiter les origines et méthodes autorisées.</p>
-                </div>
-                <div className="download-feature-copy">
-                  <span>/ 02 · NOTES</span>
-                  <h3>Ton bloc-notes te suit</h3>
-                  <p>Consulte et classe les notes enregistrées pendant tes leçons.</p>
-                </div>
+                <span aria-hidden="true">02</span>
+                <h3>Ton bloc-notes te suit</h3>
+                <p>Consulte et classe les notes enregistrées pendant tes leçons.</p>
               </article>
               <article>
-                <div className="download-feature-demo download-feature-demo--xp" aria-hidden="true">
-                  <div>
-                    <span>NIVEAU 7</span>
-                    <b>1 840 / 2 000 XP</b>
-                  </div>
-                  <div className="download-feature-demo__xp-bar">
-                    <span />
-                  </div>
-                  <small>◆ PALIER ARGENT · SÉRIE 12 JOURS</small>
-                </div>
-                <div className="download-feature-copy">
-                  <span>/ 03 · PROGRESSION</span>
-                  <h3>Tout reste synchronisé</h3>
-                  <p>XP, niveaux, séries, badges et classement utilisent les mêmes données.</p>
-                </div>
+                <span aria-hidden="true">03</span>
+                <h3>Tout reste synchronisé</h3>
+                <p>XP, niveaux, séries, badges et classement utilisent les mêmes données.</p>
               </article>
             </div>
           </div>
         </section>
-
         <section className="download-install" id="installation" aria-labelledby="install-title">
           <div className="download-install__heading">
-            <p className="download-section-index">
-              <span aria-hidden="true" />
-              03 · Installation
-            </p>
+            <p className="download-section-index">Installation</p>
             <h2 id="install-title">Choisis ton téléphone.</h2>
             <p>{installIntro(stores)}</p>
           </div>
@@ -430,13 +253,12 @@ export default function DownloadPage(): React.JSX.Element {
           </div>
         </section>
       </main>
-
       <footer className="download-footer">
         <div>
-          <Link href="/" className="download-brand">
-            <Image src="/icon_app.png" alt="" width={26} height={26} />
+          <Link href="/" className="download-brand" aria-label="CyberLearn · accueil">
+            <BastionLogo size={28} />
             <span>
-              cyber<b>learn</b>
+              CyberLearn<b>.</b>
             </span>
           </Link>
           <nav aria-label="Liens de pied de page">

@@ -12,7 +12,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
-import { EmailHead } from "../shell.js";
+import { EmailBrand, EmailHead } from "../shell.js";
 import { styles as shared } from "../theme.js";
 
 /**
@@ -50,12 +50,12 @@ const NOUN: Record<AssignedWorkKind, { subject: string; heading: string; cta: st
   lesson: {
     subject: "Nouvelle leçon à faire",
     heading: "Une leçon t'attend",
-    cta: "Ouvrir la leçon →",
+    cta: "Ouvrir la leçon",
   },
   path: {
     subject: "Nouveau parcours pour ta classe",
     heading: "Un parcours t'attend",
-    cta: "Ouvrir le parcours →",
+    cta: "Ouvrir le parcours",
   },
 };
 
@@ -73,14 +73,12 @@ export function WorkAssignedEmail({
   const noun = NOUN[kind];
 
   return (
-    <Html>
+    <Html lang="fr">
       <EmailHead />
       <Preview>{`${noun.subject} : ${workTitle}`}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
-          <Section style={styles.logoSection}>
-            <Text style={styles.logoText}>CYBER LEARN</Text>
-          </Section>
+          <EmailBrand />
 
           <Section style={styles.card}>
             <Heading style={styles.heading}>{noun.heading}</Heading>

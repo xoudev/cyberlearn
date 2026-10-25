@@ -1,5 +1,7 @@
 "use client";
 
+// Client boundary: board tabs, optimistic periods and privacy controls react to user input.
+
 import { Tabs } from "@/components/tabs";
 import { Pills } from "@/components/pills";
 import React, { useOptimistic, useState, useTransition } from "react";
@@ -19,7 +21,7 @@ import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
 import "./leaderboard.css";
 import { formatNumberFr } from "@cyberlearn/lib";
-import { Crumb } from "@/components/crumb";
+import { ProgressionHeading } from "@/components/progression-heading";
 import { FriendMark } from "@/components/friend-mark";
 import { rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { initialsOf } from "@/lib/avatar/glyphs";
@@ -91,260 +93,53 @@ function PlayerName({
 
 // ── Podium card ───────────────────────────────────────────────────────────────
 
-function PodiumCard({ entry, rank, isMe }: { entry: BoardRow; rank: number; isMe: boolean }) {
-  const rk = isMe
-    ? {
-        color: "var(--cosmetic-accent)",
-        grad: "linear-gradient(135deg, #5FFFE6 0%, var(--cosmetic-accent) 50%, var(--color-brand-blue) 100%)",
-      }
-    : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      (RK_COLORS[rank] ?? RK_COLORS[3]!);
+function PodiumCard({
+  entry,
+  rank,
+  isMe,
+}: {
+  entry: BoardRow;
+  rank: number;
+  isMe: boolean;
+}): React.JSX.Element {
   const name = entry.displayName ?? entry.username ?? "Anonyme";
-  const mono = initialsOf(name);
-  const tier = rankName(entry.level);
-  const isGold = rank === 1 && !isMe;
-
   return (
     <div
-      className={entry.profileHref !== null ? styles.linkedCard : undefined}
-      style={{
-        position: "relative",
-        background: isGold
-          ? "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,181,71,0.10), transparent 60%), rgba(5,4,26,0.7)"
-          : "rgba(5,4,26,0.6)",
-        border: `1px solid var(--color-border-default)`,
-        padding: "28px 22px 26px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        textAlign: "center",
-        minHeight: isGold ? 440 : 380,
-        transform: !isGold && !isMe ? "translateY(20px)" : undefined,
-        boxShadow: isGold
-          ? "0 0 0 1px rgba(255,181,71,0.18) inset, 0 0 28px rgba(255,181,71,0.18)"
-          : isMe
-            ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent) inset, 0 0 28px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)"
-            : undefined,
-      }}
+      className={[
+        "leaderboard-podium-card",
+        entry.profileHref !== null ? styles.linkedCard : "",
+      ].join(" ")}
+      data-rank={rank}
+      data-current={isMe}
     >
-      {/* bracket corners */}
-      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
-        <span
-          key={pos}
-          style={{
-            position: "absolute",
-            width: 16,
-            height: 16,
-            [pos.startsWith("t") ? "top" : "bottom"]: -1,
-            [pos.endsWith("l") ? "left" : "right"]: -1,
-            borderColor: rk.color,
-            borderStyle: "solid",
-            borderWidth: 0,
-            ...(pos === "tl"
-              ? { borderTopWidth: 2, borderLeftWidth: 2 }
-              : pos === "tr"
-                ? { borderTopWidth: 2, borderRightWidth: 2 }
-                : pos === "bl"
-                  ? { borderBottomWidth: 2, borderLeftWidth: 2 }
-                  : { borderBottomWidth: 2, borderRightWidth: 2 }),
-            pointerEvents: "none",
-          }}
-        />
-      ))}
-
-      {/* ME badge */}
-      {isMe && (
-        <span
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            ...MONO,
-            fontWeight: 700,
-            fontSize: 9,
-            letterSpacing: "0.22em",
-            color: "var(--cosmetic-accent)",
-            background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
-            padding: "4px 8px",
-          }}
-        >
-          › TOI
-        </span>
-      )}
-
-      {/* Rank plate */}
-      <span
-        style={{
-          position: "absolute",
-          top: -18,
-          left: "50%",
-          transform: "translateX(-50%)",
-          ...MONO,
-          fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          background: "var(--color-bg-base)",
-          border: `1px solid ${rk.color}`,
-          color: rk.color,
-          padding: "6px 14px",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          boxShadow: "0 0 14px rgba(0,0,0,0.5)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {rank === 1 && !isMe && (
-          <span
-            style={{
-              color: "var(--color-rarity-legendary)",
-              textShadow: "0 0 10px var(--color-rarity-legendary)",
-            }}
-          >
-            ★
-          </span>
-        )}
-        RANG · <b style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.01em" }}>#{rank}</b>
-      </span>
-
-      {/* Hex avatar */}
-      <div style={{ margin: "14px 0 18px" }}>
-        <HexAvatar
-          mono={mono}
-          grad={rk.grad}
-          size={isGold ? 100 : 80}
-          src={entry.avatarSrc}
-          name={name}
-        />
+      <div className="leaderboard-podium-card__rank">
+        <span>Rang</span>
+        <strong>{String(rank).padStart(2, "0")}</strong>
+        {isMe && <span>Toi</span>}
       </div>
-
-      {/* Handle */}
-      <h2
-        style={{
-          ...DISPLAY,
-          fontWeight: 700,
-          fontSize: isGold ? 26 : 22,
-          letterSpacing: "-0.01em",
-          color: "var(--color-text-primary)",
-          margin: "0 0 4px",
-          display: "inline-flex",
-          alignItems: "baseline",
-          gap: 2,
-        }}
-      >
-        <span
-          style={{
-            color: "var(--cosmetic-accent)",
-            ...MONO,
-            fontWeight: 500,
-            fontSize: isGold ? 20 : 16,
-          }}
-        >
-          @
-        </span>
+      <HexAvatar
+        mono={initialsOf(name)}
+        grad={rank === 1 ? "#ff6b2b" : "#aaa79f"}
+        size={64}
+        src={entry.avatarSrc}
+        name={name}
+      />
+      <h2>
         <PlayerName entry={entry} label={entry.username ?? entry.displayName ?? "Anonyme"} />
-        {showsFriendMark(entry) ? <FriendMark size={isGold ? 16 : 14} /> : null}
+        {showsFriendMark(entry) && <FriendMark size={14} />}
       </h2>
-      <p
-        style={{
-          ...MONO,
-          fontSize: 11,
-          letterSpacing: "0.1em",
-          color: "var(--color-text-muted)",
-          textTransform: "uppercase",
-          margin: "0 0 16px",
-        }}
-      >
-        {entry.displayName ?? ""}
-      </p>
-
-      {/* XP */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "center",
-          gap: 8,
-          marginBottom: 14,
-        }}
-      >
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 800,
-            fontSize: isGold ? 48 : 36,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-            background: rk.grad,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          {fmtXp(entry.xpTotal)}
-        </span>
-        <span
-          style={{
-            ...MONO,
-            fontWeight: 600,
-            fontSize: 12,
-            letterSpacing: "0.18em",
-            color: "var(--color-text-muted)",
-            textTransform: "uppercase",
-          }}
-        >
-          XP
-        </span>
+      {entry.displayName && entry.username && <p>{entry.displayName}</p>}
+      <div className="leaderboard-podium-card__xp">
+        <strong>{fmtXp(entry.xpTotal)}</strong>
+        <span>XP</span>
       </div>
-
-      {/* Level badge */}
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 14px",
-          ...MONO,
-          fontWeight: 700,
-          fontSize: 10.5,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "var(--color-text-secondary)",
-          border: "1px solid var(--color-border-default)",
-          background: "rgba(5,4,26,0.6)",
-        }}
-      >
-        LVL ·{" "}
-        <b style={{ color: rk.color, fontWeight: 800, fontSize: 13, letterSpacing: "-0.01em" }}>
-          {entry.level}
-        </b>
-        <span
-          style={{ color: "var(--color-text-primary)", fontWeight: 500, letterSpacing: "0.12em" }}
-        >
-          {tier}
+      <div className="leaderboard-podium-card__footer">
+        <span>
+          Niveau {entry.level} · {rankName(entry.level)}
         </span>
-      </div>
-
-      {/* Streak */}
-      <div
-        style={{
-          marginTop: 12,
-          ...MONO,
-          fontSize: 10.5,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--color-rarity-legendary)",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span style={{ filter: "drop-shadow(0 0 8px rgba(255,181,71,0.55))" }}>
-          <FlameIcon size={13} />
+        <span>
+          <FlameIcon size={13} /> {entry.streakDays} j
         </span>
-        STREAK · <b style={{ fontWeight: 700 }}>{entry.streakDays}j</b>
       </div>
     </div>
   );
@@ -620,7 +415,7 @@ const PERIOD_PILLS = LEADERBOARD_PERIODS.map((key) => ({
 
 /** The second half of the title: "Classement global.", "… de la semaine." */
 function titleTail(view: LeaderboardView, period: LeaderboardPeriod): string {
-  if (view === "league") return "ligue.";
+  if (view === "league") return "de la ligue.";
   if (view === "friends") return "entre amis.";
   if (period === "week") return "de la semaine.";
   if (period === "month") return "du mois.";
@@ -683,65 +478,17 @@ export function LeaderboardClient({
 
   return (
     <>
-      <div className="page-container">
-        {/* Breadcrumb */}
-        <Crumb segments={["classement"]} />
-
-        {/* Head */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 24,
-            marginBottom: 12,
-          }}
-        >
-          <div>
-            <span
-              style={{
-                display: "block",
-                ...MONO,
-                fontWeight: 500,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--color-text-muted)",
-                marginBottom: 14,
-              }}
-            >
-              <span style={{ color: "var(--color-text-faint)" }}>{"// "}</span>
-              {/* No "LIVE": the board is read when the page loads, not streamed. */}
-              {season ? `Saison · ${String(season.index).padStart(2, "0")}` : "Hors saison"}
-            </span>
-            <h1
-              style={{
-                ...DISPLAY,
-                fontWeight: 800,
-                fontSize: "clamp(40px, 5.5vw, 72px)",
-                lineHeight: 1,
-                letterSpacing: "-0.035em",
-                color: "var(--color-text-primary)",
-                margin: 0,
-              }}
-            >
-              <em
-                style={{
-                  fontStyle: "normal",
-                  background:
-                    "linear-gradient(135deg, var(--color-brand-blue) 0%, var(--cosmetic-accent) 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Classement
-              </em>{" "}
-              {titleTail(filter, shownPeriod)}
-            </h1>
-          </div>
-
+      <div className="page-container learning-catalogue learning-workspace progression-workspace leaderboard-workspace">
+        <ProgressionHeading
+          eyebrow={
+            season
+              ? `Progression / Saison ${String(season.index).padStart(2, "0")}`
+              : "Progression / Hors saison"
+          }
+          title="Classement"
+          description={`Tes points dans le classement ${titleTail(filter, shownPeriod)}`}
+        />
+        <div className="leaderboard-view-tabs">
           <Tabs label="Classement" items={VIEWS} value={filter} onChange={chooseView} />
         </div>
 
@@ -760,6 +507,7 @@ export function LeaderboardClient({
 
         {/* Meta strip */}
         <div
+          className="leaderboard-meta"
           style={{
             display: "flex",
             flexWrap: "wrap",

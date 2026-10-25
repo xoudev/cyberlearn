@@ -1,5 +1,7 @@
 "use client";
 
+// Password visibility, OAuth and the action result require local interaction.
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
@@ -110,12 +112,14 @@ export function LoginForm({
               className={[styles.input, styles.passwordInput].join(" ")}
               type={showPassword ? "text" : "password"}
               name="password"
+              aria-label="Mot de passe"
               autoComplete="current-password"
               required
             />
             <button
               className={styles.reveal}
               type="button"
+              aria-pressed={showPassword}
               onClick={() => {
                 setShowPassword((value) => !value);
               }}
@@ -125,7 +129,11 @@ export function LoginForm({
           </span>
         </label>
 
-        {error ? <p className={[styles.message, styles.error].join(" ")}>{error}</p> : null}
+        {error ? (
+          <p className={[styles.message, styles.error].join(" ")} role="alert">
+            {error}
+          </p>
+        ) : null}
         {errorLink ? (
           <Link className={styles.link} href={errorLink.href}>
             {errorLink.label}
