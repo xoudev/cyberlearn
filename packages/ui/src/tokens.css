@@ -17,6 +17,16 @@
   /* Brand (Cuivre Signal in Atelier Carbone & Cuivre) */
   --color-brand-blue: #ff6b2b;
   --color-brand-turquoise: #ff6b2b;
+  --color-brand-hover: #ff864f;
+  --color-paper: #eae7df;
+  --color-ink: #141518;
+  --color-interface-secondary: #c2bfb8;
+  --color-interface-muted: #aaa79f;
+  --color-interface-separator: #303137;
+  --color-interface-outline: #74767d;
+  --color-state-success: #62d4a1;
+  --color-state-warning: #ffc36e;
+  --color-state-danger: #ff929b;
 
   /* Backgrounds (Mode Clair Papier Craie) */
   --color-bg-base: #f2f1ed;

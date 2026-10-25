@@ -27,3 +27,15 @@ Phase 1 vérifiée : formatage, lint et types du monorepo réussis ; build de pr
 Les fichiers d’instructions générés par Next sont exclus du contrôle typographique des textes français : ils ne sont pas servis par l’application.
 
 Les preuves détaillées du site se trouvent dans `redesign-audit.md` et les rapports de chaque famille. La couverture et les limites des contrôles admin seront consignées séparément.
+
+## Avancement du jalon admin
+
+- Phase 1 terminée : `6cb288fc`, poussé et vérifié sur `origin/redesign` avant les modifications admin.
+- Phase 2 implémentée : variables de marges dans `@cyberlearn/ui/layout.css`, logo partagé avec façade d’import web, polices partagées par un sous-chemin distinct du barrel UI, vocabulaire de palette centralisé.
+- Phase 3 implémentée : shell 56 / 240 px, seuil mobile 1024 px, identification permanente, lien apprenant distinct, navigation rapide, focus du menu et Échap, tableaux défilants, sélecteurs en portail, confirmations sensibles communes.
+- Phase 4 terminée : les 42 modèles sont raccordés à la DA. Éditeurs de leçons et parcours, imports, quiz, badges, défis, tournois, tickets, chargements et erreurs reprennent le socle ; les détails des contrôles et leurs limites figurent dans `admin-redesign-review.md`.
+- Phase 5 terminée : rapport de couverture écrit, formatage/lint/types du monorepo réussis, 7 226 tests réussis, builds web et admin réussis avec webpack. Ce document accompagne le jalon admin, distinct du commit web, sur `redesign`.
+
+Les quatre nouveaux tests de confirmations couvrent annulation et brouillon, données et bouton d’envoi conservés, Échap et focus, validation native refusée. Les 694 tests admin et 144 tests UI sont inclus dans la suite globale, sans double comptage.
+
+Navigateur : connexion locale et MFA sans dérogation, familles de pages et détails disponibles contrôlés, filtres URL et sélection multiple exercés, confirmations annulées sans mutation. Marges comparées web/admin aux quatre largeurs prévues ; barre mesurée à 56 px. Voir les captures, les mesures et les limites dans le rapport final.

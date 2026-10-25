@@ -2,9 +2,8 @@ import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const CARD: React.CSSProperties = {
-  background: "#0A0826",
-  border: "1px solid #1F1B47",
-  borderRadius: 12,
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   padding: 20,
   position: "relative",
 };
@@ -18,7 +17,7 @@ export default function AdminDashboardLoading(): React.ReactElement {
           <Skeleton width={220} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={160} height={14} />
         </div>
-        <Skeleton width={120} height={36} style={{ borderRadius: 8 }} />
+        <Skeleton width={120} height={44} />
       </div>
 
       {/* Stats grid - 4 cards */}
@@ -26,7 +25,7 @@ export default function AdminDashboardLoading(): React.ReactElement {
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} style={CARD}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
-              <Skeleton width={40} height={40} style={{ borderRadius: 10, flexShrink: 0 }} />
+              <Skeleton width={40} height={40} style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <Skeleton width="60%" height={12} style={{ marginBottom: 8 }} />
                 <Skeleton width="40%" height={10} />
@@ -51,16 +50,12 @@ export default function AdminDashboardLoading(): React.ReactElement {
             }}
           >
             <Skeleton width={160} height={18} />
-            <Skeleton width={80} height={26} style={{ borderRadius: 6 }} />
+            <Skeleton width={80} height={26} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <Skeleton
-                  width={8}
-                  height={8}
-                  style={{ borderRadius: "50%", marginTop: 5, flexShrink: 0 }}
-                />
+                <Skeleton width={8} height={8} style={{ marginTop: 5, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <Skeleton width="75%" height={13} style={{ marginBottom: 6 }} />
                   <Skeleton width="45%" height={11} />
@@ -82,17 +77,17 @@ export default function AdminDashboardLoading(): React.ReactElement {
             }}
           >
             <Skeleton width={140} height={18} />
-            <Skeleton width={80} height={26} style={{ borderRadius: 6 }} />
+            <Skeleton width={80} height={26} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <Skeleton width={36} height={36} style={{ borderRadius: "50%", flexShrink: 0 }} />
+                <Skeleton width={36} height={36} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <Skeleton width="55%" height={13} style={{ marginBottom: 6 }} />
                   <Skeleton width="75%" height={11} />
                 </div>
-                <Skeleton width={56} height={22} style={{ borderRadius: 99, flexShrink: 0 }} />
+                <Skeleton width={56} height={22} style={{ flexShrink: 0 }} />
               </div>
             ))}
           </div>

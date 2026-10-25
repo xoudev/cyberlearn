@@ -13,13 +13,13 @@ export default function AdminPathsLoading(): React.ReactElement {
           <Skeleton width={140} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={220} height={14} />
         </div>
-        <Skeleton width={120} height={36} style={{ borderRadius: 8 }} />
+        <Skeleton width={120} height={44} />
       </div>
 
       {/* Table */}
       <div
         className="admin-table-wrap"
-        style={{ background: "#0A0826", border: "1px solid #1F1B47", borderRadius: 12 }}
+        style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)" }}
       >
         {/* Header row */}
         <div
@@ -28,7 +28,7 @@ export default function AdminPathsLoading(): React.ReactElement {
             gridTemplateColumns: CELL_WIDTHS.join(" "),
             gap: 12,
             padding: "14px 20px",
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
           }}
         >
           {CELL_WIDTHS.map((_, i) => (
@@ -46,18 +46,18 @@ export default function AdminPathsLoading(): React.ReactElement {
               gap: 12,
               padding: "16px 20px",
               alignItems: "center",
-              borderBottom: row < ROW_COUNT - 1 ? "1px solid #1F1B47" : "none",
+              borderBottom: row < ROW_COUNT - 1 ? "1px solid var(--a-border)" : "none",
             }}
           >
             <Skeleton height={13} style={{ width: "80%" }} />
             <Skeleton height={13} style={{ width: "90%" }} />
-            <Skeleton height={20} style={{ width: 64, borderRadius: 99 }} />
-            <Skeleton height={20} style={{ width: 80, borderRadius: 99 }} />
+            <Skeleton height={20} style={{ width: 64 }} />
+            <Skeleton height={20} style={{ width: 80 }} />
             <Skeleton height={13} style={{ width: "70%" }} />
-            <Skeleton height={20} style={{ width: 68, borderRadius: 99 }} />
+            <Skeleton height={20} style={{ width: 68 }} />
             <div style={{ display: "flex", gap: 8 }}>
-              <Skeleton width={28} height={28} style={{ borderRadius: 6 }} />
-              <Skeleton width={28} height={28} style={{ borderRadius: 6 }} />
+              <Skeleton width={44} height={44} />
+              <Skeleton width={44} height={44} />
             </div>
           </div>
         ))}

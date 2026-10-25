@@ -3,6 +3,7 @@
 // "use client" justified: a confirmation before an action that cannot be undone.
 
 import React, { useState, useTransition } from "react";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 import type { TournamentPhase } from "@cyberlearn/lib/challenges/tournament";
 import { deleteTournamentAction, endTournamentNowAction } from "../_actions/tournament-actions";
 
@@ -19,10 +20,11 @@ export function TournamentControls({
 }): React.ReactElement | null {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const confirm = useAdminConfirmation();
   if (phase === "FINISHED") return null;
 
-  const run = (question: string, act: () => Promise<{ error?: string }>): void => {
-    if (!window.confirm(question)) return;
+  const run = async (question: string, act: () => Promise<{ error?: string }>): Promise<void> => {
+    if (!(await confirm(`Tournoi ${tournamentId} : ${question}`))) return;
     startTransition(async () => {
       setError(null);
       const result = await act();
@@ -38,7 +40,7 @@ export function TournamentControls({
           className="a-btn a-btn--danger"
           disabled={pending}
           onClick={() => {
-            run("Supprimer ce tournoi ? Ses classes ont déjà reçu l'annonce.", () =>
+            void run("Supprimer ce tournoi ? Ses classes ont déjà reçu l'annonce.", () =>
               deleteTournamentAction(tournamentId),
             );
           }}
@@ -51,7 +53,7 @@ export function TournamentControls({
           className="a-btn a-btn--danger"
           disabled={pending}
           onClick={() => {
-            run("Terminer le tournoi maintenant ? Les scores s'arrêtent là.", () =>
+            void run("Terminer le tournoi maintenant ? Les scores s'arrêtent là.", () =>
               endTournamentNowAction(tournamentId),
             );
           }}

@@ -429,3 +429,26 @@ Pour une nouvelle page, identifier d'abord la tâche principale, les données n�
 Avant de livrer : contrôler les angles droits, le contraste, le clavier, la réduction des mouvements, la largeur à 320 px et les fonctions existantes. Exécuter les vérifications adaptées au changement et mettre à jour le registre de parité si une surface partagée évolue.
 
 Ne pas déduire de cette DA une autorisation d'ajouter des fonctionnalités, des dépendances, une nouvelle promesse produit ou de modifier les règles métier.
+
+## 22. Console d’administration Bastion
+
+La console reprend la même marque et les mêmes marges, avec une composition plus dense pour gérer des listes et des formulaires. Elle reste identifiable avant toute interaction : « Console d’administration » dans la barre, « ADMIN » sur téléphone, mention Administration sous le logo de la sidebar et préfixe ADMIN dans les titres d’onglet. Le repère cuivre appartient à la barre de 56 px ; il n’ajoute pas de décalage au contenu. La sidebar mesure 240 px et passe en menu superposé sous 1024 px.
+
+| Usage admin | Valeur |
+| --- | --- |
+| Fond, panneau, menu | `#0B0C0E`, `#121418`, `#191C22` |
+| Synthèse craie | `#EAE7DF`, texte `#141518` |
+| Texte, secondaire, métadonnées | `#F4F2ED`, `#C2BFB8`, `#AAA79F` |
+| Action, survol | `#FF6B2B`, `#FF864F`, texte `#141518` |
+| Séparation, contour de champ | `#303137`, `#74767D` |
+| Succès, avertissement, erreur, information | `#62D4A1`, `#FFC36E`, `#FF929B`, `#60A5FA` |
+
+Barlow Condensed porte les titres de 40 à 56 px ; Space Grotesk porte l’interface, JetBrains Mono le code et les identifiants. Les commandes principales font 44 px. Angles droits, fonds mats, mouvements courts liés à l’ouverture, au focus et aux changements d’état. La réduction des mouvements reste prise en compte.
+
+Les marges sont désormais partagées dans `@cyberlearn/ui/layout.css` : latéral 16 / 28 / 36 px, haut 24 / 28 / 32 px, bas 80 / 96 / 110 px, aux seuils 768 et 1280 px. Les tableaux conservent leurs colonnes dans une région de défilement ; les formulaires et les aperçus se réorganisent selon la largeur utile.
+
+Les confirmations sensibles nomment l’administration, l’action et la cible. Les sélecteurs en portail et les fenêtres utilisent les composants partagés. Les objets publiés et les réussites restent verts : le cuivre ne remplace pas le sens d’un statut.
+
+Le lien vers le site apprenant ouvre explicitement un nouvel onglet. Le logo de la sidebar mène au dashboard admin. Les permissions, la MFA obligatoire, les règles métier et les API ne sont pas redéfinies par le design.
+
+Voir [les 42 pages, les preuves et les limites de vérification](admin-redesign-review.md) et [les deux jalons Git](admin-redesign-progress.md).

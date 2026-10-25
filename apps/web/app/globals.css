@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@cyberlearn/ui/tokens.css";
+@import "@cyberlearn/ui/layout.css";
 @import "@cyberlearn/ui/dialogs.css";
 @import "../components/secondary-surfaces.css";
 
@@ -2114,26 +2115,6 @@ button.notif-row:hover {
 }
 
 /* Responsive layout utilities (mobile-first, full-screen canvas) ────────── */
-
-:root {
-  --page-gutter: 16px;
-  --page-space-top: 24px;
-  --page-space-bottom: 80px;
-}
-@media (min-width: 768px) {
-  :root {
-    --page-gutter: 28px;
-    --page-space-top: 28px;
-    --page-space-bottom: 96px;
-  }
-}
-@media (min-width: 1280px) {
-  :root {
-    --page-gutter: 36px;
-    --page-space-top: 32px;
-    --page-space-bottom: 110px;
-  }
-}
 
 /* Standard app page container - full-screen fluid layout */
 .page-container,

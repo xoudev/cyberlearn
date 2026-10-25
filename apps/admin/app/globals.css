@@ -1,6 +1,8 @@
 @import "@cyberlearn/ui/tokens.css";
+@import "@cyberlearn/ui/layout.css";
 @import "@cyberlearn/ui/dialogs.css";
 @import "./admin-ui.css";
+@import "./console-shell.css";
 
 /* ─── Base reset ─────────────────────────────────────────── */
 *,
@@ -10,12 +12,14 @@
 }
 
 html {
+  color-scheme: dark;
   background-color: var(--a-bg);
   color: var(--a-fg);
   scroll-behavior: smooth;
 }
 
 body {
+  margin: 0;
   font-family: var(--font-sans), system-ui, sans-serif;
   background: var(--a-bg);
   min-height: 100vh;
@@ -33,19 +37,6 @@ button {
 }
 input {
   font-family: inherit;
-}
-
-/* ─── Admin context signal: 2px brand top bar ────────────── */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--a-blue), var(--a-accent));
-  z-index: 9999;
-  pointer-events: none;
 }
 
 /* Sidebar sign-out hover */
@@ -71,17 +62,8 @@ body::before {
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--a-border) 0%,
-    var(--a-border) 30%,
-    var(--a-border-2) 50%,
-    var(--a-border) 70%,
-    var(--a-border) 100%
-  );
-  background-size: 800px 100%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
-  border-radius: 6px;
+  background: var(--a-border);
+  border-radius: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -126,9 +108,10 @@ body::before {
 /* Content area shifts left of sidebar */
 .admin-content-area {
   margin-left: 240px;
-  padding-top: 58px;
+  padding-top: 56px;
+  min-width: 0;
 }
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .admin-content-area {
     margin-left: 0;
   }
@@ -138,12 +121,18 @@ body::before {
 .admin-sidebar-fixed {
   transition: transform 200ms ease;
 }
-@media (max-width: 767px) {
+.a-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--a-border-2) transparent;
+}
+@media (max-width: 1023px) {
   .admin-sidebar-fixed {
     transform: translateX(-240px);
+    visibility: hidden;
   }
   .admin-sidebar-fixed.sidebar-mobile-open {
     transform: translateX(0);
+    visibility: visible;
   }
 }
 
@@ -152,15 +141,15 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   background: transparent;
   border: none;
   color: var(--a-muted);
   cursor: pointer;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .admin-hamburger {
     display: none;
   }
@@ -235,7 +224,6 @@ body::before {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  max-width: 1000px;
 }
 @media (min-width: 768px) {
   .admin-settings-grid {
@@ -252,12 +240,12 @@ body::before {
 /* Form 2-col grid: 1-col mobile → 2-col desktop */
 .admin-form-grid-2 {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
 }
 @media (min-width: 768px) {
   .admin-form-grid-2 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -268,10 +256,10 @@ body::before {
   gap: 16px;
   min-height: 500px;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1600px) {
   .import-grid {
     display: grid;
-    grid-template-columns: 320px minmax(0, 1fr) 340px;
+    grid-template-columns: 280px minmax(0, 1fr) 300px;
     height: calc(100vh - 200px);
     min-height: 600px;
   }
@@ -292,7 +280,7 @@ body::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (min-width: 1100px) {
+@media (min-width: 1400px) {
   .admin-compose-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

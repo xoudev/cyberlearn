@@ -1,158 +1,143 @@
 "use client";
 
+// A root error replaces the document, so its fallback must work without the app stylesheet.
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { brandTypeface } from "@cyberlearn/ui/brand-typeface";
+
+const actionStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 44,
+  padding: "0 18px",
+  font: "inherit",
+  fontSize: 13,
+  fontWeight: 600,
+  textDecoration: "none",
+  cursor: "pointer",
+  borderRadius: 0,
+};
 
 export default function GlobalError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }): React.JSX.Element {
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
 
-  // The "dark" class the root layout's <html> carries: once its stylesheet is
-  // loaded, globals.css reads var(--a-bg) and var(--a-fg), which are the dark
-  // tokens only under it.
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr" className={`dark ${brandTypeface}`}>
+      <head>
+        <title>ADMIN · Erreur · CyberLearn</title>
+      </head>
       <body
         style={{
           margin: 0,
           minHeight: "100vh",
-          background:
-            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(0,36,255,0.14), transparent 60%), #030219",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "system-ui, sans-serif",
-          padding: 24,
+          background: "#0B0C0E",
+          color: "#F4F2ED",
+          fontFamily: "var(--font-interface), system-ui, sans-serif",
         }}
       >
-        <div
+        <header
           style={{
-            maxWidth: 460,
-            width: "100%",
-            background: "#0A0826",
-            border: "1px solid #2A2560",
-            borderTop: "2px solid #FF4D6D",
-            padding: "30px 28px",
+            boxSizing: "border-box",
+            height: 56,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            borderTop: "2px solid #FF6B2B",
+            borderBottom: "1px solid #303137",
+            background: "#121418",
+            fontSize: 13,
+            fontWeight: 700,
           }}
         >
-          <div
+          ADMIN · Console d’administration
+        </header>
+        <main
+          style={{
+            display: "grid",
+            placeItems: "center",
+            minHeight: "calc(100vh - 56px)",
+            padding: "24px 16px 80px",
+            boxSizing: "border-box",
+          }}
+        >
+          <section
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 18,
-              fontFamily: "monospace",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "#FF4D6D",
+              maxWidth: 600,
+              width: "100%",
+              boxSizing: "border-box",
+              padding: 24,
+              border: "1px solid #303137",
+              borderTop: "2px solid #FF929B",
+              background: "#121418",
             }}
           >
-            <span style={{ width: 22, height: 1, background: "#FF4D6D" }} aria-hidden="true" />
-            Erreur d&apos;exécution
-          </div>
-
-          <h1
-            style={{
-              fontWeight: 800,
-              fontSize: 24,
-              letterSpacing: "-0.03em",
-              color: "#F5F5FA",
-              margin: "0 0 10px",
-            }}
-          >
-            Une erreur est survenue
-          </h1>
-
-          <p style={{ fontSize: 14, color: "#B8B5D1", lineHeight: 1.65, margin: "0 0 18px" }}>
-            L&apos;incident a été signalé automatiquement à l&apos;équipe. Tu peux réessayer,
-            l&apos;action est sans risque.
-          </p>
-
-          {error.digest && (
-            <p
-              style={{
-                fontSize: 11,
-                color: "#7F7BA9",
-                fontFamily: "monospace",
-                letterSpacing: "0.06em",
-                margin: "0 0 22px",
-              }}
-            >
-              Référence : {error.digest}
+            <p style={{ margin: "0 0 12px", color: "#FF929B", fontSize: 13 }}>
+              Administration · Erreur d’exécution
             </p>
-          )}
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={reset}
+            <h1
               style={{
-                minHeight: 42,
-                padding: "0 20px",
-                background: "#0024FF",
-                border: "1px solid #0024FF",
-                color: "#fff",
-                fontFamily: "monospace",
-                fontWeight: 700,
-                fontSize: 10.5,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                cursor: "pointer",
+                fontFamily: "var(--font-display), sans-serif",
+                fontSize: 44,
+                lineHeight: 1.05,
+                margin: "0 0 16px",
               }}
             >
-              Réessayer
-            </button>
-            <a
-              href="/dashboard"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                minHeight: 42,
-                padding: "0 20px",
-                border: "1px solid #2A2560",
-                color: "#B8B5D1",
-                fontFamily: "monospace",
-                fontWeight: 700,
-                fontSize: 10.5,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-              }}
-            >
-              Retour à l&apos;aperçu
-            </a>
-            <a
-              href={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr"}/contact${error.digest ? `?ref=${error.digest}` : ""}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                minHeight: 42,
-                padding: "0 20px",
-                border: "1px solid color-mix(in srgb, #0AFFD4 40%, transparent)",
-                color: "#0AFFD4",
-                fontFamily: "monospace",
-                fontWeight: 700,
-                fontSize: 10.5,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-              }}
-            >
-              Signaler le problème
-            </a>
-          </div>
-        </div>
+              La console n’a pas pu se charger.
+            </h1>
+            <p style={{ color: "#C2BFB8", fontSize: 14, lineHeight: 1.65 }}>
+              L’incident a été signalé à l’équipe. Réessaie de charger la console.
+            </p>
+            {error.digest && (
+              <p
+                style={{
+                  color: "#AAA79F",
+                  fontSize: 12,
+                  fontFamily: "monospace",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                Référence : {error.digest}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
+              <button
+                type="button"
+                onClick={retry}
+                style={{
+                  ...actionStyle,
+                  background: "#FF6B2B",
+                  color: "#141518",
+                  border: "1px solid #FF6B2B",
+                }}
+              >
+                Réessayer
+              </button>
+              <a
+                href="/dashboard"
+                style={{ ...actionStyle, color: "#F4F2ED", border: "1px solid #74767D" }}
+              >
+                Retour à l’aperçu
+              </a>
+              <a
+                href={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr"}/contact${error.digest ? `?ref=${encodeURIComponent(error.digest)}` : ""}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...actionStyle, color: "#C2BFB8", border: "1px solid #74767D" }}
+              >
+                Signaler le problème ↗
+              </a>
+            </div>
+          </section>
+        </main>
       </body>
     </html>
   );

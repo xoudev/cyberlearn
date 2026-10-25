@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminMobileSidebar } from "./admin-shell-client";
 
 interface AdminTopbarProps {
   initials: string;
   handle: string;
+  siteUrl: string;
 }
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -16,6 +16,12 @@ const SEGMENT_LABELS: Record<string, string> = {
   paths: "Parcours",
   badges: "Badges",
   challenges: "Challenges",
+  classes: "Classes",
+  tournaments: "Tournois",
+  moderation: "Modération",
+  reports: "Signalements",
+  sync: "Synchronisation",
+  structure: "Structure",
   users: "Utilisateurs",
   pending: "Inscriptions en attente",
   archives: "Archives",
@@ -42,6 +48,7 @@ const DESTINATIONS: Destination[] = [
   { label: "Parcours", href: "/paths", hint: "page" },
   { label: "Badges", href: "/badges", hint: "page" },
   { label: "Classes", href: "/classes", hint: "page" },
+  { label: "Tournois", href: "/tournaments", hint: "page" },
   { label: "Challenges", href: "/challenges", hint: "page" },
   { label: "Utilisateurs", href: "/users", hint: "page" },
   { label: "Inscriptions en attente", href: "/users/pending", hint: "page" },
@@ -62,13 +69,14 @@ function normalize(value: string): string {
   return value.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.ReactElement {
-  const { toggle } = useAdminMobileSidebar();
+export function AdminTopbar({ initials, handle, siteUrl }: AdminTopbarProps): React.ReactElement {
+  const { open: sidebarOpen, toggle } = useAdminMobileSidebar();
   const pathname = usePathname();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [cursor, setCursor] = useState(0);
 
   const crumbs = pathname
@@ -88,6 +96,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
     function onKey(event: KeyboardEvent): void {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        setSearchVisible(true);
         inputRef.current?.focus();
       }
     }
@@ -96,6 +105,10 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
       window.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  useEffect(() => {
+    if (searchVisible) inputRef.current?.focus();
+  }, [searchVisible]);
 
   function go(href: string): void {
     setOpen(false);
@@ -106,7 +119,15 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
 
   return (
     <header className="a-topbar">
-      <button type="button" aria-label="Menu" onClick={toggle} className="admin-hamburger">
+      <button
+        id="admin-menu-toggle"
+        type="button"
+        aria-label="Ouvrir le menu d’administration"
+        aria-expanded={sidebarOpen}
+        aria-controls="admin-navigation"
+        onClick={toggle}
+        className="admin-hamburger"
+      >
         <svg
           width="16"
           height="16"
@@ -120,15 +141,9 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
         </svg>
       </button>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-        <Image
-          src="/Admin_logo.png"
-          alt="CyberLearn Admin"
-          width={140}
-          height={30}
-          style={{ width: "auto", height: 30, objectFit: "contain" }}
-          priority
-        />
+      <div className="a-console-identity">
+        <span className="a-console-identity-full">Console d’administration</span>
+        <span className="a-console-identity-short">ADMIN</span>
       </div>
 
       <nav className="a-topbar-crumbs" aria-label="Fil d'Ariane">
@@ -145,7 +160,35 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
         )}
       </nav>
 
-      <div className="a-topbar-search" style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="a-quick-trigger"
+        aria-label="Rechercher une page d’administration"
+        aria-expanded={searchVisible}
+        aria-controls="admin-quick-search"
+        onClick={() => {
+          setSearchVisible((value) => !value);
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        >
+          <circle cx="10" cy="10" r="6" />
+          <path d="m15 15 6 6" />
+        </svg>
+      </button>
+      <div
+        id="admin-quick-search"
+        className="a-topbar-search"
+        data-open={searchVisible}
+        style={{ position: "relative" }}
+      >
         <div className="a-topbar-search-box">
           <svg
             width="13"
@@ -163,6 +206,13 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-label="Navigation rapide de la console"
+            aria-expanded={open && matches.length > 0}
+            aria-controls="admin-quick-jump"
+            aria-activedescendant={
+              open && matches[cursor] ? `admin-destination-${String(cursor)}` : undefined
+            }
             placeholder="Aller à une page ou une action…"
             value={query}
             onChange={(event) => {
@@ -177,6 +227,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
               // Delay so option clicks land before the list unmounts.
               setTimeout(() => {
                 setOpen(false);
+                setSearchVisible(false);
               }, 120);
             }}
             onKeyDown={(event) => {
@@ -191,6 +242,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
                 if (target) go(target.href);
               } else if (event.key === "Escape") {
                 setOpen(false);
+                setSearchVisible(false);
                 inputRef.current?.blur();
               }
             }}
@@ -200,7 +252,9 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
 
         {open && matches.length > 0 && (
           <div
+            id="admin-quick-jump"
             role="listbox"
+            aria-label="Pages et actions d’administration"
             style={{
               position: "absolute",
               top: "calc(100% + 6px)",
@@ -217,8 +271,10 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
             {matches.map((destination, index) => (
               <button
                 key={destination.href + destination.label}
+                id={`admin-destination-${String(index)}`}
                 type="button"
                 role="option"
+                tabIndex={-1}
                 aria-selected={index === cursor}
                 onMouseEnter={() => {
                   setCursor(index);
@@ -263,6 +319,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
       </div>
 
       <div
+        className="a-topbar-actions"
         style={{
           display: "flex",
           alignItems: "center",
@@ -271,7 +328,28 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
           flexShrink: 0,
         }}
       >
+        <a
+          href={siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="a-site-link"
+          aria-label="Ouvrir le site apprenant (nouvel onglet)"
+        >
+          <span>Ouvrir le site apprenant</span>
+          <svg
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          >
+            <path d="M14 4h6v6M20 4l-9 9M10 4H4v16h16v-6" />
+          </svg>
+        </a>
         <span
+          className="a-topbar-account"
           style={{
             display: "inline-flex",
             alignItems: "center",

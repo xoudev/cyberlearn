@@ -1,12 +1,13 @@
 import React from "react";
 import { unstable_cache } from "next/cache";
 import { requireAdminPage } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { prisma, ticketRepository } from "@cyberlearn/db";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
 
-// No metadata here: the title and its "%s · Admin" template are the root
+// No metadata here: the title and its admin template are the root
 // layout's. Declared again on this segment, the default went through the
 // root's template and the tab read "Admin · Cyber Learn · Admin".
 
@@ -52,7 +53,7 @@ export default async function AdminLayout({
   return (
     <div className="admin-console" style={{ background: "var(--a-bg)", minHeight: "100vh" }}>
       <AdminShellClient>
-        <AdminTopbar initials={initials} handle={handle} />
+        <AdminTopbar initials={initials} handle={handle} siteUrl={env.NEXT_PUBLIC_SITE_URL} />
         <AdminSidebar
           initials={initials}
           handle={handle}

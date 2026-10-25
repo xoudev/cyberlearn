@@ -16,10 +16,10 @@ import { LESSON_LIMITS, LESSON_SLUG_HINT, LESSON_SLUG_PATTERN } from "@/lib/less
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
-const MONO = "var(--font-mono)";
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+const TURQ = "var(--a-accent)";
+const MONO = "var(--font-sans)";
 const BODY_F = "var(--font-sans)";
 
 // ── MDX starter template ──────────────────────────────────────────────────────
@@ -56,9 +56,9 @@ echo "hello"
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
-  background: "#0A0826",
+  background: "var(--a-surface)",
   border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
+  color: "var(--a-fg)",
   fontFamily: MONO,
   fontSize: 13,
   letterSpacing: "0.01em",
@@ -69,22 +69,23 @@ const BASE_INPUT: React.CSSProperties = {
 
 function Label({
   children,
+  htmlFor,
   hint,
   req,
 }: {
   children: React.ReactNode;
+  htmlFor?: string;
   hint?: string;
   req?: boolean;
 }) {
   return (
     <label
+      htmlFor={htmlFor}
       style={{
         fontFamily: MONO,
         fontWeight: 700,
-        fontSize: 10.5,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "#B8B5D1",
+        fontSize: 12,
+        color: "var(--a-fg-2)",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
@@ -99,7 +100,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             marginLeft: "auto",
           }}
         >
@@ -112,9 +113,7 @@ function Label({
 
 function Help({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#7F7BA9" }}>
-      {children}
-    </span>
+    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
   );
 }
 
@@ -151,21 +150,13 @@ export function NewLessonForm({
 
   return (
     <>
-      <style>{`
-        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:rgba(255,255,255,0.18)!important}
-        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
-        .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
-      `}</style>
-
       {/* Global error */}
       {state.error && (
         <div
           style={{
             padding: "13px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.35)",
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid var(--a-danger)",
             borderLeft: `3px solid ${DANGER}`,
             fontFamily: MONO,
             fontSize: 11,
@@ -184,10 +175,11 @@ export function NewLessonForm({
         {/* Row 1: refCode + slug */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// auto-généré, modifiable">
+            <Label htmlFor="admin-editor-refCode" req hint="Auto-généré, modifiable">
               Ref code
             </Label>
             <input
+              id="admin-editor-refCode"
               name="refCode"
               type="text"
               required
@@ -209,7 +201,7 @@ export function NewLessonForm({
             <FieldErr msg={state.fieldErrors?.refCode} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// utilisé dans l'URL">
+            <Label htmlFor="admin-editor-slug" req hint="Utilisé dans l’URL">
               Slug
             </Label>
             <div
@@ -218,7 +210,7 @@ export function NewLessonForm({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
+                background: "var(--a-surface)",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
@@ -230,7 +222,7 @@ export function NewLessonForm({
                   width: 36,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   borderRight: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                 }}
@@ -238,6 +230,7 @@ export function NewLessonForm({
                 /
               </span>
               <input
+                id="admin-editor-slug"
                 name="slug"
                 type="text"
                 required
@@ -261,12 +254,14 @@ export function NewLessonForm({
         {/* Title */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Label
+            htmlFor="admin-editor-title"
             req
             hint={`// ${String(LESSON_LIMITS.titleMin)}–${String(LESSON_LIMITS.titleMax)} caractères`}
           >
             Titre
           </Label>
           <input
+            id="admin-editor-title"
             name="title"
             type="text"
             required
@@ -282,12 +277,14 @@ export function NewLessonForm({
         {/* Description */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Label
+            htmlFor="admin-editor-description"
             req
             hint={`// ${String(LESSON_LIMITS.descriptionMin)}–${String(LESSON_LIMITS.descriptionMax)} caractères · affichée dans le catalogue`}
           >
             Description
           </Label>
           <textarea
+            id="admin-editor-description"
             name="description"
             required
             minLength={LESSON_LIMITS.descriptionMin}
@@ -303,10 +300,13 @@ export function NewLessonForm({
         {/* Category + Difficulty */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Catégorie</Label>
+            <Label htmlFor="admin-editor-category" req>
+              Catégorie
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
                 placeholder="Choisir…"
+                id="admin-editor-category"
                 name="category"
                 required
                 defaultValue=""
@@ -320,10 +320,13 @@ export function NewLessonForm({
             <FieldErr msg={state.fieldErrors?.category} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Difficulté</Label>
+            <Label htmlFor="admin-editor-difficulty" req>
+              Difficulté
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
                 placeholder="Choisir…"
+                id="admin-editor-difficulty"
                 name="difficulty"
                 required
                 defaultValue=""
@@ -342,19 +345,22 @@ export function NewLessonForm({
         {/* Duration + XP */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Durée estimée (minutes)</Label>
+            <Label htmlFor="admin-editor-estimatedMinutes" req>
+              Durée estimée (minutes)
+            </Label>
             <div
               className="le-num"
               style={{
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
+                background: "var(--a-surface)",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
             >
               <input
+                id="admin-editor-estimatedMinutes"
                 name="estimatedMinutes"
                 type="number"
                 required
@@ -372,7 +378,7 @@ export function NewLessonForm({
                   fontFamily: MONO,
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   borderLeft: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                   textTransform: "uppercase",
@@ -387,19 +393,22 @@ export function NewLessonForm({
             </Help>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Récompense XP</Label>
+            <Label htmlFor="admin-editor-xpReward" req>
+              Récompense XP
+            </Label>
             <div
               className="le-num"
               style={{
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
+                background: "var(--a-surface)",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
             >
               <input
+                id="admin-editor-xpReward"
                 name="xpReward"
                 type="number"
                 required
@@ -418,7 +427,7 @@ export function NewLessonForm({
                   fontFamily: MONO,
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   borderLeft: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                   textTransform: "uppercase",
@@ -456,7 +465,7 @@ export function NewLessonForm({
             alignItems: "flex-start",
             gap: 14,
             padding: "16px 18px",
-            background: "#0A0826",
+            background: "var(--a-surface)",
             border: `1px solid ${BORDER}`,
             cursor: "pointer",
             transition: "border-color 150ms ease",
@@ -476,7 +485,7 @@ export function NewLessonForm({
                 fontSize: 12,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#F5F5FA",
+                color: "var(--a-fg)",
                 marginBottom: 4,
               }}
             >
@@ -497,7 +506,6 @@ export function NewLessonForm({
                   style={{
                     width: 6,
                     height: 6,
-                    borderRadius: "50%",
                     background: TURQ,
                     boxShadow: `0 0 6px ${TURQ}`,
                     display: "inline-block",
@@ -510,7 +518,7 @@ export function NewLessonForm({
               style={{
                 fontFamily: BODY_F,
                 fontSize: 12.5,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -544,7 +552,7 @@ export function NewLessonForm({
               textTransform: "uppercase",
               padding: "13px 22px",
               background: "transparent",
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               border: `1px solid ${BORDER}`,
               transition: "all 150ms ease",
               textDecoration: "none",
@@ -565,45 +573,16 @@ export function NewLessonForm({
               fontFamily: MONO,
               fontWeight: 700,
               fontSize: 12,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
               padding: "13px 22px",
-              background: "linear-gradient(135deg, #2848FF, #0024FF)",
-              color: "#fff",
+              background: "var(--a-accent)",
+              color: "var(--a-ink)",
               border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
-              boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                top: -3,
-                left: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid #fff",
-                borderRight: 0,
-                borderBottom: 0,
-                opacity: 0.7,
-              }}
-            />
             {isPending ? "Création…" : "Créer la leçon"}
             <span style={{ fontWeight: 400 }}>→</span>
-            <span
-              style={{
-                position: "absolute",
-                bottom: -3,
-                right: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid #fff",
-                borderTop: 0,
-                borderLeft: 0,
-                opacity: 0.7,
-              }}
-            />
           </button>
         </div>
       </form>

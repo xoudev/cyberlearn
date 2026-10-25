@@ -95,7 +95,7 @@ describe("the console palette", () => {
   });
 
   it("gives every tone a token, so a role colour follows the site's", () => {
-    const tones: Tone[] = ["neutral", "accent", "info", "warning", "danger", "purple"];
+    const tones: Tone[] = ["neutral", "accent", "success", "info", "warning", "danger", "purple"];
     for (const tone of tones) expect(toneColor(tone)).toMatch(/^var\(--a-[\w-]+\)$/u);
   });
 
@@ -239,7 +239,7 @@ describe("the content status", () => {
   it("gives the edit forms' status field the labels and colours of the list badge", () => {
     expect(CONTENT_STATUS_OPTIONS).toEqual([
       { value: "DRAFT", label: "Brouillon", tone: "var(--a-muted)" },
-      { value: "PUBLISHED", label: "Publié", tone: "var(--a-accent)" },
+      { value: "PUBLISHED", label: "Publié", tone: "var(--a-success)" },
       { value: "ARCHIVED", label: "Archivé", tone: "var(--a-danger)" },
     ]);
     for (const form of [

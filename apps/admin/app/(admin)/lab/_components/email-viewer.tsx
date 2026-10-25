@@ -24,7 +24,7 @@ export function EmailViewer({
   const current = samples.find((s) => s.key === active) ?? samples[0];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(200px, 260px) 1fr", gap: 16 }}>
+    <div className="a-email-viewer">
       <nav style={{ display: "grid", gap: 4, alignContent: "start" }}>
         {samples.map((s) => (
           <button

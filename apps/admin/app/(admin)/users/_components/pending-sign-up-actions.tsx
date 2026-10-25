@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../_components/admin-confirmation";
 import {
   confirmEmailAction,
   resendConfirmationAction,
@@ -49,19 +50,9 @@ export function PendingSignUpActions({
             </button>
           </form>
 
-          <form
+          <AdminConfirmForm
             action={confirmAction}
-            onSubmit={(event) => {
-              // Cancelling the native submit also cancels the action: React
-              // only runs a form's action for a submit nobody prevented.
-              if (
-                !window.confirm(
-                  `Confirmer ${email} sans e-mail ? Personne n'aura prouvé avoir accès à cette boîte : à réserver au cas où le mail n'arrive pas.`,
-                )
-              ) {
-                event.preventDefault();
-              }
-            }}
+            question={`Confirmer ${email} sans e-mail ? Personne n'aura prouvé avoir accès à cette boîte : à réserver au cas où le mail n'arrive pas.`}
           >
             <input type="hidden" name="userId" value={userId} />
             <button
@@ -71,7 +62,7 @@ export function PendingSignUpActions({
             >
               {confirmPending ? "Confirmation…" : "Confirmer l'adresse"}
             </button>
-          </form>
+          </AdminConfirmForm>
         </div>
       )}
 

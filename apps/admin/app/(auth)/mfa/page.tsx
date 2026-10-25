@@ -1,10 +1,12 @@
 import React from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { ACCESS_DENIED_PATH, safeAdminRedirect, withReturnPath } from "@/lib/auth-redirect";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { AdminAuthShell } from "../auth-shell";
 import { AdminMfaChallenge } from "./admin-mfa-challenge";
+export const metadata: Metadata = { title: "Vérification MFA" };
 
 export default async function AdminMfaPage({
   searchParams,

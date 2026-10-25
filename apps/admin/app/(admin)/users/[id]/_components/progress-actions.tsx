@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../../_components/admin-confirmation";
 import { Select } from "@cyberlearn/ui";
 import { keepFormInput } from "@/lib/form-input";
 import {
@@ -70,24 +71,15 @@ export function PlacementResetButton({
   return (
     <div className="a-form" style={{ marginTop: 12 }}>
       {offered && (
-        <form
+        <AdminConfirmForm
           action={action}
-          onSubmit={(event) => {
-            // Cancelling the native submit also cancels the action.
-            if (
-              !window.confirm(
-                "Remettre le test de positionnement à zéro ? Ses scores sont effacés et les leçons qu'il dispensait se verrouillent de nouveau, sauf celles déjà terminées. Une notification invite la personne à le repasser.",
-              )
-            ) {
-              event.preventDefault();
-            }
-          }}
+          question={`Compte ${userId} : remettre le test de positionnement à zéro ? Ses scores sont effacés et les leçons qu’il dispensait se verrouillent de nouveau, sauf celles déjà terminées. Une notification invite la personne à le repasser.`}
         >
           <input type="hidden" name="userId" value={userId} />
           <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
             {pending ? "Remise à zéro…" : "Remettre le test à zéro"}
           </button>
-        </form>
+        </AdminConfirmForm>
       )}
       <Outcome state={state} />
     </div>
@@ -131,19 +123,13 @@ export function WaiveCooldownButton({
   return (
     <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
       {offer !== null && (
-        <form
-          action={action}
-          onSubmit={(event) => {
-            // Cancelling the native submit also cancels the action.
-            if (!window.confirm(question)) event.preventDefault();
-          }}
-        >
+        <AdminConfirmForm action={action} question={`Compte ${userId} : ${question}`}>
           <input type="hidden" name="userId" value={userId} />
           <input type="hidden" name="pathId" value={pathId} />
           <button type="submit" disabled={pending} className="a-btn a-btn--ghost a-btn--sm">
             {label}
           </button>
-        </form>
+        </AdminConfirmForm>
       )}
       <Outcome state={state} />
     </div>
@@ -170,19 +156,19 @@ export function LessonCorrectionForm({
   if (lessons.length === 0) return hasOutcome(state) ? <Outcome state={state} /> : null;
 
   return (
-    <form
+    <AdminConfirmForm
       action={action}
       onReset={keepFormInput}
-      onSubmit={(event) => {
-        const data = new FormData(event.currentTarget);
+      question={(form) => {
+        const data = new FormData(form);
         const lesson = lessons.find((entry) => entry.id === data.get("lessonId"));
         const mode = data.get("mode");
-        if (lesson === undefined || (mode !== "reset" && mode !== "complete")) return;
+        if (lesson === undefined || (mode !== "reset" && mode !== "complete")) return null;
         const question =
           mode === "reset"
             ? `Remettre à zéro « ${lesson.title} » ? Sa progression, ses réponses aux quiz et ses cartes de révision sont effacées ; l'XP déjà gagnée reste.`
             : `Marquer « ${lesson.title} » terminée ? Sans XP, sans série et sans badge.`;
-        if (!window.confirm(question)) event.preventDefault();
+        return `Compte ${userId} : ${question}`;
       }}
       className="a-form"
     >
@@ -219,6 +205,6 @@ export function LessonCorrectionForm({
         {pending ? "Correction…" : "Corriger la leçon"}
       </button>
       <Outcome state={state} />
-    </form>
+    </AdminConfirmForm>
   );
 }

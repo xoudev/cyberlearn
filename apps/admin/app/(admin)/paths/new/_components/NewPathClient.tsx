@@ -3,7 +3,7 @@
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { createPathAction, type CreatePathState } from "../../_actions/path-actions";
-import { Select } from "@cyberlearn/ui";
+import { ModalShell, Select } from "@cyberlearn/ui";
 import { CoverUploadField } from "@/app/(admin)/lessons/_components/cover-upload-field";
 import { keepFormInput } from "@/lib/form-input";
 
@@ -21,10 +21,10 @@ interface AvailableLesson {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
-const MONO = "var(--font-mono)";
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+const TURQ = "var(--a-accent)";
+const MONO = "var(--font-sans)";
 const BODY_F = "var(--font-sans)";
 
 // Canonical public host (same source as the verify link / cert); no hardcoded .app.
@@ -75,9 +75,9 @@ function slugify(input: string): string {
 
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
-  background: "#0A0826",
+  background: "var(--a-surface)",
   border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
+  color: "var(--a-fg)",
   fontFamily: MONO,
   fontSize: 13,
   letterSpacing: "0.01em",
@@ -89,9 +89,9 @@ const BASE_INPUT: React.CSSProperties = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CAT_CHIPS: Record<string, { color: string; border: string }> = {
-  CYBERSEC: { color: "#FF6B9D", border: "rgba(255,107,157,0.3)" },
-  NETWORK: { color: "#6E8BFF", border: "rgba(110,139,255,0.35)" },
-  DEV: { color: TURQ, border: `rgba(10,255,212,0.3)` },
+  CYBERSEC: { color: "var(--color-category-cybersec)", border: "var(--a-border-2)" },
+  NETWORK: { color: "var(--color-category-network)", border: "var(--a-border-2)" },
+  DEV: { color: "var(--color-category-dev)", border: "var(--a-border-2)" },
 };
 const DIFF_DIAMONDS: Record<string, number> = {
   BEGINNER: 1,
@@ -103,31 +103,32 @@ const DIFF_DIAMONDS: Record<string, number> = {
 function diamonds(difficulty: string): React.ReactElement {
   const n = DIFF_DIAMONDS[difficulty] ?? 1;
   return (
-    <span style={{ letterSpacing: "-0.05em", color: "#7F7BA9" }}>
+    <span style={{ letterSpacing: "-0.05em", color: "var(--a-muted)" }}>
       {"◆".repeat(n)}
-      <span style={{ color: "#7F7BA9" }}>{"◇".repeat(4 - n)}</span>
+      <span style={{ color: "var(--a-muted)" }}>{"◇".repeat(4 - n)}</span>
     </span>
   );
 }
 
 function Label({
   children,
+  htmlFor,
   hint,
   req,
 }: {
   children: React.ReactNode;
+  htmlFor?: string;
   hint?: string;
   req?: boolean;
 }) {
   return (
     <label
+      htmlFor={htmlFor}
       style={{
         fontFamily: MONO,
         fontWeight: 700,
-        fontSize: 10.5,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "#B8B5D1",
+        fontSize: 12,
+        color: "var(--a-fg-2)",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
@@ -142,7 +143,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             marginLeft: "auto",
           }}
         >
@@ -153,7 +154,9 @@ function Label({
   );
 }
 function Help({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>{children}</span>;
+  return (
+    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>{children}</span>
+  );
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
   return msg ? <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>{msg}</span> : null;
@@ -188,10 +191,14 @@ function LessonRow({
   const isDragging = dragState.dragId === lesson.id;
   const isDropTarget =
     dragState.overId === lesson.id && dragState.dragId !== null && dragState.dragId !== lesson.id;
-  const cat = CAT_CHIPS[lesson.category] ?? { color: "#7F7BA9", border: "rgba(107,104,144,0.35)" };
+  const cat = CAT_CHIPS[lesson.category] ?? {
+    color: "var(--a-muted)",
+    border: "var(--a-border-2)",
+  };
 
   return (
     <li
+      className="a-path-lesson"
       draggable
       onDragStart={(e) => {
         onDragStart(e, lesson.id);
@@ -204,18 +211,14 @@ function LessonRow({
       }}
       onDragEnd={onDragEnd}
       style={{
-        display: "grid",
-        gridTemplateColumns: "28px 36px 1fr auto auto",
         alignItems: "center",
         gap: 14,
         padding: "12px 16px 12px 8px",
-        borderBottom: `1px solid rgba(42,37,96,0.5)`,
-        background: isDropTarget ? "#0E0A33" : isDragging ? "#0E0A33" : "#0A0826",
+        borderBottom: `1px solid var(--a-border)`,
+        background: isDropTarget || isDragging ? "var(--a-hover)" : "var(--a-surface)",
         outline: isDragging ? `1px solid ${TURQ}` : isDropTarget ? `1px dashed ${TURQ}` : "none",
         outlineOffset: -1,
-        boxShadow: isDragging
-          ? `0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(10,255,212,0.25)`
-          : "none",
+        boxShadow: isDragging ? `0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--a-accent)` : "none",
         position: "relative",
         transition: "background 100ms ease",
         cursor: "grab",
@@ -244,7 +247,7 @@ function LessonRow({
           placeItems: "center",
           width: 28,
           height: 28,
-          color: isDragging ? TURQ : "#44406B",
+          color: isDragging ? TURQ : "var(--a-muted)",
           transition: "color 100ms ease",
         }}
       >
@@ -265,9 +268,9 @@ function LessonRow({
           fontWeight: 700,
           fontSize: 11,
           letterSpacing: "0.04em",
-          color: idx === 0 ? TURQ : "#7F7BA9",
-          background: "#050416",
-          border: `1px solid ${idx === 0 ? "rgba(10,255,212,0.35)" : BORDER}`,
+          color: idx === 0 ? TURQ : "var(--a-muted)",
+          background: "var(--a-bg)",
+          border: `1px solid ${idx === 0 ? TURQ : BORDER}`,
           width: 36,
           height: 28,
           display: "grid",
@@ -284,7 +287,7 @@ function LessonRow({
             fontFamily: BODY_F,
             fontWeight: 600,
             fontSize: 14,
-            color: "#F5F5FA",
+            color: "var(--a-fg)",
             margin: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -297,7 +300,7 @@ function LessonRow({
           style={{
             fontFamily: MONO,
             fontSize: 10.5,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -305,11 +308,11 @@ function LessonRow({
           }}
         >
           <span style={{ color: TURQ }}>{lesson.refCode}</span>
-          <span style={{ color: "#7F7BA9" }}>·</span>
+          <span style={{ color: "var(--a-muted)" }}>·</span>
           {diamonds(lesson.difficulty)}
-          <span style={{ color: "#7F7BA9" }}>·</span>
+          <span style={{ color: "var(--a-muted)" }}>·</span>
           <span>
-            <b style={{ color: "#7F7BA9" }}>{lesson.estimatedMinutes}</b> min
+            <b style={{ color: "var(--a-muted)" }}>{lesson.estimatedMinutes}</b> min
           </span>
         </span>
       </div>
@@ -343,9 +346,9 @@ function LessonRow({
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             padding: "3px 8px",
-            border: `1px solid rgba(10,255,212,0.3)`,
+            border: `1px solid var(--a-accent)`,
             color: TURQ,
-            background: "rgba(10,255,212,0.05)",
+            background: "var(--a-surface)",
           }}
         >
           +{lesson.xpReward} XP
@@ -366,7 +369,7 @@ function LessonRow({
           height: 30,
           background: "transparent",
           border: `1px solid ${BORDER}`,
-          color: "#7F7BA9",
+          color: "var(--a-muted)",
           cursor: "pointer",
           transition: "all 150ms ease",
         }}
@@ -410,22 +413,18 @@ function LessonPicker({
   );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "grid",
-        placeItems: "center",
-        background: "rgba(3,2,25,0.85)",
-      }}
-      onClick={onClose}
+    <ModalShell
+      open
+      onClose={onClose}
+      maxWidth={640}
+      eyebrow="ADMIN · Parcours"
+      title="Ajouter une leçon"
+      ariaLabel="Administration : ajouter une leçon au parcours"
     >
       <div
         style={{
-          width: "min(640px, 90vw)",
-          background: "#0A0826",
-          border: `1px solid ${BORDER}`,
+          width: "100%",
+          background: "var(--a-surface)",
           maxHeight: "70vh",
           display: "flex",
           flexDirection: "column",
@@ -434,44 +433,6 @@ function LessonPicker({
           e.stopPropagation();
         }}
       >
-        {/* header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 18px",
-            borderBottom: `1px solid ${BORDER}`,
-            background: "#050416",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: MONO,
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#B8B5D1",
-            }}
-          >
-            <span style={{ color: "#7F7BA9" }}>{"// "}</span>AJOUTER UNE LEÇON
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: 0,
-              color: "#7F7BA9",
-              cursor: "pointer",
-              fontFamily: MONO,
-              fontSize: 13,
-            }}
-          >
-            ✕
-          </button>
-        </div>
         {/* search */}
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
           <input
@@ -493,7 +454,7 @@ function LessonPicker({
                 textAlign: "center",
                 fontFamily: MONO,
                 fontSize: 11,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
               }}
             >
               Aucune leçon disponible
@@ -501,8 +462,8 @@ function LessonPicker({
           ) : (
             filtered.map((l) => {
               const cat = CAT_CHIPS[l.category] ?? {
-                color: "#7F7BA9",
-                border: "rgba(107,104,144,0.35)",
+                color: "var(--a-muted)",
+                border: "var(--a-border-2)",
               };
               return (
                 <button
@@ -516,7 +477,7 @@ function LessonPicker({
                     width: "100%",
                     background: "none",
                     border: 0,
-                    borderBottom: `1px solid rgba(42,37,96,0.5)`,
+                    borderBottom: `1px solid var(--a-border)`,
                     padding: "12px 18px",
                     cursor: "pointer",
                     textAlign: "left",
@@ -532,16 +493,14 @@ function LessonPicker({
                         fontFamily: BODY_F,
                         fontWeight: 600,
                         fontSize: 13,
-                        color: "#F5F5FA",
+                        color: "var(--a-fg)",
                         margin: "0 0 3px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {l.title}
                     </p>
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#7F7BA9" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
                       {l.refCode} · {l.estimatedMinutes} min · +{l.xpReward} XP
                     </span>
                   </div>
@@ -567,7 +526,7 @@ function LessonPicker({
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -644,16 +603,6 @@ export function NewPathClient({
 
   return (
     <>
-      <style>{`
-        .le-input:hover,.le-select:hover,.le-textarea:hover{border-color:rgba(255,255,255,0.18)!important}
-        .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
-        .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .pe-row:hover{background:#0E0A33!important}
-        .pe-add:hover{color:${TURQ}!important;background:rgba(10,255,212,0.04)!important;border-top-color:rgba(10,255,212,0.4)!important;border-top-style:solid!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
-      `}</style>
-
       {pickerOpen && (
         <LessonPicker
           available={availableLessons}
@@ -674,9 +623,9 @@ export function NewPathClient({
           gap: 14,
           marginBottom: 28,
           padding: "12px 16px",
-          background: "rgba(10,8,38,0.5)",
-          border: "1px solid #1F1B47",
-          borderLeft: "3px solid #2A2560",
+          background: "var(--a-surface)",
+          border: "1px solid var(--a-border)",
+          borderLeft: "3px solid var(--a-border-2)",
         }}
       >
         <span
@@ -691,9 +640,9 @@ export function NewPathClient({
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             background: "transparent",
-            border: "1px solid #1F1B47",
+            border: "1px solid var(--a-border)",
             cursor: "not-allowed",
           }}
         >
@@ -713,7 +662,7 @@ export function NewPathClient({
           </svg>
           Gérer le quiz final
         </span>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", letterSpacing: "0.02em" }}>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
           {"Enregistre le parcours d'abord pour gérer le quiz final."}
         </span>
       </div>
@@ -722,8 +671,8 @@ export function NewPathClient({
         <div
           style={{
             padding: "13px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.35)",
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid var(--a-danger)",
             borderLeft: `3px solid ${DANGER}`,
             fontFamily: MONO,
             fontSize: 11,
@@ -742,10 +691,11 @@ export function NewPathClient({
         {/* refCode + slug */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// auto-généré">
+            <Label htmlFor="admin-editor-refCode" req hint="Auto-généré">
               Ref code
             </Label>
             <input
+              id="admin-editor-refCode"
               name="refCode"
               type="text"
               required
@@ -764,7 +714,7 @@ export function NewPathClient({
             <FieldErr msg={state.fieldErrors?.refCode} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req hint="// utilisé dans l'URL">
+            <Label htmlFor="admin-editor-slug" req hint="Utilisé dans l’URL">
               Slug
             </Label>
             <div
@@ -773,7 +723,7 @@ export function NewPathClient({
                 position: "relative",
                 display: "flex",
                 alignItems: "stretch",
-                background: "#0A0826",
+                background: "var(--a-surface)",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
               }}
@@ -785,7 +735,7 @@ export function NewPathClient({
                   width: 36,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   borderRight: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                 }}
@@ -793,6 +743,7 @@ export function NewPathClient({
                 /
               </span>
               <input
+                id="admin-editor-slug"
                 name="slug"
                 type="text"
                 required
@@ -816,10 +767,11 @@ export function NewPathClient({
 
         {/* Title */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label req hint="// 3–200 caractères">
+          <Label htmlFor="admin-editor-title" req hint="3–200 caractères">
             Titre
           </Label>
           <input
+            id="admin-editor-title"
             name="title"
             type="text"
             required
@@ -839,10 +791,15 @@ export function NewPathClient({
 
         {/* Description */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Label req hint="// 10–1000 caractères · affichée sur la page parcours">
+          <Label
+            htmlFor="admin-editor-description"
+            req
+            hint="10–1000 caractères · affichée sur la page parcours"
+          >
             Description
           </Label>
           <textarea
+            id="admin-editor-description"
             name="description"
             required
             minLength={10}
@@ -858,9 +815,12 @@ export function NewPathClient({
         {/* Track: what the path is for, orthogonal to the domain it covers. */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Type de parcours</Label>
+            <Label htmlFor="admin-editor-track" req>
+              Type de parcours
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
+                id="admin-editor-track"
                 name="track"
                 required
                 defaultValue={"SKILL"}
@@ -877,10 +837,13 @@ export function NewPathClient({
         {/* Category + Difficulty */}
         <div className="admin-form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Catégorie</Label>
+            <Label htmlFor="admin-editor-category" req>
+              Catégorie
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
                 placeholder="Choisir…"
+                id="admin-editor-category"
                 name="category"
                 required
                 defaultValue=""
@@ -894,10 +857,13 @@ export function NewPathClient({
             <FieldErr msg={state.fieldErrors?.category} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label req>Difficulté</Label>
+            <Label htmlFor="admin-editor-difficulty" req>
+              Difficulté
+            </Label>
             <div style={{ position: "relative" }}>
               <Select
                 placeholder="Choisir…"
+                id="admin-editor-difficulty"
                 name="difficulty"
                 required
                 defaultValue=""
@@ -915,19 +881,22 @@ export function NewPathClient({
 
         {/* Duration */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
-          <Label req>Durée estimée (heures)</Label>
+          <Label htmlFor="admin-editor-estimatedHours" req>
+            Durée estimée (heures)
+          </Label>
           <div
             className="le-num"
             style={{
               position: "relative",
               display: "flex",
               alignItems: "stretch",
-              background: "#0A0826",
+              background: "var(--a-surface)",
               border: `1px solid ${BORDER}`,
               transition: "all 150ms ease",
             }}
           >
             <input
+              id="admin-editor-estimatedHours"
               name="estimatedHours"
               type="number"
               required
@@ -945,7 +914,7 @@ export function NewPathClient({
                 fontFamily: MONO,
                 fontSize: 10.5,
                 letterSpacing: "0.18em",
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 borderLeft: `1px solid ${BORDER}`,
                 background: "rgba(0,0,0,0.25)",
                 textTransform: "uppercase",
@@ -978,7 +947,7 @@ export function NewPathClient({
             alignItems: "flex-start",
             gap: 14,
             padding: "16px 18px",
-            background: "#0A0826",
+            background: "var(--a-surface)",
             border: `1px solid ${BORDER}`,
             cursor: "pointer",
           }}
@@ -997,7 +966,7 @@ export function NewPathClient({
                 fontSize: 12,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#F5F5FA",
+                color: "var(--a-fg)",
                 marginBottom: 4,
                 display: "inline-flex",
                 alignItems: "center",
@@ -1020,7 +989,6 @@ export function NewPathClient({
                   style={{
                     width: 6,
                     height: 6,
-                    borderRadius: "50%",
                     background: TURQ,
                     boxShadow: `0 0 6px ${TURQ}`,
                     display: "inline-block",
@@ -1033,7 +1001,7 @@ export function NewPathClient({
               style={{
                 fontFamily: BODY_F,
                 fontSize: 12.5,
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -1047,7 +1015,7 @@ export function NewPathClient({
         {/* Lessons section */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Label hint="// glisse pour réordonner">Leçons du parcours</Label>
-          <div style={{ border: `1px solid ${BORDER}`, background: "#0A0826" }}>
+          <div style={{ border: `1px solid ${BORDER}`, background: "var(--a-surface)" }}>
             {/* section head */}
             <div
               style={{
@@ -1056,7 +1024,7 @@ export function NewPathClient({
                 justifyContent: "space-between",
                 padding: "14px 18px",
                 borderBottom: `1px solid ${BORDER}`,
-                background: "#050416",
+                background: "var(--a-bg)",
               }}
             >
               <h3
@@ -1066,16 +1034,14 @@ export function NewPathClient({
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#B8B5D1",
+                  color: "var(--a-fg-2)",
                   margin: 0,
                 }}
               >
-                <span style={{ color: "#7F7BA9" }}>{"// "}</span>
                 <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
               </h3>
-              <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>
-                <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
-                <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
+              <span style={{ fontFamily: MONO, fontSize: 12, color: "var(--a-muted)" }}>
+                <b>{(totals.dur / 60).toFixed(1)} h</b> total · <b>{totals.xp}</b> XP cumulés
               </span>
             </div>
 
@@ -1087,7 +1053,7 @@ export function NewPathClient({
                   textAlign: "center",
                   fontFamily: MONO,
                   fontSize: 11,
-                  color: "#7F7BA9",
+                  color: "var(--a-muted)",
                   letterSpacing: "0.06em",
                 }}
               >
@@ -1133,7 +1099,7 @@ export function NewPathClient({
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#7F7BA9",
+                color: "var(--a-muted)",
                 cursor: "pointer",
                 transition: "all 150ms ease",
               }}
@@ -1164,10 +1130,9 @@ export function NewPathClient({
 
             {/* Totals strip */}
             <div
+              className="a-path-totals"
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                background: "#050416",
+                background: "var(--a-bg)",
                 borderTop: `1px solid ${BORDER}`,
                 fontFamily: MONO,
                 fontSize: 11,
@@ -1194,7 +1159,7 @@ export function NewPathClient({
                       fontSize: 9.5,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
-                      color: "#7F7BA9",
+                      color: "var(--a-muted)",
                     }}
                   >
                     {cell.lbl}
@@ -1203,7 +1168,7 @@ export function NewPathClient({
                     style={{
                       fontWeight: 700,
                       fontSize: 14,
-                      color: cell.brand ? TURQ : "#F5F5FA",
+                      color: cell.brand ? TURQ : "var(--a-fg)",
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -1238,7 +1203,7 @@ export function NewPathClient({
               textTransform: "uppercase",
               padding: "13px 22px",
               background: "transparent",
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               border: `1px solid ${BORDER}`,
               transition: "all 150ms ease",
               textDecoration: "none",
@@ -1261,42 +1226,15 @@ export function NewPathClient({
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               padding: "13px 22px",
-              background: "linear-gradient(135deg, #2848FF, #0024FF)",
-              color: "#fff",
+              background: "var(--a-accent)",
+              color: "var(--a-ink)",
               border: 0,
               cursor: isPending ? "not-allowed" : "pointer",
               opacity: isPending ? 0.6 : 1,
-              boxShadow: "0 0 24px rgba(40,72,255,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                top: -3,
-                left: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid #fff",
-                borderRight: 0,
-                borderBottom: 0,
-                opacity: 0.7,
-              }}
-            />
             {isPending ? "Création…" : "Créer le parcours"}
             <span style={{ fontWeight: 400 }}>→</span>
-            <span
-              style={{
-                position: "absolute",
-                bottom: -3,
-                right: -3,
-                width: 10,
-                height: 10,
-                border: "1.5px solid #fff",
-                borderTop: 0,
-                borderLeft: 0,
-                opacity: 0.7,
-              }}
-            />
           </button>
         </div>
       </form>

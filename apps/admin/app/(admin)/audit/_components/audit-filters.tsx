@@ -80,7 +80,7 @@ export function AuditFilters({
           block={false}
           aria-labelledby={actionLabel}
           defaultValue={params.action ?? ""}
-          triggerStyle={{ height: 36, fontSize: 11, padding: "0 10px", minWidth: 200 }}
+          triggerStyle={{ height: 44, fontSize: 12, padding: "0 10px", minWidth: 200 }}
           options={[
             { value: "", label: "Toutes" },
             ...actions.map((action) => ({ value: action, label: action })),

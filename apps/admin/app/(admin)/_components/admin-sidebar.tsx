@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BastionLogo } from "@cyberlearn/ui";
 import { signOut } from "../_actions/signout";
 import { useAdminMobileSidebar } from "./admin-shell-client";
 
@@ -170,7 +171,7 @@ export function AdminSidebar({
   counts,
 }: AdminSidebarProps): React.ReactElement {
   const pathname = usePathname();
-  const { open, close } = useAdminMobileSidebar();
+  const { open, mobile, close } = useAdminMobileSidebar();
 
   const mainItems = [
     { label: "Aperçu", href: "/dashboard", icon: "dash", count: null as number | null },
@@ -224,10 +225,14 @@ export function AdminSidebar({
 
   return (
     <aside
+      id="admin-navigation"
+      aria-label="Navigation d’administration"
+      role={open && mobile ? "dialog" : undefined}
+      aria-modal={open && mobile ? true : undefined}
       className={`admin-sidebar-fixed${open ? " sidebar-mobile-open" : ""}`}
       style={{
         position: "fixed",
-        top: 58,
+        top: 56,
         left: 0,
         bottom: 0,
         width: 240,
@@ -236,23 +241,40 @@ export function AdminSidebar({
         borderRight: "1px solid var(--a-border)",
         display: "flex",
         flexDirection: "column",
-        overflowY: "auto",
+        overflow: "hidden",
       }}
     >
-      <div style={{ padding: "20px 0 0" }}>
-        <SectionLabel text="Gestion" />
-        <nav style={{ display: "grid", gap: 1 }}>{mainItems.map(renderItem)}</nav>
+      <div className="a-sidebar-brand">
+        <Link href="/dashboard" onClick={close} aria-label="Bastion, accueil de l’administration">
+          <BastionLogo size={36} />
+          <span>
+            <strong>BASTION</strong>
+            <small>Administration</small>
+          </span>
+        </Link>
+        <button
+          type="button"
+          className="admin-hamburger"
+          onClick={close}
+          aria-label="Fermer le menu d’administration"
+        >
+          ×
+        </button>
       </div>
+      <div className="a-sidebar-scroll">
+        <div style={{ padding: "20px 0 0" }}>
+          <SectionLabel text="Gestion" />
+          <nav style={{ display: "grid", gap: 1 }}>{mainItems.map(renderItem)}</nav>
+        </div>
 
-      <div style={{ padding: "22px 0 0" }}>
-        <SectionLabel text="Système" />
-        <nav style={{ display: "grid", gap: 1 }}>{sysItems.map(renderItem)}</nav>
+        <div style={{ padding: "22px 0 0" }}>
+          <SectionLabel text="Système" />
+          <nav style={{ display: "grid", gap: 1 }}>{sysItems.map(renderItem)}</nav>
+        </div>
       </div>
-
-      <div style={{ flex: 1 }} />
 
       {/* Identity + sign out */}
-      <div style={{ padding: "16px 14px", borderTop: "1px solid var(--a-border)" }}>
+      <div className="a-sidebar-account">
         <div
           style={{
             display: "grid",

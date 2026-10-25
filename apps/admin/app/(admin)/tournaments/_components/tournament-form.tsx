@@ -49,7 +49,7 @@ export interface TournamentFormValues {
   challenges: { challengeId: string; points: number }[];
 }
 
-const CHECK_STYLE: React.CSSProperties = { accentColor: "#0AFFD4", width: 16, height: 16 };
+const CHECK_STYLE: React.CSSProperties = { accentColor: "var(--a-accent)", width: 18, height: 18 };
 
 export function TournamentForm({
   phase,
@@ -118,7 +118,7 @@ export function TournamentForm({
               style={{ resize: "vertical" }}
             />
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="a-fields-grid">
             <label className="a-field">
               <span className="a-label">Début</span>
               <input
@@ -193,10 +193,7 @@ export function TournamentForm({
                       />
                       <span>
                         {option.name}
-                        <span style={{ color: "var(--a-muted, #8A86A8)" }}>
-                          {" "}
-                          · {option.promotion}
-                        </span>
+                        <span style={{ color: "var(--a-muted)" }}> · {option.promotion}</span>
                       </span>
                     </label>
                   ))}
@@ -247,7 +244,7 @@ export function TournamentForm({
                   />
                   <span style={{ display: "grid", gap: 2 }}>
                     <span style={{ fontWeight: 600 }}>{option.title}</span>
-                    <span className="mono" style={{ fontSize: 10.5, color: "#8A86A8" }}>
+                    <span className="mono" style={{ fontSize: 12, color: "var(--a-muted)" }}>
                       {option.refCode} · {option.type}
                       {option.isActive ? "" : " · réservé au tournoi"}
                       {solvedBefore > 0

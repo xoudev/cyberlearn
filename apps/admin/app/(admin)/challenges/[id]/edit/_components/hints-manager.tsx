@@ -25,10 +25,11 @@ interface Props {
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 10px",
-  background: "#060420",
-  border: "1px solid #2A2560",
-  color: "#F5F5FA",
-  fontFamily: "var(--font-mono)",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border-2)",
+  color: "var(--a-fg)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontSize: 12,
   outline: "none",
   boxSizing: "border-box",
@@ -36,12 +37,10 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   fontWeight: 700,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "#7F7BA9",
+  color: "var(--a-muted)",
   marginBottom: 4,
 };
 
@@ -125,19 +124,19 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: "#7F7BA9",
+          color: "var(--a-muted)",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           marginBottom: 16,
           paddingBottom: 8,
-          borderBottom: "1px solid #1F1B47",
+          borderBottom: "1px solid var(--a-border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
         <span>{"// INDICES"}</span>
-        <span style={{ color: "#7F7BA9", fontSize: 9 }}>
+        <span style={{ color: "var(--a-muted)", fontSize: 12 }}>
           {String(hints.length)} indice{hints.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -146,11 +145,11 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.3)",
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid var(--a-danger)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#FF4D6D",
+            color: "var(--a-danger)",
             marginBottom: 12,
           }}
         >
@@ -163,7 +162,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             marginBottom: 12,
           }}
         >
@@ -177,8 +176,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
           style={{
             marginBottom: 10,
             padding: "14px 16px",
-            background: editingId === hint.id ? "rgba(10,255,212,0.03)" : "#060420",
-            border: `1px solid ${editingId === hint.id ? "rgba(10,255,212,0.2)" : "#2A2560"}`,
+            background: editingId === hint.id ? "var(--a-overlay)" : "var(--a-surface)",
+            border: `1px solid ${editingId === hint.id ? "var(--a-accent)" : "var(--a-border-2)"}`,
           }}
         >
           {editingId === hint.id ? (
@@ -194,7 +193,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{ ...inputStyle, resize: "vertical" }}
                 />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="a-fields-grid">
                 <div>
                   <label style={labelStyle}>Coût XP</label>
                   <input
@@ -218,8 +217,9 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   }}
                   style={{
                     padding: "6px 14px",
-                    background: savePending ? "#2A2560" : "#0AFFD4",
-                    color: savePending ? "#7F7BA9" : "#030219",
+                    minHeight: 44,
+                    background: "var(--a-accent)",
+                    color: "var(--a-ink)",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 700,
                     fontSize: 10,
@@ -237,8 +237,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     padding: "6px 14px",
                     background: "transparent",
-                    border: "1px solid #2A2560",
-                    color: "#7F7BA9",
+                    border: "1px solid var(--a-border-2)",
+                    color: "var(--a-muted)",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 10,
@@ -258,7 +258,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
-                    color: "#7F7BA9",
+                    color: "var(--a-muted)",
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     marginBottom: 4,
@@ -271,7 +271,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: 12,
-                    color: "#B8B5D1",
+                    color: "var(--a-fg-2)",
                     lineHeight: 1.5,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
@@ -289,8 +289,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     padding: "4px 10px",
                     background: "transparent",
-                    border: "1px solid #2A2560",
-                    color: "#7F7BA9",
+                    border: "1px solid var(--a-border-2)",
+                    color: "var(--a-muted)",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 9,
@@ -310,8 +310,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     padding: "4px 10px",
                     background: "transparent",
-                    border: "1px solid rgba(255,77,109,0.3)",
-                    color: "#FF4D6D",
+                    border: "1px solid var(--a-danger)",
+                    color: "var(--a-danger)",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 9,
@@ -333,8 +333,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         <div
           style={{
             padding: "16px",
-            background: "rgba(10,255,212,0.03)",
-            border: "1px solid rgba(10,255,212,0.15)",
+            background: "var(--a-surface)",
+            border: "1px solid var(--a-border)",
             marginTop: 8,
           }}
         >
@@ -351,7 +351,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div className="a-fields-grid">
               <div>
                 <label style={labelStyle}>Coût XP</label>
                 <input
@@ -385,8 +385,9 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 onClick={handleCreate}
                 style={{
                   padding: "6px 14px",
-                  background: createPending ? "#2A2560" : "#0AFFD4",
-                  color: createPending ? "#7F7BA9" : "#030219",
+                  minHeight: 44,
+                  background: "var(--a-accent)",
+                  color: "var(--a-ink)",
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
                   fontSize: 10,
@@ -409,8 +410,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 style={{
                   padding: "6px 14px",
                   background: "transparent",
-                  border: "1px solid #2A2560",
-                  color: "#7F7BA9",
+                  border: "1px solid var(--a-border-2)",
+                  color: "var(--a-muted)",
                   fontFamily: "var(--font-mono)",
                   fontWeight: 600,
                   fontSize: 10,
@@ -436,8 +437,8 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
             marginTop: hints.length > 0 ? 4 : 0,
             padding: "7px 16px",
             background: "transparent",
-            border: "1px solid rgba(10,255,212,0.2)",
-            color: "#0AFFD4",
+            border: "1px solid var(--a-accent)",
+            color: "var(--a-accent)",
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 10,

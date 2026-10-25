@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 import { deleteLessonAction } from "../_actions/lesson-actions";
 
 function TrashIcon() {
@@ -37,15 +38,16 @@ export function DeleteLessonButton({
   disabledReason?: string;
 }): React.JSX.Element {
   const router = useRouter();
+  const confirm = useAdminConfirmation();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [hov, setHov] = useState(false);
 
-  function handleDelete() {
+  async function handleDelete(): Promise<void> {
     if (
-      !window.confirm(
-        `Supprimer définitivement "${lessonTitle}" ?\n\nCette action est irréversible.`,
-      )
+      !(await confirm(
+        `Supprimer définitivement la leçon « ${lessonTitle} » ?\n\nCette action est irréversible.`,
+      ))
     )
       return;
 
@@ -72,7 +74,7 @@ export function DeleteLessonButton({
         title={disabled ? (disabledReason ?? "Action non disponible") : "Supprimer la leçon"}
         disabled={(disabled ?? false) || isPending}
         onClick={() => {
-          handleDelete();
+          void handleDelete();
         }}
         onMouseEnter={() => {
           setHov(true);
@@ -84,15 +86,14 @@ export function DeleteLessonButton({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 28,
-          height: 28,
+          width: 44,
+          height: 44,
           background:
             hov && !disabled
               ? "color-mix(in srgb, var(--a-danger) 8%, transparent)"
               : "transparent",
           border: `1px solid ${hov && !disabled ? "color-mix(in srgb, var(--a-danger) 30%, transparent)" : "transparent"}`,
-          borderRadius: 4,
-          color: disabled ? "#2A2560" : "var(--a-danger)",
+          color: disabled ? "var(--a-muted)" : "var(--a-danger)",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,
@@ -121,9 +122,8 @@ export function DeleteLessonButton({
             position: "absolute",
             right: 0,
             top: "calc(100% + 4px)",
-            background: "#0A0826",
+            background: "var(--a-surface)",
             border: "1px solid color-mix(in srgb, var(--a-danger) 40%, transparent)",
-            borderRadius: 4,
             padding: "6px 10px",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
@@ -143,7 +143,7 @@ export function DeleteLessonButton({
             }}
             style={{
               marginLeft: 8,
-              color: "#7F7BA9",
+              color: "var(--a-muted)",
               background: "none",
               border: "none",
               cursor: "pointer",

@@ -32,10 +32,11 @@ const INITIAL: ChallengeFormState = {};
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "9px 12px",
-  background: "#060420",
-  border: "1px solid #2A2560",
-  color: "#F5F5FA",
-  fontFamily: "var(--font-mono)",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border-2)",
+  color: "var(--a-fg)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontSize: 12,
   outline: "none",
   boxSizing: "border-box",
@@ -43,12 +44,10 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
   fontWeight: 700,
-  letterSpacing: "0.14em",
-  textTransform: "uppercase",
-  color: "#7F7BA9",
+  color: "var(--a-muted)",
   marginBottom: 6,
 };
 
@@ -70,7 +69,14 @@ function Field({
       </label>
       {children}
       {error !== undefined && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#FF4D6D", marginTop: 4 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
+            color: "var(--a-danger)",
+            marginTop: 4,
+          }}
+        >
           {error}
         </p>
       )}
@@ -93,11 +99,11 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         <div
           style={{
             padding: "12px 16px",
-            background: "rgba(255,77,109,0.08)",
-            border: "1px solid rgba(255,77,109,0.3)",
+            background: "color-mix(in srgb, var(--a-danger) 8%, transparent)",
+            border: "1px solid var(--a-danger)",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#FF4D6D",
+            color: "var(--a-danger)",
           }}
         >
           {state.error}
@@ -110,17 +116,17 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
           }}
         >
           {"// IDENTIFICATION"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid">
           <Field label="Code de référence *" name="refCode" error={fe.refCode}>
             <input id="refCode" name="refCode" required style={inputStyle} placeholder="CTF-001" />
           </Field>
@@ -142,12 +148,12 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
           }}
         >
           {"// CONTENU"}
@@ -185,17 +191,17 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
           }}
         >
           {"// CLASSIFICATION"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid a-fields-grid--3">
           <Field label="Catégorie *" name="category" error={fe.category}>
             <Select
               name="category"
@@ -247,17 +253,17 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
             paddingBottom: 8,
-            borderBottom: "1px solid #1F1B47",
+            borderBottom: "1px solid var(--a-border)",
           }}
         >
           {"// PARAMÈTRES"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid a-fields-grid--4">
           <Field label="XP Récompense *" name="xpReward" error={fe.xpReward}>
             <input
               id="xpReward"
@@ -339,7 +345,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
                 placeholder={MACHINE_PLACEHOLDER}
               />
             </Field>
-            <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--fg-tertiary, #7F7BA9)" }}>
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--a-muted)" }}>
               Les fichiers placés dans /mnt de la machine du navigateur. Écris {"{{FLAG}}"} là où va
               le flag : chaque élève y reçoit le sien, et le champ Flag ne sert plus.
             </p>
@@ -369,7 +375,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         )}
 
         {/* Resource & attachment URLs */}
-        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="a-fields-grid" style={{ marginTop: 16 }}>
           <Field label="URL de connexion / cible" name="resourceUrl" error={fe.resourceUrl}>
             <input
               id="resourceUrl"
@@ -416,8 +422,8 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             display: "inline-flex",
             alignItems: "center",
             padding: "9px 20px",
-            border: "1px solid #2A2560",
-            color: "#7F7BA9",
+            border: "1px solid var(--a-border-2)",
+            color: "var(--a-muted)",
             fontFamily: "var(--font-mono)",
             fontWeight: 600,
             fontSize: 11,
@@ -435,8 +441,9 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             display: "inline-flex",
             alignItems: "center",
             padding: "9px 24px",
-            background: pending ? "#2A2560" : "#FF4D6D",
-            color: "#fff",
+            minHeight: 44,
+            background: "var(--a-accent)",
+            color: "var(--a-ink)",
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 11,

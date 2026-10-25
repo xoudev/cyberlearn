@@ -26,7 +26,7 @@
  * chain. It is what the panel has without a `preview`, and a switch away with.
  */
 
-import { ACCENT, BORDER, DANGER, MONO } from "../lib/palette.js";
+import { ACCENT, BORDER, MONO } from "../lib/palette.js";
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount, BeforeMount } from "@monaco-editor/react";
@@ -48,6 +48,7 @@ export { useLessonPreview } from "./mdx-preview-frame";
 export type { LessonPreviewAction, MdxEditorPreview, MdxPreviewResult } from "./mdx-preview-frame";
 
 type EditorInstance = Parameters<OnMount>[0];
+const DANGER = "var(--color-danger)";
 
 // ── Dynamic import - Monaco has no SSR support ─────────────────────────────────
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
@@ -56,7 +57,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
     <div
       style={{
         height: "100%",
-        background: "#07051E",
+        background: "var(--color-bg-base)",
         display: "grid",
         placeItems: "center",
         color: "var(--color-text-muted)",
@@ -83,7 +84,7 @@ function renderInline(text: string): React.ReactNode {
         );
       case "em":
         return (
-          <em key={i} style={{ color: "#D0CDEC" }}>
+          <em key={i} style={{ color: "var(--color-text-secondary)" }}>
             {token.text}
           </em>
         );
@@ -93,10 +94,9 @@ function renderInline(text: string): React.ReactNode {
             key={i}
             style={{
               fontFamily: MONO,
-              background: "#1A1740",
+              background: "var(--color-bg-overlay)",
               color: ACCENT,
               padding: "1px 5px",
-              borderRadius: 3,
               fontSize: "0.88em",
             }}
           >
@@ -129,17 +129,22 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
     const meta: Record<string, { border: string; bg: string; color: string; label: string }> = {
       info: {
         border: "var(--color-info)",
-        bg: "rgba(77,139,255,0.08)",
+        bg: "color-mix(in srgb, var(--color-info) 8%, transparent)",
         color: "var(--color-info)",
         label: "INFO",
       },
       warning: {
         border: "var(--color-warning)",
-        bg: "rgba(255,176,32,0.08)",
+        bg: "color-mix(in srgb, var(--color-warning) 8%, transparent)",
         color: "var(--color-warning)",
         label: "ATTENTION",
       },
-      danger: { border: DANGER, bg: "rgba(255,77,109,0.08)", color: DANGER, label: "DANGER" },
+      danger: {
+        border: DANGER,
+        bg: "color-mix(in srgb, var(--color-danger) 8%, transparent)",
+        color: DANGER,
+        label: "DANGER",
+      },
       success: {
         border: ACCENT,
         bg: "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)",
@@ -158,7 +163,6 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           background: c.bg,
           border: `1px solid color-mix(in srgb, ${c.border} 27%, transparent)`,
           borderLeft: `3px solid ${c.border}`,
-          borderRadius: "0 6px 6px 0",
         }}
       >
         <div
@@ -195,7 +199,6 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           padding: "14px 16px",
           background: "var(--color-bg-elevated)",
           border: `1px solid ${BORDER}`,
-          borderRadius: 8,
         }}
       >
         <div
@@ -234,10 +237,9 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
       <div
         style={{
           margin: "14px 0",
-          background: "#060422",
+          background: "var(--color-bg-elevated)",
           border: `1px solid var(--color-border-subtle)`,
           borderLeft: `3px solid ${ACCENT}`,
-          borderRadius: 6,
           overflow: "hidden",
         }}
       >
@@ -296,9 +298,8 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         style={{
           margin: "14px 0",
           padding: "18px",
-          background: "#060422",
+          background: "var(--color-bg-elevated)",
           border: `1px dashed ${BORDER}`,
-          borderRadius: 6,
           textAlign: "center",
         }}
       >
@@ -318,9 +319,8 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
       style={{
         margin: "10px 0",
         padding: "8px 12px",
-        background: "rgba(77,139,255,0.05)",
-        border: `1px solid rgba(77,139,255,0.18)`,
-        borderRadius: 4,
+        background: "var(--color-bg-elevated)",
+        border: `1px solid var(--color-border-default)`,
         display: "flex",
         alignItems: "baseline",
         gap: 8,
@@ -478,10 +478,9 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
           key={k++}
           style={{
             margin: "14px 0",
-            background: "#060422",
+            background: "var(--color-bg-elevated)",
             border: `1px solid var(--color-border-subtle)`,
             borderLeft: `3px solid ${ACCENT}`,
-            borderRadius: 6,
             overflow: "hidden",
           }}
         >
@@ -658,7 +657,6 @@ function TBtn({
         justifyContent: "center",
         background: active || hov ? "rgba(255,255,255,0.06)" : "transparent",
         border: active ? `1px solid ${BORDER}` : "1px solid transparent",
-        borderRadius: 3,
         color: active ? ACCENT : hov ? "var(--color-text-primary)" : "var(--color-text-muted)",
         fontFamily: mono ? MONO : "inherit",
         fontWeight: mono ? 700 : 400,
@@ -708,7 +706,7 @@ function GuideRow({
   const preview = firstLine.length > 36 ? firstLine.slice(0, 33) + "…" : firstLine;
 
   return (
-    <div style={{ borderBottom: "1px solid rgba(31,27,71,0.45)", padding: "5px 0" }}>
+    <div style={{ borderBottom: "1px solid var(--color-border-subtle)", padding: "5px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <code
           style={{
@@ -748,7 +746,7 @@ function GuideRow({
                 ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)"
                 : hov
                   ? `color-mix(in srgb, ${accent} 40%, transparent)`
-                  : "rgba(31,27,71,0.8)"
+                  : "var(--color-border-default)"
             }`,
             background: done
               ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
@@ -761,7 +759,6 @@ function GuideRow({
             fontWeight: 700,
             letterSpacing: "0.08em",
             cursor: "pointer",
-            borderRadius: 2,
             transition: "all 120ms ease",
           }}
         >
@@ -798,7 +795,14 @@ function GuideGroupBlock({
     <div style={{ marginTop: group.name === undefined ? 0 : 10 }}>
       {group.name !== undefined && (
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 2 }}>
-          <code style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color: "#D0CDEC" }}>
+          <code
+            style={{
+              fontFamily: MONO,
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: "var(--color-text-secondary)",
+            }}
+          >
             &lt;{group.name}&gt;
           </code>
           <span style={{ fontSize: 10.5, color: "var(--color-text-muted)" }}>{group.label}</span>
@@ -853,15 +857,15 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
   return (
     <div
       className="mdx-editor-guide"
-      style={{ height: "100%", overflowY: "auto", background: "#060422" }}
+      style={{ height: "100%", overflowY: "auto", background: "var(--color-bg-elevated)" }}
     >
       <div
         style={{
           position: "sticky",
           top: 0,
-          background: "#060422",
+          background: "var(--color-bg-elevated)",
           zIndex: 1,
-          borderBottom: "1px solid rgba(31,27,71,0.6)",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         <div
@@ -880,10 +884,8 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
             style={{
               width: 4,
               height: 4,
-              borderRadius: "50%",
               background: ACCENT,
               display: "inline-block",
-              boxShadow: `0 0 6px ${ACCENT}`,
             }}
           />
           GUIDE MDX
@@ -904,14 +906,13 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
               width: "100%",
               boxSizing: "border-box",
               height: 26,
-              background: "#07051E",
+              background: "var(--color-bg-base)",
               border: `1px solid ${BORDER}`,
               color: "var(--color-text-secondary)",
               fontFamily: MONO,
               fontSize: 10.5,
               padding: "0 8px",
               outline: "none",
-              borderRadius: 2,
             }}
           />
         </div>
@@ -936,10 +937,8 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
                 style={{
                   width: 5,
                   height: 5,
-                  borderRadius: "50%",
                   background: section.accent,
                   flexShrink: 0,
-                  boxShadow: `0 0 5px color-mix(in srgb, ${section.accent} 53%, transparent)`,
                 }}
               />
               <span
@@ -954,7 +953,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
               >
                 {section.title}
               </span>
-              <div style={{ flex: 1, height: 1, background: "rgba(31,27,71,0.5)" }} />
+              <div style={{ flex: 1, height: 1, background: "var(--color-border-subtle)" }} />
             </div>
             {section.groups.map((group) => (
               <GuideGroupBlock
@@ -1083,7 +1082,11 @@ export function MdxEditorPanel({
     <div
       ref={panelRef}
       className="mdx-editor-panel"
-      style={{ border: `1px solid ${BORDER}`, overflow: "hidden", background: "#07051E" }}
+      style={{
+        border: `1px solid ${BORDER}`,
+        overflow: "hidden",
+        background: "var(--color-bg-base)",
+      }}
     >
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
       <div
@@ -1092,7 +1095,7 @@ export function MdxEditorPanel({
           display: "flex",
           alignItems: "center",
           gap: 2,
-          background: "#050416",
+          background: "var(--color-bg-elevated)",
           borderBottom: `1px solid ${BORDER}`,
           height: 40,
           padding: "0 10px",
@@ -1293,7 +1296,6 @@ export function MdxEditorPanel({
                   cursor: "pointer",
                   padding: "0 4px",
                   outline: "none",
-                  borderRadius: 2,
                 }}
               >
                 {[
@@ -1356,7 +1358,6 @@ export function MdxEditorPanel({
                   cursor: "pointer",
                   padding: "0 4px",
                   outline: "none",
-                  borderRadius: 2,
                 }}
               >
                 {(["info", "warning", "danger", "success"] as const).map((t) => (
@@ -1437,7 +1438,6 @@ export function MdxEditorPanel({
                   cursor: "pointer",
                   padding: "0 4px",
                   outline: "none",
-                  borderRadius: 2,
                 }}
               >
                 {(["python", "javascript", "c", "asm"] as const).map((l) => (
@@ -1487,7 +1487,6 @@ export function MdxEditorPanel({
                   cursor: "pointer",
                   padding: "0 4px",
                   outline: "none",
-                  borderRadius: 2,
                 }}
               >
                 {(["bash", "powershell"] as const).map((s) => (
@@ -1540,9 +1539,8 @@ export function MdxEditorPanel({
               gap: 5,
               height: 26,
               padding: "0 9px",
-              background: showGuide ? "rgba(77,139,255,0.08)" : "transparent",
-              border: `1px solid ${showGuide ? "rgba(77,139,255,0.3)" : BORDER}`,
-              borderRadius: 3,
+              background: showGuide ? "var(--color-bg-overlay)" : "transparent",
+              border: `1px solid ${showGuide ? "var(--color-info)" : BORDER}`,
               color: showGuide ? "var(--color-info)" : "var(--color-text-muted)",
               fontFamily: MONO,
               fontSize: 9,
@@ -1586,7 +1584,6 @@ export function MdxEditorPanel({
               border: `1px solid ${
                 split ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : BORDER
               }`,
-              borderRadius: 3,
               color: split ? ACCENT : "var(--color-text-muted)",
               fontFamily: MONO,
               fontSize: 9,
@@ -1628,7 +1625,7 @@ export function MdxEditorPanel({
             margin: 0,
             padding: "8px 14px",
             borderBottom: `1px solid color-mix(in srgb, ${DANGER} 33%, transparent)`,
-            background: "rgba(255,77,109,0.07)",
+            background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
             color: "var(--color-text-primary)",
             fontSize: 12,
             lineHeight: 1.5,
@@ -1718,7 +1715,7 @@ export function MdxEditorPanel({
                 height: 620,
                 overflow: "auto",
                 padding: "16px 20px 32px",
-                background: "#060422",
+                background: "var(--color-bg-elevated)",
               }}
             >
               <div
@@ -1737,10 +1734,8 @@ export function MdxEditorPanel({
                   style={{
                     width: 4,
                     height: 4,
-                    borderRadius: "50%",
                     background: ACCENT,
                     display: "inline-block",
-                    boxShadow: `0 0 6px ${ACCENT}`,
                   }}
                 />
                 APERÇU RAPIDE
@@ -1771,7 +1766,7 @@ export function MdxEditorPanel({
           alignItems: "center",
           gap: 14,
           padding: "5px 14px",
-          background: "#050416",
+          background: "var(--color-bg-elevated)",
           borderTop: `1px solid ${BORDER}`,
           fontFamily: MONO,
           fontSize: 9.5,
@@ -1786,7 +1781,6 @@ export function MdxEditorPanel({
             style={{
               width: 4,
               height: 4,
-              borderRadius: "50%",
               background: ACCENT,
               display: "inline-block",
             }}

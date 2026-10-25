@@ -9,7 +9,7 @@ export function Skeleton({ width, height, style, ...props }: SkeletonProps): Rea
   return (
     <div
       className="skeleton-shimmer"
-      style={{ width, height, borderRadius: 6, ...style }}
+      style={{ width, height, ...style, borderRadius: 0 }}
       {...props}
     />
   );

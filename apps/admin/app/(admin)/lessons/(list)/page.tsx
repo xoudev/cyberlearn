@@ -46,17 +46,20 @@ export default async function AdminLessonsPage({
         description={`${String(counts.PUBLISHED)} publiée${counts.PUBLISHED !== 1 ? "s" : ""} · ${String(counts.DRAFT)} brouillon${counts.DRAFT !== 1 ? "s" : ""}. Les leçons archivées sont rangées à part.`}
         actions={
           <>
-            <ArchiveFirstCatalogueButton paths={first.paths} lessons={first.lessons} />
-            <GhostLink href="/lessons/archives">Archives ({String(counts.ARCHIVED)})</GhostLink>
-            <GhostLink href="/lessons/sync">Synchroniser avec le dépôt</GhostLink>
-            <GhostLink href="/lessons/reports">
-              Questions signalées{openReports > 0 ? ` (${String(openReports)})` : ""}
-            </GhostLink>
             <GhostLink href="/lessons/import">Importer MDX</GhostLink>
             <PrimaryLink href="/lessons/new">Nouvelle leçon</PrimaryLink>
           </>
         }
       />
+
+      <nav className="a-catalogue-tools" aria-label="Gestion du catalogue de leçons">
+        <GhostLink href="/lessons/reports">
+          Questions signalées{openReports > 0 ? ` (${String(openReports)})` : ""}
+        </GhostLink>
+        <GhostLink href="/lessons/sync">Synchroniser avec le dépôt</GhostLink>
+        <GhostLink href="/lessons/archives">Archives ({String(counts.ARCHIVED)})</GhostLink>
+        <ArchiveFirstCatalogueButton paths={first.paths} lessons={first.lessons} />
+      </nav>
 
       <LessonsGrid
         folder="active"

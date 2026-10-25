@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useTransition } from "react";
+import { useAdminConfirmation } from "../../../../_components/admin-confirmation";
 import {
   createQuestionAction,
   deleteQuestionAction,
@@ -36,27 +37,25 @@ interface Props {
 }
 
 // ── Shared admin tokens (aligned with the Lessons / Badges CRUD pages) ──────────
-const BORDER = "#2A2560";
-const DANGER = "#FF4D6D";
-const TURQ = "#0AFFD4";
-const BLUE = "#0024FF";
+const BORDER = "var(--a-border-2)";
+const DANGER = "var(--a-danger)";
+const TURQ = "var(--a-accent)";
+const BLUE = "var(--a-accent)";
 
 const LABEL_STYLE: React.CSSProperties = {
   display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: 9.5,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "#7F7BA9",
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
+  color: "var(--a-muted)",
   marginBottom: 6,
 };
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
-  background: "rgba(5,4,26,0.8)",
+  background: "var(--a-surface)",
   border: `1px solid ${BORDER}`,
-  color: "#F5F5FA",
-  fontFamily: "var(--font-mono)",
+  color: "var(--a-fg)",
+  fontFamily: "var(--font-sans)",
   fontSize: 13,
   padding: "11px 14px",
   outline: "none",
@@ -64,20 +63,17 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 const CARD_STYLE: React.CSSProperties = {
-  background: "rgba(10,8,38,0.6)",
-  border: "1px solid #1F1B47",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   borderLeft: `3px solid ${BORDER}`,
-  borderRadius: 8,
   padding: "20px 22px",
   marginBottom: 20,
 };
 
 const SECTION_EYEBROW: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "#7F7BA9",
+  fontFamily: "var(--font-display), sans-serif",
+  fontSize: 24,
+  color: "var(--a-fg)",
   margin: "0 0 16px",
 };
 
@@ -85,8 +81,9 @@ const primaryBtnStyle = (pending: boolean): React.CSSProperties => ({
   padding: "12px 26px",
   background: BLUE,
   border: `1px solid ${BLUE}`,
-  color: "#fff",
-  fontFamily: "var(--font-mono)",
+  color: "var(--a-ink)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 11,
   letterSpacing: "0.14em",
@@ -99,8 +96,9 @@ const ghostBtnStyle: React.CSSProperties = {
   padding: "12px 22px",
   background: "transparent",
   border: `1px solid ${BORDER}`,
-  color: "#7F7BA9",
-  fontFamily: "var(--font-mono)",
+  color: "var(--a-muted)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 11,
   letterSpacing: "0.14em",
@@ -111,7 +109,7 @@ const ghostBtnStyle: React.CSSProperties = {
 const dangerBtnStyle = (pending: boolean): React.CSSProperties => ({
   padding: "9px 16px",
   background: "transparent",
-  border: "1px solid rgba(255,77,109,0.4)",
+  border: "1px solid var(--a-danger)",
   color: DANGER,
   fontFamily: "var(--font-mono)",
   fontWeight: 700,
@@ -126,8 +124,9 @@ const smallGhostBtnStyle: React.CSSProperties = {
   padding: "9px 16px",
   background: "transparent",
   border: `1px solid ${BORDER}`,
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono)",
+  color: "var(--a-fg-2)",
+  minHeight: 44,
+  fontFamily: "var(--font-sans)",
   fontWeight: 700,
   fontSize: 10,
   letterSpacing: "0.12em",
@@ -146,12 +145,12 @@ const warnStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: 11,
   lineHeight: 1.6,
-  color: "#FFB84D",
+  color: "var(--a-warning)",
   margin: "10px 0 0",
   padding: "10px 14px",
-  background: "rgba(255,184,77,0.07)",
-  border: "1px solid rgba(255,184,77,0.3)",
-  borderLeft: "3px solid #FFB84D",
+  background: "color-mix(in srgb, var(--a-warning) 7%, transparent)",
+  border: "1px solid var(--a-warning)",
+  borderLeft: "3px solid var(--a-warning)",
 };
 
 function Field({
@@ -171,7 +170,7 @@ function Field({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#7F7BA9",
+            color: "var(--a-muted)",
             margin: "0 0 6px",
           }}
         >
@@ -191,7 +190,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
       {quiz ? (
         <QuestionsSection path={path} quiz={quiz} questions={questions} />
       ) : (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
           {"Enregistre d'abord les réglages pour créer le quiz, puis ajoute des questions."}
         </p>
       )}
@@ -276,7 +275,7 @@ function SettingsForm({
           }}
           style={{ accentColor: TURQ, width: 16, height: 16 }}
         />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#B8B5D1" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
           Quiz actif (requis pour obtenir le certificat)
         </span>
       </label>
@@ -329,12 +328,12 @@ function QuestionsSection({
             fontFamily: "var(--font-sans)",
             fontSize: 16,
             fontWeight: 700,
-            color: "#F5F5FA",
+            color: "var(--a-fg)",
             margin: 0,
           }}
         >
           Questions{" "}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-muted)" }}>
             ({questions.length} · {quiz.activeQuestionCount} active(s))
           </span>
         </h2>
@@ -381,8 +380,14 @@ function QuestionRow({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function remove(): void {
-    if (!confirm("Supprimer cette question ?")) return;
+  const confirm = useAdminConfirmation();
+  async function remove(): Promise<void> {
+    if (
+      !(await confirm(
+        `Parcours « ${path.title} » : supprimer la question « ${question.question} » ?`,
+      ))
+    )
+      return;
     setError(null);
     start(async () => {
       const res = await deleteQuestionAction({ questionId: question.id, pathId: path.id });
@@ -407,8 +412,8 @@ function QuestionRow({
   return (
     <div style={CARD_STYLE}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "#F5F5FA" }}>
-          <span style={{ fontFamily: "var(--font-mono)", color: "#7F7BA9" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--a-fg)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", color: "var(--a-muted)" }}>
             #{question.orderIndex}
           </span>{" "}
           {question.question}
@@ -417,7 +422,7 @@ function QuestionRow({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#FFB84D",
+                color: "var(--a-warning)",
                 marginLeft: 8,
               }}
             >
@@ -435,7 +440,14 @@ function QuestionRow({
           >
             Éditer
           </button>
-          <button type="button" style={dangerBtnStyle(pending)} onClick={remove} disabled={pending}>
+          <button
+            type="button"
+            style={dangerBtnStyle(pending)}
+            onClick={() => {
+              void remove();
+            }}
+            disabled={pending}
+          >
             Suppr.
           </button>
         </div>
@@ -446,7 +458,7 @@ function QuestionRow({
           paddingLeft: 18,
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#B8B5D1",
+          color: "var(--a-fg-2)",
           lineHeight: 1.8,
         }}
       >
@@ -608,7 +620,7 @@ function QuestionForm({
             }}
             style={{ accentColor: TURQ, width: 16, height: 16 }}
           />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#B8B5D1" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--a-fg-2)" }}>
             Active
           </span>
         </label>

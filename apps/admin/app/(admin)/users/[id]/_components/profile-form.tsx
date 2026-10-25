@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState } from "react";
+import { AdminConfirmForm } from "../../../_components/admin-confirmation";
 import { keepFormInput } from "@/lib/form-input";
 import {
   resetUserProfileFieldAction,
@@ -81,20 +82,11 @@ export function ProfileForm({
 
       {/* Remounted when the saved values change, so a field reset below
           shows here at once; a refusal changes nothing and keeps the typing. */}
-      <form
+      <AdminConfirmForm
         key={`${displayName}\u0000${username ?? ""}\u0000${bio ?? ""}`}
         action={saveAction}
         onReset={keepFormInput}
-        onSubmit={(event) => {
-          // Cancelling the native submit also cancels the action.
-          if (
-            !window.confirm(
-              `Enregistrer ces changements sur le profil de ${handle} ? Ils se voient partout où le compte apparaît.`,
-            )
-          ) {
-            event.preventDefault();
-          }
-        }}
+        question={`Enregistrer ces changements sur le profil de ${handle} ? Ils se voient partout où le compte apparaît.`}
         className="a-form"
       >
         <input type="hidden" name="userId" value={userId} />
@@ -149,18 +141,16 @@ export function ProfileForm({
 
         {saveState.error !== undefined && <p className="a-form-error">{saveState.error}</p>}
         {saveState.notice !== undefined && <p className="a-form-notice">{saveState.notice}</p>}
-      </form>
+      </AdminConfirmForm>
 
       <div className="a-form" style={{ marginTop: 18 }}>
         <span className="a-label">Remettre à zéro</span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           {resets.map((reset) => (
-            <form
+            <AdminConfirmForm
               key={reset.field}
               action={resetAction}
-              onSubmit={(event) => {
-                if (!window.confirm(confirmations[reset.field])) event.preventDefault();
-              }}
+              question={`${handle} : ${confirmations[reset.field]}`}
             >
               <input type="hidden" name="userId" value={userId} />
               <input type="hidden" name="field" value={reset.field} />
@@ -171,7 +161,7 @@ export function ProfileForm({
               >
                 {reset.label}
               </button>
-            </form>
+            </AdminConfirmForm>
           ))}
         </div>
 

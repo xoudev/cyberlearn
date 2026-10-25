@@ -2,9 +2,8 @@ import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const CARD: React.CSSProperties = {
-  background: "#0A0826",
-  border: "1px solid #1F1B47",
-  borderRadius: 12,
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   padding: "28px 20px",
   display: "flex",
   flexDirection: "column",
@@ -21,7 +20,7 @@ export default function AdminBadgesLoading(): React.ReactElement {
           <Skeleton width={140} height={28} style={{ marginBottom: 10 }} />
           <Skeleton width={200} height={14} />
         </div>
-        <Skeleton width={120} height={36} style={{ borderRadius: 8 }} />
+        <Skeleton width={120} height={44} />
       </div>
 
       {/* Grid 3 cols */}
@@ -46,7 +45,7 @@ export default function AdminBadgesLoading(): React.ReactElement {
             />
             <Skeleton width="70%" height={14} />
             <Skeleton width="50%" height={12} />
-            <Skeleton width={80} height={22} style={{ borderRadius: 99 }} />
+            <Skeleton width={80} height={22} />
           </div>
         ))}
       </div>

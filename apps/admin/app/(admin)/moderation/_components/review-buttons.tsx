@@ -5,6 +5,7 @@ import { BAN_DURATIONS } from "@cyberlearn/lib";
 import { Select } from "@cyberlearn/ui";
 import { resolveModerationAction } from "../_actions/moderation-actions";
 import { useReportOutcome } from "./review-outcomes";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 
 /**
  * Two decisions, and a sanction that rides along with one of them.
@@ -51,6 +52,7 @@ export function ReviewButtons({
   const [pending, start] = useTransition();
   const [sanction, setSanction] = useState("none");
   const report = useReportOutcome();
+  const confirm = useAdminConfirmation();
 
   const decide = (outcome: "UPHELD" | "OVERTURNED", chosen?: string): void => {
     start(async () => {
@@ -58,6 +60,21 @@ export function ReviewButtons({
       if (result.message !== undefined) report(about, result.message);
     });
   };
+
+  async function confirmDecision(): Promise<void> {
+    if (actionable) {
+      const warning =
+        sanction === "none"
+          ? "Supprimer définitivement ce contenu ? C’est irréversible."
+          : "Supprimer définitivement ce contenu et bannir son auteur ? C’est irréversible.";
+      if (!(await confirm(`${about} : ${warning}`))) return;
+    } else if (
+      sanction !== "none" &&
+      !(await confirm(`${about} : bannir l’auteur ? C’est une sanction.`))
+    )
+      return;
+    decide("UPHELD", sanction);
+  }
 
   return (
     <div className="a-row-actions" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
@@ -92,22 +109,7 @@ export function ReviewButtons({
         type="button"
         disabled={pending}
         onClick={() => {
-          // Only the destroying decision asks. Confirming a refusal destroys
-          // nothing, so a warning about something irreversible would be a lie
-          // and would train people to click through the real one.
-          if (actionable) {
-            const warning =
-              sanction === "none"
-                ? "Supprimer définitivement ce contenu ? C'est irréversible."
-                : "Supprimer définitivement ce contenu et bannir son auteur ? C'est irréversible.";
-            if (!window.confirm(warning)) return;
-          } else if (
-            sanction !== "none" &&
-            !window.confirm("Bannir l'auteur ? C'est une sanction.")
-          ) {
-            return;
-          }
-          decide("UPHELD", sanction);
+          void confirmDecision();
         }}
         className="a-btn a-btn--danger a-btn--sm"
       >

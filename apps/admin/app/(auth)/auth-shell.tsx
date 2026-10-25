@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import { BastionLogo } from "@cyberlearn/ui";
 
 function CheckIcon(): React.ReactElement {
   return (
@@ -34,16 +34,17 @@ export function AdminAuthShell({
 }): React.ReactElement {
   return (
     <div className="a-auth">
+      <header className="a-auth-console-bar">
+        <BastionLogo size={28} />
+        <span className="a-console-identity-full">Console d’administration</span>
+        <span className="a-console-identity-short">ADMIN</span>
+      </header>
       <aside className="a-auth-brand">
         <div>
-          <Image
-            src="/Admin_logo.png"
-            alt="CyberLearn Admin"
-            width={170}
-            height={36}
-            style={{ width: "auto", height: 36, objectFit: "contain" }}
-            priority
-          />
+          <div className="a-auth-admin">
+            <BastionLogo size={44} />
+            <span>BASTION · Administration</span>
+          </div>
           <h2 className="a-auth-tagline">
             La console qui pilote
             <br />

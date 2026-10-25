@@ -6,6 +6,7 @@ import { Select } from "@cyberlearn/ui";
 import { ROLE_LABEL, isUserRole, roleChangeQuestion, roleTone } from "@/lib/roles";
 import { toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
+import { useAdminConfirmation } from "../../_components/admin-confirmation";
 
 /**
  * The role, stated and changed by the same control.
@@ -43,18 +44,27 @@ export function RoleSelect({
 }): React.ReactElement {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const confirm = useAdminConfirmation();
+
+  async function changeRole(next: string): Promise<void> {
+    if (!isUserRole(next) || next === currentRole) return;
+    if (!(await confirm(roleChangeQuestion(handle, currentRole, next)))) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await updateUserRoleAction(userId, next);
+      if (!result.ok) setError(result.error ?? "Le changement de rôle a échoué.");
+    });
+  }
 
   return (
     <span style={{ display: "inline-grid", gap: 4 }}>
       <Select
         block={false}
         triggerStyle={{
-          height: 26,
+          height: 44,
           padding: "0 9px",
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: 700,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
           background: `color-mix(in srgb, ${toneColor(roleTone(currentRole))} 8%, transparent)`,
         }}
         value={currentRole}
@@ -66,15 +76,7 @@ export function RoleSelect({
           tone: toneColor(roleTone(r)),
         }))}
         onChange={(next) => {
-          // Guard rather than cast: the option list is ours, but the value comes
-          // back out of the control as a plain string.
-          if (!isUserRole(next) || next === currentRole) return;
-          if (!window.confirm(roleChangeQuestion(handle, currentRole, next))) return;
-          setError(null);
-          startTransition(async () => {
-            const result = await updateUserRoleAction(userId, next);
-            if (!result.ok) setError(result.error ?? "Le changement de rôle a échoué.");
-          });
+          void changeRole(next);
         }}
       />
       {error !== null && (

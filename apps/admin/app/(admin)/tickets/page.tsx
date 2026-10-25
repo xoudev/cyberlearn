@@ -161,7 +161,6 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
               style={{
                 width: 5,
                 height: 5,
-                borderRadius: "50%",
                 background: status.color,
                 flexShrink: 0,
               }}

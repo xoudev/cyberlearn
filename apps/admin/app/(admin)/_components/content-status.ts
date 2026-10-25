@@ -15,7 +15,7 @@ export type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
  */
 export const CONTENT_STATUS: Record<ContentStatus, { label: string; tone: Tone }> = {
   DRAFT: { label: "Brouillon", tone: "neutral" },
-  PUBLISHED: { label: "Publié", tone: "accent" },
+  PUBLISHED: { label: "Publié", tone: "success" },
   ARCHIVED: { label: "Archivé", tone: "danger" },
 };
 

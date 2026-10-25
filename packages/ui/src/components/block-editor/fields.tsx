@@ -20,14 +20,13 @@ export const MONO = "var(--font-mono)";
 export const DANGER = "var(--color-danger)";
 export const MUTED = "var(--color-text-muted)";
 export const TEXT = "var(--color-text-primary)";
-const INPUT_BG = "#07051E";
+const INPUT_BG = "var(--color-bg-base)";
 
 const inputStyle = (invalid: boolean, mono: boolean): React.CSSProperties => ({
   width: "100%",
   boxSizing: "border-box",
   background: INPUT_BG,
   border: `1px solid ${invalid ? DANGER : BORDER}`,
-  borderRadius: 2,
   color: TEXT,
   fontFamily: mono ? MONO : "inherit",
   fontSize: mono ? 12 : 13,
@@ -72,7 +71,7 @@ export function Field({
         hint !== undefined && (
           <span
             className="mdx-field-hint"
-            style={{ fontFamily: MONO, fontSize: 9.5, color: "#5A5785" }}
+            style={{ fontFamily: MONO, fontSize: 12, color: "var(--color-text-muted)" }}
           >
             {hint}
           </span>
@@ -274,7 +273,6 @@ export function SmallButton({
         fontWeight: 700,
         letterSpacing: "0.06em",
         cursor: disabled ? "default" : "pointer",
-        borderRadius: 2,
         flexShrink: 0,
       }}
     >
